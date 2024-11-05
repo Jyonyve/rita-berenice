@@ -1,5 +1,6 @@
 import { ChatGroq } from "@langchain/groq";
-
+import GroqLogo from "@assets/groq-logo.svg?react";
+import { Button } from "@mui/material";
 export const Groq = () => {
 	//
 	const getResult = async () => {
@@ -13,8 +14,8 @@ export const Groq = () => {
 		return res;
 	};
 	return (
-		<>
-			<button onClick={getResult}>{`click`}</button>
-		</>
+		<Button onClick={getResult}>
+			<GroqLogo />
+		</Button>
 	);
 };
