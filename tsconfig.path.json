@@ -1,0 +1,14 @@
+{
+	"compilerOptions": {
+		"baseUrl": "./src",
+		"paths": {
+			"@assets/*": ["./assets/*"],
+			"@util/*": ["./util/*"],
+			"@openai/*": ["./openai/*"],
+			"@groq/*": ["./groq/*"]
+			// "@pinecone/*":[
+			//   "./pinecone/*"
+			// ]
+		}
+	}
+}
