@@ -1,1 +1,1 @@
-export * from "./CommonMessage";
+export * from './ChatTypes';
