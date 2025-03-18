@@ -2,15 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { createAiService } from '@services/aiService';
 import { ChatTurn } from '@domain/datasource';
 
+const CHROMA_API_URL = import.meta.env.VITE_CHROMA_API_URL;
+const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
+
 export const useChat = (characterName: string) => {
 	const [messages, setMessages] = useState<ChatTurn[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
-	const [aiService] = useState(() =>
-		createAiService(
-			process.env.REACT_APP_CHROMA_API_URL || '',
-			process.env.REACT_APP_OPENAI_API_KEY || ''
-		)
-	);
+	const [aiService] = useState(() => createAiService(CHROMA_API_URL || '', OPENAI_API_KEY || ''));
 
 	// Initialize the service with the selected character
 	useEffect(() => {

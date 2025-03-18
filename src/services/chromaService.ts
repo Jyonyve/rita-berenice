@@ -1,7 +1,10 @@
 import { ConversationContext, ChromaDocument, QueryResult } from '@domain/chromadb';
 import { ChromaClient, Collection, OpenAIEmbeddingFunction, IncludeEnum } from 'chromadb';
 
-// Summarization function (dummy implementation, replace with actual summarization logic)
+const DEFAULT_QUERY_LIMIT = import.meta.env.VITE_DEFAULT_QUERY_LIMIT;
+const RECENT_QUERY_LIMIT = import.meta.env.VITE_RECENT_QUERY_LIMIT;
+
+// 더 정교한 요약 로직이 필요하다면 LLM 호출이나 기타 요약 알고리즘으로 대체할 수 있습니다.
 const summarizeContexts = (contexts: ConversationContext[]): string => {
 	return contexts.map((ctx) => ctx.context).join(' ');
 };
@@ -15,11 +18,10 @@ export const createChromaService = (
 	const embeddingFunction = new OpenAIEmbeddingFunction({ openai_api_key: openAIApiKey });
 	let collection: Collection | null = null;
 
-	const getRecentContexts = async (limit: number = 5): Promise<ConversationContext[]> => {
+	const getRecentContexts = async (limit: number = 10): Promise<ConversationContext[]> => {
 		if (!collection) {
 			throw new Error('Collection not initialized. Call initialize() first.');
 		}
-
 		try {
 			const results = await collection.query({
 				queryTexts: [''],
@@ -33,9 +35,7 @@ export const createChromaService = (
 					timestamp: (results.metadatas?.[0]?.[index]?.timestamp as string) || '',
 				})) || [];
 
-			// Sort contexts by timestamp in descending order
 			contexts.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
 			return contexts;
 		} catch (error) {
 			console.error('Failed to retrieve recent contexts:', error);
@@ -48,7 +48,6 @@ export const createChromaService = (
 			try {
 				const collections = await client.listCollections();
 				const exists = collections.some((col) => col === collectionName);
-
 				if (exists) {
 					collection = await client.getCollection({ name: collectionName, embeddingFunction });
 					console.log(`Collection '${collectionName}' loaded successfully`);
@@ -63,10 +62,7 @@ export const createChromaService = (
 		},
 
 		addDocuments: async (documents: ChromaDocument[]): Promise<void> => {
-			if (!collection) {
-				throw new Error('Collection not initialized. Call initialize() first.');
-			}
-
+			if (!collection) throw new Error('Collection not initialized. Call initialize() first.');
 			try {
 				await collection.add({
 					ids: documents.map((doc) => doc.id),
@@ -80,11 +76,8 @@ export const createChromaService = (
 			}
 		},
 
-		query: async (queryText: string, n: number = 5): Promise<QueryResult> => {
-			if (!collection) {
-				throw new Error('Collection not initialized. Call initialize() first.');
-			}
-
+		query: async (queryText: string, n: number = DEFAULT_QUERY_LIMIT): Promise<QueryResult> => {
+			if (!collection) throw new Error('Collection not initialized. Call initialize() first.');
 			try {
 				const results = await collection.query({ queryTexts: [queryText], nResults: n });
 				const { ids, distances, documents, metadatas } = results;
@@ -101,10 +94,7 @@ export const createChromaService = (
 		},
 
 		deleteDocuments: async (ids: string[]): Promise<void> => {
-			if (!collection) {
-				throw new Error('Collection not initialized. Call initialize() first.');
-			}
-
+			if (!collection) throw new Error('Collection not initialized. Call initialize() first.');
 			try {
 				await collection.delete({ ids });
 				console.log(`Deleted ${ids.length} documents from collection`);
@@ -115,12 +105,9 @@ export const createChromaService = (
 		},
 
 		addConversationContext: async (context: ConversationContext): Promise<void> => {
-			if (!collection) {
-				throw new Error('Collection not initialized. Call initialize() first.');
-			}
-
+			if (!collection) throw new Error('Collection not initialized. Call initialize() first.');
 			try {
-				// Add raw conversation context
+				// 원본 대화 문서를 저장합니다.
 				await collection.add({
 					ids: [context.id],
 					documents: [context.context],
@@ -128,19 +115,22 @@ export const createChromaService = (
 				});
 				console.log(`Added conversation context with id ${context.id}`);
 
-				// Retrieve the existing summary
-				const summaryId = `${context.id.split('_')[0]}_summary`;
+				// session prefix 기반 summary 문서 id 구성 (예: "peter_summary")
+				const sessionPrefix = context.id.split('_')[0];
+				const summaryId = `${sessionPrefix}_summary`;
+
+				// 기존 summary를 검색합니다.
 				const summaryResult = await collection.query({ queryTexts: [summaryId], nResults: 1 });
 				let summary = summaryResult.documents?.[0]?.[0] || '';
 
-				// Update the summary with the new context
+				// 최근 3개의 문서를 가져와 요약합니다.
 				const recentContexts = await getRecentContexts(3);
 				if (recentContexts.length === 3) {
 					const newSummary = summarizeContexts(recentContexts);
-					summary += `\n${newSummary}`;
+					summary = summary ? summary + `\n${newSummary}` : newSummary;
 				}
 
-				// Store the updated summary
+				// summary 문서를 저장 또는 업데이트합니다.
 				await collection.add({
 					ids: [summaryId],
 					documents: [summary],
@@ -154,16 +144,11 @@ export const createChromaService = (
 		},
 
 		getRecentContexts,
-
 		getCollection: (): Collection => {
-			if (!collection) {
-				throw new Error('Collection not initialized. Call initialize() first.');
-			}
+			if (!collection) throw new Error('Collection not initialized. Call initialize() first.');
 			return collection;
 		},
 
-		isInitialized: (): boolean => {
-			return !!collection;
-		},
+		isInitialized: (): boolean => !!collection,
 	};
 };
