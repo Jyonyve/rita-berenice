@@ -9,8 +9,8 @@ export const createAiService = (chromaUrl: string, openAiKey: string) => {
 
 	return {
 		initialize: async (characterName: string): Promise<void> => {
-			const sessionId = `${characterName}_${new Date().getTime()}`;
-			startNewSession(sessionId);
+			// 내부에서 sessionId를 생성하므로 캐릭터 이름만 전달합니다.
+			await startNewSession(characterName);
 		},
 
 		chat: async (userMessage: string, model: string = 'gpt-3.5-turbo'): Promise<string> => {
