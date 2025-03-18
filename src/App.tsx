@@ -1,8 +1,8 @@
 import '@assets/App.css';
 
 function App() {
-  //
-  return <>{/* <Entrypoint />d */}</>;
+	//
+	return <>{/* <Entrypoint />d */}</>;
 }
 
 export default App;
