@@ -2,22 +2,28 @@ import { ChatOpenAI } from '@langchain/openai';
 import { BedrockChat } from '@langchain/community/chat_models/bedrock';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatOllama } from '@langchain/ollama';
-import { AiModelInfo, BedrockAiModelInfo } from '@domain/aimodel';
+import { AiModelInfo } from '@domain/aimodel';
 import { useErrorDialog } from 'shared/useDialog';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
 	defaultAiInfo,
 	getDefaultSummaryAiInfo,
 	getAiModelInfo,
 	isValidAiModelInfo,
+	supportingAiInfo,
 } from '@util/aiTypeModelUtils';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
+import { removeLocalPrefix } from '@util/parseUtils';
 
 export const useAiModel = () => {
+	//	const
+	const defaultLlm = new ChatOllama({ model: removeLocalPrefix(supportingAiInfo.local[0]) });
+	const defaultSummaryLlm = new ChatOllama({ model: removeLocalPrefix(supportingAiInfo.local[0]) });
+
 	// state
-	const [aiInfo, setAiInfo] = useState<AiModelInfo>();
-	const [llm, setLlm] = useState<BaseChatModel>();
-	const [summaryLlm, setSummaryLlm] = useState<BaseChatModel>();
+	const [aiInfo, setAiInfo] = useState<AiModelInfo>(defaultAiInfo);
+	const [llm, setLlm] = useState<BaseChatModel>(defaultLlm);
+	const [summaryLlm, setSummaryLlm] = useState<BaseChatModel>(defaultSummaryLlm);
 
 	// hook
 	const { showError } = useErrorDialog();
@@ -31,6 +37,7 @@ export const useAiModel = () => {
 		}
 
 		setAiInfo(newAiInfo);
+		await changeLLMClient(newAiInfo); // Ensure LLM client is changed before proceeding
 	};
 
 	const changeLLMClient = async (aiInfo: AiModelInfo) => {
@@ -62,14 +69,5 @@ export const useAiModel = () => {
 		setSummaryLlm(newSummaryLlm);
 	};
 
-	// Effect to change LLM client only if type changes
-	useEffect(() => {
-		if (aiInfo) {
-			if (llm && llm._modelType() !== aiInfo.model) {
-				changeLLMClient(aiInfo);
-			}
-		}
-	}, [aiInfo, llm]);
-
-	return { llm, summaryLlm, aiInfo, changeAiModel };
+	return { aiInfo, llm, summaryLlm, changeAiModel };
 };

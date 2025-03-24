@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ChatEntry, ChatSession, ChatMessage, ChatTurn } from '@domain/chat';
 import { useAiModel } from '@hook/useAiModel';
-import { parseTextToEntries } from '@util/parseUtils';
-import { MessageContent } from '@langchain/core/messages';
+import { buildChatTurnToText, parseTextToEntries } from '@util/parseUtils';
+import { MessageContent, MessageContentText } from '@langchain/core/messages';
 import axios from 'axios';
-import { DefaultAiRole } from '@domain/aimodel';
+import { AiRole } from '@domain/aimodel';
 
-const SUMMARY_INTERVAL = 3;
+const SUMMARY_INTERVAL = import.meta.env.VITE_SUMMARY_INTERVAL;
+const MAX_TURNS = import.meta.env.VITE_QUERY_LIMIT;
 
 export const useChat = () => {
 	const [isLoading, setIsLoading] = useState(false);
@@ -19,6 +20,7 @@ export const useChat = () => {
 	};
 
 	const saveChatTurn = async (chatTurn: ChatTurn) => {
+		// TODO: do ChromaService stuff here
 		// await chromaService.storeChatTurn(chatTurn);
 		if (chatTurn.sequence % SUMMARY_INTERVAL === 0) {
 			await updateSummary(chatTurn.sessionId);
@@ -27,17 +29,19 @@ export const useChat = () => {
 
 	const updateSummary = async (sessionId: string) => {
 		if (!llm) throw new Error('No LLM client available.');
+		// TODO: do ChromaService stuff here
 		const summary = await llm.invoke([
 			{
 				role: 'system',
-				content: `Summarize the following chat:
-${recentChatTurn.map((turn) => turn.request.entries.map((e) => e.prompt).join(' ')).join('\n')}`,
+				content: `Summarize the following chat: ${recentChatTurn
+					.map((turn) => buildChatTurnToText(turn))
+					.join('\n\n')}`,
 			},
 		]);
 		// await chromaService.storeSummary(sessionId, summary.content);
 	};
 
-	const buildChatMessage = (speaker: DefaultAiRole, text: string): ChatMessage => {
+	const buildChatMessage = (speaker: AiRole, text: string): ChatMessage => {
 		const entries: ChatEntry[] = parseTextToEntries(text);
 		return {
 			messageId: `${currentSessionId}_${Date.now()}`,
@@ -47,71 +51,77 @@ ${recentChatTurn.map((turn) => turn.request.entries.map((e) => e.prompt).join(' 
 		};
 	};
 
-	const buildPromptWithMemory = async (query: string): Promise<string> => {
-		if (!currentSessionId) throw new Error('No active session.');
+	const buildUserPromptFromLog = async (
+		userText: string,
+		isFull: boolean = false
+	): Promise<string> => {
+		// TODO: do ChromaService stuff here
 
-		let summaryPrompt = '';
-		try {
-			// summaryPrompt = await chromaService.getSummary(currentSessionId);
-		} catch (error) {
-			console.warn('No summary available, checking full logs.');
+		if (!currentSessionId) throw new Error('No active session.');
+		const relevantDetail = '';
+		// 요약 조회
+		// let relevantDetail = (await chromaService.querySummary(currentSessionId, userText)) || '';
+
+		// 요약이 충분하지 않다면 전체 로그 검색 수행
+		if (!relevantDetail || isFull) {
+			// relevantDetail = (await chromaService.queryChatLog(currentSessionId, userText)) || '';
 		}
 
-		const fullLogResults = '';
-		// await chromaService.queryChatLog(currentSessionId, query);
-		return `Summary:
-${summaryPrompt}\n\nFull Chat Context:
-${fullLogResults}\n\nUser: ${query}`;
+		// 프롬프트 조합
+		return `Context:\n
+            Relevant Detail: ${relevantDetail}\n
+            User Prompt: ${userText}`;
 	};
 
-	// const callLlmForSession = async (
-	// 	sessionId: string,
-	// 	userInput: string,
-	// 	model?: string
-	// ): Promise<MessageContent> => {
-	// 	if (model && model !== aiInfo.model) {
-	// 	changeAiModelAiModel(model);
-	// 	}
+	const getResponseFromLlm = async (prompt: string, userPickModel?: string): Promise<string> => {
+		// Change AI model if user picks a different one
+		if (userPickModel && userPickModel !== aiInfo.model) {
+			setIsLoading(true);
+			await changeAiModel(userPickModel);
+			setIsLoading(false);
+		}
 
-	// 	const conversationHistory = recentChatTurn.map((turn) => ({
-	// 		role: turn.speaker === 'user' ? 'user' : 'assistant',
-	// 		content: turn.request.entries.map((entry) => entry.prompt).join(' '),
-	// 	}));
+		const conversationHistory = recentChatTurn
+			.slice(-MAX_TURNS)
+			.map((turn) => buildChatTurnToText(turn));
 
-	// 	if (aiInfo.type === 'local') {
-	// 		const response = await axios.post('http://localhost:11434/api/generate', {
-	// 			model: aiInfo.model,
-	// 			messages: [...conversationHistory, { role: 'user', content: userInput }],
-	// 		});
-	// 		return response.data.response;
-	// 	}
+		const response = await llm.invoke([...conversationHistory, { role: 'user', content: prompt }]);
 
-	// 	return llm.invoke([...conversationHistory, { role: 'user', content: userInput }]);
-	// };
+		if (typeof response.content === 'string') {
+			return response.content;
+		} else if (Array.isArray(response.content)) {
+			const textContent = response.content.find(
+				(content) => content.type === 'text'
+			) as MessageContentText;
+			return textContent ? textContent.text : JSON.stringify(response.content);
+		} else {
+			return JSON.stringify(response.content);
+		}
+	};
 
-	// const chat = async (userMessage: string): Promise<string> => {
-	// 	if (!currentSessionId) throw new Error('No active session.');
+	const getLlmResponse = async (userText: string): Promise<string> => {
+		if (!currentSessionId) throw new Error('No active session.');
 
-	// 	const userMsg = buildChatMessage('user', userMessage);
-	// 	const prompt = await buildPromptWithMemory(userMessage);
-	// 	const response = await callLlmForSession(currentSessionId, prompt);
-	// 	const assistantMsg = buildChatMessage('assistant', response.content);
+		const userMsg = buildChatMessage('user', userText);
+		const prompt = await buildUserPromptFromLog(userText);
+		const response = await getResponseFromLlm(prompt);
+		const assistantMsg = buildChatMessage('assistant', response);
 
-	// 	const sequence = recentChatTurn.length
-	// 		? recentChatTurn[recentChatTurn.length - 1].sequence + 1
-	// 		: 1;
-	// 	const newTurn: ChatTurn = {
-	// 		sessionId: currentSessionId,
-	// 		sequence,
-	// 		request: userMsg,
-	// 		response: assistantMsg,
-	// 		isTemp: true,
-	// 	};
-	// 	setRecentChatTurn([...recentChatTurn, newTurn]);
-	// 	await saveChatTurn(newTurn);
+		const sequence = recentChatTurn.length
+			? recentChatTurn[recentChatTurn.length - 1].sequence + 1
+			: 1;
+		const newTurn: ChatTurn = {
+			sessionId: currentSessionId,
+			sequence,
+			request: userMsg,
+			response: assistantMsg,
+			isTemp: true,
+		};
+		setRecentChatTurn([...recentChatTurn, newTurn]);
+		await saveChatTurn(newTurn);
 
-	// 	return response.content;
-	// };
+		return response;
+	};
 
-	return { messages: recentChatTurn, isLoading, currentSessionId, changeSessionId };
+	return { recentChatTurn, isLoading, currentSessionId, changeSessionId, getLlmResponse };
 };
