@@ -1,8 +1,8 @@
 import { ConversationContext, ChromaDocument, QueryResult } from '@domain/chromadb';
 import { ChromaClient, Collection, OpenAIEmbeddingFunction, IncludeEnum } from 'chromadb';
 
-const DEFAULT_QUERY_LIMIT = import.meta.env.VITE_DEFAULT_QUERY_LIMIT;
-const RECENT_QUERY_LIMIT = import.meta.env.VITE_RECENT_QUERY_LIMIT;
+const DEFAULT_QUERY_LIMIT = import.meta.env.VITE_QUERY_LIMIT;
+const SUMMARY_INTERVAL = import.meta.env.VITE_SUMMARY_INTERVAL;
 
 const summarizeContexts = (contexts: ConversationContext[]): string => {
 	return contexts.map((ctx) => ctx.context).join(' ');
@@ -30,7 +30,7 @@ export const chromaService = (apiUrl: string, collectionName: string, openAIApiK
 	};
 
 	const getRecentContexts = async (
-		limit: number = RECENT_QUERY_LIMIT
+		limit: number = SUMMARY_INTERVAL
 	): Promise<ConversationContext[]> => {
 		await initializeCollection();
 		try {

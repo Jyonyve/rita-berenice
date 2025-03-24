@@ -2,7 +2,8 @@ import { supportingAiInfo } from '@util/aiTypeModelUtils';
 
 export type SupportingAi = keyof typeof supportingAiInfo;
 export type SupportingAiModel<T extends SupportingAi> = (typeof supportingAiInfo)[T][number];
-export type DefaultAiRole = 'system' | 'user' | 'assistant';
+type DefaultAiRole = 'system' | 'user' | 'assistant';
+export type AiRole = DefaultAiRole | 'custom';
 
 // Basic AI model information
 interface BasicAiModelInfo {

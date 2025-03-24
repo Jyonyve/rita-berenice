@@ -1,4 +1,4 @@
-import { ChatEntry } from '@domain/chat';
+import { ChatEntry, ChatTurn } from '@domain/chat';
 import { v4 as uuidv4 } from 'uuid';
 
 export const parseTextToEntries = (text: string): ChatEntry[] => {
@@ -21,6 +21,20 @@ export const parseEntriesToText = (entries: ChatEntry[]): string => {
 	return entries
 		.map((entry) => (entry.type === 'action' ? `*${entry.prompt}*` : entry.prompt))
 		.join(' ');
+};
+
+export const buildChatTurnToText = (chatTurn: ChatTurn): string => {
+	const { request, response } = chatTurn;
+
+	const requestPrompt = `
+	speaker: ${request.speaker}\n
+	prompt: ${parseEntriesToText(request.entries)}`;
+
+	const responsePrompt = `
+	speaker: ${response.speaker}\n	
+	prompt: ${parseEntriesToText(response.entries)}`;
+
+	return `${requestPrompt}\n${responsePrompt}`;
 };
 
 export const removeLocalPrefix = (localModel: string): string => {
