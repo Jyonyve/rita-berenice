@@ -1,1 +1,1 @@
-export * from './useDialog';
+export * from './useMuiComp';

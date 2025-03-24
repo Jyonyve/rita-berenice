@@ -3,7 +3,7 @@ import { BedrockChat } from '@langchain/community/chat_models/bedrock';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatOllama } from '@langchain/ollama';
 import { AiModelInfo } from '@domain/aimodel';
-import { useErrorDialog } from 'shared/useDialog';
+import { useErrorDialog } from '@shared/useMuiComp';
 import { useState } from 'react';
 import {
 	defaultAiInfo,
@@ -13,7 +13,7 @@ import {
 	supportingAiInfo,
 } from '@util/aiTypeModelUtils';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
-import { removeLocalPrefix } from '@util/parseUtils';
+import { removeLocalPrefix } from '@util/chatConvertUtils';
 
 export const useAiModel = () => {
 	//	const
@@ -21,7 +21,7 @@ export const useAiModel = () => {
 	const defaultSummaryLlm = new ChatOllama({ model: removeLocalPrefix(supportingAiInfo.local[0]) });
 
 	// state
-	const [aiInfo, setAiInfo] = useState<AiModelInfo>(defaultAiInfo);
+	const [aiModelInfo, setAiInfo] = useState<AiModelInfo>(defaultAiInfo);
 	const [llm, setLlm] = useState<BaseChatModel>(defaultLlm);
 	const [summaryLlm, setSummaryLlm] = useState<BaseChatModel>(defaultSummaryLlm);
 
@@ -69,5 +69,5 @@ export const useAiModel = () => {
 		setSummaryLlm(newSummaryLlm);
 	};
 
-	return { aiInfo, llm, summaryLlm, changeAiModel };
+	return { aiModelInfo, llm, summaryLlm, changeAiModel };
 };
