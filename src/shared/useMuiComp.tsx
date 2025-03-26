@@ -6,13 +6,13 @@ import {
 	DialogTitle,
 	Button,
 	ListSubheader,
-	ListSubheaderProps,
 	MenuItem,
 	Select,
 	FormControl,
 	InputLabel,
 } from '@mui/material';
-import { supportingAiInfo } from '@util/aiTypeModelUtils';
+import { supportingAiInfo } from '@domain/aimodel';
+import { initializeAwsCredentials } from '@util/awsCredentialUtils';
 
 export const useErrorDialog = (initialOpen: boolean = false, initialMessage?: string) => {
 	const [open, setOpen] = useState(initialOpen);
@@ -70,5 +70,23 @@ export const SelectAiModel = ({ id }: { id?: string }) => {
 				{extractAiModelSelect()}
 			</Select>
 		</FormControl>
+	);
+};
+export const AwsLoginChecker = () => {
+	const [status, setStatus] = useState('');
+
+	const checkLogin = async () => {
+		try {
+			await initializeAwsCredentials();
+			setStatus('✅');
+		} catch (error) {
+			setStatus('❌');
+		}
+	};
+
+	return (
+		<Button onClick={checkLogin} color={status === '✅' ? 'success' : 'error'}>
+			Check AWS Login<p>{status}</p>
+		</Button>
 	);
 };
