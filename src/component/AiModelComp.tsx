@@ -1,19 +1,16 @@
-import { AiModelInfo } from '@domain/aimodel';
-import { ChatComp } from './ChatComp';
 import { useAiModel } from '@hook/useAiModel';
-import { defaultAiInfo, isValidAiModelInfo, supportingAiInfo } from '@util/aiTypeModelUtils';
-import { ChangeEvent, useEffect } from 'react';
-import { SelectAiModel, useErrorDialog } from '@shared/useMuiComp';
+import { useEffect } from 'react';
+import { useErrorDialog } from '@shared/useMuiComp';
 import { useChat } from '@hook/useChat';
 import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from '@mui/material';
-import React from 'react';
+import { defaultAiInfo, supportingAiInfo } from '@domain/aimodel';
 
 export const AiModelComp = ({
-	model = defaultAiInfo.model,
 	sessionId,
+	model = defaultAiInfo.model,
 }: {
-	model: string;
 	sessionId: string;
+	model?: string;
 }) => {
 	// Initialize the AI service
 	// Get the AI model and LLM client
@@ -54,15 +51,18 @@ export const AiModelComp = ({
 					label="Select AI Model"
 					onChange={handleModelChange}
 				>
+					{/* Map over the categories */}
 					{Object.keys(supportingAiInfo).map((category) => (
-						<React.Fragment key={category}>
+						<div key={category}>
+							{/* MenuItem for category label */}
 							<MenuItem disabled>{category}</MenuItem>
+							{/* Map over the models under each category */}
 							{supportingAiInfo[category].map((modelName) => (
 								<MenuItem key={modelName} value={modelName}>
 									{modelName}
 								</MenuItem>
 							))}
-						</React.Fragment>
+						</div>
 					))}
 				</Select>
 			</FormControl>

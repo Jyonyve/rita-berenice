@@ -1,9 +1,8 @@
-import './assets/App.css';
+// import './assets/App.css';
 
-import React from 'react';
 import { Box, CssBaseline, Container } from '@mui/material';
-import { ChatComp } from '@component/ChatComp'; // Importing Chat Component
-import { AiModelComp } from '@component/AiModelComp'; // Importing AI Model Component
+import { AiModelComp } from '@component/AiModelComp';
+import { ChatComp } from '@component/ChatComp';
 
 const App = () => {
 	const sessionId = 'example-session-id'; // Replace with actual session ID
@@ -14,7 +13,7 @@ const App = () => {
 			<Container maxWidth="sm">
 				<h1>AI Chat Application</h1>
 				{/* AI Model Selector */}
-				<AiModelComp model={'exaone-deep-2.4b'} sessionId={sessionId} />
+				<AiModelComp sessionId={sessionId} />
 
 				{/* Chat Component */}
 				<ChatComp />

@@ -1,4 +1,5 @@
 export * from './chatConvertUtils';
 export * from './testUtils';
-export * from './aiTypeModelUtils';
+export * from './aiModelUtils';
 export * from './axiosUtils';
+export * from './awsCredentialUtils';
