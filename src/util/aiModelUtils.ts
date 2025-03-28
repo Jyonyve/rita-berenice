@@ -1,5 +1,5 @@
 import { AiModelInfo, defaultAiInfo, SupportingAi, supportingAiInfo } from '@domain/aimodel';
-import { getAwsCredentials, isAwsCredentialsExpired } from '@util/awsCredentialUtils'; // Import from awsCredentialUtils
+// import { getAwsCredentials, isAwsCredentialsExpired } from '@util/awsCredentialUtils'; // Import from awsCredentialUtils
 
 // API keys for each AI service
 export const supportingAiApiKey: Record<string, string> = {

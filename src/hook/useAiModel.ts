@@ -1,5 +1,5 @@
 import { ChatOpenAI } from '@langchain/openai';
-import { ChatBedrockConverse } from '@langchain/aws';
+// import { ChatBedrockConverse } from '@langchain/aws';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatOllama } from '@langchain/ollama';
 import { AiModelInfo, defaultAiInfo, supportingAiInfo } from '@domain/aimodel';
@@ -8,11 +8,11 @@ import { useEffect, useState } from 'react';
 import { getDefaultSummaryAiInfo, getAiModelInfo, isValidAiModelInfo } from '@util/aiModelUtils';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { removeLocalPrefix } from '@util/chatConvertUtils';
-import {
-	initializeAwsCredentials,
-	getAwsCredentials,
-	isAwsCredentialsExpired,
-} from '@util/awsCredentialUtils';
+// import {
+// 	initializeAwsCredentials,
+// 	getAwsCredentials,
+// 	isAwsCredentialsExpired,
+// } from '@util/awsCredentialUtils';
 
 export const useAiModel = () => {
 	const defaultLlm = new ChatOllama({ model: removeLocalPrefix(supportingAiInfo.local[0]) });
