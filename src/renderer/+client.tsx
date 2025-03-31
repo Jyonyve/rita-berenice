@@ -5,8 +5,8 @@ import { CacheProvider } from '@emotion/react';
 import createCache from '@emotion/cache';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { theme } from '@asset/theme';
-import { PageContextClient } from './types.ts';
+import { theme } from '#root/src/client/assets/theme';
+import { PageContextClient } from 'vike/types';
 
 export async function render(pageContext: PageContextClient) {
 	const { Page } = pageContext;

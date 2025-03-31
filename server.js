@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
-import { createServer as createViteServer } from 'vite';
+import { createDevMiddleware } from 'vike/server';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === 'production';
@@ -14,8 +14,10 @@ async function createServer() {
 	if (isProduction) {
 		app.use(express.static(path.join(__dirname, 'dist/client')));
 	} else {
-		vite = await createViteServer({ server: { middlewareMode: 'ssr' }, appType: 'custom' });
-		app.use(vite.middlewares);
+		const { devMiddleware } = await createDevMiddleware({ root });
+		app.use(devMiddleware);
+		// vite = await createDevMiddleware({ server: { middlewareMode: 'ssr' }, appType: 'custom' });
+		// app.use(vite.middlewares);
 	}
 
 	// Serve static files first
@@ -35,7 +37,7 @@ async function createServer() {
 			}
 
 			const { appHtml, emotionCss } = await render(url);
-			
+
 			const html = template
 				.replace('<!--emotion-css-->', emotionCss)
 				.replace('<!--ssr-outlet-->', appHtml);

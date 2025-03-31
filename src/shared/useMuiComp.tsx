@@ -11,7 +11,7 @@ import {
 	FormControl,
 	InputLabel,
 } from '@mui/material';
-import { supportingAiInfo } from '@domain/aimodel';
+import { supportingAiInfo } from '#root/src/client/domain/aimodel';
 // import { initializeAwsCredentials } from '@util/awsCredentialUtils';
 
 export const useErrorDialog = (initialOpen: boolean = false, initialMessage?: string) => {

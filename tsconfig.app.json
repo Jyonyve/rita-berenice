@@ -9,19 +9,7 @@
 		"resolveJsonModule": true,
 		"isolatedModules": true,
 		"noEmit": true,
-		"jsx": "react-jsx",
-
-		/* Path aliases */
-		"baseUrl": ".",
-		"paths": {
-			"@/*": ["./src/*"],
-			"@domain/*": ["src/domain/*"],
-			"@util/*": ["src/util/*"],
-			"@component/*": ["src/component/*"],
-			"@hook/*": ["src/hook/*"],
-			"@shared/*": ["src/shared/*"],
-			"@asset/*": ["src/assets/*"]
-		}
+		"jsx": "react-jsx"
 
 		/* Type Checking */
 		// "strict": true,

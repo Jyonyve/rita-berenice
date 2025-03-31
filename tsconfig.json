@@ -8,7 +8,20 @@
 		"types": ["vite/client"],
 		"jsx": "react-jsx",
 		"skipLibCheck": true,
-		"esModuleInterop": true
+		"esModuleInterop": true,
+
+		/* Path aliases */
+		"baseUrl": "",
+		"paths": {
+			"#root/*": ["./*"],
+			"@/*": ["./src/*"],
+			"@client/domain/*": ["src/client/domain/*"],
+			"@client/util/*": ["src/client/util/*"],
+			"@client/component/*": ["src/client/component/*"],
+			"@client/hook/*": ["src/client/hook/*"],
+			"@client/asset/*": ["src/client/assets/*"],
+			"@shared/*": ["./src/shared/*"]
+		}
 	},
 	"files": [],
 	"references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }]
