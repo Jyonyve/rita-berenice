@@ -1,101 +1,143 @@
+import { useState } from 'react';
+
 import { ChatOpenAI } from '@langchain/openai';
 // import { ChatBedrockConverse } from '@langchain/aws';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatOllama } from '@langchain/ollama';
-import { AiModelInfo, defaultAiInfo, supportingAiInfo } from '#root/src/client/domain/aimodel';
+import { ChatGoogleGenerativeAI } from '@langchain/google-genai'; // Keep for direct/openrouter
+import { BaseChatModel } from '@langchain/core/language_models/chat_models';
+import { AiModelInfo, supportAiModelInfo } from '@client/domain/aimodel';
+import { removeLocalPrefix } from '@client/util/chatConvertUtils';
 import { useErrorDialog } from '@shared/useMuiComp';
-import { useEffect, useState } from 'react';
 import {
-	getDefaultSummaryAiInfo,
+	determineDefaultSummaryAiInfo,
+	determineInitialDefaultAiInfo,
 	getAiModelInfo,
 	isValidAiModelInfo,
-} from '#root/src/client/util/aiModelUtils';
-import { BaseChatModel } from '@langchain/core/language_models/chat_models';
-import { removeLocalPrefix } from '#root/src/client/util/chatConvertUtils';
+} from '@client/util/index';
 // import {
 // 	initializeAwsCredentials,
 // 	getAwsCredentials,
 // 	isAwsCredentialsExpired,
 // } from '@util/awsCredentialUtils';
 
-export const useAiModel = () => {
-	const defaultLlm = new ChatOllama({ model: removeLocalPrefix(supportingAiInfo.local[0]) });
-	const defaultSummaryLlm = new ChatOllama({ model: removeLocalPrefix(supportingAiInfo.local[0]) });
+// Function to create LLM instance based on the new AiModelInfo structure
+const createLlmInstance = (aiInfo: AiModelInfo): BaseChatModel => {
+	const { platform: source, provider, model, apiKey } = aiInfo;
 
-	let refreshTimeout: NodeJS.Timeout | null = null;
+	switch (source) {
+		case 'direct':
+			switch (provider) {
+				case 'openai':
+					return new ChatOpenAI({ model, apiKey });
+				case 'anthropic':
+					return new ChatAnthropic({ model, apiKey });
+				case 'google':
+					return new ChatGoogleGenerativeAI({ model, apiKey });
+				default:
+					console.warn(`Unsupported direct provider: ${provider}. Falling back.`);
+					// Fallback to a default local model might be safer here
+					return new ChatOllama({ model: removeLocalPrefix(supportAiModelInfo.local.ollama[0]) });
+			}
+		case 'openrouter':
+			return new ChatOpenAI({
+				modelName: `${provider}/${model}`, // OpenRouter format e.g., "google/gemini-pro-1.5"
+				apiKey: apiKey || import.meta.env.VITE_OPENROUTER_API_KEY, // Use specific or general OpenRouter key
+				configuration: {
+					baseURL: 'https://openrouter.ai/api/v1',
+					// Add any necessary headers for OpenRouter if needed
+					// defaultHeaders: {
+					//   "HTTP-Referer": $YOUR_SITE_URL, // Optional, for logging
+					//   "X-Title": $YOUR_SITE_NAME, // Optional, for logging
+					// },
+				},
+			});
+		// case 'bedrock':
+		//   // Requires AWS credentials setup, which is commented out.
+		//   // return new ChatBedrockConverse({ model }); // Simplified example
+		//   console.warn('Bedrock source selected but integration is commented out. Falling back.');
+		//   return new ChatOllama({ model: removeLocalPrefix(supportingAiInfo.local.ollama[0]) });
+		case 'local':
+			return new ChatOllama({ model: removeLocalPrefix(model) });
+		default:
+			console.warn(`Unsupported AI source: ${source}. Falling back to default local.`);
+			return new ChatOllama({ model: removeLocalPrefix(supportAiModelInfo.local.ollama[0]) });
+	}
+};
+
+export const useAiModel = () => {
+	//
+	const initialDefaultAiInfo = determineInitialDefaultAiInfo();
+	const initialDefaultSummaryAiInfo = determineDefaultSummaryAiInfo();
+
+	// Initialize LLM instances
+	const initialLlm = createLlmInstance(initialDefaultAiInfo);
+	const initialSummaryLlm = createLlmInstance(initialDefaultSummaryAiInfo);
 
 	// state
-	const [aiModelInfo, setAiInfo] = useState<AiModelInfo>(defaultAiInfo);
-	const [llm, setLlm] = useState<BaseChatModel>(defaultLlm);
-	const [summaryLlm, setSummaryLlm] = useState<BaseChatModel>(defaultSummaryLlm);
+	const [aiModelInfo, setAiModelInfo] = useState<AiModelInfo>(initialDefaultAiInfo); // Renamed setter for clarity
+	const [llm, setLlm] = useState<BaseChatModel>(initialLlm);
+	const [summaryLlm, setSummaryLlm] = useState<BaseChatModel>(initialSummaryLlm);
 
 	// hook
 	const { showError } = useErrorDialog();
 
-	const changeAiModel = async (model: string) => {
-		const newAiInfo = await getAiModelInfo(model);
+	const changeAiModel = (modelName: string) => {
+		const newAiInfo = getAiModelInfo(modelName);
 		if (!newAiInfo || !isValidAiModelInfo(newAiInfo)) {
-			showError('Invalid AI model information');
+			showError(`Invalid AI model information for: ${modelName}`);
 			return;
 		}
 
-		setAiInfo(newAiInfo);
-		await changeLLMClient(newAiInfo); // Ensure LLM client is changed before proceeding
+		setAiModelInfo(newAiInfo);
+		changeLLMClient(newAiInfo);
 	};
 
-	const changeLLMClient = async (aiInfo: AiModelInfo) => {
-		const summaryAiInfo = await getDefaultSummaryAiInfo(aiInfo.type);
-		let newLlm;
-		let newSummaryLlm: BaseChatModel = new ChatBedrockConverse({ ...summaryAiInfo });
-		switch (aiInfo.type) {
-			case 'gpt':
-				newLlm = new ChatOpenAI({ ...aiInfo });
-				break;
-			case 'claude':
-				newLlm = new ChatAnthropic({ ...aiInfo });
-				break;
-			case 'bedrock':
-				newLlm = new ChatBedrockConverse({ ...aiInfo });
-				break;
-			case 'exaone':
-				newLlm = new ChatOllama({ ...aiInfo });
-				break;
-			case 'local':
-				newLlm = new ChatOllama({ ...aiInfo });
-				newSummaryLlm = new ChatOllama({ ...summaryAiInfo });
-				break;
-			default:
-				throw new Error('Invalid AI model type');
-		}
+	const changeLLMClient = (newAiInfo: AiModelInfo) => {
+		const summaryAiInfo = determineDefaultSummaryAiInfo();
+
+		const newLlm = createLlmInstance(newAiInfo);
+		const newSummaryLlm = createLlmInstance(summaryAiInfo);
+
 		setLlm(newLlm);
 		setSummaryLlm(newSummaryLlm);
 	};
 
-	const refreshAwsCredentials = async () => {
-		try {
-			if (isAwsCredentialsExpired()) {
-				await initializeAwsCredentials();
-			}
-			const credentials = await getAwsCredentials();
+	// AWS credential refresh logic and useEffect are removed
 
-			// 크레덴셜 만료 5분 전에 자동 갱신 설정
-			if (credentials.Expiration) {
-				const expiresInMs = new Date(credentials.Expiration).getTime() - Date.now() - 5 * 60 * 1000;
-				refreshTimeout = setTimeout(refreshAwsCredentials, Math.max(expiresInMs, 0));
-			}
-		} catch (error) {
-			console.error('AWS credentials refresh failed:', error);
-		}
-	};
+	// const refreshAwsCredentials = async () => {
+	// 	try {
+	// 		// if (isAwsCredentialsExpired()) { // Assuming isAwsCredentialsExpired is defined elsewhere
+	// 		// 	await initializeAwsCredentials(); // Assuming initializeAwsCredentials is defined elsewhere
+	// 		// }
+	// 		// const credentials = await getAwsCredentials(); // Assuming getAwsCredentials is defined elsewhere
 
-	useEffect(() => {
-		if (aiModelInfo.type === 'bedrock') {
-			refreshAwsCredentials(); // Bedrock 사용 시 인증 실행
-		} else {
-			clearTimeout(refreshTimeout!);
-			refreshTimeout = null;
-		}
-	}, [aiModelInfo.type]);
+	// 		// // 크레덴셜 만료 5분 전에 자동 갱신 설정
+	// 		// if (credentials.Expiration) {
+	// 		// 	const expiresInMs = new Date(credentials.Expiration).getTime() - Date.now() - 5 * 60 * 1000;
+	// 		// 	refreshTimeout = setTimeout(refreshAwsCredentials, Math.max(expiresInMs, 0));
+	// 		// }
+	// 	} catch (error) {
+	// 		console.error('AWS credentials refresh failed:', error);
+	// 	}
+	// };
+
+	// useEffect(() => {
+	// 	// if (aiModelInfo.type === 'bedrock') {
+	// 	// 	refreshAwsCredentials(); // Bedrock 사용 시 인증 실행
+	// 	// } else {
+	// 	// 	if (refreshTimeout) {
+	// 	//          clearTimeout(refreshTimeout);
+	// 	//          refreshTimeout = null;
+	// 	//       }
+	// 	// }
+	// 	// // Cleanup function to clear timeout on component unmount or when aiModelInfo.type changes
+	// 	// return () => {
+	// 	//    if (refreshTimeout) {
+	// 	//       clearTimeout(refreshTimeout);
+	// 	//    }
+	// 	// };
+	// }, [aiModelInfo.type]); // Dependency array includes aiModelInfo.type
 
 	return { aiModelInfo, llm, summaryLlm, changeAiModel };
 };

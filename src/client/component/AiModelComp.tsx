@@ -1,45 +1,41 @@
-import { useAiModel } from '#root/src/client/hook/useAiModel';
+import { useAiModel } from '@client/hook/useAiModel';
 import { useEffect } from 'react';
 import { useErrorDialog } from '@shared/useMuiComp';
-import { useChat } from '#root/src/client/hook/useChat';
+import { useChat } from '@client/hook/useChat';
 import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from '@mui/material';
-import { defaultAiInfo, supportingAiInfo } from '#root/src/client/domain/aimodel';
+import { DEFAULT_FREE_MODEL, supportAiModelInfo } from '@client/domain/aimodel';
 
-export const AiModelComp = ({
-	sessionId,
-	model = defaultAiInfo.model,
-}: {
+interface AiModelCompProps {
 	sessionId: string;
 	model?: string;
-}) => {
-	// Initialize the AI service
-	// Get the AI model and LLM client
+}
+
+export const AiModelComp = ({ sessionId, model = DEFAULT_FREE_MODEL.model }: AiModelCompProps) => {
 	const { aiModelInfo, changeAiModel } = useAiModel();
 	const { currentSessionId, changeSessionId } = useChat();
-
-	// hook
 	const { showError } = useErrorDialog();
 
-	const handleModelChange = (event: SelectChangeEvent) => {
+	const handleModelChange = (event: SelectChangeEvent<string>) => {
 		changeAiModel(event.target.value);
 	};
 
-	// initialization
+	// Session initialization
 	useEffect(() => {
 		if (!sessionId) {
 			showError('No session ID provided');
-		} else if (currentSessionId !== sessionId) {
-			// TODO: add validation logic
+			return;
+		}
+		if (currentSessionId !== sessionId) {
 			changeSessionId(sessionId);
 		}
-	}, [sessionId, currentSessionId]);
+	}, [sessionId, currentSessionId, changeSessionId, showError]);
 
-	// init and change AI model
+	// Model initialization
 	useEffect(() => {
-		if (model !== aiModelInfo?.model) {
+		if (model && aiModelInfo?.model !== model) {
 			changeAiModel(model);
 		}
-	}, [model]);
+	}, [model, aiModelInfo?.model, changeAiModel]);
 
 	return (
 		<Box sx={{ marginBottom: 3 }}>
@@ -47,23 +43,50 @@ export const AiModelComp = ({
 				<InputLabel id="ai-model-select-label">Select AI Model</InputLabel>
 				<Select
 					labelId="ai-model-select-label"
+					id="ai-model-select"
 					value={model}
 					label="Select AI Model"
 					onChange={handleModelChange}
 				>
-					{/* Map over the categories */}
-					{Object.keys(supportingAiInfo).map((category) => (
-						<div key={category}>
-							{/* MenuItem for category label */}
-							<MenuItem disabled>{category}</MenuItem>
-							{/* Map over the models under each category */}
-							{supportingAiInfo[category].map((modelName) => (
-								<MenuItem key={modelName} value={modelName}>
-									{modelName}
+					{/* OpenRouter Models First */}
+					<MenuItem disabled sx={{ bgcolor: 'action.hover' }}>
+						OpenRouter Models
+					</MenuItem>
+					{Object.entries(supportAiModelInfo.openrouter).map(([provider, models]) => (
+						<Box key={provider} sx={{ pl: 2 }}>
+							<MenuItem disabled sx={{ fontWeight: 'bold' }}>
+								{provider}
+							</MenuItem>
+							{models.map((modelName) => (
+								<MenuItem key={modelName} value={modelName} sx={{ pl: 4 }}>
+									{modelName.split('/').pop()}
 								</MenuItem>
 							))}
-						</div>
+						</Box>
 					))}
+
+					{/* Other Platform Models */}
+					{Object.entries(supportAiModelInfo)
+						.filter(([platform]) => platform !== 'openrouter')
+						.map(([platform, providers]) => (
+							<Box key={platform}>
+								<MenuItem disabled sx={{ bgcolor: 'action.hover' }}>
+									{platform.toUpperCase()}
+								</MenuItem>
+								{Object.entries(providers).map(([provider, models]) => (
+									<Box key={provider} sx={{ pl: 2 }}>
+										<MenuItem disabled sx={{ fontWeight: 'bold' }}>
+											{provider}
+										</MenuItem>
+										{models.map((modelName) => (
+											<MenuItem key={modelName} value={modelName} sx={{ pl: 4 }}>
+												{modelName}
+											</MenuItem>
+										))}
+									</Box>
+								))}
+							</Box>
+						))}
 				</Select>
 			</FormControl>
 		</Box>

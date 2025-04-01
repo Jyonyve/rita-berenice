@@ -1,5 +1,5 @@
 import { Box, CssBaseline, Container, Button } from '@mui/material';
-import { ChatComp } from '@client/component/index';
+
 import { navigate } from 'vike/client/router';
 
 export function Page() {

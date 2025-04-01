@@ -1,65 +1,51 @@
-export type SupportingAi = keyof typeof supportingAiInfo;
-export type SupportingAiModel<T extends SupportingAi> = (typeof supportingAiInfo)[T][number];
-type DefaultAiRole = 'system' | 'user' | 'assistant';
+import { supportAiModelInfo } from './supportAiModelInfo';
+
+// 2. Define types based on the new structure
+export type AiPlatform = keyof typeof supportAiModelInfo;
+export type AiProvider<S extends AiPlatform> = keyof (typeof supportAiModelInfo)[S];
+export type AiModelName<
+	S extends AiPlatform,
+	P extends AiProvider<S>,
+> = (typeof supportAiModelInfo)[S][P] extends readonly string[]
+	? (typeof supportAiModelInfo)[S][P][number]
+	: never;
+
+// Utility type to extract all models for a given source
+type ModelsForPlatform<S extends AiPlatform> = {
+	[P in AiProvider<S>]: AiModelName<S, P>;
+}[AiProvider<S>];
+
+// Utility type to get all possible model names
+export type AllModelNames = { [S in AiPlatform]: ModelsForPlatform<S> }[AiPlatform];
+
+// 3. Update AiModelInfo structure with proper provider typing
+export interface AiModelInfo {
+	platform: AiPlatform;
+	provider: AiProvider<AiPlatform>; // Fixed: Make provider properly typed
+	model: AllModelNames; // Fixed: Use AllModelNames type
+	apiKey?: string;
+}
+
+// Get all sources
+export const SupportAiPlatformList = Object.keys(supportAiModelInfo) as AiPlatform[];
+
+// Get all model names (flattened)
+export const SupportAiModelList = Object.values(supportAiModelInfo)
+	.map((providers) => Object.values(providers).flat())
+	.flat() as AllModelNames[]; // Fixed: Use proper type assertion
+
+// 5. Define AiRole (remains unchanged)
+export type DefaultAiRole = 'system' | 'user' | 'assistant';
 export type AiRole = DefaultAiRole | 'custom';
 
-// Basic AI model information
-interface BasicAiModelInfo {
-	type: SupportingAi;
-	model: string;
-	apiKey: string;
-}
+export const DEFAULT_FREE_MODEL: AiModelInfo = {
+	platform: 'openrouter',
+	provider: 'google',
+	model: 'google/gemini-2.0-flash-thinking-exp:free' as AllModelNames,
+};
 
-// Specific AI model information interfaces
-interface GptAiModelInfo extends BasicAiModelInfo {
-	type: 'gpt';
-	model: SupportingAiModel<'gpt'>;
-}
-
-interface ClaudeAiModelInfo extends BasicAiModelInfo {
-	type: 'claude';
-	model: SupportingAiModel<'claude'>;
-}
-
-interface ExaoneAiModelInfo extends BasicAiModelInfo {
-	type: 'exaone';
-	model: SupportingAiModel<'exaone'>;
-}
-
-// Bedrock AI model information
-export interface BedrockAiModelInfo extends Partial<BasicAiModelInfo> {
-	type: 'bedrock';
-	model: SupportingAiModel<'bedrock'>;
-}
-
-interface LocalAiModelInfo extends Partial<BasicAiModelInfo> {
-	type: 'local';
-	model: SupportingAiModel<'local'>;
-}
-
-// Combined AI model information type
-export type AiModelInfo =
-	| GptAiModelInfo
-	| ClaudeAiModelInfo
-	| ExaoneAiModelInfo
-	| BedrockAiModelInfo
-	| LocalAiModelInfo;
-
-// Current AI models supported by the application
-export const supportingAiInfo: Record<string, string[]> = {
-	local: ['local_exaone-deep-2.4b'],
-	gpt: ['gpt-4o', 'gpt-4o-mini'],
-	claude: ['claude-3.7-sonnet', 'claude-3.5-haiku'],
-	exaone: ['exaone-deep-7.8b', 'exaone-deep-2.4b'],
-	bedrock: [
-		'anthropic.claude-3-5-haiku-20241022-v1:0', // first one should be the default summary AI
-		'anthropic.claude-3-7-sonnet-20250219-v1:0',
-		'amazon.nova-pro-v1:0',
-	],
-} as const;
-export const SupportingAiList = Object.keys(supportingAiInfo).flat();
-export const SupportingAiModelList = Object.values(supportingAiInfo).flat();
-export const defaultAiInfo: AiModelInfo = {
-	type: 'local',
-	model: 'local_exaone-deep-2.4b',
-} as const;
+export const DEFAULT_LOCAL_MODEL: AiModelInfo = {
+	platform: 'local',
+	provider: 'exaone',
+	model: 'exaone-deep-2.4b' as AllModelNames,
+};

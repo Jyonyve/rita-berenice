@@ -41,6 +41,7 @@ export default {
 		}),
 	],
 	build: {
+		chunkSizeWarningLimit: 1000,
 		rollupOptions: {
 			external: [...builtinModules, ...CHROMADB],
 			output: {
@@ -61,6 +62,7 @@ export default {
 			},
 		},
 	},
+	// esbuild: { logOverride: { 'this-is-undefined-in-esm': 'silent', EVAL: 'silent' } },
 	optimizeDeps: {
 		include: ['@emotion/react', '@emotion/styled', '@emotion/cache', 'hoist-non-react-statics'],
 		// exclude: ['@mui/material', '@emotion/react', '@emotion/styled'],

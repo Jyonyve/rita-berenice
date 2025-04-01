@@ -5,5 +5,5 @@
 
 // const onBeforePrerenderStart: OnBeforePrerenderStartAsync =
 // 	async (): ReturnType<OnBeforePrerenderStartAsync> => {
-// 		return ['/hello', ...names.map((name) => `/hello/${name}`)];
+// 		return ['', ...names.map((name) => `/${name}`)];
 // 	};
