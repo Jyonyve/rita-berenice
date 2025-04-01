@@ -1,13 +1,13 @@
 import { useState, useCallback, useMemo } from 'react';
 import { ChromaClient, Collection, DefaultEmbeddingFunction, IncludeEnum } from 'chromadb';
-import { ChatTurn, SUMMARY_ID_SUFFIX, SupportingAiModelList } from '#root/src/client/domain/index';
+import { ChatTurn, SUMMARY_ID_SUFFIX, SupportAiModelList } from '#root/src/client/domain/index';
 
 const chromaUrl = import.meta.env.VITE_CHROMA_API_URL as string;
 const QUERY_LIMIT = import.meta.env.VITE_QUERY_LIMIT as number;
 
 export const useChromaChat = (
 	initialSessionId: string,
-	initialAiModel: (typeof SupportingAiModelList)[number]
+	initialAiModel: (typeof SupportAiModelList)[number]
 ) => {
 	const [sessionId, setSessionId] = useState(initialSessionId);
 	const [aiModel, setAiModel] = useState(initialAiModel);

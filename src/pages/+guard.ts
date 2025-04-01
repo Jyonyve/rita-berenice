@@ -1,14 +1,27 @@
 import type { GuardAsync } from 'vike/types';
 import { render } from 'vike/abort';
 
-// The guard() hook enables to protect pages
 export const guard: GuardAsync = async (pageContext): ReturnType<GuardAsync> => {
-	if (pageContext.urlPathname === '/hello/forbidden') {
-		await sleep(2 * 1000); // Unlike Route Functions, guard() can be async
-		throw render(401, 'This page is forbidden.');
+	const { urlPathname } = pageContext;
+
+	// Handle API routes
+	if (urlPathname.startsWith('/api/')) {
+		try {
+			// Simple rate limiting check (replace with your actual implementation)
+			const requestLimit = 10; // requests per minute
+			const currentRequests = 0; // implement your counter here
+
+			if (currentRequests > requestLimit) {
+				throw render(
+					429,
+					'Too many requests'
+					// retryAfter: 60, // seconds
+				);
+			}
+		} catch (error) {
+			// Handle unexpected errors
+			console.error('API Guard Error:', error);
+			throw render(500, 'Internal Server Error');
+		}
 	}
 };
-
-function sleep(milliseconds: number): Promise<void> {
-	return new Promise((r) => setTimeout(r, milliseconds));
-}
