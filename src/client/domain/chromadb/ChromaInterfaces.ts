@@ -1,4 +1,4 @@
-import { Metadata } from 'chromadb';
+import type { Metadata } from 'chromadb';
 
 export interface ChromaDocument {
 	id: string;
@@ -26,3 +26,4 @@ export interface GroupedSession {
 }
 
 export type SessionGroups = Record<string, GroupedSession[]>;
+export const COLLECTIONS = { CHARACTER: 'character', DOCUMENT: 'document' } as const;

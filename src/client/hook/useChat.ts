@@ -1,15 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ChatEntry, ChatSession, ChatMessage, ChatTurn } from '#root/src/client/domain/chat';
-import { useAiModel } from '#root/src/client/hook/useAiModel';
+import { ChatMessage, ChatTurn, CHAT_ROLES } from '@client/domain/chat';
+import { useAiModel } from '@client/hook/useAiModel';
 import {
 	buildChatTurnToJsonString,
 	convertMessageContentToString,
-	parseTextToEntries,
-} from '#root/src/client/util/chatConvertUtils';
-import { MessageContent, MessageContentText } from '@langchain/core/messages';
-import axios from 'axios';
-import { AiRole } from '#root/src/client/domain/aimodel';
-import { Collection } from 'chromadb';
+	extractValidOpenAiContent,
+	isOpenAI,
+} from '@client/util/index';
 
 const SUMMARY_INTERVAL = import.meta.env.VITE_SUMMARY_INTERVAL;
 const MAX_TURNS = import.meta.env.VITE_QUERY_LIMIT;
@@ -19,7 +16,9 @@ export const useChat = () => {
 	const [isLoading, setIsLoading] = useState(false);
 	const [currentSessionId, setCurrentSessionId] = useState<string>('');
 	const [recentChatTurn, setRecentChatTurn] = useState<ChatTurn[]>([]);
-	const { aiModelInfo: aiInfo, llm, changeAiModel } = useAiModel();
+	const { aiModelInfo, llm, changeAiModel } = useAiModel();
+
+	const openAI = isOpenAI(llm);
 
 	const changeSessionId = (newSessionId: string) => {
 		if (newSessionId) setCurrentSessionId(newSessionId);
@@ -29,34 +28,48 @@ export const useChat = () => {
 		if (!llm) throw new Error('No LLM client available.');
 
 		if (chatTurn.sequence % SUMMARY_INTERVAL === 0) {
-			const summary = await llm.invoke([
-				{
-					role: 'system',
-					content: `Summarize the following chat: ${recentChatTurn
-						.map((turn) => buildChatTurnToJsonString(turn))
-						.join('\n\n')}`,
-				},
-			]);
+			const summaryRequest = {
+				role: CHAT_ROLES.SYSTEM,
+				content: `Summarize the following chat:\n${recentChatTurn
+					.map((turn) => buildChatTurnToJsonString(turn))
+					.join('\n\n')}`,
+			};
 
-			return summary.content;
+			if (openAI) {
+				const completion = await llm.chat.completions.create({
+					model: aiModelInfo.model,
+					messages: [summaryRequest],
+				});
+				return extractValidOpenAiContent(completion);
+			} else {
+				const response = await llm.invoke([summaryRequest]);
+				return convertMessageContentToString(response.content);
+			}
 		}
 	};
 
 	const getResponseFromLlm = async (prompt: string, userPickModel?: string): Promise<string> => {
 		// Change AI model if user picks a different one
-		if (userPickModel && userPickModel !== aiInfo.model) {
+		if (userPickModel && userPickModel !== aiModelInfo.model) {
 			setIsLoading(true);
 			await changeAiModel(userPickModel);
 			setIsLoading(false);
 		}
 
-		const conversationHistory = recentChatTurn
-			.slice(-MAX_TURNS)
-			.map((turn) => buildChatTurnToJsonString(turn));
+		// const conversationHistory = recentChatTurn
+		// 	.slice(-MAX_TURNS)
+		// 	.map((turn) => buildChatTurnToJsonString(turn));
 
-		const response = await llm.invoke([...conversationHistory, { role: 'user', content: prompt }]);
-
-		return convertMessageContentToString(response.content);
+		if (openAI) {
+			const response = await llm.chat.completions.create({
+				model: aiModelInfo.model,
+				messages: [{ role: CHAT_ROLES.USER, content: prompt }],
+			});
+			return extractValidOpenAiContent(response);
+		} else {
+			const response = await llm.invoke([{ role: CHAT_ROLES.USER, content: prompt }]);
+			return convertMessageContentToString(response.content);
+		}
 	};
 
 	const buildNextSequence = (userMsg: ChatMessage, assistantMsg: ChatMessage) => {

@@ -1,4 +1,4 @@
-import { Metadata } from 'chromadb';
+import type { Metadata } from 'chromadb';
 
 export interface CharacterMetadata extends Metadata {
 	character: string;

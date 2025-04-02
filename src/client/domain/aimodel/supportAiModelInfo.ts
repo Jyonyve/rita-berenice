@@ -1,11 +1,11 @@
 // 1. Define the new 3-level structure for supporting AI info
 export const supportAiModelInfo: Record<string, Record<string, string[]>> = {
-	local: { exaone: ['exaone-deep-7.8b', 'exaone-deep-2.4b'] },
+	local: { exaone: ['exaone-deep:2.4b'], google: ['gemma3:1b', 'gemma3:1b-Q6_K'] },
 	openrouter: {
 		anthropic: [
 			'anthropic/claude-3.7-sonnet',
 			'anthropic/claude-3.5-sonnet',
-			'anthropic/claude-3-haiku',
+			'anthropic/claude-3.5-haiku',
 		],
 		google: ['google/gemini-2.5-pro-exp-03-25:free', 'google/gemini-2.0-flash-thinking-exp:free'],
 		openai: ['openai/gpt-4o', 'openai/gpt-4o-mini'],

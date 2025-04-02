@@ -7,6 +7,7 @@ import {
 	DEFAULT_LOCAL_MODEL,
 	DEFAULT_FREE_MODEL,
 } from '@client/domain/aimodel';
+import OpenAI from 'openai';
 
 // API key mapping focusing on OpenRouter
 const API_KEY_MAP = {
@@ -17,6 +18,10 @@ const API_KEY_MAP = {
 };
 
 const openrouter = 'openrouter';
+
+export const isOpenAI = (llm: unknown): llm is OpenAI => {
+	return llm instanceof OpenAI;
+};
 
 const getApiKey = (platform: AiPlatform): string => {
 	const envKey =
@@ -42,12 +47,13 @@ export const freeAiModelInfos = extractFreeModels();
 
 const checkLocalAiRunning = async (): Promise<boolean> => {
 	try {
-		const response = await fetch('http://localhost:11434/api/version');
+		const response = await fetch(import.meta.env.LOCAL_AI_URL);
 		return response.ok;
 	} catch {
 		return false;
 	}
 };
+
 export const getAiModelInfo = (modelName: string): AiModelInfo => {
 	try {
 		// Handle OpenRouter models (with '/')
@@ -116,20 +122,20 @@ export const determineDefaultSummaryAiInfo = (
 	}
 };
 
-export const isValidAiModelInfo = (aiInfo: unknown): aiInfo is AiModelInfo =>
+export const isValidAiModelInfo = (aiInfo: unknown): boolean =>
 	!!aiInfo &&
 	typeof aiInfo === 'object' &&
-	'source' in aiInfo &&
+	'platform' in aiInfo &&
 	'provider' in aiInfo &&
 	'model' in aiInfo &&
-	supportAiModelInfo[aiInfo.source as AiPlatform]?.[aiInfo.provider as string]?.includes(
+	supportAiModelInfo[aiInfo.platform as AiPlatform]?.[aiInfo.provider as string]?.includes(
 		aiInfo.model as string
 	);
 
-export const checkLocalRunning = async () => {
+export const checkLocalRunning = async (): Promise<boolean> => {
 	if (!(await checkLocalAiRunning())) {
 		throw new Error('Local AI is not running. Please start Local AI server first.');
 	}
 
-	return DEFAULT_LOCAL_MODEL;
+	return true;
 };

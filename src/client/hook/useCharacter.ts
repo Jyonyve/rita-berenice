@@ -1,4 +1,5 @@
-import { ChromaClient, Collection, IncludeEnum } from 'chromadb';
+// Import types only for client-side usage
+import type { ChromaClient, Collection, IncludeEnum } from 'chromadb';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
 	CharacterInfo,
@@ -9,58 +10,68 @@ import {
 const chromaUrl = import.meta.env.VITE_CHROMA_API_URL as string;
 
 export const useCharacter = () => {
-	//
-	const client = useMemo(() => new ChromaClient({ path: chromaUrl }), []);
+	// --- CHROMA DB CLIENT-SIDE USAGE REMOVED ---
+	// The following code attempts to use ChromaClient directly in the browser, which is not supported.
+	// This logic needs to be moved to the server (e.g., API endpoints or Vike data functions)
+	// and the client should fetch data from the server instead.
+
+	// // Memoize client to prevent recreation - REMOVED
+	// const client = useMemo(() => new ChromaClient({ path: chromaUrl }), []);
 
 	// state
-	const [characters, setCharacters] = useState<CharacterInfo[]>([]);
+	const [characters, setCharacters] = useState<CharacterInfo[]>([]); // Keep state for fetched data
 	const [currentCharacter, setCurrentCharacter] = useState<CharacterInfo>();
 	const [loading, setLoading] = useState(false);
 
 	// Initial fetch only once when hook is mounted
 	useEffect(() => {
 		fetchCharacters();
-	}, []);
+	}, []); // Initial fetch on mount
 
-	const getCharactersList = useCallback(async (): Promise<Collection> => {
-		return await client.getOrCreateCollection({ name: 'characters' });
-	}, [client]);
-
+	// Fetch characters from the API endpoint
 	const fetchCharacters = useCallback(async () => {
+		console.log('Fetching characters from API...');
 		try {
 			setLoading(true);
-			const collection = await getCharactersList();
-			const result = await collection.get({ include: [IncludeEnum.Metadatas, IncludeEnum.Documents] });
-
-			const charactersList: CharacterInfo[] = result.ids.map((id, index) => ({
-				id,
-				metadata: result.metadatas[index] as CharacterMetadata,
-			}));
-
+			const response = await fetch('/api/characters'); // GET request to our endpoint
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+			const charactersList: CharacterInfo[] = await response.json();
 			setCharacters(charactersList);
+			console.log('Fetched characters:', charactersList);
 			return charactersList;
 		} catch (error) {
-			console.error('Failed to fetch characters:', error);
+			console.error('Failed to fetch characters from API:', error);
+			setCharacters([]); // Clear characters on error
 			return [];
 		} finally {
 			setLoading(false);
 		}
-	}, [getCharactersList]);
+	}, []); // No dependencies needed now
 
+	// Create a character via the API endpoint
 	const createCharacter = useCallback(
 		async (newCharacter: CharacterInfo) => {
+			console.log('Creating character via API:', newCharacter);
 			try {
 				setLoading(true);
-				const collection = await getCharactersList();
-
-				// Add new character
-				await collection.add({
-					ids: [newCharacter.id],
-					metadatas: [newCharacter.metadata],
-					documents: [JSON.stringify(newCharacter.metadata)],
+				const response = await fetch('/api/characters', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(newCharacter),
 				});
 
-				// Fetch updated list
+				if (!response.ok) {
+					const errorData = await response.json().catch(() => ({})); // Try to parse error
+					throw new Error(
+						`HTTP error! status: ${response.status}, message: ${errorData.error || 'Unknown error'}`
+					);
+				}
+
+				console.log('Character created successfully via API.');
+
+				// Optimistic update or re-fetch: Re-fetch is simpler for now
 				const updatedList = await fetchCharacters();
 
 				// Find and set the newly created character
@@ -80,7 +91,7 @@ export const useCharacter = () => {
 				setLoading(false);
 			}
 		},
-		[getCharactersList, fetchCharacters]
+		[fetchCharacters] // Removed getCharactersList from dependency array
 	);
 
 	const changeCharacter = useCallback(

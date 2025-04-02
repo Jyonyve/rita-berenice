@@ -1,1 +1,1 @@
-export * from './chromaTypes';
+export * from './ChromaInterfaces';

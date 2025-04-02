@@ -1,6 +1,7 @@
 import { AiRole } from '#root/src/client/domain/aimodel';
 import { ChatEntry, ChatMessage, ChatTurn } from '#root/src/client/domain/chat';
 import { MessageContent, MessageContentText } from '@langchain/core/messages';
+import { ChatCompletion } from 'openai/resources/chat';
 import { v4 as uuidv4 } from 'uuid';
 
 export const parseTextToEntries = (text: string): ChatEntry[] => {
@@ -72,6 +73,15 @@ export const removeLocalPrefix = (localModel: string): string => {
 
 export const buildNewSessionId = (characterLabel: string): string => {
 	return `${characterLabel}_${uuidv4()}`;
+};
+
+export const extractValidOpenAiContent = (response: ChatCompletion): string => {
+	if (!response?.choices?.length) return '';
+
+	// Find first valid content from choices
+	const validChoice = response.choices.find((choice) => choice?.message?.content != null);
+
+	return validChoice?.message?.content || '';
 };
 
 export const convertMessageContentToString = (content: MessageContent): string => {
