@@ -15,6 +15,7 @@
 		"paths": {
 			"#root/*": ["./*"],
 			"@/*": ["./src/*"],
+			"@server/api": ["src/server/api/*"],
 			"@client/domain/*": ["src/client/domain/*"],
 			"@client/util/*": ["src/client/util/*"],
 			"@client/component/*": ["src/client/component/*"],

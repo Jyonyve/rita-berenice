@@ -20,3 +20,7 @@ export interface ChatTurn {
 export type ChatSession = { sessionId: string; conversations: ChatTurn[] };
 
 export const SUMMARY_ID_SUFFIX = '_summary' as const;
+
+export const CHAT_ROLES = { SYSTEM: 'system', ASSISTANT: 'assistant', USER: 'user' } as const;
+
+export type ChatRole = (typeof CHAT_ROLES)[keyof typeof CHAT_ROLES];

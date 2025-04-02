@@ -7,10 +7,9 @@ import { useAiModel } from '#root/src/client/hook/useAiModel';
 import { MessageContent } from '@langchain/core/messages';
 import { useCallback, useEffect, useState } from 'react';
 import { useChat } from '#root/src/client/hook/useChat';
-import { ChromaComp } from './ChromaComp';
+
 import { useChromaChat } from '#root/src/client/hook/useChromaChat';
 import { Box, Button, Divider, TextField, Typography } from '@mui/material';
-import mdx from '@mdx-js/rollup';
 
 const DEFAULT_QUERY_LIMIT = import.meta.env.VITE_QUERY_LIMIT;
 const SUMMARY_INTERVAL = import.meta.env.VITE_SUMMARY_INTERVAL;

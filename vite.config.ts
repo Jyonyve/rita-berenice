@@ -21,9 +21,10 @@ export default {
 		], // 번들링 강제
 	},
 	resolve: {
-		externalConditions: ['node'],
+		// externalConditions: ['node'], // Ensure this is removed or commented out
 		alias: {
 			'@': path.resolve(__dirname, './src/client'),
+			'@server/api': path.resolve(__dirname, './src/server/api'),
 			'@client/domain': path.resolve(__dirname, './src/client/domain'),
 			'@client/util': path.resolve(__dirname, './src/client/util'),
 			'@client/component': path.resolve(__dirname, './src/client/component'),
@@ -32,6 +33,7 @@ export default {
 			'@shared': path.resolve(__dirname, './src/shared'),
 			'#root': path.resolve(__dirname, '.'),
 		},
+		// externalConditions: ['node'], // This commented line can remain or be removed, the key is the active one above is gone.
 	},
 	plugins: [
 		react({ jsxImportSource: '@emotion/react', babel: { plugins: ['@emotion/babel-plugin'] } }),
@@ -65,7 +67,10 @@ export default {
 	// esbuild: { logOverride: { 'this-is-undefined-in-esm': 'silent', EVAL: 'silent' } },
 	optimizeDeps: {
 		include: ['@emotion/react', '@emotion/styled', '@emotion/cache', 'hoist-non-react-statics'],
-		// exclude: ['@mui/material', '@emotion/react', '@emotion/styled'],
+		exclude: [
+			// '@mui/material', '@emotion/react', '@emotion/styled' // Keep existing excludes if needed
+			'chromadb', // Exclude chromadb from optimization/pre-bundling for the browser
+		],
 	},
 } satisfies UserConfig;
 
