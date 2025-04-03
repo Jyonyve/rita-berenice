@@ -1,4 +1,4 @@
-export * from './chatConvertUtils';
+export * from './chatUtils';
 export * from './testUtils';
 export * from './aiModelUtils';
 export * from './axiosUtils';

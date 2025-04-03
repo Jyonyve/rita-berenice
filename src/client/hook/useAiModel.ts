@@ -7,7 +7,7 @@ import { ChatOllama } from '@langchain/ollama';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai'; // Keep for direct/openrouter
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { AiModelInfo, supportAiModelInfo } from '@client/domain/aimodel';
-import { removeLocalPrefix } from '@client/util/chatConvertUtils';
+import { removeLocalPrefix } from '#root/src/shared/util/chatUtils';
 import { useErrorDialog } from '@shared/useMuiComp';
 import {
 	determineDefaultSummaryAiInfo,
@@ -16,7 +16,7 @@ import {
 	getAiModelInfo,
 	isOpenAI,
 	isValidAiModelInfo,
-} from '@client/util/index';
+} from '#root/src/shared/util/index';
 import OpenAI from 'openai';
 // import {
 // 	initializeAwsCredentials,

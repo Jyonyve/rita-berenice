@@ -10,17 +10,10 @@ import {
 const chromaUrl = import.meta.env.VITE_CHROMA_API_URL as string;
 
 export const useCharacter = () => {
-	// --- CHROMA DB CLIENT-SIDE USAGE REMOVED ---
-	// The following code attempts to use ChromaClient directly in the browser, which is not supported.
-	// This logic needs to be moved to the server (e.g., API endpoints or Vike data functions)
-	// and the client should fetch data from the server instead.
-
-	// // Memoize client to prevent recreation - REMOVED
-	// const client = useMemo(() => new ChromaClient({ path: chromaUrl }), []);
-
 	// state
 	const [characters, setCharacters] = useState<CharacterInfo[]>([]); // Keep state for fetched data
 	const [currentCharacter, setCurrentCharacter] = useState<CharacterInfo>();
+	const [currentUser, setCurrentUser] = useState<CharacterInfo>();
 	const [loading, setLoading] = useState(false);
 
 	// Initial fetch only once when hook is mounted

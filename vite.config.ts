@@ -26,7 +26,6 @@ export default {
 			'@': path.resolve(__dirname, './src/client'),
 			'@server/api': path.resolve(__dirname, './src/server/api'),
 			'@client/domain': path.resolve(__dirname, './src/client/domain'),
-			'@client/util': path.resolve(__dirname, './src/client/util'),
 			'@client/component': path.resolve(__dirname, './src/client/component'),
 			'@client/hook': path.resolve(__dirname, './src/client/hook'),
 			'@client/asset': path.resolve(__dirname, './src/client/assets'),

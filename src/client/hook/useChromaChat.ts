@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import type { ChatTurn } from '#root/src/client/domain/chat';
+import { SUFFIX, type ChatTurn } from '#root/src/client/domain/chat';
 import { documentService } from '#root/src/server';
 
 export const useChromaChat = (initialSessionId: string) => {
@@ -8,7 +8,7 @@ export const useChromaChat = (initialSessionId: string) => {
 	const storeChatTurn = useCallback(
 		async (chatTurn: ChatTurn) => {
 			if (!sessionId) throw new Error('No active session.');
-			await documentService.addChatTurn(sessionId, chatTurn);
+			await documentService.storeChatTurn(sessionId, chatTurn);
 		},
 		[sessionId]
 	);
@@ -16,7 +16,7 @@ export const useChromaChat = (initialSessionId: string) => {
 	const storeSummary = useCallback(
 		async (summary: string) => {
 			if (!sessionId) throw new Error('No active session.');
-			await documentService.addSummary(sessionId, summary);
+			await documentService.storeSummary(sessionId, summary);
 		},
 		[sessionId]
 	);
@@ -26,13 +26,75 @@ export const useChromaChat = (initialSessionId: string) => {
 		return (await documentService.getSummary(sessionId)) ?? '';
 	}, [sessionId]);
 
-	const queryChatLog = useCallback(
-		async (query: string, limit?: number) => {
+	const querySummary = useCallback(
+		async (query: string) => {
 			if (!sessionId) throw new Error('No active session.');
-			return await documentService.queryChatLog(sessionId, query, limit ?? 10);
+			return (await documentService.querySummary(sessionId, query)).pop();
 		},
 		[sessionId]
 	);
 
-	return { sessionId, setSessionId, storeChatTurn, storeSummary, getSummary, queryChatLog };
+	const queryChatLog = useCallback(
+		async (query: string, limit?: number, fixedOnly?: boolean) => {
+			if (!sessionId) throw new Error('No active session.');
+			return await documentService.queryChatLog(
+				sessionId,
+				query,
+				['request', 'response'],
+				fixedOnly ?? true
+			);
+		},
+		[sessionId]
+	);
+
+	// For retrieving recent chat history
+	const getRecentChatLogs = useCallback(
+		async (turnCount?: number, fixedOnly?: boolean) => {
+			if (!sessionId) throw new Error('No active session.');
+			return await documentService.getRecentChatLogs(sessionId, turnCount, fixedOnly);
+		},
+		[sessionId]
+	);
+
+	const getChatTurnBySequence = useCallback(
+		async (sequence: number, fixedOnly?: boolean) => {
+			if (!sessionId) throw new Error('No active session.');
+			return await documentService.getChatTurnBySequence(sessionId, sequence, fixedOnly);
+		},
+		[sessionId]
+	);
+
+	const getAllResponsesForSequence = useCallback(
+		async (sequence: number, fixedOnly?: boolean) => {
+			if (!sessionId) throw new Error('No active session.');
+			return await documentService.getAllResponsesForSequence(sessionId, sequence, fixedOnly);
+		},
+		[sessionId]
+	);
+
+	const buildUserPromptFromLog = async (
+		userText: string,
+		isFullLogQuery?: boolean,
+		fixedOnly: boolean = true
+	) => {
+		if (!sessionId) throw new Error('No active session.');
+		return (
+			(await documentService.buildUserPromptFromLog(sessionId, userText, isFullLogQuery, fixedOnly)) ??
+			''
+		);
+	};
+
+	return {
+		sessionId,
+		setSessionId,
+		storeChatTurn,
+		storeSummary,
+		queryChatLog,
+		querySummary,
+		getSummary,
+		getRecentChatLogs,
+		getChatTurnBySequence,
+		getAllResponsesForSequence,
+		buildUserPromptFromLog,
+	};
 };
