@@ -1,5 +1,5 @@
 import { CharacterInfo } from '#root/src/client/domain';
-import { axiosCharacter } from '#root/src/client/util';
+import { axiosCharacter } from '#root/src/shared/util';
 
 export const characterService = {
 	async getAllCharacterList(): Promise<CharacterInfo[]> {
