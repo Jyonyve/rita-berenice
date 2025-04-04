@@ -3,8 +3,7 @@
 //  - When changing this file, you needed to manually restart your server for your changes to take effect.
 //  - To use your environment variables defined in your .env files, you need to install dotenv, see https://vike.dev/env
 //  - To use your path aliases defined in your vite.config.js, you need to tell Node.js about them, see https://vike.dev/path-aliases
-export * from './api';
-export * from './chromadb';
+
 import express from 'express';
 import compression from 'compression';
 import { renderPage, createDevMiddleware } from 'vike/server';
