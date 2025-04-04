@@ -3,8 +3,8 @@ import type { ChromaClient, Collection, IncludeEnum } from 'chromadb';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
 	CharacterInfo,
-	CharacterMetadata,
-	CharacterAsset,
+	AiCharacterMetadata,
+	AiCharacterAsset,
 } from '#root/src/client/domain/character';
 
 const chromaUrl = import.meta.env.VITE_CHROMA_API_URL as string;
@@ -91,7 +91,7 @@ export const useCharacter = () => {
 		(sessionId: string) => {
 			const [character, variant] = sessionId.split('-');
 			const characterInfo = characters.find(
-				(info) => info.metadata.character === character && info.metadata.variant === variant
+				(info) => info.metadata.id === character && info.metadata.variant === variant
 			);
 
 			if (characterInfo) {
@@ -105,13 +105,13 @@ export const useCharacter = () => {
 	const getCharacter = useCallback(
 		(character: string, variant: string) => {
 			return characters.find(
-				(info) => info.metadata.character === character && info.metadata.variant === variant
+				(info) => info.metadata.id === character && info.metadata.variant === variant
 			);
 		},
 		[characters]
 	);
 
-	const getCharacterAssets = useCallback((character: string, variant: string): CharacterAsset => {
+	const getCharacterAssets = useCallback((character: string, variant: string): AiCharacterAsset => {
 		const images = import.meta.glob<{ default: string }>('/src/assets/character/**/*.webp', {
 			eager: true,
 		});

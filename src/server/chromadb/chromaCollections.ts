@@ -1,3 +1,4 @@
+import { COLLECTIONS } from '#root/src/client/domain';
 import { ChromaClient, Collection, IncludeEnum } from 'chromadb';
 
 const CHROMA_URL = process.env.VITE_CHROMA_URL || 'http://localhost:8000';
@@ -5,6 +6,7 @@ const chromaClient = new ChromaClient({ path: CHROMA_URL });
 
 // Collection caches
 let characterCollection: Collection | null = null;
+let profileCollection: Collection | null = null;
 const sessionCollections: Record<string, Collection> = {};
 
 export const chromaCollection = {
@@ -12,11 +14,21 @@ export const chromaCollection = {
 	getCharacterCollection: async (): Promise<Collection> => {
 		if (!characterCollection) {
 			characterCollection = await chromaClient.getOrCreateCollection({
-				name: 'characters',
-				metadata: { type: 'character_definitions' },
+				name: COLLECTIONS.CHARACTER,
+				metadata: { type: 'character_list' },
 			});
 		}
 		return characterCollection;
+	},
+
+	getProfileCollection: async (): Promise<Collection> => {
+		if (!profileCollection) {
+			profileCollection = await chromaClient.getOrCreateCollection({
+				name: COLLECTIONS.PROFILE,
+				metadata: { type: 'user_profiles' },
+			});
+		}
+		return profileCollection;
 	},
 
 	getSessionCollection: async (sessionId: string): Promise<Collection> => {
@@ -25,13 +37,13 @@ export const chromaCollection = {
 		}
 
 		if (!sessionCollections[sessionId]) {
-			const charName = sessionId.split('-')[0];
+			const characterName = sessionId.split('-')[0];
 			sessionCollections[sessionId] = await chromaClient.getOrCreateCollection({
 				name: `session_${sessionId}`,
 				metadata: {
 					type: 'chat_session',
 					sessionId,
-					characterName: charName,
+					characterName,
 					createdAt: new Date().toISOString(),
 				},
 			});

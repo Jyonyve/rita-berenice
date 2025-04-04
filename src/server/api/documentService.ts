@@ -1,11 +1,10 @@
 import type {
 	ChatTurn,
 	ChatMessage,
-	ChatEntry,
 	ChatRoleType,
 	ChatMessageType,
 } from '#root/src/client/domain/chat';
-import { AiRole, SUFFIX } from '#root/src/client/domain/index';
+import { SUFFIX } from '#root/src/client/domain/index';
 import { parseEntriesToText, buildMessageId, buildTurnId, buildSummaryId } from '#root/src/shared';
 import chromaCollection from '../chromadb/chromaCollections';
 import { Collection, IncludeEnum } from 'chromadb';
