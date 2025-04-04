@@ -1,10 +1,7 @@
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { createDevMiddleware, renderPage } from 'vike/server'; // Assuming renderPage is available
-// Import chroma service functions
-import * as chromaService from './src/server/api/characterService.js'; // Use .js extension for ES modules
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === 'production';

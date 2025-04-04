@@ -26,4 +26,11 @@ export interface GroupedSession {
 }
 
 export type SessionGroups = Record<string, GroupedSession[]>;
-export const COLLECTIONS = { CHARACTER: 'character', DOCUMENT: 'document' } as const;
+
+export const COLLECTIONS = {
+	CHARACTER: 'character',
+	PROFILE: 'profile',
+	DOCUMENT: 'document',
+} as const;
+
+export type CollectionType = keyof typeof COLLECTIONS;
