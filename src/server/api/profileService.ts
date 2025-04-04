@@ -70,10 +70,7 @@ export const profileService = {
 		const collection = await profileService._getCollection();
 
 		try {
-			const results = await collection.get({
-				where: { sesionId: sessionId },
-				include: [IncludeEnum.Documents],
-			});
+			const results = await collection.get({ where: { sessionId }, include: [IncludeEnum.Documents] });
 
 			if (!results.documents || results.documents.length === 0) {
 				return [];

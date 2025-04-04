@@ -1,7 +1,7 @@
 import path from 'node:path';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
-import { createDevMiddleware, renderPage } from 'vike/server'; // Assuming renderPage is available
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === 'production';

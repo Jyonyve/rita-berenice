@@ -32,14 +32,10 @@ export default {
 			'@shared': path.resolve(__dirname, './src/shared'),
 			'#root': path.resolve(__dirname, '.'),
 		},
-		// externalConditions: ['node'], // This commented line can remain or be removed, the key is the active one above is gone.
 	},
 	plugins: [
 		react({ jsxImportSource: '@emotion/react', babel: { plugins: ['@emotion/babel-plugin'] } }),
-		vike({
-			// prerender: true,
-			includeAssetsImportedByServer: true,
-		}),
+		vike(),
 	],
 	build: {
 		chunkSizeWarningLimit: 1000,
