@@ -1,3 +1,3 @@
-export * from './AiModelComp';
-export * from './ChatComp';
-export * from './CharacterComp';
+export * from './AiModelComp.tsx';
+export * from './ChatComp.tsx';
+export * from './CharacterComp.tsx';

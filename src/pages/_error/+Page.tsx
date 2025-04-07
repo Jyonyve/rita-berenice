@@ -1,7 +1,5 @@
+import { usePageContext } from '#root/src/renderer/usePageContext.tsx';
 export { Page };
-
-import React from 'react';
-import { usePageContext } from '../../renderer/usePageContext';
 
 function Page() {
 	const pageContext = usePageContext();

@@ -1,5 +1,9 @@
 {
 	"extends": "./tsconfig.json",
-	"compilerOptions": { "composite": true, "allowSyntheticDefaultImports": true },
+	"compilerOptions": {
+		"module": "NodeNext",
+		"composite": true,
+		"allowSyntheticDefaultImports": true
+	},
 	"include": ["vite.config.ts"]
 }

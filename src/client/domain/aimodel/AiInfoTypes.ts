@@ -1,4 +1,4 @@
-import { supportAiModelInfo } from './supportAiModelInfo';
+import { supportAiModelInfo } from './supportAiModelInfo.ts';
 
 // 2. Define types based on the new structure
 export type AiPlatform = keyof typeof supportAiModelInfo;

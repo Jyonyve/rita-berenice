@@ -1,9 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { Box, Typography, Divider, TextField, Button, CircularProgress } from '@mui/material';
-import { ChatTurn } from '@client/domain/chat';
-import { useChat } from '@client/hook/useChat';
-import { useChromaChat } from '@client/hook/useChromaChat';
-import { buildChatMessage, parseEntriesToText } from '#root/src/shared/util/index';
+import { ChatTurn, ChatMessage } from '@client/domain/chat/index.ts'; // Added ChatMessage
+import { useChromaChat, useChat } from '@client/hook/index.ts';
+import { buildChatMessage, parseEntriesToText } from '#root/src/shared/util/index.ts';
 
 export const ChatComp: React.FC = () => {
 	const [userInput, setUserInput] = useState<string>('');
@@ -79,7 +78,8 @@ export const ChatComp: React.FC = () => {
 	]);
 
 	const handleRegenerateResponse = useCallback(async () => {
-		if (isProcessing || recentChatTurn.length === 0) return;
+		// Add guard for currentSessionId
+		if (isProcessing || recentChatTurn.length === 0 || !currentSessionId) return;
 
 		setIsProcessing(true);
 
@@ -134,11 +134,16 @@ export const ChatComp: React.FC = () => {
 						<Typography variant="body1" color="primary">
 							<strong>{turn.request.role}:</strong> {parseEntriesToText(turn.request.entries)}
 						</Typography>
-						{turn.response.map((response, index) => (
-							<Typography key={index} variant="body1" color="text.secondary">
-								<strong>{response.role}:</strong> {parseEntriesToText(response.entries)}
-							</Typography>
-						))}
+						{turn.response.map(
+							(
+								response: ChatMessage,
+								index: number // Added types here
+							) => (
+								<Typography key={index} variant="body1" color="text.secondary">
+									<strong>{response.role}:</strong> {parseEntriesToText(response.entries)}
+								</Typography>
+							)
+						)}
 					</Box>
 				))}
 				{isProcessing && (

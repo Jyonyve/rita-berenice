@@ -1,19 +1,9 @@
-import type { RouteSync } from 'vike/types';
+import { PageContextServer } from 'vike/types';
 
-// Route Functions enables advanced routing logic
-export const route: RouteSync = (pageContext): ReturnType<RouteSync> => {
+// src/pages/+route.ts
+export default function route(pageContext: PageContextServer) {
 	const { urlPathname } = pageContext;
-
-	// Root route
-	if (urlPathname === '/' || urlPathname === '') {
-		return { routeParams: { page: 'index' } };
-	}
-
-	// Character route
-	if (urlPathname === '/character') {
-		return { routeParams: { page: 'character' } };
-	}
-
-	// 404 for unmatched routes
+	if (urlPathname === '/') return { routeParams: { page: 'index' } };
+	if (urlPathname === '/character') return { routeParams: { page: 'character' } };
 	return false;
-};
+}

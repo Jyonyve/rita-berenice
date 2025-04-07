@@ -1,6 +1,6 @@
 import type { Metadata } from 'chromadb';
 
-interface CharacterMetadata extends Metadata {
+export interface CharacterMetadata extends Metadata {
 	id: string; // character name
 	variant: string; // specifier (ex: original| uuid)
 	description: string;
@@ -8,7 +8,7 @@ interface CharacterMetadata extends Metadata {
 	updatedAt: string;
 }
 
-interface ProfileMetadata extends Metadata {
+export interface ProfileMetadata extends Metadata {
 	id: string; // character name
 	description: string;
 	createdAt: string;
@@ -33,7 +33,7 @@ export interface CharacterImages {
 	};
 }
 
-interface CharacterAsset {
+export interface CharacterAsset {
 	images: string[];
 	defaultImage: string;
 }

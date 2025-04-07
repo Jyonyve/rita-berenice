@@ -1,11 +1,6 @@
 // Import types only for client-side usage
-import type { ChromaClient, Collection, IncludeEnum } from 'chromadb';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-	CharacterInfo,
-	AiCharacterMetadata,
-	AiCharacterAsset,
-} from '#root/src/client/domain/character';
+import { CharacterInfo, CharacterAsset } from '#root/src/client/domain/character/index.ts';
 
 const chromaUrl = import.meta.env.VITE_CHROMA_API_URL as string;
 
@@ -111,16 +106,18 @@ export const useCharacter = () => {
 		[characters]
 	);
 
-	const getCharacterAssets = useCallback((character: string, variant: string): AiCharacterAsset => {
-		const images = import.meta.glob<{ default: string }>('/src/assets/character/**/*.webp', {
-			eager: true,
-		});
+	const getCharacterAssets = useCallback((character: string, variant: string): CharacterAsset => {
+		const images = Object.entries(
+			import.meta.glob<{ default: string }>('/src/assets/character/**/*.webp', {
+				eager: true,
+			}) as Record<string, { default: string }>
+		);
 
-		const filteredImages = Object.entries(images)
+		const filteredImages = images
 			.filter(([path]) => path.includes(`/${character}-${variant}/`))
 			.map(([_, module]) => module.default);
 
-		return { images: filteredImages, defaultImage: filteredImages[0] || '' };
+		return { images: filteredImages, defaultImage: filteredImages[0] || '' } as CharacterAsset;
 	}, []);
 
 	return {

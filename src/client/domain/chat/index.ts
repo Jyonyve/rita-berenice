@@ -1,1 +1,1 @@
-export * from './ChatTypes';
+export * from './ChatTypes.ts';

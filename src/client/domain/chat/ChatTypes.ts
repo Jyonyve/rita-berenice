@@ -1,5 +1,4 @@
-// ChatTypes.ts
-import { DefaultAiRole } from '../aimodel';
+import { DefaultAiRole } from '../index.ts';
 
 export type ChatType = 'dialogue' | 'action';
 
