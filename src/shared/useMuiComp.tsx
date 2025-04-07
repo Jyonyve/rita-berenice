@@ -11,7 +11,7 @@ import {
 	FormControl,
 	InputLabel,
 } from '@mui/material';
-import { supportAiModelInfo } from '#root/src/client/domain/aimodel';
+import { supportAiModelInfo } from '#root/src/client/domain/index.ts';
 // import { initializeAwsCredentials } from '@util/awsCredentialUtils';
 
 export const useErrorDialog = (initialOpen: boolean = false, initialMessage?: string) => {
@@ -51,7 +51,7 @@ export const SelectAiModel = ({ id }: { id?: string }) => {
 				<ListSubheader>
 					<em>{category}</em>
 				</ListSubheader>
-				{models.map((model, index) => (
+				{Object.values(models).map((model, index) => (
 					<MenuItem key={index} value={model}>
 						{model}
 					</MenuItem>

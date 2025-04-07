@@ -1,8 +1,10 @@
+import { ReactNode } from 'react';
+
 // https://vike.dev/pageContext#typescript
 declare global {
 	namespace Vike {
 		interface PageContext {
-			Page: Page;
+			// Remove the Page property as it's already defined by Vike
 			data?: {
 				// Needed by getPageTitle() and onBeforePrerenderStart()
 				title?: string;
@@ -13,11 +15,10 @@ declare global {
 			};
 			abortReason?: string;
 			someAsyncProps?: number;
+			is404?: boolean;
 		}
 	}
 }
-
-type Page = () => React.ReactElement;
 
 // Tell TypeScript that this file isn't an ambient module
 export {};

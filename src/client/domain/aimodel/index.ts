@@ -1,3 +1,3 @@
-export * from './AiInfoTypes';
-export * from './AiApiInterfaces';
-export * from './supportAiModelInfo';
+export * from './AiInfoTypes.ts';
+export * from './AiApiInterfaces.ts';
+export * from './supportAiModelInfo.ts';
