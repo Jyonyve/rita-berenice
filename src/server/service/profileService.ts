@@ -1,9 +1,9 @@
-import { ProfileInfo } from '#root/src/client/domain';
-import chromaCollection from '../chromadb/chromaCollections';
+import { ProfileInfo } from '#root/src/shared/index.ts';
 import { Collection, IncludeEnum } from 'chromadb';
+import { chromaDbClient } from '#server/db/chromaDbClient.ts';
 
 const { getProfileCollection, addDocument, upsertDocument, getDocumentById, queryDocuments } =
-	chromaCollection;
+	chromaDbClient;
 
 export const profileService = {
 	// Cache for profile collection

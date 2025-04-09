@@ -1,4 +1,4 @@
-import { COLLECTIONS } from '#root/src/client/domain';
+import { COLLECTIONS } from '#root/src/shared/domain/index.ts';
 import { ChromaClient, Collection, IncludeEnum } from 'chromadb';
 
 const CHROMA_URL = process.env.VITE_CHROMA_URL || 'http://localhost:8000';
@@ -9,7 +9,7 @@ let characterCollection: Collection | null = null;
 let profileCollection: Collection | null = null;
 const sessionCollections: Record<string, Collection> = {};
 
-export const chromaCollection = {
+export const chromaDbClient = {
 	// Basic collection management
 	getCharacterCollection: async (): Promise<Collection> => {
 		if (!characterCollection) {
@@ -120,11 +120,4 @@ export const chromaCollection = {
 
 		await collection.add(params);
 	},
-
-	initializeCollections: async (): Promise<void> => {
-		await chromaCollection.getCharacterCollection();
-		console.log('Character collection initialized');
-	},
 };
-
-export default chromaCollection;

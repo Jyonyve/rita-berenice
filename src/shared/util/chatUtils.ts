@@ -1,18 +1,16 @@
-// ChatUtils.ts
+import { MessageContent, MessageContentText } from '@langchain/core/messages';
+import { ChatCompletion } from 'openai/resources/index.mjs';
 
-import { AiRole } from '#root/src/client/domain/aimodel';
+import { v4 as uuidv4 } from 'uuid';
 import {
-	ChatEntry,
 	ChatMessage,
-	ChatMessageType,
-	ChatRoleType,
+	ChatEntry,
 	ChatTurn,
+	ChatRoleType,
+	ChatMessageType,
 	SUFFIX,
 	SuffixType,
-} from '#root/src/client/domain/chat';
-import { MessageContent, MessageContentText } from '@langchain/core/messages';
-import { ChatCompletion } from 'openai/resources/chat';
-import { v4 as uuidv4 } from 'uuid';
+} from '@shared/domain/index.ts';
 
 export const parseTextToEntries = (text: string): ChatEntry[] => {
 	const entries: ChatEntry[] = [];

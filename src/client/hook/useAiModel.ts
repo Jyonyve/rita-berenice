@@ -6,14 +6,14 @@ import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatOllama } from '@langchain/ollama';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai'; // Keep for direct/openrouter
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
-import { AiModelInfo } from '@client/domain/index.ts';
-import { useErrorDialog } from '@shared/index.ts';
 import {
+	useErrorDialog,
+	AiModelInfo,
 	determineDefaultSummaryAiInfo,
 	determineInitialDefaultAiInfo,
 	getAiModelInfo,
 	isValidAiModelInfo,
-} from '#root/src/shared/util/index.ts';
+} from '@shared/index.ts';
 import OpenAI from 'openai';
 // import {
 // 	initializeAwsCredentials,

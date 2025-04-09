@@ -3,13 +3,19 @@
 	<head>
 		<meta charset="UTF-8" />
 		<!-- <link rel="icon" type="image/svg+xml" href="/vite.svg" /> -->
-		<link rel="icon" href="data:," />
+		<!-- Using data URI for favicon to avoid 404 during dev startup if needed -->
+		<link rel="icon" href="data:;base64,iVBORw0KGgo=" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Rita Berenice</title>
-		<!--head-tags-->
+		<!-- This placeholder will be replaced by head elements generated during SSR (e.g., Emotion styles) -->
+		<!--head-outlet-->
 	</head>
 	<body>
-		<div id="page-view"><!--app-html--></div>
-		<script type="module" src="/src/renderer/_default.page.client.ts"></script>
+		<!-- Root element where the React app will be mounted/hydrated -->
+		<!-- The content here will be replaced by server-rendered HTML -->
+		<div id="root"><!--ssr-outlet--></div>
+
+		<!-- Script tag MUST point to your client entry file -->
+		<script type="module" src="/src/entry-client.tsx"></script>
 	</body>
 </html>
