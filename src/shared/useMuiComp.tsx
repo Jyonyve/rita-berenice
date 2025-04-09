@@ -11,8 +11,8 @@ import {
 	FormControl,
 	InputLabel,
 } from '@mui/material';
-import { supportAiModelInfo } from '#root/src/shared/domain/index.ts';
 // import { initializeAwsCredentials } from '@util/awsCredentialUtils';
+import { supportAiModelInfo } from '#root/src/shared/index.ts';
 
 export const useErrorDialog = (initialOpen: boolean = false, initialMessage?: string) => {
 	const [open, setOpen] = useState(initialOpen);

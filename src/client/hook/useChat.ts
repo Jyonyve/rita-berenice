@@ -8,9 +8,7 @@ import {
 	isOpenAI,
 	parseMessageId,
 } from '@shared/util/index.ts';
-
-const SUMMARY_INTERVAL = Number(import.meta.env.VITE_SUMMARY_INTERVAL) || 3;
-const MAX_TURNS = Number(import.meta.env.VITE_QUERY_LIMIT) || 10;
+import { DEFAULT_QUERY_LIMIT, DEFAULT_SUMMARY_INTERVAL } from '@shared/index.ts';
 
 export const useChat = () => {
 	const [isLoading, setIsLoading] = useState(false);
@@ -40,10 +38,10 @@ export const useChat = () => {
 		if (!llm || recentChatTurn.length === 0) return;
 
 		const currentSequence = getCurrentSequence();
-		if (currentSequence % SUMMARY_INTERVAL !== 0) return;
+		if (currentSequence % DEFAULT_SUMMARY_INTERVAL !== 0) return;
 
 		const summaryContent = `Summarize the following chat:\n${recentChatTurn
-			.slice(-MAX_TURNS)
+			.slice(-DEFAULT_QUERY_LIMIT)
 			.map((turn) => buildChatTurnToJsonString(turn))
 			.join('\n\n')}`;
 

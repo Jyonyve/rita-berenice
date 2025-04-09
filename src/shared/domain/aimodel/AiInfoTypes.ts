@@ -1,4 +1,4 @@
-import { supportAiModelInfo } from './supportAiModelInfo.ts';
+import { supportAiModelInfo } from '../../config/supportAiModelInfo.ts'; //should export from file, not index(circular error)
 
 // 2. Define types based on the new structure
 export type AiPlatform = keyof typeof supportAiModelInfo;

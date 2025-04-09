@@ -5,13 +5,13 @@
 	"type": "module",
 	"scripts": {
 		"clean": "rimraf dist && rimraf node_modules",
-		"dev": "tsx watch server.ts",
+		"dev": "tsx watch --env-file .env.development server.ts",
 		"build:client": "vite build --outDir dist/client",
 		"build:server-entry": "vite build --ssr src/entry-server.tsx --outDir dist/server",
-		"build:server-main": "esbuild server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --external:express --external:compression --external:sirv --external:vite",
+		"build:server-main": "node ./scripts/build-server.js",
 		"build": "npm run build:client && npm run build:server-entry && npm run build:server-main",
-		"preview": "cross-env NODE_ENV=development node dist/server.js",
-		"start": "cross-env NODE_ENV=production node dist/server.js",
+		"preview": "cross-env NODE_ENV=production node --env-file .env.production dist/server.js",
+		"start": "cross-env NODE_ENV=production node --env-file .env.production dist/server.js",
 		"prod": "npm run build && npm start"
 	},
 	"dependencies": {
@@ -33,10 +33,12 @@
 		"chromadb": "^2.0.1",
 		"compression": "^1.8.0",
 		"express": "^5.0.1",
+		"onnxruntime-node": "^1.21.0",
 		"openai": "^4.91.1",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",
 		"react-router-dom": "^6.26.1",
+		"sharp": "^0.33.5",
 		"sirv": "^2.0.4"
 	},
 	"devDependencies": {
