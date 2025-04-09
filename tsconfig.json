@@ -1,29 +1,28 @@
 {
-  "compilerOptions": {
-    "target": "ES2020",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "skipLibCheck": true,
-    "strict": true,
-    "jsx": "react-jsx",
-    "moduleResolution": "Bundler",
-    "allowImportingTsExtensions": true,
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "noEmit": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "baseUrl": "./src",
-    "paths": {
-      "@domain/*": ["./domain/*"],
-      "@utils/*": ["./utils/*"],
-      "@components/*": ["./components/*"],
-      "@hooks/*": ["./hooks/*"],
-      "@services/*": ["./services/*"],
-      "@assets/*": ["./assets/*"]
-    }
-  },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts", "index.html"],
-  "exclude": ["node_modules", "dist"]
+	"compilerOptions": {
+		"strict": true,
+		"module": "ES2020",
+		"moduleResolution": "Node",
+		"target": "ES2020",
+		"lib": ["DOM", "DOM.Iterable", "ESNext"],
+		"types": ["vite/client"],
+		"jsx": "react-jsx",
+		"skipLibCheck": true,
+		"esModuleInterop": true,
+
+		/* Path aliases */
+		"baseUrl": "",
+		"paths": {
+			"#root/*": ["./*"],
+			"@/*": ["./src/*"],
+			"@client/domain/*": ["src/client/domain/*"],
+			"@client/util/*": ["src/client/util/*"],
+			"@client/component/*": ["src/client/component/*"],
+			"@client/hook/*": ["src/client/hook/*"],
+			"@client/asset/*": ["src/client/assets/*"],
+			"@shared/*": ["./src/shared/*"]
+		}
+	},
+	"files": [],
+	"references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }]
 }
