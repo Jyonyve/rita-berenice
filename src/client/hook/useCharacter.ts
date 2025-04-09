@@ -1,111 +1,144 @@
-// Import types only for client-side usage
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CharacterInfo, CharacterAsset } from '#root/src/client/domain/character/index.ts';
+// src/client/hooks/useCharacter.ts
+import { apiClient, CharacterInfo, CharacterAsset, genApiUrl } from '@shared/index.ts';
+import { useCallback, useEffect, useState } from 'react';
 
-const chromaUrl = import.meta.env.VITE_CHROMA_API_URL as string;
+// Define the module name used in API paths
+const MODULE_NAME = 'character';
 
 export const useCharacter = () => {
-	// state
-	const [characters, setCharacters] = useState<CharacterInfo[]>([]); // Keep state for fetched data
-	const [currentCharacter, setCurrentCharacter] = useState<CharacterInfo>();
-	const [currentUser, setCurrentUser] = useState<CharacterInfo>();
-	const [loading, setLoading] = useState(false);
+	// --- State ---
+	const [characters, setCharacters] = useState<CharacterInfo[]>([]);
+	const [currentCharacter, setCurrentCharacter] = useState<CharacterInfo | undefined>(undefined); // Use undefined initially
+	const [loading, setLoading] = useState<boolean>(false); // Track loading state for all async operations
 
-	// Initial fetch only once when hook is mounted
-	useEffect(() => {
-		fetchCharacters();
-	}, []); // Initial fetch on mount
+	// --- API Call Functions ---
 
-	// Fetch characters from the API endpoint
-	const fetchCharacters = useCallback(async () => {
-		console.log('Fetching characters from API...');
+	// Fetch all characters from the API
+	const getAllCharacters = useCallback(async (): Promise<CharacterInfo[]> => {
+		console.log('Fetching all characters from API...');
+		setLoading(true);
 		try {
-			setLoading(true);
-			const response = await fetch('/api/characters'); // GET request to our endpoint
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`);
-			}
-			const charactersList: CharacterInfo[] = await response.json();
-			setCharacters(charactersList);
-			console.log('Fetched characters:', charactersList);
-			return charactersList;
+			const url = genApiUrl(MODULE_NAME, 'getAllCharacters');
+			const response = await apiClient.get<CharacterInfo[]>(url); // Add type hint for response data
+			setCharacters(response.data);
+			console.log('Fetched characters:', response.data);
+			return response.data;
 		} catch (error) {
 			console.error('Failed to fetch characters from API:', error);
-			setCharacters([]); // Clear characters on error
-			return [];
+			setCharacters([]); // Clear on error
+			return []; // Return empty array on error
 		} finally {
 			setLoading(false);
 		}
-	}, []); // No dependencies needed now
+	}, []); // No dependencies, safe for useCallback
 
-	// Create a character via the API endpoint
-	const createCharacter = useCallback(
-		async (newCharacter: CharacterInfo) => {
-			console.log('Creating character via API:', newCharacter);
+	// Fetch a single character by ID from the API
+	const getCharacterById = useCallback(async (id: string): Promise<CharacterInfo | null> => {
+		console.log(`Fetching character by ID ${id} from API...`);
+		setLoading(true);
+		try {
+			const url = genApiUrl(MODULE_NAME, 'getCharacterById', [id]);
+			const response = await apiClient.get<CharacterInfo>(url); // Expect single CharacterInfo
+			// Optionally update local state if needed, or just return
+			return response.data;
+		} catch (error: any) {
+			console.error(`Failed to fetch character by ID ${id} from API:`, error);
+			// Handle 404 specifically? Axios error object has response.status
+			if (error.response?.status === 404) {
+				console.log(`Character with ID ${id} not found.`);
+				return null;
+			}
+			// Re-throw other errors or return null
+			return null;
+		} finally {
+			setLoading(false);
+		}
+	}, []); // No dependencies
+
+	// Store (create or update) a character via the API
+	const storeCharacter = useCallback(
+		async (characterData: CharacterInfo): Promise<CharacterInfo | null> => {
+			console.log('Storing character via API:', characterData);
+			setLoading(true);
 			try {
-				setLoading(true);
-				const response = await fetch('/api/characters', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(newCharacter),
-				});
+				const url = genApiUrl(MODULE_NAME, 'storeCharacter');
+				// API expects full CharacterInfo, including ID for upsert
+				const response = await apiClient.post<CharacterInfo>(url, characterData);
+				console.log('Character stored successfully via API:', response.data);
 
-				if (!response.ok) {
-					const errorData = await response.json().catch(() => ({})); // Try to parse error
-					throw new Error(
-						`HTTP error! status: ${response.status}, message: ${errorData.error || 'Unknown error'}`
-					);
-				}
+				// Refresh the list after storing to ensure UI consistency
+				await getAllCharacters(); // Call the refactored function
 
-				console.log('Character created successfully via API.');
-
-				// Optimistic update or re-fetch: Re-fetch is simpler for now
-				const updatedList = await fetchCharacters();
-
-				// Find and set the newly created character
-				const createdCharacter = updatedList.find((char) => char.id === newCharacter.id);
-				if (createdCharacter) {
-					setCurrentCharacter(createdCharacter);
-				} else {
-					console.warn('Created character not found in updated list');
-					setCurrentCharacter(newCharacter);
-				}
-
-				return createdCharacter || newCharacter;
+				return response.data; // Return the stored/updated character data from response
 			} catch (error) {
-				console.error('Failed to create character:', error);
-				throw error;
+				console.error('Failed to store character via API:', error);
+				throw error; // Re-throw for component-level handling
 			} finally {
 				setLoading(false);
 			}
 		},
-		[fetchCharacters] // Removed getCharactersList from dependency array
+		[getAllCharacters] // Depends on getAllCharacters to refresh the list
 	);
 
-	const changeCharacter = useCallback(
-		(sessionId: string) => {
-			const [character, variant] = sessionId.split('-');
-			const characterInfo = characters.find(
-				(info) => info.metadata.id === character && info.metadata.variant === variant
-			);
-
-			if (characterInfo) {
-				setCurrentCharacter(characterInfo);
+	// Query characters via API (Example - implement if needed)
+	const queryCharacters = useCallback(
+		async (query: string, limit: number = 10): Promise<CharacterInfo[]> => {
+			console.log(`Querying characters with "${query}" from API...`);
+			setLoading(true);
+			try {
+				const url = genApiUrl(MODULE_NAME, 'queryCharacters');
+				const response = await apiClient.get<CharacterInfo[]>(url, { params: { q: query, limit } });
+				console.log('Query results:', response.data);
+				// Maybe update local state? Or just return results for specific use cases.
+				return response.data;
+			} catch (error) {
+				console.error('Failed to query characters from API:', error);
+				return []; // Return empty array on error
+			} finally {
+				setLoading(false);
 			}
 		},
-		[characters]
+		[]
 	);
 
-	// Use memoized find instead of DB query
-	const getCharacter = useCallback(
-		(character: string, variant: string) => {
-			return characters.find(
-				(info) => info.metadata.id === character && info.metadata.variant === variant
-			);
+	// --- Client-Side Logic ---
+
+	// Initial fetch on mount
+	useEffect(() => {
+		getAllCharacters(); // Call the refactored function
+	}, [getAllCharacters]); // Add getAllCharacters as dependency
+
+	// Change current character based on selection (purely client-side state change)
+	const changeCharacter = useCallback(
+		(characterId: string) => {
+			// Use ID directly if available, or derive if needed
+			// Find character in the locally cached list
+			// Note: This assumes ID format allows easy lookup.
+			// If characterId includes variant, split and find.
+			const characterInfo = characters.find((info) => info.id === characterId);
+			if (characterInfo) {
+				console.log(
+					`Changing current character to: ${characterInfo.metadata?.name} (${characterInfo.id})`
+				);
+				setCurrentCharacter(characterInfo);
+			} else {
+				console.warn(`Character with ID ${characterId} not found in local state.`);
+				// Optionally trigger a fetch? getCharacterById(characterId).then(setCurrentCharacter);
+			}
+		},
+		[characters] // Depends on the local characters list
+	);
+
+	// Get character from local state (client-side lookup)
+	const getCharacterFromState = useCallback(
+		(characterId: string): CharacterInfo | undefined => {
+			// Note: Renamed to avoid confusion with API call `getCharacterById`
+			return characters.find((info) => info.id === characterId);
 		},
 		[characters]
 	);
 
+	// Get character assets (purely client-side using Vite's glob import)
 	const getCharacterAssets = useCallback((character: string, variant: string): CharacterAsset => {
 		const images = Object.entries(
 			import.meta.glob<{ default: string }>('/src/assets/character/**/*.webp', {
@@ -114,20 +147,27 @@ export const useCharacter = () => {
 		);
 
 		const filteredImages = images
-			.filter(([path]) => path.includes(`/${character}-${variant}/`))
+			.filter(([path]) => path.includes(`/${character}-${variant}/`)) // Assumes folder naming convention
 			.map(([_, module]) => module.default);
 
 		return { images: filteredImages, defaultImage: filteredImages[0] || '' } as CharacterAsset;
-	}, []);
+	}, []); // No dependencies
 
+	// --- Return Hook Values ---
 	return {
-		characters,
-		currentCharacter,
-		loading,
-		changeCharacter,
-		getCharacterAssets,
-		fetchCharacters,
-		createCharacter,
-		getCharacter,
+		characters, // The list of all characters (local state)
+		currentCharacter, // The currently selected character (local state)
+		loading, // Loading indicator for API calls
+
+		// API functions
+		getAllCharacters, // Fetches all characters and updates state
+		getCharacterById, // Fetches a single character by ID (doesn't update state directly, returns value)
+		storeCharacter, // Creates/Updates a character via API and refreshes state
+		queryCharacters, // Queries characters via API (returns results)
+
+		// Client-side functions
+		changeCharacter, // Sets the currentCharacter from local state
+		getCharacterFromState, // Finds a character in the local state
+		getCharacterAssets, // Gets asset paths
 	};
 };

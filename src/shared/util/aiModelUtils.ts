@@ -6,7 +6,7 @@ import {
 	AllModelNames,
 	DEFAULT_LOCAL_MODEL,
 	DEFAULT_FREE_MODEL,
-} from '@client/domain/aimodel';
+} from '@shared/domain/index.ts';
 import OpenAI from 'openai';
 
 // API key mapping focusing on OpenRouter

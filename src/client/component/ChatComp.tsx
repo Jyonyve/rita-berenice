@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Box, Typography, Divider, TextField, Button, CircularProgress } from '@mui/material';
-import { ChatTurn, ChatMessage } from '@client/domain/chat/index.ts'; // Added ChatMessage
+import { ChatTurn, ChatMessage } from '#root/src/shared/domain/chat/index.ts'; // Added ChatMessage
 import { useChromaChat, useChat } from '@client/hook/index.ts';
 import { buildChatMessage, parseEntriesToText } from '#root/src/shared/util/index.ts';
 

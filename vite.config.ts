@@ -1,95 +1,98 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
-import vike from 'vike/plugin';
-import { builtinModules } from 'module';
+import { fileURLToPath } from 'node:url'; // Use import.meta.url for ES modules
+import { builtinModules } from 'node:module'; // Correct import for ES modules
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
-import topLevelAwaitPlugin from 'vite-plugin-top-level-await';
+import svgr from 'vite-plugin-svgr';
+import tsconfigPaths from 'vite-tsconfig-paths';
+import topLevelAwaitPlugin, { Options } from 'vite-plugin-top-level-await';
 
-const topLevelAwait = topLevelAwaitPlugin as unknown as (options?: any) => Plugin;
+// Helper to get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Type assertion for the topLevelAwait plugin (keep if it fixed previous issues)
+const topLevelAwait = topLevelAwaitPlugin as unknown as (options?: Options) => Plugin;
 
 const CHROMADB = 'chromadb' as const;
 const nodeBuiltinModules = builtinModules.map((m) => `node:${m}`);
+const allBuiltinModules = [...new Set([...builtinModules, ...nodeBuiltinModules])];
 
 export default defineConfig({
-	define: { 'process.env.APP_ENV': JSON.stringify(process.env.APP_ENV), global: 'globalThis' },
+	cacheDir: '.vite_cache',
+	define: { 'process.env.APP_ENV': JSON.stringify(process.env.APP_ENV) },
+	// SSR specific options
 	ssr: {
-		external: [CHROMADB, ...builtinModules, 'fsevents', ...nodeBuiltinModules],
+		external: [CHROMADB, ...allBuiltinModules, 'fsevents'],
 		noExternal: [
 			'@mui/material',
-			'@mui/styled-engine',
+			'@mui/system',
 			'@emotion/react',
 			'@emotion/styled',
 			'@emotion/cache',
 			'@emotion/server',
-			'@emotion/utils',
-			'@langchain/community',
+			// Review Langchain if issues arise
 		],
+		target: 'node',
 	},
 	resolve: {
 		alias: {
+			// Client-side aliases
 			'@': path.resolve(__dirname, './src/client'),
-			'@server/api': path.resolve(__dirname, './src/server/api'),
-			'@client/domain': path.resolve(__dirname, './src/client/domain'),
+			'@client/domain': path.resolve(__dirname, './src/client/domain'), // Consider moving shared domain to @shared
 			'@client/component': path.resolve(__dirname, './src/client/component'),
 			'@client/hook': path.resolve(__dirname, './src/client/hook'),
-			'@client/asset': path.resolve(__dirname, './src/client/assets'),
+			'@client/asset': path.resolve(__dirname, './src/client/asset'), // Or assets
+
+			// Shared alias
 			'@shared': path.resolve(__dirname, './src/shared'),
+
+			// Server-side aliases (Using # prefix is fine, ensure consistency)
+			// Adjusted to plural folder names
+			'#server/db': path.resolve(__dirname, './src/server/db'),
+			'#server/routes': path.resolve(__dirname, './src/server/routes'),
+			'#server/services': path.resolve(__dirname, './src/server/services'),
+
+			// Root alias
 			'#root': path.resolve(__dirname, '.'),
 		},
 	},
 	plugins: [
 		react({ jsxImportSource: '@emotion/react', babel: { plugins: ['@emotion/babel-plugin'] } }),
-		vike(),
 		nodePolyfills({ globals: { Buffer: true, global: true, process: true }, protocolImports: true }),
-		topLevelAwait({
-			// The export name of top-level await promise for each chunk module
-			promiseExportName: '__tla',
-			// The function to generate import names of top-level await promise in each chunk module
-			promiseImportName: (i: any) => `__tla_${i}`,
-		}),
+		topLevelAwait(),
+		tsconfigPaths(), // Reads 'paths' from tsconfig.json
+		svgr(), // For SVG components
 	],
 	build: {
 		chunkSizeWarningLimit: 1000,
 		rollupOptions: {
-			external: [CHROMADB, ...builtinModules, ...nodeBuiltinModules, 'fsevents', /^node:.*/],
+			external: [CHROMADB, ...allBuiltinModules, 'fsevents', /^node:.*/],
 			output: {
 				manualChunks(id) {
-					if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+					if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/'))
 						return 'react-vendor';
-					}
-					if (id.includes('node_modules/@mui/') || id.includes('node_modules/@emotion/')) {
+					if (id.includes('node_modules/@mui/') || id.includes('node_modules/@emotion/'))
 						return 'mui-vendor';
-					}
-					if (id.includes('node_modules/onnxruntime-web')) {
-						return 'transformers';
-					}
-					if (id.includes('@langchain/')) {
-						return 'langchain';
-					}
+					if (id.includes('node_modules/onnxruntime-web')) return 'transformers'; // Keep if needed
+					if (id.includes('@langchain/')) return 'langchain'; // Keep if needed
 				},
 			},
 		},
+		sourcemap: true, // Enable source maps for easier debugging
+		// Ensure client and server build outputs don't conflict (controlled by scripts now)
 	},
 	optimizeDeps: {
-		include: [
-			'@emotion/react',
-			'@emotion/styled',
-			'@emotion/cache',
-			'hoist-non-react-statics',
-			'buffer',
-			'process',
-		],
+		include: ['@emotion/react', '@emotion/styled', '@emotion/cache'],
 		exclude: [
-			'chromadb',
-			'totalist', // Add this line
-			'sirv', // You might also need this
-			'local-access', // And possibly this
+			CHROMADB, // Keep native deps excluded
+			// Ensure sirv is NOT excluded if used in server.ts
 		],
 	},
 	esbuild: {
 		logOverride: { 'this-is-undefined-in-esm': 'silent', 'commonjs-variable-in-esm': 'silent' },
 		logLevel: 'error',
-		target: ['es2020'],
+		target: 'es2020',
 	},
 });

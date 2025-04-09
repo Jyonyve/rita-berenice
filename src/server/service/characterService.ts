@@ -1,9 +1,8 @@
-import { CharacterInfo, CharacterAssets } from '#root/src/client/domain';
-import chromaCollection from '../chromadb/chromaCollections';
+import { CharacterInfo } from '#root/src/shared/domain/index.ts';
 import { Collection, IncludeEnum } from 'chromadb';
+import { chromaDbClient } from '#server/db/index.ts';
 
-const { getCharacterCollection, upsertDocument, getDocumentById, queryDocuments } =
-	chromaCollection;
+const { getCharacterCollection, upsertDocument, getDocumentById, queryDocuments } = chromaDbClient;
 
 export const characterService = {
 	// Cache for character collection

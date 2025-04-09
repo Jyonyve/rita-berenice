@@ -1,16 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
-import { ChatMessage, ChatTurn, SUFFIX } from '@client/domain/chat';
-import { useAiModel } from '@client/hook/useAiModel';
-import { AiRole } from '../domain/aimodel/AiInfoTypes';
+import { useState, useCallback } from 'react';
+import { ChatMessage, ChatTurn } from '@shared/domain/index.ts';
+import { useAiModel } from '@client/hook/index.ts';
 import {
 	buildChatTurnToJsonString,
 	convertMessageContentToString,
 	extractValidOpenAiContent,
 	isOpenAI,
-	buildChatMessage,
 	parseMessageId,
-	buildMessageId,
-} from '#root/src/shared/util/index';
+} from '@shared/util/index.ts';
 
 const SUMMARY_INTERVAL = Number(import.meta.env.VITE_SUMMARY_INTERVAL) || 3;
 const MAX_TURNS = Number(import.meta.env.VITE_QUERY_LIMIT) || 10;

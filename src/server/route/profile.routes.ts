@@ -1,0 +1,120 @@
+// src/server/routes/profile.routes.ts
+import { genRoutePattern, ProfileInfo } from '#root/src/shared/index.ts';
+import express, { type Request, type Response } from 'express';
+import { profileService } from '#server/service/index.ts';
+
+const router = express.Router();
+const MODULE_NAME = 'profile'; // Define module name
+
+// --- GET /api/profile/get-all-profiles ---
+// Corresponds to profileService.getAllProfiles
+router.get(
+	genRoutePattern(MODULE_NAME, 'getAllProfiles'),
+	async (req: Request, res: Response): Promise<any> => {
+		const path = genRoutePattern(MODULE_NAME, 'getAllProfiles');
+		console.log(`API HIT: GET ${path}`);
+		try {
+			const profiles = await profileService.getAllProfiles();
+			res.json(profiles);
+		} catch (error: any) {
+			console.error(`Error in GET ${path}:`, error);
+			res.status(500).json({ error: 'Failed to fetch profiles' });
+		}
+	}
+);
+
+// --- GET /api/profile/get-profile-by-id/:id ---
+// Corresponds to profileService.getProfileById
+router.get(
+	genRoutePattern(MODULE_NAME, 'getProfileById', ['id']),
+	async (req: Request<{ id: string }>, res: Response): Promise<any> => {
+		const { id } = req.params;
+		const path = genRoutePattern(MODULE_NAME, 'getProfileById', ['id']);
+		console.log(`API HIT: GET ${path.replace(':id', id)}`);
+		try {
+			const profile = await profileService.getProfileById(id);
+			if (!profile) {
+				return res.status(404).json({ error: 'Profile not found' });
+			}
+			res.json(profile);
+		} catch (error: any) {
+			console.error(`Error in GET ${path.replace(':id', id)}:`, error);
+			res.status(500).json({ error: 'Failed to fetch profile details' });
+		}
+	}
+);
+
+// --- GET /api/profile/get-profiles-by-session-id/:sessionId ---
+// Corresponds to profileService.getProfilesBySessionId
+router.get(
+	genRoutePattern(MODULE_NAME, 'getProfilesBySessionId', ['sessionId']),
+	async (req: Request<{ sessionId: string }>, res: Response): Promise<any> => {
+		const { sessionId } = req.params;
+		const path = genRoutePattern(MODULE_NAME, 'getProfilesBySessionId', ['sessionId']);
+		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
+		try {
+			const profiles = await profileService.getProfilesBySessionId(sessionId);
+			// Service already handles empty array case, just return results
+			res.json(profiles);
+		} catch (error: any) {
+			console.error(`Error in GET ${path.replace(':sessionId', sessionId)}:`, error);
+			res.status(500).json({ error: 'Failed to fetch profiles for session' });
+		}
+	}
+);
+
+// --- POST /api/profile/store-profile ---
+// Corresponds to profileService.storeProfile (upsert)
+// Expects ProfileInfo in body
+router.post(
+	genRoutePattern(MODULE_NAME, 'storeProfile'),
+	async (req: Request<{}, any, ProfileInfo>, res: Response): Promise<any> => {
+		const profileData = req.body;
+		const path = genRoutePattern(MODULE_NAME, 'storeProfile');
+		console.log(`API HIT: POST ${path} for ID: ${profileData?.id}`);
+
+		if (
+			!profileData ||
+			typeof profileData !== 'object' ||
+			!profileData.id ||
+			!profileData.metadata?.name
+		) {
+			return res.status(400).json({ error: 'Invalid profile data in request body' });
+		}
+
+		try {
+			await profileService.storeProfile(profileData);
+			// Respond with the data that was stored/updated
+			res.status(200).json(profileData); // 200 OK for upsert
+		} catch (error: any) {
+			console.error(`Error in POST ${path}:`, error);
+			res.status(500).json({ error: 'Failed to store profile' });
+		}
+	}
+);
+
+// --- GET /api/profile/query-profiles?q=...&limit=... ---
+// Corresponds to profileService.queryProfiles
+router.get(
+	genRoutePattern(MODULE_NAME, 'queryProfiles'),
+	async (req: Request, res: Response): Promise<any> => {
+		const query = req.query.q as string | undefined;
+		const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10; // Default limit
+		const path = genRoutePattern(MODULE_NAME, 'queryProfiles');
+		console.log(`API HIT: GET ${path}?q=${query}&limit=${limit}`);
+
+		if (!query) {
+			return res.status(400).json({ error: 'Missing query parameter "q"' });
+		}
+
+		try {
+			const profiles = await profileService.queryProfiles(query, limit);
+			res.json(profiles);
+		} catch (error: any) {
+			console.error(`Error in GET ${path}:`, error);
+			res.status(500).json({ error: 'Failed to query profiles' });
+		}
+	}
+);
+
+export default router;

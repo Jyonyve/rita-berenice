@@ -3,38 +3,43 @@ import type {
 	ChatMessage,
 	ChatRoleType,
 	ChatMessageType,
-} from '#root/src/client/domain/chat';
-import { SUFFIX } from '#root/src/client/domain/index';
-import { parseEntriesToText, buildMessageId, buildTurnId, buildSummaryId } from '#root/src/shared';
-import chromaCollection from '../chromadb/chromaCollections';
+} from '#root/src/shared/domain/index.ts';
+import { SUFFIX } from '#root/src/shared/domain/index.ts';
+import {
+	parseEntriesToText,
+	buildMessageId,
+	buildTurnId,
+	buildSummaryId,
+} from '#root/src/shared/index.ts';
 import { Collection, IncludeEnum } from 'chromadb';
+import { chromaDbClient } from '#server/db/chromaDbClient.ts';
 
 const DEFAULT_QUERY_LIMIT = Number(process.env.VITE_QUERY_LIMIT) || 10;
 
 // Destructure outside the object
 const { getSessionCollection, addDocument, upsertDocument, getDocumentById, queryDocuments } =
-	chromaCollection;
+	chromaDbClient;
 
-export const documentService = {
+export const chatService = {
 	// Cache for session collections
 	_sessionCollections: new Map<string, Collection>(),
 
 	// Get collection with caching (more efficient)
 	_getCollection: async (sessionId: string): Promise<Collection> => {
 		// First check if it's in the cache (non-async operation)
-		const cachedCollection = documentService._sessionCollections.get(sessionId);
+		const cachedCollection = chatService._sessionCollections.get(sessionId);
 		if (cachedCollection) {
 			return cachedCollection;
 		}
 
 		// If not in cache, fetch it (async operation)
 		const collection = await getSessionCollection(sessionId);
-		documentService._sessionCollections.set(sessionId, collection);
+		chatService._sessionCollections.set(sessionId, collection);
 		return collection;
 	},
 
 	_storeFullChatTurnString: async (sessionId: string, chatTurn: ChatTurn): Promise<void> => {
-		const collection = await documentService._getCollection(sessionId);
+		const collection = await chatService._getCollection(sessionId);
 		const turnId = buildTurnId(sessionId, chatTurn.sequence);
 		await addDocument(collection, turnId, JSON.stringify(chatTurn), {
 			type: 'full_turn',
@@ -47,7 +52,7 @@ export const documentService = {
 
 	// Remove temporary turns for a given sequence
 	_removeTemporaryTurns: async (sessionId: string, sequence: number): Promise<void> => {
-		const collection = await documentService._getCollection(sessionId);
+		const collection = await chatService._getCollection(sessionId);
 		try {
 			// Find all documents for this sequence that are not fixed
 			const results = await collection.get({ where: { sessionId, sequence, isFixed: false } });
@@ -69,11 +74,11 @@ export const documentService = {
 
 	// Chat Turn Operations - Enhanced for better AI retrieval
 	storeChatTurn: async (sessionId: string, chatTurn: ChatTurn): Promise<void> => {
-		const collection = await documentService._getCollection(sessionId);
+		const collection = await chatService._getCollection(sessionId);
 
 		// If this is a fixed turn, remove any temporary turns with the same sequence
 		if (chatTurn.isFixed) {
-			await documentService._removeTemporaryTurns(sessionId, chatTurn.sequence);
+			await chatService._removeTemporaryTurns(sessionId, chatTurn.sequence);
 		}
 
 		// Store request
@@ -109,16 +114,16 @@ export const documentService = {
 
 		// Store the full turn as JSON only when it's fixed
 		if (chatTurn.isFixed) {
-			await documentService._storeFullChatTurnString(sessionId, chatTurn);
-			await documentService._removeTemporaryTurns(sessionId, chatTurn.sequence);
+			await chatService._storeFullChatTurnString(sessionId, chatTurn);
+			await chatService._removeTemporaryTurns(sessionId, chatTurn.sequence);
 		}
 	},
 
 	// Summary Operations
 	storeSummary: async (sessionId: string, newSummary: string): Promise<void> => {
-		const collection = await documentService._getCollection(sessionId);
+		const collection = await chatService._getCollection(sessionId);
 		const summaryId = buildSummaryId(sessionId);
-		const existingSummary = await documentService.getSummary(sessionId);
+		const existingSummary = await chatService.getSummary(sessionId);
 
 		const updatedSummary = existingSummary ? `${existingSummary}\n---\n${newSummary}` : newSummary;
 
@@ -154,7 +159,7 @@ export const documentService = {
 	},
 
 	getSummary: async (sessionId: string): Promise<string> => {
-		const collection = await documentService._getCollection(sessionId);
+		const collection = await chatService._getCollection(sessionId);
 		const summaryId = buildSummaryId(sessionId);
 
 		try {
@@ -174,7 +179,7 @@ export const documentService = {
 		fixedOnly: boolean = true,
 		limit?: number
 	): Promise<string[]> => {
-		const collection = await documentService._getCollection(sessionId);
+		const collection = await chatService._getCollection(sessionId);
 
 		try {
 			// Create a where clause that includes the specified message types
@@ -200,11 +205,11 @@ export const documentService = {
 		beforeSequence?: number
 	): Promise<ChatTurn[]> => {
 		// Get collection from cache synchronously if possible
-		const cachedCollection = documentService._sessionCollections.get(sessionId);
+		const cachedCollection = chatService._sessionCollections.get(sessionId);
 		const collection = cachedCollection || (await getSessionCollection(sessionId));
 
 		if (!cachedCollection) {
-			documentService._sessionCollections.set(sessionId, collection);
+			chatService._sessionCollections.set(sessionId, collection);
 		}
 
 		try {
@@ -255,11 +260,11 @@ export const documentService = {
 	},
 
 	querySummary: async (sessionId: string, queryText: string): Promise<string[]> => {
-		const collection = await documentService._getCollection(sessionId);
+		const collection = await chatService._getCollection(sessionId);
 		const summaryId = buildSummaryId(sessionId);
 
 		try {
-			const summary = await documentService.getSummary(sessionId);
+			const summary = await chatService.getSummary(sessionId);
 			if (!summary) return [];
 
 			return await queryDocuments(collection, queryText, { id: summaryId, type: 'summary' }, 1);
@@ -275,7 +280,7 @@ export const documentService = {
 		sequence: number,
 		fixedOnly: boolean = true
 	): Promise<ChatTurn | null> => {
-		const collection = await documentService._getCollection(sessionId);
+		const collection = await chatService._getCollection(sessionId);
 		const turnId = buildTurnId(sessionId, sequence);
 
 		try {
@@ -310,7 +315,7 @@ export const documentService = {
 		sequence: number,
 		fixedOnly: boolean = false
 	): Promise<ChatMessage[]> => {
-		const collection = await documentService._getCollection(sessionId);
+		const collection = await chatService._getCollection(sessionId);
 
 		try {
 			// Create a where clause to find all responses for this sequence
@@ -418,13 +423,13 @@ export const documentService = {
 		// Try summary first unless full log is requested
 		let relevantDetail: string[] = [];
 		if (!isFullLogQuery) {
-			relevantDetail = await documentService.querySummary(sessionId, userText);
+			relevantDetail = await chatService.querySummary(sessionId, userText);
 		}
 
 		// Fall back to full chat log if needed
 		if (!relevantDetail.length || isFullLogQuery) {
 			// Query both request and response messages for comprehensive context
-			relevantDetail = await documentService.queryChatLog(
+			relevantDetail = await chatService.queryChatLog(
 				sessionId,
 				userText,
 				['request', 'response'],
@@ -441,9 +446,9 @@ export const documentService = {
 	// Method to clear the cache if needed (e.g., for testing or memory management)
 	clearCollectionCache: (sessionId?: string): void => {
 		if (sessionId) {
-			documentService._sessionCollections.delete(sessionId);
+			chatService._sessionCollections.delete(sessionId);
 		} else {
-			documentService._sessionCollections.clear();
+			chatService._sessionCollections.clear();
 		}
 	},
 };
