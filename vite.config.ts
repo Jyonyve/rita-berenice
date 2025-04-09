@@ -1,123 +1,98 @@
-import { builtinModules } from 'module';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
-import vike from 'vike/plugin';
-import { UserConfig } from 'vite';
+import { fileURLToPath } from 'node:url'; // Use import.meta.url for ES modules
+import { builtinModules } from 'node:module'; // Correct import for ES modules
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
+import svgr from 'vite-plugin-svgr';
+import tsconfigPaths from 'vite-tsconfig-paths';
+import topLevelAwaitPlugin, { Options } from 'vite-plugin-top-level-await';
+
+// Helper to get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Type assertion for the topLevelAwait plugin (keep if it fixed previous issues)
+const topLevelAwait = topLevelAwaitPlugin as unknown as (options?: Options) => Plugin;
 
 const CHROMADB = 'chromadb' as const;
-export default {
-	define: { 'process.env.APP_ENV': JSON.stringify(process.env.APP_ENV), global: 'globalThis' },
+const nodeBuiltinModules = builtinModules.map((m) => `node:${m}`);
+const allBuiltinModules = [...new Set([...builtinModules, ...nodeBuiltinModules])];
+
+export default defineConfig({
+	cacheDir: '.vite_cache',
+	define: { 'process.env.APP_ENV': JSON.stringify(process.env.APP_ENV) },
+	// SSR specific options
 	ssr: {
-		external: [CHROMADB, ...builtinModules],
+		external: [CHROMADB, ...allBuiltinModules, 'fsevents'],
 		noExternal: [
 			'@mui/material',
-			'@mui/styled-engine',
+			'@mui/system',
 			'@emotion/react',
 			'@emotion/styled',
 			'@emotion/cache',
 			'@emotion/server',
-			'@emotion/utils',
-			'@langchain/community',
-		], // 번들링 강제
+			// Review Langchain if issues arise
+		],
+		target: 'node',
 	},
 	resolve: {
-		externalConditions: ['node'],
 		alias: {
+			// Client-side aliases
 			'@': path.resolve(__dirname, './src/client'),
-			'@client/domain': path.resolve(__dirname, './src/client/domain'),
-			'@client/util': path.resolve(__dirname, './src/client/util'),
+			'@client/domain': path.resolve(__dirname, './src/client/domain'), // Consider moving shared domain to @shared
 			'@client/component': path.resolve(__dirname, './src/client/component'),
 			'@client/hook': path.resolve(__dirname, './src/client/hook'),
-			'@client/asset': path.resolve(__dirname, './src/client/assets'),
+			'@client/asset': path.resolve(__dirname, './src/client/asset'), // Or assets
+
+			// Shared alias
 			'@shared': path.resolve(__dirname, './src/shared'),
+
+			// Server-side aliases (Using # prefix is fine, ensure consistency)
+			// Adjusted to plural folder names
+			'#server/db': path.resolve(__dirname, './src/server/db'),
+			'#server/routes': path.resolve(__dirname, './src/server/routes'),
+			'#server/services': path.resolve(__dirname, './src/server/services'),
+
+			// Root alias
 			'#root': path.resolve(__dirname, '.'),
 		},
 	},
 	plugins: [
 		react({ jsxImportSource: '@emotion/react', babel: { plugins: ['@emotion/babel-plugin'] } }),
-		vike({
-			// prerender: true,
-			includeAssetsImportedByServer: true,
-		}),
+		nodePolyfills({ globals: { Buffer: true, global: true, process: true }, protocolImports: true }),
+		topLevelAwait(),
+		tsconfigPaths(), // Reads 'paths' from tsconfig.json
+		svgr(), // For SVG components
 	],
 	build: {
+		chunkSizeWarningLimit: 1000,
 		rollupOptions: {
-			external: [...builtinModules, ...CHROMADB],
+			external: [CHROMADB, ...allBuiltinModules, 'fsevents', /^node:.*/],
 			output: {
 				manualChunks(id) {
-					if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+					if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/'))
 						return 'react-vendor';
-					}
-					if (id.includes('node_modules/@mui/') || id.includes('node_modules/@emotion/')) {
+					if (id.includes('node_modules/@mui/') || id.includes('node_modules/@emotion/'))
 						return 'mui-vendor';
-					}
-					if (id.includes('node_modules/onnxruntime-web')) {
-						return 'transformers';
-					}
-					if (id.includes('@langchain/')) {
-						return 'langchain';
-					}
+					if (id.includes('node_modules/onnxruntime-web')) return 'transformers'; // Keep if needed
+					if (id.includes('@langchain/')) return 'langchain'; // Keep if needed
 				},
 			},
 		},
+		sourcemap: true, // Enable source maps for easier debugging
+		// Ensure client and server build outputs don't conflict (controlled by scripts now)
 	},
 	optimizeDeps: {
-		include: ['@emotion/react', '@emotion/styled', '@emotion/cache', 'hoist-non-react-statics'],
-		// exclude: ['@mui/material', '@emotion/react', '@emotion/styled'],
+		include: ['@emotion/react', '@emotion/styled', '@emotion/cache'],
+		exclude: [
+			CHROMADB, // Keep native deps excluded
+			// Ensure sirv is NOT excluded if used in server.ts
+		],
 	},
-} satisfies UserConfig;
-
-// export default defineConfig(({ command }) => {
-// 	const isServer = JSON.parse(process.env.SSR || 'false'); // Ensure boolean type
-// 	const external = ['chromadb'];
-
-// 	return {
-// define: { 'process.env.APP_ENV': JSON.stringify(process.env.APP_ENV), global: 'globalThis' },
-// ssr: {
-// 	external: [...external, ...builtinModules], // `@langchain/community` 제거
-// 	noExternal: ['@mui/material', '@emotion/react', '@emotion/styled', '@langchain/community'], // 번들링 강제
-// 	resolveExternalConditions: isServer ? ['node'] : ['browser', 'module', 'import'],
-// },
-// build: {
-// 	outDir: isServer ? 'dist/server' : 'dist/client',
-// 	assetsDir: 'assets',
-// 	manifest: true,
-// 	chunkSizeWarningLimit: 1000,
-// 	rollupOptions: {
-// 		input: isServer ? 'src/renderer/+server.tsx' : 'src/renderer/+client.tsx',
-// 		output: {
-// 			format: 'esm',
-// 			dir: isServer ? 'dist/server' : 'dist/client',
-// 			entryFileNames: isServer ? '[name].mjs' : 'assets/[name]-[hash].js',
-// 			chunkFileNames: isServer ? 'chunks/[name]-[hash].mjs' : 'assets/[name]-[hash].js',
-// 			manualChunks: {
-// 				'react-vendor': ['react', 'react-dom'],
-// 				'mui-vendor': ['@mui/material', '@emotion/react', '@emotion/styled'],
-// 				transformers: ['onnxruntime-web'],
-// 				langchain: [
-// 					'@langchain/anthropic',
-// 					'@langchain/community',
-// 					'@langchain/core',
-// 					'@langchain/langgraph',
-// 					'@langchain/ollama',
-// 					'@langchain/openai',
-// 				],
-// 			},
-// 		},
-// 		external: [...builtinModules, ...external], // `@langchain/community` 제거
-// 		onwarn(warning, warn) {
-// 			if (warning.code === 'EVAL' && warning.id?.includes('onnxruntime-web')) {
-// 				return;
-// 			}
-// 			warn(warning);
-// 		},
-// 	},
-// },
-// optimizeDeps: {
-// 	include: ['@emotion/react', 'hoist-non-react-statics'],
-// 	exclude: ['@mui/material', '@emotion/react', '@emotion/styled'],
-// },
-
-// 		plugins: [reactSwc(), svgr(), tsconfigPaths(), vike({ prerender: true })],
-// 	};
-// });
+	esbuild: {
+		logOverride: { 'this-is-undefined-in-esm': 'silent', 'commonjs-variable-in-esm': 'silent' },
+		logLevel: 'error',
+		target: 'es2020',
+	},
+});

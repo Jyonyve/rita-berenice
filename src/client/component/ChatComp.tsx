@@ -1,109 +1,193 @@
-import axios from 'axios';
-import { v4 as uuidv4 } from 'uuid';
-import { ChatSession, ChatMessage, ChatEntry } from '#root/src/client/domain/chat';
+import React, { useState, useCallback } from 'react';
+import { Box, Typography, Divider, TextField, Button, CircularProgress } from '@mui/material';
+import { ChatTurn, ChatMessage } from '#root/src/shared/domain/chat/index.ts'; // Added ChatMessage
+import { useChromaChat, useChat } from '@client/hook/index.ts';
+import { buildChatMessage, parseEntriesToText } from '#root/src/shared/util/index.ts';
 
-import { buildChatMessage, parseTextToEntries } from '#root/src/client/util/chatConvertUtils';
-import { useAiModel } from '#root/src/client/hook/useAiModel';
-import { MessageContent } from '@langchain/core/messages';
-import { useCallback, useEffect, useState } from 'react';
-import { useChat } from '#root/src/client/hook/useChat';
-import { ChromaComp } from './ChromaComp';
-import { useChromaChat } from '#root/src/client/hook/useChromaChat';
-import { Box, Button, Divider, TextField, Typography } from '@mui/material';
-import mdx from '@mdx-js/rollup';
+export const ChatComp: React.FC = () => {
+	const [userInput, setUserInput] = useState<string>('');
+	const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
-const DEFAULT_QUERY_LIMIT = import.meta.env.VITE_QUERY_LIMIT;
-const SUMMARY_INTERVAL = import.meta.env.VITE_SUMMARY_INTERVAL;
+	const {
+		recentChatTurn,
+		isLoading,
+		currentSessionId,
+		createChatTurn,
+		addChatTurn,
+		getResponseFromLlm,
+		generateSummary,
+		getNextSequence,
+	} = useChat();
 
-export const ChatComp = () => {
-	// state
-	const [userText, setUserText] = useState<string>();
-	const [isTyping, setIsTyping] = useState<boolean>();
-	const [currentPrompt, setCurrentPrompt] = useState<string>();
-	const [currentUserChatMsg, setCurrentUserChatMsg] = useState<ChatMessage>();
-	const [currentCharChatMsg, setCurrentCharChatMsg] = useState<ChatMessage>();
+	const { storeChatTurn, storeSummary, buildUserPromptFromLog } = useChromaChat(currentSessionId);
 
-	// hook
-	const { aiModelInfo } = useAiModel();
-	const { recentChatTurn, currentSessionId, changeSessionId, getResponseFromLlm, saveChatTurn } =
-		useChat();
-
-	const { buildUserPromptFromLog, storeChatTurn, storeSummary, getSummary, queryChatLog } =
-		useChromaChat(currentSessionId, aiModelInfo.model);
-
-	// function
-	const handleUserText = (text: string) => {
-		// user enter there chat
-		if (!currentSessionId) throw new Error('No active session.');
-		setUserText(text);
+	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setUserInput(e.target.value);
 	};
 
-	const handleUserChatMsg = async (userText: string) => {
-		// build user chat message
-		if (!currentSessionId) throw new Error('No active session.');
-		const userChatMsg = buildChatMessage('user', userText, currentSessionId);
-		setCurrentUserChatMsg(userChatMsg);
+	const handleSendMessage = useCallback(async () => {
+		if (!userInput.trim() || !currentSessionId || isProcessing) return;
 
-		const prompt = await buildUserPromptFromLog(userText);
-		setCurrentPrompt(prompt);
+		setIsProcessing(true);
 
-		genLlmResponse(prompt);
-	};
+		try {
+			const sequence = getNextSequence();
+			const userMessage = buildChatMessage('user', sequence, userInput, currentSessionId);
 
-	const genLlmResponse = async (prompt: string): Promise<string> => {
-		const response = await getResponseFromLlm(prompt);
-		const charChatMsg = buildChatMessage('assistant', response, currentSessionId);
-		setCurrentCharChatMsg(charChatMsg);
-		return response;
-	};
+			// Build prompt with context from previous conversations
+			const enhancedPrompt = await buildUserPromptFromLog(userInput);
 
-	const handleSendUserChatMsg = () => {
-		setIsTyping(false);
-	};
+			// Get response from LLM using the enhanced prompt
+			const assistantResponse = await getResponseFromLlm(enhancedPrompt);
+			const assistantMessage = buildChatMessage(
+				'assistant',
+				sequence,
+				assistantResponse,
+				currentSessionId
+			);
 
-	const handleReloadAiChat = () => {
-		if (!currentPrompt) throw new Error('No current user prompt.');
-		genLlmResponse(currentPrompt);
-	};
+			const chatTurn = createChatTurn(userMessage, assistantMessage, true);
+			addChatTurn(chatTurn);
+			await storeChatTurn(chatTurn);
 
-	//	Effect
-	useEffect(() => {
-		if (!userText && !isTyping) {
-			setIsTyping(true);
-		} else if (userText && !isTyping) {
-			handleUserChatMsg(userText);
+			if (sequence % 3 === 0) {
+				const summary = await generateSummary();
+				if (summary) {
+					await storeSummary(summary);
+				}
+			}
+
+			setUserInput('');
+		} catch (error) {
+			console.error('Error sending message:', error);
+		} finally {
+			setIsProcessing(false);
 		}
-	}, [isTyping, userText]);
+	}, [
+		userInput,
+		currentSessionId,
+		isProcessing,
+		getNextSequence,
+		buildUserPromptFromLog,
+		getResponseFromLlm,
+		createChatTurn,
+		addChatTurn,
+		storeChatTurn,
+		generateSummary,
+		storeSummary,
+	]);
+
+	const handleRegenerateResponse = useCallback(async () => {
+		// Add guard for currentSessionId
+		if (isProcessing || recentChatTurn.length === 0 || !currentSessionId) return;
+
+		setIsProcessing(true);
+
+		try {
+			const currentTurn = recentChatTurn[recentChatTurn.length - 1];
+			const enhancedPrompt = await buildUserPromptFromLog(
+				parseEntriesToText(currentTurn.request.entries)
+			);
+			const newResponse = await getResponseFromLlm(enhancedPrompt);
+
+			const newAssistantMessage = buildChatMessage(
+				'assistant',
+				currentTurn.sequence,
+				newResponse,
+				currentSessionId
+			);
+
+			const updatedTurn: ChatTurn = { ...currentTurn, response: [newAssistantMessage], isFixed: true };
+			addChatTurn(updatedTurn);
+			await storeChatTurn(updatedTurn);
+		} catch (error) {
+			console.error('Error regenerating response:', error);
+		} finally {
+			setIsProcessing(false);
+		}
+	}, [
+		isProcessing,
+		recentChatTurn,
+		buildUserPromptFromLog,
+		getResponseFromLlm,
+		currentSessionId,
+		addChatTurn,
+		storeChatTurn,
+	]);
+
+	const handleKeyPress = (e: React.KeyboardEvent) => {
+		if (e.key === 'Enter' && !e.shiftKey) {
+			e.preventDefault();
+			handleSendMessage();
+		}
+	};
 
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', width: 400, margin: 'auto' }}>
 			<Typography variant="h5" gutterBottom>
 				Chat
 			</Typography>
+
 			<Box sx={{ overflowY: 'auto', maxHeight: 400, marginBottom: 2 }}>
 				{recentChatTurn.map((turn) => (
 					<Box key={turn.sequence} sx={{ marginBottom: 1 }}>
-						<Typography variant="body1" color={'primary'}>
-							<strong>{turn.request.speaker}:</strong> {turn.request.entries.join('\n')}
+						<Typography variant="body1" color="primary">
+							<strong>{turn.request.role}:</strong> {parseEntriesToText(turn.request.entries)}
 						</Typography>
-						<Typography variant="body1" color={'text.secondary'}>
-							<strong>{turn.response.speaker}:</strong> {turn.response.entries.join('\n')}
-						</Typography>
+						{turn.response.map(
+							(
+								response: ChatMessage,
+								index: number // Added types here
+							) => (
+								<Typography key={index} variant="body1" color="text.secondary">
+									<strong>{response.role}:</strong> {parseEntriesToText(response.entries)}
+								</Typography>
+							)
+						)}
 					</Box>
 				))}
+				{isProcessing && (
+					<Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+						<CircularProgress size={24} />
+					</Box>
+				)}
 			</Box>
+
 			<Divider />
+
 			<TextField
-				value={userText}
-				onChange={(e) => handleUserText(e.target.value)}
+				value={userInput}
+				onChange={handleInputChange}
+				onKeyDown={handleKeyPress}
 				label="Your message"
 				variant="outlined"
+				multiline
+				rows={2}
 				fullWidth
-				sx={{ marginBottom: 2 }}
+				sx={{ marginY: 2 }}
+				disabled={isProcessing || isLoading}
 			/>
-			<Button onClick={handleSendUserChatMsg} variant="contained" color="primary" fullWidth>
-				Send Message
-			</Button>
+
+			<Box sx={{ display: 'flex', gap: 2 }}>
+				<Button
+					onClick={handleSendMessage}
+					variant="contained"
+					color="primary"
+					fullWidth
+					disabled={isProcessing || isLoading || !userInput.trim()}
+				>
+					Send
+				</Button>
+				<Button
+					onClick={handleRegenerateResponse}
+					variant="outlined"
+					color="secondary"
+					fullWidth
+					disabled={isProcessing || isLoading || recentChatTurn.length === 0}
+				>
+					Regenerate
+				</Button>
+			</Box>
 		</Box>
 	);
 };

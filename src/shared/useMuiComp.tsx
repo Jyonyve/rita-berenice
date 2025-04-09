@@ -11,8 +11,8 @@ import {
 	FormControl,
 	InputLabel,
 } from '@mui/material';
-import { supportingAiInfo } from '#root/src/client/domain/aimodel';
 // import { initializeAwsCredentials } from '@util/awsCredentialUtils';
+import { supportAiModelInfo } from '#root/src/shared/index.ts';
 
 export const useErrorDialog = (initialOpen: boolean = false, initialMessage?: string) => {
 	const [open, setOpen] = useState(initialOpen);
@@ -46,12 +46,12 @@ export const useErrorDialog = (initialOpen: boolean = false, initialMessage?: st
 export const SelectAiModel = ({ id }: { id?: string }) => {
 	// Generate select options based on the supportingAiInfo record
 	const extractAiModelSelect = () => {
-		return Object.entries(supportingAiInfo).map(([category, models], idx) => (
+		return Object.entries(supportAiModelInfo).map(([category, models], idx) => (
 			<Fragment key={category}>
 				<ListSubheader>
 					<em>{category}</em>
 				</ListSubheader>
-				{models.map((model, index) => (
+				{Object.values(models).map((model, index) => (
 					<MenuItem key={index} value={model}>
 						{model}
 					</MenuItem>

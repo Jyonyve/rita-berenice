@@ -1,85 +1,191 @@
-import { useState, useEffect, useCallback } from 'react';
-import { ChatEntry, ChatSession, ChatMessage, ChatTurn } from '#root/src/client/domain/chat';
-import { useAiModel } from '#root/src/client/hook/useAiModel';
+import { useState, useCallback } from 'react';
+import { ChatMessage, ChatTurn } from '@shared/domain/index.ts';
+import { useAiModel } from '@client/hook/index.ts';
 import {
 	buildChatTurnToJsonString,
 	convertMessageContentToString,
-	parseTextToEntries,
-} from '#root/src/client/util/chatConvertUtils';
-import { MessageContent, MessageContentText } from '@langchain/core/messages';
-import axios from 'axios';
-import { AiRole } from '#root/src/client/domain/aimodel';
-import { Collection } from 'chromadb';
-
-const SUMMARY_INTERVAL = import.meta.env.VITE_SUMMARY_INTERVAL;
-const MAX_TURNS = import.meta.env.VITE_QUERY_LIMIT;
+	extractValidOpenAiContent,
+	isOpenAI,
+	parseMessageId,
+} from '@shared/util/index.ts';
+import { DEFAULT_QUERY_LIMIT, DEFAULT_SUMMARY_INTERVAL } from '@shared/index.ts';
 
 export const useChat = () => {
-	//
 	const [isLoading, setIsLoading] = useState(false);
 	const [currentSessionId, setCurrentSessionId] = useState<string>('');
 	const [recentChatTurn, setRecentChatTurn] = useState<ChatTurn[]>([]);
-	const { aiModelInfo: aiInfo, llm, changeAiModel } = useAiModel();
+	const { aiModelInfo, llm, changeAiModel } = useAiModel();
 
-	const changeSessionId = (newSessionId: string) => {
+	const openAI = isOpenAI(llm);
+
+	const changeSessionId = useCallback((newSessionId: string) => {
 		if (newSessionId) setCurrentSessionId(newSessionId);
-	};
+	}, []);
 
-	const saveChatTurn = async (chatTurn: ChatTurn) => {
-		if (!llm) throw new Error('No LLM client available.');
+	// Get the current sequence number based on the most recent chat turn
+	const getCurrentSequence = useCallback((): number => {
+		if (recentChatTurn.length === 0) return 0;
+		return recentChatTurn[recentChatTurn.length - 1].sequence;
+	}, [recentChatTurn]);
 
-		if (chatTurn.sequence % SUMMARY_INTERVAL === 0) {
-			const summary = await llm.invoke([
-				{
-					role: 'system',
-					content: `Summarize the following chat: ${recentChatTurn
-						.map((turn) => buildChatTurnToJsonString(turn))
-						.join('\n\n')}`,
-				},
-			]);
+	// Get the next sequence number
+	const getNextSequence = useCallback((): number => {
+		return getCurrentSequence() + 1;
+	}, [getCurrentSequence]);
 
-			return summary.content;
+	// Generate a summary for the conversation
+	const generateSummary = useCallback(async (): Promise<string | undefined> => {
+		if (!llm || recentChatTurn.length === 0) return;
+
+		const currentSequence = getCurrentSequence();
+		if (currentSequence % DEFAULT_SUMMARY_INTERVAL !== 0) return;
+
+		const summaryContent = `Summarize the following chat:\n${recentChatTurn
+			.slice(-DEFAULT_QUERY_LIMIT)
+			.map((turn) => buildChatTurnToJsonString(turn))
+			.join('\n\n')}`;
+
+		try {
+			if (openAI) {
+				const completion = await llm.chat.completions.create({
+					model: aiModelInfo.model,
+					messages: [{ role: 'system', content: summaryContent }],
+				});
+				return extractValidOpenAiContent(completion);
+			} else {
+				const response = await llm.invoke([{ role: 'system', content: summaryContent }]);
+				return convertMessageContentToString(response.content);
+			}
+		} catch (error) {
+			console.error('Error generating summary:', error);
+			return undefined;
 		}
-	};
+	}, [llm, recentChatTurn, getCurrentSequence, aiModelInfo.model, openAI]);
 
-	const getResponseFromLlm = async (prompt: string, userPickModel?: string): Promise<string> => {
-		// Change AI model if user picks a different one
-		if (userPickModel && userPickModel !== aiInfo.model) {
-			setIsLoading(true);
-			await changeAiModel(userPickModel);
-			setIsLoading(false);
-		}
+	// Get a response from the LLM
+	const getResponseFromLlm = useCallback(
+		async (prompt: string, userPickModel?: string): Promise<string> => {
+			if (!llm) throw new Error('No LLM client available.');
 
-		const conversationHistory = recentChatTurn
-			.slice(-MAX_TURNS)
-			.map((turn) => buildChatTurnToJsonString(turn));
+			// Change AI model if user picks a different one
+			if (userPickModel && userPickModel !== aiModelInfo.model) {
+				setIsLoading(true);
+				await changeAiModel(userPickModel);
+				setIsLoading(false);
+			}
 
-		const response = await llm.invoke([...conversationHistory, { role: 'user', content: prompt }]);
+			try {
+				if (openAI) {
+					const response = await llm.chat.completions.create({
+						model: aiModelInfo.model,
+						messages: [{ role: 'user', content: prompt }],
+					});
+					return extractValidOpenAiContent(response);
+				} else {
+					const response = await llm.invoke([{ role: 'user', content: prompt }]);
+					return convertMessageContentToString(response.content);
+				}
+			} catch (error) {
+				console.error('Error getting response from LLM:', error);
+				return 'Sorry, I encountered an error while processing your request.';
+			}
+		},
+		[llm, aiModelInfo.model, changeAiModel, openAI]
+	);
 
-		return convertMessageContentToString(response.content);
-	};
+	// Create a new chat turn
+	const createChatTurn = useCallback(
+		(userMessage: ChatMessage, assistantMessage: ChatMessage, isFixed: boolean = true): ChatTurn => {
+			return {
+				sessionId: currentSessionId,
+				sequence: parseInt(parseMessageId(userMessage.messageId).sequence.toString()),
+				request: userMessage,
+				response: [assistantMessage],
+				isFixed,
+			};
+		},
+		[currentSessionId]
+	);
 
-	const buildNextSequence = (userMsg: ChatMessage, assistantMsg: ChatMessage) => {
-		const sequence = recentChatTurn.length
-			? recentChatTurn[recentChatTurn.length - 1].sequence + 1
-			: 1;
-		const newTurn: ChatTurn = {
-			sessionId: currentSessionId,
-			sequence,
-			request: userMsg,
-			response: assistantMsg,
-			isTemp: true,
-		};
-		setRecentChatTurn([...recentChatTurn, newTurn]);
-	};
+	// Add a temporary response to the most recent chat turn
+	const addTemporaryResponse = useCallback(
+		(assistantMessage: ChatMessage): void => {
+			if (recentChatTurn.length === 0) return;
+
+			const currentTurn = recentChatTurn[recentChatTurn.length - 1];
+
+			// Create a new turn with the additional response
+			const updatedTurn: ChatTurn = {
+				...currentTurn,
+				response: [...currentTurn.response, assistantMessage],
+				isFixed: false,
+			};
+
+			// Update the recent chat turns
+			setRecentChatTurn([...recentChatTurn.slice(0, -1), updatedTurn]);
+		},
+		[recentChatTurn]
+	);
+
+	// Fix the current chat turn (mark as final)
+	const fixCurrentChatTurn = useCallback(
+		(responseIndex: number = 0): ChatTurn | null => {
+			if (recentChatTurn.length === 0) return null;
+
+			const currentTurn = recentChatTurn[recentChatTurn.length - 1];
+
+			// If the selected response doesn't exist, do nothing
+			if (responseIndex >= currentTurn.response.length) return null;
+
+			// Create a new turn with only the selected response and marked as fixed
+			const fixedTurn: ChatTurn = {
+				...currentTurn,
+				response: [currentTurn.response[responseIndex]],
+				isFixed: true,
+			};
+
+			// Update the recent chat turns
+			setRecentChatTurn([...recentChatTurn.slice(0, -1), fixedTurn]);
+
+			return fixedTurn;
+		},
+		[recentChatTurn]
+	);
+
+	// Add a new chat turn to the conversation
+	const addChatTurn = useCallback((chatTurn: ChatTurn): void => {
+		setRecentChatTurn((prev) => [...prev, chatTurn]);
+	}, []);
+
+	// Load chat history from storage
+	const loadChatHistory = useCallback(
+		async (sessionId: string): Promise<void> => {
+			// This would typically fetch from your storage/database
+			// For now, just setting the session ID
+			changeSessionId(sessionId);
+		},
+		[changeSessionId]
+	);
+
+	// Clear the chat history
+	const clearChatHistory = useCallback((): void => {
+		setRecentChatTurn([]);
+	}, []);
 
 	return {
 		recentChatTurn,
 		isLoading,
 		currentSessionId,
 		changeSessionId,
-		buildNextSequence,
+		createChatTurn,
+		addTemporaryResponse,
+		fixCurrentChatTurn,
+		addChatTurn,
 		getResponseFromLlm,
-		saveChatTurn,
+		generateSummary,
+		getCurrentSequence,
+		getNextSequence,
+		loadChatHistory,
+		clearChatHistory,
 	};
 };
