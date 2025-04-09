@@ -141,7 +141,7 @@ export const useCharacter = () => {
 	// Get character assets (purely client-side using Vite's glob import)
 	const getCharacterAssets = useCallback((character: string, variant: string): CharacterAsset => {
 		const images = Object.entries(
-			import.meta.glob<{ default: string }>('/src/assets/character/**/*.webp', {
+			import.meta.glob<{ default: string }>('/src/asset/character/**/*.webp', {
 				eager: true,
 			}) as Record<string, { default: string }>
 		);
