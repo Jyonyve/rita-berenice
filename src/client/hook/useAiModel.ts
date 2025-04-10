@@ -1,138 +1,68 @@
-import { useState } from 'react';
-
-import { ChatOpenAI } from '@langchain/openai';
-// import { ChatBedrockConverse } from '@langchain/aws';
-import { ChatAnthropic } from '@langchain/anthropic';
-import { ChatOllama } from '@langchain/ollama';
-import { ChatGoogleGenerativeAI } from '@langchain/google-genai'; // Keep for direct/openrouter
-import { BaseChatModel } from '@langchain/core/language_models/chat_models';
+// src/client/hooks/useAiModel.ts
+import { useState, useCallback } from 'react';
 import {
 	useErrorDialog,
 	AiModelInfo,
-	determineDefaultSummaryAiInfo,
-	determineInitialDefaultAiInfo,
-	getAiModelInfo,
-	isValidAiModelInfo,
-} from '@shared/index.ts';
-import OpenAI from 'openai';
-// import {
-// 	initializeAwsCredentials,
-// 	getAwsCredentials,
-// 	isAwsCredentialsExpired,
-// } from '@util/awsCredentialUtils';
+	AllModelNames, // Keep this type
+	// Import the keyless defaults and client-side utils
+	DEFAULT_CHAT_MODEL_FREE, // Make sure this is defined without apiKey in shared types [6]
+	DEFAULT_SUMMARY_MODEL_FREE, // Make sure this is defined without apiKey in shared types [6]
+	getAiModelInfo, // Use the refactored client-side util [Phase 3]
+	isValidAiModelInfo, // Use the refactored client-side util [Phase 3]
+} from '@shared/index.ts'; // Adjust path as needed
 
-const initialDefaultAiInfo = determineInitialDefaultAiInfo();
-const initialDefaultSummaryAiInfo = determineDefaultSummaryAiInfo();
-
-// Function to create LLM instance based on the new AiModelInfo structure
-const createLlmInstance = (aiInfo: AiModelInfo): BaseChatModel | OpenAI => {
-	const { platform, provider, model, apiKey } = aiInfo;
-
-	switch (platform) {
-		case 'direct':
-			switch (provider) {
-				case 'openai':
-					return new ChatOpenAI({ model, apiKey });
-				case 'anthropic':
-					return new ChatAnthropic({ model, apiKey });
-				case 'google':
-					return new ChatGoogleGenerativeAI({ model, apiKey });
-				default:
-					console.warn(`Unsupported direct provider: ${provider}. Falling back.`);
-					// Fallback to a default local model might be safer here
-					return new ChatOllama({ ...initialDefaultSummaryAiInfo });
-			}
-		case 'openrouter':
-			return new OpenAI({
-				baseURL: 'https://openrouter.ai/api/v1',
-				apiKey: '<OPENROUTER_API_KEY>',
-				defaultHeaders: {
-					'HTTP-Referer': '<YOUR_SITE_URL>', // Optional. Site URL for rankings on openrouter.ai.
-					'X-Title': 'Rita Berenice', // Optional. Site title for rankings on openrouter.ai.
-				},
-			});
-		// case 'bedrock':
-		//   // Requires AWS credentials setup, which is commented out.
-		//   // return new ChatBedrockConverse({ model }); // Simplified example
-		//   console.warn('Bedrock source selected but integration is commented out. Falling back.');
-		//   return new ChatOllama({ model: removeLocalPrefix(supportingAiInfo.local.ollama[0]) });
-		case 'local':
-			return new ChatOllama({ model });
-		default:
-			console.warn(`Unsupported AI source: ${platform}. Falling back to default free model.`);
-			return new ChatOllama({ ...initialDefaultSummaryAiInfo });
-	}
-};
+// Determine initial states using the refactored utils (which don't include apiKey)
+const initialDefaultAiInfo: AiModelInfo = DEFAULT_CHAT_MODEL_FREE; // Or use determineInitialDefaultAiInfo if preferred
+const initialDefaultSummaryAiInfo: AiModelInfo = DEFAULT_SUMMARY_MODEL_FREE; // Or use determineDefaultSummaryAiInfo
 
 export const useAiModel = () => {
-	// Initialize LLM instances
-	const initialLlm = createLlmInstance(initialDefaultAiInfo);
-	const initialSummaryLlm = createLlmInstance(initialDefaultSummaryAiInfo);
+	// --- State ---
+	// Stores the user's currently selected AI model configuration (platform, provider, model)
+	const [aiModelInfo, setAiModelInfo] = useState<AiModelInfo>(initialDefaultAiInfo);
+	// Stores the AI model configuration used for summary tasks
+	const [summaryAiModelInfo, setSummaryAiModelInfo] = useState<AiModelInfo>(
+		initialDefaultSummaryAiInfo
+	);
 
-	// state
-	const [aiModelInfo, setAiModelInfo] = useState<AiModelInfo>(initialDefaultAiInfo); // Renamed setter for clarity
-	const [llm, setLlm] = useState<BaseChatModel | OpenAI>(initialLlm);
-	const [summaryLlm, setSummaryLlm] = useState<BaseChatModel | OpenAI>(initialSummaryLlm);
-
-	// hook
+	// --- Hooks ---
 	const { showError } = useErrorDialog();
 
-	const changeAiModel = async (modelName: string) => {
-		const newAiInfo = getAiModelInfo(modelName);
-		if (!newAiInfo || !isValidAiModelInfo(newAiInfo)) {
-			showError(`Invalid AI model information for: ${modelName}`);
-			return;
-		}
+	/**
+	 * Changes the primary AI model selection based on the model name.
+	 * Uses the client-side getAiModelInfo utility.
+	 * @param modelName - The full name of the model selected by the user (e.g., "openai/gpt-4o").
+	 */
+	const changeAiModel = useCallback(
+		(modelName: AllModelNames | string) => {
+			// Accept string for broader input compatibility
+			// Use the client-side utility to get structured info (no keys)
+			const newAiInfo = getAiModelInfo(modelName);
 
-		setAiModelInfo(newAiInfo);
-		await changeLLMClient(newAiInfo);
+			// Validate the structure and if it's supported (using client-side util)
+			if (!isValidAiModelInfo(newAiInfo)) {
+				const errorMsg = `Invalid or unsupported AI model selected: ${modelName}`;
+				console.error(errorMsg, 'Resolved info:', newAiInfo);
+				showError(errorMsg);
+				return; // Don't update state if invalid
+			}
+
+			console.log('Setting AI model to:', newAiInfo);
+			setAiModelInfo(newAiInfo);
+
+			// Note: Summary model typically remains fixed, no update needed here unless desired.
+		},
+		[showError]
+	); // Dependency: showError
+
+	// --- Removed all LLM instance creation, state, credential logic, and effects ---
+
+	// --- Return Hook Values ---
+	return {
+		/** The currently selected AiModelInfo for primary tasks (platform, provider, model) */
+		aiModelInfo,
+		/** The AiModelInfo used for summary tasks (platform, provider, model) */
+		summaryAiModelInfo,
+		/** Function to change the primary selected AI model based on its name */
+		changeAiModel,
 	};
-
-	const changeLLMClient = async (newAiInfo: AiModelInfo) => {
-		const summaryAiInfo = determineDefaultSummaryAiInfo();
-
-		const newLlm = createLlmInstance(newAiInfo);
-		const newSummaryLlm = createLlmInstance(summaryAiInfo);
-
-		setLlm(newLlm);
-		setSummaryLlm(newSummaryLlm);
-	};
-
-	// AWS credential refresh logic and useEffect are removed
-
-	// const refreshAwsCredentials = async () => {
-	// 	try {
-	// 		// if (isAwsCredentialsExpired()) { // Assuming isAwsCredentialsExpired is defined elsewhere
-	// 		// 	await initializeAwsCredentials(); // Assuming initializeAwsCredentials is defined elsewhere
-	// 		// }
-	// 		// const credentials = await getAwsCredentials(); // Assuming getAwsCredentials is defined elsewhere
-
-	// 		// // 크레덴셜 만료 5분 전에 자동 갱신 설정
-	// 		// if (credentials.Expiration) {
-	// 		// 	const expiresInMs = new Date(credentials.Expiration).getTime() - Date.now() - 5 * 60 * 1000;
-	// 		// 	refreshTimeout = setTimeout(refreshAwsCredentials, Math.max(expiresInMs, 0));
-	// 		// }
-	// 	} catch (error) {
-	// 		console.error('AWS credentials refresh failed:', error);
-	// 	}
-	// };
-
-	// useEffect(() => {
-	// 	// if (aiModelInfo.type === 'bedrock') {
-	// 	// 	refreshAwsCredentials(); // Bedrock 사용 시 인증 실행
-	// 	// } else {
-	// 	// 	if (refreshTimeout) {
-	// 	//          clearTimeout(refreshTimeout);
-	// 	//          refreshTimeout = null;
-	// 	//       }
-	// 	// }
-	// 	// // Cleanup function to clear timeout on component unmount or when aiModelInfo.type changes
-	// 	// return () => {
-	// 	//    if (refreshTimeout) {
-	// 	//       clearTimeout(refreshTimeout);
-	// 	//    }
-	// 	// };
-	// }, [aiModelInfo.type]); // Dependency array includes aiModelInfo.type
-
-	return { aiModelInfo, llm, summaryLlm, changeAiModel };
 };

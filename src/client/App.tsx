@@ -1,20 +1,10 @@
-// src/client/App.tsx
-import React from 'react';
 import { Routes, Route } from 'react-router-dom'; // Import React Router components
 
 // --- MUI Imports ---
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { AiModelComp, CharacterComp, ChatComp } from './component/index.ts';
+import { CharacterComp, ChatComp } from '@client/component/index.ts';
 // import { lightTheme, darkTheme } from './themes'; // Assuming you have theme definitions
-
-// --- Import Your Page Components ---
-// You need to create these components based on your UI needs
-// import HomePage from './pages/HomePage'; // Example: src/client/pages/HomePage.tsx
-// import CharacterListPage from './pages/CharacterListPage'; // Example: src/client/pages/CharacterListPage.tsx
-// import CharacterDetailPage from './pages/CharacterDetailPage'; // Example: src/client/pages/CharacterDetailPage.tsx
-// import ChatPage from './pages/ChatPage'; // Example: src/client/pages/ChatPage.tsx
-// import NotFoundPage from './pages/NotFoundPage'; // Example: src/client/pages/NotFoundPage.tsx
 
 // --- Define or Import MUI Theme ---
 // Example: Replace with your actual theme configuration

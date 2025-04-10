@@ -4,17 +4,16 @@ import type {
 	ChatRoleType,
 	ChatMessageType,
 } from '#root/src/shared/domain/index.ts';
-import { SUFFIX } from '#root/src/shared/domain/index.ts';
 import {
 	parseEntriesToText,
 	buildMessageId,
 	buildTurnId,
 	buildSummaryId,
+	DEFAULT_QUERY_LIMIT,
+	SUFFIX,
 } from '#root/src/shared/index.ts';
 import { Collection, IncludeEnum } from 'chromadb';
 import { chromaDbClient } from '#server/db/chromaDbClient.ts';
-
-const DEFAULT_QUERY_LIMIT = Number(process.env.VITE_QUERY_LIMIT) || 10;
 
 // Destructure outside the object
 const { getSessionCollection, addDocument, upsertDocument, getDocumentById, queryDocuments } =

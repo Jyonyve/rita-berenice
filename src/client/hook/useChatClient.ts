@@ -10,7 +10,7 @@ import {
 } from '@shared/util/index.ts';
 import { DEFAULT_QUERY_LIMIT, DEFAULT_SUMMARY_INTERVAL } from '@shared/index.ts';
 
-export const useChat = () => {
+export const useChatClient = () => {
 	const [isLoading, setIsLoading] = useState(false);
 	const [currentSessionId, setCurrentSessionId] = useState<string>('');
 	const [recentChatTurn, setRecentChatTurn] = useState<ChatTurn[]>([]);

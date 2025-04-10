@@ -1,17 +1,20 @@
 import { useEffect } from 'react';
 import { useErrorDialog } from '@shared/useMuiComp.tsx';
-import { useChat, useAiModel } from '@client/hook/index.ts';
+import { useChatClient, useAiModel } from '@client/hook/index.ts';
 import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from '@mui/material';
-import { DEFAULT_FREE_MODEL, supportAiModelInfo } from '#root/src/shared/index.ts';
+import { DEFAULT_CHAT_MODEL_FREE, supportAiModelInfo } from '@shared/index.ts';
 
 interface AiModelCompProps {
 	sessionId: string;
 	model?: string;
 }
 
-export const AiModelComp = ({ sessionId, model = DEFAULT_FREE_MODEL.model }: AiModelCompProps) => {
+export const AiModelComp = ({
+	sessionId,
+	model = DEFAULT_CHAT_MODEL_FREE.model,
+}: AiModelCompProps) => {
 	const { aiModelInfo, changeAiModel } = useAiModel();
-	const { currentSessionId, changeSessionId } = useChat();
+	const { currentSessionId, changeSessionId } = useChatClient();
 	const { showError } = useErrorDialog();
 
 	const handleModelChange = (event: SelectChangeEvent<string>) => {

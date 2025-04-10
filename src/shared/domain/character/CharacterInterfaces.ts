@@ -27,11 +27,7 @@ export interface ProfileInfo {
 	metadata: ProfileMetadata;
 }
 
-export interface CharacterImages {
-	[key: string]: {
-		[key: string]: string[]; // Each type can have multiple images
-	};
-}
+export type CharacterImages = Record<string, string[]>;
 
 export interface CharacterAsset {
 	images: string[];

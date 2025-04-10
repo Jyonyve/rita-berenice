@@ -1,10 +1,9 @@
 import { useState, useCallback } from 'react';
-import { ChatTurn, apiClient, genApiUrl } from '@shared/index.ts'; // Or shared types
+import { ChatTurn, MODULE_NAMES, apiClient, genApiUrl } from '@shared/index.ts'; // Or shared types
 
-// Define the module name used in API paths
-const MODULE_NAME = 'chat';
-
-export const useChromaChat = (initialSessionId: string) => {
+export const useChatServer = (initialSessionId: string) => {
+	//
+	const MODULE_NAME = MODULE_NAMES.CHAT;
 	const [sessionId, setSessionId] = useState(initialSessionId);
 
 	// --- Helper for API calls ---

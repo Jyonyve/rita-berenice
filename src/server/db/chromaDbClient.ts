@@ -1,16 +1,29 @@
 import { COLLECTIONS } from '#root/src/shared/domain/index.ts';
 import { ChromaClient, Collection, IncludeEnum } from 'chromadb';
 
-const CHROMA_URL = process.env.VITE_CHROMA_URL || 'http://localhost:8000';
+const CHROMA_URL = process.env.CHROMA_API_URL || 'http://localhost:8000';
 const chromaClient = new ChromaClient({ path: CHROMA_URL });
 
 // Collection caches
 let characterCollection: Collection | null = null;
 let profileCollection: Collection | null = null;
 const sessionCollections: Record<string, Collection> = {};
+let credentialCollection: Collection | null = null;
 
 export const chromaDbClient = {
 	// Basic collection management
+
+	getCredentialCollection: async (): Promise<Collection> => {
+		if (!credentialCollection) {
+			credentialCollection = await chromaClient.getOrCreateCollection({
+				// Use a consistent name for the secrets collection
+				name: COLLECTIONS.CREDENTIAL,
+				metadata: { type: 'credential' },
+			});
+		}
+		return credentialCollection;
+	},
+
 	getCharacterCollection: async (): Promise<Collection> => {
 		if (!characterCollection) {
 			characterCollection = await chromaClient.getOrCreateCollection({

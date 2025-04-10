@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Box, Typography, Divider, TextField, Button, CircularProgress } from '@mui/material';
 import { ChatTurn, ChatMessage } from '#root/src/shared/domain/chat/index.ts'; // Added ChatMessage
-import { useChromaChat, useChat } from '@client/hook/index.ts';
+import { useChatServer, useChatClient } from '@client/hook/index.ts';
 import { buildChatMessage, parseEntriesToText } from '#root/src/shared/util/index.ts';
 
 export const ChatComp: React.FC = () => {
@@ -17,9 +17,9 @@ export const ChatComp: React.FC = () => {
 		getResponseFromLlm,
 		generateSummary,
 		getNextSequence,
-	} = useChat();
+	} = useChatClient();
 
-	const { storeChatTurn, storeSummary, buildUserPromptFromLog } = useChromaChat(currentSessionId);
+	const { storeChatTurn, storeSummary, buildUserPromptFromLog } = useChatServer(currentSessionId);
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		setUserInput(e.target.value);

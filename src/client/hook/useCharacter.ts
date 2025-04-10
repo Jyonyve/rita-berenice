@@ -1,11 +1,15 @@
 // src/client/hooks/useCharacter.ts
-import { apiClient, CharacterInfo, CharacterAsset, genApiUrl } from '@shared/index.ts';
+import {
+	apiClient,
+	CharacterInfo,
+	CharacterAsset,
+	genApiUrl,
+	MODULE_NAMES,
+} from '@shared/index.ts';
 import { useCallback, useEffect, useState } from 'react';
 
-// Define the module name used in API paths
-const MODULE_NAME = 'character';
-
 export const useCharacter = () => {
+	const MODULE_NAME = MODULE_NAMES.CHARACTER;
 	// --- State ---
 	const [characters, setCharacters] = useState<CharacterInfo[]>([]);
 	const [currentCharacter, setCurrentCharacter] = useState<CharacterInfo | undefined>(undefined); // Use undefined initially
@@ -19,7 +23,7 @@ export const useCharacter = () => {
 		setLoading(true);
 		try {
 			const url = genApiUrl(MODULE_NAME, 'getAllCharacters');
-			const response = await apiClient.get<CharacterInfo[]>(url); // Add type hint for response data
+			const response = await apiClient.get<CharacterInfo[]>(url);
 			setCharacters(response.data);
 			console.log('Fetched characters:', response.data);
 			return response.data;
@@ -111,10 +115,6 @@ export const useCharacter = () => {
 	// Change current character based on selection (purely client-side state change)
 	const changeCharacter = useCallback(
 		(characterId: string) => {
-			// Use ID directly if available, or derive if needed
-			// Find character in the locally cached list
-			// Note: This assumes ID format allows easy lookup.
-			// If characterId includes variant, split and find.
 			const characterInfo = characters.find((info) => info.id === characterId);
 			if (characterInfo) {
 				console.log(

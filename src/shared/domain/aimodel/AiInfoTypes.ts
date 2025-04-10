@@ -23,7 +23,7 @@ export interface AiModelInfo {
 	platform: AiPlatform;
 	provider: AiProvider<AiPlatform>; // Fixed: Make provider properly typed
 	model: AllModelNames; // Fixed: Use AllModelNames type
-	apiKey?: string;
+	// apiKey?: string;
 }
 
 // Get all sources
@@ -38,14 +38,20 @@ export const SupportAiModelList = Object.values(supportAiModelInfo)
 export type DefaultAiRole = 'system' | 'user' | 'assistant';
 export type AiRole = DefaultAiRole | 'custom';
 
-export const DEFAULT_FREE_MODEL: AiModelInfo = {
+export const DEFAULT_CHAT_MODEL_FREE: AiModelInfo = {
 	platform: 'openrouter',
 	provider: 'google',
-	model: 'google/gemini-2.0-flash-thinking-exp:free' as AllModelNames,
+	model: 'google/gemini-2.5-pro-exp-03-25:free',
+};
+
+export const DEFAULT_SUMMARY_MODEL_FREE: AiModelInfo = {
+	platform: 'openrouter',
+	provider: 'google',
+	model: 'google/gemini-2.0-flash-thinking-exp:free',
 };
 
 export const DEFAULT_LOCAL_MODEL: AiModelInfo = {
 	platform: 'local',
 	provider: 'exaone',
-	model: 'exaone-deep-2.4b' as AllModelNames,
+	model: 'exaone-deep-2.4b',
 };

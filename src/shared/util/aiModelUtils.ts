@@ -1,179 +1,163 @@
-// src/shared/util/aiModelUtils.ts
+// src/shared/util/aiModelUtils.ts (CLIENT-SIDE REFACTORED)
+
 import {
 	AiModelInfo,
 	AiPlatform,
 	AiProvider,
 	AllModelNames,
-	DEFAULT_LOCAL_MODEL,
-	DEFAULT_FREE_MODEL,
+	DEFAULT_LOCAL_MODEL, // Ensure this is defined keyless in shared [6]
+	DEFAULT_CHAT_MODEL_FREE, // Ensure this is defined keyless in shared [6]
+	DEFAULT_SUMMARY_MODEL_FREE, // Ensure this is defined keyless in shared [6]
 	supportAiModelInfo,
 } from '@shared/index.ts'; // Ensure path is correct
-import OpenAI from 'openai';
 
-// Use standard server-side environment variable names (NO VITE_ prefix)
-// These MUST match the names in your .env files (without VITE_)
-const API_KEY_MAP = {
-	openrouter: 'OPENROUTER_API_KEY',
-	openai: 'OPENAI_API_KEY',
-	anthropic: 'ANTHROPIC_API_KEY',
-	google: 'GOOGLE_API_KEY', // Or GEMINI_API_KEY, matching your .env
-	groq: 'GROQ_API_KEY', // Added Groq
-	// Add other platforms like Bedrock if needed here
-};
+// --- Constants (Client-safe) ---
+const PLATFORM_OPENROUTER = 'openrouter';
+const PLATFORM_LOCAL = 'local';
 
-const openrouter = 'openrouter';
-// Get Local AI URL from server-side environment variables
-const LOCAL_AI_URL = process.env.LOCAL_AI_URL || 'http://localhost:11434/api/chat'; // Default if not set
+// --- Utility Functions (Client-Side Safe) ---
 
-export const isOpenAI = (llm: unknown): llm is OpenAI => {
-	return llm instanceof OpenAI;
-};
+/**
+ * Extracts models marked as ':free' from the supportAiModelInfo.
+ * Does NOT include API keys.
+ * @param platform - The platform to extract from (defaults to openrouter).
+ * @returns Array of AiModelInfo for free models.
+ */
+const extractFreeModels = (platform: AiPlatform = PLATFORM_OPENROUTER): AiModelInfo[] => {
+	const platformProviders = supportAiModelInfo[platform];
+	if (!platformProviders) return [];
 
-// Reads API key from server-side process.env
-const getApiKey = (platform: AiPlatform): string => {
-	const envKey =
-		platform === openrouter
-			? API_KEY_MAP.openrouter
-			: API_KEY_MAP[platform as keyof typeof API_KEY_MAP];
-
-	// Ensure envKey is valid before accessing process.env
-	if (!envKey) {
-		console.warn(`No API key mapping found for platform: ${platform}`);
-		return ''; // Or throw an error if an API key is always expected
+	if (platform === PLATFORM_OPENROUTER) {
+		return Object.entries(platformProviders).flatMap(([provider, models]) =>
+			models
+				.filter((model) => model.endsWith(':free'))
+				.map((model) => ({
+					platform,
+					provider: provider as AiProvider<'openrouter'>,
+					model: model as AllModelNames,
+					// No apiKey
+				}))
+		);
 	}
-
-	const apiKey = process.env[envKey]; // Read from process.env
-
-	if (!apiKey) {
-		console.warn(`API Key for ${platform} (${envKey}) is not defined in environment variables.`);
-		// Depending on requirements, you might throw an error here:
-		// throw new Error(`API Key for ${platform} (${envKey}) is required but not defined.`);
-		return ''; // Return empty string if key is optional or handled elsewhere
-	}
-	return apiKey;
+	// Add logic for other platforms if they have ':free' convention
+	return [];
 };
 
-// Function to extract free models (uses getApiKey, which now reads process.env)
-const extractFreeModels = (platform: AiPlatform = openrouter): AiModelInfo[] =>
-	Object.entries(supportAiModelInfo.openrouter).flatMap(([provider, models]) =>
-		models
-			.filter((model) => model.endsWith(':free'))
-			.map((model) => ({
-				platform,
-				provider: provider as AiProvider<typeof platform>,
-				model: model as AllModelNames,
-				apiKey: getApiKey(platform), // This will likely be empty or invalid for 'free' models unless handled specifically
-			}))
-	);
+// Pre-calculate free models list (client-side)
+export const freeAiModelInfos: AiModelInfo[] = extractFreeModels();
 
-export const freeAiModelInfos = extractFreeModels();
-
-// Function to check local AI status (uses LOCAL_AI_URL from process.env)
-const checkLocalAiRunning = async (): Promise<boolean> => {
-	try {
-		// Use the variable derived from process.env
-		const response = await fetch(LOCAL_AI_URL);
-		return response.ok;
-	} catch (error) {
-		// It's common for fetch to fail if the server isn't running, log as warning
-		console.warn('CheckLocalAiRunning: Failed to connect to Local AI URL:', LOCAL_AI_URL);
-		return false;
-	}
-};
-
-// --- Functions below use getApiKey, so they are now server-side compatible ---
-
+/**
+ * Gets the AiModelInfo structure for a given model name based on supportAiModelInfo.
+ * Does NOT include API keys. This is purely for identifying the model's details.
+ * @param modelName - The full name of the model (e.g., 'openai/gpt-4o', 'google/gemini-pro:free', 'ollama/llama3').
+ * @returns AiModelInfo structure without API key, or a default free model if not found.
+ */
 export const getAiModelInfo = (modelName: string): AiModelInfo => {
 	try {
-		// Handle OpenRouter models (with '/')
-		if (modelName.includes('/')) {
-			const [provider, _] = modelName.split('/');
-			const openrouterModels = supportAiModelInfo.openrouter[provider];
+		// Handle OpenRouter format (provider/model-name)
+		if (modelName.includes('/') && supportAiModelInfo[PLATFORM_OPENROUTER]) {
+			const [provider, modelPart] = modelName.split('/');
+			const fullModelNameInMap = modelName; // Use the full name for lookup
 
-			if (openrouterModels?.includes(modelName)) {
-				return {
-					platform: openrouter,
-					provider: provider as AiProvider<typeof openrouter>,
-					model: modelName as AllModelNames,
-					apiKey: getApiKey(openrouter), // Reads process.env
-				};
-			}
-		}
-
-		// Handle other platform models (no '/')
-		for (const [platform, providers] of Object.entries(supportAiModelInfo)) {
-			if (platform === openrouter) continue;
-
-			for (const [provider, models] of Object.entries(providers)) {
-				if (models.includes(modelName)) {
+			// Use type assertion carefully or check provider existence first
+			const providersForPlatform = supportAiModelInfo[PLATFORM_OPENROUTER];
+			if (provider in providersForPlatform) {
+				const modelsForProvider = providersForPlatform[provider as keyof typeof providersForPlatform];
+				if (modelsForProvider?.includes(fullModelNameInMap as any)) {
 					return {
-						platform: platform as AiPlatform,
-						provider: provider as AiProvider<typeof platform>,
-						model: modelName as AllModelNames,
-						// Only add apiKey if it's not the 'local' platform
-						...(platform !== 'local' && { apiKey: getApiKey(platform as AiPlatform) }), // Reads process.env
+						platform: PLATFORM_OPENROUTER,
+						provider: provider as AiProvider<'openrouter'>,
+						model: fullModelNameInMap as AllModelNames,
+						// No apiKey
 					};
 				}
 			}
 		}
 
-		// Fallback to free models (Note: apiKey might be empty/irrelevant here)
-		const freeModel =
-			freeAiModelInfos.find((aiModelInfo) =>
-				aiModelInfo.model.startsWith(modelName.substring(0, 3))
-			) || freeAiModelInfos[0];
-		return freeModel || DEFAULT_FREE_MODEL;
-	} catch (error) {
-		console.error('AI Model selection error:', error);
-		// Re-throwing allows upstream callers to handle it
-		throw error;
-	}
-};
+		// Handle other platforms (direct, local)
+		for (const [platform, providers] of Object.entries(supportAiModelInfo)) {
+			// Skip openrouter as it was handled above
+			if (platform === PLATFORM_OPENROUTER) continue;
 
-export const determineInitialDefaultAiInfo = (preferredProvider = 'google'): AiModelInfo => {
-	// This function now uses getApiKey indirectly via freeAiModelInfos/DEFAULT_FREE_MODEL if needed
-	try {
-		// Finding logic remains the same, but underlying data relies on process.env for keys
-		return (
-			freeAiModelInfos.find((aiModelInfo) => aiModelInfo.provider.includes(preferredProvider)) ||
-			DEFAULT_FREE_MODEL
+			for (const [providerKey, models] of Object.entries(providers)) {
+				// Ensure models is an array before calling includes
+				if (Array.isArray(models) && models.includes(modelName as any)) {
+					return {
+						platform: platform as AiPlatform,
+						provider: providerKey as AiProvider<typeof platform>,
+						model: modelName as AllModelNames,
+						// No apiKey
+					};
+				}
+			}
+		}
+
+		// Fallback if model not found
+		console.warn(
+			`Model "${modelName}" not found in supportAiModelInfo. Falling back to default free model.`
 		);
+		// Return default free model directly (ensure it's keyless)
+		return DEFAULT_CHAT_MODEL_FREE;
 	} catch (error) {
-		console.error('Failed to determine default AI info:', error);
-		return DEFAULT_FREE_MODEL;
+		console.error(`Error getting AI Model info for "${modelName}":`, error);
+		// Fallback to a safe default in case of error
+		return DEFAULT_CHAT_MODEL_FREE;
 	}
 };
 
-export const determineDefaultSummaryAiInfo = (
-	preferredModel = 'google/gemini-2.0-flash-thinking-exp:free'
-): AiModelInfo => {
-	// This function uses getAiModelInfo, which now reads process.env for keys
-	try {
-		return getAiModelInfo(preferredModel);
-	} catch (error) {
-		console.error('Failed to get summary AI model:', error);
-		return DEFAULT_FREE_MODEL;
-	}
+/**
+ * Determines the initial default AiModelInfo based on available free models.
+ * Uses the pre-calculated freeAiModelInfos list.
+ * @returns AiModelInfo for the determined default model (keyless).
+ */
+export const determineInitialDefaultAiInfo = (): AiModelInfo => {
+	// Simplified: just use the constant if it's reliable
+	return DEFAULT_CHAT_MODEL_FREE;
+	// Or, if logic is needed based on freeAiModelInfos:
+	// return freeAiModelInfos[0] || DEFAULT_CHAT_MODEL_FREE;
 };
 
-// This function remains purely structural, no env var access
-export const isValidAiModelInfo = (aiInfo: unknown): boolean =>
-	!!aiInfo &&
-	typeof aiInfo === 'object' &&
-	'platform' in aiInfo &&
-	'provider' in aiInfo &&
-	'model' in aiInfo &&
-	supportAiModelInfo[aiInfo.platform as AiPlatform]?.[aiInfo.provider as string]?.includes(
-		aiInfo.model as string
-	);
+/**
+ * Determines the default AiModelInfo for summary tasks.
+ * @returns AiModelInfo for the summary model (keyless).
+ */
+export const determineDefaultSummaryAiInfo = (): AiModelInfo => {
+	// Simplified: just use the constant
+	return DEFAULT_SUMMARY_MODEL_FREE;
+};
 
-// This uses checkLocalAiRunning, which now reads process.env
-export const checkLocalRunning = async (): Promise<boolean> => {
-	if (!(await checkLocalAiRunning())) {
-		// Consider if throwing an error is always desired, or if returning false is better
-		console.error('Local AI is not running. Please start the Local AI server.');
-		// throw new Error('Local AI is not running. Please start Local AI server first.');
-		return false; // Return false might be more flexible
+/**
+ * Validates if an object structurally matches the AiModelInfo interface
+ * and if the model is listed in the supportAiModelInfo configuration.
+ * Does NOT check for API keys.
+ * @param aiInfo - The object to validate.
+ * @returns True if the object is a valid AiModelInfo structure and the model is supported.
+ */
+export const isValidAiModelInfo = (aiInfo: unknown): aiInfo is AiModelInfo => {
+	if (
+		!aiInfo ||
+		typeof aiInfo !== 'object' ||
+		!('platform' in aiInfo) ||
+		typeof aiInfo.platform !== 'string' ||
+		!('provider' in aiInfo) ||
+		typeof aiInfo.provider !== 'string' ||
+		!('model' in aiInfo) ||
+		typeof aiInfo.model !== 'string'
+		// No apiKey check needed
+	) {
+		return false;
 	}
-	return true;
+
+	// Check if the model exists in the configuration
+	const platform = aiInfo.platform as AiPlatform;
+	const provider = aiInfo.provider as string; // Use string for lookup key
+	const model = aiInfo.model as string;
+
+	const providersForPlatform = supportAiModelInfo[platform];
+	if (!providersForPlatform || !(provider in providersForPlatform)) {
+		return false; // Platform or provider doesn't exist
+	}
+	const modelsForProvider = providersForPlatform[provider as keyof typeof providersForPlatform];
+
+	return Array.isArray(modelsForProvider) && modelsForProvider.includes(model as any);
 };
