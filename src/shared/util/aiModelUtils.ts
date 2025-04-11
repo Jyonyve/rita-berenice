@@ -7,7 +7,7 @@ import {
 	AllModelNames,
 	DEFAULT_LOCAL_MODEL, // Ensure this is defined keyless in shared [6]
 	DEFAULT_CHAT_MODEL_FREE, // Ensure this is defined keyless in shared [6]
-	DEFAULT_SUMMARY_MODEL_FREE, // Ensure this is defined keyless in shared [6]
+	DEFAULT_RECAP_MODEL_FREE, // Ensure this is defined keyless in shared [6]
 	supportAiModelInfo,
 } from '@shared/index.ts'; // Ensure path is correct
 
@@ -123,7 +123,7 @@ export const determineInitialDefaultAiInfo = (): AiModelInfo => {
  */
 export const determineDefaultSummaryAiInfo = (): AiModelInfo => {
 	// Simplified: just use the constant
-	return DEFAULT_SUMMARY_MODEL_FREE;
+	return DEFAULT_RECAP_MODEL_FREE;
 };
 
 /**

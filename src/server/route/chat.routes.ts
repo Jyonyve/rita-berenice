@@ -77,7 +77,7 @@ router.get(
 
 		if (!query) return res.status(400).json({ error: 'Missing query parameter "q"' });
 		try {
-			const results = await chatService.querySummary(sessionId, query);
+			const results = await chatService.queryRecap(sessionId, query);
 			res.json({ result: results?.pop() }); // Send back the last result or undefined
 		} catch (error: any) {
 			console.error(`Error in GET ${path}:`, error);
@@ -124,7 +124,7 @@ router.get(
 		console.log(`API HIT: GET ${path}?turnCount=${turnCount}&fixedOnly=${fixedOnly}`);
 
 		try {
-			const results = await chatService.getRecentChatLogs(sessionId, turnCount, fixedOnly);
+			const results = await chatService.loadChatTurns(sessionId, turnCount, fixedOnly);
 			res.json(results);
 		} catch (error: any) {
 			console.error(`Error in GET ${path}:`, error);

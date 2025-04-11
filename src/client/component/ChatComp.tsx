@@ -1,44 +1,76 @@
-import React, { useState, useCallback } from 'react';
-import { Box, Typography, Divider, TextField, Button, CircularProgress } from '@mui/material';
-import { ChatTurn, ChatMessage } from '#root/src/shared/domain/chat/index.ts'; // Added ChatMessage
-import { useChatServer, useChatClient } from '@client/hook/index.ts';
+// src/client/components/ChatComp.tsx (Relevant sections)
+import { useChatServer, useChatClient, useAiModel, useCredential } from '@client/hook/index.ts';
+import { DEFAULT_RECAP_INTERVAL, DEFAULT_QUERY_LIMIT, ChatTurn } from '@shared/index.ts';
 import { buildChatMessage, parseEntriesToText } from '#root/src/shared/util/index.ts';
+import { CircularProgress, Divider } from '@mui/material';
+import { Stack, Box } from '@mui/system';
+import { useState, useEffect, useCallback } from 'react';
 
 export const ChatComp: React.FC = () => {
-	const [userInput, setUserInput] = useState<string>('');
-	const [isProcessing, setIsProcessing] = useState<boolean>(false);
+	const [userInput, setUserInput] = useState('');
+	const [isProcessing, setIsProcessing] = useState(false);
 
+	// === Hooks ===
 	const {
+		// Functions manage client-side state
 		recentChatTurn,
-		isLoading,
+		isLoading: isHistoryLoading,
 		currentSessionId,
 		createChatTurn,
 		addChatTurn,
-		getResponseFromLlm,
-		generateSummary,
 		getNextSequence,
+		loadChatHistory,
 	} = useChatClient();
 
-	const { storeChatTurn, storeSummary, buildUserPromptFromLog } = useChatServer(currentSessionId);
+	const {
+		// Functions make API calls to server
+		storeChatTurn,
+		buildUserPromptFromLog,
+		genResponseFromLlm, // <-- API call for response
+	} = useChatServer(currentSessionId); // <-- Pass session ID
 
-	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		setUserInput(e.target.value);
-	};
+	const { aiModelInfo, summaryAiModelInfo } = useAiModel(); // <-- Model selection state
+	const { credential, isLoading: isLoadingCredentials, error: credentialError } = useCredential(); // <-- Credential status
+
+	useEffect(() => {
+		if (currentSessionId) {
+			loadChatHistory(currentSessionId); // Trigger init history load
+		}
+		setUserInput('');
+	}, [currentSessionId]);
+
+	// === Event Handlers ===
+	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => setUserInput(e.target.value);
 
 	const handleSendMessage = useCallback(async () => {
-		if (!userInput.trim() || !currentSessionId || isProcessing) return;
+		// --- Pre-send Checks (Keep these) ---
+		if (
+			!userInput.trim() ||
+			!currentSessionId ||
+			isProcessing ||
+			isLoadingCredentials ||
+			credentialError ||
+			!credential ||
+			Object.keys(credential).length === 0 ||
+			!aiModelInfo
+		) {
+			// Set appropriate errorState before returning...
+			return;
+		}
+		// --- End Checks ---
 
 		setIsProcessing(true);
+		const sequence = getNextSequence(); // Get sequence number BEFORE API calls
 
 		try {
-			const sequence = getNextSequence();
 			const userMessage = buildChatMessage('user', sequence, userInput, currentSessionId);
-
-			// Build prompt with context from previous conversations
 			const enhancedPrompt = await buildUserPromptFromLog(userInput);
 
-			// Get response from LLM using the enhanced prompt
-			const assistantResponse = await getResponseFromLlm(enhancedPrompt);
+			// === Call Backend for Response ===
+			const response = await genResponseFromLlm('user', enhancedPrompt, aiModelInfo);
+			const { assistantResponse } = response;
+			// === End Backend Call ===
+
 			const assistantMessage = buildChatMessage(
 				'assistant',
 				sequence,
@@ -46,20 +78,16 @@ export const ChatComp: React.FC = () => {
 				currentSessionId
 			);
 
-			const chatTurn = createChatTurn(userMessage, assistantMessage, true);
-			addChatTurn(chatTurn);
-			await storeChatTurn(chatTurn);
+			// === Update Client State ===
+			const chatTurn = createChatTurn(userMessage, assistantMessage);
+			addChatTurn(chatTurn); // <-- Update local state via hook function
 
-			if (sequence % 3 === 0) {
-				const summary = await generateSummary();
-				if (summary) {
-					await storeSummary(summary);
-				}
-			}
+			// === Store Remotely ===
+			await storeChatTurn(chatTurn); // <-- Store via server hook function
 
 			setUserInput('');
-		} catch (error) {
-			console.error('Error sending message:', error);
+		} catch (error: any) {
+			const message = error.response?.data?.message || error.message || 'Failed to get response.';
 		} finally {
 			setIsProcessing(false);
 		}
@@ -67,127 +95,105 @@ export const ChatComp: React.FC = () => {
 		userInput,
 		currentSessionId,
 		isProcessing,
+		isLoadingCredentials,
 		getNextSequence,
 		buildUserPromptFromLog,
-		getResponseFromLlm,
+		genResponseFromLlm,
 		createChatTurn,
 		addChatTurn,
 		storeChatTurn,
-		generateSummary,
-		storeSummary,
+		aiModelInfo,
 	]);
 
 	const handleRegenerateResponse = useCallback(async () => {
-		// Add guard for currentSessionId
-		if (isProcessing || recentChatTurn.length === 0 || !currentSessionId) return;
+		// --- Pre-send Checks (Keep similar checks) ---
+		if (
+			isProcessing ||
+			recentChatTurn.length === 0 ||
+			!currentSessionId ||
+			isLoadingCredentials ||
+			credentialError ||
+			!credential ||
+			Object.keys(credential).length === 0 ||
+			!aiModelInfo
+		) {
+			return;
+		}
+		// --- End Checks ---
 
 		setIsProcessing(true);
+		// Get the sequence number of the turn to regenerate
+		const turnToRegen = recentChatTurn[recentChatTurn.length - 1];
+		const sequence = turnToRegen.sequence;
 
 		try {
-			const currentTurn = recentChatTurn[recentChatTurn.length - 1];
-			const enhancedPrompt = await buildUserPromptFromLog(
-				parseEntriesToText(currentTurn.request.entries)
-			);
-			const newResponse = await getResponseFromLlm(enhancedPrompt);
+			const previousUserInput = parseEntriesToText(turnToRegen.request.entries);
+			const enhancedPrompt = await buildUserPromptFromLog(previousUserInput);
+
+			// === Call Backend for New Response ===
+			const response = await genResponseFromLlm('user', enhancedPrompt, aiModelInfo);
+			const { assistantResponse: newResponse } = response;
+			// === End Backend Call ===
 
 			const newAssistantMessage = buildChatMessage(
 				'assistant',
-				currentTurn.sequence,
+				sequence,
 				newResponse,
 				currentSessionId
 			);
 
-			const updatedTurn: ChatTurn = { ...currentTurn, response: [newAssistantMessage], isFixed: true };
-			addChatTurn(updatedTurn);
-			await storeChatTurn(updatedTurn);
-		} catch (error) {
-			console.error('Error regenerating response:', error);
+			// === Update Client State ===
+			// Create the updated turn structure
+			const updatedTurn: ChatTurn = { ...turnToRegen, response: [newAssistantMessage], isFixed: true };
+			addChatTurn(updatedTurn); // <-- Update local state (relies on addChatTurn handling updates)
+
+			// === Store Remotely ===
+			await storeChatTurn(updatedTurn); // <-- Store updated turn via server hook function
+		} catch (error: any) {
+			const message =
+				error.response?.data?.message || error.message || 'Failed to regenerate response.';
 		} finally {
 			setIsProcessing(false);
 		}
 	}, [
+		// Dependencies
 		isProcessing,
+		isLoadingCredentials,
+		credentialError,
+		credential,
+		aiModelInfo,
 		recentChatTurn,
-		buildUserPromptFromLog,
-		getResponseFromLlm,
 		currentSessionId,
+		buildUserPromptFromLog,
+		genResponseFromLlm,
 		addChatTurn,
-		storeChatTurn,
+		storeChatTurn, // Need addChatTurn here too
 	]);
 
-	const handleKeyPress = (e: React.KeyboardEvent) => {
-		if (e.key === 'Enter' && !e.shiftKey) {
-			e.preventDefault();
-			handleSendMessage();
-		}
+	const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+		/* ... */
 	};
 
+	// --- Render (Ensure uses recentChatTurn from useChatClient) ---
 	return (
-		<Box sx={{ display: 'flex', flexDirection: 'column', width: 400, margin: 'auto' }}>
-			<Typography variant="h5" gutterBottom>
-				Chat
-			</Typography>
-
-			<Box sx={{ overflowY: 'auto', maxHeight: 400, marginBottom: 2 }}>
-				{recentChatTurn.map((turn) => (
-					<Box key={turn.sequence} sx={{ marginBottom: 1 }}>
-						<Typography variant="body1" color="primary">
-							<strong>{turn.request.role}:</strong> {parseEntriesToText(turn.request.entries)}
-						</Typography>
-						{turn.response.map(
-							(
-								response: ChatMessage,
-								index: number // Added types here
-							) => (
-								<Typography key={index} variant="body1" color="text.secondary">
-									<strong>{response.role}:</strong> {parseEntriesToText(response.entries)}
-								</Typography>
-							)
-						)}
-					</Box>
-				))}
-				{isProcessing && (
-					<Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-						<CircularProgress size={24} />
-					</Box>
+		<Stack spacing={2} sx={{ p: 2, height: '100%', boxSizing: 'border-box' }}>
+			{/* ... Typography, Divider ... */}
+			<Box sx={{ flexGrow: 1, overflowY: 'auto', mb: 2 }}>
+				{isHistoryLoading && <CircularProgress /> /* Show loading for history */}
+				{recentChatTurn.map(
+					(
+						turn,
+						turnIndex // <-- Renders state from useChatClient
+					) => (
+						<></>
+					)
 				)}
+				{/* ... isProcessing, errorState, credential status ... */}
 			</Box>
-
 			<Divider />
-
-			<TextField
-				value={userInput}
-				onChange={handleInputChange}
-				onKeyDown={handleKeyPress}
-				label="Your message"
-				variant="outlined"
-				multiline
-				rows={2}
-				fullWidth
-				sx={{ marginY: 2 }}
-				disabled={isProcessing || isLoading}
-			/>
-
-			<Box sx={{ display: 'flex', gap: 2 }}>
-				<Button
-					onClick={handleSendMessage}
-					variant="contained"
-					color="primary"
-					fullWidth
-					disabled={isProcessing || isLoading || !userInput.trim()}
-				>
-					Send
-				</Button>
-				<Button
-					onClick={handleRegenerateResponse}
-					variant="outlined"
-					color="secondary"
-					fullWidth
-					disabled={isProcessing || isLoading || recentChatTurn.length === 0}
-				>
-					Regenerate
-				</Button>
+			<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 'auto', pt: 2 }}>
+				{/* ... TextField, Buttons with correct disabled states ... */}
 			</Box>
-		</Box>
+		</Stack>
 	);
 };

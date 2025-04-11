@@ -1,14 +1,15 @@
 import { COLLECTIONS } from '../domain/index.ts';
 // Default interval for generating summaries (e.g., every 3 turns)
-export const DEFAULT_SUMMARY_INTERVAL: number = 3 as const;
+export const DEFAULT_RECAP_INTERVAL: number = 3 as const;
+export const DEFAULT_LOAING_CHAT_TURN_COUNT: number = 5 as const;
 
-// Default limit for querying chat logs or turns to consider for summary
+// Default limit for querying chat logs
 export const DEFAULT_QUERY_LIMIT: number = 10 as const;
 
 /* user secret storing key */
 export const SECRET_DOC_ID = 'user_api_keys' as const;
 
-export const MODULE_NAMES = COLLECTIONS;
+export const MODULE_NAMES = { ...COLLECTIONS, LLM: 'llm' };
 
 export const ENV_CONSTANTS = {
 	VITE_API_URL: 'http://localhost:3000',

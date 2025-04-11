@@ -69,17 +69,3 @@ export function genApiUrl(
 
 	return path;
 }
-
-// --- Example Usage Comments (same as before) ---
-/*
-// Server-side route definition:
-const storeTurnPattern = generateRoutePattern('chroma', 'storeChatTurn', ['sessionId']);
-// -> '/api/chroma/store-chat-turn/:sessionId'
-router.post(storeTurnPattern, handler);
-
-// Client-side API call:
-const sessionId = 'some_session_id';
-const urlForStoreTurn = generateApiUrl('chroma', 'storeChatTurn', [sessionId]);
-// -> '/api/chroma/store-chat-turn/some_session_id'
-apiClient.post(urlForStoreTurn, data);
-*/

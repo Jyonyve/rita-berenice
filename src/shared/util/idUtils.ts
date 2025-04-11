@@ -44,6 +44,10 @@ export const buildTurnId = (sessionId: string, sequence: number): string => {
 	return `${sessionId}_${sequence}_${SUFFIX.FULL}`;
 };
 
+export const buildRecapId = (sessionId: string) => {
+	return `${sessionId}_${SUFFIX.RECAP}`;
+};
+
 export const buildSummaryId = (sessionId: string): string => {
 	return `${sessionId}_${SUFFIX.SUMMARY}`;
 };

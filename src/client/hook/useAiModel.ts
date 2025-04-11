@@ -6,14 +6,14 @@ import {
 	AllModelNames, // Keep this type
 	// Import the keyless defaults and client-side utils
 	DEFAULT_CHAT_MODEL_FREE, // Make sure this is defined without apiKey in shared types [6]
-	DEFAULT_SUMMARY_MODEL_FREE, // Make sure this is defined without apiKey in shared types [6]
+	DEFAULT_RECAP_MODEL_FREE, // Make sure this is defined without apiKey in shared types [6]
 	getAiModelInfo, // Use the refactored client-side util [Phase 3]
 	isValidAiModelInfo, // Use the refactored client-side util [Phase 3]
 } from '@shared/index.ts'; // Adjust path as needed
 
 // Determine initial states using the refactored utils (which don't include apiKey)
 const initialDefaultAiInfo: AiModelInfo = DEFAULT_CHAT_MODEL_FREE; // Or use determineInitialDefaultAiInfo if preferred
-const initialDefaultSummaryAiInfo: AiModelInfo = DEFAULT_SUMMARY_MODEL_FREE; // Or use determineDefaultSummaryAiInfo
+const initialDefaultSummaryAiInfo: AiModelInfo = DEFAULT_RECAP_MODEL_FREE; // Or use determineDefaultSummaryAiInfo
 
 export const useAiModel = () => {
 	// --- State ---

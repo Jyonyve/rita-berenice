@@ -6,10 +6,17 @@ import { ChatOllama } from '@langchain/ollama';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import OpenAI from 'openai'; // For OpenRouter
 
-import { AiModelInfo, CredentialDataType } from '#root/src/shared/index.ts';
+import {
+	AiModelInfo,
+	ChatRoleType,
+	convertMessageContentToString,
+	CredentialDataType,
+	extractValidOpenAiContent,
+	isDirectOpenAIClient,
+} from '#root/src/shared/index.ts';
 import { credentialService } from './credentialService.ts';
 
-export const aiService = {
+export const llmService = {
 	createLlmInstance: async (aiInfo: AiModelInfo): Promise<BaseChatModel | OpenAI> => {
 		//
 		const { platform, provider, model } = aiInfo;
@@ -94,18 +101,11 @@ export const aiService = {
 				//  throw new Error("Bedrock provider not fully implemented yet.");
 
 				case 'local': {
-					// Check if local server is expected/configured? Or just try?
-					// The LOCAL_AI_URL might be needed here if different from default
-					const localUrl = process.env.LOCAL_AI_URL; // Get from server env if needed
-					return new ChatOllama({
-						model,
-						...(localUrl && { baseUrl: localUrl }), // Conditionally add baseUrl if needed
-					});
+					const localUrl = process.env.LOCAL_AI_URL;
+					return new ChatOllama({ model, ...(localUrl && { baseUrl: localUrl }) });
 				}
 
 				default:
-					// Check if it's a free model that doesn't need keys (though handled by provider logic mostly)
-					// If truly unknown, throw error.
 					throw new Error(`Unsupported AI platform: ${platform} for model ${model}.`);
 			}
 		} catch (error) {
@@ -115,5 +115,39 @@ export const aiService = {
 		}
 	},
 
-	// You could add other AI-related utility functions here later if needed
+	invokeLlm: async (
+		role: ChatRoleType,
+		content: string,
+		aiModelInfo: AiModelInfo
+	): Promise<string> => {
+		const llmOrClient = await llmService.createLlmInstance(aiModelInfo);
+		let responseContent = '';
+		const message = { role, content };
+
+		try {
+			if (isDirectOpenAIClient(llmOrClient)) {
+				console.log(`Invoking direct OpenAI client (${aiModelInfo.model})`);
+				const completion = await llmOrClient.chat.completions.create({
+					model: aiModelInfo.model,
+					messages: [message],
+				});
+				responseContent = extractValidOpenAiContent(completion);
+			} else {
+				// Assumes LangChain BaseChatModel
+				console.log(`Invoking LangChain model (${aiModelInfo.model})`);
+				const responseMessage = await llmOrClient.invoke([message]);
+				responseContent = convertMessageContentToString(responseMessage.content);
+			}
+
+			if (!responseContent) {
+				console.warn(`LLM invocation (${aiModelInfo.model}) resulted in empty response.`);
+				return '[LLM returned empty content]'; // Return specific string for empty
+			}
+			return responseContent;
+		} catch (error) {
+			console.error(`LLM invocation failed for ${aiModelInfo.model}:`, error);
+			// Rethrow or return error message? Rethrowing is often better for API routes.
+			throw new Error(`LLM invocation failed: ${error || 'Unknown error'}`);
+		}
+	},
 };

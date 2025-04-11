@@ -44,7 +44,7 @@ export const DEFAULT_CHAT_MODEL_FREE: AiModelInfo = {
 	model: 'google/gemini-2.5-pro-exp-03-25:free',
 };
 
-export const DEFAULT_SUMMARY_MODEL_FREE: AiModelInfo = {
+export const DEFAULT_RECAP_MODEL_FREE: AiModelInfo = {
 	platform: 'openrouter',
 	provider: 'google',
 	model: 'google/gemini-2.0-flash-thinking-exp:free',

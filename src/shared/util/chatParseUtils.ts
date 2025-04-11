@@ -65,12 +65,6 @@ export const buildChatMessage = (
 	};
 };
 
-export const extractValidOpenAiContent = (response: ChatCompletion): string => {
-	if (!response?.choices?.length) return '';
-	const validChoice = response.choices.find((choice) => choice?.message?.content != null);
-	return validChoice?.message?.content || '';
-};
-
 export const convertMessageContentToString = (content: MessageContent): string => {
 	if (typeof content === 'string') {
 		return content;

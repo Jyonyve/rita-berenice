@@ -29,6 +29,7 @@ export const SUFFIX = {
 	REQUEST: 'request',
 	RESPONSE: 'response',
 	FULL: 'full',
+	RECAP: 'recap',
 	SUMMARY: 'summary',
 } as const;
 

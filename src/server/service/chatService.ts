@@ -3,6 +3,7 @@ import type {
 	ChatMessage,
 	ChatRoleType,
 	ChatMessageType,
+	AiModelInfo,
 } from '#root/src/shared/domain/index.ts';
 import {
 	parseEntriesToText,
@@ -11,9 +12,15 @@ import {
 	buildSummaryId,
 	DEFAULT_QUERY_LIMIT,
 	SUFFIX,
+	DEFAULT_LOAING_CHAT_TURN_COUNT,
+	DEFAULT_RECAP_INTERVAL,
+	buildChatTurnToJsonString,
+	DEFAULT_RECAP_MODEL_FREE,
+	buildRecapId,
 } from '#root/src/shared/index.ts';
 import { Collection, IncludeEnum } from 'chromadb';
 import { chromaDbClient } from '#server/db/chromaDbClient.ts';
+import { llmService } from './llmService.ts';
 
 // Destructure outside the object
 const { getSessionCollection, addDocument, upsertDocument, getDocumentById, queryDocuments } =
@@ -71,14 +78,45 @@ export const chatService = {
 		}
 	},
 
-	// Chat Turn Operations - Enhanced for better AI retrieval
-	storeChatTurn: async (sessionId: string, chatTurn: ChatTurn): Promise<void> => {
-		const collection = await chatService._getCollection(sessionId);
-
-		// If this is a fixed turn, remove any temporary turns with the same sequence
-		if (chatTurn.isFixed) {
-			await chatService._removeTemporaryTurns(sessionId, chatTurn.sequence);
+	_triggerRecapGeneration: async (sessionId: string, sequence: number): Promise<void> => {
+		// 1. Fetch recent turns from DB
+		const turnsForRecap = await chatService.getRecentTurns(sessionId, DEFAULT_RECAP_INTERVAL);
+		if (turnsForRecap.length === 0) {
+			console.warn(`No turns found for recap generation (Session: ${sessionId}, Seq: ${sequence})`);
+			return;
 		}
+
+		// 2. Format prompt
+		const recapPromptContent = `Create a concise recap of the key points from the following recent chat turns:\n${turnsForRecap
+			.map((turn) => buildChatTurnToJsonString(turn)) // Ensure util is available
+			.join('\n\n')}`;
+
+		// 3. Get Recap Model Info (use default or allow configuration later)
+		const recapModelInfo: AiModelInfo = DEFAULT_RECAP_MODEL_FREE; // Use keyless default shared constant
+
+		// 4. Invoke LLM via llmService
+		const recapContent = await llmService.invokeLlm('system', recapPromptContent, recapModelInfo); // Use invokeLlm
+
+		if (!recapContent || recapContent.startsWith('[Error')) {
+			console.warn(`Recap generation for sequence ${sequence} returned empty/error.`);
+			return;
+		}
+
+		// 5. Save the Recap
+		await chatService.storeRecap(sessionId, sequence, recapContent);
+		console.log(
+			`Successfully generated and saved recap for sequence No ${sequence}, session ${sessionId}.`
+		);
+	},
+
+	// Chat Turn Operations - Enhanced for better AI retrieval
+	storeChatTurn: async (chatTurn: ChatTurn): Promise<void> => {
+		// validation
+		if (!chatTurn || typeof chatTurn.sequence !== 'number' || !chatTurn.sessionId) {
+			throw new Error('Invalid ChatTurn data received.');
+		}
+		const sessionId = chatTurn.sessionId;
+		const collection = await chatService._getCollection(sessionId);
 
 		// Store request
 		const requestContent = parseEntriesToText(chatTurn.request.entries);
@@ -118,6 +156,17 @@ export const chatService = {
 		}
 	},
 
+	storeRecap: async (sessionId: string, sequence: number, recapContent: string): Promise<void> => {
+		const collection = await chatService._getCollection(sessionId);
+		const recapDocId = buildRecapId(sessionId);
+		await upsertDocument(collection, recapDocId, recapContent, {
+			type: SUFFIX.RECAP,
+			sequence, // Sequence number it summarizes up to
+			timestamp: new Date().toISOString(),
+			sessionId,
+		});
+	},
+
 	// Summary Operations
 	storeSummary: async (sessionId: string, newSummary: string): Promise<void> => {
 		const collection = await chatService._getCollection(sessionId);
@@ -155,6 +204,19 @@ export const chatService = {
 			timestamp: new Date().toISOString(),
 			updateCount,
 		});
+	},
+
+	getRecap: async (sessionId: string): Promise<string> => {
+		const collection = await chatService._getCollection(sessionId);
+		const recapId = buildRecapId(sessionId);
+
+		try {
+			const recap = await getDocumentById(collection, recapId);
+			return recap || '';
+		} catch (error) {
+			console.warn(`No recap found for session ${sessionId}`);
+			return '';
+		}
 	},
 
 	getSummary: async (sessionId: string): Promise<string> => {
@@ -197,9 +259,8 @@ export const chatService = {
 	},
 
 	// Infinite scroll
-	getRecentChatLogs: async (
+	loadChatTurns: async (
 		sessionId: string,
-		turnCount: number = 5,
 		fixedOnly: boolean = false,
 		beforeSequence?: number
 	): Promise<ChatTurn[]> => {
@@ -226,7 +287,7 @@ export const chatService = {
 			const results = await collection.get({
 				where: whereClause,
 				include: [IncludeEnum.Documents],
-				limit: turnCount,
+				limit: DEFAULT_LOAING_CHAT_TURN_COUNT,
 				// You can also use offset if needed for pagination
 				// offset: offsetValue
 			});
@@ -258,7 +319,7 @@ export const chatService = {
 		}
 	},
 
-	querySummary: async (sessionId: string, queryText: string): Promise<string[]> => {
+	queryRecap: async (sessionId: string, queryText: string): Promise<string[]> => {
 		const collection = await chatService._getCollection(sessionId);
 		const summaryId = buildSummaryId(sessionId);
 
@@ -422,7 +483,7 @@ export const chatService = {
 		// Try summary first unless full log is requested
 		let relevantDetail: string[] = [];
 		if (!isFullLogQuery) {
-			relevantDetail = await chatService.querySummary(sessionId, userText);
+			relevantDetail = await chatService.queryRecap(sessionId, userText);
 		}
 
 		// Fall back to full chat log if needed
@@ -440,6 +501,44 @@ export const chatService = {
 		return relevantDetail.length
 			? `Context:\n${relevantDetail.join('\n')}\nUser Prompt: ${userText}`
 			: userText;
+	},
+
+	getRecentTurns: async (sessionId: string, limit: number): Promise<ChatTurn[]> => {
+		if (!sessionId) throw new Error('No active session.');
+		try {
+			const collection = await chatService._getCollection(sessionId);
+			// Fetch 'full_turn' documents, sort by sequence descending, take limit
+			const results = await collection.get({
+				where: { type: 'full_turn', sessionId }, // Filter for full turns
+				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
+				// ChromaDB get limitation: Cannot easily sort by metadata value AND limit.
+				// Fetch all and sort/slice in memory (acceptable for moderate history).
+			});
+
+			if (!results.ids || results.ids.length === 0) return [];
+
+			const turns = results.ids
+				.map((id, index) => {
+					try {
+						const meta = results.metadatas?.[index];
+						const doc = results.documents?.[index];
+						if (doc && meta && typeof meta.sequence === 'number') {
+							const turnData = JSON.parse(doc) as ChatTurn;
+							if (turnData.sequence === meta.sequence) return turnData;
+						}
+					} catch (e) {
+						console.error(`Parse error for turn ${id}`);
+					}
+					return null;
+				})
+				.filter((t): t is ChatTurn => t !== null);
+
+			turns.sort((a, b) => b.sequence - a.sequence); // Sort descending
+			return turns.slice(0, limit).reverse(); // Take limit, then reverse for ascending
+		} catch (error) {
+			console.error(`Error fetching recent turns DB for session ${sessionId}:`, error);
+			return [];
+		}
 	},
 
 	// Method to clear the cache if needed (e.g., for testing or memory management)
