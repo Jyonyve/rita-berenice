@@ -1,18 +1,10 @@
 import { useState, useCallback } from 'react';
-import { ChatMessage, ChatTurn } from '@shared/domain/index.ts';
-import { useAiModel } from '@client/hook/index.ts';
-import {
-	convertMessageContentToString,
-	extractValidOpenAiContent,
-	parseMessageId,
-} from '@shared/util/index.ts';
-import { DEFAULT_QUERY_LIMIT, DEFAULT_RECAP_INTERVAL } from '@shared/index.ts';
+import { ChatMessage, ChatTurn, parseMessageId } from '@shared/index.ts';
 
 export const useChatClient = () => {
 	const [isLoading, setIsLoading] = useState(false);
 	const [currentSessionId, setCurrentSessionId] = useState<string>('');
 	const [recentChatTurn, setRecentChatTurn] = useState<ChatTurn[]>([]);
-	const { aiModelInfo, changeAiModel } = useAiModel();
 
 	const changeSessionId = useCallback((newSessionId: string) => {
 		if (newSessionId) setCurrentSessionId(newSessionId);

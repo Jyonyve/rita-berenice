@@ -1,3 +1,6 @@
+import { ChatRoleType } from '../chat/ChatTypes.ts';
+import { AiModelInfo } from './AiInfoTypes.ts';
+
 // Common message structure
 interface MessageContent {
 	text: string;
@@ -37,4 +40,10 @@ export interface AiApiRequest {
 	contentType: string;
 	accept: string;
 	body: AiRequestBody;
+}
+
+export interface BasicLlmRequestFormat {
+	role: ChatRoleType;
+	prompt: string;
+	aiModelInfo: AiModelInfo;
 }

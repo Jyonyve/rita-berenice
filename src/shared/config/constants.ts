@@ -9,7 +9,7 @@ export const DEFAULT_QUERY_LIMIT: number = 10 as const;
 /* user secret storing key */
 export const SECRET_DOC_ID = 'user_api_keys' as const;
 
-export const MODULE_NAMES = { ...COLLECTIONS, LLM: 'llm' };
+export const MODULE_NAMES = { ...COLLECTIONS, LLM: 'llm' } as const;
 
 export const ENV_CONSTANTS = {
 	VITE_API_URL: 'http://localhost:3000',
