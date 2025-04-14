@@ -39,7 +39,7 @@
 		"react-dom": "^19.0.0",
 		"react-router-dom": "^6.26.1",
 		"sharp": "^0.33.5",
-		"sirv": "^2.0.4"
+		"sirv": "^3.0.1"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.13.0",

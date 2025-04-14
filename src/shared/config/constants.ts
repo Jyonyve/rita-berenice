@@ -1,7 +1,8 @@
 import { COLLECTIONS } from '../domain/index.ts';
 // Default interval for generating summaries (e.g., every 3 turns)
 export const DEFAULT_RECAP_INTERVAL: number = 3 as const;
-export const DEFAULT_LOAING_CHAT_TURN_COUNT: number = 5 as const;
+export const DEFAULT_RECENT_TURN_COUNT: number = 10 as const;
+export const DEFAULT_LOADING_TURN_COUNT: number = 5 as const;
 
 // Default limit for querying chat logs
 export const DEFAULT_QUERY_LIMIT: number = 10 as const;

@@ -5,14 +5,15 @@ const CHROMA_URL = process.env.CHROMA_API_URL || 'http://localhost:8000';
 const chromaClient = new ChromaClient({ path: CHROMA_URL });
 
 // Collection caches
+const sessionCollections: Record<string, Collection> = {};
 let characterCollection: Collection | null = null;
 let profileCollection: Collection | null = null;
-const sessionCollections: Record<string, Collection> = {};
 let credentialCollection: Collection | null = null;
+let tempChatCollection: Collection | null = null;
+let recapCollection: Collection | null = null;
 
 export const chromaDbClient = {
 	// Basic collection management
-
 	getCredentialCollection: async (): Promise<Collection> => {
 		if (!credentialCollection) {
 			credentialCollection = await chromaClient.getOrCreateCollection({
@@ -44,6 +45,26 @@ export const chromaDbClient = {
 		return profileCollection;
 	},
 
+	getTempChatCollection: async (): Promise<Collection> => {
+		if (!tempChatCollection) {
+			tempChatCollection = await chromaClient.getOrCreateCollection({
+				name: COLLECTIONS.TEMP_CHAT,
+				metadata: { type: 'recent_temp_chat' },
+			});
+		}
+		return tempChatCollection;
+	},
+
+	getRecapCollection: async (): Promise<Collection> => {
+		if (!recapCollection) {
+			recapCollection = await chromaClient.getOrCreateCollection({
+				name: COLLECTIONS.TEMP_CHAT,
+				metadata: { type: 'conversation_recap' },
+			});
+		}
+		return recapCollection;
+	},
+
 	getSessionCollection: async (sessionId: string): Promise<Collection> => {
 		if (!sessionId) {
 			throw new Error('Session ID is required');
@@ -65,6 +86,7 @@ export const chromaDbClient = {
 	},
 
 	// Enhanced CRUD operations with embedding support
+
 	addDocument: async (
 		collection: Collection,
 		id: string,
@@ -132,5 +154,9 @@ export const chromaDbClient = {
 		}
 
 		await collection.add(params);
+	},
+
+	deleteDocumentById: async (collection: Collection, id: string): Promise<void> => {
+		return await collection.delete({ ids: [id] });
 	},
 };

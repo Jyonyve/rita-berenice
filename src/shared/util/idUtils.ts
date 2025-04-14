@@ -32,12 +32,9 @@ export const parseSessionId = (
 export const buildMessageId = (
 	sessionId: string,
 	sequence: number,
-	messageType: ChatMessageType,
-	index?: number
+	messageType: ChatMessageType
 ): string => {
-	return index !== undefined
-		? `${sessionId}_${sequence}_${messageType}_${index}`
-		: `${sessionId}_${sequence}_${messageType}`;
+	return `${sessionId}_${sequence}_${messageType}`;
 };
 
 export const buildTurnId = (sessionId: string, sequence: number): string => {

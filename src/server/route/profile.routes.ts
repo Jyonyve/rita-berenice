@@ -1,10 +1,10 @@
 // src/server/routes/profile.routes.ts
-import { genRoutePattern, ProfileInfo } from '#root/src/shared/index.ts';
+import { genRoutePattern, MODULE_NAMES, ProfileInfo } from '#root/src/shared/index.ts';
 import express, { type Request, type Response } from 'express';
 import { profileService } from '#server/service/index.ts';
 
 const router = express.Router();
-const MODULE_NAME = 'profile'; // Define module name
+const MODULE_NAME = MODULE_NAMES.PROFILE;
 
 // --- GET /api/profile/get-all-profiles ---
 // Corresponds to profileService.getAllProfiles

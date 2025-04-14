@@ -6,14 +6,21 @@ import express, { type Request, type Response, type NextFunction } from 'express
 import compression from 'compression'; // Add compression middleware
 
 import { createServer as createViteServer, type ViteDevServer } from 'vite';
-import characterRoutes from '#root/src/server/route/character.routes.ts';
-import chatRoutes from './src/server/route/chat.routes.ts';
+import {
+	characterRoutes,
+	chatRoutes,
+	profileRoutes,
+	llmRoutes,
+	tempChatRoutes,
+} from '#root/src/server/route/index.ts';
 import sirv from 'sirv';
+import { MODULE_NAMES } from './src/shared/index.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === 'production';
 const PORT = process.env.PORT || 3000;
 const BASE = process.env.BASE || '/'; // Base path for the app
+const BASE_API = `${BASE}api/`;
 
 // --- Helper Function to Resolve Project Root ---
 const resolve = (p: string) => path.resolve(__dirname, p);
@@ -61,8 +68,11 @@ async function createServer() {
 	// --- API Routes ---
 	// Mount the imported modular routers under the '/api' prefix using singular nouns
 	console.log('Mounting API routes...');
-	app.use(`${BASE}api/character`, characterRoutes); // Mount character routes at /api/character
-	app.use(`${BASE}api/chat`, chatRoutes); // Mount chat routes at /api/chat
+	app.use(`${BASE_API}${MODULE_NAMES.CHARACTER}`, characterRoutes);
+	app.use(`${BASE_API}${MODULE_NAMES.CHAT}`, chatRoutes);
+	app.use(`${BASE_API}${MODULE_NAMES.LLM}`, llmRoutes);
+	app.use(`${BASE_API}${MODULE_NAMES.PROFILE}`, profileRoutes);
+	app.use(`${BASE_API}${MODULE_NAMES.TEMP_CHAT}`, tempChatRoutes);
 
 	// --- SSR Catch-all Handler ---
 	// This handles all GET requests not previously handled by static serving or API routes.

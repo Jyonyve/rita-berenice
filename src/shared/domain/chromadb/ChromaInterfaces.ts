@@ -32,6 +32,7 @@ export const COLLECTIONS = {
 	PROFILE: 'profile',
 	CHAT: 'chat',
 	CREDENTIAL: 'credential',
+	TEMP_CHAT: 'tempChat',
 } as const;
 
 export type CollectionType = keyof typeof COLLECTIONS;

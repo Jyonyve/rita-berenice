@@ -6,6 +6,7 @@ type DefaultChatEntry = { type: ChatType; prompt: string };
 export type ChatEntry = DefaultChatEntry; // expand if needed
 
 export type ChatMessageType = 'request' | 'response';
+export type ChatMessageSet = { request: ChatMessage; response: ChatMessage };
 
 export interface ChatMessage {
 	role: ChatRoleType;
@@ -19,8 +20,12 @@ export interface ChatTurn {
 	sessionId: string;
 	sequence: number;
 	request: ChatMessage;
-	response: ChatMessage[];
-	isFixed: boolean;
+	response: ChatMessage;
+}
+
+export interface TempChatTurn {
+	sessionId: string;
+	chatTurnSets: ChatMessageSet[];
 }
 
 export type ChatSession = { sessionId: string; conversations: ChatTurn[] };
@@ -31,6 +36,7 @@ export const SUFFIX = {
 	FULL: 'full',
 	RECAP: 'recap',
 	SUMMARY: 'summary',
+	TEMP: 'temp',
 } as const;
 
 export type ChatRoleType = DefaultAiRole;

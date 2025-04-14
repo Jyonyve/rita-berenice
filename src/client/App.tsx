@@ -1,9 +1,10 @@
 import { Routes, Route } from 'react-router-dom'; // Import React Router components
 
 // --- MUI Imports ---
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import { CharacterComp, ChatComp } from '@client/component/index.ts';
+import { ThemeProvider } from '@emotion/react';
+import { CssBaseline } from '@mui/material';
+import { createTheme } from '@mui/system';
 // import { lightTheme, darkTheme } from './themes'; // Assuming you have theme definitions
 
 // --- Define or Import MUI Theme ---

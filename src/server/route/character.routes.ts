@@ -1,11 +1,11 @@
 // src/server/routes/character.routes.ts
 import { CharacterInfo } from '#root/src/shared/domain/index.ts';
-import { genRoutePattern } from '#root/src/shared/index.ts';
+import { genRoutePattern, MODULE_NAMES } from '#root/src/shared/index.ts';
 import express, { type Request, type Response } from 'express';
 import { characterService } from '#server/service/index.ts';
 
 const router = express.Router();
-const MODULE_NAME = 'character'; // Define module name once
+const MODULE_NAME = MODULE_NAMES.CHARACTER; // Define module name once
 
 // --- GET /api/character/get-all-characters ---
 // Corresponds to characterService.getAllCharacters
