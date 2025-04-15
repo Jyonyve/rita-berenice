@@ -1,6 +1,6 @@
 import { Typography, CssBaseline, Button } from '@mui/material';
 import { Box, Container, Stack } from '@mui/system';
-import { useCharacter, useChatServer } from '#root/src/client/hook/index.ts';
+import { useCharacter } from '#root/src/client/hook/index.ts';
 
 export const CharacterComp = () => {
 	const { characters, loading, getCharacterAssets } = useCharacter();

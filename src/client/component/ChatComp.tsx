@@ -1,267 +1,241 @@
-// src/client/components/ChatComp.tsx
-import React, { useState, useCallback, useEffect, FC } from 'react'; // Add React
+import React, { useState, useEffect, useCallback } from 'react';
 import { useChatServer, useChatClient, useAiModel, useCredential } from '@client/hook/index.ts';
-// REMOVE: DEFAULT_SUMMARY_INTERVAL, DEFAULT_QUERY_LIMIT
-import { ChatTurn, ChatMessage } from '@shared/index.ts'; // Import types directly if needed
+import { ChatTurn, ChatMessage, TempChatTurn } from '@shared/index.ts';
 import { buildChatMessage, parseEntriesToText } from '#root/src/shared/util/index.ts';
-import { CircularProgress, Divider, TextField, Button, Typography, Paper } from '@mui/material'; // Import Typography
+import { CircularProgress, Divider, TextField, Button, Typography, Paper } from '@mui/material';
 import { Stack, Box } from '@mui/system';
 
-export const ChatComp: FC = () => {
+export const ChatComp: React.FC<{ sessionId: string }> = ({ sessionId }) => {
+	// UI state
 	const [userInput, setUserInput] = useState('');
 	const [isProcessing, setIsProcessing] = useState(false);
-	const [errorState, setErrorState] = useState(''); // <-- Add error state
+	const [errorState, setErrorState] = useState<string>();
 
-	// === Hooks ===
+	// Hooks
 	const {
-		recentChatTurn,
-		isLoading: isHistoryLoading,
-		currentSessionId,
-		createChatTurn,
+		chatTurns,
+		tempChatTurn,
+		isLoading,
+		isLoadingHistory,
+		error,
+		hasMoreHistory,
+		setInitialData,
+		addOlderChatTurns,
 		addChatTurn,
-		getCurrentSequence,
+		changeTempChatTurn,
+		setIsLoading,
+		setIsLoadingHistory,
+		setError,
+		setHasMoreHistory,
+		clearChatState,
 		getNextSequence,
-		loadChatHistory,
-		changeSessionId, // Assuming this is needed to set the initial ID
 	} = useChatClient();
 
-	const { storeChatTurn, buildUserPromptFromLog, genResponseFromLlm } =
-		useChatServer(currentSessionId);
+	const {
+		getRecentChatTurns,
+		getLoadingChatTurns,
+		storeChatTurn,
+		getTempChatTurn,
+		saveTempChatTurn,
+		removeTempChatTurn,
+		buildUserPromptFromLog,
+		genResponseFromLlm,
+	} = useChatServer(sessionId);
 
 	const { aiModelInfo } = useAiModel();
 	const { credential, isLoading: isLoadingCredentials, error: credentialError } = useCredential();
 
+	// Initial load
 	useEffect(() => {
-		if (currentSessionId) {
-			changeSessionId(currentSessionId);
-			loadChatHistory(currentSessionId);
-		}
-		setUserInput(''); // Clear input when session changes
-	}, [currentSessionId, loadChatHistory]);
+		const loadInitial = async () => {
+			setIsLoading(true);
+			try {
+				const [fixed, temp] = await Promise.all([
+					getRecentChatTurns(sessionId, 10),
+					getTempChatTurn(sessionId),
+				]);
+				// Convert null from server to undefined for client
+				setInitialData(fixed, temp ?? undefined);
+			} catch (err: any) {
+				setError('Failed to load chat history.');
+			} finally {
+				setIsLoading(false);
+			}
+		};
+		loadInitial();
+		// eslint-disable-next-line
+	}, [sessionId]);
 
-	// === Event Handlers ===
-	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => setUserInput(e.target.value);
-
+	// Send message
 	const handleSendMessage = useCallback(async () => {
-		setErrorState(''); // Clear previous errors
-		// --- Pre-send Checks ---
+		setErrorState(undefined);
 		if (
 			!userInput.trim() ||
-			!currentSessionId ||
 			isProcessing ||
 			isLoadingCredentials ||
 			credentialError ||
 			!credential ||
-			Object.keys(credential).length === 0 ||
 			!aiModelInfo
 		) {
-			// Set specific errorState messages based on the condition
-			if (isLoadingCredentials) setErrorState('Checking credentials...');
-			else if (credentialError) setErrorState(`Credential Error: ${credentialError.message}`);
-			else if (!credential || Object.keys(credential).length === 0)
-				setErrorState('Credentials not configured.');
-			else if (!aiModelInfo) setErrorState('AI Model not selected.');
-			else if (!currentSessionId) setErrorState('No active session.');
-			// else ignore empty input or already processing
+			setErrorState('Cannot send message. Check credentials and model.');
 			return;
 		}
-		// --- End Checks ---
-
 		setIsProcessing(true);
-		const sequence = getNextSequence();
-
 		try {
-			const userMessage = buildChatMessage('user', sequence, userInput, currentSessionId);
-			const enhancedPrompt = await buildUserPromptFromLog(userInput);
+			// 1. Build user message and temp turn
+			const sequence = getNextSequence();
+			const userMsg = buildChatMessage('user', sequence, userInput, sessionId);
 
-			// Call Backend for Response
-			const response = await genResponseFromLlm('user', enhancedPrompt, aiModelInfo); // Corrected body
-			const { assistantResponse } = response;
+			// 2. Build prompt and get AI response
+			const prompt = await buildUserPromptFromLog(sessionId, userInput);
+			const { assistantResponse } = await genResponseFromLlm(sessionId, 'user', prompt, aiModelInfo);
+			const aiMsg = buildChatMessage('assistant', sequence, assistantResponse, sessionId);
 
-			const assistantMessage = buildChatMessage(
-				'assistant',
-				sequence,
-				assistantResponse,
-				currentSessionId
-			);
-			const chatTurn = createChatTurn(userMessage, assistantMessage, false);
-
-			addChatTurn(chatTurn); // Update client state
-			await storeChatTurn(chatTurn); // Store remotely (triggers server recap)
+			// 3. Update temp turn with response and save
+			const tempChatTurn: TempChatTurn = {
+				sessionId,
+				chatTurnSets: [{ request: userMsg, response: aiMsg }],
+			};
+			changeTempChatTurn(tempChatTurn);
+			await saveTempChatTurn(tempChatTurn);
 
 			setUserInput('');
-		} catch (error: any) {
-			const message = error.response?.data?.message || error.message || 'Failed to get response.';
-			setErrorState(`Error: ${message}`); // Set error state for UI
+		} catch (err: any) {
+			setErrorState('Failed to send message.');
 		} finally {
 			setIsProcessing(false);
 		}
 	}, [
-		// Dependencies - REMOVE summary related ones
 		userInput,
-		currentSessionId,
 		isProcessing,
 		isLoadingCredentials,
 		credentialError,
 		credential,
 		aiModelInfo,
-		getNextSequence,
+		changeTempChatTurn,
+		saveTempChatTurn,
 		buildUserPromptFromLog,
 		genResponseFromLlm,
-		createChatTurn,
-		addChatTurn,
-		storeChatTurn,
+		getNextSequence,
+		sessionId,
 	]);
 
-	const handleRegenerateResponse = useCallback(async () => {
-		setErrorState('');
-		// --- Pre-send Checks ---
-		if (
-			isProcessing ||
-			recentChatTurn.length === 0 ||
-			!currentSessionId ||
-			isLoadingCredentials ||
-			credentialError ||
-			!credential ||
-			Object.keys(credential).length === 0 ||
-			!aiModelInfo
-		) {
-			setErrorState('Cannot regenerate now.');
-			return;
-		}
-		// --- End Checks ---
-
+	// Select response (fix turn)
+	const handleSelectResponse = useCallback(async () => {
+		if (!tempChatTurn) return;
 		setIsProcessing(true);
-		const turnToRegen = recentChatTurn[recentChatTurn.length - 1];
-		const sequence = getCurrentSequence();
-
 		try {
-			const userMessage = buildChatMessage('user', sequence, userInput, currentSessionId);
-			const enhancedPrompt = await buildUserPromptFromLog(userInput);
-
-			// Call Backend for New Response
-			const response = await genResponseFromLlm('user', enhancedPrompt, aiModelInfo); // Corrected body
-			const { assistantResponse: newResponse } = response;
-
-			const newAssistantMessage = buildChatMessage(
-				'assistant',
-				sequence,
-				newResponse,
-				currentSessionId
-			);
-			const updatedTurn: ChatTurn = { ...turnToRegen, response: [newAssistantMessage], isFixed: true };
-
-			addChatTurn(updatedTurn); // Update client state
-			await storeChatTurn(updatedTurn); // Store remotely (triggers server recap)
-		} catch (error: any) {
-			const message =
-				error.response?.data?.message || error.message || 'Failed to regenerate response.';
-			setErrorState(`Error: ${message}`); // Set error state
+			const { request, response } = tempChatTurn.chatTurnSets[0];
+			const sequence = getNextSequence();
+			const fixedTurn: ChatTurn = { sessionId, sequence, request, response };
+			addChatTurn(fixedTurn);
+			changeTempChatTurn(undefined);
+			await storeChatTurn(sessionId, fixedTurn);
+			await removeTempChatTurn(sessionId);
+		} catch (err: any) {
+			setErrorState('Failed to fix turn.');
 		} finally {
 			setIsProcessing(false);
 		}
 	}, [
-		// Dependencies - REMOVE summary related ones
-		isProcessing,
-		isLoadingCredentials,
-		credentialError,
-		credential,
-		aiModelInfo,
-		recentChatTurn,
-		currentSessionId,
-		buildUserPromptFromLog,
-		genResponseFromLlm,
+		tempChatTurn,
 		addChatTurn,
+		changeTempChatTurn,
 		storeChatTurn,
+		removeTempChatTurn,
+		getNextSequence,
+		sessionId,
 	]);
 
-	// --- Render ---
+	// Load older turns
+	const handleLoadOlder = useCallback(async () => {
+		if (isLoadingHistory || !hasMoreHistory) return;
+		setIsLoadingHistory(true);
+		try {
+			const beforeSeq = chatTurns[0]?.sequence;
+			if (beforeSeq === undefined) return;
+			const older = await getLoadingChatTurns(sessionId, beforeSeq, 10);
+			addOlderChatTurns(older);
+			if (older.length < 10) setHasMoreHistory(false);
+		} catch (err: any) {
+			setError('Failed to load older messages.');
+		} finally {
+			setIsLoadingHistory(false);
+		}
+	}, [
+		isLoadingHistory,
+		hasMoreHistory,
+		chatTurns,
+		getLoadingChatTurns,
+		sessionId,
+		addOlderChatTurns,
+		setHasMoreHistory,
+		setIsLoadingHistory,
+		setError,
+	]);
+
+	// Render
 	return (
-		<Stack spacing={2} sx={{ p: 2, height: '100%', boxSizing: 'border-box' }}>
-			{/* ... Header ... */}
-			<Box sx={{ flexGrow: 1, overflowY: 'auto', mb: 2 }}>
-				{isHistoryLoading && <CircularProgress />}
-				{recentChatTurn.map((turn, turnIndex) => (
-					<Paper key={`${turn.sequence}-${turnIndex}`} elevation={1} sx={{ p: 1.5, mb: 1.5 }}>
-						{/* Display turn content */}
-						<Typography variant="body2">Seq: {turn.sequence}</Typography>
-						<Typography variant="body1">User: {parseEntriesToText(turn.request.entries)}</Typography>
-						{turn.response?.map((res, idx) => (
-							<Typography key={idx} variant="body1" sx={{ mt: 1 }}>
-								Assistant: {parseEntriesToText(res.entries)}
-							</Typography>
-						))}
-					</Paper>
+		<Stack spacing={2} sx={{ padding: 2 }}>
+			<Typography variant="h5">Chat Session: {sessionId}</Typography>
+			<Paper elevation={3} sx={{ padding: 2, minHeight: 300 }}>
+				{isLoading && <CircularProgress />}
+				{chatTurns.map((turn) => (
+					<div key={turn.sequence}>
+						<b>User:</b> {parseEntriesToText(turn.request.entries)}
+						<br />
+						<b>Assistant:</b> {parseEntriesToText(turn.response.entries)}
+						<Divider sx={{ my: 1 }} />
+					</div>
 				))}
-				{/* Status indicators */}
-				{isProcessing && <CircularProgress size={24} sx={{ display: 'block', mx: 'auto' }} />}
-				{errorState && (
-					<Typography color="error" sx={{ mt: 1 }}>
-						{errorState}
-					</Typography>
+				{tempChatTurn && (
+					<div style={{ background: '#ffe' }}>
+						<b>User:</b> {parseEntriesToText(tempChatTurn.chatTurnSets[0].request.entries)}
+						<br />
+						<b>Assistant:</b>{' '}
+						{tempChatTurn.chatTurnSets[0].response ? (
+							parseEntriesToText(tempChatTurn.chatTurnSets[0].response.entries)
+						) : (
+							<i>Waiting for response...</i>
+						)}
+						<Button
+							onClick={handleSelectResponse}
+							disabled={isProcessing || !tempChatTurn.chatTurnSets[0].response}
+							sx={{ mt: 1 }}
+						>
+							Fix Turn
+						</Button>
+						<Divider sx={{ my: 1 }} />
+					</div>
 				)}
-				{isLoadingCredentials && <Typography color="text.secondary">Loading credentials...</Typography>}
-				{credentialError && (
-					<Typography color="error">Credential Error: {credentialError.message}</Typography>
+				{hasMoreHistory && (
+					<Button onClick={handleLoadOlder} disabled={isLoadingHistory}>
+						{isLoadingHistory ? 'Loading...' : 'Load Older'}
+					</Button>
 				)}
-			</Box>
-			<Divider />
-			<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 'auto', pt: 2 }}>
+			</Paper>
+			<Box>
 				<TextField
-					fullWidth
-					variant="outlined"
-					placeholder="Type your message..."
+					label="Your message"
 					value={userInput}
-					onChange={handleInputChange}
-					multiline
-					maxRows={5}
-					disabled={isProcessing || isLoadingCredentials}
-					error={!!errorState || !!credentialError}
-					helperText={errorState || credentialError?.message || ' '}
+					onChange={(e) => setUserInput(e.target.value)}
+					fullWidth
+					disabled={isProcessing || !!tempChatTurn}
+					onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
 				/>
-				<Button
-					variant="outlined"
-					onClick={handleSendMessage}
-					disabled={
-						isProcessing ||
-						!userInput.trim() ||
-						isLoadingCredentials ||
-						!!credentialError ||
-						!credential ||
-						Object.keys(credential).length === 0
-					}
-				>
-					Edit
-				</Button>
 				<Button
 					variant="contained"
 					onClick={handleSendMessage}
-					disabled={
-						isProcessing ||
-						!userInput.trim() ||
-						isLoadingCredentials ||
-						!!credentialError ||
-						!credential ||
-						Object.keys(credential).length === 0
-					}
+					disabled={isProcessing || !!tempChatTurn}
+					sx={{ mt: 1 }}
 				>
 					Send
 				</Button>
-				<Button
-					variant="outlined"
-					onClick={handleRegenerateResponse}
-					disabled={
-						isProcessing ||
-						recentChatTurn.length === 0 ||
-						isLoadingCredentials ||
-						!!credentialError ||
-						!credential ||
-						Object.keys(credential).length === 0
-					}
-				>
-					Regen
-				</Button>
 			</Box>
+			{errorState && <Typography color="error">{errorState}</Typography>}
+			{error && <Typography color="error">{error}</Typography>}
+			{isLoadingCredentials && <Typography>Loading credentials...</Typography>}
+			{credentialError && <Typography color="error">{credentialError.message}</Typography>}
 		</Stack>
 	);
 };

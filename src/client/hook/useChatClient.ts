@@ -1,117 +1,84 @@
 import { useState, useCallback } from 'react';
-import { ChatMessage, ChatTurn, parseMessageId } from '@shared/index.ts';
+import { ChatTurn, TempChatTurn } from '@shared/index.ts';
 
 export const useChatClient = () => {
-	const [isLoading, setIsLoading] = useState(false);
-	const [currentSessionId, setCurrentSessionId] = useState<string>('');
-	const [recentChatTurn, setRecentChatTurn] = useState<ChatTurn[]>([]);
+	// State for fixed chat history
+	const [chatTurns, setChatTurns] = useState<ChatTurn[]>([]);
+	// State for the single, ongoing temporary turn
+	const [tempChatTurn, setTempChatTurn] = useState<TempChatTurn>();
 
-	const changeSessionId = useCallback((newSessionId: string) => {
-		if (newSessionId) setCurrentSessionId(newSessionId);
+	const [isLoading, setIsLoading] = useState(false);
+	const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+	const [error, setError] = useState<string>();
+	const [hasMoreHistory, setHasMoreHistory] = useState(true);
+
+	// Setters for initial data
+	const setInitialData = useCallback((fixedTurns: ChatTurn[], tempTurn?: TempChatTurn) => {
+		setChatTurns(fixedTurns);
+		setTempChatTurn(tempTurn);
+		setHasMoreHistory(fixedTurns.length > 0);
 	}, []);
 
-	// Get the current sequence number based on the most recent chat turn
-	const getCurrentSequence = useCallback((): number => {
-		if (recentChatTurn.length === 0) return 0;
-		return recentChatTurn[recentChatTurn.length - 1].sequence;
-	}, [recentChatTurn]);
+	// Add older fixed turns (prepend for infinite scroll)
+	const addOlderChatTurns = useCallback((olderTurns: ChatTurn[]) => {
+		if (olderTurns.length > 0) {
+			setChatTurns((prev) => [...olderTurns, ...prev]);
+		}
+	}, []);
 
-	// Get the next sequence number
+	// Add a new fixed turn (append)
+	const addChatTurn = useCallback((turn: ChatTurn) => {
+		setChatTurns((prev) => [...prev, turn]);
+	}, []);
+
+	// Set or clear the temp turn
+	const changeTempChatTurn = useCallback((temp?: TempChatTurn) => {
+		setTempChatTurn(temp);
+	}, []);
+
+	// Clear all state
+	const clearChatState = useCallback(() => {
+		setChatTurns([]);
+		setTempChatTurn(undefined);
+		setIsLoading(false);
+		setIsLoadingHistory(false);
+		setError(undefined);
+		setHasMoreHistory(true);
+	}, []);
+
+	// Sequence helpers
+	const getCurrentSequence = useCallback((): number => {
+		if (chatTurns.length === 0) return -1;
+		return chatTurns[chatTurns.length - 1].sequence;
+	}, [chatTurns]);
+
 	const getNextSequence = useCallback((): number => {
-		return getCurrentSequence() + 1;
+		const seq = getCurrentSequence();
+		return seq === -1 ? 0 : seq + 1;
 	}, [getCurrentSequence]);
 
-	// Create a new chat turn
-	const createChatTurn = useCallback(
-		(userMessage: ChatMessage, assistantMessage: ChatMessage, isFixed: boolean = true): ChatTurn => {
-			return {
-				sessionId: currentSessionId,
-				sequence: parseInt(parseMessageId(userMessage.messageId).sequence.toString()),
-				request: userMessage,
-				response: [assistantMessage],
-				isFixed,
-			};
-		},
-		[currentSessionId]
-	);
-
-	// Add a temporary response to the most recent chat turn
-	const addTemporaryResponse = useCallback(
-		(assistantMessage: ChatMessage): void => {
-			if (recentChatTurn.length === 0) return;
-
-			const currentTurn = recentChatTurn[recentChatTurn.length - 1];
-
-			// Create a new turn with the additional response
-			const updatedTurn: ChatTurn = {
-				...currentTurn,
-				response: [...currentTurn.response, assistantMessage],
-				isFixed: false,
-			};
-
-			// Update the recent chat turns
-			setRecentChatTurn([...recentChatTurn.slice(0, -1), updatedTurn]);
-		},
-		[recentChatTurn]
-	);
-
-	// Fix the current chat turn (mark as final)
-	const fixCurrentChatTurn = useCallback(
-		(responseIndex: number = 0): ChatTurn | null => {
-			if (recentChatTurn.length === 0) return null;
-
-			const currentTurn = recentChatTurn[recentChatTurn.length - 1];
-
-			// If the selected response doesn't exist, do nothing
-			if (responseIndex >= currentTurn.response.length) return null;
-
-			// Create a new turn with only the selected response and marked as fixed
-			const fixedTurn: ChatTurn = {
-				...currentTurn,
-				response: [currentTurn.response[responseIndex]],
-				isFixed: true,
-			};
-
-			// Update the recent chat turns
-			setRecentChatTurn([...recentChatTurn.slice(0, -1), fixedTurn]);
-
-			return fixedTurn;
-		},
-		[recentChatTurn]
-	);
-
-	// Add a new chat turn to the conversation
-	const addChatTurn = useCallback((chatTurn: ChatTurn): void => {
-		setRecentChatTurn((prev) => [...prev, chatTurn]);
-	}, []);
-
-	// Load chat history from storage
-	const loadChatHistory = useCallback(
-		async (sessionId: string): Promise<void> => {
-			// This would typically fetch from your storage/database
-			// For now, just setting the session ID
-			changeSessionId(sessionId);
-		},
-		[changeSessionId]
-	);
-
-	// Clear the chat history
-	const clearChatHistory = useCallback((): void => {
-		setRecentChatTurn([]);
-	}, []);
-
 	return {
-		recentChatTurn,
+		// State
+		chatTurns,
+		tempChatTurn,
 		isLoading,
-		currentSessionId,
-		changeSessionId,
-		createChatTurn,
-		addTemporaryResponse,
-		fixCurrentChatTurn,
+		isLoadingHistory,
+		error,
+		hasMoreHistory,
+
+		// Setters
+		setInitialData,
+		addOlderChatTurns,
 		addChatTurn,
+		changeTempChatTurn,
+		setIsLoading,
+		setIsLoadingHistory,
+		setError,
+		setHasMoreHistory,
+		clearChatState,
+
+		// Getters
 		getCurrentSequence,
 		getNextSequence,
-		loadChatHistory,
-		clearChatHistory,
 	};
 };

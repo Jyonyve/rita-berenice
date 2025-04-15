@@ -4,178 +4,245 @@ import {
 	ChatRoleType,
 	ChatTurn,
 	MODULE_NAMES,
+	TempChatTurn,
 	apiClient,
 	genApiUrl,
 } from '@shared/index.ts'; // Or shared types
 
-export const useChatServer = (initialSessionId: string) => {
+export const useChatServer = (sessionId: string) => {
 	//
-	const MODULE_NAME = MODULE_NAMES.CHAT;
-	const [sessionId, setSessionId] = useState(initialSessionId);
-
 	// --- Helper for API calls ---
 	// Encapsulates error handling and common logic
 	const _makeApiCall = useCallback(
-		async (
+		async <T = any>(
+			moduleName: string,
 			methodName: string,
-			httpMethod: 'get' | 'post' = 'get', // Default to GET
-			urlParams: (string | number)[] = [], // Params embedded in URL path
-			queryParams: Record<string, any> = {}, // Params for query string (?key=value)
-			body: Record<string, any> = {} // Data for POST body
-		): Promise<any> => {
-			if (!sessionId) {
-				throw new Error('No active session.');
-			}
-
-			// Ensure sessionId is included if required by convention (most methods here use it)
-			const finalUrlParams = urlParams.includes(sessionId) ? urlParams : [sessionId, ...urlParams];
-
-			const url = genApiUrl(MODULE_NAME, methodName, finalUrlParams);
-			console.log(`Making API call: ${httpMethod.toUpperCase()} ${url}`, { queryParams, body });
-
+			httpMethod: 'get' | 'post' | 'delete' = 'get',
+			urlParamValues: (string | number)[] = [],
+			params: Record<string, any> = {},
+			body: Record<string, any> = {}
+		): Promise<T> => {
+			const urlPath = genApiUrl(moduleName, methodName, urlParamValues);
 			try {
 				let response;
-				if (httpMethod === 'post') {
-					response = await apiClient.post(url, body);
-				} else {
-					// Default to GET
-					response = await apiClient.get(url, { params: queryParams });
+				switch (httpMethod) {
+					case 'post':
+						response = await apiClient.post<T>(urlPath, body, { params });
+						break;
+					case 'delete':
+						response = await apiClient.delete<T>(urlPath, { params });
+						break;
+					case 'get':
+					default:
+						response = await apiClient.get<T>(urlPath, { params });
+						break;
 				}
-				// Assuming successful responses contain data under the 'data' property
 				return response.data;
-			} catch (error) {
-				// The apiClient interceptor already logs errors.
-				// You might want specific UI feedback here, or just re-throw.
-				console.error(`API call failed for ${methodName}:`, error);
-				throw error; // Re-throw to allow component-level error handling
+			} catch (error: any) {
+				throw error;
 			}
 		},
-		[sessionId]
-	); // Depends on sessionId
+		[sessionId, apiClient]
+	);
 
-	// --- Refactored Hook Functions ---
+	// --- CHAT Module API Functions (Based on chat.routes.ts [2]) ---
+
+	const getRecentChatTurns = useCallback(
+		async (sessionId: string, limit: number): Promise<ChatTurn[]> => {
+			if (!sessionId) throw new Error('Session ID required');
+			// GET /api/chat/get-recent-chat-turns/:sessionId?limit=...
+			return await _makeApiCall<ChatTurn[]>(
+				MODULE_NAMES.CHAT,
+				'getRecentChatTurns',
+				'get',
+				[sessionId],
+				{ limit }
+			);
+		},
+		[_makeApiCall]
+	);
+
+	const getLoadingChatTurns = useCallback(
+		async (sessionId: string, beforeSequence: number, limit: number): Promise<ChatTurn[]> => {
+			if (!sessionId) throw new Error('Session ID required');
+			// GET /api/chat/get-loading-chat-turns/:sessionId?beforeSequence=...&limit=...
+			return await _makeApiCall<ChatTurn[]>(
+				MODULE_NAMES.CHAT,
+				'getLoadingChatTurns',
+				'get',
+				[sessionId],
+				{ beforeSequence, limit }
+			);
+		},
+		[_makeApiCall]
+	);
 
 	const storeChatTurn = useCallback(
-		async (chatTurn: ChatTurn) => {
-			// API: POST /api/chroma/store-chat-turn/:sessionId
+		async (sessionId: string, chatTurn: ChatTurn): Promise<void> => {
+			if (!sessionId) throw new Error('Session ID required');
+			// POST /api/chat/store-chat-turn/:sessionId
 			// Body: { chatTurn: ChatTurn }
-			await _makeApiCall('storeChatTurn', 'post', [], {}, { chatTurn });
-		},
-		[_makeApiCall] // Depends on the helper function
-	);
-
-	const storeSummary = useCallback(
-		async (summary: string) => {
-			// API: POST /api/chroma/store-summary/:sessionId
-			// Body: { summary: string }
-			await _makeApiCall('storeSummary', 'post', [], {}, { summary });
-		},
-		[_makeApiCall]
-	);
-
-	const getSummary = useCallback(async () => {
-		// API: GET /api/chroma/get-summary/:sessionId
-		// Response: { summary: string }
-		const responseData = await _makeApiCall('getSummary', 'get');
-		return responseData?.summary ?? ''; // Extract summary from response
-	}, [_makeApiCall]);
-
-	const querySummary = useCallback(
-		async (query: string) => {
-			// API: GET /api/chroma/query-summary/:sessionId?q=...
-			// Response: { result: any } (last result from the array)
-			const responseData = await _makeApiCall('querySummary', 'get', [], { q: query });
-			return responseData?.result; // Extract result from response
-		},
-		[_makeApiCall]
-	);
-
-	const queryChatLog = useCallback(
-		async (query: string, limit?: number, fixedOnly?: boolean) => {
-			// API: GET /api/chroma/query-chat-log/:sessionId?q=...&limit=...&fixedOnly=...
-			// Response: Array<any> (results)
-			const queryParams: Record<string, any> = { q: query };
-			if (limit !== undefined) queryParams.limit = limit;
-			if (fixedOnly !== undefined) queryParams.fixedOnly = fixedOnly; // Send explicit value if provided
-
-			return await _makeApiCall('queryChatLog', 'get', [], queryParams);
-		},
-		[_makeApiCall]
-	);
-
-	const getRecentChatLogs = useCallback(
-		async (turnCount?: number, fixedOnly?: boolean) => {
-			// API: GET /api/chroma/get-recent-chat-logs/:sessionId?turnCount=...&fixedOnly=...
-			// Response: Array<any> (results)
-			const queryParams: Record<string, any> = {};
-			if (turnCount !== undefined) queryParams.turnCount = turnCount;
-			if (fixedOnly !== undefined) queryParams.fixedOnly = fixedOnly;
-
-			return await _makeApiCall('getRecentChatLogs', 'get', [], queryParams);
+			await _makeApiCall<void>(
+				MODULE_NAMES.CHAT,
+				'storeChatTurn',
+				'post',
+				[sessionId],
+				{},
+				{ chatTurn } // Body structure as defined in route [2]
+			);
 		},
 		[_makeApiCall]
 	);
 
 	const getChatTurnBySequence = useCallback(
-		async (sequence: number, fixedOnly?: boolean) => {
-			// API: GET /api/chroma/get-chat-turn-by-sequence/:sessionId/:sequence?fixedOnly=...
-			// Response: ChatTurn | null
-			const queryParams: Record<string, any> = {};
-			if (fixedOnly !== undefined) queryParams.fixedOnly = fixedOnly;
-
-			// Pass sequence as a URL parameter value
-			return await _makeApiCall('getChatTurnBySequence', 'get', [sequence], queryParams);
+		async (sessionId: string, sequence: number): Promise<ChatTurn> => {
+			if (!sessionId) throw new Error('Session ID required');
+			// GET /api/chat/get-chat-turn-by-sequence/:sessionId/:sequence
+			return await _makeApiCall<ChatTurn>(MODULE_NAMES.CHAT, 'getChatTurnBySequence', 'get', [
+				sessionId,
+				sequence,
+			]);
 		},
 		[_makeApiCall]
 	);
 
-	const getAllResponsesForSequence = useCallback(
-		async (sequence: number, fixedOnly?: boolean) => {
-			// API: GET /api/chroma/get-all-responses-for-sequence/:sessionId/:sequence?fixedOnly=...
-			// Response: Array<any>
-			const queryParams: Record<string, any> = {};
-			if (fixedOnly !== undefined) queryParams.fixedOnly = fixedOnly;
+	const getRecap = useCallback(
+		async (sessionId: string): Promise<string> => {
+			if (!sessionId) throw new Error('Session ID required');
+			// GET /api/chat/get-recap/:sessionId
+			// Response: { recap: string }
+			const responseData = await _makeApiCall<{ recap: string }>(
+				MODULE_NAMES.CHAT,
+				'getRecap',
+				'get',
+				[sessionId]
+			);
+			return responseData?.recap ?? '';
+		},
+		[_makeApiCall]
+	);
 
-			// Pass sequence as a URL parameter value
-			return await _makeApiCall('getAllResponsesForSequence', 'get', [sequence], queryParams);
+	const queryChatLog = useCallback(
+		async (sessionId: string, queryText: string, limit: number): Promise<string[]> => {
+			if (!sessionId) throw new Error('Session ID required');
+			// GET /api/chat/query-chat-log/:sessionId?q=...&limit=... [2]
+			return await _makeApiCall<string[]>(
+				MODULE_NAMES.CHAT,
+				'queryChatLog',
+				'get',
+				[sessionId],
+				{ q: queryText, limit } // Use 'q' as query param name [2]
+			);
 		},
 		[_makeApiCall]
 	);
 
 	const buildUserPromptFromLog = useCallback(
-		async (
-			userText: string,
-			isFullLogQuery?: boolean,
-			fixedOnly: boolean = true
-		): Promise<string> => {
-			const body = { userText, isFullLogQuery, fixedOnly };
-			const responseData = await _makeApiCall('buildUserPromptFromLog', 'post', [], {}, body);
-			return responseData?.prompt ?? ''; // Extract prompt from response
+		async (sessionId: string, userText: string, isFullLogQuery?: boolean): Promise<string> => {
+			if (!sessionId) throw new Error('Session ID required');
+			// POST /api/chat/build-user-prompt-from-log/:sessionId [2]
+			// Body: { userText: string, isFullLogQuery?: boolean }
+			const responseData = await _makeApiCall<{ prompt: string }>(
+				MODULE_NAMES.CHAT,
+				'buildUserPromptFromLog',
+				'post',
+				[sessionId],
+				{},
+				{ userText, isFullLogQuery } // Body structure from route [2]
+			);
+			return responseData?.prompt ?? '';
 		},
 		[_makeApiCall]
 	);
 
-	// Get a response from the LLM
 	const genResponseFromLlm = useCallback(
-		async (role: ChatRoleType, prompt: string, aiModelInfo: AiModelInfo) => {
-			return await _makeApiCall('genResponseFromLlm', 'post', [], {}, { role, prompt, aiModelInfo });
+		async (
+			sessionId: string,
+			role: ChatRoleType,
+			prompt: string,
+			aiModelInfo: AiModelInfo
+		): Promise<{ assistantResponse: string }> => {
+			// Define expected response shape
+			if (!sessionId) throw new Error('Session ID required');
+			// Adjust module/methodName if this calls a different API or endpoint
+			// Example: POST /api/chat/gen-response-from-llm/:sessionId
+			return await _makeApiCall<{ assistantResponse: string }>(
+				MODULE_NAMES.LLM,
+				'genResponseFromLlm', // Assumed corresponding method name
+				'post',
+				[sessionId],
+				{},
+				{ role, prompt, aiModelInfo }
+			);
 		},
 		[_makeApiCall]
 	);
 
-	// Return the state and the refactored functions
+	// --- TEMP_CHAT Module API Functions (Based on tempChat.routes.ts [1]) ---
+
+	const getTempChatTurn = useCallback(
+		async (sessionId: string): Promise<TempChatTurn | null> => {
+			try {
+				return await _makeApiCall<TempChatTurn | null>(
+					MODULE_NAMES.TEMP_CHAT,
+					'getTempChatTurn',
+					'get',
+					[sessionId]
+				);
+			} catch (error: any) {
+				if (error.response?.status === 404) return null;
+				throw error;
+			}
+		},
+		[_makeApiCall]
+	);
+
+	const saveTempChatTurn = useCallback(
+		async (tempData: TempChatTurn): Promise<void> => {
+			if (!tempData?.sessionId) throw new Error('Temp data with Session ID required');
+			// POST /api/temp-chat/save-temp-chat-turn [1]
+			// Body: { tempData: TempChatTurn }
+			await _makeApiCall<void>(
+				MODULE_NAMES.TEMP_CHAT,
+				'saveTempChatTurn',
+				'post',
+				[], // No URL params
+				{}, // No query params
+				{ tempData } // Body structure as defined in route [1]
+			);
+		},
+		[_makeApiCall]
+	);
+
+	const removeTempChatTurn = useCallback(
+		async (sessionId: string): Promise<void> => {
+			if (!sessionId) throw new Error('Session ID required');
+			// DELETE /api/temp-chat/remove-temp-chat-turn/:sessionId [1]
+			await _makeApiCall<void>(
+				MODULE_NAMES.TEMP_CHAT,
+				'removeTempChatTurn',
+				'delete',
+				[sessionId] // sessionId as path param value
+			);
+		},
+		[_makeApiCall]
+	);
+
+	// --- Return API Action Functions ---
 	return {
-		sessionId,
-		setSessionId,
+		// CHAT actions
+		getRecentChatTurns,
+		getLoadingChatTurns,
 		storeChatTurn,
-		storeSummary,
-		getSummary,
-		querySummary,
-		queryChatLog,
-		getRecentChatLogs,
 		getChatTurnBySequence,
-		getAllResponsesForSequence,
+		getRecap,
+		queryChatLog,
 		buildUserPromptFromLog,
 		genResponseFromLlm,
+
+		// TEMP_CHAT actions
+		getTempChatTurn,
+		saveTempChatTurn,
+		removeTempChatTurn,
 	};
 };
