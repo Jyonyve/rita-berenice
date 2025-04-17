@@ -35,14 +35,13 @@ export const parseEntriesToText = (entries: ChatEntry[]): string => {
 export const parseEntryToJson = (entry: ChatEntry) => ({ type: entry.type, prompt: entry.prompt });
 
 export const buildChatTurnToJsonString = (chatTurn: ChatTurn): string => {
-	const { request, response, sessionId, sequence, isFixed } = chatTurn;
+	const { request, response, sessionId, sequence } = chatTurn;
 
 	const jsonObject = {
 		sessionId,
 		sequence,
-		isFixed,
 		request: { ...request, entries: request.entries.map(parseEntryToJson) },
-		response: response.map((r) => ({ ...r, entries: r.entries.map(parseEntryToJson) })),
+		response: { ...response, entries: response.entries.map(parseEntryToJson) },
 	};
 
 	return JSON.stringify(jsonObject, null, 2);

@@ -1,0 +1,78 @@
+/* ChatComp.module.scss */
+
+/* Base message styling */
+.messageEntry {
+	display: block; /* Each entry on a new line */
+	margin-bottom: 4px; /* Spacing between entries */
+	padding: 2px 5px;
+	border-radius: 4px;
+}
+
+/* User Styles */
+.userDialogue {
+	composes: messageEntry;
+	font-weight: bold;
+	color: #4682b4; /* SteelBlue - good readability */
+	background-color: #f0f8ff; /* AliceBlue - light background */
+}
+
+.userAction {
+	composes: messageEntry;
+	font-weight: bold;
+	font-style: italic;
+	color: #555555; /* Dark Gray */
+	background-color: #f5f5f5; /* Lighter Gray */
+}
+
+/* Assistant Styles */
+.assistantDialogue {
+	composes: messageEntry;
+	font-weight: bold;
+	color: #333333; /* Darker text for light background */
+	background-color: #fffacd; /* LemonChiffon - warm light background */
+	margin-left: 10px; /* Indent assistant messages slightly */
+}
+
+.assistantAction {
+	composes: messageEntry;
+	font-weight: bold;
+	font-style: italic;
+	color: #b8860b; /* DarkGoldenrod - warm accent */
+	background-color: #fff8dc; /* Cornsilk - lighter warm background */
+	margin-left: 10px; /* Indent assistant messages slightly */
+}
+
+/* Buttons styling */
+.turnContainer {
+	margin-bottom: 10px; /* Space between turns */
+	position: relative; /* For positioning buttons */
+}
+
+.buttonGroup {
+	position: absolute;
+	right: 5px;
+	top: 50%;
+	transform: translateY(-50%);
+	display: flex;
+	gap: 4px; /* Space between buttons */
+	opacity: 0; /* Hidden by default */
+	transition: opacity 0.2s ease-in-out;
+}
+
+.turnContainer:hover .buttonGroup {
+	opacity: 1; /* Show on hover */
+}
+
+.logContainer {
+	padding: 10px;
+	border: 1px solid #ccc;
+	border-radius: 5px;
+	background-color: #ffffff;
+}
+
+.inputArea {
+	margin-top: 15px;
+	display: flex;
+	gap: 10px;
+	align-items: center;
+}

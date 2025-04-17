@@ -11,14 +11,14 @@ export const useCredential = () => {
 
 	// --- State ---
 	const [credential, setCredential] = useState<CredentialData>();
-	const [isLoading, setIsLoading] = useState<boolean>(true); // Start loading initially
-	const [error, setError] = useState<Error>();
+	const [isLoadingCredential, setIsLoadingCredential] = useState<boolean>(true); // Start loading initially
+	const [credentialError, setCredentialError] = useState<Error>();
 
 	// --- API Call Functions ---
 
 	const loadCredential = useCallback(async (): Promise<void> => {
-		setIsLoading(true);
-		setError(undefined);
+		setIsLoadingCredential(true);
+		setCredentialError(undefined);
 		try {
 			const url = genApiUrl(MODULE_NAME, 'loadCredential'); // Or adjust based on genApiUrl needs
 			const response = await apiClient.get<CredentialData>(url);
@@ -29,17 +29,17 @@ export const useCredential = () => {
 			console.error('useCredential: Failed to load credentials:', err);
 			// Extract meaningful error message (check Axios error structure if applicable)
 			const message = err.response?.data?.message || err.message || 'An unknown error occurred';
-			setError(new Error(message));
+			setCredentialError(new Error(message));
 			setCredential(undefined); // Clear credentials on error
 		} finally {
-			setIsLoading(false);
+			setIsLoadingCredential(false);
 		}
 	}, []);
 
 	const saveCredential = useCallback(async (secrets: CredentialData): Promise<boolean> => {
 		// console.log('useCredential: Saving credentials...');
-		setIsLoading(true);
-		setError(undefined);
+		setIsLoadingCredential(true);
+		setCredentialError(undefined);
 		let success = false;
 		try {
 			const url = genApiUrl(MODULE_NAME, 'saveCredential'); // Or adjust based on genApiUrl needs
@@ -55,10 +55,10 @@ export const useCredential = () => {
 		} catch (err: any) {
 			console.error('useCredential: Failed to save credentials:', err);
 			const message = err.response?.data?.message || err.message || 'An unknown error occurred';
-			setError(new Error(message));
+			setCredentialError(new Error(message));
 			// Keep optimistic update or revert? For settings, keeping it might be acceptable.
 		} finally {
-			setIsLoading(false);
+			setIsLoadingCredential(false);
 		}
 		return success;
 	}, []); // Dependencies: apiClient, genApiUrl are assumed stable/global
@@ -71,5 +71,5 @@ export const useCredential = () => {
 	}, [loadCredential]); // Runs once when the hook mounts (and loadCredentials is stable)
 
 	// --- Return Hook Values ---
-	return { credential, isLoading, error, loadCredential, saveCredential };
+	return { credential, isLoadingCredential, credentialError, loadCredential, saveCredential };
 };

@@ -1,7 +1,7 @@
 import { Routes, Route } from 'react-router-dom'; // Import React Router components
 
 // --- MUI Imports ---
-import { CharacterComp, ChatComp } from '@client/component/index.ts';
+import { CharacterPage, ChatPage } from '@client/component/index.ts';
 import { ThemeProvider } from '@emotion/react';
 import { CssBaseline } from '@mui/material';
 import { createTheme } from '@mui/system';
@@ -19,17 +19,16 @@ const theme = createTheme({
 export function App() {
 	return (
 		<ThemeProvider theme={theme}>
-			{/* Apply MUI's baseline CSS reset */}
+			d{/* Apply MUI's baseline CSS reset */}
 			<CssBaseline />
-
 			{/* --- Routing Setup --- */}
 			{/* Define which component to render based on the URL path */}
 			<Routes>
 				{/* Map paths to your page components */}
-				<Route path="/" element={<>home page</>} />
+				<Route path="/" element={<>Rita-Berenice</>} />
 
 				{/* Character Routes */}
-				<Route path="/character" element={<CharacterComp />} />
+				<Route path="/character" element={<CharacterPage />} />
 				{/* Matches /character/some-name */}
 				<Route path="/character/:characterName" element={<>character page</>} />
 				{/* Add routes for /character/new or update if needed */}
@@ -38,12 +37,11 @@ export function App() {
 
 				{/* Chat Route */}
 				{/* Matches /chat/session-abc-123 */}
-				<Route path="/chat/:sessionId" element={<ChatComp />} />
+				<Route path="/chat/:sessionId" element={<ChatPage sessionId="" />} />
 
 				{/* Catch-all route for 404 Not Found */}
 				{/* <Route path="*" element={<NotFoundPage />} /> */}
 			</Routes>
-
 			{/* You could add common layout components here (e.g., Navbar, Footer) */}
 			{/* <Navbar /> */}
 			{/* <Footer /> */}

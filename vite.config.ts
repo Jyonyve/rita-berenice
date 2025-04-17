@@ -28,6 +28,7 @@ export default defineConfig({
 		noExternal: [
 			'@mui/material',
 			'@mui/system',
+			'@mui/icons-material',
 			'@emotion/react',
 			'@emotion/styled',
 			'@emotion/cache',

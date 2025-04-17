@@ -77,8 +77,45 @@ export const useChatServer = (sessionId: string) => {
 		[_makeApiCall]
 	);
 
+	const storeRequest = useCallback(
+		async (chatTurn: ChatTurn): Promise<void> => {
+			const sessionId = chatTurn.sessionId;
+			if (!sessionId) throw new Error('Session ID required');
+			// POST /api/chat/store-request/:sessionId
+			// Body: { chatTurn: ChatTurn }
+			await _makeApiCall<void>(
+				MODULE_NAMES.CHAT,
+				'storeRequest',
+				'post',
+				[sessionId],
+				{},
+				{ chatTurn } // Body structure as defined in route [2]
+			);
+		},
+		[_makeApiCall]
+	);
+
+	const storeResponse = useCallback(
+		async (chatTurn: ChatTurn): Promise<void> => {
+			const sessionId = chatTurn.sessionId;
+			if (!sessionId) throw new Error('Session ID required');
+			// POST /api/chat/store-response/:sessionId
+			// Body: { chatTurn: ChatTurn }
+			await _makeApiCall<void>(
+				MODULE_NAMES.CHAT,
+				'storeResponse',
+				'post',
+				[sessionId],
+				{},
+				{ chatTurn } // Body structure as defined in route [2]
+			);
+		},
+		[_makeApiCall]
+	);
+
 	const storeChatTurn = useCallback(
-		async (sessionId: string, chatTurn: ChatTurn): Promise<void> => {
+		async (chatTurn: ChatTurn): Promise<void> => {
+			const sessionId = chatTurn.sessionId;
 			if (!sessionId) throw new Error('Session ID required');
 			// POST /api/chat/store-chat-turn/:sessionId
 			// Body: { chatTurn: ChatTurn }
@@ -234,6 +271,8 @@ export const useChatServer = (sessionId: string) => {
 		getRecentChatTurns,
 		getLoadingChatTurns,
 		storeChatTurn,
+		storeRequest,
+		storeResponse,
 		getChatTurnBySequence,
 		getRecap,
 		queryChatLog,

@@ -14,7 +14,6 @@ export const AiModelComp = ({
 	model = DEFAULT_CHAT_MODEL_FREE.model,
 }: AiModelCompProps) => {
 	const { aiModelInfo, changeAiModel } = useAiModel();
-	const { currentSessionId, changeSessionId } = useChatClient();
 	const { showError } = useErrorDialog();
 
 	const handleModelChange = (event: SelectChangeEvent<string>) => {
@@ -27,10 +26,7 @@ export const AiModelComp = ({
 			showError('No session ID provided');
 			return;
 		}
-		if (currentSessionId !== sessionId) {
-			changeSessionId(sessionId);
-		}
-	}, [sessionId, currentSessionId, changeSessionId, showError]);
+	}, [sessionId, showError]);
 
 	// Model initialization
 	useEffect(() => {

@@ -7,9 +7,8 @@ export const useChatClient = () => {
 	// State for the single, ongoing temporary turn
 	const [tempChatTurn, setTempChatTurn] = useState<TempChatTurn>();
 
-	const [isLoading, setIsLoading] = useState(false);
 	const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-	const [error, setError] = useState<string>();
+	const [clientError, setClientError] = useState<string>();
 	const [hasMoreHistory, setHasMoreHistory] = useState(true);
 
 	// Setters for initial data
@@ -40,9 +39,8 @@ export const useChatClient = () => {
 	const clearChatState = useCallback(() => {
 		setChatTurns([]);
 		setTempChatTurn(undefined);
-		setIsLoading(false);
 		setIsLoadingHistory(false);
-		setError(undefined);
+		setClientError(undefined);
 		setHasMoreHistory(true);
 	}, []);
 
@@ -61,9 +59,8 @@ export const useChatClient = () => {
 		// State
 		chatTurns,
 		tempChatTurn,
-		isLoading,
 		isLoadingHistory,
-		error,
+		clientError,
 		hasMoreHistory,
 
 		// Setters
@@ -71,9 +68,8 @@ export const useChatClient = () => {
 		addOlderChatTurns,
 		addChatTurn,
 		changeTempChatTurn,
-		setIsLoading,
 		setIsLoadingHistory,
-		setError,
+		setClientError,
 		setHasMoreHistory,
 		clearChatState,
 

@@ -26,6 +26,7 @@
 		"@langchain/google-genai": "^0.2.1",
 		"@langchain/ollama": "^0.2.0",
 		"@langchain/openai": "^0.5.4",
+		"@mui/icons-material": "^7.0.2",
 		"@mui/material": "^7.0.0",
 		"@mui/system": "^7.0.0",
 		"@vitejs/plugin-react": "^4.3.4",

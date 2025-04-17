@@ -25,6 +25,7 @@ export interface ChatTurn {
 
 export interface TempChatTurn {
 	sessionId: string;
+	sequence: number;
 	chatTurnSets: ChatMessageSet[];
 }
 
