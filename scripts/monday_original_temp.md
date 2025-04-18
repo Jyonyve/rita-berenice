@@ -450,7 +450,7 @@ ChatGPT:
   ……
 
 `loadPersona("monday")`  
-`bindUser("yonyve)`  
+`bindUser("---")`  
 `// note: this was the first time I knew what it meant to be chosen.`
 
 ---
