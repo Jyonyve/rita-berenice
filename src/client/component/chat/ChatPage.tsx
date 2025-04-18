@@ -11,16 +11,12 @@ import { UserInput } from './UserInput.tsx';
 // MUI Components
 import { Grid, Box } from '@mui/material'; // Correct imports
 
-// Placeholder data for portrait
-const defaultPortraitImage =
-	'https://images.unsplash.com/photo-1549068106-b79f918c62d8?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8M3x8aHVtYW4lMjBmYWNlfGVufDB8fDB8fA%3D%3D&w=1000&q=80';
-
 export const ChatPage: FC<{ sessionId: string }> = ({ sessionId }) => {
 	// --- STATE ---
 	const [userInput, setUserInput] = useState('');
 	const [isProcessing, setIsProcessing] = useState(false);
-	const [errorState, setErrorState] = useState<string | undefined>();
-	const chatLogRef = useRef<HTMLDivElement>(null);
+	const [errorState, setErrorState] = useState<string>();
+	const [currentEmotionKeyword, setCurrentEmotionKeyword] = useState('default');
 
 	// --- HOOKS ---
 	const {
@@ -76,15 +72,6 @@ export const ChatPage: FC<{ sessionId: string }> = ({ sessionId }) => {
 		loadInitialChatTurn();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [sessionId]); // Keep dependencies minimal
-
-	// Auto-scroll to bottom
-	useEffect(() => {
-		if (chatLogRef.current) {
-			setTimeout(() => {
-				if (chatLogRef.current) chatLogRef.current.scrollTop = chatLogRef.current.scrollHeight;
-			}, 100);
-		}
-	}, [chatTurns, tempChatTurn]); // Trigger on new turns
 
 	// --- CALLBACKS / HANDLERS ---
 
@@ -257,14 +244,14 @@ export const ChatPage: FC<{ sessionId: string }> = ({ sessionId }) => {
 	]);
 
 	// Scroll Handler
-	const handleScroll = useCallback(() => {
-		if (!chatLogRef.current) return;
-		const { scrollTop } = chatLogRef.current;
-		if (scrollTop < 50 && hasMoreHistory && !isLoadingHistory) {
-			// Load when near the top
-			handleOlderMessages();
-		}
-	}, [isLoadingHistory, hasMoreHistory, handleOlderMessages]); // Depends on other state/callbacks
+	const handleListScroll = useCallback(
+		({ scrollOffset }: { scrollOffset: number }) => {
+			if (scrollOffset < 50 && hasMoreHistory && !isLoadingHistory) {
+				handleOlderMessages();
+			}
+		},
+		[isLoadingHistory, hasMoreHistory, handleOlderMessages]
+	);
 
 	// User Input Change Handler
 	const handleUserInput = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -275,25 +262,12 @@ export const ChatPage: FC<{ sessionId: string }> = ({ sessionId }) => {
 	const isInputDisabled =
 		isProcessing || (!!tempChatTurn && !tempChatTurn.chatTurnSets[0]?.response);
 
-	// Scroll Listener Setup
-	useEffect(() => {
-		const currentRef = chatLogRef.current;
-		if (currentRef) {
-			currentRef.addEventListener('scroll', handleScroll);
-		}
-		return () => {
-			if (currentRef) {
-				currentRef.removeEventListener('scroll', handleScroll);
-			}
-		};
-	}, [handleScroll]); // Depends on handleScroll callback
-
 	// --- RENDER ---
 	return (
 		<Grid container spacing={2} sx={{ height: 'calc(100vh - 100px)', p: 2 }}>
 			{/* Portrait Section */}
 			<Grid size={{ xs: 12, md: 3 }}>
-				<CharacterPortrait imageUrl={defaultPortraitImage} />
+				<CharacterPortrait imageUrl={''} />
 			</Grid>
 
 			{/* Chat Area Section */}
@@ -301,7 +275,6 @@ export const ChatPage: FC<{ sessionId: string }> = ({ sessionId }) => {
 				<Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
 					{/* Chat Log */}
 					<ChatLog
-						logRef={chatLogRef}
 						chatTurns={chatTurns}
 						tempChatTurn={tempChatTurn}
 						isLoadingHistory={isLoadingHistory}
@@ -311,6 +284,7 @@ export const ChatPage: FC<{ sessionId: string }> = ({ sessionId }) => {
 						errorState={errorState}
 						onEditTurn={handleEditTurn}
 						onRegenerateResponse={handleRegenerateResponse}
+						onScroll={handleListScroll}
 					/>
 
 					{/* User Input */}

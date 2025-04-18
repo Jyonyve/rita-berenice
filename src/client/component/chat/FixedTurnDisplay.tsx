@@ -2,7 +2,7 @@ import React, { FC } from 'react';
 import { Box, IconButton } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import { ChatTurn } from '@shared/domain/index.ts';
-import { styleEntryFont } from '../styleUtils.ts';
+import { styleEntryFont } from '../../util/chatCompUtils.ts';
 import styles from './ChatComp.module.scss'; // Assuming shared styles
 
 interface FixedTurnDisplayProps {

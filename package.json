@@ -29,6 +29,8 @@
 		"@mui/icons-material": "^7.0.2",
 		"@mui/material": "^7.0.0",
 		"@mui/system": "^7.0.0",
+		"@types/react-virtualized-auto-sizer": "^1.0.8",
+		"@types/react-window": "^1.8.8",
 		"@vitejs/plugin-react": "^4.3.4",
 		"axios": "^1.8.4",
 		"chromadb": "^2.0.1",
@@ -39,6 +41,8 @@
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",
 		"react-router-dom": "^6.26.1",
+		"react-virtualized-auto-sizer": "^1.0.26",
+		"react-window": "^1.8.11",
 		"sharp": "^0.33.5",
 		"sirv": "^3.0.1"
 	},

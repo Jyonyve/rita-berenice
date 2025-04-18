@@ -1,5 +1,5 @@
 import styles from './ChatComp.module.scss';
-import { ChatRoleType, ChatType } from '#root/src/shared/domain/index.ts';
+import { ChatRoleType, ChatType } from '@shared/domain/index.ts';
 
 export const styleEntryFont = (role: ChatRoleType, type: ChatType): string => {
 	if (role === 'user') {

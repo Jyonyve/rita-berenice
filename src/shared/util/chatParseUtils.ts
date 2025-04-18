@@ -60,6 +60,7 @@ export const buildChatMessage = (
 		messageId: buildMessageId(sessionId, sequence, messageType),
 		messageType,
 		entries,
+		emotion: '',
 		timestamp: new Date().toISOString(),
 	};
 };

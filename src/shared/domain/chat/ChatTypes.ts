@@ -1,6 +1,8 @@
+import { allEmotionKeywords } from '../../config/index.ts';
 import { DefaultAiRole } from '../index.ts';
 
 export type ChatType = 'dialogue' | 'action';
+export type ChatRoleType = DefaultAiRole;
 
 type DefaultChatEntry = { type: ChatType; prompt: string };
 export type ChatEntry = DefaultChatEntry; // expand if needed
@@ -13,6 +15,7 @@ export interface ChatMessage {
 	messageId: string;
 	messageType: ChatMessageType;
 	entries: ChatEntry[];
+	emotion: (typeof allEmotionKeywords)[number];
 	timestamp: string; // ISO 8601 format
 }
 
@@ -40,5 +43,4 @@ export const SUFFIX = {
 	TEMP: 'temp',
 } as const;
 
-export type ChatRoleType = DefaultAiRole;
 export type SuffixType = (typeof SUFFIX)[keyof typeof SUFFIX];

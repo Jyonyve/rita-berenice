@@ -2,7 +2,7 @@ import React, { FC } from 'react';
 import { Box, IconButton, Typography, CircularProgress } from '@mui/material';
 import ReplayIcon from '@mui/icons-material/Replay';
 import { TempChatTurn } from '@shared/domain/index.ts';
-import { styleEntryFont } from '../styleUtils.ts';
+import { styleEntryFont } from '../../util/chatCompUtils.ts';
 import styles from './ChatComp.module.scss'; // Assuming shared styles
 
 interface TempTurnDisplayProps {

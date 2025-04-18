@@ -3,13 +3,11 @@ import { Box } from '@mui/material';
 
 interface CharacterPortraitProps {
 	imageUrl: string;
-	altText?: string;
+	charName?: string;
 }
 
-export const CharacterPortrait: FC<CharacterPortraitProps> = ({
-	imageUrl,
-	altText = 'Character Portrait',
-}) => {
+export const CharacterPortrait: FC<CharacterPortraitProps> = ({ imageUrl, charName }) => {
+	const altText = charName ? `${charName}_portrait` : 'portrait';
 	return (
 		<Box
 			sx={{
