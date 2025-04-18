@@ -58,7 +58,7 @@ export const chromaDbClient = {
 	getRecapCollection: async (): Promise<Collection> => {
 		if (!recapCollection) {
 			recapCollection = await chromaClient.getOrCreateCollection({
-				name: COLLECTIONS.TEMP_CHAT,
+				name: COLLECTIONS.RECAP,
 				metadata: { type: 'conversation_recap' },
 			});
 		}
@@ -73,7 +73,7 @@ export const chromaDbClient = {
 		if (!sessionCollections[sessionId]) {
 			const characterName = sessionId.split('-')[0];
 			sessionCollections[sessionId] = await chromaClient.getOrCreateCollection({
-				name: `session_${sessionId}`,
+				name: COLLECTIONS.CHAT,
 				metadata: {
 					type: 'chat_session',
 					sessionId,

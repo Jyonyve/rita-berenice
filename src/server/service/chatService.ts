@@ -16,6 +16,7 @@ import {
 	DEFAULT_RECAP_MODEL_FREE,
 	buildRecapId,
 	DEFAULT_RECENT_TURN_COUNT,
+	METADATA_TYPES,
 } from '#root/src/shared/index.ts';
 import { Collection, IncludeEnum } from 'chromadb';
 import { chromaDbClient } from '#server/db/chromaDbClient.ts';
@@ -65,7 +66,7 @@ export const chatService = {
 		const collection = await chatService._getCollection(sessionId);
 		const turnId = buildTurnId(sessionId, sequence);
 		await upsertDocument(collection, turnId, JSON.stringify(chatTurn), {
-			type: 'full_turn',
+			type: METADATA_TYPES.SET,
 			sessionId,
 			sequence,
 			timestamp: request.timestamp,
@@ -99,10 +100,9 @@ export const chatService = {
 		}
 
 		// 5. Save the Recap
-		const collection = await chatService._getCollection(sessionId);
-		const recapId = buildRecapId(sessionId);
-		await upsertDocument(collection, recapId, recapContent, {
-			type: SUFFIX.RECAP,
+		const collection = await chatService._getRecapCollection();
+		await upsertDocument(collection, sessionId, recapContent, {
+			type: METADATA_TYPES.RECAP,
 			sequence,
 			timestamp: new Date().toISOString(),
 			sessionId,
@@ -121,7 +121,7 @@ export const chatService = {
 			.map((id, index) => {
 				const doc = documents[index];
 				const meta = metadatas[index];
-				if (!doc || !meta || typeof meta.sequence !== 'number' || meta.type !== 'full_turn') {
+				if (!doc || !meta || typeof meta.sequence !== 'number' || meta.type !== METADATA_TYPES.SET) {
 					console.warn(`Skipping invalid turn data for ID ${id}`);
 					return null;
 				}
@@ -146,7 +146,7 @@ export const chatService = {
 
 		const collection = await chatService._getTempCollection();
 		await upsertDocument(collection, tempData.sessionId, JSON.stringify(tempData), {
-			type: SUFFIX.TEMP,
+			type: METADATA_TYPES.TEMP,
 			sessionId: tempData.sessionId,
 			timestamp: new Date().toISOString(),
 			setCount: tempData.chatTurnSets?.length ?? 0,
@@ -185,7 +185,7 @@ export const chatService = {
 		const requestContent = parseEntriesToText(request.entries);
 		const requestId = buildMessageId(sessionId, sequence, 'request');
 		await upsertDocument(collection, requestId, requestContent, {
-			type: 'message',
+			type: METADATA_TYPES.MESSAGE,
 			messageType: SUFFIX.REQUEST,
 			sessionId,
 			sequence,
@@ -200,7 +200,7 @@ export const chatService = {
 		const responseContent = parseEntriesToText(response.entries);
 		const responseId = buildMessageId(sessionId, sequence, 'response');
 		await upsertDocument(collection, responseId, responseContent, {
-			type: 'message',
+			type: METADATA_TYPES.MESSAGE,
 			messageType: SUFFIX.RESPONSE,
 			sessionId,
 			sequence,
@@ -226,11 +226,10 @@ export const chatService = {
 	},
 
 	getRecap: async (sessionId: string): Promise<string> => {
-		const collection = await chatService._getCollection(sessionId);
-		const recapId = buildRecapId(sessionId);
+		const collection = await chatService._getRecapCollection();
 
 		try {
-			const recap = await getDocumentById(collection, recapId);
+			const recap = await getDocumentById(collection, sessionId);
 			return recap || '';
 		} catch (error) {
 			console.warn(`No recap found for session ${sessionId}`);
@@ -249,7 +248,10 @@ export const chatService = {
 
 		try {
 			// Create a where clause that includes the specified message types
-			const whereClause: Record<string, any> = { type: 'message', messageType: { $in: messageTypes } };
+			const whereClause: Record<string, any> = {
+				type: METADATA_TYPES.MESSAGE,
+				messageType: { $in: messageTypes },
+			};
 			return await queryDocuments(collection, queryText, whereClause, limit ?? -1);
 		} catch (error) {
 			console.error(`Failed to query chat log for session ${sessionId}:`, error);
@@ -271,7 +273,7 @@ export const chatService = {
 		const collection = await chatService._getCollection(sessionId);
 		try {
 			const whereClause: Record<string, any> = {
-				type: 'full_turn',
+				type: METADATA_TYPES.SET,
 				sessionId,
 				sequence: { $lt: beforeSequence }, // Fetch turns strictly less than the marker
 			};
@@ -308,10 +310,10 @@ export const chatService = {
 		const collection = await chatService._getCollection(sessionId);
 		try {
 			const whereClause: Record<string, any> = {
-				type: 'full_turn', // Only fetch fixed, full turn documents
+				type: METADATA_TYPES.SET, // Only fetch fixed, full turn documents
 				sessionId,
 			};
-			// Fetch 'full_turn' documents, sort by sequence descending, take limit
+			// Fetch FULL_TURN documents, sort by sequence descending, take limit
 			const results = await collection.get({
 				where: whereClause,
 				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],

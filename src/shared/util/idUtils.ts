@@ -38,52 +38,16 @@ export const buildMessageId = (
 };
 
 export const buildTurnId = (sessionId: string, sequence: number): string => {
-	return `${sessionId}_${sequence}_${SUFFIX.FULL}`;
-};
-
-export const buildRecapId = (sessionId: string) => {
-	return `${sessionId}_${SUFFIX.RECAP}`;
-};
-
-export const buildSummaryId = (sessionId: string): string => {
-	return `${sessionId}_${SUFFIX.SUMMARY}`;
+	return `${sessionId}_${sequence}_${SUFFIX.SET}`;
 };
 
 export const parseMessageId = (
 	messageId: string
-): { sessionId: string; sequence: number; type: SuffixType; index?: number } => {
+): { sessionId: string; sequence: number; type: ChatMessageType; index?: number } => {
 	const parts = messageId.split('_');
 	if (parts.length < 3) {
 		throw new Error(`Invalid message ID format: ${messageId}`);
 	}
 
-	const lastPart = parts[parts.length - 1];
-	const secondLastPart = parts[parts.length - 2];
-
-	if (lastPart === SUFFIX.SUMMARY) {
-		return {
-			sessionId: parts.slice(0, parts.length - 1).join('_'),
-			sequence: -1, // No sequence for summaries
-			type: SUFFIX.SUMMARY,
-		};
-	} else if (lastPart === SUFFIX.FULL) {
-		return {
-			sessionId: parts.slice(0, parts.length - 2).join('_'),
-			sequence: parseInt(secondLastPart, 10),
-			type: SUFFIX.FULL,
-		};
-	} else if (lastPart.match(/^\d+$/)) {
-		return {
-			sessionId: parts.slice(0, parts.length - 3).join('_'),
-			sequence: parseInt(parts[parts.length - 3], 10),
-			type: SUFFIX.RESPONSE,
-			index: parseInt(lastPart, 10),
-		};
-	} else {
-		return {
-			sessionId: parts.slice(0, parts.length - 2).join('_'),
-			sequence: parseInt(secondLastPart, 10),
-			type: lastPart as SuffixType,
-		};
-	}
+	return { sessionId: parts[0], sequence: parseInt(parts[1]), type: parts[2] as ChatMessageType };
 };

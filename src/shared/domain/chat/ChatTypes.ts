@@ -37,7 +37,7 @@ export type ChatSession = { sessionId: string; conversations: ChatTurn[] };
 export const SUFFIX = {
 	REQUEST: 'request',
 	RESPONSE: 'response',
-	FULL: 'full',
+	SET: 'set',
 	RECAP: 'recap',
 	SUMMARY: 'summary',
 	TEMP: 'temp',

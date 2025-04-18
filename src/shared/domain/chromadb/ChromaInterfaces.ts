@@ -31,11 +31,14 @@ export const COLLECTIONS = {
 	CHARACTER: 'character',
 	PROFILE: 'profile',
 	CHAT: 'chat',
-	CREDENTIAL: 'credential',
 	TEMP_CHAT: 'tempChat',
+	RECAP: 'recap',
+	CREDENTIAL: 'credential',
 } as const;
 
 export type CollectionType = keyof typeof COLLECTIONS;
+
+export const METADATA_TYPES = { MESSAGE: 'message', SET: 'set', RECAP: 'recap', TEMP: 'temp' };
 
 // src/shared/types/credentials.ts (Example path)
 export interface CredentialData {

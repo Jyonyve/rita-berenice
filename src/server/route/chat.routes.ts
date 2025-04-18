@@ -1,6 +1,11 @@
 // src/server/routes/chat.routes.ts
 import express, { type Request, type Response } from 'express';
-import { ChatTurn, ChatMessageType } from '#root/src/shared/domain/index.ts'; // Added ChatMessageType
+import {
+	ChatTurn,
+	ChatMessageType,
+	SUFFIX,
+	METADATA_TYPES,
+} from '#root/src/shared/domain/index.ts'; // Added ChatMessageType
 import { chatService } from '#root/src/server/service/index.ts';
 import { genRoutePattern, buildTurnId } from '#root/src/shared/util/index.ts'; // Added buildTurnId
 import {
@@ -167,8 +172,8 @@ router.get(
 				.metadatas?.[0];
 
 			// Ensure it's a 'full_turn' type we are serving
-			if (!metadata || metadata.type !== 'full_turn') {
-				console.warn(`Attempted to fetch non-full_turn via sequence endpoint: ${turnId}`);
+			if (!metadata || metadata.type !== METADATA_TYPES.SET) {
+				console.warn(`Attempted to fetch non- via sequence endpoint: ${turnId}`);
 				res
 					.status(404)
 					.json({ error: `Chat turn with sequence ${sequence} not found (or not a fixed turn)` });
