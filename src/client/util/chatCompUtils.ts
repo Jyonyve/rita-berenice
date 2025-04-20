@@ -1,4 +1,4 @@
-import styles from './ChatComp.module.scss';
+import styles from '../component/chat/ChatComp.module.scss';
 import { ChatRoleType, ChatType } from '@shared/domain/index.ts';
 
 export const styleEntryFont = (role: ChatRoleType, type: ChatType): string => {

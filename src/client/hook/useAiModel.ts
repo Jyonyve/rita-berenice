@@ -1,7 +1,7 @@
 // src/client/hooks/useAiModel.ts
 import { useState, useCallback } from 'react';
+import { useErrorDialog } from './useMuiComp.tsx';
 import {
-	useErrorDialog,
 	AiModelInfo,
 	AllModelNames, // Keep this type
 	// Import the keyless defaults and client-side utils

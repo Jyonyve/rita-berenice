@@ -2,7 +2,10 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
 :root {
-	font-family: 'Noto Sans KR', 'Pretendard', Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+	font-family:
+		'Noto Sans KR', 'Inter', 'system-ui', 'Avenir', 'Helvetica', 'Arial', 'Pretendard', 'Inter var',
+		'ui-sans-serif', 'sans-serif', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+		'Noto Color Emoji';
 	line-height: 1.5;
 	font-weight: 400;
 
