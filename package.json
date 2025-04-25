@@ -12,7 +12,9 @@
 		"build": "npm run build:client && npm run build:server-entry && npm run build:server-main",
 		"preview": "cross-env NODE_ENV=production node --env-file .env.production dist/server.js",
 		"start": "cross-env NODE_ENV=production node --env-file .env.production dist/server.js",
-		"prod": "npm run build && npm start"
+		"prod": "npm run build && npm start",
+		"data:init": "tsx ./scripts/initBatchChat.ts",
+		"data:check": "tsx ./scripts/checkSeededData.ts"
 	},
 	"dependencies": {
 		"@emotion/cache": "^11.14.0",

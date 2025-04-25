@@ -1,9 +1,9 @@
 import { Typography, CssBaseline, Button } from '@mui/material';
 import { Box, Container, Stack } from '@mui/system';
-import { useCharacter } from '#root/src/client/hook/index.ts';
+import { useCharacterApi } from '#root/src/client/hook/index.ts';
 
 export const CharacterPage = () => {
-	const { characters, loading, getCharacterAssets } = useCharacter();
+	const { characters, loading, getCharacterAssets } = useCharacterApi();
 
 	if (loading) {
 		return <Typography>Loading characters...</Typography>;

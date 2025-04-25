@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, FC, ChangeEvent } from 'react';
-import { useChatServer, useChatClient, useAiModel, useCredential } from '@client/hook/index.ts';
+import { useChatApi, useChatState, useAiModel, useCredential } from '@client/hook/index.ts';
 import { ChatTurn, TempChatTurn } from '@shared/domain/index.ts';
 import { buildChatMessage, parseEntriesToText } from '#root/src/shared/util/index.ts';
 
@@ -33,7 +33,7 @@ export const ChatPage: FC<{ sessionId: string }> = ({ sessionId }) => {
 		setClientError,
 		setHasMoreHistory,
 		getNextSequence,
-	} = useChatClient();
+	} = useChatState();
 
 	const {
 		getRecentChatTurns,
@@ -44,7 +44,7 @@ export const ChatPage: FC<{ sessionId: string }> = ({ sessionId }) => {
 		removeTempChatTurn,
 		buildUserPromptFromLog,
 		genResponseFromLlm,
-	} = useChatServer(sessionId);
+	} = useChatApi(sessionId);
 
 	const { aiModelInfo } = useAiModel();
 	const { credential, isLoadingCredential, credentialError } = useCredential(); // Renamed isLoading

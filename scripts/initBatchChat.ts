@@ -14,7 +14,7 @@ const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev
 const emotionDefault = 'default'; // Default emotion if not specified per turn
 
 // --- Main Seeding Logic ---
-async function seedInitialChatData() {
+async function initBatchChat() {
 	console.log(`Connecting to ChromaDB at: ${CHROMA_URL}`);
 	const chroma = new ChromaClient({ path: CHROMA_URL });
 
@@ -115,4 +115,4 @@ async function seedInitialChatData() {
 }
 
 // --- Run the script ---
-seedInitialChatData();
+initBatchChat();

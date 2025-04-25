@@ -8,7 +8,7 @@ import {
 } from '@shared/index.ts';
 import { useCallback, useEffect, useState } from 'react';
 
-export const useCharacter = () => {
+export const useCharacterApi = () => {
 	const MODULE_NAME = MODULE_NAMES.CHARACTER;
 	// --- State ---
 	const [characters, setCharacters] = useState<CharacterInfo[]>([]);

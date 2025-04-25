@@ -7,7 +7,7 @@ import { loadNumberedPortraits } from '../../util/index.ts';
  * @param characterId The ID of the character whose portraits to load.
  * @returns Object containing the portrait map, loading state, and default image URL.
  */
-export function useCharacterState(characterId: string | null | undefined) {
+export const useCharacterState = (characterId: string) => {
 	const [portraitMap, setPortraitMap] = useState<Record<number, string>>({});
 	const [isLoadingPortraits, setIsLoadingPortraits] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -65,4 +65,4 @@ export function useCharacterState(characterId: string | null | undefined) {
 	return { portraitMap, isLoadingPortraits, error };
 	// Consider adding defaultImageUrl to the return if CharacterPage needs it directly
 	// return { portraitMap, isLoadingPortraits, error, defaultImageUrl };
-}
+};

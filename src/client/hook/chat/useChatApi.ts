@@ -9,7 +9,7 @@ import {
 	genApiUrl,
 } from '@shared/index.ts'; // Or shared types
 
-export const useChatServer = (sessionId: string) => {
+export const useChatApi = (sessionId: string) => {
 	//
 	// --- Helper for API calls ---
 	// Encapsulates error handling and common logic

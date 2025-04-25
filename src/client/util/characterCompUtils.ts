@@ -4,7 +4,9 @@
 import { DEFAULT_IMAGE_NUMBER, numberToEmotionWordsMap } from '@shared/index.ts'; // Adjust import path
 
 // --- loadNumberedPortraits function remains the same ---
-export async function loadNumberedPortraits(characterId: string): Promise<Record<number, string>> {
+export const loadNumberedPortraits = async (
+	characterId: string
+): Promise<Record<number, string>> => {
 	// ... (implementation as before) ...
 	const imageModules = import.meta.glob('/src/asset/character/*/*.webp');
 	const imageMap: Record<number, string> = {};
@@ -32,7 +34,7 @@ export async function loadNumberedPortraits(characterId: string): Promise<Record
 	}
 	// ... (logging) ...
 	return imageMap;
-}
+};
 
 /**
  * A reverse lookup map generated from numberToEmotionWordsMap.

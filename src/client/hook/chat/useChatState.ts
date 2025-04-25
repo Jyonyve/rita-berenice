@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { ChatTurn, TempChatTurn } from '@shared/index.ts';
 
-export const useChatClient = () => {
+export const useChatState = () => {
 	// State for fixed chat history
 	const [chatTurns, setChatTurns] = useState<ChatTurn[]>([]);
 	// State for the single, ongoing temporary turn

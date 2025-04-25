@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useErrorDialog } from '#root/src/client/hook/useMuiComp.tsx';
-import { useChatClient, useAiModel } from '@client/hook/index.ts';
+import { useChatState, useAiModel } from '@client/hook/index.ts';
 import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from '@mui/material';
 import { DEFAULT_CHAT_MODEL_FREE, supportAiModelInfo } from '@shared/index.ts';
 
