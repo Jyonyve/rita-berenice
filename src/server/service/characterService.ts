@@ -1,4 +1,4 @@
-import { CharacterInfo } from '#root/src/shared/domain/index.ts';
+import { CharacterInfo, METADATA_TYPES } from '#root/src/shared/domain/index.ts';
 import { Collection, IncludeEnum } from 'chromadb';
 import { chromaDbClient } from '#server/db/index.ts';
 
@@ -28,7 +28,7 @@ export const characterService = {
 		try {
 			const results = await collection.get({
 				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
-				where: { type: 'character' },
+				where: { type: METADATA_TYPES. },
 			});
 
 			if (!results.documents || results.documents.length === 0) {
