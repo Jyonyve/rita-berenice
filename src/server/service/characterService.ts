@@ -1,4 +1,4 @@
-import { CharacterInfo } from '#root/src/shared/domain/index.ts';
+import { CharacterInfo, METADATA_TYPES } from '#root/src/shared/domain/index.ts';
 import { Collection, IncludeEnum } from 'chromadb';
 import { chromaDbClient } from '#server/db/index.ts';
 
@@ -28,7 +28,7 @@ export const characterService = {
 		try {
 			const results = await collection.get({
 				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
-				where: { type: 'character' },
+				where: { type: METADATA_TYPES.CHARACTER },
 			});
 
 			if (!results.documents || results.documents.length === 0) {
@@ -72,7 +72,7 @@ export const characterService = {
 		try {
 			await upsertDocument(collection, character.id, JSON.stringify(character), {
 				...character.metadata,
-				type: 'character', // This already adds the type
+				type: METADATA_TYPES.CHARACTER, // This already adds the type
 			});
 		} catch (error) {
 			console.error('Failed to store character:', error);
@@ -84,7 +84,12 @@ export const characterService = {
 		const collection = await characterService._getCollection();
 
 		try {
-			const results = await queryDocuments(collection, queryText, { type: 'character' }, limit);
+			const results = await queryDocuments(
+				collection,
+				queryText,
+				{ type: METADATA_TYPES.CHARACTER },
+				limit
+			);
 
 			return results
 				.map((doc) => {

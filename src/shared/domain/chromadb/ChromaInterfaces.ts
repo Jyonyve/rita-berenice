@@ -38,7 +38,14 @@ export const COLLECTIONS = {
 
 export type CollectionType = keyof typeof COLLECTIONS;
 
-export const METADATA_TYPES = { MESSAGE: 'message', SET: 'set', RECAP: 'recap', TEMP: 'temp' };
+export const METADATA_TYPES = {
+	CHARACTER: 'character',
+	PROFILE: 'profile',
+	MESSAGE: 'message',
+	SET: 'set',
+	RECAP: 'recap',
+	TEMP: 'temp',
+};
 
 // src/shared/types/credentials.ts (Example path)
 export interface CredentialData {

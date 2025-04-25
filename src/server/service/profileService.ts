@@ -1,4 +1,4 @@
-import { ProfileInfo } from '#root/src/shared/index.ts';
+import { METADATA_TYPES, ProfileInfo } from '#root/src/shared/index.ts';
 import { Collection, IncludeEnum } from 'chromadb';
 import { chromaDbClient } from '#server/db/chromaDbClient.ts';
 
@@ -28,7 +28,7 @@ export const profileService = {
 		try {
 			const results = await collection.get({
 				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
-				where: { type: 'profile' },
+				where: { type: METADATA_TYPES.PROFILE },
 			});
 
 			if (!results.documents || results.documents.length === 0) {
@@ -100,7 +100,7 @@ export const profileService = {
 		try {
 			await upsertDocument(collection, profile.id, JSON.stringify(profile), {
 				...profile.metadata,
-				type: 'profile', // Make sure this is added
+				type: METADATA_TYPES.PROFILE, // Make sure this is added
 			});
 		} catch (error) {
 			console.error('Failed to store profile:', error);
@@ -112,7 +112,12 @@ export const profileService = {
 		const collection = await profileService._getCollection();
 
 		try {
-			const results = await queryDocuments(collection, queryText, { type: 'profile' }, limit);
+			const results = await queryDocuments(
+				collection,
+				queryText,
+				{ type: METADATA_TYPES.PROFILE },
+				limit
+			);
 
 			return results
 				.map((doc) => {

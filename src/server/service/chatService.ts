@@ -8,13 +8,11 @@ import {
 	parseEntriesToText,
 	buildMessageId,
 	buildTurnId,
-	buildSummaryId,
 	SUFFIX,
 	DEFAULT_LOADING_TURN_COUNT,
 	DEFAULT_RECAP_INTERVAL,
 	buildChatTurnToJsonString,
 	DEFAULT_RECAP_MODEL_FREE,
-	buildRecapId,
 	DEFAULT_RECENT_TURN_COUNT,
 	METADATA_TYPES,
 } from '#root/src/shared/index.ts';
