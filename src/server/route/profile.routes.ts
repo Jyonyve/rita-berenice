@@ -15,10 +15,10 @@ router.get(
 		console.log(`API HIT: GET ${path}`);
 		try {
 			const profiles = await profileService.getAllProfiles();
-			res.json(profiles);
+			return res.json(profiles);
 		} catch (error: any) {
 			console.error(`Error in GET ${path}:`, error);
-			res.status(500).json({ error: 'Failed to fetch profiles' });
+			return res.status(500).json({ error: 'Failed to fetch profiles' });
 		}
 	}
 );
@@ -36,10 +36,10 @@ router.get(
 			if (!profile) {
 				return res.status(404).json({ error: 'Profile not found' });
 			}
-			res.json(profile);
+			return res.json(profile);
 		} catch (error: any) {
 			console.error(`Error in GET ${path.replace(':id', id)}:`, error);
-			res.status(500).json({ error: 'Failed to fetch profile details' });
+			return res.status(500).json({ error: 'Failed to fetch profile details' });
 		}
 	}
 );
@@ -55,10 +55,10 @@ router.get(
 		try {
 			const profiles = await profileService.getProfilesBySessionId(sessionId);
 			// Service already handles empty array case, just return results
-			res.json(profiles);
+			return res.json(profiles);
 		} catch (error: any) {
 			console.error(`Error in GET ${path.replace(':sessionId', sessionId)}:`, error);
-			res.status(500).json({ error: 'Failed to fetch profiles for session' });
+			return res.status(500).json({ error: 'Failed to fetch profiles for session' });
 		}
 	}
 );
@@ -85,10 +85,10 @@ router.post(
 		try {
 			await profileService.storeProfile(profileData);
 			// Respond with the data that was stored/updated
-			res.status(200).json(profileData); // 200 OK for upsert
+			return res.status(200).json(profileData); // 200 OK for upsert
 		} catch (error: any) {
 			console.error(`Error in POST ${path}:`, error);
-			res.status(500).json({ error: 'Failed to store profile' });
+			return res.status(500).json({ error: 'Failed to store profile' });
 		}
 	}
 );
@@ -109,10 +109,10 @@ router.get(
 
 		try {
 			const profiles = await profileService.queryProfiles(query, limit);
-			res.json(profiles);
+			return res.json(profiles);
 		} catch (error: any) {
 			console.error(`Error in GET ${path}:`, error);
-			res.status(500).json({ error: 'Failed to query profiles' });
+			return res.status(500).json({ error: 'Failed to query profiles' });
 		}
 	}
 );

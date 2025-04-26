@@ -1,6 +1,6 @@
-import { Typography, CssBaseline, Button } from '@mui/material';
-import { Box, Container, Stack } from '@mui/system';
-import { useCharacterApi } from '#root/src/client/hook/index.ts';
+import { Typography, CssBaseline, Button, Box, Container, Stack } from '@mui/material';
+
+import { useCharacterApi } from '@client/hook/index.ts';
 
 export const CharacterPage = () => {
 	const { characters, loading, getCharacterAssets } = useCharacterApi();

@@ -40,7 +40,7 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			// Client-side aliases
-			'@': path.resolve(__dirname, './src/client'),
+			'@client': path.resolve(__dirname, './src/client'),
 			'@client/domain': path.resolve(__dirname, './src/client/domain'), // Consider moving shared domain to @shared
 			'@client/component': path.resolve(__dirname, './src/client/component'),
 			'@client/hook': path.resolve(__dirname, './src/client/hook'),
@@ -51,6 +51,7 @@ export default defineConfig({
 
 			// Server-side aliases (Using # prefix is fine, ensure consistency)
 			// Adjusted to plural folder names
+			'#server': path.resolve(__dirname, './src/server'),
 			'#server/db': path.resolve(__dirname, './src/server/db'),
 			'#server/routes': path.resolve(__dirname, './src/server/routes'),
 			'#server/services': path.resolve(__dirname, './src/server/services'),
@@ -61,10 +62,17 @@ export default defineConfig({
 	},
 	plugins: [
 		react({ jsxImportSource: '@emotion/react', babel: { plugins: ['@emotion/babel-plugin'] } }),
-		nodePolyfills({ globals: { Buffer: true, global: true, process: true }, protocolImports: true }),
+		// Configure nodePolyfills to exclude 'crypto'
+		nodePolyfills({
+			exclude: ['crypto'],
+			// Keep other options if needed
+			globals: { Buffer: true, global: true, process: true },
+			protocolImports: true,
+		}),
+
 		topLevelAwait(),
-		tsconfigPaths(), // Reads 'paths' from tsconfig.json
-		svgr(), // For SVG components
+		tsconfigPaths(),
+		svgr(),
 	],
 	build: {
 		chunkSizeWarningLimit: 1000,

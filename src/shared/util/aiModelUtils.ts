@@ -1,15 +1,11 @@
-// src/shared/util/aiModelUtils.ts (CLIENT-SIDE REFACTORED)
-
+import { supportAiModelInfo } from '../config/supportAiModelInfo.ts';
 import {
-	AiModelInfo,
-	AiPlatform,
-	AiProvider,
-	AllModelNames,
-	DEFAULT_LOCAL_MODEL, // Ensure this is defined keyless in shared [6]
-	DEFAULT_CHAT_MODEL_FREE, // Ensure this is defined keyless in shared [6]
-	DEFAULT_RECAP_MODEL_FREE, // Ensure this is defined keyless in shared [6]
-	supportAiModelInfo,
-} from '@shared/index.ts'; // Ensure path is correct
+	DEFAULT_CHAT_MODEL_FREE,
+	DEFAULT_RECAP_MODEL_FREE,
+} from '../domain/aimodel/AiInfoTypes.ts';
+import type { AiModelInfo, AiPlatform, AiProvider, AllModelNames } from '@shared/index.ts';
+
+// src/shared/util/aiModelUtils.ts (CLIENT-SIDE REFACTORED)
 
 // --- Constants (Client-safe) ---
 const PLATFORM_OPENROUTER = 'openrouter';

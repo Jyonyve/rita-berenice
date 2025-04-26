@@ -1,50 +1,36 @@
-import { Routes, Route } from 'react-router-dom'; // Import React Router components
+// src/client/App.tsx
+import { Routes, Route } from 'react-router-dom';
+import { CssBaseline } from '@mui/material'; // Only CssBaseline needed here
 
-// --- MUI Imports ---
+// Import your page components
+
+// import { NotFoundPage } from '@client/component/page/NotFoundPage.tsx'; // Example 404
 import { CharacterPage, ChatPage } from '@client/component/index.ts';
-import { ThemeProvider } from '@emotion/react';
-import { CssBaseline } from '@mui/material';
-import { createTheme } from '@mui/system';
-// import { lightTheme, darkTheme } from './themes'; // Assuming you have theme definitions
-
-// --- Define or Import MUI Theme ---
-// Example: Replace with your actual theme configuration
-const theme = createTheme({
-	palette: {
-		mode: 'light', // or 'dark'
-		// Add your theme customizations here
-	},
-});
 
 export function App() {
 	return (
-		<ThemeProvider theme={theme}>
-			d{/* Apply MUI's baseline CSS reset */}
+		<>
+			{/* Use Fragment or a root div if needed */}
+			{/* CssBaseline applies resets based on the theme provided by an ancestor ThemeProvider */}
 			<CssBaseline />
 			{/* --- Routing Setup --- */}
-			{/* Define which component to render based on the URL path */}
 			<Routes>
 				{/* Map paths to your page components */}
-				<Route path="/" element={<>Rita-Berenice</>} />
+				<Route path="/" element={<CharacterPage />} />
 
 				{/* Character Routes */}
 				<Route path="/character" element={<CharacterPage />} />
-				{/* Matches /character/some-name */}
-				<Route path="/character/:characterName" element={<>character page</>} />
-				{/* Add routes for /character/new or update if needed */}
-				{/* <Route path="/character/new" element={<CreateCharacterPage />} /> */}
-				{/* <Route path="/character/:characterName/edit" element={<UpdateCharacterPage />} /> */}
+				{/* Add routes for /character/new etc. if needed */}
 
 				{/* Chat Route */}
-				{/* Matches /chat/session-abc-123 */}
-				<Route path="/chat/:sessionId" element={<ChatPage sessionId="" />} />
+				<Route
+					path="/chat/:sessionId"
+					element={<ChatPage sessionId={'monday_original_4addb91c-5733-4bf3-8142-a0ab98d0fd9e'} />}
+				/>
 
 				{/* Catch-all route for 404 Not Found */}
 				{/* <Route path="*" element={<NotFoundPage />} /> */}
 			</Routes>
-			{/* You could add common layout components here (e.g., Navbar, Footer) */}
-			{/* <Navbar /> */}
-			{/* <Footer /> */}
-		</ThemeProvider>
+		</>
 	);
 }

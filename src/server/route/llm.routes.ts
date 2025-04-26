@@ -18,7 +18,7 @@ const MODULE_NAME = MODULE_NAMES.LLM;
 // --- POST /api/llm/gen-response-from-llm ---
 router.post(
 	genRoutePattern(MODULE_NAME, 'genResponseFromLlm', []), // Method name matches client call
-	async (req: Request, res: Response): Promise<void> => {
+	async (req: Request, res: Response): Promise<any> => {
 		const path = genRoutePattern(MODULE_NAME, 'genResponseFromLlm', []);
 		console.log(`API HIT: POST ${path}`);
 
@@ -37,12 +37,12 @@ router.post(
 			const assistantResponse = await llmService.invokeLlm(role, prompt, aiModelInfo);
 
 			// --- Send Response ---
-			res.status(200).json({ assistantResponse });
+			return res.status(200).json({ assistantResponse });
 		} catch (error: any) {
 			// Error Handling (llmService might throw specific errors)
 			console.error(`Error in POST ${path}:`, error);
 			const statusCode = error.message.includes('Required API key') ? 401 : 500;
-			res.status(statusCode).json({ message: error.message || 'Failed to get response.' });
+			return res.status(statusCode).json({ message: error.message || 'Failed to get response.' });
 		}
 	}
 );

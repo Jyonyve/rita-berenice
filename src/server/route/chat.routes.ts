@@ -23,7 +23,7 @@ const MODULE_NAME = MODULE_NAMES.CHAT; // Define module name once
 // Stores a completed (fixed) chat turn
 router.post(
 	genRoutePattern(MODULE_NAME, 'storeChatTurn', ['sessionId']),
-	async (req: Request<{ sessionId: string }>, res: Response): Promise<void> => {
+	async (req: Request<{ sessionId: string }>, res: Response): Promise<any> => {
 		const { sessionId } = req.params;
 		const { chatTurn } = req.body;
 		const path = genRoutePattern(MODULE_NAME, 'storeChatTurn', [sessionId]);
@@ -50,10 +50,10 @@ router.post(
 		try {
 			// storeChatTurn handles storing messages, full turn, deleting temp, and recap trigger
 			await chatService.storeChatTurn(chatTurn as ChatTurn);
-			res.status(201).json({ message: 'Chat turn stored successfully' });
+			return res.status(201).json({ message: 'Chat turn stored successfully' });
 		} catch (error: any) {
 			console.error(`Error in POST ${path}:`, error);
-			res.status(500).json({ error: error.message || 'Failed to store chat turn' });
+			return res.status(500).json({ error: error.message || 'Failed to store chat turn' });
 		}
 	}
 );
@@ -62,7 +62,7 @@ router.post(
 // Gets the most recent fixed chat turns for initial load
 router.get(
 	genRoutePattern(MODULE_NAME, 'getRecentChatTurns', ['sessionId']),
-	async (req: Request<{ sessionId: string }>, res: Response): Promise<void> => {
+	async (req: Request<{ sessionId: string }>, res: Response): Promise<any> => {
 		const { sessionId } = req.params;
 		// Use query param for limit, default to constant
 		const limitParam = req.query.limit as string | undefined;
@@ -81,10 +81,10 @@ router.get(
 
 		try {
 			const results = await chatService.getRecentChatTurns(sessionId, limit);
-			res.json(results); // Returns ChatTurn[] parsed on the server
+			return res.json(results); // Returns ChatTurn[] parsed on the server
 		} catch (error: any) {
 			console.error(`Error in GET ${path}:`, error);
-			res.status(500).json({ error: error.message || 'Failed to get recent chat turns' });
+			return res.status(500).json({ error: error.message || 'Failed to get recent chat turns' });
 		}
 	}
 );
@@ -93,7 +93,7 @@ router.get(
 // Gets older fixed chat turns for infinite scroll
 router.get(
 	genRoutePattern(MODULE_NAME, 'getLoadingChatTurns', ['sessionId']),
-	async (req: Request<{ sessionId: string }>, res: Response): Promise<void> => {
+	async (req: Request<{ sessionId: string }>, res: Response): Promise<any> => {
 		const { sessionId } = req.params;
 		const beforeSequenceParam = req.query.beforeSequence as string | undefined;
 		const limitParam = req.query.limit as string | undefined;
@@ -126,10 +126,10 @@ router.get(
 
 		try {
 			const results = await chatService.getLoadingChatTurns(sessionId, beforeSequence, limit);
-			res.json(results); // Returns ChatTurn[] parsed on the server
+			return res.json(results); // Returns ChatTurn[] parsed on the server
 		} catch (error: any) {
 			console.error(`Error in GET ${path}:`, error);
-			res.status(500).json({ error: error.message || 'Failed to load older chat turns' });
+			return res.status(500).json({ error: error.message || 'Failed to load older chat turns' });
 		}
 	}
 );
@@ -138,7 +138,7 @@ router.get(
 // Gets a specific fixed turn by its sequence number
 router.get(
 	genRoutePattern(MODULE_NAME, 'getChatTurnBySequence', ['sessionId', 'sequence']),
-	async (req: Request<{ sessionId: string; sequence: string }>, res: Response): Promise<void> => {
+	async (req: Request<{ sessionId: string; sequence: string }>, res: Response): Promise<any> => {
 		const { sessionId } = req.params;
 		const sequenceParam = req.params.sequence;
 		const path = genRoutePattern(MODULE_NAME, 'getChatTurnBySequence', [sessionId, sequenceParam]);
@@ -180,7 +180,7 @@ router.get(
 				return;
 			}
 
-			res.json(turn);
+			return res.json(turn);
 		} catch (error: any) {
 			console.error(`Error in GET ${path}:`, error);
 			res.status(500).json({ error: error.message || 'Failed to get chat turn by sequence' });
@@ -218,7 +218,7 @@ router.get(
 // Example: /api/chat/query-chat-log/session123?q=search%20term&limit=5
 router.get(
 	genRoutePattern(MODULE_NAME, 'queryChatLog', ['sessionId']),
-	async (req: Request<{ sessionId: string }>, res: Response): Promise<void> => {
+	async (req: Request<{ sessionId: string }>, res: Response): Promise<any> => {
 		const { sessionId } = req.params;
 		const queryText = req.query.q as string | undefined;
 		const limitParam = req.query.limit as string | undefined;
@@ -244,7 +244,7 @@ router.get(
 			// Define which message types to query (likely request and response)
 			const messageTypesToQuery: ChatMessageType[] = ['request', 'response'];
 			const results = await chatService.queryChatLog(sessionId, queryText, messageTypesToQuery, limit);
-			res.json(results); // Returns string[] of matching document contents
+			return res.json(results); // Returns string[] of matching document contents
 		} catch (error: any) {
 			console.error(`Error in GET ${path}:`, error);
 			res.status(500).json({ error: error.message || 'Failed to query chat log' });
@@ -256,7 +256,7 @@ router.get(
 // Builds a context-aware prompt using recap or recent turns
 router.post(
 	genRoutePattern(MODULE_NAME, 'buildUserPromptFromLog', ['sessionId']),
-	async (req: Request<{ sessionId: string }>, res: Response): Promise<void> => {
+	async (req: Request<{ sessionId: string }>, res: Response): Promise<any> => {
 		const { sessionId } = req.params;
 		const { userText, isFullLogQuery } = req.body; // isFullLogQuery is optional flag
 		const path = genRoutePattern(MODULE_NAME, 'buildUserPromptFromLog', [sessionId]);
@@ -285,10 +285,10 @@ router.post(
 				!!isFullLogQuery // Convert to boolean, defaults to false if undefined
 			);
 			// Return the generated prompt string
-			res.json({ prompt: prompt ?? '' });
+			return res.json({ prompt: prompt ?? '' });
 		} catch (error: any) {
 			console.error(`Error in POST ${path}:`, error);
-			res.status(500).json({ error: error.message || 'Failed to build prompt from log' });
+			return res.status(500).json({ error: error.message || 'Failed to build prompt from log' });
 		}
 	}
 );

@@ -16,10 +16,10 @@ router.get(
 		console.log(`API HIT: GET ${path}`);
 		try {
 			const characters = await characterService.getAllCharacters();
-			res.json(characters);
+			return res.json(characters);
 		} catch (error: any) {
 			console.error(`Error in GET ${path}:`, error);
-			res.status(500).json({ error: 'Failed to fetch characters' });
+			return res.status(500).json({ error: 'Failed to fetch characters' });
 		}
 	}
 );
@@ -37,10 +37,10 @@ router.get(
 			if (!character) {
 				return res.status(404).json({ error: 'Character not found' });
 			}
-			res.json(character);
+			return res.json(character);
 		} catch (error: any) {
 			console.error(`Error in GET ${path.replace(':id', id)}:`, error);
-			res.status(500).json({ error: 'Failed to fetch character details' });
+			return res.status(500).json({ error: 'Failed to fetch character details' });
 		}
 	}
 );
@@ -69,10 +69,10 @@ router.post(
 			// Call the service which handles upsert logic
 			await characterService.storeCharacter(characterData);
 			// Respond with the data that was stored/updated
-			res.status(200).json(characterData); // 200 OK since it's an upsert
+			return res.status(200).json(characterData); // 200 OK since it's an upsert
 		} catch (error: any) {
 			console.error(`Error in POST ${path}:`, error);
-			res.status(500).json({ error: 'Failed to store character' });
+			return res.status(500).json({ error: 'Failed to store character' });
 		}
 	}
 );
@@ -93,16 +93,12 @@ router.get(
 
 		try {
 			const characters = await characterService.queryCharacters(query, limit);
-			res.json(characters);
+			return res.json(characters);
 		} catch (error: any) {
 			console.error(`Error in GET ${path}:`, error);
-			res.status(500).json({ error: 'Failed to query characters' });
+			return res.status(500).json({ error: 'Failed to query characters' });
 		}
 	}
 );
-
-// --- Note: The old PUT route is removed as 'storeCharacter' handles upserts via POST ---
-// --- Note: The old GET /:characterName route is removed in favour of GET /get-character-by-id/:id ---
-// --- You could add a GET /get-character-by-name/:name route if needed, requiring a new service method ---
 
 export default router;

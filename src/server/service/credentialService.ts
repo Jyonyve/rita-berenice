@@ -1,6 +1,7 @@
 import { chromaDbClient } from '#server/db/index.ts';
-import { encrypt, decrypt, SECRET_DOC_ID } from '#root/src/shared/index.ts';
+import { SECRET_DOC_ID } from '#root/src/shared/index.ts';
 import type { Collection } from 'chromadb'; // Use Collection type
+import { decrypt, encrypt } from '../util/cryptoUtils.ts';
 
 const { getCredentialCollection, upsertDocument, getDocumentById } = chromaDbClient;
 

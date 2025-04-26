@@ -1,39 +1,34 @@
 // src/entry-client.tsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import createCache from '@emotion/cache'; // For Emotion
-import { CacheProvider } from '@emotion/react'; // For Emotion
-import { App } from './client/App.tsx';
+import createCache from '@emotion/cache';
+import { CacheProvider, ThemeProvider } from '@emotion/react'; // Use ThemeProvider
+import { BrowserRouter } from 'react-router-dom'; // Import BrowserRouter
+import { App, theme } from '@client/index.ts';
 
-// You might wrap App in context providers or Router here if needed
-// e.g., import { BrowserRouter } from 'react-router-dom';
-
-// For Emotion: Create cache for client-side injection
-// Ensure key matches the one used in entry-server.tsx if applicable
+// Create cache for client-side injection
 const emotionCache = createCache({ key: 'emotion-css-cache', prepend: true });
 
+// Define the client-side app structure with providers
 function ClientApp() {
-	// Wrap your App component with necessary providers
 	return (
-		<React.StrictMode>
-			<CacheProvider value={emotionCache}>
-				{/* If using React Router for client-side navigation: */}
-				{/* <BrowserRouter> */}
-				<App />
-				{/* </BrowserRouter> */}
-			</CacheProvider>
-		</React.StrictMode>
+		<CacheProvider value={emotionCache}>
+			<ThemeProvider theme={theme}>
+				<BrowserRouter>
+					{/* Client-side router */}
+					<App />
+				</BrowserRouter>
+			</ThemeProvider>
+		</CacheProvider>
 	);
 }
 
-// Get the root element where the app was rendered server-side
+// Get the root element
 const container = document.getElementById('root');
-
 if (!container) {
 	throw new Error('Root element #root not found');
 }
 
-// Use hydrateRoot to attach React to the existing server-rendered HTML
+// Use hydrateRoot for SSR
 ReactDOM.hydrateRoot(container, <ClientApp />);
-
 console.log('React app hydrated on client.');

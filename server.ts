@@ -76,9 +76,9 @@ async function createServer() {
 
 	// --- SSR Catch-all Handler ---
 	// This handles all GET requests not previously handled by static serving or API routes.
-	app.get('*', async (req: Request, res: Response, next: NextFunction) => {
+	app.get('/{*splat}', async (req: Request, res: Response, next: NextFunction) => {
 		// Simple check to skip SSR for API routes
-		if (req.originalUrl.startsWith(`${BASE}api/`)) {
+		if (req.originalUrl.startsWith(`${BASE_API}`)) {
 			return next(); // Pass request to the next handler (likely 404)
 		}
 
@@ -95,6 +95,7 @@ async function createServer() {
 				'.jpeg',
 				'.gif',
 				'.svg',
+				'.webp',
 				'.woff',
 				'.woff2',
 				'.map',
