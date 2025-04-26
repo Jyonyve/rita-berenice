@@ -5,7 +5,7 @@ import { COLLECTIONS } from '../src/shared/domain/index.ts';
 
 // --- Configuration ---
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev';
-const COLLECTION_TO_DROP = COLLECTIONS.CHAT; // Target the main CHAT collection
+const COLLECTION_TO_DROP = COLLECTIONS.CHARACTER; // Target the main CHAT collection
 
 // --- Main Deletion Logic ---
 async function dropCollection() {

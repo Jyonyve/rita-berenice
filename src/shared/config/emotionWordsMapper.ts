@@ -2,7 +2,7 @@
 
 /**
  * Defines the mapping from image number index to associated emotion keywords.
- * Key: Image number (as referenced in filenames like ...-N.webp)
+ * Key: Image number (as referenced in filenames like ..._N.webp)
  * Value: Array of lowercase emotion keywords associated with that image.
  * IMPORTANT: Ensure keyword 'default' and/or 'neutral' maps to DEFAULT_IMAGE_NUMBER.
  */
@@ -22,7 +22,7 @@ export const numberToEmotionWordsMap: Readonly<Record<number, readonly string[]>
 		'satisfied', // Generally calm/neutral states
 	],
 	1: [
-		// << NEW NUMBER FOR POSITIVE EMOTIONS >>
+		// POSITIVE EMOTIONS
 		'happy',
 		'glad',
 		'pleased',
@@ -147,3 +147,4 @@ export const allEmotionKeywords: readonly string[] = Array.from(
 
 // Default portrait number
 export const DEFAULT_IMAGE_NUMBER = 0;
+export type EmotionKey = keyof typeof numberToEmotionWordsMap;

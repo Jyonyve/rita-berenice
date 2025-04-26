@@ -119,7 +119,7 @@ export const useProfile = () => {
 	// Optional: Function to set the current profile from the local state
 	const selectProfile = useCallback(
 		(profileId: string) => {
-			const profile = profiles.find((p) => p.id === profileId);
+			const profile = profiles.find((p) => p.profileId === profileId);
 			setCurrentProfile(profile);
 		},
 		[profiles]

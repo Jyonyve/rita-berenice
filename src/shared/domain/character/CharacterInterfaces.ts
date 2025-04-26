@@ -1,28 +1,38 @@
 import type { Metadata } from 'chromadb';
+import { EmotionKey } from '../../config/emotionWordsMapper.ts';
 
 export interface CharacterMetadata extends Metadata {
-	id: string; // character name
+	characterId: string;
+	name: string; // character name
 	variant: string; // specifier (ex: original| uuid)
 	description: string;
-	createdAt: string;
-	updatedAt: string;
+	instructions: string; // Field for LLM instructions/persona rules
+	showName: string; // 한글 이름
+	createdAt: string; // should be ISOstring
+	updatedAt: string; // should be ISOstring
+	type: string; // e.g., METADATA_TYPES.CHARACTER
 }
 
 export interface ProfileMetadata extends Metadata {
-	id: string; // character name
+	profileId: string;
+	name: string; // character name
 	description: string;
+	showName: string;
 	createdAt: string;
 	updatedAt: string;
+	type: string; // e.g., METADATA_TYPES.PROFILE
 }
 
 export interface CharacterInfo {
-	id: string; // e.g., "tarion-original ; ${id}-{variant}"
+	characterId: string; // e.g., "tarion-original ; ${id}-{variant}"
+	name: string;
 	showName: string; // 한글 이름
 	metadata: CharacterMetadata;
 }
 
 export interface ProfileInfo {
-	id: string; // e.g., "yonyve-${sessionId}"
+	profileId: string; // e.g., "yonyve-${sessionId}"
+	name: string;
 	showName: string;
 	metadata: ProfileMetadata;
 }
@@ -35,5 +45,5 @@ export interface CharacterAsset {
 }
 
 export interface CharacterAssets {
-	[character: string]: { [type: string]: CharacterAsset };
+	[characterId: string]: Partial<Record<EmotionKey, CharacterAsset>>;
 }

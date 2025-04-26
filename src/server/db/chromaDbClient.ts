@@ -19,7 +19,7 @@ export const chromaDbClient = {
 			credentialCollection = await chromaClient.getOrCreateCollection({
 				// Use a consistent name for the secrets collection
 				name: COLLECTIONS.CREDENTIAL,
-				metadata: { type: 'credential' },
+				metadata: { type: COLLECTIONS.CREDENTIAL },
 			});
 		}
 		return credentialCollection;
@@ -29,7 +29,7 @@ export const chromaDbClient = {
 		if (!characterCollection) {
 			characterCollection = await chromaClient.getOrCreateCollection({
 				name: COLLECTIONS.CHARACTER,
-				metadata: { type: 'character_list' },
+				metadata: { type: COLLECTIONS.CHARACTER },
 			});
 		}
 		return characterCollection;
@@ -39,7 +39,7 @@ export const chromaDbClient = {
 		if (!profileCollection) {
 			profileCollection = await chromaClient.getOrCreateCollection({
 				name: COLLECTIONS.PROFILE,
-				metadata: { type: 'user_profiles' },
+				metadata: { type: COLLECTIONS.PROFILE },
 			});
 		}
 		return profileCollection;
@@ -49,7 +49,7 @@ export const chromaDbClient = {
 		if (!tempChatCollection) {
 			tempChatCollection = await chromaClient.getOrCreateCollection({
 				name: COLLECTIONS.TEMP_CHAT,
-				metadata: { type: 'recent_temp_chat' },
+				metadata: { type: COLLECTIONS.TEMP_CHAT },
 			});
 		}
 		return tempChatCollection;
@@ -59,7 +59,7 @@ export const chromaDbClient = {
 		if (!recapCollection) {
 			recapCollection = await chromaClient.getOrCreateCollection({
 				name: COLLECTIONS.RECAP,
-				metadata: { type: 'conversation_recap' },
+				metadata: { type: COLLECTIONS.RECAP },
 			});
 		}
 		return recapCollection;
@@ -75,7 +75,7 @@ export const chromaDbClient = {
 			sessionCollections[sessionId] = await chromaClient.getOrCreateCollection({
 				name: COLLECTIONS.CHAT,
 				metadata: {
-					type: 'chat_session',
+					type: COLLECTIONS.CHAT,
 					sessionId,
 					characterName,
 					createdAt: new Date().toISOString(),

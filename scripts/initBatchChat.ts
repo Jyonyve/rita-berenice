@@ -31,6 +31,7 @@ async function initBatchChat() {
 				// Minimal, descriptive metadata for the collection itself
 				description: 'Stores all chat session turns.',
 				created_by_script: 'initBatchChat.ts',
+				type: COLLECTIONS.CHAT,
 			},
 		});
 		console.log(`Collection "${COLLECTIONS.CHAT}" ready.`);

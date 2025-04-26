@@ -1,25 +1,17 @@
 // src/server/routes/ai.routes.ts (or chatGeneration.routes.ts)
 import express, { type Request, type Response } from 'express';
 import { llmService } from '#root/src/server/service/llmService.ts'; // Correct path
-import {
-	genRoutePattern,
-	MODULE_NAMES,
-	isDirectOpenAIClient,
-	extractValidOpenAiContent,
-	convertMessageContentToString,
-	isValidAiModelInfo,
-} from '#root/src/shared/index.ts';
+import { genRoutePattern, isValidAiModelInfo } from '#root/src/shared/index.ts';
 import { AiModelInfo, ChatRoleType, ChatTurn } from '#root/src/shared/domain/index.ts';
 // Import the necessary server-side utils
 
 const router = express.Router();
-const MODULE_NAME = MODULE_NAMES.LLM;
 
 // --- POST /api/llm/gen-response-from-llm ---
 router.post(
-	genRoutePattern(MODULE_NAME, 'genResponseFromLlm', []), // Method name matches client call
+	genRoutePattern('genResponseFromLlm', []), // Method name matches client call
 	async (req: Request, res: Response): Promise<any> => {
-		const path = genRoutePattern(MODULE_NAME, 'genResponseFromLlm', []);
+		const path = genRoutePattern('genResponseFromLlm', []);
 		console.log(`API HIT: POST ${path}`);
 
 		try {

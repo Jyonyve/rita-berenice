@@ -115,10 +115,10 @@ export const useCharacterApi = () => {
 	// Change current character based on selection (purely client-side state change)
 	const changeCharacter = useCallback(
 		(characterId: string) => {
-			const characterInfo = characters.find((info) => info.id === characterId);
+			const characterInfo = characters.find((info) => info.characterId === characterId);
 			if (characterInfo) {
 				console.log(
-					`Changing current character to: ${characterInfo.metadata?.name} (${characterInfo.id})`
+					`Changing current character to: ${characterInfo.metadata?.name} (${characterInfo.characterId})`
 				);
 				setCurrentCharacter(characterInfo);
 			} else {
@@ -133,25 +133,10 @@ export const useCharacterApi = () => {
 	const getCharacterFromState = useCallback(
 		(characterId: string): CharacterInfo | undefined => {
 			// Note: Renamed to avoid confusion with API call `getCharacterById`
-			return characters.find((info) => info.id === characterId);
+			return characters.find((info) => info.characterId === characterId);
 		},
 		[characters]
 	);
-
-	// Get character assets (purely client-side using Vite's glob import)
-	const getCharacterAssets = useCallback((character: string, variant: string): CharacterAsset => {
-		const images = Object.entries(
-			import.meta.glob<{ default: string }>('/src/asset/character/**/*.webp', {
-				eager: true,
-			}) as Record<string, { default: string }>
-		);
-
-		const filteredImages = images
-			.filter(([path]) => path.includes(`/${character}-${variant}/`)) // Assumes folder naming convention
-			.map(([_, module]) => module.default);
-
-		return { images: filteredImages, defaultImage: filteredImages[0] || '' } as CharacterAsset;
-	}, []); // No dependencies
 
 	// --- Return Hook Values ---
 	return {
@@ -168,6 +153,5 @@ export const useCharacterApi = () => {
 		// Client-side functions
 		changeCharacter, // Sets the currentCharacter from local state
 		getCharacterFromState, // Finds a character in the local state
-		getCharacterAssets, // Gets asset paths
 	};
 };

@@ -1,18 +1,17 @@
 // src/server/routes/character.routes.ts
 import { CharacterInfo } from '#root/src/shared/domain/index.ts';
-import { genRoutePattern, MODULE_NAMES } from '#root/src/shared/index.ts';
+import { genRoutePattern } from '#root/src/shared/index.ts';
 import express, { type Request, type Response } from 'express';
 import { characterService } from '#server/service/index.ts';
 
 const router = express.Router();
-const MODULE_NAME = MODULE_NAMES.CHARACTER; // Define module name once
 
 // --- GET /api/character/get-all-characters ---
 // Corresponds to characterService.getAllCharacters
 router.get(
-	genRoutePattern(MODULE_NAME, 'getAllCharacters'),
+	genRoutePattern('getAllCharacters'),
 	async (req: Request, res: Response): Promise<any> => {
-		const path = genRoutePattern(MODULE_NAME, 'getAllCharacters');
+		const path = genRoutePattern('getAllCharacters');
 		console.log(`API HIT: GET ${path}`);
 		try {
 			const characters = await characterService.getAllCharacters();
@@ -27,10 +26,10 @@ router.get(
 // --- GET /api/character/get-character-by-id/:id ---
 // Corresponds to characterService.getCharacterById
 router.get(
-	genRoutePattern(MODULE_NAME, 'getCharacterById', ['id']),
+	genRoutePattern('getCharacterById', ['id']),
 	async (req: Request<{ id: string }>, res: Response): Promise<any> => {
 		const { id } = req.params;
-		const path = genRoutePattern(MODULE_NAME, 'getCharacterById', ['id']);
+		const path = genRoutePattern('getCharacterById', ['id']);
 		console.log(`API HIT: GET ${path.replace(':id', id)}`);
 		try {
 			const character = await characterService.getCharacterById(id);
@@ -49,17 +48,17 @@ router.get(
 // Corresponds to characterService.storeCharacter (which uses upsert)
 // Expects a full CharacterInfo object in the body
 router.post(
-	genRoutePattern(MODULE_NAME, 'storeCharacter'),
+	genRoutePattern('storeCharacter'),
 	async (req: Request<{}, any, CharacterInfo>, res: Response): Promise<any> => {
 		const characterData = req.body; // Expects full CharacterInfo
-		const path = genRoutePattern(MODULE_NAME, 'storeCharacter');
-		console.log(`API HIT: POST ${path} for ID: ${characterData?.id}`);
+		const path = genRoutePattern('storeCharacter');
+		console.log(`API HIT: POST ${path} for ID: ${characterData?.characterId}`);
 
 		// Basic validation
 		if (
 			!characterData ||
 			typeof characterData !== 'object' ||
-			!characterData.id ||
+			!characterData.characterId ||
 			!characterData.metadata?.name
 		) {
 			return res.status(400).json({ error: 'Invalid character data in request body' });
@@ -80,11 +79,11 @@ router.post(
 // --- GET /api/character/query-characters?q=...&limit=... ---
 // Corresponds to characterService.queryCharacters
 router.get(
-	genRoutePattern(MODULE_NAME, 'queryCharacters'),
+	genRoutePattern('queryCharacters'),
 	async (req: Request, res: Response): Promise<any> => {
 		const query = req.query.q as string | undefined;
 		const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10; // Default limit
-		const path = genRoutePattern(MODULE_NAME, 'queryCharacters');
+		const path = genRoutePattern('queryCharacters');
 		console.log(`API HIT: GET ${path}?q=${query}&limit=${limit}`);
 
 		if (!query) {

@@ -8,25 +8,20 @@ import {
 } from '#root/src/shared/domain/index.ts'; // Added ChatMessageType
 import { chatService } from '#root/src/server/service/index.ts';
 import { genRoutePattern, buildTurnId } from '#root/src/shared/util/index.ts'; // Added buildTurnId
-import {
-	DEFAULT_LOADING_TURN_COUNT,
-	DEFAULT_RECENT_TURN_COUNT,
-	MODULE_NAMES,
-} from '#root/src/shared/index.ts';
+import { DEFAULT_LOADING_TURN_COUNT, DEFAULT_RECENT_TURN_COUNT } from '#root/src/shared/index.ts';
 import { chromaDbClient } from '#server/db/chromaDbClient.ts'; // Added chromaDbClient for direct access in one route
 import { IncludeEnum } from 'chromadb';
 
 const router = express.Router();
-const MODULE_NAME = MODULE_NAMES.CHAT; // Define module name once
 
 // --- POST /api/chat/store-chat-turn/:sessionId ---
 // Stores a completed (fixed) chat turn
 router.post(
-	genRoutePattern(MODULE_NAME, 'storeChatTurn', ['sessionId']),
+	genRoutePattern('storeChatTurn', ['sessionId']),
 	async (req: Request<{ sessionId: string }>, res: Response): Promise<any> => {
 		const { sessionId } = req.params;
 		const { chatTurn } = req.body;
-		const path = genRoutePattern(MODULE_NAME, 'storeChatTurn', [sessionId]);
+		const path = genRoutePattern('storeChatTurn', [sessionId]);
 		console.log(`API HIT: POST ${path}`);
 
 		if (!chatTurn) {
@@ -61,13 +56,13 @@ router.post(
 // --- GET /api/chat/get-recent-chat-turns/:sessionId ---
 // Gets the most recent fixed chat turns for initial load
 router.get(
-	genRoutePattern(MODULE_NAME, 'getRecentChatTurns', ['sessionId']),
+	genRoutePattern('getRecentChatTurns', ['sessionId']),
 	async (req: Request<{ sessionId: string }>, res: Response): Promise<any> => {
 		const { sessionId } = req.params;
 		// Use query param for limit, default to constant
 		const limitParam = req.query.limit as string | undefined;
 		const limit = limitParam ? parseInt(limitParam, 10) : DEFAULT_RECENT_TURN_COUNT;
-		const path = genRoutePattern(MODULE_NAME, 'getRecentChatTurns', [sessionId]);
+		const path = genRoutePattern('getRecentChatTurns', [sessionId]);
 		console.log(`API HIT: GET ${path}?limit=${limit}`);
 
 		if (!sessionId) {
@@ -92,14 +87,14 @@ router.get(
 // --- GET /api/chat/get-loading-chat-turns/:sessionId ---
 // Gets older fixed chat turns for infinite scroll
 router.get(
-	genRoutePattern(MODULE_NAME, 'getLoadingChatTurns', ['sessionId']),
+	genRoutePattern('getLoadingChatTurns', ['sessionId']),
 	async (req: Request<{ sessionId: string }>, res: Response): Promise<any> => {
 		const { sessionId } = req.params;
 		const beforeSequenceParam = req.query.beforeSequence as string | undefined;
 		const limitParam = req.query.limit as string | undefined;
 
 		const limit = limitParam ? parseInt(limitParam, 10) : DEFAULT_LOADING_TURN_COUNT;
-		const path = genRoutePattern(MODULE_NAME, 'getLoadingChatTurns', [sessionId]);
+		const path = genRoutePattern('getLoadingChatTurns', [sessionId]);
 		console.log(`API HIT: GET ${path}?beforeSequence=${beforeSequenceParam}&limit=${limit}`);
 
 		if (!sessionId) {
@@ -137,11 +132,11 @@ router.get(
 // --- GET /api/chat/get-chat-turn-by-sequence/:sessionId/:sequence ---
 // Gets a specific fixed turn by its sequence number
 router.get(
-	genRoutePattern(MODULE_NAME, 'getChatTurnBySequence', ['sessionId', 'sequence']),
+	genRoutePattern('getChatTurnBySequence', ['sessionId', 'sequence']),
 	async (req: Request<{ sessionId: string; sequence: string }>, res: Response): Promise<any> => {
 		const { sessionId } = req.params;
 		const sequenceParam = req.params.sequence;
-		const path = genRoutePattern(MODULE_NAME, 'getChatTurnBySequence', [sessionId, sequenceParam]);
+		const path = genRoutePattern('getChatTurnBySequence', [sessionId, sequenceParam]);
 		console.log(`API HIT: GET ${path}`);
 
 		if (!sessionId) {
@@ -191,10 +186,10 @@ router.get(
 // --- GET /api/chat/get-recap/:sessionId ---
 // Gets the generated recap for the session
 router.get(
-	genRoutePattern(MODULE_NAME, 'getRecap', ['sessionId']),
+	genRoutePattern('getRecap', ['sessionId']),
 	async (req: Request<{ sessionId: string }>, res: Response): Promise<void> => {
 		const { sessionId } = req.params;
-		const path = genRoutePattern(MODULE_NAME, 'getRecap', [sessionId]);
+		const path = genRoutePattern('getRecap', [sessionId]);
 		console.log(`API HIT: GET ${path}`);
 
 		if (!sessionId) {
@@ -217,14 +212,14 @@ router.get(
 // Performs a semantic query against the chat log messages (request/response)
 // Example: /api/chat/query-chat-log/session123?q=search%20term&limit=5
 router.get(
-	genRoutePattern(MODULE_NAME, 'queryChatLog', ['sessionId']),
+	genRoutePattern('queryChatLog', ['sessionId']),
 	async (req: Request<{ sessionId: string }>, res: Response): Promise<any> => {
 		const { sessionId } = req.params;
 		const queryText = req.query.q as string | undefined;
 		const limitParam = req.query.limit as string | undefined;
 		const limit = limitParam ? parseInt(limitParam, 10) : 10; // Default query limit
 
-		const path = genRoutePattern(MODULE_NAME, 'queryChatLog', [sessionId]);
+		const path = genRoutePattern('queryChatLog', [sessionId]);
 		console.log(`API HIT: GET ${path}?q=${queryText}&limit=${limit}`);
 
 		if (!sessionId) {
@@ -255,11 +250,11 @@ router.get(
 // --- POST /api/chat/build-user-prompt-from-log/:sessionId ---
 // Builds a context-aware prompt using recap or recent turns
 router.post(
-	genRoutePattern(MODULE_NAME, 'buildUserPromptFromLog', ['sessionId']),
+	genRoutePattern('buildUserPromptFromLog', ['sessionId']),
 	async (req: Request<{ sessionId: string }>, res: Response): Promise<any> => {
 		const { sessionId } = req.params;
 		const { userText, isFullLogQuery } = req.body; // isFullLogQuery is optional flag
-		const path = genRoutePattern(MODULE_NAME, 'buildUserPromptFromLog', [sessionId]);
+		const path = genRoutePattern('buildUserPromptFromLog', [sessionId]);
 		console.log(`API HIT: POST ${path}`);
 
 		if (!sessionId) {

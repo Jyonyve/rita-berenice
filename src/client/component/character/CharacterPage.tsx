@@ -1,45 +1,98 @@
-import { Typography, CssBaseline, Button, Box, Container, Stack } from '@mui/material';
+// src/client/component/page/CharacterPage.tsx
 
+import { Typography, Box, Container, Stack, CircularProgress } from '@mui/material'; // Import CircularProgress
 import { useCharacterApi } from '@client/hook/index.ts';
+import { DEFAULT_IMAGE_NUMBER } from '@shared/index.ts'; // Import default image number constant
+import { useCharacterState } from '@client/hook/character/index.ts';
+import { CharacterPortrait } from './index.ts';
+
+// Helper Component to manage state for a single character's portrait
+const CharacterItem: React.FC<{ characterId: string; showName: string }> = ({
+	characterId,
+	showName,
+}) => {
+	// Use the hook *per character* to load its specific assets
+	const { portraitMap, isLoadingPortraits, error } = useCharacterState(characterId);
+	console.log(characterId);
+	// Get the URL for the default portrait from the map
+	console.log(portraitMap);
+	const defaultImageUrl = portraitMap[DEFAULT_IMAGE_NUMBER];
+	console.log(defaultImageUrl);
+
+	return (
+		<Box key={characterId} sx={{ border: '1px solid grey', p: 2, mb: 2 }}>
+			{/* Conditionally render portrait based on loading/error/success */}
+			{isLoadingPortraits ? (
+				<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 100 }}>
+					<CircularProgress size={24} /> {/* Show loading spinner */}
+				</Box>
+			) : error ? (
+				<Typography color="error" variant="caption">
+					Image Error
+				</Typography> // Show error
+			) : defaultImageUrl ? (
+				<CharacterPortrait imageUrl={defaultImageUrl} charName={showName} /> // Show portrait
+			) : (
+				<Box
+					sx={{
+						height: 100,
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						bgcolor: 'grey.200',
+					}}
+				>
+					<Typography variant="caption" color="textSecondary">
+						No Image
+					</Typography>
+					{/* Placeholder if no default image found */}
+				</Box>
+			)}
+			<Typography variant="h6">{showName}</Typography>
+			{/* Add navigation buttons or links here */}
+		</Box>
+	);
+};
 
 export const CharacterPage = () => {
-	const { characters, loading, getCharacterAssets } = useCharacterApi();
+	// Fetch character list metadata
+	const { characters, loading: loadingList } = useCharacterApi();
 
-	if (loading) {
-		return <Typography>Loading characters...</Typography>;
+	if (loadingList) {
+		// Use a more descriptive loading state, maybe centered
+		return (
+			<Container
+				sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}
+			>
+				<CircularProgress />
+				<Typography sx={{ ml: 2 }}>Loading characters...</Typography>
+			</Container>
+		);
+	}
+
+	// if (listError) {
+	//      return <Typography color="error">Error loading character list: {listError.message}</Typography>
+	// }
+
+	if (characters.length === 0) {
+		return <Typography>No characters found.</Typography>; // Handle empty state
 	}
 
 	return (
-		<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 4 }}>
-			<CssBaseline />
-			<Container maxWidth="sm">
-				{characters.map(({ id, metadata }) => {
-					const [character, variant] = id.split('-');
-					const asset = getCharacterAssets(character, variant);
-					return (
-						<Box key={id} sx={{ mb: 3 }}>
-							<Stack direction="row" spacing={2} alignItems="center">
-								{asset && (
-									<Box
-										component="img"
-										src={asset.defaultImage}
-										alt={metadata.showName.toString()}
-										sx={{ width: 48, height: 48, borderRadius: '50%' }}
-									/>
-								)}
-								<Stack spacing={2}>
-									<Typography variant="h6">{metadata.showName}</Typography>
-									{/* {groupSessions.map((session) => (
-										<Button key={session.uuId} variant="contained" onClick={() => navigate(session.id)}>
-											{session.title}
-										</Button>
-									))} */}
-								</Stack>
-							</Stack>
-						</Box>
-					);
-				})}
-			</Container>
-		</Box>
+		<Container maxWidth="sm">
+			<Typography variant="h4" gutterBottom>
+				Select Character
+			</Typography>
+			<Stack spacing={2}>
+				{/* Map over characters and render CharacterItem for each */}
+				{characters.map(({ characterId, showName }) => (
+					<CharacterItem
+						key={characterId}
+						characterId={characterId} // Pass the full ID (e.g., "monday-original")
+						showName={showName}
+					/>
+				))}
+			</Stack>
+		</Container>
 	);
 };

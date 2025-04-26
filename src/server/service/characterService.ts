@@ -1,4 +1,4 @@
-import { CharacterInfo, METADATA_TYPES } from '#root/src/shared/domain/index.ts';
+import { CharacterInfo, CharacterMetadata, METADATA_TYPES } from '#root/src/shared/domain/index.ts';
 import { Collection, IncludeEnum } from 'chromadb';
 import { chromaDbClient } from '#server/db/index.ts';
 
@@ -39,7 +39,13 @@ export const characterService = {
 				.map((doc, index) => {
 					if (doc === null) return null;
 					try {
-						return JSON.parse(doc) as CharacterInfo;
+						const fullMetaData = JSON.parse(doc) as CharacterMetadata;
+						return {
+							characterId: fullMetaData.characterId,
+							name: fullMetaData.name,
+							showName: fullMetaData.showName,
+							metadata: fullMetaData,
+						} as CharacterInfo;
 					} catch (e) {
 						console.error('Error parsing character info:', e);
 						return null;
@@ -70,7 +76,7 @@ export const characterService = {
 		const collection = await characterService._getCollection();
 
 		try {
-			await upsertDocument(collection, character.id, JSON.stringify(character), {
+			await upsertDocument(collection, character.characterId, JSON.stringify(character), {
 				...character.metadata,
 				type: METADATA_TYPES.CHARACTER, // This already adds the type
 			});

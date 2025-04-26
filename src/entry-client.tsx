@@ -1,34 +1,49 @@
-// src/entry-client.tsx
+// src/client/entry-client.tsx
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import createCache from '@emotion/cache';
-import { CacheProvider, ThemeProvider } from '@emotion/react'; // Use ThemeProvider
-import { BrowserRouter } from 'react-router-dom'; // Import BrowserRouter
-import { App, theme } from '@client/index.ts';
+import { BrowserRouter } from 'react-router-dom'; // Use BrowserRouter for client
+import { CacheProvider } from '@emotion/react';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { createEmotionCache } from '@shared/util/index.ts'; // Use your shared utility
+import { App, theme } from '@client/index.ts'; // Import theme and App
 
-// Create cache for client-side injection
-const emotionCache = createCache({ key: 'emotion-css-cache', prepend: true });
+// 1. Create a single client-side cache instance using the shared utility
+const clientSideEmotionCache = createEmotionCache();
 
-// Define the client-side app structure with providers
+// Define the client-side app structure with providers (NO HelmetProvider)
 function ClientApp() {
 	return (
-		<CacheProvider value={emotionCache}>
-			<ThemeProvider theme={theme}>
-				<BrowserRouter>
-					{/* Client-side router */}
-					<App />
-				</BrowserRouter>
-			</ThemeProvider>
-		</CacheProvider>
+		<React.StrictMode>
+			{' '}
+			{/* Optional but recommended */}
+			<CacheProvider value={clientSideEmotionCache}>
+				{' '}
+				{/* Emotion wrapper */}
+				<ThemeProvider theme={theme}>
+					{' '}
+					{/* MUI Theme wrapper */}
+					<CssBaseline /> {/* MUI CSS reset */}
+					<BrowserRouter>
+						{' '}
+						{/* Router wrapper */}
+						<App />
+					</BrowserRouter>
+				</ThemeProvider>
+			</CacheProvider>
+		</React.StrictMode>
 	);
 }
 
-// Get the root element
+// 2. Get the root element
 const container = document.getElementById('root');
+
 if (!container) {
-	throw new Error('Root element #root not found');
+	throw new Error("Root element '#root' not found for hydration.");
 }
 
-// Use hydrateRoot for SSR
+// 3. Use hydrateRoot for SSR, wrapping with ClientApp which includes providers
 ReactDOM.hydrateRoot(container, <ClientApp />);
+
 console.log('React app hydrated on client.');

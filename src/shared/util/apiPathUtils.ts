@@ -28,12 +28,13 @@ function toKebabCase(str: string): string {
  * @returns The API route pattern string (e.g., '/api/chroma/store-chat-turn/:sessionId').
  */
 export function genRoutePattern(
-	moduleName: string,
+	// moduleName is no longer part of the generated path string
 	methodName: string,
 	paramNames: string[] = []
 ): string {
 	const kebabMethod = toKebabCase(methodName);
-	let path = `/api/${moduleName}/${kebabMethod}`; // Base path with module and method
+	// Start the path directly with the method name, relative to the mount point
+	let path = `/${kebabMethod}`;
 
 	// Append parameter placeholders if any are specified
 	if (paramNames.length > 0) {
@@ -59,7 +60,7 @@ export function genApiUrl(
 	paramValues: (string | number)[] = []
 ): string {
 	const kebabMethod = toKebabCase(methodName);
-	let path = `/api/${moduleName}/${kebabMethod}`; // Base path
+	let path = `/${moduleName}/${kebabMethod}`; // Base path
 
 	// Append encoded parameter values if any are provided
 	if (paramValues.length > 0) {

@@ -7,6 +7,7 @@ interface CharacterPortraitProps {
 }
 
 export const CharacterPortrait: FC<CharacterPortraitProps> = ({ imageUrl, charName }) => {
+	console.log(imageUrl);
 	const altText = charName ? `${charName}_portrait` : 'portrait';
 	return (
 		<Box

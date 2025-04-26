@@ -1,4 +1,9 @@
-import { METADATA_TYPES, ProfileInfo } from '#root/src/shared/index.ts';
+import {
+	CharacterInfo,
+	METADATA_TYPES,
+	ProfileInfo,
+	ProfileMetadata,
+} from '#root/src/shared/index.ts';
 import { Collection, IncludeEnum } from 'chromadb';
 import { chromaDbClient } from '#server/db/chromaDbClient.ts';
 
@@ -39,7 +44,13 @@ export const profileService = {
 				.map((doc, index) => {
 					if (doc === null) return null;
 					try {
-						return JSON.parse(doc) as ProfileInfo;
+						const fullMetaData = JSON.parse(doc) as ProfileMetadata;
+						return {
+							profileId: fullMetaData.profileId,
+							name: fullMetaData.name,
+							showName: fullMetaData.showName,
+							metadata: fullMetaData,
+						} as ProfileInfo;
 					} catch (e) {
 						console.error('Error parsing profile info:', e);
 						return null;
@@ -98,7 +109,7 @@ export const profileService = {
 		const collection = await profileService._getCollection();
 
 		try {
-			await upsertDocument(collection, profile.id, JSON.stringify(profile), {
+			await upsertDocument(collection, profile.profileId, JSON.stringify(profile), {
 				...profile.metadata,
 				type: METADATA_TYPES.PROFILE, // Make sure this is added
 			});

@@ -6,14 +6,13 @@ import { genRoutePattern } from '#root/src/shared/util/index.ts';
 import { MODULE_NAMES } from '#root/src/shared/index.ts';
 
 const router = express.Router();
-const MODULE_NAME = MODULE_NAMES.TEMP_CHAT;
 
 // --- POST /api/temp-chat/save-temp-chat-turn ---
 router.post(
-	genRoutePattern(MODULE_NAME, 'saveTempChatTurn', []),
+	genRoutePattern('saveTempChatTurn', []),
 	async (req: Request, res: Response): Promise<any> => {
 		const { tempData } = req.body;
-		console.log(`API HIT: POST ${genRoutePattern(MODULE_NAME, 'saveTempChatTurn', [])}`);
+		console.log(`API HIT: POST ${genRoutePattern('saveTempChatTurn', [])}`);
 
 		if (!tempData?.sessionId) {
 			res.status(400).json({ error: 'Invalid tempData' });
@@ -31,10 +30,10 @@ router.post(
 
 // --- GET /api/temp-chat/get-temp-chat-turn/:sessionId ---
 router.get(
-	genRoutePattern(MODULE_NAME, 'getTempChatTurn', ['sessionId']),
+	genRoutePattern('getTempChatTurn', ['sessionId']),
 	async (req: Request<{ sessionId: string }>, res: Response): Promise<any> => {
 		const { sessionId } = req.params;
-		console.log(`API HIT: GET ${genRoutePattern(MODULE_NAME, 'getTempChatTurn', [sessionId])}`);
+		console.log(`API HIT: GET ${genRoutePattern('getTempChatTurn', [sessionId])}`);
 
 		try {
 			const tempTurn = await chatService.getTempChatTurn(sessionId);
@@ -47,10 +46,10 @@ router.get(
 
 // --- DELETE /api/temp-chat/remove-temp-chat-turn/:sessionId ---
 router.delete(
-	genRoutePattern(MODULE_NAME, 'removeTempChatTurn', ['sessionId']),
+	genRoutePattern('removeTempChatTurn', ['sessionId']),
 	async (req: Request<{ sessionId: string }>, res: Response): Promise<any> => {
 		const { sessionId } = req.params;
-		console.log(`API HIT: DELETE ${genRoutePattern(MODULE_NAME, 'removeTempChatTurn', [sessionId])}`);
+		console.log(`API HIT: DELETE ${genRoutePattern('removeTempChatTurn', [sessionId])}`);
 
 		try {
 			await chatService.removeTempChatTurn(sessionId);

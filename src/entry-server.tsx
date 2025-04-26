@@ -1,39 +1,45 @@
-// src/entry-server.tsx
+// src/server/entry-server.tsx
+
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
+import { StaticRouter } from 'react-router-dom'; // Use StaticRouter for server
+import { CacheProvider } from '@emotion/react';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import createEmotionServer from '@emotion/server/create-instance';
-// import createCache from '@emotion/cache'; // Remove direct import
-import { CacheProvider, ThemeProvider } from '@emotion/react';
-import { StaticRouter } from 'react-router-dom'; // Correct import name
+import { createEmotionCache } from '@shared/util/index.ts'; // Use your shared utility
+import { theme, App } from '@client/index.ts'; // Import theme and App
 
-import createEmotionCache from './shared/util/createEmotionCache.ts';
-import { theme, App } from './client/index.ts';
+interface RenderResult {
+	html: string;
+	emotionStyleTags: string;
+}
 
-export async function render(url: string) {
-	// Removed ssrManifest for simplicity unless needed
-	// Use the utility function to create the cache
-	const emotionCache = createEmotionCache(); // <<< Use the function
-	const { extractCriticalToChunks, constructStyleTagsFromChunks } =
-		createEmotionServer(emotionCache);
+// Make sure this function signature matches how it's called in server.ts
+export function render(url: string): RenderResult {
+	// 1. Create a new cache instance *for each request*
+	const cache = createEmotionCache();
+	const { extractCriticalToChunks, constructStyleTagsFromChunks } = createEmotionServer(cache);
 
-	const app = (
-		// Add StrictMode if desired for development checks
-		<React.StrictMode>
-			<StaticRouter location={url}>
-				{/* Use StaticRouter */}
-				<CacheProvider value={emotionCache}>
-					<ThemeProvider theme={theme}>
-						<App />
-					</ThemeProvider>
-				</CacheProvider>
-			</StaticRouter>
-		</React.StrictMode>
+	// 2. Render the app wrapped in necessary providers (NO HelmetProvider)
+	const appHtml = ReactDOMServer.renderToString(
+		<CacheProvider value={cache}>
+			{/* Emotion wrapper */}
+			<ThemeProvider theme={theme}>
+				{/* MUI Theme wrapper */}
+				<CssBaseline /> {/* MUI CSS reset */}
+				<StaticRouter location={url}>
+					{/* Router wrapper */}
+					<App />
+				</StaticRouter>
+			</ThemeProvider>
+		</CacheProvider>
 	);
 
-	const appHtml = ReactDOMServer.renderToString(app);
+	// 3. Extract the critical Emotion styles
 	const emotionChunks = extractCriticalToChunks(appHtml);
 	const emotionStyleTags = constructStyleTagsFromChunks(emotionChunks);
-	const head = `${emotionStyleTags}`;
 
-	return { html: appHtml, head };
+	// 4. Return HTML and the extracted style tags
+	return { html: appHtml, emotionStyleTags }; // Remove helmetContext
 }

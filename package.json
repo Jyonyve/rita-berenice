@@ -13,8 +13,11 @@
 		"preview": "cross-env NODE_ENV=production node --env-file .env.production dist/server.js",
 		"start": "cross-env NODE_ENV=production node --env-file .env.production dist/server.js",
 		"prod": "npm run build && npm start",
+		"char:init": "tsx ./scripts/initCharacter.ts",
+		"char:check": "tsx ./scripts/checkCharacterData.ts",
 		"data:init": "tsx ./scripts/initBatchChat.ts",
-		"data:check": "tsx ./scripts/checkSeededData.ts"
+		"data:check": "tsx ./scripts/checkSeededData.ts",
+		"drop": "tsx ./scripts/dropCollection.ts"
 	},
 	"dependencies": {
 		"@emotion/cache": "^11.14.0",
@@ -64,7 +67,7 @@
 		"eslint-plugin-react-hooks": "^4.6.2",
 		"prettier": "^3.3.3",
 		"rimraf": "^5.0.9",
-		"sass":"^1.87.0",
+		"sass": "^1.87.0",
 		"tsx": "^4.19.3",
 		"typescript": "^5.8.3",
 		"vite": "^6.2.5",

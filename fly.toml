@@ -1,0 +1,31 @@
+# fly.toml (Your edited local version - Attempt 2)
+
+app = "chromadb-flyio"
+primary_region = "sin"
+
+# --- Specify the image under the [build] section ---
+[build]
+  image = "registry.fly.io/chromadb-flyio:deployment-01JPGWZ52ZXN19XWPNAXYB8G1N"
+
+# --- Keep your environment variables ---
+[env]
+  PERSIST_DIRECTORY = "/data"
+  IS_PERSISTENT = "TRUE"
+
+# --- Keep the rest of your config ---
+[http_service]
+  auto_start_machines = true
+  auto_stop_machines = true
+  force_https = true
+  internal_port = 8000
+  min_machines_running = 0
+  processes = ["app"]
+
+[[mounts]]
+  destination = "/data"
+  source = "chromadb_data"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory = "1gb"
