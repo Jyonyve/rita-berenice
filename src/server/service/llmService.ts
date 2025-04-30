@@ -15,6 +15,26 @@ import {
 	isDirectOpenAIClient,
 } from '#root/src/shared/index.ts';
 import { credentialService } from './credentialService.ts';
+import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
+import { BaseMessage, SystemMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
+
+const convertToLangChainMessages = (
+	messages: { role: string; content: string }[]
+): BaseMessage[] => {
+	return messages.map((msg) => {
+		switch (msg.role) {
+			case 'system':
+				return new SystemMessage(msg.content);
+			case 'user':
+				return new HumanMessage(msg.content);
+			case 'assistant':
+				return new AIMessage(msg.content);
+			default:
+				console.warn(`Unknown message role "${msg.role}", treating as human message.`);
+				return new HumanMessage(msg.content);
+		}
+	});
+};
 
 export const llmService = {
 	createLlmInstance: async (aiInfo: AiModelInfo): Promise<BaseChatModel | OpenAI> => {
@@ -72,33 +92,7 @@ export const llmService = {
 						},
 						// Dangerously allow browser = true; // THIS IS DANGEROUS if you ever ran this client-side by mistake
 					});
-					// If you prefer using Langchain's ChatOpenAI for consistency:
-					// return new ChatOpenAI({
-					//    model: model, // OpenRouter needs the full model string here
-					//    apiKey: apiKey,
-					//    configuration: {
-					//        baseURL: "https://openrouter.ai/api/v1",
-					//        defaultHeaders: {
-					//            'HTTP-Referer': 'YOUR_SITE_URL',
-					//            'X-Title': 'Rita Berenice',
-					//        },
-					//    }
-					// });
 				}
-
-				// case 'bedrock':
-				//  // Fetch Bedrock specific credentials from `credentials` object
-				//  const awsCredentials = {
-				//      region: credentials?.BEDROCK_CONFIG?.AWS_REGION,
-				//      accessKeyId: credentials?.BEDROCK_CONFIG?.AWS_ACCESS_KEY_ID,
-				//      secretAccessKey: credentials?.BEDROCK_CONFIG?.AWS_SECRET_ACCESS_KEY,
-				//  };
-				//  if (!awsCredentials.region || !awsCredentials.accessKeyId || !awsCredentials.secretAccessKey) {
-				//      throw new Error("AWS Bedrock credentials missing.");
-				//  }
-				//  // Use appropriate LangChain AWS class, passing credentials
-				//  // return new ChatBedrockConverse({ model, credentials: awsCredentials });
-				//  throw new Error("Bedrock provider not fully implemented yet.");
 
 				case 'local': {
 					const localUrl = process.env.LOCAL_AI_URL;
@@ -122,20 +116,20 @@ export const llmService = {
 	): Promise<string> => {
 		const llmOrClient = await llmService.createLlmInstance(aiModelInfo);
 		let responseContent = '';
-		const message = { role, content };
+		const messages = [{ role, content }];
 
 		try {
 			if (isDirectOpenAIClient(llmOrClient)) {
 				console.log(`Invoking direct OpenAI client (${aiModelInfo.model})`);
 				const completion = await llmOrClient.chat.completions.create({
 					model: aiModelInfo.model,
-					messages: [message],
+					messages,
 				});
 				responseContent = extractValidOpenAiContent(completion);
 			} else {
 				// Assumes LangChain BaseChatModel
 				console.log(`Invoking LangChain model (${aiModelInfo.model})`);
-				const responseMessage = await llmOrClient.invoke([message]);
+				const responseMessage = await llmOrClient.invoke([messages]);
 				responseContent = convertMessageContentToString(responseMessage.content);
 			}
 
@@ -148,6 +142,69 @@ export const llmService = {
 			console.error(`LLM invocation failed for ${aiModelInfo.model}:`, error);
 			// Rethrow or return error message? Rethrowing is often better for API routes.
 			throw new Error(`LLM invocation failed: ${error || 'Unknown error'}`);
+		}
+	},
+
+	invokeLlmFromMessages: async (
+		messages: ChatCompletionMessageParam[], // Accepts OpenAI format
+		aiModelInfo: AiModelInfo
+	): Promise<string> => {
+		// Returns JSON string
+		const llmOrClient = await llmService.createLlmInstance(aiModelInfo);
+
+		try {
+			if (isDirectOpenAIClient(llmOrClient)) {
+				console.log(`Invoking direct OpenAI client (${aiModelInfo.model}) for messages`);
+				const completion = await llmOrClient.chat.completions.create({
+					model: aiModelInfo.model,
+					messages,
+					response_format: { type: 'json_object' }, // <--- Ensure JSON mode is requested
+				});
+				const content = extractValidOpenAiContent(completion);
+				if (!content || !content.trim().startsWith('{')) {
+					// Basic check if it looks like JSON
+					console.warn(
+						`Direct OpenAI client (${aiModelInfo.model}) returned non-JSON or empty content: ${content}`
+					);
+					return JSON.stringify({
+						response: content || '[LLM returned empty content]',
+						emotion: 'default',
+					}); // Fallback JSON
+				}
+				return content; // Expecting JSON string
+			} else {
+				// Assumes LangChain BaseChatModel
+				console.log(`Invoking LangChain model (${aiModelInfo.model}) for messages`);
+				const langChainMessages = convertToLangChainMessages(messages as any); // Use helper
+
+				const responseMessage = await llmOrClient.invoke(langChainMessages, {
+					// Try adding response_format here if supported by the specific LangChain model wrapper
+					// response_format: { type: 'json_object' }, // Check Langchain docs
+				});
+				const content = convertMessageContentToString(responseMessage.content);
+
+				if (!content) {
+					console.warn(`LangChain model (${aiModelInfo.model}) returned empty content.`);
+					return JSON.stringify({ response: '[LLM returned empty content]', emotion: 'neutral' }); // Fallback JSON
+				}
+				// Check if the response looks like JSON
+				if (content.trim().startsWith('{') && content.trim().endsWith('}')) {
+					return content;
+				} else {
+					console.warn(
+						`LangChain model (${aiModelInfo.model}) did not return expected JSON format. Response: ${content}`
+					);
+					// Wrap non-JSON response in expected structure
+					return JSON.stringify({ response: content, emotion: 'neutral' }); // Fallback JSON
+				}
+			}
+		} catch (error: any) {
+			console.error(`LLM invocation failed for ${aiModelInfo.model} in invokeLlmFromMessages:`, error);
+			// Return a JSON string indicating the error for PersonaEngine to parse
+			return JSON.stringify({
+				response: `[LLM invocation error: ${error.message || 'Unknown error'}]`,
+				emotion: 'neutral',
+			});
 		}
 	},
 };

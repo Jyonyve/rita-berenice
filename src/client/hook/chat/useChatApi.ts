@@ -197,7 +197,8 @@ export const useChatApi = (sessionId: string) => {
 			sessionId: string,
 			role: ChatRoleType,
 			prompt: string,
-			aiModelInfo: AiModelInfo
+			aiModelInfo: AiModelInfo,
+			personaInstruction: string
 		): Promise<{ assistantResponse: string }> => {
 			// Define expected response shape
 			if (!sessionId) throw new Error('Session ID required');
@@ -209,7 +210,7 @@ export const useChatApi = (sessionId: string) => {
 				'post',
 				[sessionId],
 				{},
-				{ role, prompt, aiModelInfo }
+				{ role, prompt, aiModelInfo, personaInstruction }
 			);
 		},
 		[_makeApiCall]

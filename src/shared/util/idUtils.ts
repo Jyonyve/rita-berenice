@@ -25,7 +25,7 @@ export const parseSessionId = (
 	return {
 		characterName: parts[0],
 		variant: parts[1],
-		uuid: parts.slice(2).join('_'), // In case UUID contains underscores
+		uuid: parts[2], // In case UUID contains underscores
 	};
 };
 

@@ -1,7 +1,18 @@
 import React, { useState, useEffect, useCallback, useRef, FC, ChangeEvent } from 'react';
-import { useChatApi, useChatState, useAiModel, useCredential } from '@client/hook/index.ts';
+import {
+	useChatApi,
+	useChatState,
+	useAiModel,
+	useCredential,
+	useCharacterState,
+} from '@client/hook/index.ts';
 import { ChatTurn, TempChatTurn } from '@shared/domain/index.ts';
-import { buildChatMessage, parseEntriesToText } from '#root/src/shared/util/index.ts';
+import {
+	parseSessionId,
+	buildChatMessage,
+	parseEntriesToText,
+	buildCharacterId,
+} from '@shared/util/index.ts';
 
 // Import the new components
 import { CharacterPortrait } from '../character/index.ts';
@@ -10,8 +21,46 @@ import { UserInput } from './UserInput.tsx';
 
 // MUI Components
 import { Grid, Box } from '@mui/material'; // Correct imports
+import { useNavigate, useParams } from 'react-router-dom';
 
-export const ChatPage: FC<{ sessionId: string }> = ({ sessionId }) => {
+export const ChatPage = () => {
+	// init
+	const { sessionId } = useParams();
+	const navigate = useNavigate();
+
+	// Initial Load
+	useEffect(() => {
+		if (!sessionId) {
+			console.log('Session ID missing, redirecting to 404...');
+			navigate('/not-found-sessionId', { replace: true });
+		} else {
+			const loadInitialChatTurn = async () => {
+				setIsLoadingHistory(true);
+				try {
+					const [fixed, temp] = await Promise.all([
+						getRecentChatTurns(sessionId, 10),
+						getTempChatTurn(sessionId),
+					]);
+					setInitialData(fixed, temp ?? undefined);
+					setHasMoreHistory(fixed.length === 10);
+				} catch (err: any) {
+					setClientError('Failed to load initial chat history.');
+					console.error('Initial Load Error:', err);
+				} finally {
+					setIsLoadingHistory(false);
+				}
+			};
+			loadInitialChatTurn();
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [sessionId, navigate]);
+
+	if (!sessionId) return;
+
+	// const
+	const { characterName, variant } = parseSessionId(sessionId);
+	const characterId = buildCharacterId(characterName, variant);
+
 	// --- STATE ---
 	const [userInput, setUserInput] = useState('');
 	const [isProcessing, setIsProcessing] = useState(false);
@@ -19,6 +68,7 @@ export const ChatPage: FC<{ sessionId: string }> = ({ sessionId }) => {
 	const [currentEmotionKeyword, setCurrentEmotionKeyword] = useState('default');
 
 	// --- HOOKS ---
+	const { portraitMap } = useCharacterState(characterId);
 	const {
 		chatTurns,
 		tempChatTurn,
@@ -47,37 +97,12 @@ export const ChatPage: FC<{ sessionId: string }> = ({ sessionId }) => {
 	} = useChatApi(sessionId);
 
 	const { aiModelInfo } = useAiModel();
-	const { credential, isLoadingCredential, credentialError } = useCredential(); // Renamed isLoading
+	const { credential, isLoadingCredential, credentialError } = useCredential();
 
 	// --- EFFECTS ---
 
-	// Initial Load
-	useEffect(() => {
-		const loadInitialChatTurn = async () => {
-			setIsLoadingHistory(true);
-			try {
-				const [fixed, temp] = await Promise.all([
-					getRecentChatTurns(sessionId, 10),
-					getTempChatTurn(sessionId),
-				]);
-				setInitialData(fixed, temp ?? undefined);
-				setHasMoreHistory(fixed.length === 10);
-			} catch (err: any) {
-				setClientError('Failed to load initial chat history.');
-				console.error('Initial Load Error:', err);
-			} finally {
-				setIsLoadingHistory(false);
-			}
-		};
-		loadInitialChatTurn();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [sessionId]); // Keep dependencies minimal
-
 	// --- CALLBACKS / HANDLERS ---
-
-	// Send Message (includes auto-fix)
-	const handleSendMessage = useCallback(async () => {
-		setErrorState(undefined);
+	const _checkError = () => {
 		if (
 			!userInput.trim() ||
 			isProcessing ||
@@ -87,44 +112,53 @@ export const ChatPage: FC<{ sessionId: string }> = ({ sessionId }) => {
 			!aiModelInfo
 		) {
 			setErrorState('Cannot send message. Check input, credentials, and model selection.');
+		}
+	};
+
+	const _storeTempChatTurn = async (currentSequence: number, tempChatTurn: TempChatTurn) => {
+		try {
+			const sequenceToFix = currentSequence - 1;
+			if (
+				sequenceToFix >= 0 &&
+				tempChatTurn.chatTurnSets[0]?.request &&
+				tempChatTurn.chatTurnSets[0]?.response
+			) {
+				const { request, response } = tempChatTurn.chatTurnSets[0];
+				const fixedTurn: ChatTurn = { sessionId, sequence: sequenceToFix, request, response };
+				addChatTurn(fixedTurn);
+				await storeChatTurn(fixedTurn); // Pass the whole turn
+				await removeTempChatTurn(sessionId);
+			} else {
+				console.warn('Attempted to fix incomplete or invalid sequence temp turn:', tempChatTurn);
+				await removeTempChatTurn(sessionId);
+			}
+		} catch (fixErr: any) {
+			console.error('Failed to automatically fix previous turn:', fixErr);
+			setErrorState('Error saving previous turn. Please try sending again.');
+			setIsProcessing(false);
 			return;
 		}
+	};
+
+	// Send Message (includes auto-fix)
+	const handleSendMessage = useCallback(async () => {
+		setErrorState(undefined);
+		_checkError();
 		setIsProcessing(true);
 		try {
 			const currentSequence = getNextSequence();
-			if (tempChatTurn) {
-				try {
-					const sequenceToFix = currentSequence - 1;
-					if (
-						sequenceToFix >= 0 &&
-						tempChatTurn.chatTurnSets[0]?.request &&
-						tempChatTurn.chatTurnSets[0]?.response
-					) {
-						const { request, response } = tempChatTurn.chatTurnSets[0];
-						const fixedTurn: ChatTurn = { sessionId, sequence: sequenceToFix, request, response };
-						addChatTurn(fixedTurn);
-						await storeChatTurn(fixedTurn); // Pass the whole turn
-						await removeTempChatTurn(sessionId);
-					} else {
-						console.warn('Attempted to fix incomplete or invalid sequence temp turn:', tempChatTurn);
-						await removeTempChatTurn(sessionId);
-					}
-				} catch (fixErr: any) {
-					console.error('Failed to automatically fix previous turn:', fixErr);
-					setErrorState('Error saving previous turn. Please try sending again.');
-					setIsProcessing(false);
-					return;
-				}
-			}
+			tempChatTurn && _storeTempChatTurn(currentSequence, tempChatTurn);
 
+			//user
 			const userMsg = buildChatMessage('user', currentSequence, userInput, sessionId);
 			const prompt = await buildUserPromptFromLog(sessionId, userInput);
+			//character
 			const { assistantResponse } = await genResponseFromLlm(sessionId, 'user', prompt, aiModelInfo);
 			const aiMsg = buildChatMessage('assistant', currentSequence, assistantResponse, sessionId);
 
 			const newTempChatTurn: TempChatTurn = {
 				sessionId,
-				sequence: currentSequence, // Sequence is part of messages now, not top-level on TempTurn
+				sequence: currentSequence,
 				chatTurnSets: [{ request: userMsg, response: aiMsg }],
 			};
 			changeTempChatTurn(newTempChatTurn);
@@ -138,12 +172,6 @@ export const ChatPage: FC<{ sessionId: string }> = ({ sessionId }) => {
 			setIsProcessing(false);
 		}
 	}, [
-		userInput,
-		isProcessing,
-		isLoadingCredential,
-		credentialError,
-		credential,
-		aiModelInfo,
 		tempChatTurn,
 		getNextSequence,
 		sessionId,
@@ -151,7 +179,6 @@ export const ChatPage: FC<{ sessionId: string }> = ({ sessionId }) => {
 		genResponseFromLlm,
 		addChatTurn,
 		storeChatTurn,
-		removeTempChatTurn,
 		changeTempChatTurn,
 		saveTempChatTurn,
 		buildChatMessage,
@@ -166,16 +193,19 @@ export const ChatPage: FC<{ sessionId: string }> = ({ sessionId }) => {
 		setIsProcessing(true);
 		setErrorState(undefined);
 		try {
-			const requestEntries = tempChatTurn.chatTurnSets[0].request.entries;
-			const originalUserInput = parseEntriesToText(requestEntries);
-			const prompt = await buildUserPromptFromLog(sessionId, originalUserInput);
-			const { assistantResponse } = await genResponseFromLlm(sessionId, 'user', prompt, aiModelInfo);
 			const sequence = tempChatTurn.sequence; // Use existing sequence
+
+			const requestEntries = tempChatTurn.chatTurnSets[length - 1].request.entries;
+			const lastUserInput = parseEntriesToText(requestEntries);
+			const newUserMsg = buildChatMessage('user', sequence, lastUserInput, sessionId);
+
+			const prompt = await buildUserPromptFromLog(sessionId, lastUserInput);
+			const { assistantResponse } = await genResponseFromLlm(sessionId, 'user', prompt, aiModelInfo);
 			const newAiMsg = buildChatMessage('assistant', sequence, assistantResponse, sessionId);
 
 			const updatedTempChatTurn: TempChatTurn = {
 				...tempChatTurn,
-				chatTurnSets: [{ request: tempChatTurn.chatTurnSets[0].request, response: newAiMsg }],
+				chatTurnSets: [{ request: newUserMsg, response: newAiMsg }],
 			};
 			changeTempChatTurn(updatedTempChatTurn);
 			await saveTempChatTurn(updatedTempChatTurn);
@@ -289,6 +319,7 @@ export const ChatPage: FC<{ sessionId: string }> = ({ sessionId }) => {
 
 					{/* User Input */}
 					<UserInput
+						sessionId={sessionId}
 						value={userInput}
 						isProcessing={isProcessing}
 						isDisabled={isInputDisabled}

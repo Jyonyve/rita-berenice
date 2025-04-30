@@ -18,15 +18,21 @@ router.post(
 			const role: ChatRoleType = req.body.role;
 			const prompt: string = req.body.prompt;
 			const aiModelInfo: AiModelInfo = req.body.aiModelInfo;
+			const personaInstruction: string = req.body.personaInstruction;
 
 			// --- Validation ---
-			if (!prompt || !isValidAiModelInfo(aiModelInfo)) {
-				res.status(400).json({ message: 'Invalid prompt or aiModelInfo in request body' });
+			if (!prompt || !personaInstruction || !isValidAiModelInfo(aiModelInfo)) {
+				res.status(400).json({ message: 'Missing required LLM input fields.' });
 				return;
 			}
 
 			// --- Call llmService to handle invocation ---
-			const assistantResponse = await llmService.invokeLlm(role, prompt, aiModelInfo);
+			const assistantResponse = await llmService.invokeLlm(
+				role,
+				prompt,
+				aiModelInfo,
+				personaInstruction
+			);
 
 			// --- Send Response ---
 			return res.status(200).json({ assistantResponse });

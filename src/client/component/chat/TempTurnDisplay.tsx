@@ -17,7 +17,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 	onRegenerate,
 }) => {
 	// Assuming chatTurnSets always has at least one element when tempTurn exists
-	const currentSet = tempTurn.chatTurnSets[0];
+	const currentSet = tempTurn.chatTurnSets[length - 1];
 	if (!currentSet) return null; // Safety check
 
 	return (

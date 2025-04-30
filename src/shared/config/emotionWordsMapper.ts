@@ -148,3 +148,16 @@ export const allEmotionKeywords: readonly string[] = Array.from(
 // Default portrait number
 export const DEFAULT_IMAGE_NUMBER = 0;
 export type EmotionKey = keyof typeof numberToEmotionWordsMap;
+
+export const findClosestEmotion = (word: string): EmotionKey => {
+	const lower = word.toLowerCase();
+
+	for (const [key, keywords] of Object.entries(numberToEmotionWordsMap)) {
+		if (keywords.includes(lower)) {
+			return Number(key) as EmotionKey;
+		}
+	}
+
+	console.warn(`Unknown emotion keyword from LLM: "${word}", defaulting to neutral`);
+	return DEFAULT_IMAGE_NUMBER as EmotionKey;
+};
