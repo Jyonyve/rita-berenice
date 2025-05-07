@@ -52,17 +52,8 @@ export const useAiModel = () => {
 			// Note: Summary model typically remains fixed, no update needed here unless desired.
 		},
 		[showError]
-	); // Dependency: showError
-
-	// --- Removed all LLM instance creation, state, credential logic, and effects ---
+	);
 
 	// --- Return Hook Values ---
-	return {
-		/** The currently selected AiModelInfo for primary tasks (platform, provider, model) */
-		aiModelInfo,
-		/** The AiModelInfo used for summary tasks (platform, provider, model) */
-		summaryAiModelInfo,
-		/** Function to change the primary selected AI model based on its name */
-		changeAiModel,
-	};
+	return { aiModelInfo, summaryAiModelInfo, changeAiModel };
 };
