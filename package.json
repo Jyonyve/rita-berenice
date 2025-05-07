@@ -13,10 +13,11 @@
 		"preview": "cross-env NODE_ENV=production node --env-file .env.production dist/server.js",
 		"start": "cross-env NODE_ENV=production node --env-file .env.production dist/server.js",
 		"prod": "npm run build && npm start",
-		"char:init": "tsx ./scripts/initCharacter.ts",
-		"char:check": "tsx ./scripts/checkCharacterData.ts",
-		"data:init": "tsx ./scripts/initBatchChat.ts",
-		"data:check": "tsx ./scripts/checkSeededData.ts",
+		"char:init": "tsx ./scripts/character/initCharacter.ts",
+		"char:check": "tsx ./scripts/character/checkCharacter.ts",
+		"chat:crawl": "tsx ./scripts/chat/crawlChat.ts",
+		"chat:init": "tsx ./scripts/chat/initChat.ts",
+		"chat:check": "tsx ./scripts/chat/checkChat.ts",
 		"drop": "tsx ./scripts/dropCollection.ts"
 	},
 	"dependencies": {
@@ -43,6 +44,7 @@
 		"express": "^5.1.0",
 		"onnxruntime-node": "^1.21.0",
 		"openai": "^4.91.1",
+		"puppeteer": "^24.8.1",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",
 		"react-router-dom": "^7.5.2",

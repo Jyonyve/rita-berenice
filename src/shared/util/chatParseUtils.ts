@@ -1,5 +1,4 @@
 import { MessageContent, MessageContentText } from '@langchain/core/messages';
-import { ChatCompletion } from 'openai/resources/index.mjs';
 
 import {
 	ChatMessage,
@@ -9,6 +8,7 @@ import {
 	ChatMessageType,
 } from '@shared/domain/index.ts';
 import { buildMessageId } from './idUtils.ts';
+import { isValidEmotionKeyword } from '../config/emotionWordsMapper.ts';
 
 export const parseTextToEntries = (text: string): ChatEntry[] => {
 	const entries: ChatEntry[] = [];
@@ -51,7 +51,8 @@ export const buildChatMessage = (
 	role: ChatRoleType,
 	sequence: number,
 	text: string,
-	sessionId: string
+	sessionId: string,
+	emotion = 'default'
 ): ChatMessage => {
 	const entries: ChatEntry[] = parseTextToEntries(text);
 	const messageType: ChatMessageType = role === 'user' ? 'request' : 'response';
@@ -60,7 +61,7 @@ export const buildChatMessage = (
 		messageId: buildMessageId(sessionId, sequence, messageType),
 		messageType,
 		entries,
-		emotion: '',
+		emotion: isValidEmotionKeyword(emotion) ? emotion : 'default',
 		timestamp: new Date().toISOString(),
 	};
 };

@@ -34,10 +34,15 @@
 		"baseUrl": ".", // Base directory for path resolution
 		"paths": {
 			"#root/*": ["./*"], // Alias for project root
-			"server/*": ["./src/server/*"],
+
+			"#scripts/*": ["./scripts/*"],
+			"#scripts/chat/*": ["./scripts/chat/*"],
+			"#scripts/character/*": ["./scripts/character/*"],
+
 			"#server/db/*": ["./src/server/db/*"], // Alias for src/server
 			"#server/route/*": ["./src/server/route/*"], // Alias for src/server
 			"#server/service/*": ["./src/server/service/*"], // Alias for src/server
+
 			"@client/*": ["./src/client/*"], // General alias for src (consider if this should be more specific, e.g., "./src/client/*")
 			"@client/domain/*": ["src/shared/domain/*"],
 			"@client/component/*": ["./src/client/component/*"],

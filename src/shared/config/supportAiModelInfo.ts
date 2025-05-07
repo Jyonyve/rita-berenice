@@ -5,6 +5,7 @@ export const supportAiModelInfo: Record<string, Record<string, string[]>> = {
 		anthropic: [
 			'anthropic/claude-3.7-sonnet',
 			'anthropic/claude-3.5-sonnet',
+			'anthropic/claude-3.5-sonnet-20240620',
 			'anthropic/claude-3.5-haiku',
 		],
 		google: ['google/gemini-2.5-pro-exp-03-25:free', 'google/gemini-2.0-flash-thinking-exp:free'],
@@ -16,7 +17,7 @@ export const supportAiModelInfo: Record<string, Record<string, string[]>> = {
 	},
 	bedrock: {
 		anthropic: [
-			'anthropic.claude-3-5-haiku-20241022-v1:0', // Default summary AI? Keep note.
+			'anthropic.claude-3-5-haiku-20241022-v1:0', // Default summary AI? Keep note.s
 			'anthropic.claude-3-7-sonnet-20250219-v1:0',
 		],
 		amazon: ['amazon.nova-pro-v1:0'],

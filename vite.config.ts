@@ -58,6 +58,11 @@ export default defineConfig({
 
 			// Root alias
 			'#root': path.resolve(__dirname, '.'),
+
+			// scripts alias
+			'#scripts': path.resolve(__dirname, './scripts'),
+			'#scripts/chat': path.resolve(__dirname, './scripts/chat/*'),
+			'#scripts/character': path.resolve(__dirname, './scripts/character/*'),
 		},
 	},
 	plugins: [

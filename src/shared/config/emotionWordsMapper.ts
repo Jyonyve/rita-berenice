@@ -26,6 +26,7 @@ export const numberToEmotionWordsMap: Readonly<Record<number, readonly string[]>
 		'happy',
 		'glad',
 		'pleased',
+		'joy',
 		'joyful',
 		'cheerful',
 		'smiling',
@@ -35,14 +36,17 @@ export const numberToEmotionWordsMap: Readonly<Record<number, readonly string[]>
 		'delighted',
 		'upbeat',
 		'positive',
+		'gratitude',
 	],
 	2: [
 		// Anger & Related Negative
 		'angry',
+		'anger',
 		'mad',
 		'furious',
 		'irate',
 		'annoyed',
+		'annoyance',
 		'irritated',
 		'frustrated',
 		'rage',
@@ -51,10 +55,14 @@ export const numberToEmotionWordsMap: Readonly<Record<number, readonly string[]>
 		'bitter',
 		'shouting',
 		'yelling',
+		'negative',
+		'disapproval',
+		'cold',
 	],
 	3: [
 		// Sadness & Related Negative
 		'sad',
+		'sadness',
 		'unhappy',
 		'sorrowful',
 		'depressed',
@@ -80,6 +88,7 @@ export const numberToEmotionWordsMap: Readonly<Record<number, readonly string[]>
 		'terrified',
 		'panicked',
 		'horror',
+		'surprise',
 		'surprised',
 		'startled',
 		'astonished',
@@ -98,6 +107,7 @@ export const numberToEmotionWordsMap: Readonly<Record<number, readonly string[]>
 		'uncertain',
 		'doubtful',
 		'skeptical',
+		'realization',
 	],
 	6: [
 		// Affection & Shyness
@@ -120,9 +130,11 @@ export const numberToEmotionWordsMap: Readonly<Record<number, readonly string[]>
 		'thrilled',
 		'elated',
 		'energetic',
+		'desire',
 	],
 	8: [
 		// Disgust & Contempt
+		'disgust',
 		'disgusted',
 		'repulsed',
 		'sickened',
@@ -137,13 +149,37 @@ export const numberToEmotionWordsMap: Readonly<Record<number, readonly string[]>
  * A flattened, unique list of all defined emotion keywords in lowercase.
  * Useful for validation or providing hints to the LLM.
  */
-export const allEmotionKeywords: readonly string[] = Array.from(
-	new Set(
-		Object.values(numberToEmotionWordsMap)
-			.flat()
-			.map((word) => word.toLowerCase())
-	)
+export const allEmotionKeywords: Readonly<Set<string>> = new Set(
+	Object.values(numberToEmotionWordsMap)
+		.flat()
+		.map((word) => word.toLowerCase())
 );
+export const allEmotionKeywordsList: readonly string[] = Array.from(allEmotionKeywords);
+
+export function getImageNumberForEmotion(emotion: string): number {
+	const lowerEmotion = emotion.toLowerCase();
+	for (const [imageNumber, keywords] of Object.entries(numberToEmotionWordsMap)) {
+		if (keywords.includes(lowerEmotion)) {
+			return parseInt(imageNumber, 10);
+		}
+	}
+	console.warn(
+		`Emotion keyword "${emotion}" not found in numberToEmotionWordsMap. Returning default image number ${DEFAULT_IMAGE_NUMBER}.`
+	);
+	return DEFAULT_IMAGE_NUMBER;
+}
+
+export function isValidEmotionKeyword(emotion: string): boolean {
+	const lowerEmotion = emotion.toLowerCase();
+
+	if (allEmotionKeywords.has(lowerEmotion)) {
+		return true;
+	}
+
+	// If the loop finishes, the emotion was not found
+	console.warn(`Invalid or unmapped emotion keyword: "${emotion}".`);
+	return false; // Emotion not found
+}
 
 // Default portrait number
 export const DEFAULT_IMAGE_NUMBER = 0;
