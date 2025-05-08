@@ -1,6 +1,6 @@
 // Save this file as scripts/checkMondayChat.ts
 import { ChromaClient, Collection, IncludeEnum } from 'chromadb';
-import { COLLECTIONS, METADATA_TYPES, SUFFIX } from '../../src/shared/domain/index.ts';
+import { ChatTurn, COLLECTIONS, METADATA_TYPES, SUFFIX } from '../../src/shared/domain/index.ts';
 
 // --- Configuration ---
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev'; // Use env var or default
@@ -67,13 +67,13 @@ async function checkSeededData() {
 					// Safely access documents and parse
 					const docString = results.documents?.[i];
 					if (docString) {
-						const chatTurnData = JSON.parse(docString);
+						const chatTurnData: ChatTurn = JSON.parse(docString);
 						console.log(`Content (Sequence ${chatTurnData.sequence}):`);
 						console.log(
-							`  Request Prompt: "${chatTurnData.request?.entries?.[0]?.prompt?.substring(0, 80)}..."`
+							`  Request Prompt: ${chatTurnData.request?.entries?.[0]?.type}\n"${chatTurnData.request?.entries?.[0]?.prompt?.substring(0, 80)}..."`
 						);
 						console.log(
-							`  Response Prompt: "${chatTurnData.response?.entries?.[0]?.prompt?.substring(0, 80)}..."`
+							`  Response Prompt: ${chatTurnData.response?.entries?.[0]?.type}\n"${chatTurnData.response?.entries?.[0]?.prompt?.substring(0, 80)}..."`
 						);
 					} else {
 						console.log(`  Content: Document data missing.`);

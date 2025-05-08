@@ -6,7 +6,7 @@ import { BrowserRouter } from 'react-router-dom'; // Use BrowserRouter for clien
 import { CacheProvider } from '@emotion/react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { createEmotionCache } from '@shared/util/index.ts'; // Use your shared utility
+import { createEmotionCache } from '@shared/config/index.ts'; // Use your shared utility
 import { App, theme } from '@client/index.ts'; // Import theme and App
 
 // 1. Create a single client-side cache instance using the shared utility
@@ -16,17 +16,13 @@ const clientSideEmotionCache = createEmotionCache();
 function ClientApp() {
 	return (
 		<React.StrictMode>
-			{' '}
 			{/* Optional but recommended */}
 			<CacheProvider value={clientSideEmotionCache}>
-				{' '}
 				{/* Emotion wrapper */}
 				<ThemeProvider theme={theme}>
-					{' '}
 					{/* MUI Theme wrapper */}
 					<CssBaseline /> {/* MUI CSS reset */}
 					<BrowserRouter>
-						{' '}
 						{/* Router wrapper */}
 						<App />
 					</BrowserRouter>
