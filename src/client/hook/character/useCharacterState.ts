@@ -1,10 +1,11 @@
 // src/client/hooks/useCharacterState.ts
 
-import { useState, useEffect, useRef } from 'react'; // Removed useCallback unless needed elsewhere at top level
+import { useState, useEffect, useRef } from 'react';
 // Correctly import the utility function
-import { loadNumberedPortraits, PortraitMap } from '../../util/index.ts';
+import { loadNumberedPortraits } from '../../util/index.ts';
 // CharacterAsset might not be needed here if not returned/used
 // import { CharacterAsset } from '#root/src/shared/index.ts';
+import { PortraitMap } from '@shared/config/index.ts';
 
 /**
  * Hook to load and manage numbered portrait images for a specific character.
@@ -23,8 +24,6 @@ export const useCharacterState = (characterId?: string) => {
 
 	// --- useEffect Hook (Correct) ---
 	useEffect(() => {
-		// --- Logic INSIDE useEffect ---
-
 		// Reset state if characterId is cleared
 		if (!characterId) {
 			setPortraitMap({});
@@ -34,9 +33,6 @@ export const useCharacterState = (characterId?: string) => {
 			console.log('[useCharacterState] Character ID cleared, resetting state.');
 			return;
 		}
-
-		// --- REMOVED INVALID HOOK CALL ---
-		// const getCharacterAssets = useCallback(...) // DELETED THIS BLOCK
 
 		// --- Fetch portraits logic remains ---
 		const loadPortraits = async () => {

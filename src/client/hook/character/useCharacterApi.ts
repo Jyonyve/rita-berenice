@@ -1,11 +1,5 @@
 // src/client/hooks/useCharacter.ts
-import {
-	apiClient,
-	CharacterInfo,
-	CharacterAsset,
-	genApiUrl,
-	MODULE_NAMES,
-} from '@shared/index.ts';
+import { apiClient, CharacterInfo, genApiUrl, MODULE_NAMES } from '@shared/index.ts';
 import { useCallback, useEffect, useState } from 'react';
 
 export const useCharacterApi = () => {

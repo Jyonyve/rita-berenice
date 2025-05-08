@@ -7,7 +7,7 @@ import { CacheProvider } from '@emotion/react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import createEmotionServer from '@emotion/server/create-instance';
-import { createEmotionCache } from '@shared/util/index.ts'; // Use your shared utility
+import { createEmotionCache } from '@shared/config/index.ts'; // Use your shared utility
 import { theme, App } from '@client/index.ts'; // Import theme and App
 
 interface RenderResult {

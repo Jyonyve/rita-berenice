@@ -31,7 +31,7 @@ export const UserInput: FC<UserInputProps> = ({
 	const theme = useTheme(); // Hook to access theme values
 
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-		if (e.key === 'Enter' && !e.shiftKey && !isDisabled) {
+		if (!e.shiftKey && !isDisabled) {
 			e.preventDefault();
 			onSend();
 		}

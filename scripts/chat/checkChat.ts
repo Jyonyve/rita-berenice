@@ -1,13 +1,13 @@
 // Save this file as scripts/checkMondayChat.ts
 import { ChromaClient, Collection, IncludeEnum } from 'chromadb';
-import { COLLECTIONS, METADATA_TYPES, SUFFIX } from '../src/shared/domain/index.ts';
-import {
-	sessionId as TARGET_SESSION_ID, // Import the target sessionId
-} from './monday_origin_4addb91c-5733-4bf3-8142-a0ab98d0fd9e.ts'; // Adjust path
+import { ChatTurn, COLLECTIONS, METADATA_TYPES, SUFFIX } from '../../src/shared/domain/index.ts';
 
 // --- Configuration ---
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev'; // Use env var or default
 const TARGET_COLLECTION_NAME = COLLECTIONS.CHAT; // The collection where data was inserted
+// const TARGET_SESSION_ID = 'tarion_original_6b3557f0-225a-4b98-beae-28d428a83c50';
+// const TARGET_SESSION_ID = 'monday_original_4addb91c-5733-4bf3-8142-a0ab98d0fd9e';
+const TARGET_SESSION_ID = 'tarion_spinoff_853b0fe0-cae6-4531-905d-3779262c73d4';
 
 // --- Main Checking Logic ---
 async function checkSeededData() {
@@ -67,13 +67,13 @@ async function checkSeededData() {
 					// Safely access documents and parse
 					const docString = results.documents?.[i];
 					if (docString) {
-						const chatTurnData = JSON.parse(docString);
+						const chatTurnData: ChatTurn = JSON.parse(docString);
 						console.log(`Content (Sequence ${chatTurnData.sequence}):`);
 						console.log(
-							`  Request Prompt: "${chatTurnData.request?.entries?.[0]?.prompt?.substring(0, 80)}..."`
+							`  Request Prompt: ${chatTurnData.request?.entries?.[0]?.type}\n"${chatTurnData.request?.entries?.[0]?.prompt?.substring(0, 80)}..."`
 						);
 						console.log(
-							`  Response Prompt: "${chatTurnData.response?.entries?.[0]?.prompt?.substring(0, 80)}..."`
+							`  Response Prompt: ${chatTurnData.response?.entries?.[0]?.type}\n"${chatTurnData.response?.entries?.[0]?.prompt?.substring(0, 80)}..."`
 						);
 					} else {
 						console.log(`  Content: Document data missing.`);

@@ -6,7 +6,7 @@
  * Value: Array of lowercase emotion keywords associated with that image.
  * IMPORTANT: Ensure keyword 'default' and/or 'neutral' maps to DEFAULT_IMAGE_NUMBER.
  */
-export const numberToEmotionWordsMap: Readonly<Record<number, readonly string[]>> = {
+export const numberToEmotionWordsMap = {
 	0: [
 		// Defaults & Neutral
 		'default',
@@ -19,13 +19,38 @@ export const numberToEmotionWordsMap: Readonly<Record<number, readonly string[]>
 		'relaxed',
 		'at ease',
 		'peaceful',
-		'satisfied', // Generally calm/neutral states
+		'satisfied',
+		'serene',
+		'composed',
+		'complacent',
+		'mellow',
+		'placid',
+		'tranquil',
+		'at peace',
+		'rested',
+		'unconcerned',
+		'indifferent',
+		'stoical',
+		'lethargic',
+		'listless',
+		'subdued',
+		'pensiveness',
+		'unemotional',
+		'impassive',
+		'dispassionate',
+		'even-tempered',
+		'observant',
+		'still',
+		'quiet',
+		'reflective',
+		'mild',
 	],
 	1: [
-		// POSITIVE EMOTIONS
+		// POSITIVE EMOTIONS (Joy, Happiness, Elation)
 		'happy',
 		'glad',
 		'pleased',
+		'joy',
 		'joyful',
 		'cheerful',
 		'smiling',
@@ -35,26 +60,98 @@ export const numberToEmotionWordsMap: Readonly<Record<number, readonly string[]>
 		'delighted',
 		'upbeat',
 		'positive',
+		'gratitude',
+		'grateful',
+		'bliss',
+		'ecstatic',
+		'elated',
+		'euphoria',
+		'exhilarated',
+		'glee',
+		'jolliness',
+		'jubilation',
+		'merry',
+		'contented',
+		'fulfilled',
+		'inspired',
+		'optimism',
+		'hopeful',
+		'appreciative',
+		'relieved', // 'pride' moved to 9
+		'vivacious',
+		'zest',
+		'aliveness',
+		'enchanted',
+		'invigorated',
+		'radiant',
+		'thrilled',
+		'overjoyed',
+		'blessed',
+		'thankful',
+		'festive',
+		'sunny',
+		'high-spirited',
+		'spirited',
+		'exuberant',
+		'buoyant',
 	],
 	2: [
-		// Anger & Related Negative
+		// ANGER & RELATED NEGATIVE (Frustration, Irritation, Hostility)
 		'angry',
+		'anger',
 		'mad',
 		'furious',
 		'irate',
 		'annoyed',
+		'annoyance',
 		'irritated',
-		'frustrated',
+		'frustration',
 		'rage',
 		'outraged',
 		'resentful',
 		'bitter',
 		'shouting',
 		'yelling',
+		'negative',
+		'disapproval',
+		'cold',
+		'hostile',
+		'aggressive',
+		'agitated',
+		'cross',
+		'exasperation',
+		'fury',
+		'hate',
+		'hatred',
+		'loathing',
+		'offended',
+		'resentment',
+		'scorn',
+		'spite',
+		'vengeful',
+		'wrathful',
+		'grouchy',
+		'grumpy',
+		'moody',
+		'impatient',
+		'testy',
+		'defiant',
+		'defiance',
+		'indignant',
+		'vexed',
+		'enraged',
+		'infuriated',
+		'displeased',
+		'provoked',
+		'sullen',
+		'petulant',
+		'chafed',
+		'exasperated',
 	],
 	3: [
-		// Sadness & Related Negative
+		// SADNESS & RELATED NEGATIVE (Grief, Worry, Despair)
 		'sad',
+		'sadness',
 		'unhappy',
 		'sorrowful',
 		'depressed',
@@ -71,23 +168,78 @@ export const numberToEmotionWordsMap: Readonly<Record<number, readonly string[]>
 		'anxious',
 		'nervous',
 		'concerned',
+		'apprehensive',
+		'blue',
+		'dejected',
+		'despondent',
+		'disappointed',
+		'discouraged',
+		'dismay',
+		'distressed',
+		'forlorn',
+		'homesick',
+		'lonely',
+		'misery',
+		'pessimism',
+		'regret',
+		'remorse',
+		'somber',
+		'sulky', // 'longing' & 'yearning' moved to 6
+		'weary',
+		'woe',
+		'anguish',
+		'suffering',
+		'heavy-hearted',
+		'crestfallen',
+		'downcast',
+		'troubled',
+		'pensive', // Pensive can also lean sad/worried
+		'solemn',
+		'heartache',
+		'disheartened',
+		'doleful',
 	],
 	4: [
-		// Fear & Surprise
+		// FEAR & SURPRISE (Shock, Terror, Amazement)
 		'fear',
 		'scared',
 		'afraid',
 		'terrified',
 		'panicked',
 		'horror',
+		'surprise',
 		'surprised',
 		'startled',
 		'astonished',
 		'shocked',
 		'amazed',
+		'alarmed',
+		'awe',
+		'awkward',
+		'distrust',
+		'dread',
+		'frightened',
+		'hysteria',
+		'intimidated',
+		'jumpy',
+		'overwhelmed',
+		'petrified',
+		'shaken',
+		'speechless',
+		'stunned',
+		'suspicion',
+		'tense',
+		'uneasy',
+		'unnerved',
+		'wary',
+		'timid',
+		'dumbfounded',
+		'flabbergasted',
+		'frozen',
+		'trepidation',
 	],
 	5: [
-		// Thinking & Confusion
+		// THINKING, CONFUSION, CURIOSITY (Doubt, Skepticism)
 		'thinking',
 		'pondering',
 		'considering',
@@ -98,9 +250,36 @@ export const numberToEmotionWordsMap: Readonly<Record<number, readonly string[]>
 		'uncertain',
 		'doubtful',
 		'skeptical',
+		'realization',
+		'ambivalent',
+		'apathy',
+		'baffled',
+		'bewildered',
+		'dazed',
+		'disoriented',
+		'hesitation',
+		'hesitant',
+		'incredulous',
+		'interest',
+		'intrigued',
+		'perplexed',
+		'quizzical',
+		'speculative',
+		'wonder',
+		'analytical',
+		'contemplative',
+		'deliberating',
+		'examining',
+		'inquisitive',
+		'investigating',
+		'meditative',
+		'musing',
+		'philosophical',
+		'reflecting',
+		'studying',
 	],
 	6: [
-		// Affection & Shyness
+		// AFFECTION, LOVE, SHYNESS (Care, Empathy)
 		'love',
 		'affectionate',
 		'caring',
@@ -111,53 +290,239 @@ export const numberToEmotionWordsMap: Readonly<Record<number, readonly string[]>
 		'embarrassed',
 		'blushing',
 		'flustered',
+		'adoration',
+		'attraction',
+		'compassion',
+		'empathy',
+		'kindness',
+		'limerence',
+		'longing',
+		'yearning',
+		'passion',
+		'sentimentality',
+		'tenderness',
+		'warmth',
+		'devotion',
+		'infatuation',
+		'lust',
+		'safe',
+		'secure',
+		'trust',
+		'admiration',
+		'benevolence',
+		'brotherly',
+		'cherish',
+		'comfort',
+		'connection',
+		'endearment',
+		'friendliness',
+		'gentle',
+		'intimacy',
+		'kinship',
+		'platonic',
+		'protectiveness',
+		'sweet',
+		'sympathy',
+		'unity',
 	],
 	7: [
-		// Excitement & Eagerness
+		// EXCITEMENT, EAGERNESS, ENTHUSIASM (Desire, Anticipation)
 		'excited',
 		'eager',
 		'enthusiastic',
 		'thrilled',
 		'elated',
 		'energetic',
+		'desire',
+		'anticipation',
+		'arousal',
+		'driven',
+		'fervent',
+		'fiery',
+		'impassioned',
+		'keen',
+		'motivated',
+		'spirited',
+		'vibrant',
+		'zeal',
+		'zestful',
+		'playful',
+		'animated',
+		'expectant',
+		'ardent',
+		'avid',
+		'buzzing',
+		'dynamic',
+		'fervor',
+		'giddy',
+		'gung-ho',
+		'hyper',
+		'impatience',
+		'intense',
+		'lively',
+		'pumped',
+		'ravenous',
+		'ready',
+		'restless',
+		'amped',
+		'charged',
+		'agog',
 	],
 	8: [
-		// Disgust & Contempt
+		// DISGUST, CONTEMPT, REVULSION (Dislike, Scorn)
+		'disgust',
 		'disgusted',
 		'repulsed',
 		'sickened',
 		'contempt',
 		'scornful',
 		'disdainful',
+		'abhorrence',
+		'aversion',
+		'appalled',
+		'critical',
+		'cynical',
+		'derision',
+		'dislike',
+		'distaste',
+		'judgmental',
+		'loathing',
+		'nauseated',
+		'rejection',
+		'revulsion',
+		'sarcastic',
+		'antipathy',
+		'condescending',
+		'disdain',
+		'displeasure',
+		'grossed out',
+		'haughty',
+		'insolent',
+		'mocking',
+		'patronizing',
+		'queasy',
+		'repugnance',
+		'sneering',
+		'sour',
+		'uppity',
 	],
-	// Add more numbers and associated keyword arrays as needed
-} as const; // Using 'as const' provides stronger typing
 
-/**
- * A flattened, unique list of all defined emotion keywords in lowercase.
- * Useful for validation or providing hints to the LLM.
- */
-export const allEmotionKeywords: readonly string[] = Array.from(
-	new Set(
-		Object.values(numberToEmotionWordsMap)
-			.flat()
-			.map((word) => word.toLowerCase())
-	)
-);
+	9: [
+		// PRIDE, CONFIDENCE, SMUGNESS
+		'pride',
+		'confident',
+		'assured',
+		'smug',
+		'triumphant',
+		'arrogant',
+		'boastful',
+		'cocky',
+		'hubris',
+		'self-assured',
+		'superior',
+		'victorious',
+		'assertive',
+		'bold',
+		'brave',
+		'courageous',
+		'daring',
+		'determined',
+		'dignified',
+		'empowered',
+		'fearless',
+		'graceful',
+		'heroic',
+		'honorable',
+		'independent',
+		'majestic',
+		'poised',
+		'powerful',
+		'regal',
+		'resolute',
+		'self-reliant',
+		'self-respect',
+		'stately',
+		'strong',
+		'unflappable',
+		'valiant',
+	],
+	10: [
+		// SHAME, GUILT, HUMILIATION
+		'ashamed',
+		'guilt',
+		'humiliation',
+		'embarrassment',
+		'mortified',
+		'regretful',
+		'remorseful',
+		'self-conscious',
+		'sheepish',
+		'worthless',
+		'abashed',
+		'apologetic',
+		'contrite',
+		'demeaned',
+		'disgraced',
+		'hangdog',
+		'humbled',
+		'inferior',
+		'insecure',
+		'meek',
+		'penitent',
+		'self-blame',
+		'self-critical',
+		'self-deprecating',
+		'shamefaced',
+		'submissive',
+		'vulnerable',
+	],
+} as const;
 
 // Default portrait number
-export const DEFAULT_IMAGE_NUMBER = 0;
 export type EmotionKey = keyof typeof numberToEmotionWordsMap;
+export const DEFAULT_IMAGE_NUMBER: EmotionKey = 0;
+export const validEmotionKeyNumbers: Readonly<Set<EmotionKey>> = new Set(
+	Object.keys(numberToEmotionWordsMap).map((k) => Number(k) as EmotionKey)
+);
 
-export const findClosestEmotion = (word: string): EmotionKey => {
-	const lower = word.toLowerCase();
+// The PortraitMap stores loaded image URLs, keyed by their valid EmotionKey (image number).
+// It's Partial because not every EmotionKey defined in numberToEmotionWordsMap
+// will necessarily have a corresponding image file available.
+export type PortraitMap = Partial<Record<EmotionKey, string>>;
+/**
+ * Flattened set of all unique emotion keywords (lowercase) for fast lookup.
+ */
+export const allEmotionKeywords: Readonly<Set<string>> = new Set(
+	Object.values(numberToEmotionWordsMap)
+		.flat()
+		.map((w) => w.toLowerCase())
+);
 
-	for (const [key, keywords] of Object.entries(numberToEmotionWordsMap)) {
-		if (keywords.includes(lower)) {
-			return Number(key) as EmotionKey;
+/**
+ * Array version of all emotion keywords (if you need an array).
+ */
+export const allEmotionKeywordsList: readonly string[] = Array.from(allEmotionKeywords);
+
+/**
+ * Returns the image number associated with an emotion keyword.
+ * If not found, returns DEFAULT_IMAGE_NUMBER and logs a warning.
+ */
+export function getImageNumberForEmotion(emotion: string): EmotionKey {
+	const lowerEmotion = emotion.toLowerCase();
+	for (const [numStr, keywords] of Object.entries(numberToEmotionWordsMap)) {
+		if ((keywords as readonly string[]).includes(lowerEmotion)) {
+			return Number(numStr) as EmotionKey;
 		}
 	}
+	console.warn(
+		`Emotion keyword "${emotion}" not found. Returning default image number ${DEFAULT_IMAGE_NUMBER}.`
+	);
+	return DEFAULT_IMAGE_NUMBER;
+}
 
-	console.warn(`Unknown emotion keyword from LLM: "${word}", defaulting to neutral`);
-	return DEFAULT_IMAGE_NUMBER as EmotionKey;
-};
+export function isValidEmotionKeyword(emotion: string): boolean {
+	const lowerEmotion = emotion.toLowerCase();
+	if (allEmotionKeywords.has(lowerEmotion)) return true;
+	console.warn(`Invalid or unmapped emotion keyword: "${emotion}".`);
+	return false;
+}

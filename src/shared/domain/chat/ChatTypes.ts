@@ -1,4 +1,4 @@
-import { allEmotionKeywords } from '../../config/index.ts';
+import { allEmotionKeywordsList } from '../../config/index.ts';
 import { DefaultAiRole } from '../index.ts';
 
 export type ChatType = 'dialogue' | 'action';
@@ -15,8 +15,19 @@ export interface ChatMessage {
 	messageId: string;
 	messageType: ChatMessageType;
 	entries: ChatEntry[];
-	emotion: (typeof allEmotionKeywords)[number];
+	emotion: (typeof allEmotionKeywordsList)[number];
 	timestamp: string; // ISO 8601 format
+	model?: string;
+}
+
+export interface MigChatMessage {
+	uuid: string;
+	role: ChatRoleType;
+	content: string;
+	timestamp: string;
+	speaker?: string;
+	emotion?: string;
+	model?: string;
 }
 
 export interface ChatTurn {

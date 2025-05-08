@@ -2,10 +2,10 @@
 
 import { ChromaClient } from 'chromadb';
 // Assuming these imports are correct for your project structure
-import { COLLECTIONS, METADATA_TYPES } from '../src/shared/domain/chromadb/ChromaInterfaces.ts';
+import { COLLECTIONS, METADATA_TYPES } from '../../src/shared/domain/chromadb/ChromaInterfaces.ts';
 // Import the *updated* interface without image paths
-import type { CharacterMetadata } from '../src/shared/domain/character/CharacterInterfaces'; // Adjust path if needed
-import { buildCharacterId } from '../src/shared/util/idUtils';
+import type { CharacterMetadata } from '../../src/shared/domain/character/CharacterInterfaces.ts'; // Adjust path if needed
+import { buildCharacterId } from '../../src/shared/util/idUtils.ts';
 
 // --- Configuration ---
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev'; // Use env var or default
