@@ -2,11 +2,8 @@
 
 import { ChromaClient } from 'chromadb';
 // Assuming these imports are correct for your project structure
-import { COLLECTIONS, METADATA_TYPES } from '../../src/shared/domain/chromadb/ChromaInterfaces.ts';
-// Import the *updated* interface without image paths
-import type { CharacterMetadata } from '../../src/shared/domain/character/CharacterInterfaces.ts'; // Adjust path if needed
-import { buildCharacterId } from '../../src/shared/util/idUtils.ts';
-import { tarionOriginal, tarionSpinoff } from './migrationTemplates.ts';
+import { COLLECTIONS } from '../../src/shared/domain/chromadb/ChromaInterfaces.ts';
+import { mondayOriginal, tarionOriginal, tarionSpinoff } from './migrationTemplates.ts';
 
 // --- Configuration ---
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev'; // Use env var or default
@@ -16,9 +13,11 @@ async function initCharacter() {
 	console.log(`Connecting to ChromaDB at: ${CHROMA_URL}`);
 	const chroma = new ChromaClient({ path: CHROMA_URL });
 
-	const { characterId } = tarionOriginal;
-	// const { characterId } = tarionSpinoff;
-	// const { characterId } = mondayOriginal;
+	// let initData = mondayOriginal;
+	// let initData = tarionOriginal;
+	let initData = tarionSpinoff;
+
+	const { characterId } = initData;
 
 	try {
 		// 1. Get or Create the CHARACTER Collection
@@ -39,8 +38,8 @@ async function initCharacter() {
 
 		await collection.upsert({
 			ids: [characterId],
-			documents: [JSON.stringify(tarionOriginal)],
-			metadatas: [tarionOriginal],
+			documents: [JSON.stringify(initData)],
+			metadatas: [initData],
 		});
 
 		console.log(

@@ -2,7 +2,7 @@ import { ChatMessageType, SUFFIX, ALPHANUMERIC_ALPHABET } from '../index.ts';
 import { customAlphabet } from 'nanoid';
 
 /* gen uuid (shortened)*/
-const _genNanoId = (length: number) => customAlphabet(ALPHANUMERIC_ALPHABET, length); // Or your desired length
+const _genNanoId = (length: number) => customAlphabet(ALPHANUMERIC_ALPHABET, length)();
 
 /* character id */
 export const buildCharacterId = (characterName: string, variant?: string): string => {

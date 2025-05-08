@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 import { COLLECTIONS, METADATA_TYPES } from '../../src/shared/domain/chromadb/ChromaInterfaces.ts';
 import { ChatMessage, ChatTurn, MigChatMessage } from '../../src/shared/domain/chat/ChatTypes.ts';
-import { buildMessageId, buildTurnId } from '../../src/shared/util/idUtils.ts';
+import { buildMessageId, buildSessionId, buildTurnId } from '../../src/shared/util/idUtils.ts';
 import { isValidEmotionKeyword } from '../../src/shared/config/emotionWordsMapper.ts';
 import { parseTextToEntries } from '../../src/shared/util/chatParseUtils.ts';
 
@@ -16,7 +16,7 @@ const __dirname = path.dirname(__filename);
 
 // --- Configuration ---
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev';
-const CRAWLER_LOGS_DIR = path.join(__dirname, 'logs');
+const CRAWLER_RESULT_DIR = path.join(__dirname, 'result');
 const EMOTION_DEFAULT = 'default';
 
 // --- ADJUST THESE FOR DEBUGGING ---
@@ -89,30 +89,30 @@ async function initChatFromLogFiles() {
 		});
 		console.log(`Collection "${COLLECTIONS.CHAT}" ready.`);
 
-		const allLogFiles = (await fs.readdir(CRAWLER_LOGS_DIR)).filter((file) => file.endsWith('.json'));
+		const allLogFiles = (await fs.readdir(CRAWLER_RESULT_DIR)).filter((file) =>
+			file.endsWith('.json')
+		);
 
 		if (allLogFiles.length === 0) {
-			console.log(`No JSON log files found in ${CRAWLER_LOGS_DIR}. Nothing to process.`);
+			console.log(`No JSON log files found in ${CRAWLER_RESULT_DIR}. Nothing to process.`);
 			return;
 		}
 		console.log(`Found the following log files to process: ${allLogFiles.join(', ')}`);
 
 		// --- MODIFIED: Temporary skip for "monday" to focus on "tarion" or others ---
-		const logFilesToProcess = allLogFiles.filter((file) => !file.startsWith('monday_original'));
-		// const logFilesToProcess = allLogFiles; // Uncomment this line to process all files normally
-		console.log(
-			`Files to actually process in this run: ${logFilesToProcess.join(', ') || 'None (if only monday_original was present)'}`
-		);
+		// const logFilesToProcess = allLogFiles.filter((file) => !file.startsWith('tarion'));
+		const logFilesToProcess = allLogFiles; // Uncomment this line to process all files normally
+		// console.log(
+		// 	`Files to actually process in this run: ${logFilesToProcess.join(', ') || 'None (if only monday_original was present)'}`
+		// );
 		// ---
 
 		for (const logFile of logFilesToProcess) {
 			// Changed from allLogFiles to logFilesToProcess
-			const TARGET_SESSION_ID = path.basename(logFile, '.json');
-			// Your original script had: if (TARGET_SESSION_ID.includes('monday')) continue;
-			// The filter above achieves this more cleanly if that's the intent for this specific run.
-			// If you want to keep the explicit continue, it's fine, but the filter is also an option.
+			const characterId = path.basename(logFile, '.json');
+			const TARGET_SESSION_ID = buildSessionId(characterId);
 
-			const filePath = path.join(CRAWLER_LOGS_DIR, logFile);
+			const filePath = path.join(CRAWLER_RESULT_DIR, logFile);
 			console.log(`\nProcessing log file: "${logFile}" for session ID: "${TARGET_SESSION_ID}"...`);
 
 			const fileContent = await fs.readFile(filePath, 'utf-8');
