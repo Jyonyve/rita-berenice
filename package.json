@@ -18,7 +18,9 @@
 		"chat:crawl": "tsx ./scripts/chat/crawlChat.ts",
 		"chat:init": "tsx ./scripts/chat/initChat.ts",
 		"chat:check": "tsx ./scripts/chat/checkChat.ts",
-		"drop": "tsx ./scripts/dropCollection.ts"
+		"chat:delete": "tsx ./scripts/chat/deleteChat.ts",
+		"drop": "tsx ./scripts/dropCollection.ts",
+		"source:parse": "tsx ./scripts/source/htmlParserCheerio.ts"
 	},
 	"dependencies": {
 		"@emotion/cache": "^11.14.0",
@@ -39,9 +41,11 @@
 		"@types/react-window": "^1.8.8",
 		"@vitejs/plugin-react": "^4.3.4",
 		"axios": "^1.8.4",
+		"cheerio": "^1.0.0",
 		"chromadb": "^2.0.1",
 		"compression": "^1.8.0",
 		"express": "^5.1.0",
+		"nanoid": "^5.1.5",
 		"onnxruntime-node": "^1.21.0",
 		"openai": "^4.91.1",
 		"puppeteer": "^24.8.1",
@@ -55,6 +59,7 @@
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.13.0",
+		"@types/cheerio": "^1.0.0",
 		"@types/compression": "^1.7.5",
 		"@types/express": "^5.0.1",
 		"@types/node": "^22.14.0",

@@ -1,6 +1,9 @@
 import { COLLECTIONS } from '../domain/index.ts';
-// Default interval for generating summaries (e.g., every 3 turns)
+
+export const ALPHANUMERIC_ALPHABET =
+	'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' as const;
 export const DEFAULT_RECAP_INTERVAL: number = 3 as const;
+export const DEFAULT_RELATIONSHIP_RECAP_INTERVAL = 7 as const;
 export const DEFAULT_RECENT_TURN_COUNT: number = 10 as const;
 export const DEFAULT_LOADING_TURN_COUNT: number = 5 as const;
 

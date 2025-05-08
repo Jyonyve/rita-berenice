@@ -8,7 +8,7 @@ import {
 	ChatMessageType,
 } from '@shared/domain/index.ts';
 import { buildMessageId } from './idUtils.ts';
-import { isValidEmotionKeyword } from '../config/emotionWordsMapper.ts';
+import { DEFAULT_EMOTION, isValidEmotionKeyword } from '../config/index.ts';
 
 export const parseTextToEntries = (text: string): ChatEntry[] => {
 	const entries: ChatEntry[] = [];
@@ -32,27 +32,16 @@ export const parseEntriesToText = (entries: ChatEntry[]): string => {
 		.join(' ');
 };
 
-export const parseEntryToJson = (entry: ChatEntry) => ({ type: entry.type, prompt: entry.prompt });
-
-export const buildChatTurnToJsonString = (chatTurn: ChatTurn): string => {
-	const { request, response, sessionId, sequence } = chatTurn;
-
-	const jsonObject = {
-		sessionId,
-		sequence,
-		request: { ...request, entries: request.entries.map(parseEntryToJson) },
-		response: { ...response, entries: response.entries.map(parseEntryToJson) },
-	};
-
-	return JSON.stringify(jsonObject, null, 2);
-};
+export const buildChatTurnToJsonString = (chatTurn: ChatTurn): string =>
+	JSON.stringify(chatTurn, null, 2);
 
 export const buildChatMessage = (
 	role: ChatRoleType,
 	sequence: number,
+	showName: string,
 	text: string,
 	sessionId: string,
-	emotion = 'default'
+	emotion = DEFAULT_EMOTION
 ): ChatMessage => {
 	const entries: ChatEntry[] = parseTextToEntries(text);
 	const messageType: ChatMessageType = role === 'user' ? 'request' : 'response';
@@ -60,9 +49,21 @@ export const buildChatMessage = (
 		role,
 		messageId: buildMessageId(sessionId, sequence, messageType),
 		messageType,
+		showName,
 		entries,
-		emotion: isValidEmotionKeyword(emotion) ? emotion : 'default',
+		emotion: isValidEmotionKeyword(emotion) ? emotion : DEFAULT_EMOTION,
 		timestamp: new Date().toISOString(),
+	};
+};
+
+export const parseChatTurnToSimpleLogs = (chatTurn: ChatTurn) => {
+	const { request, response } = chatTurn;
+	return {
+		userName: request.showName,
+		userPrompt: parseEntriesToText(request.entries),
+		charName: response.showName,
+		charPrompt: parseEntriesToText(response.entries),
+		emotion: response.emotion,
 	};
 };
 

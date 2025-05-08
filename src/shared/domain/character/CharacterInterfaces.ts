@@ -47,3 +47,11 @@ export interface CharacterAsset {
 export interface CharacterAssets {
 	[characterId: string]: Partial<Record<EmotionKey, CharacterAsset>>;
 }
+
+export interface CharacterHistory {
+	characterId: string;
+	title: string;
+	content: string;
+	sequence: number;
+	timeline: number;
+}

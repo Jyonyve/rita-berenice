@@ -11,6 +11,7 @@ import {
 	ChatRoleType,
 	convertMessageContentToString,
 	CredentialDataType,
+	DEFAULT_EMOTION,
 	extractValidOpenAiContent,
 	isDirectOpenAIClient,
 } from '#root/src/shared/index.ts';
@@ -168,7 +169,7 @@ export const llmService = {
 					);
 					return JSON.stringify({
 						response: content || '[LLM returned empty content]',
-						emotion: 'default',
+						emotion: DEFAULT_EMOTION,
 					}); // Fallback JSON
 				}
 				return content; // Expecting JSON string
@@ -185,7 +186,7 @@ export const llmService = {
 
 				if (!content) {
 					console.warn(`LangChain model (${aiModelInfo.model}) returned empty content.`);
-					return JSON.stringify({ response: '[LLM returned empty content]', emotion: 'neutral' }); // Fallback JSON
+					return JSON.stringify({ response: '[LLM returned empty content]', emotion: DEFAULT_EMOTION }); // Fallback JSON
 				}
 				// Check if the response looks like JSON
 				if (content.trim().startsWith('{') && content.trim().endsWith('}')) {
@@ -195,7 +196,7 @@ export const llmService = {
 						`LangChain model (${aiModelInfo.model}) did not return expected JSON format. Response: ${content}`
 					);
 					// Wrap non-JSON response in expected structure
-					return JSON.stringify({ response: content, emotion: 'neutral' }); // Fallback JSON
+					return JSON.stringify({ response: content, emotion: DEFAULT_EMOTION }); // Fallback JSON
 				}
 			}
 		} catch (error: any) {
@@ -203,7 +204,7 @@ export const llmService = {
 			// Return a JSON string indicating the error for PersonaEngine to parse
 			return JSON.stringify({
 				response: `[LLM invocation error: ${error.message || 'Unknown error'}]`,
-				emotion: 'neutral',
+				emotion: DEFAULT_EMOTION,
 			});
 		}
 	},

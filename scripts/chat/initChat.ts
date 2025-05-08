@@ -165,6 +165,7 @@ async function initChatFromLogFiles() {
 						entries: parseTextToEntries(userLog.content),
 						emotion: EMOTION_DEFAULT,
 						timestamp: requestTimestamp,
+						showName: '요니브',
 					};
 
 					const responseMessage: ChatMessage = {
@@ -175,6 +176,7 @@ async function initChatFromLogFiles() {
 						emotion:
 							botLog.emotion && isValidEmotionKeyword(botLog.emotion) ? botLog.emotion : EMOTION_DEFAULT,
 						timestamp: responseTimestamp,
+						showName: '타리온',
 					};
 
 					const chatTurn: ChatTurn = {
@@ -196,7 +198,6 @@ async function initChatFromLogFiles() {
 						timestamp: requestTimestamp,
 						model: botLog.model, // Renamed from modelUsed
 						originalLogId: logId, // This is the log.uuid
-						characterName: botLog.speaker,
 					};
 
 					allTurnIdsForFile.push(turnId);

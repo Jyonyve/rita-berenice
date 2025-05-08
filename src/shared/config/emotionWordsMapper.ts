@@ -480,7 +480,8 @@ export const numberToEmotionWordsMap = {
 
 // Default portrait number
 export type EmotionKey = keyof typeof numberToEmotionWordsMap;
-export const DEFAULT_IMAGE_NUMBER: EmotionKey = 0;
+export const DEFAULT_IMAGE_NUMBER: EmotionKey = 0 as const;
+export const DEFAULT_EMOTION = 'default' as const;
 export const validEmotionKeyNumbers: Readonly<Set<EmotionKey>> = new Set(
 	Object.keys(numberToEmotionWordsMap).map((k) => Number(k) as EmotionKey)
 );
@@ -520,8 +521,9 @@ export function getImageNumberForEmotion(emotion: string): EmotionKey {
 	return DEFAULT_IMAGE_NUMBER;
 }
 
-export function isValidEmotionKeyword(emotion: string): boolean {
-	const lowerEmotion = emotion.toLowerCase();
+export function isValidEmotionKeyword(emotion?: string): boolean {
+	if (!emotion) return false;
+	const lowerEmotion = emotion?.toLowerCase();
 	if (allEmotionKeywords.has(lowerEmotion)) return true;
 	console.warn(`Invalid or unmapped emotion keyword: "${emotion}".`);
 	return false;

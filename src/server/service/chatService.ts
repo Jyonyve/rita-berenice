@@ -1,9 +1,4 @@
-import type {
-	ChatTurn,
-	ChatMessageType,
-	AiModelInfo,
-	TempChatTurn,
-} from '#root/src/shared/domain/index.ts';
+import type { ChatTurn, ChatMessageType, TempChatTurn } from '#root/src/shared/domain/index.ts';
 import {
 	parseEntriesToText,
 	buildMessageId,
@@ -15,10 +10,16 @@ import {
 	DEFAULT_RECAP_MODEL_FREE,
 	DEFAULT_RECENT_TURN_COUNT,
 	METADATA_TYPES,
+	DEFAULT_RELATIONSHIP_RECAP_INTERVAL,
+	buildRelationshipRecapId,
+	parseChatTurnToSimpleLogs,
+	buildRecapId,
+	ChatMessage,
 } from '#root/src/shared/index.ts';
 import { Collection, IncludeEnum } from 'chromadb';
-import { chromaDbClient } from '#server/db/chromaDbClient.ts';
+import { chromaDbClient } from '../db/chromaDbClient.ts';
 import { llmService } from './llmService.ts';
+import { buildLlmRecapPrompt, buildLlmRelationshipRecapPrompt } from '../util/index.ts';
 
 // Destructure outside the object
 const {
@@ -74,6 +75,9 @@ export const chatService = {
 	_storeRecap: async (sessionId: string, sequence: number): Promise<void> => {
 		// validation
 		if (sequence === 0 || sequence % DEFAULT_RECAP_INTERVAL !== 0) return;
+
+		console.log(`Attempting to generate recap for session ${sessionId}, sequence ${sequence}`);
+
 		// 1. Fetch recent turns from DB
 		const turnsForRecap = await chatService.getRecentChatTurns(sessionId, DEFAULT_RECAP_INTERVAL);
 		if (turnsForRecap.length === 0) {
@@ -82,9 +86,9 @@ export const chatService = {
 		}
 
 		// 2. Format prompt
-		const recapPromptContent = `Create a concise recap of the key points from the following recent chat turns:\n${turnsForRecap
-			.map((turn) => buildChatTurnToJsonString(turn)) // Ensure util is available
-			.join('\n\n')}`;
+		const recapPromptContent = buildLlmRecapPrompt(
+			turnsForRecap.map((turn) => buildChatTurnToJsonString(turn)).join('\n\n')
+		);
 
 		// 3. Get Recap Model Info (use default or allow configuration later)
 		const recapModelInfo = DEFAULT_RECAP_MODEL_FREE; // Use keyless default shared constant
@@ -98,8 +102,9 @@ export const chatService = {
 		}
 
 		// 5. Save the Recap
+		const recapId = buildRecapId(sessionId);
 		const collection = await chatService._getRecapCollection();
-		await upsertDocument(collection, sessionId, recapContent, {
+		await upsertDocument(collection, recapId, recapContent, {
 			type: METADATA_TYPES.RECAP,
 			sequence,
 			timestamp: new Date().toISOString(),
@@ -107,6 +112,60 @@ export const chatService = {
 		});
 		console.log(
 			`Successfully generated and saved recap for sequence No ${sequence}, session ${sessionId}.`
+		);
+	},
+
+	_storeRelationshipRecap: async (sessionId: string, sequence: number): Promise<void> => {
+		if (sequence === 0 || sequence % DEFAULT_RELATIONSHIP_RECAP_INTERVAL !== 0) {
+			return; // Trigger only at the specified interval
+		}
+
+		console.log(
+			`Attempting to generate relationship recap for session ${sessionId}, sequence ${sequence}`
+		);
+
+		// 1. Fetch recent turns from DB
+		const turnsForRecap = await chatService.getRecentChatTurns(
+			sessionId,
+			DEFAULT_RELATIONSHIP_RECAP_INTERVAL
+		);
+		const simpleChatLogs = turnsForRecap.map((turn) => parseChatTurnToSimpleLogs(turn));
+
+		if (turnsForRecap.length === 0) {
+			console.warn(`No turns found for recap generation (Session: ${sessionId}, Seq: ${sequence})`);
+			return;
+		}
+
+		// 2. Format prompt
+		const recapPromptContent = buildLlmRelationshipRecapPrompt(
+			simpleChatLogs[0].userName,
+			simpleChatLogs[0].charName,
+			simpleChatLogs.map((log) => JSON.stringify(log)).join('\n\n')
+		);
+
+		// 3. Get Recap Model Info (use default or allow configuration later)
+		const recapModelInfo = DEFAULT_RECAP_MODEL_FREE; // Use keyless default shared constant
+
+		// 4. Invoke LLM via llmService
+		const recapContent = await llmService.invokeLlm('system', recapPromptContent, recapModelInfo); // Use invokeLlm
+
+		if (!recapContent || recapContent.startsWith('[Error')) {
+			console.warn(`Recap generation for sequence ${sequence} returned empty/error.`);
+			return;
+		}
+
+		// 5. Save the Recap
+		const relationshipRecapId = buildRelationshipRecapId(sessionId);
+		const collection = await chatService._getRecapCollection();
+		await upsertDocument(collection, relationshipRecapId, recapContent, {
+			type: METADATA_TYPES.RECAP,
+			sequence,
+			timestamp: new Date().toISOString(),
+			sessionId,
+		});
+
+		console.log(
+			`Successfully generated and saved relationship recap for sequence No ${sequence}, session ${sessionId}.`
 		);
 	},
 
@@ -184,11 +243,9 @@ export const chatService = {
 		const requestId = buildMessageId(sessionId, sequence, 'request');
 		await upsertDocument(collection, requestId, requestContent, {
 			type: METADATA_TYPES.MESSAGE,
-			messageType: SUFFIX.REQUEST,
 			sessionId,
 			sequence,
-			role: request.role,
-			timestamp: request.timestamp,
+			...request,
 		});
 	},
 	// Store response (public for non-regen editing)
@@ -199,11 +256,9 @@ export const chatService = {
 		const responseId = buildMessageId(sessionId, sequence, 'response');
 		await upsertDocument(collection, responseId, responseContent, {
 			type: METADATA_TYPES.MESSAGE,
-			messageType: SUFFIX.RESPONSE,
 			sessionId,
 			sequence,
-			role: response.role,
-			timestamp: response.timestamp,
+			...response,
 		});
 	},
 
@@ -221,16 +276,32 @@ export const chatService = {
 		await chatService._storeFullChatTurn(chatTurn);
 		await chatService.removeTempChatTurn(sessionId);
 		await chatService._storeRecap(sessionId, chatTurn.sequence);
+		await chatService._storeRelationshipRecap(sessionId, chatTurn.sequence);
 	},
 
 	getRecap: async (sessionId: string): Promise<string> => {
 		const collection = await chatService._getRecapCollection();
-
+		const recapId = buildRecapId(sessionId);
 		try {
-			const recap = await getDocumentById(collection, sessionId);
+			const recap = await getDocumentById(collection, recapId);
 			return recap || '';
 		} catch (error) {
 			console.warn(`No recap found for session ${sessionId}`);
+			return '';
+		}
+	},
+
+	getRelationshipRecap: async (sessionId: string): Promise<string> => {
+		const collection = await chatService._getRecapCollection();
+		const relationshipRecapId = buildRelationshipRecapId(sessionId);
+		try {
+			const recap = await getDocumentById(collection, relationshipRecapId);
+			return recap || '';
+		} catch (error) {
+			// It's common for a recap not to exist initially, so log as warn or info
+			console.info(
+				`No relationship recap found for ID ${relationshipRecapId} (session ${sessionId}). This may be normal.`
+			);
 			return '';
 		}
 	},
@@ -335,11 +406,6 @@ export const chatService = {
 			console.error(`Error fetching recent fixed turns for session ${sessionId}:`, error);
 			return [];
 		}
-	},
-
-	/** Get recap document */
-	queryRecap: async (sessionId: string): Promise<string> => {
-		return await chatService.getRecap(sessionId);
 	},
 
 	/** Gets a single FIXED turn by sequence */

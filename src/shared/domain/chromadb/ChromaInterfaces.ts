@@ -33,6 +33,7 @@ export const COLLECTIONS = {
 	CHAT: 'chat',
 	TEMP_CHAT: 'tempChat',
 	RECAP: 'recap',
+	LORE: 'lore',
 	CREDENTIAL: 'credential',
 } as const;
 

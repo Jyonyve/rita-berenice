@@ -1,29 +1,36 @@
-import { v4 as uuidv4 } from 'uuid';
-import { ChatMessageType, SUFFIX, SuffixType } from '@shared/domain/index.ts';
+import { ChatMessageType, SUFFIX, ALPHANUMERIC_ALPHABET } from '../index.ts';
+import { customAlphabet } from 'nanoid';
+
+/* gen uuid (shortened)*/
+const _genNanoId = (length: number) => customAlphabet(ALPHANUMERIC_ALPHABET, length); // Or your desired length
 
 /* character id */
-export const buildCharacterId = (characterName: string, variant: string): string => {
-	return `${characterName}_${variant}`;
+export const buildCharacterId = (characterName: string, variant?: string): string => {
+	return `${characterName}_${variant || _genNanoId(8)}`;
 };
 
 export const buildProfileId = (profileName: string, sessionId: string) => {
 	return `${profileName}_${sessionId}`;
 };
 
+export const buildLoreId = (characterId: string, sequence: number) => {
+	return `${characterId}_${sequence}_${SUFFIX.LORE}`;
+};
+
 /* chat id */
 export const buildSessionId = (characterId: string): string => {
-	return `${characterId}_${uuidv4()}`;
+	return `${characterId}_${_genNanoId(16)}`;
 };
 
 export const parseSessionId = (
 	sessionId: string
-): { characterName: string; variant: string; uuid: string } => {
+): { charName: string; variant: string; uuid: string } => {
 	const parts = sessionId.split('_');
 	if (parts.length < 3) {
 		throw new Error(`Invalid session ID format: ${sessionId}`);
 	}
 	return {
-		characterName: parts[0],
+		charName: parts[0],
 		variant: parts[1],
 		uuid: parts[2], // In case UUID contains underscores
 	};
@@ -39,6 +46,15 @@ export const buildMessageId = (
 
 export const buildTurnId = (sessionId: string, sequence: number): string => {
 	return `${sessionId}_${sequence}_${SUFFIX.SET}`;
+};
+
+// other collections
+export const buildRecapId = (sessionId: string): string => {
+	return `${sessionId}_${SUFFIX.RECAP}`;
+};
+
+export const buildRelationshipRecapId = (sessionId: string): string => {
+	return `${sessionId}_${SUFFIX.RELATIONSHIP}`;
 };
 
 export const parseMessageId = (

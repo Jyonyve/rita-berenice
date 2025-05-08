@@ -15,8 +15,9 @@ export interface ChatMessage {
 	messageId: string;
 	messageType: ChatMessageType;
 	entries: ChatEntry[];
-	emotion: (typeof allEmotionKeywordsList)[number];
+	showName: string;
 	timestamp: string; // ISO 8601 format
+	emotion: (typeof allEmotionKeywordsList)[number];
 	model?: string;
 }
 
@@ -25,7 +26,7 @@ export interface MigChatMessage {
 	role: ChatRoleType;
 	content: string;
 	timestamp: string;
-	speaker?: string;
+	showName?: string;
 	emotion?: string;
 	model?: string;
 }
@@ -49,8 +50,9 @@ export const SUFFIX = {
 	REQUEST: 'request',
 	RESPONSE: 'response',
 	SET: 'set',
+	RELATIONSHIP: 'relationship',
 	RECAP: 'recap',
-	SUMMARY: 'summary',
+	LORE: 'lore',
 	TEMP: 'temp',
 } as const;
 

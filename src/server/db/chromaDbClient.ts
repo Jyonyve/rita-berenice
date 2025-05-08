@@ -65,6 +65,16 @@ export const chromaDbClient = {
 		return recapCollection;
 	},
 
+	getLoreCollection: async (): Promise<Collection> => {
+		if (!recapCollection) {
+			recapCollection = await chromaClient.getOrCreateCollection({
+				name: COLLECTIONS.LORE,
+				metadata: { type: COLLECTIONS.LORE },
+			});
+		}
+		return recapCollection;
+	},
+
 	getSessionCollection: async (sessionId: string): Promise<Collection> => {
 		if (!sessionId) {
 			throw new Error('Session ID is required');

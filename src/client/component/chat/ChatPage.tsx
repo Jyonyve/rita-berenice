@@ -22,6 +22,7 @@ import { UserInput } from './UserInput.tsx';
 // MUI Components
 import { Grid, Box } from '@mui/material'; // Correct imports
 import { useNavigate, useParams } from 'react-router-dom';
+import { DEFAULT_EMOTION } from '#root/src/shared/index.ts';
 
 export const ChatPage = () => {
 	// init
@@ -58,14 +59,14 @@ export const ChatPage = () => {
 	if (!sessionId) return;
 
 	// const
-	const { characterName, variant } = parseSessionId(sessionId);
-	const characterId = buildCharacterId(characterName, variant);
+	const { charName, variant } = parseSessionId(sessionId);
+	const characterId = buildCharacterId(charName, variant);
 
 	// --- STATE ---
 	const [userInput, setUserInput] = useState('');
+	const [userEditInput, setUserEditInput] = useState('');
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [errorState, setErrorState] = useState<string>();
-	const [currentEmotionKeyword, setCurrentEmotionKeyword] = useState('default');
 
 	// --- HOOKS ---
 	const { portraitMap } = useCharacterState(characterId);
@@ -92,7 +93,6 @@ export const ChatPage = () => {
 		getTempChatTurn,
 		saveTempChatTurn,
 		removeTempChatTurn,
-		buildUserPromptFromLog,
 		genResponseFromLlm,
 	} = useChatApi(sessionId);
 
@@ -150,11 +150,23 @@ export const ChatPage = () => {
 			tempChatTurn && _storeTempChatTurn(currentSequence, tempChatTurn);
 
 			//user
-			const userMsg = buildChatMessage('user', currentSequence, userInput, sessionId);
-			const prompt = await buildUserPromptFromLog(sessionId, userInput);
+			const userMsg = buildChatMessage('user', currentSequence, 'the user', userInput, sessionId);
 			//character
-			const { assistantResponse } = await genResponseFromLlm(sessionId, 'user', prompt, aiModelInfo);
-			const aiMsg = buildChatMessage('assistant', currentSequence, assistantResponse, sessionId);
+			const { stringifyResponse } = await genResponseFromLlm(
+				sessionId,
+				'user',
+				userInput,
+				aiModelInfo
+			);
+			const { response, emotion } = JSON.parse(stringifyResponse);
+			const aiMsg = buildChatMessage(
+				'assistant',
+				currentSequence,
+				charName,
+				response,
+				sessionId,
+				emotion
+			);
 
 			const newTempChatTurn: TempChatTurn = {
 				sessionId,
@@ -175,7 +187,6 @@ export const ChatPage = () => {
 		tempChatTurn,
 		getNextSequence,
 		sessionId,
-		buildUserPromptFromLog,
 		genResponseFromLlm,
 		addChatTurn,
 		storeChatTurn,
@@ -195,13 +206,22 @@ export const ChatPage = () => {
 		try {
 			const sequence = tempChatTurn.sequence; // Use existing sequence
 
-			const requestEntries = tempChatTurn.chatTurnSets[length - 1].request.entries;
-			const lastUserInput = parseEntriesToText(requestEntries);
-			const newUserMsg = buildChatMessage('user', sequence, lastUserInput, sessionId);
+			const lastUserInput = parseEntriesToText(
+				[...tempChatTurn.chatTurnSets].pop()?.request.entries ?? []
+			);
+			setUserEditInput(lastUserInput);
+			//FIXME: make edit modal or textfield
+			const newUserMsg = buildChatMessage('user', sequence, 'the user', userEditInput, sessionId);
 
-			const prompt = await buildUserPromptFromLog(sessionId, lastUserInput);
-			const { assistantResponse } = await genResponseFromLlm(sessionId, 'user', prompt, aiModelInfo);
-			const newAiMsg = buildChatMessage('assistant', sequence, assistantResponse, sessionId);
+			const { stringifyResponse } = await genResponseFromLlm(
+				sessionId,
+				'user',
+				userEditInput,
+				aiModelInfo
+			);
+			const { response, emotion } = JSON.parse(stringifyResponse);
+
+			const newAiMsg = buildChatMessage('assistant', sequence, charName, response, sessionId, emotion);
 
 			const updatedTempChatTurn: TempChatTurn = {
 				...tempChatTurn,
@@ -218,7 +238,6 @@ export const ChatPage = () => {
 	}, [
 		tempChatTurn,
 		aiModelInfo,
-		buildUserPromptFromLog,
 		genResponseFromLlm,
 		sessionId,
 		changeTempChatTurn,

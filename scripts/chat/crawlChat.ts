@@ -8,7 +8,11 @@ import { MigChatMessage } from '../../src/shared/domain';
 const GET_CHAT_LOGS_API_URL = 'https://rofan.ai/api/chat/GetChatLogs'; // !! IMPORTANT: Replace with the ACTUAL API URL from your DevTools
 // 2. Update CHARACTERS with the correct 'name' and 'url' (from which chatId will be extracted)
 const CHARACTERS = [
-	{ name: 'tarion_original', url: 'https://rofan.ai/chat/2a5c08d2-b3e0-48eb-982c-f6b75ca869c9' },
+	{
+		name: 'tarion_original',
+		showName: '타리온',
+		url: 'https://rofan.ai/chat/2a5c08d2-b3e0-48eb-982c-f6b75ca869c9',
+	},
 	// Example for another character:
 	{ name: 'tarion_spinoff', url: 'https://rofan.ai/chat/ffbf2c97-53bb-496a-b061-67482cd708ae' },
 	// Add more characters as needed
@@ -112,9 +116,9 @@ MANUAL LOGIN REQUIRED:
 		});
 		console.log('\nLogin complete (assumed by user). Proceeding with chat data crawling via API...');
 
-		const logsDir = path.join(__dirname, 'logs');
-		await fs.mkdir(logsDir, { recursive: true });
-		console.log(`Chat logs will be saved in: ${logsDir}`);
+		const resultDir = path.join(__dirname, 'result');
+		await fs.mkdir(resultDir, { recursive: true });
+		console.log(`Chat logs will be saved in: ${resultDir}`);
 
 		if (!GET_CHAT_LOGS_API_URL || GET_CHAT_LOGS_API_URL.includes('YOUR_ACTUAL_API_ENDPOINT_HERE')) {
 			console.error(
@@ -179,7 +183,6 @@ MANUAL LOGIN REQUIRED:
 						if (logEntry.bot_chat) {
 							allMessagesForThisCharacter.push({
 								role: 'assistant',
-								speaker: character.name, // Using the name from CHARACTERS array
 								content: logEntry.bot_chat,
 								timestamp: logEntry.updated,
 								model: logEntry.model,
@@ -229,7 +232,7 @@ MANUAL LOGIN REQUIRED:
 				);
 
 				const sanitizedCharacterName = character.name.replace(/[^a-z0-9_.-]/gi, '_').toLowerCase();
-				const filePath = path.join(logsDir, `${sanitizedCharacterName}_${randomUUID()}.json`);
+				const filePath = path.join(resultDir, `${sanitizedCharacterName}_${randomUUID()}.json`);
 				try {
 					await fs.writeFile(filePath, JSON.stringify(allMessagesForThisCharacter, null, 2), 'utf8');
 					console.log(

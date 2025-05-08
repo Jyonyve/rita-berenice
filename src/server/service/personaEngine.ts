@@ -1,137 +1,137 @@
+// src/services/personaEngine.ts
 import {
 	EmotionKey,
 	CharacterMetadata,
 	AiModelInfo,
 	DEFAULT_IMAGE_NUMBER,
-	findClosestEmotion,
+	getImageNumberForEmotion,
 	ChatMessage,
+	// Add other necessary types/constants
 } from '#root/src/shared/index.ts';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { llmService } from './llmService.ts';
-import { EMOTION_TEMPLATE } from '#root/src/shared/config/llmTemplates.ts';
+// Import template utils
+import { EMOTION_TEMPLATE, buildRelationshipContextSystemPrompt } from '../util/templateUtils.ts'; // Adjust path as needed
+import { chatService } from './chatService.ts'; // To fetch relationship recap
 
-// Export the response type
 export interface PersonaResponse {
 	response: string;
-	emotion: EmotionKey; // Use the specific type from emotionMapper
+	emotion: EmotionKey;
 }
 
-/**
- * Factory function to create a PersonaEngine instance.
- * Manages persona-based LLM interactions with state managed via closure.
- *
- * @param persona - The character metadata defining the persona.
- * @param aiModelInfo - The AI model configuration to use.
- * @returns An object with methods to interact with the persona engine.
- */
-export const createPersonaEngine = (persona: CharacterMetadata, aiModelInfo: AiModelInfo) => {
-	// --- State managed by closure ---
-	let memory: ChatMessage[] = []; // Use 'let' as it will be reassigned by loadMemory
+export const createPersonaEngine = (
+	persona: CharacterMetadata, // Contains persona.name (charName) and persona.instructions
+	aiModelInfo: AiModelInfo,
+	sessionId: string, // Session ID is needed to fetch recaps
+	userName: string = 'the user' // User's name/identifier
+) => {
+	let memory: ChatMessage[] = [];
 
-	// --- Private Helper Function (Internal Message Builder) ---
-	const buildPrompt = (userInput: string): ChatCompletionMessageParam[] => {
-		const prompt: ChatCompletionMessageParam[] = [];
+	const buildPrompt = async (userInput: string): Promise<ChatCompletionMessageParam[]> => {
+		const systemPromptParts: string[] = [];
 
-		// System prompt combining persona and emotion instructions
+		// 1. Core Persona Instructions
+		systemPromptParts.push(persona.instructions);
 
-		// Combine persona instructions with emotion instructions
-		prompt.push({
-			role: 'system',
-			content: `${persona.instructions}\n\n${EMOTION_TEMPLATE}`, // Access persona from closure
-		});
+		// 2. Relationship Context (fetched from chatService)
+		const relationshipRecapText = await chatService.getRelationshipRecap(sessionId);
+		const relationshipContext = buildRelationshipContextSystemPrompt(
+			relationshipRecapText,
+			userName,
+			persona.name // charName from persona metadata
+		);
+		if (relationshipContext) {
+			systemPromptParts.push(relationshipContext);
+		}
 
-		// Add memory (past messages) from closure state
+		// 3. General Recap (Optional, if you decide to fetch and add it here too)
+		// const generalRecapText = await chatService.getRecap(sessionId);
+		// if (generalRecapText) {
+		//   systemPromptParts.push(`\n[General Conversation Recap]\n"${generalRecapText}"`);
+		// }
+
+		// 4. Emotion Template
+		systemPromptParts.push(EMOTION_TEMPLATE);
+
+		const finalSystemContent = systemPromptParts.join('\n\n---\n\n'); // Join with a clear separator
+
+		const prompt: ChatCompletionMessageParam[] = [{ role: 'system', content: finalSystemContent }];
+
+		// Add memory (past messages)
 		for (const msg of memory) {
-			// Access memory from closure
-			// Assuming msg.entries contains text and msg.role is 'user' or 'assistant'
 			const content = msg.entries?.map((e) => e.prompt).join('\n') || '';
 			if (content && (msg.role === 'user' || msg.role === 'assistant')) {
-				// Ensure the role matches the expected type for ChatCompletionMessageParam
-				const role = msg.role as 'user' | 'assistant'; // Cast if necessary based on ChatMessage type
+				const role = msg.role as 'user' | 'assistant';
 				prompt.push({ role, content });
 			}
 		}
 
-		// Add current user message
 		prompt.push({ role: 'user', content: userInput });
-
 		return prompt;
 	};
 
-	// --- Public Methods (Returned Object) ---
-
-	/**
-	 * Loads prior messages into the engine's memory.
-	 * @param messages - An array of chat messages representing conversation history.
-	 */
 	const loadMemory = (messages: ChatMessage[]): void => {
-		// Assign to the 'memory' variable in the closure
 		memory = messages;
-		console.log(`PersonaEngine loaded ${messages.length} messages into memory.`);
+		// console.log(`PersonaEngine loaded ${messages.length} messages into memory for session ${sessionId}.`);
 	};
 
-	/**
-	 * Sends user input to the LLM, processing the response for text and emotion.
-	 * @param userInput - The user's latest message.
-	 * @returns A promise resolving to a PersonaResponse object containing the text response and mapped emotion key.
-	 */
 	const ask = async (userInput: string): Promise<PersonaResponse> => {
-		console.log(`PersonaEngine asking with input: "${userInput}"`);
-		// Call the internal buildPrompt function
-		const messages = buildPrompt(userInput);
+		// console.log(`PersonaEngine (session ${sessionId}) asking with input: "${userInput}" for user "${userName}"`);
+		const messages = await buildPrompt(userInput); // buildPrompt is now async
 
-		console.log('PersonaEngine invoking LLM with messages:', messages);
-		// Call llmService using aiModelInfo from closure
-		const rawJsonResponse = await llmService.invokeLlmFromMessages(
-			messages,
-			aiModelInfo // Access aiModelInfo from closure
-		);
-		console.log('PersonaEngine received raw response:', rawJsonResponse);
+		// console.log(`PersonaEngine (session ${sessionId}) invoking LLM with messages:`, JSON.stringify(messages, null, 2));
+
+		const rawJsonResponse = await llmService.invokeLlmFromMessages(messages, aiModelInfo);
+		// console.log(`PersonaEngine (session ${sessionId}) received raw response:`, rawJsonResponse);
 
 		let parsed: { response: string; emotion: string };
-
 		try {
-			// Attempt to parse the raw string as JSON
 			parsed = JSON.parse(rawJsonResponse);
-			// Validate structure
 			if (typeof parsed.response !== 'string' || typeof parsed.emotion !== 'string') {
-				throw new Error(
-					'Parsed JSON does not match expected structure {response: string, emotion: string}'
-				);
+				throw new Error('Parsed JSON does not match expected structure');
 			}
 		} catch (err: any) {
-			console.error(`LLM returned invalid JSON or structure error: ${rawJsonResponse}`, err);
-			console.warn('Falling back to using raw response and default emotion.');
-			return { response: rawJsonResponse, emotion: DEFAULT_IMAGE_NUMBER };
+			console.error(`LLM (session ${sessionId}) returned invalid JSON: ${rawJsonResponse}`, err);
+			return { response: rawJsonResponse, emotion: DEFAULT_IMAGE_NUMBER }; // Fallback
 		}
 
-		// Map the string emotion word to a valid EmotionKey using your utility
-		const matchedEmotionKey = findClosestEmotion(parsed.emotion);
-		console.log(`PersonaEngine mapped emotion "${parsed.emotion}" to key: ${matchedEmotionKey}`);
-
+		const matchedEmotionKey = getImageNumberForEmotion(parsed.emotion);
+		// console.log(`PersonaEngine (session ${sessionId}) mapped emotion "${parsed.emotion}" to key: ${matchedEmotionKey}`);
 		return { response: parsed.response, emotion: matchedEmotionKey };
 	};
 
-	// Return the public interface
 	return { loadMemory, ask };
 };
 
-// Example Usage (conceptual, would be in your API route):
+// Example Usage (conceptual, where you create the engine):
 /*
-import { characterService } from './characterService'; // Assuming you have this
-import { chatHistoryService } from './chatHistoryService'; // Assuming you have this
-
-async function handleChatRequest(sessionId: string, userInput: string, modelInfo: AiModelInfo) {
-    const personaData = await characterService.getMetadata(sessionId); // Fetch persona
-    const history = await chatHistoryService.getMessages(sessionId); // Fetch history
-
-    const engine = createPersonaEngine(personaData, modelInfo); // Create instance
-    engine.loadMemory(history); // Load history
-
-    const result = await engine.ask(userInput); // Get response
-
-    console.log('Response:', result.response);
-    console.log('Emotion Key:', result.emotion);
-    // ... send result back to client
-}
-*/
+  async function handleChatRequest(
+	sessionId: string,
+	userInput: string,
+	modelInfo: AiModelInfo,
+	characterData: CharacterMetadata, // Includes characterData.name
+	userName: string // The name of the user interacting with Tarion
+  ) {
+	const history = await chatService.getRecentChatTurns(sessionId, 10); // Fetch limited history for engine memory
+	// Convert ChatTurn[] to ChatMessage[] if necessary, or adjust createPersonaEngine memory type
+	const engineMemory: ChatMessage[] = history.map(turn => ({
+		role: 'user', // This needs more sophisticated mapping from ChatTurn to ChatMessage
+		entries: turn.request.entries,
+		// ... other ChatMessage fields
+	})).concat(
+	  history.map(turn => ({
+		role: 'assistant',
+		entries: turn.response.entries,
+		// ...
+	  }))
+	);
+  
+  
+	const engine = createPersonaEngine(characterData, modelInfo, sessionId, userName);
+	engine.loadMemory(engineMemory); // Or a more suitable representation of history for the engine's memory
+	const result = await engine.ask(userInput);
+  
+	// ... then you'd call chatService.storeChatTurn, passing characterData.name and userName
+	// await chatService.storeChatTurn(newChatTurn, characterData.name, userName);
+  }
+  */

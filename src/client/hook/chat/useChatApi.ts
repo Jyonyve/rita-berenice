@@ -174,43 +174,24 @@ export const useChatApi = (sessionId: string) => {
 		[_makeApiCall]
 	);
 
-	const buildUserPromptFromLog = useCallback(
-		async (sessionId: string, userText: string, isFullLogQuery?: boolean): Promise<string> => {
-			if (!sessionId) throw new Error('Session ID required');
-			// POST /api/chat/build-user-prompt-from-log/:sessionId [2]
-			// Body: { userText: string, isFullLogQuery?: boolean }
-			const responseData = await _makeApiCall<{ prompt: string }>(
-				MODULE_NAMES.CHAT,
-				'buildUserPromptFromLog',
-				'post',
-				[sessionId],
-				{},
-				{ userText, isFullLogQuery } // Body structure from route [2]
-			);
-			return responseData?.prompt ?? '';
-		},
-		[_makeApiCall]
-	);
-
 	const genResponseFromLlm = useCallback(
 		async (
 			sessionId: string,
 			role: ChatRoleType,
 			prompt: string,
-			aiModelInfo: AiModelInfo,
-			personaInstruction: string
-		): Promise<{ assistantResponse: string }> => {
+			aiModelInfo: AiModelInfo
+		): Promise<{ stringifyResponse: string }> => {
 			// Define expected response shape
 			if (!sessionId) throw new Error('Session ID required');
 			// Adjust module/methodName if this calls a different API or endpoint
 			// Example: POST /api/chat/gen-response-from-llm/:sessionId
-			return await _makeApiCall<{ assistantResponse: string }>(
+			return await _makeApiCall<{ stringifyResponse: string }>(
 				MODULE_NAMES.LLM,
 				'genResponseFromLlm', // Assumed corresponding method name
 				'post',
 				[sessionId],
 				{},
-				{ role, prompt, aiModelInfo, personaInstruction }
+				{ role, prompt, aiModelInfo }
 			);
 		},
 		[_makeApiCall]
@@ -277,7 +258,6 @@ export const useChatApi = (sessionId: string) => {
 		getChatTurnBySequence,
 		getRecap,
 		queryChatLog,
-		buildUserPromptFromLog,
 		genResponseFromLlm,
 
 		// TEMP_CHAT actions

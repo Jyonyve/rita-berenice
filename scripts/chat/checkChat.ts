@@ -6,8 +6,8 @@ import { ChatTurn, COLLECTIONS, METADATA_TYPES, SUFFIX } from '../../src/shared/
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev'; // Use env var or default
 const TARGET_COLLECTION_NAME = COLLECTIONS.CHAT; // The collection where data was inserted
 // const TARGET_SESSION_ID = 'tarion_original_6b3557f0-225a-4b98-beae-28d428a83c50';
-// const TARGET_SESSION_ID = 'monday_original_4addb91c-5733-4bf3-8142-a0ab98d0fd9e';
-const TARGET_SESSION_ID = 'tarion_spinoff_853b0fe0-cae6-4531-905d-3779262c73d4';
+const TARGET_SESSION_ID = 'monday_original_4addb91c-5733-4bf3-8142-a0ab98d0fd9e';
+// const TARGET_SESSION_ID = 'tarion_spinoff_853b0fe0-cae6-4531-905d-3779262c73d4';
 
 // --- Main Checking Logic ---
 async function checkSeededData() {
