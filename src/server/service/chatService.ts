@@ -8,10 +8,16 @@ import {
 	DEFAULT_RECENT_TURN_COUNT,
 	METADATA_TYPES,
 	DEFAULT_RELATIONSHIP_RECAP_INTERVAL,
+	COLLECTIONS,
 } from '#root/src/shared/index.ts';
 import { Collection, IncludeEnum, Where } from 'chromadb';
 import { chromaDbClient, ChromaResponse } from '../db/chromaDbClient.ts';
-import { buildChatMessageDocument, buildChatTurnDocument } from '../util/index.ts';
+import {
+	buildChatMessageDocument,
+	buildChatTurnDocument,
+	validateResult,
+	validateServiceId,
+} from '../util/index.ts';
 import { recapService } from './recapService.ts';
 
 // Destructure outside the object
@@ -20,6 +26,7 @@ const {
 	getTempChatCollection,
 	upsertRecord,
 	getRecordById,
+	getRecords,
 	deleteRecordById,
 	queryRecords,
 } = chromaDbClient;
@@ -27,10 +34,6 @@ const {
 interface ChatChromaResponse extends ChromaResponse {
 	chatTurns: ChatTurn[];
 }
-
-const _validation = (sessionId: string) => {
-	if (!sessionId) throw new Error('Session ID is required.');
-};
 
 export const chatService = {
 	// Cache for session collections
@@ -86,7 +89,7 @@ export const chatService = {
 		interval: number
 	): Promise<ChatTurn[]> => {
 		// validation
-		_validation(sessionId);
+		validateServiceId(sessionId, COLLECTIONS.CHAT);
 		if (sequence === 0 || sequence % DEFAULT_RECAP_INTERVAL !== 0) return [];
 		console.log(`Attempting to generate recap for session ${sessionId}, sequence ${sequence}`);
 
@@ -113,7 +116,7 @@ export const chatService = {
 	},
 
 	getTempChatTurn: async (sessionId: string): Promise<TempChatTurn | null> => {
-		_validation(sessionId);
+		validateServiceId(sessionId, COLLECTIONS.CHAT);
 		try {
 			const collection = await chatService._getTempCollection(); // Assumes _getTempCollection exists
 			const result = await chromaDbClient.getRecordById(collection, sessionId);
@@ -126,7 +129,7 @@ export const chatService = {
 	},
 
 	removeTempChatTurn: async (sessionId: string): Promise<void> => {
-		_validation(sessionId);
+		validateServiceId(sessionId, COLLECTIONS.CHAT);
 		try {
 			const collection = await chatService._getTempCollection();
 			await deleteRecordById(collection, sessionId);
@@ -202,7 +205,7 @@ export const chatService = {
 		queryText: string,
 		limit?: number
 	): Promise<string[]> => {
-		_validation(sessionId);
+		validateServiceId(sessionId, COLLECTIONS.CHAT);
 		const collection = await chatService._getCollection(sessionId);
 		try {
 			// Create a where clause that includes the specified message types
@@ -220,7 +223,7 @@ export const chatService = {
 		queryText: string,
 		limit?: number
 	): Promise<string[]> => {
-		_validation(sessionId);
+		validateServiceId(sessionId, COLLECTIONS.CHAT);
 		const collection = await chatService._getCollection(sessionId);
 		try {
 			// Create a where clause that includes the specified message types
@@ -240,7 +243,7 @@ export const chatService = {
 		limit: number = DEFAULT_LOADING_TURN_COUNT
 	): Promise<ChatChromaResponse | null> => {
 		//validation
-		_validation(sessionId);
+		validateServiceId(sessionId, COLLECTIONS.CHAT);
 		if (typeof beforeSequence !== 'number' || beforeSequence < 0) {
 			throw new Error('A valid beforeSequence number is required.');
 		}
@@ -257,14 +260,17 @@ export const chatService = {
 				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
 				// We cannot reliably use limit/offset here to get the *highest* sequences < beforeSequence.
 			});
-			if (!results.ids || results.ids.length === 0) return null;
 
-			// return part
-			const { ids, documents, metadatas } = results;
-			const parsedTurns = chatService._parseMetadataToChatTurns(metadatas);
-			parsedTurns.sort((a, b) => b.sequence - a.sequence);
-			const limitedTurns = parsedTurns.slice(0, limit);
-			return { ids, documents, metadatas, chatTurns: limitedTurns.reverse() };
+			if (validateResult(results)) {
+				const { ids, documents, metadatas } = results;
+
+				const parsedTurns = chatService._parseMetadataToChatTurns(metadatas);
+				parsedTurns.sort((a, b) => b.sequence - a.sequence);
+				const limitedTurns = parsedTurns.slice(0, limit);
+				return { ids, documents, metadatas, chatTurns: limitedTurns.reverse() };
+			}
+			console.warn(`failed to getLoadingChatTurns, beforSequence : ${beforeSequence}`);
+			return null;
 		} catch (error) {
 			console.error(
 				`Error fetching chat turns before ${beforeSequence} for session ${sessionId}:`,
@@ -279,28 +285,27 @@ export const chatService = {
 		sessionId: string,
 		limit: number = DEFAULT_RECENT_TURN_COUNT
 	): Promise<ChatChromaResponse | null> => {
-		_validation(sessionId);
+		validateServiceId(sessionId, COLLECTIONS.CHAT);
 
 		const collection = await chatService._getCollection(sessionId);
 		try {
-			const whereClause: Record<string, any> = {
+			const whereClause: Where = {
 				type: METADATA_TYPES.SET, // Only fetch fixed, full turn documents
 				sessionId,
 			};
 			// Fetch FULL_TURN documents, sort by sequence descending, take limit
-			const results = await collection.get({
-				where: whereClause,
-				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
-			});
+			const results = await getRecords(collection, whereClause);
+			if (validateResult(results)) {
+				const { ids, documents, metadatas } = results;
 
-			if (!results.ids || results.ids.length === 0) return null;
-
+				const parsedTurns = chatService._parseMetadataToChatTurns(metadatas);
+				parsedTurns.sort((a, b) => b.sequence - a.sequence);
+				const limitedTurns = parsedTurns.slice(0, limit);
+				return { ids, documents, metadatas, chatTurns: limitedTurns.reverse() };
+			}
+			console.warn(`fail to get recent chat turns condition: ${whereClause}`);
+			return null;
 			//return part
-			const { ids, documents, metadatas } = results;
-			const parsedTurns = chatService._parseMetadataToChatTurns(metadatas);
-			parsedTurns.sort((a, b) => b.sequence - a.sequence);
-			const limitedTurns = parsedTurns.slice(0, limit);
-			return { ids, documents, metadatas, chatTurns: limitedTurns.reverse() };
 		} catch (error) {
 			console.error(`Error fetching recent fixed turns for session ${sessionId}:`, error);
 			return null;
@@ -309,7 +314,7 @@ export const chatService = {
 
 	/** Gets a single FIXED turn by sequence */
 	getChatTurnBySequence: async (sessionId: string, sequence: number): Promise<ChatTurn | null> => {
-		_validation(sessionId);
+		validateServiceId(sessionId, COLLECTIONS.CHAT);
 		const collection = await chatService._getCollection(sessionId);
 		const turnId = buildTurnId(sessionId, sequence);
 		try {

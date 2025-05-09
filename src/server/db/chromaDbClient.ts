@@ -1,4 +1,9 @@
-import { COLLECTIONS, METADATA_TYPES, MetadataValueType } from '#root/src/shared/domain/index.ts';
+import {
+	COLLECTIONS,
+	CollectionType,
+	METADATA_TYPES,
+	MetadataValueType,
+} from '#root/src/shared/domain/index.ts';
 import { DEFAULT_QUERY_LIMIT } from '#root/src/shared/index.ts';
 import { ChromaClient, Collection, IncludeEnum, Metadata, GetResponse, Where } from 'chromadb';
 
@@ -187,6 +192,7 @@ export const chromaDbClient = {
 			const results = await collection.get({
 				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
 				where: whereClause,
+				limit,
 			});
 			return _returnResponse(results);
 		} catch (error) {

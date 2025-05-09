@@ -1,10 +1,10 @@
-import { CharacterInfo, METADATA_TYPES } from '#root/src/shared/domain/index.ts';
+import { CharacterInfo, COLLECTIONS, METADATA_TYPES } from '#root/src/shared/domain/index.ts';
 import { Collection, IncludeEnum, Document, Where } from 'chromadb';
-import { chromaDbClient, ChromaResponse, validateResponse } from '../db/index.ts';
+import { chromaDbClient, ChromaResponse } from '../db/index.ts';
 import { buildCharacterDocument } from '../util/documentUtils.ts';
+import { validateResult, validateServiceId } from '../util/index.ts';
 
-const { getCharacterCollection, upsertRecord, getRecordById, deleteRecordById, queryRecords } =
-	chromaDbClient;
+const { getCharacterCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
 
 interface BasicCharacterInfo {
 	characterId: string;
@@ -22,11 +22,6 @@ interface CharacterChromaResponse extends ChromaResponse {
 export const characterService = {
 	// Cache for character collection
 	_characterCollection: null as Collection | null,
-
-	_validation: (characterId: string) => {
-		if (!characterId) throw new Error('Character ID is required.');
-	},
-
 	// Get collection with caching
 	_getCollection: async (): Promise<Collection> => {
 		// First check if it's in the cache (non-async operation)
@@ -64,7 +59,7 @@ export const characterService = {
 				where: { type: METADATA_TYPES.CHARACTER },
 			});
 
-			if (validateResponse(results)) {
+			if (!!results) {
 				const { ids, documents, metadatas } = results;
 				const parsedInfos = characterService._parseDocToBasicCharInfo(results.documents);
 				parsedInfos.sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
@@ -81,23 +76,16 @@ export const characterService = {
 
 	getCharacter: async (characterId: string): Promise<CharacterChromaResponse | null> => {
 		const collection = await characterService._getCollection();
-		characterService._validation(characterId);
+		validateServiceId(characterId, COLLECTIONS.CHARACTER);
 		try {
 			const result = await getRecordById(collection, characterId);
-			if (validateResponse(result)) {
-				const { ids, documents, metadatas } = result;
-				const parsedInfos = characterService._parseDocToBasicCharInfo(result.documents);
-				return {
-					ids,
-					documents,
-					metadatas,
-					basicCharInfo: parsedInfos[0],
-					basicCharInfos: parsedInfos,
-				};
-			} else {
+			const { ids, documents, metadatas } = result;
+			if (!ids || ids.length === 0) {
 				console.warn(`no character is fetched by characterId: ${characterId}`);
 				return null;
 			}
+			const parsedInfos = characterService._parseDocToBasicCharInfo(result.documents);
+			return { ids, documents, metadatas, basicCharInfo: parsedInfos[0], basicCharInfos: parsedInfos };
 		} catch (error) {
 			console.error(`Failed to get character with ID ${characterId}:`, error);
 			return null;
@@ -118,30 +106,27 @@ export const characterService = {
 	getCharactersByShowName: async (
 		showName: string,
 		limit: number = -1
-	): Promise<CharacterChromaResponse> => {
+	): Promise<CharacterChromaResponse | null> => {
 		const collection = await characterService._getCollection();
 		const where: Where = {
 			$and: [{ type: { $eq: METADATA_TYPES.CHARACTER } }, { showName: { $in: showName } }],
 		};
 		try {
-			const results = collection.query({
-				where,
-				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
-			});
+			const results = await getRecords(collection, where, limit);
+			console.log(
+				`[CharacterService.queryCharactersByShowName] Fetching characters with filter: ${JSON.stringify(where)}`
+			);
 
-			return results
-				.map((doc) => {
-					try {
-						return JSON.parse(doc) as BasicCharacterInfo;
-					} catch (e) {
-						console.error('Error parsing character from query:', e);
-						return null;
-					}
-				})
-				.filter((char): char is BasicCharacterInfo => char !== null);
+			if (validateResult(results)) {
+				const { ids, documents, metadatas } = results;
+				const parsedBasicInfos = characterService._parseDocToBasicCharInfo(documents);
+				return { ids, documents, metadatas, basicCharInfos: parsedBasicInfos };
+			}
+			console.warn(`failed to getCharactersByShowName, showName : ${showName}`);
+			return null;
 		} catch (error) {
 			console.error('Failed to query characters:', error);
-			return [];
+			return null;
 		}
 	},
 

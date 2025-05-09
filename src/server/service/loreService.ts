@@ -7,12 +7,7 @@ import { buildLoreId } from '#root/src/shared/index.ts';
 // Assuming buildLoreId is no longer needed if 'id' in LoreInfo is the ChromaDB doc ID
 // import { buildLoreId } from '#root/src/shared/index.ts';
 
-const {
-	getLoreCollection,
-	upsertRecord: upsertDocument,
-	getRecordsByMetadataType: getDocumentsByMetadata,
-	queryRecords: queryDocuments,
-} = chromaDbClient;
+const { getLoreCollection, upsertRecord, getRecordsByMetadataType, queryRecords } = chromaDbClient;
 
 export const loreService = {
 	_loreCollection: null as Collection | null,
