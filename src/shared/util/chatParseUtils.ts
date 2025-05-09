@@ -6,6 +6,7 @@ import {
 	ChatTurn,
 	ChatRoleType,
 	ChatMessageType,
+	METADATA_TYPES,
 } from '@shared/domain/index.ts';
 import { buildMessageId } from './idUtils.ts';
 import { DEFAULT_EMOTION, isValidEmotionKeyword } from '../config/index.ts';
@@ -53,17 +54,7 @@ export const buildChatMessage = (
 		entries,
 		emotion: isValidEmotionKeyword(emotion) ? emotion : DEFAULT_EMOTION,
 		timestamp: new Date().toISOString(),
-	};
-};
-
-export const parseChatTurnToSimpleLogs = (chatTurn: ChatTurn) => {
-	const { request, response } = chatTurn;
-	return {
-		userName: request.showName,
-		userPrompt: parseEntriesToText(request.entries),
-		charName: response.showName,
-		charPrompt: parseEntriesToText(response.entries),
-		emotion: response.emotion,
+		type: METADATA_TYPES.MESSAGE,
 	};
 };
 

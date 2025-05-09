@@ -32,7 +32,7 @@ router.get(
 		const path = genRoutePattern('getCharacterById', ['id']);
 		console.log(`API HIT: GET ${path.replace(':id', id)}`);
 		try {
-			const character = await characterService.getCharacterById(id);
+			const character = await characterService.getCharacter(id);
 			if (!character) {
 				return res.status(404).json({ error: 'Character not found' });
 			}
@@ -91,7 +91,7 @@ router.get(
 		}
 
 		try {
-			const characters = await characterService.queryCharacters(query, limit);
+			const characters = await characterService.getCharactersByShowName(query, limit);
 			return res.json(characters);
 		} catch (error: any) {
 			console.error(`Error in GET ${path}:`, error);

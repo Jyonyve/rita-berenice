@@ -1,14 +1,14 @@
-import {
-	CharacterInfo,
-	METADATA_TYPES,
-	ProfileInfo,
-	ProfileMetadata,
-} from '#root/src/shared/index.ts';
+import { CharacterInfo, METADATA_TYPES, ProfileInfo, ProfileInfo } from '#root/src/shared/index.ts';
 import { Collection, IncludeEnum } from 'chromadb';
 import { chromaDbClient } from '#server/db/chromaDbClient.ts';
 
-const { getProfileCollection, addDocument, upsertDocument, getDocumentById, queryDocuments } =
-	chromaDbClient;
+const {
+	getProfileCollection,
+	addRecord: addDocument,
+	upsertRecord: upsertDocument,
+	getDocumentById,
+	queryRecords: queryDocuments,
+} = chromaDbClient;
 
 export const profileService = {
 	// Cache for profile collection
@@ -44,7 +44,7 @@ export const profileService = {
 				.map((doc, index) => {
 					if (doc === null) return null;
 					try {
-						const fullMetaData = JSON.parse(doc) as ProfileMetadata;
+						const fullMetaData = JSON.parse(doc) as ProfileInfo;
 						return {
 							profileId: fullMetaData.profileId,
 							name: fullMetaData.name,

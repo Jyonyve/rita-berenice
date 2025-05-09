@@ -1,5 +1,6 @@
 import { allEmotionKeywordsList } from '../../config/index.ts';
 import { DefaultAiRole } from '../index.ts';
+import { METADATA_TYPES } from '../chromadb/index.ts';
 
 export type ChatType = 'dialogue' | 'action';
 export type ChatRoleType = DefaultAiRole;
@@ -19,6 +20,7 @@ export interface ChatMessage {
 	timestamp: string; // ISO 8601 format
 	emotion: (typeof allEmotionKeywordsList)[number];
 	model?: string;
+	type: typeof METADATA_TYPES.MESSAGE;
 }
 
 export interface MigChatMessage {
@@ -32,10 +34,12 @@ export interface MigChatMessage {
 }
 
 export interface ChatTurn {
+	turnId: string;
 	sessionId: string;
 	sequence: number;
 	request: ChatMessage;
 	response: ChatMessage;
+	type: typeof METADATA_TYPES.SET;
 }
 
 export interface TempChatTurn {
@@ -43,17 +47,3 @@ export interface TempChatTurn {
 	sequence: number;
 	chatTurnSets: ChatMessageSet[];
 }
-
-export type ChatSession = { sessionId: string; conversations: ChatTurn[] };
-
-export const SUFFIX = {
-	REQUEST: 'request',
-	RESPONSE: 'response',
-	SET: 'set',
-	RELATIONSHIP: 'relationship',
-	RECAP: 'recap',
-	LORE: 'lore',
-	TEMP: 'temp',
-} as const;
-
-export type SuffixType = (typeof SUFFIX)[keyof typeof SUFFIX];

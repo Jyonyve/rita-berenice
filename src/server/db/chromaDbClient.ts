@@ -1,5 +1,6 @@
-import { COLLECTIONS } from '#root/src/shared/domain/index.ts';
-import { ChromaClient, Collection, IncludeEnum } from 'chromadb';
+import { COLLECTIONS, METADATA_TYPES, MetadataValueType } from '#root/src/shared/domain/index.ts';
+import { DEFAULT_QUERY_LIMIT } from '#root/src/shared/index.ts';
+import { ChromaClient, Collection, IncludeEnum, Metadata, GetResponse, Where } from 'chromadb';
 
 const CHROMA_URL = process.env.CHROMA_API_URL || 'http://localhost:8000';
 const chromaClient = new ChromaClient({ path: CHROMA_URL });
@@ -11,6 +12,17 @@ let profileCollection: Collection | null = null;
 let credentialCollection: Collection | null = null;
 let tempChatCollection: Collection | null = null;
 let recapCollection: Collection | null = null;
+export type ChromaResponse = Pick<GetResponse, 'ids' | 'metadatas' | 'documents'>;
+const _returnResponse = (results: ChromaResponse) => {
+	const { ids } = results;
+
+	if (!ids || ids.length === 0) {
+		console.log(`[ChromaClient.queryRecords] No documents found for the query.`);
+		return null;
+	}
+	console.log(`[ChromaClient.queryRecords] Found ${ids.length} entries.`);
+	return results;
+};
 
 export const chromaDbClient = {
 	// Basic collection management
@@ -97,7 +109,7 @@ export const chromaDbClient = {
 
 	// Enhanced CRUD operations with embedding support
 
-	addDocument: async (
+	addRecord: async (
 		collection: Collection,
 		id: string,
 		document: string,
@@ -113,7 +125,7 @@ export const chromaDbClient = {
 		await collection.add(params);
 	},
 
-	upsertDocument: async (
+	upsertRecord: async (
 		collection: Collection,
 		id: string,
 		document: string,
@@ -129,28 +141,93 @@ export const chromaDbClient = {
 		await collection.upsert(params);
 	},
 
-	getDocumentById: async (collection: Collection, id: string): Promise<string | null> => {
-		const result = await collection.get({ ids: [id], include: [IncludeEnum.Documents] });
-		return result.documents?.[0] || null;
+	getRecordById: async (collection: Collection, id: string): Promise<GetResponse> => {
+		const result = await collection.get({ ids: [id], include: [IncludeEnum.Metadatas] });
+		return result;
 	},
 
-	queryDocuments: async (
+	getRecordsByMetadataType: async (
+		collection: Collection,
+		type: MetadataValueType,
+		options: { offset?: number; limit?: number } = {}
+	): Promise<ChromaResponse | null> => {
+		const whereFilter: Where = { type: { $eq: type } }; // For just type
+
+		console.log(
+			`[ChromaClient.getDocumentsByMetadata] Fetching documents with filter: ${JSON.stringify(whereFilter)}`
+		);
+
+		try {
+			const results = await collection.get({
+				where: whereFilter,
+				include: [IncludeEnum.Documents, IncludeEnum.Metadatas], // Include IDs (implicit), documents, and metadatas
+				offset: options.offset,
+				limit: options.limit,
+			});
+
+			return _returnResponse(results);
+		} catch (error) {
+			console.error(
+				`[ChromaClient.getDocumentsByMetadata] Error fetching documents by metadata type:`,
+				error
+			);
+			return null;
+		}
+	},
+
+	getRecords: async (
+		collection: Collection,
+		whereClause?: Where,
+		limit: number = DEFAULT_QUERY_LIMIT
+	): Promise<ChromaResponse | null> => {
+		try {
+			console.log(
+				`[ChromaClient.queryRecords] filter: ${JSON.stringify(whereClause)}, limit: ${limit}`
+			);
+			const results = await collection.get({
+				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
+				where: whereClause,
+			});
+			return _returnResponse(results);
+		} catch (error) {
+			console.error(`[ChromaClient.queryRecords] Failed to query records:`, error);
+			return null;
+		}
+	},
+
+	queryRecords: async (
 		collection: Collection,
 		queryText: string,
-		whereClause: Record<string, any>,
-		limit: number
-	): Promise<string[]> => {
-		const results = await collection.query({
-			queryTexts: [queryText],
-			nResults: limit,
-			include: [IncludeEnum.Documents],
-			where: whereClause,
-		});
-		return results.documents?.[0]?.filter((doc): doc is string => doc !== null) || [];
+		whereClause?: Where,
+		limit: number = DEFAULT_QUERY_LIMIT
+	): Promise<ChromaResponse[]> => {
+		try {
+			console.log(
+				`[ChromaClient.queryRecords] Querying with text: "${queryText.substring(0, 50)}...", filter: ${JSON.stringify(whereClause)}, limit: ${limit}`
+			);
+			const results = await collection.query({
+				queryTexts: [queryText], // queryTexts expects an array of strings
+				nResults: limit,
+				include: [IncludeEnum.Documents, IncludeEnum.Metadatas, IncludeEnum.Distances], // Also include distances
+				where: whereClause, // Pass the metadata filter
+			});
+
+			return results.ids
+				.map((id, i) => {
+					const ids = results.ids[i];
+					const documents = results.documents[i];
+					const metadatas = results.metadatas[i];
+					return _returnResponse({ ids, documents, metadatas });
+				})
+				.filter((r): r is ChromaResponse => r !== null);
+		} catch (error) {
+			console.error(`[ChromaClient.queryRecords] Failed to query records:`, error);
+			return [];
+		}
 	},
 
 	// Add batch operations for efficiency
-	addDocumentBatch: async (
+	addRecordsBatch: async (
 		collection: Collection,
 		ids: string[],
 		documents: string[],
@@ -166,7 +243,7 @@ export const chromaDbClient = {
 		await collection.add(params);
 	},
 
-	deleteDocumentById: async (collection: Collection, id: string): Promise<void> => {
+	deleteRecordById: async (collection: Collection, id: string): Promise<void> => {
 		return await collection.delete({ ids: [id] });
 	},
 };

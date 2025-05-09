@@ -238,7 +238,12 @@ router.get(
 		try {
 			// Define which message types to query (likely request and response)
 			const messageTypesToQuery: ChatMessageType[] = ['request', 'response'];
-			const results = await chatService.queryChatLog(sessionId, queryText, messageTypesToQuery, limit);
+			const results = await chatService.queryIndividual\ChatLogs(
+				sessionId,
+				queryText,
+				messageTypesToQuery,
+				limit
+			);
 			return res.json(results); // Returns string[] of matching document contents
 		} catch (error: any) {
 			console.error(`Error in GET ${path}:`, error);

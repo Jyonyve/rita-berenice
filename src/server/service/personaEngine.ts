@@ -1,11 +1,13 @@
 // src/services/personaEngine.ts
 import {
 	EmotionKey,
-	CharacterMetadata,
+	CharacterInfo,
 	AiModelInfo,
 	DEFAULT_IMAGE_NUMBER,
 	getImageNumberForEmotion,
 	ChatMessage,
+	parseEntriesToText,
+	DEFAULT_LOADING_TURN_COUNT,
 	// Add other necessary types/constants
 } from '#root/src/shared/index.ts';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
@@ -13,6 +15,7 @@ import { llmService } from './llmService.ts';
 // Import template utils
 import { EMOTION_TEMPLATE, buildRelationshipContextSystemPrompt } from '../util/templateUtils.ts'; // Adjust path as needed
 import { chatService } from './chatService.ts'; // To fetch relationship recap
+import { recapService } from './recapService.ts';
 
 export interface PersonaResponse {
 	response: string;
@@ -20,7 +23,7 @@ export interface PersonaResponse {
 }
 
 export const createPersonaEngine = (
-	persona: CharacterMetadata, // Contains persona.name (charName) and persona.instructions
+	persona: CharacterInfo, // Contains persona.name (charName) and persona.instructions
 	aiModelInfo: AiModelInfo,
 	sessionId: string, // Session ID is needed to fetch recaps
 	userName: string = 'the user' // User's name/identifier
@@ -31,10 +34,10 @@ export const createPersonaEngine = (
 		const systemPromptParts: string[] = [];
 
 		// 1. Core Persona Instructions
-		systemPromptParts.push(persona.instructions);
+		systemPromptParts.push(persona.instruction);
 
 		// 2. Relationship Context (fetched from chatService)
-		const relationshipRecapText = await chatService.getRelationshipRecap(sessionId);
+		const relationshipRecapText = await recapService.getRelationshipRecap(sessionId);
 		const relationshipContext = buildRelationshipContextSystemPrompt(
 			relationshipRecapText,
 			userName,
@@ -98,6 +101,31 @@ export const createPersonaEngine = (
 		const matchedEmotionKey = getImageNumberForEmotion(parsed.emotion);
 		// console.log(`PersonaEngine (session ${sessionId}) mapped emotion "${parsed.emotion}" to key: ${matchedEmotionKey}`);
 		return { response: parsed.response, emotion: matchedEmotionKey };
+	};
+
+	/** Builds user' enhanced prompt using recap or fixed logs */
+	const buildUserPromptFromLog = async (
+		sessionId: string,
+		userText: string,
+		isFullLogQuery = false
+	): Promise<string> => {
+		let context = '';
+		if (!isFullLogQuery) {
+			context = await recapService.getRecap(sessionId); // Try recap first
+		}
+		if (!context) {
+			// Fallback to recent fixed turns
+			const turns = await chatService.getRecentChatTurns(sessionId, DEFAULT_LOADING_TURN_COUNT); // Adjust limit as needed
+			context = turns
+				.map(
+					(t) =>
+						`Seq ${t.sequence}: User: ${parseEntriesToText(t.request.entries)} Assistant: ${parseEntriesToText(t.response.entries)}`
+				)
+				.join('\n');
+		}
+		return context
+			? `Use the following context if relevant, otherwise ignore it.\nContext:\n${context}\n\nUser: ${userText}`
+			: userText;
 	};
 
 	return { loadMemory, ask };

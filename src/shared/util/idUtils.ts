@@ -1,8 +1,21 @@
-import { ChatMessageType, SUFFIX, ALPHANUMERIC_ALPHABET } from '../index.ts';
+import { ChatMessageType, ALPHANUMERIC_ALPHABET } from '../index.ts';
 import { customAlphabet } from 'nanoid';
 
 /* gen uuid (shortened)*/
 const _genNanoId = (length: number) => customAlphabet(ALPHANUMERIC_ALPHABET, length)();
+
+/* ID suffix */
+export const SUFFIX = {
+	REQUEST: 'request',
+	RESPONSE: 'response',
+	SET: 'set',
+	RELATIONSHIP: 'relationship',
+	RECAP: 'recap',
+	LORE: 'lore',
+	HISTORY: 'history',
+	TEMP: 'temp',
+} as const;
+export type SuffixType = (typeof SUFFIX)[keyof typeof SUFFIX];
 
 /* character id */
 export const buildCharacterId = (characterName: string, variant?: string): string => {
@@ -13,8 +26,12 @@ export const buildProfileId = (profileName: string, sessionId: string) => {
 	return `${profileName}_${sessionId}`;
 };
 
-export const buildLoreId = (characterId: string, sequence: number) => {
-	return `${characterId}_${sequence}_${SUFFIX.LORE}`;
+export const buildLoreId = (characterId: string, timestamp: string) => {
+	return `${characterId}_${timestamp}_${SUFFIX.LORE}`;
+};
+
+export const buildHistoryId = (characterId: string, timestamp: string) => {
+	return `${characterId}_${timestamp}_${SUFFIX.HISTORY}`;
 };
 
 /* chat id */
