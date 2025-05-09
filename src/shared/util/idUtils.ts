@@ -30,8 +30,8 @@ export const buildLoreId = (characterId: string, timestamp: string) => {
 	return `${characterId}_${timestamp}_${SUFFIX.LORE}`;
 };
 
-export const buildHistoryId = (characterId: string, timestamp: string) => {
-	return `${characterId}_${timestamp}_${SUFFIX.HISTORY}`;
+export const buildHistoryId = (characterId: string, sequence: number) => {
+	return `${characterId}_${sequence}_${SUFFIX.HISTORY}`;
 };
 
 /* chat id */

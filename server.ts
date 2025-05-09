@@ -84,6 +84,7 @@ async function createServer() {
 				'.jpeg',
 				'.gif',
 				'.svg',
+				'.avif',
 				'.webp',
 				'.woff',
 				'.woff2',

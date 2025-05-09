@@ -1,4 +1,10 @@
-import { EmotionKey, PortraitMap, validEmotionKeyNumbers } from '@shared/config/index.ts';
+import {
+	BASE_IMAGE_DIR,
+	DEFAULT_EMOTION,
+	EmotionKey,
+	PortraitMap,
+	validEmotionKeyNumbers,
+} from '@shared/config/index.ts';
 
 // Helper function to escape string for use in RegExp constructor
 function escapeRegExp(string: string): string {
@@ -16,14 +22,14 @@ export const loadNumberedPortraits = async (characterId: string): Promise<Portra
 
 	// Vite's import.meta.glob for dynamic bulk import of image URLs
 	const imageModules = import.meta.glob<{ default: string }>(
-		'/src/client/asset/character/*/*.webp', // Glob pattern for character images
+		[`${BASE_IMAGE_DIR}/*/*.webp`, `${BASE_IMAGE_DIR}/*/*.avif`], // Glob pattern for character images
 		{
 			eager: true, // Load modules immediately (provides URLs directly)
-			import: 'default', // Import the default export, which is the resolved URL string
+			import: DEFAULT_EMOTION, // Import the default export, which is the resolved URL string
 		}
 	) as unknown as Record<string, string>; // Cast to expected runtime type
 
-	const characterAssetPathPrefix = `/src/client/asset/character/${characterId}/`;
+	const characterAssetPathPrefix = `${BASE_IMAGE_DIR}/${characterId}/`;
 	const characterFilenamePrefix = `${characterId}_`; // e.g., "monday_original_"
 	// Regex to match filenames like: {characterFilenamePrefix}{NUMBER}.webp and capture NUMBER
 	const filenameRegex = new RegExp(`^${escapeRegExp(characterFilenamePrefix)}(\\d+)\\.webp$`);
