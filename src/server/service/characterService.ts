@@ -2,7 +2,7 @@ import { CharacterInfo, COLLECTIONS, METADATA_TYPES } from '#root/src/shared/dom
 import { Collection, IncludeEnum, Document, Where } from 'chromadb';
 import { chromaDbClient, ChromaResponse } from '../db/index.ts';
 import { buildCharacterDocument } from '../util/documentUtils.ts';
-import { validateResult, validateServiceId } from '../util/index.ts';
+import { buildCharacterId, validateResult, validateServiceId } from '../util/index.ts';
 
 const { getCharacterCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
 
@@ -94,6 +94,7 @@ export const characterService = {
 
 	storeCharacter: async (character: CharacterInfo): Promise<void> => {
 		const collection = await characterService._getCollection();
+		character.characterId = buildCharacterId(character.name, character.variant);
 		const documentForEmbedding = buildCharacterDocument(character);
 		try {
 			await upsertRecord(collection, character.characterId, documentForEmbedding, character);

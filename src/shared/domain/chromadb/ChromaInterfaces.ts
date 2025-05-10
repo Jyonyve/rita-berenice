@@ -49,9 +49,9 @@ export const METADATA_TYPES = {
 	LORE: 'lore',
 	HISTORY: 'history',
 	TEMP: 'temp',
-};
+} as const;
 
-export type MetadataValueType = (typeof METADATA_TYPES)[keyof typeof METADATA_TYPES];
+export type MetadataType = (typeof METADATA_TYPES)[keyof typeof METADATA_TYPES];
 
 // src/shared/types/credentials.ts (Example path)
 export interface CredentialData {

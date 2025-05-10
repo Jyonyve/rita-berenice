@@ -7,12 +7,7 @@ import {
 	useCharacterState,
 } from '@client/hook/index.ts';
 import { ChatTurn, TempChatTurn } from '@shared/domain/index.ts';
-import {
-	parseSessionId,
-	buildChatMessage,
-	parseEntriesToText,
-	buildCharacterId,
-} from '@shared/util/index.ts';
+import { buildChatMessage, parseEntriesToText, parseSessionId } from '@shared/util/index.ts';
 
 // Import the new components
 import { CharacterPortrait } from '../character/index.ts';
@@ -60,7 +55,7 @@ export const ChatPage = () => {
 
 	// const
 	const { charName, variant } = parseSessionId(sessionId);
-	const characterId = buildCharacterId(charName, variant);
+	const characterId = `${charName}_${variant}`;
 
 	// --- STATE ---
 	const [userInput, setUserInput] = useState('');
@@ -92,7 +87,6 @@ export const ChatPage = () => {
 		storeChatTurn,
 		getTempChatTurn,
 		saveTempChatTurn,
-		removeTempChatTurn,
 		genResponseFromLlm,
 	} = useChatApi(sessionId);
 
@@ -115,31 +109,6 @@ export const ChatPage = () => {
 		}
 	};
 
-	const _storeTempChatTurn = async (currentSequence: number, tempChatTurn: TempChatTurn) => {
-		try {
-			const sequenceToFix = currentSequence - 1;
-			if (
-				sequenceToFix >= 0 &&
-				tempChatTurn.chatTurnSets[0]?.request &&
-				tempChatTurn.chatTurnSets[0]?.response
-			) {
-				const { request, response } = tempChatTurn.chatTurnSets[0];
-				const fixedTurn: ChatTurn = { sessionId, sequence: sequenceToFix, request, response };
-				addChatTurn(fixedTurn);
-				await storeChatTurn(fixedTurn); // Pass the whole turn
-				await removeTempChatTurn(sessionId);
-			} else {
-				console.warn('Attempted to fix incomplete or invalid sequence temp turn:', tempChatTurn);
-				await removeTempChatTurn(sessionId);
-			}
-		} catch (fixErr: any) {
-			console.error('Failed to automatically fix previous turn:', fixErr);
-			setErrorState('Error saving previous turn. Please try sending again.');
-			setIsProcessing(false);
-			return;
-		}
-	};
-
 	// Send Message (includes auto-fix)
 	const handleSendMessage = useCallback(async () => {
 		setErrorState(undefined);
@@ -147,7 +116,7 @@ export const ChatPage = () => {
 		setIsProcessing(true);
 		try {
 			const currentSequence = getNextSequence();
-			tempChatTurn && _storeTempChatTurn(currentSequence, tempChatTurn);
+			tempChatTurn && saveTempChatTurn(tempChatTurn);
 
 			//user
 			const userMsg = buildChatMessage('user', currentSequence, 'the user', userInput, sessionId);

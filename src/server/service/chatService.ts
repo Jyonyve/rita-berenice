@@ -1,8 +1,5 @@
 import type { ChatTurn, ChatMessageType, TempChatTurn } from '#root/src/shared/domain/index.ts';
 import {
-	parseEntriesToText,
-	buildMessageId,
-	buildTurnId,
 	DEFAULT_LOADING_TURN_COUNT,
 	DEFAULT_RECAP_INTERVAL,
 	DEFAULT_RECENT_TURN_COUNT,
@@ -15,6 +12,8 @@ import { chromaDbClient, ChromaResponse } from '../db/chromaDbClient.ts';
 import {
 	buildChatMessageDocument,
 	buildChatTurnDocument,
+	buildMessageId,
+	buildTurnId as buildChatTurnId,
 	validateResult,
 	validateServiceId,
 } from '../util/index.ts';
@@ -59,28 +58,16 @@ export const chatService = {
 	_storeFullChatTurn: async (chatTurn: ChatTurn): Promise<void> => {
 		const { sessionId, sequence, request } = chatTurn;
 		const collection = await chatService._getCollection(sessionId);
-		const turnId = buildTurnId(sessionId, sequence);
+		chatTurn.chatTurnId = buildChatTurnId(sessionId, sequence);
 		const documentForEmbedding = buildChatTurnDocument(chatTurn);
-		await upsertRecord(collection, turnId, documentForEmbedding, {
+		await upsertRecord(collection, chatTurn.chatTurnId, documentForEmbedding, {
 			...chatTurn,
 			timestamp: request.timestamp,
 		});
 	},
 
 	_parseMetadataToChatTurns: (metadatas: (Record<string, any> | null)[]): ChatTurn[] => {
-		return metadatas
-			.map((meta, index) => {
-				if (!meta || meta.type !== METADATA_TYPES.SET) {
-					return null;
-				}
-				try {
-					return meta;
-				} catch (e) {
-					console.error(`Failed to parse chat turn for ID ${meta}:`, e);
-					return null;
-				}
-			})
-			.filter((t): t is ChatTurn => t !== null);
+		return metadatas.filter((meta): meta is ChatTurn => meta?.type === METADATA_TYPES.SET);
 	},
 
 	_checkAndGetRecapTurns: async (
@@ -110,7 +97,7 @@ export const chatService = {
 			type: METADATA_TYPES.TEMP,
 			sessionId: tempData.sessionId,
 			timestamp: new Date().toISOString(),
-			setCount: tempData.chatTurnSets?.length ?? 0,
+			setCount: tempData.chatTurnSets?.length || 0,
 		});
 		console.log(`Stored temp data for session ${tempData.sessionId}`);
 	},
@@ -143,9 +130,9 @@ export const chatService = {
 	storeRequest: async (chatTurn: ChatTurn): Promise<void> => {
 		const { sessionId, sequence, request } = chatTurn;
 		const collection = await chatService._getCollection(sessionId);
+		request.messageId = buildMessageId(sessionId, sequence, 'request');
 		const documentForEmbedding = buildChatMessageDocument(chatTurn, 'request');
-		const requestId = buildMessageId(sessionId, sequence, 'request');
-		await upsertRecord(collection, requestId, documentForEmbedding, {
+		await upsertRecord(collection, request.messageId, documentForEmbedding, {
 			sessionId,
 			sequence,
 			...request,
@@ -156,9 +143,9 @@ export const chatService = {
 	storeResponse: async (chatTurn: ChatTurn): Promise<void> => {
 		const { sessionId, sequence, response } = chatTurn;
 		const collection = await chatService._getCollection(sessionId);
+		response.messageId = buildMessageId(sessionId, sequence, 'response');
 		const documentForEmbedding = buildChatMessageDocument(chatTurn, 'response');
-		const responseId = buildMessageId(sessionId, sequence, 'response');
-		await upsertRecord(collection, responseId, documentForEmbedding, {
+		await upsertRecord(collection, response.messageId, documentForEmbedding, {
 			sessionId,
 			sequence,
 			...response,
@@ -250,13 +237,13 @@ export const chatService = {
 
 		const collection = await chatService._getCollection(sessionId);
 		try {
-			const whereClause: Record<string, any> = {
+			const where: Where = {
 				type: METADATA_TYPES.SET,
 				sessionId,
 				sequence: { $lt: beforeSequence }, // Fetch turns strictly less than the marker
 			};
 			const results = await collection.get({
-				where: whereClause,
+				where,
 				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
 				// We cannot reliably use limit/offset here to get the *highest* sequences < beforeSequence.
 			});
@@ -316,7 +303,7 @@ export const chatService = {
 	getChatTurnBySequence: async (sessionId: string, sequence: number): Promise<ChatTurn | null> => {
 		validateServiceId(sessionId, COLLECTIONS.CHAT);
 		const collection = await chatService._getCollection(sessionId);
-		const turnId = buildTurnId(sessionId, sequence);
+		const turnId = buildChatTurnId(sessionId, sequence);
 		try {
 			const turnJson = await getRecordById(collection, turnId);
 			return turnJson ? (turnJson as unknown as ChatTurn) : null;

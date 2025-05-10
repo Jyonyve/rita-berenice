@@ -1,13 +1,30 @@
 // src/server/service/loreService.ts
 
-import { CharacterHistory, CharacterLore, METADATA_TYPES } from '#root/src/shared/domain/index.ts'; // Adjust path
-import { Collection, IncludeEnum } from 'chromadb';
-import { chromaDbClient } from '../db/index.ts'; // Adjust path
-import { buildLoreId } from '#root/src/shared/index.ts';
-// Assuming buildLoreId is no longer needed if 'id' in LoreInfo is the ChromaDB doc ID
-// import { buildLoreId } from '#root/src/shared/index.ts';
+import {
+	CharacterHistory,
+	CharacterLore,
+	COLLECTIONS,
+	METADATA_TYPES,
+} from '#root/src/shared/index.ts'; // Adjust path
+import { Collection, Where } from 'chromadb';
+import { chromaDbClient, ChromaResponse } from '../db/index.ts'; // Adjust path
+import {
+	buildHistoryDocument,
+	buildHistoryId,
+	buildLoreDocument,
+	buildLoreId,
+	validateResult,
+	validateServiceId,
+} from '../util/index.ts';
 
-const { getLoreCollection, upsertRecord, getRecordsByMetadataType, queryRecords } = chromaDbClient;
+const { getLoreCollection, upsertRecord, getRecords } = chromaDbClient;
+
+interface LoreChromaResponse extends ChromaResponse {
+	lores: CharacterLore[];
+	loreContents: string[];
+	histrories: CharacterHistory[];
+	historyContents: string[];
+}
 
 export const loreService = {
 	_loreCollection: null as Collection | null,
@@ -24,237 +41,92 @@ export const loreService = {
 		return collection;
 	},
 
-	// --- Get a specific lore/history entry by its unique ID ---
-	getLores: async (characterId: string): Promise<CharacterLore[]> => {
+	_parseMetadataToLores: (metadatas: (Record<string, any> | null)[]): CharacterLore[] => {
+		return metadatas.filter((meta): meta is CharacterLore => meta?.type === METADATA_TYPES.LORE);
+	},
+
+	_parseMetadataToHistories: (metadatas: (Record<string, any> | null)[]): CharacterHistory[] => {
+		return metadatas.filter(
+			(meta): meta is CharacterHistory => meta?.type === METADATA_TYPES.HISTORY
+		);
+	},
+
+	// --- Get a lores by character ID ---
+	getLores: async (characterId: string, limit = -1): Promise<LoreChromaResponse | null> => {
+		validateServiceId(characterId, COLLECTIONS.LORE); // Ensure characterId is valid
 		const collection = await loreService._getCollection();
 		try {
 			console.log(`[LoreService] Querying Lores for characterId: ${characterId}`);
+			const whereClause: Where = { type: METADATA_TYPES.LORE, characterId };
+			const results = await getRecords(collection, whereClause, limit);
 
-			const results = await collection.get({
-				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
-				where: { type: METADATA_TYPES.LORE, characterId },
-			});
-
-			if (!results.documents || results.documents.length === 0) {
-				return [];
+			if (validateResult(results)) {
+				const { ids, documents, metadatas } = results;
+				const parsedLores = loreService._parseMetadataToLores(metadatas);
+				return {
+					ids,
+					documents,
+					metadatas,
+					lores: parsedLores,
+					loreContents: parsedLores.map((lore) => lore.content),
+					historyContents: [],
+					histrories: [],
+				};
 			}
-
-			return results.documents
-				.map((doc, index) => {
-					if (doc === null) return null;
-					try {
-						return JSON.parse(doc) as CharacterLore;
-					} catch (e) {
-						console.error('Error parsing character info:', e);
-						return null;
-					}
-				})
-				.filter((char): char is CharacterLore => char !== null);
+			console.warn(`failed to getLores, characterId : ${characterId}`);
+			return null;
 		} catch (error) {
 			console.error(`Failed to get lores with ID ${characterId}:`, error);
-			return [];
+			return null;
 		}
 	},
 
-	// --- Get all lore/history for a specific character, optionally filtered by type ---
-	getHistories: async (
-		characterId: string,
-		type?: typeof METADATA_TYPES.HISTORY,
-		// Add pagination or sorting options if needed (e.g., sortBy: 'sequence' or 'created_at')
-		options: { offset?: number; limit?: number } = {}
-	): Promise<CharacterHistory[]> => {
+	// --- Get all history for a specific character, optionally filtered by type ---
+	getHistories: async (characterId: string, limit = -1): Promise<LoreChromaResponse | null> => {
+		validateServiceId(characterId, COLLECTIONS.LORE); // Ensure characterId is valid
 		const collection = await loreService._getCollection();
 		try {
-			const whereFilter: Record<string, any> = { character_id: characterId, type };
+			console.log(`[LoreService] Querying Lores for characterId: ${characterId}`);
+			const whereClause: Where = { type: METADATA_TYPES.HISTORY, characterId };
+			const results = await getRecords(collection, whereClause, limit);
 
-			console.log(
-				`[LoreService.getCharacterKnowledge] Fetching for character: ${characterId}, type: ${type || 'all'}, options: ${JSON.stringify(options)}`
-			);
-
-			const results = await collection.get({
-				where: whereFilter,
-				include: [IncludeEnum.Documents, IncludeEnum.Metadatas], // Documents for content
-				offset: options.offset,
-				limit: options.limit,
-				// ChromaDB's collection.get doesn't directly support sorting in the query.
-				// Sorting would need to be done client-side after fetching,
-				// or if using query, similarity score is the primary sort.
-			});
-
-			if (!results.ids || results.ids.length === 0) {
-				console.log(`[LoreService.getCharacterKnowledge] No entries found.`);
-				return [];
+			if (validateResult(results)) {
+				const { ids, documents, metadatas } = results;
+				const parsedHistories = loreService._parseMetadataToHistories(metadatas);
+				return {
+					ids,
+					documents,
+					metadatas,
+					lores: [],
+					loreContents: [],
+					historyContents: parsedHistories.map((history) => history.content),
+					histrories: parsedHistories,
+				};
 			}
-
-			const histories = results.documents
-				.map((doc, index) => {
-					if (doc === null) return null;
-					try {
-						return JSON.parse(doc) as CharacterHistory;
-					} catch (e) {
-						console.error('Error parsing character info:', e);
-						return null;
-					}
-				})
-				.filter((history): history is CharacterHistory => history !== null);
-			return histories.sort((a, b) => b.sequence - a.sequence);
+			console.warn(`failed to getHistories, characterId : ${characterId}`);
+			return null;
 		} catch (error) {
-			console.error(`[LoreService.getCharacterKnowledge] Error fetching entries:`, error);
-			return [];
+			console.error(`Failed to get histories with ID ${characterId}:`, error);
+			return null;
 		}
 	},
 
-	// --- Store a new piece of lore or history ---
-	storeLoreEntry: async (characterLore: CharacterLore): Promise<string> => {
+	// --- Store a new piece of lore ---
+	storeLore: async (lore: CharacterLore): Promise<void> => {
+		const { characterId, createdAt } = lore;
 		const collection = await loreService._getCollection();
-
-		// Ensure critical metadata is present
-		const metadataToStore: LoreMetadata = {
-			...entry.metadata, // User provided metadata
-			character_id: entry.characterId, // Ensure character_id is in metadata for filtering
-			created_at: entry.metadata.created_at || new Date().toISOString(),
-			updated_at: new Date().toISOString(), // Always set/update this
-		};
-
-		try {
-			console.log(
-				`[LoreService.storeLoreEntry] Upserting entry ID: ${entryId} for character: ${entry.characterId}`
-			);
-			await upsertDocument(
-				collection,
-				entryId, // The unique ID for this lore/history document
-				entry.content, // The text content
-				metadataToStore // The structured metadata
-			);
-			console.log(`[LoreService.storeLoreEntry] Successfully upserted entry ID: ${entryId}`);
-			return entryId;
-		} catch (error) {
-			console.error(
-				`[LoreService.storeLoreEntry] Failed to store entry for character ${entry.characterId}:`,
-				error
-			);
-			throw error;
-		}
+		lore.loreId = buildLoreId(characterId, createdAt);
+		const documentForEmbedding = buildLoreDocument(lore);
+		await upsertRecord(collection, lore.loreId, documentForEmbedding, lore);
 	},
 
-	// --- Update an existing lore/history entry ---
-	updateLoreEntry: async (
-		entryId: string,
-		updates: Partial<Pick<LoreInfo, 'content' | 'metadata'>>
-	): Promise<boolean> => {
+	// --- Store a new piece of history ---
+	storeHistory: async (history: CharacterHistory): Promise<void> => {
+		const { characterId, createdAt } = history;
 		const collection = await loreService._getCollection();
-		try {
-			console.log(`[LoreService.updateLoreEntry] Attempting to update entry ID: ${entryId}`);
-			const existing = await collection.get({
-				ids: [entryId],
-				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
-			});
-
-			if (!existing.ids || existing.ids.length === 0 || !existing.documents || !existing.metadatas) {
-				console.warn(
-					`[LoreService.updateLoreEntry] Entry not found for ID: ${entryId}. Cannot update.`
-				);
-				return false;
-			}
-
-			const currentDoc = existing.documents[0];
-			const currentMeta = existing.metadatas[0] as LoreMetadata;
-
-			const newContent = updates.content !== undefined ? updates.content : currentDoc;
-			const newMetadata: LoreMetadata = {
-				...currentMeta,
-				...(updates.metadata || {}),
-				updated_at: new Date().toISOString(), // Always update this
-			};
-
-			await upsertDocument(collection, entryId, newContent!, newMetadata); // Use newContent! as it's guaranteed by logic
-			console.log(`[LoreService.updateLoreEntry] Successfully updated entry ID: ${entryId}`);
-			return true;
-		} catch (error) {
-			console.error(`[LoreService.updateLoreEntry] Failed to update entry ID ${entryId}:`, error);
-			throw error;
-		}
-	},
-
-	// --- Query for lore/history based on semantic similarity ---
-	queryCharacterKnowledge: async (
-		characterId: string,
-		queryText: string,
-		limit: number = 5,
-		type?: typeof METADATA_TYPES.LORE | typeof METADATA_TYPES.HISTORY
-	): Promise<LoreInfo[]> => {
-		const collection = await loreService._getCollection();
-		try {
-			const whereFilter: Record<string, any> = { character_id: characterId };
-			if (type) {
-				whereFilter.type = type;
-			}
-			console.log(
-				`[LoreService.queryCharacterKnowledge] Querying for character ${characterId}, type: ${type || 'all'}, text: "${queryText.substring(0, 30)}..."`
-			);
-
-			// Assuming queryDocuments in chromaDbClient handles embedding the queryText
-			// and performs collection.query
-			const results = await queryDocuments(collection, queryText, whereFilter, limit);
-			// The structure of 'results' from queryDocuments needs to be known.
-			// Assuming it's an array of { id: string, document: string, metadata: Record<string,any>, distance?: number }
-			// OR the raw collection.query() result: { ids: [[]], documents: [[]], metadatas: [[]], distances: [[]] }
-
-			console.log(
-				`[LoreService.queryCharacterKnowledge] Raw query result:`,
-				JSON.stringify(results, null, 2)
-			);
-
-			// Adapt this mapping based on the actual structure of 'results'
-			let loreInfos: LoreInfo[] = [];
-			if (results?.ids && Array.isArray(results.ids[0])) {
-				// Likely raw collection.query output
-				const ids = results.ids[0] || [];
-				const docs = results.documents?.[0] || [];
-				const metas = results.metadatas?.[0] || [];
-				// const distances = results.distances?.[0] || []; // Optional
-
-				loreInfos = ids.map((id, index) => ({
-					id,
-					characterId: (metas[index] as LoreMetadata)?.character_id || characterId, // Fallback
-					content: docs[index] as string,
-					metadata: metas[index] as LoreMetadata,
-					// distance: distances[index] // Optional
-				}));
-			} else if (Array.isArray(results)) {
-				// Simpler array of objects
-				loreInfos = results.map((resItem: any) => ({
-					id: resItem.id,
-					characterId: resItem.metadata?.character_id || characterId,
-					content: resItem.document,
-					metadata: resItem.metadata as LoreMetadata,
-					// distance: resItem.distance // Optional
-				}));
-			}
-
-			console.log(
-				`[LoreService.queryCharacterKnowledge] Found ${loreInfos.length} entries from query.`
-			);
-			return loreInfos;
-		} catch (error) {
-			console.error(`[LoreService.queryCharacterKnowledge] Error querying entries:`, error);
-			return [];
-		}
-	},
-
-	// --- Delete a specific lore/history entry ---
-	deleteLoreEntry: async (entryId: string): Promise<boolean> => {
-		const collection = await loreService._getCollection();
-		try {
-			console.log(`[LoreService.deleteLoreEntry] Deleting entry ID: ${entryId}`);
-			await collection.delete({ ids: [entryId] }); // ChromaDB delete method
-			console.log(`[LoreService.deleteLoreEntry] Successfully deleted entry ID: ${entryId}`);
-			return true;
-		} catch (error) {
-			console.error(`[LoreService.deleteLoreEntry] Failed to delete entry ID ${entryId}:`, error);
-			// Consider if you want to throw or return false
-			return false;
-		}
+		history.historyId = buildHistoryId(characterId, createdAt);
+		const documentForEmbedding = buildHistoryDocument(history);
+		await upsertRecord(collection, history.historyId, documentForEmbedding, history);
 	},
 
 	clearCollectionCache: (): void => {

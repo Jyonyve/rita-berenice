@@ -2,7 +2,7 @@ import {
 	COLLECTIONS,
 	CollectionType,
 	METADATA_TYPES,
-	MetadataValueType,
+	MetadataType,
 } from '#root/src/shared/domain/index.ts';
 import { DEFAULT_QUERY_LIMIT } from '#root/src/shared/index.ts';
 import { ChromaClient, Collection, IncludeEnum, Metadata, GetResponse, Where } from 'chromadb';
@@ -153,7 +153,7 @@ export const chromaDbClient = {
 
 	getRecordsByMetadataType: async (
 		collection: Collection,
-		type: MetadataValueType,
+		type: MetadataType,
 		options: { offset?: number; limit?: number } = {}
 	): Promise<ChromaResponse | null> => {
 		const whereFilter: Where = { type: { $eq: type } }; // For just type

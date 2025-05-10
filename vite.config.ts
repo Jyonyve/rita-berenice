@@ -59,10 +59,11 @@ export default defineConfig({
 			// Root alias
 			'#root': path.resolve(__dirname, '.'),
 
-			// scripts alias
-			'#scripts': path.resolve(__dirname, './scripts'),
-			'#scripts/chat': path.resolve(__dirname, './scripts/chat/*'),
-			'#scripts/character': path.resolve(__dirname, './scripts/character/*'),
+			// migration alias
+			'#migration': path.resolve(__dirname, './src/migration'),
+			'#migration/chat': path.resolve(__dirname, './src/migration/chat/*'),
+			'#migration/character': path.resolve(__dirname, './src/migration/character/*'),
+			'#migration/source': path.resolve(__dirname, './src/migration/source/*'),
 		},
 	},
 	plugins: [
@@ -95,7 +96,6 @@ export default defineConfig({
 			},
 		},
 		sourcemap: true, // Enable source maps for easier debugging
-		// Ensure client and server build outputs don't conflict (controlled by scripts now)
 	},
 	optimizeDeps: {
 		include: ['@emotion/react', '@emotion/styled', '@emotion/cache'],

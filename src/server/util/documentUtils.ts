@@ -1,5 +1,7 @@
 import {
+	CharacterHistory,
 	CharacterInfo,
+	CharacterLore,
 	ChatMessageType,
 	ChatTurn,
 	parseEntriesToText,
@@ -38,5 +40,17 @@ export const buildCharacterDocument = (character: CharacterInfo) => {
 export const buildProfileDocument = (profile: ProfileInfo) => {
 	const { profileId, showName, description } = profile;
 	const document = { profileId, showName, description };
+	return JSON.stringify(document).trim();
+};
+
+export const buildLoreDocument = (lore: CharacterLore) => {
+	const { characterId, loreId, content, keywords, updatedAt } = lore;
+	const document = { characterId, loreId, content, keywords, updatedAt };
+	return JSON.stringify(document).trim();
+};
+
+export const buildHistoryDocument = (history: CharacterHistory) => {
+	const { characterId, historyId, title, content, periodLabel, updatedAt } = history;
+	const document = { characterId, historyId, title, content, periodLabel, updatedAt };
 	return JSON.stringify(document).trim();
 };

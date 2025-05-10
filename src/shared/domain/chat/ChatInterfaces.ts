@@ -1,6 +1,6 @@
 import { allEmotionKeywordsList } from '../../config/index.ts';
 import { DefaultAiRole } from '../index.ts';
-import { METADATA_TYPES } from '../chromadb/index.ts';
+import { METADATA_TYPES, MetadataType } from '../chromadb/index.ts';
 
 export type ChatType = 'dialogue' | 'action';
 export type ChatRoleType = DefaultAiRole;
@@ -26,6 +26,7 @@ export interface ChatMessage {
 export interface MigChatMessage {
 	uuid: string;
 	role: ChatRoleType;
+	messageType: ChatMessageType;
 	content: string;
 	timestamp: string;
 	showName?: string;
@@ -34,7 +35,7 @@ export interface MigChatMessage {
 }
 
 export interface ChatTurn {
-	turnId: string;
+	chatTurnId: string;
 	sessionId: string;
 	sequence: number;
 	request: ChatMessage;

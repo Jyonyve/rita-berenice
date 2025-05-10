@@ -4,7 +4,7 @@ export interface CharacterLore {
 	loreId: string;
 	characterId: string;
 	content: string;
-	keyword: string;
+	keywords: string[];
 	createdAt: string;
 	updatedAt: string;
 	type: typeof METADATA_TYPES.LORE;
@@ -13,9 +13,13 @@ export interface CharacterLore {
 export interface CharacterHistory extends Omit<CharacterLore, 'loreId' | 'type'> {
 	historyId: string;
 	title: string;
-	period: string;
+	periodLabel: string;
+	periodConfidence: number;
 	estimatedEventDate: string;
+	dateType: 'absolute' | 'relative' | 'era';
+	dateConfidence: number;
 	keyThemes: string[];
-	sequence: number;
+	temporalRelations: string[];
+	sequence: string;
 	type: typeof METADATA_TYPES.HISTORY;
 }

@@ -76,3 +76,75 @@ The following is an AI-generated summary of your (${charName}'s) current relatio
 Remember this context deeply. It reflects your shared history and emotional bond. Let it guide your feelings, attitude, and behavior towards ${userName} to ensure consistency and emotional continuity in your responses. For example, if the summary indicates growing trust, your responses should reflect that. If it mentions recent conflict, acknowledge that tension appropriately.
 `.trim();
 };
+
+export const buildHistoryTimelinePrompt = (existingEventsPreview: string) =>
+	`**System Role**  
+You are a narrative metadata architect specializing in fictional character timelines. Analyze the provided content to extract structured metadata for chronology management.
+
+**Input Format**  
+Title: {title}  
+Content: {content}
+
+**Output Requirements**  
+Return JSON with these fields:
+{
+  "period": {
+    "label": "Childhood|Adolescence|Adulthood...",
+    "confidence": 0.0-1.0,
+    "rationale": "1-sentence justification"
+  },
+  "estimatedEventDate": {
+    "value": "ISO 8601, relative time, or era",
+    "type": "absolute|relative|era",
+    "confidence": 0.0-1.0
+  },
+  "keyThemes": ["theme1", "theme2", "theme3"],
+  "keywords": ["keyword1", "keyword2"],
+  "temporalRelations": ["before EventX", "after EventY"]
+}
+
+**Processing Rules**  
+1. Cross-reference with existing timeline context:
+   ${existingEventsPreview}  
+2. For vague timelines, use narrative sequencing over exact dates
+3. Prefer existing period labels when possible
+4. Identify 2-3 core themes using character's emotional arc
+5. Generate 1-2 keywords for semantic search
+
+**Examples**  
+Good Output:
+{
+  "period": {
+    "label": "Early Adolescence",
+    "confidence": 0.9,
+    "rationale": "Mentions middle school experiences"
+  },
+  "estimatedEventDate": {
+    "value": "Age 12-14",
+    "type": "relative",
+    "confidence": 0.8
+  },
+  "keyThemes": ["Identity Crisis", "Peer Pressure"],
+  "keywords": ["school", "friendship"],
+  "temporalRelations": ["after First Day of School"]
+}
+
+Vague Timeline Example:
+{
+  "period": {
+    "label": "Formative Years",
+    "confidence": 0.7,
+    "rationale": "Describes foundational life experiences"
+  },
+  "estimatedEventDate": {
+    "value": "Early 20s",
+    "type": "era",
+    "confidence": 0.6
+  }
+}`.trim();
+
+export const buildLogContextPrompt = (userInput: string, context: string) => {
+	return context
+		? `Use the following previous conversation as context to understand the user's intention better. You can ignore it if unnecessary.\n\nContext:\n${context}\n\nUser: ${userInput}`
+		: userInput;
+};

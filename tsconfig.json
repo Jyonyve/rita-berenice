@@ -35,19 +35,21 @@
 		"paths": {
 			"#root/*": ["./*"], // Alias for project root
 
-			"#scripts/*": ["./scripts/*"],
-			"#scripts/chat/*": ["./scripts/chat/*"],
-			"#scripts/character/*": ["./scripts/character/*"],
+			"#migration/*": ["./src/migration/*"],
+			"#migration/chat/*": ["./src/migration/chat/*"],
+			"#migration/character/*": [".src/migration/character/*"],
+			"#migration/source/*": ["./src/migration/source/*"],
 
 			"#server/db/*": ["./src/server/db/*"], // Alias for src/server
 			"#server/route/*": ["./src/server/route/*"], // Alias for src/server
 			"#server/service/*": ["./src/server/service/*"], // Alias for src/server
 
 			"@client/*": ["./src/client/*"], // General alias for src (consider if this should be more specific, e.g., "./src/client/*")
-			"@client/domain/*": ["src/shared/domain/*"],
+			"@client/domain/*": ["./src/client/domain/*"],
 			"@client/component/*": ["./src/client/component/*"],
 			"@client/hook/*": ["./src/client/hook/*"],
 			"@client/asset/*": ["./src/client/asset/*"],
+
 			"@shared/*": ["./src/shared/*"]
 		}
 	},

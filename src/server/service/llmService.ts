@@ -128,20 +128,21 @@ export const llmService = {
 				});
 				responseContent = extractValidOpenAiContent(completion);
 			} else {
-				// Assumes LangChain BaseChatModel
+				// LangChain: convert to BaseMessage[]
 				console.log(`Invoking LangChain model (${aiModelInfo.model})`);
-				const responseMessage = await llmOrClient.invoke([messages]);
+				const langchainMessages = convertToLangChainMessages(messages);
+				const responseMessage = await llmOrClient.invoke(langchainMessages);
 				responseContent = convertMessageContentToString(responseMessage.content);
 			}
 
 			if (!responseContent) {
 				console.warn(`LLM invocation (${aiModelInfo.model}) resulted in empty response.`);
-				return '[LLM returned empty content]'; // Return specific string for empty
+				return '[LLM returned empty content]';
 			}
+
 			return responseContent;
 		} catch (error) {
 			console.error(`LLM invocation failed for ${aiModelInfo.model}:`, error);
-			// Rethrow or return error message? Rethrowing is often better for API routes.
 			throw new Error(`LLM invocation failed: ${error || 'Unknown error'}`);
 		}
 	},

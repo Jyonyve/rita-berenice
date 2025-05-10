@@ -8,12 +8,17 @@ import {
 	ChatMessage,
 	parseEntriesToText,
 	DEFAULT_LOADING_TURN_COUNT,
+	ChatTurn,
 	// Add other necessary types/constants
 } from '#root/src/shared/index.ts';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { llmService } from './llmService.ts';
 // Import template utils
-import { EMOTION_TEMPLATE, buildRelationshipContextSystemPrompt } from '../util/templateUtils.ts'; // Adjust path as needed
+import {
+	EMOTION_TEMPLATE,
+	buildLogContextPrompt,
+	buildRelationshipContextSystemPrompt,
+} from '../util/templateUtils.ts'; // Adjust path as needed
 import { chatService } from './chatService.ts'; // To fetch relationship recap
 import { recapService } from './recapService.ts';
 
@@ -103,32 +108,26 @@ export const createPersonaEngine = (
 		return { response: parsed.response, emotion: matchedEmotionKey };
 	};
 
-	/** Builds user' enhanced prompt using recap or fixed logs */
-	const buildUserPromptFromLog = async (
+	const getPriorLogContext = async (
 		sessionId: string,
-		userText: string,
+		userInput: string,
 		isFullLogQuery = false
 	): Promise<string> => {
 		let context = '';
+
 		if (!isFullLogQuery) {
-			context = await recapService.getRecap(sessionId); // Try recap first
+			context = await recapService.getRecap(sessionId);
 		}
-		if (!context) {
-			// Fallback to recent fixed turns
-			const turns = await chatService.getRecentChatTurns(sessionId, DEFAULT_LOADING_TURN_COUNT); // Adjust limit as needed
-			context = turns
-				.map(
-					(t) =>
-						`Seq ${t.sequence}: User: ${parseEntriesToText(t.request.entries)} Assistant: ${parseEntriesToText(t.response.entries)}`
-				)
-				.join('\n');
+
+		if (isFullLogQuery || !context) {
+			const turns = await chatService.queryChatTurnDocs(sessionId, userInput, -1);
+			context = turns.join('\n');
 		}
-		return context
-			? `Use the following context if relevant, otherwise ignore it.\nContext:\n${context}\n\nUser: ${userText}`
-			: userText;
+
+		return buildLogContextPrompt(userInput, context);
 	};
 
-	return { loadMemory, ask };
+	return { loadMemory, ask, getPriorLogContext };
 };
 
 // Example Usage (conceptual, where you create the engine):

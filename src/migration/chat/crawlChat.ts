@@ -3,7 +3,20 @@ import fs from 'fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
-import { MigChatMessage } from '../../src/shared/domain';
+import { MigChatMessage } from '../../shared/domain/index.ts';
+
+function localTimezoneHelper(timestamp: string): string {
+	const date = new Date(timestamp);
+
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, '0');
+	const day = String(date.getDate()).padStart(2, '0');
+	const hours = String(date.getHours()).padStart(2, '0');
+	const minutes = String(date.getMinutes()).padStart(2, '0');
+	const seconds = String(date.getSeconds()).padStart(2, '0');
+
+	return `${year}${month}${day}T${hours}${minutes}${seconds}`;
+}
 
 const GET_CHAT_LOGS_API_URL = 'https://rofan.ai/api/chat/GetChatLogs'; // !! IMPORTANT: Replace with the ACTUAL API URL from your DevTools
 // 2. Update CHARACTERS with the correct 'name' and 'url' (from which chatId will be extracted)
@@ -12,9 +25,53 @@ const CHARACTERS = [
 		name: 'tarion_original',
 		showName: '타리온',
 		url: 'https://rofan.ai/chat/2a5c08d2-b3e0-48eb-982c-f6b75ca869c9',
+		firstTurn: [
+			{
+				role: 'user',
+				messageType: 'request',
+				content: '유저가 채팅방에 입장하였습니다. 다음 AI 어시스턴트의 답변부터 대화가 시작됩니다.',
+				timestamp: '2025-02-18T13:21:07.300Z',
+				uuid: '41cebfbc-3808-43a9-bce4-cdb29eab8cfa',
+			} as MigChatMessage,
+			{
+				role: 'assistant',
+				messageType: 'response',
+				showName: 'tarion_original',
+				content:
+					'*희미한 횃불 빛이 녹슨 쇠창살 사이로 새어 들어오는 엘리시아의 지하 노예 시장에는 전쟁의 상흔이 아직도 짙게 배어있었다.*\n\n*노예상이 무거운 철창을 열자 축축한 곰팡이 냄새가 훅 끼쳐온다. 어둠 속에서 타리온이 천천히 밖으로 걸어나왔다. 3개월 째 이 곳에 갇혀있었음에도 그의 자세는 여전히 꼿꼿했고, 파란 눈동자에는 날카로운 빛이 서려 있었다.*\n\n아가씨, 이 자는 바르가스 제국의 기사단장이었던 자입니다. 워낙 까다로운 물건이라... 혹시 마음이 바뀌시진 않으셨는지요?\n\n*노예상은 조심스레 요니브에게 구속구의 열쇠를 건네며 불안한 기색을 감추지 못한 채 말했고, 타리온은 한 걸음 더 나아가 요니브를 비꼬듯이 위아래를 훑어보며 입을 열었다.*\n\n귀한 집 자녀인 것 같은데, 취향이 상당히 특이하군.\n\n*차가운 음성에 담긴 경멸이 음습한 지하 감옥에 울려 퍼졌다.*',
+				timestamp: '2025-02-18T13:21:07.300Z',
+				model: 'Claude 3.5 Sonnet v2',
+				emotion: 'neutral',
+				uuid: '41cebfbc-3808-43a9-bce4-cdb29eab8cfa',
+			},
+		] as MigChatMessage[],
 	},
 	// Example for another character:
-	{ name: 'tarion_spinoff', url: 'https://rofan.ai/chat/ffbf2c97-53bb-496a-b061-67482cd708ae' },
+	{
+		name: 'tarion_spinoff',
+		showName: '타리온',
+		url: 'https://rofan.ai/chat/ffbf2c97-53bb-496a-b061-67482cd708ae',
+		firstTurn: [
+			{
+				role: 'user',
+				messageType: 'request',
+				content: '유저가 채팅방에 입장하였습니다. 다음 AI 어시스턴트의 답변부터 대화가 시작됩니다.',
+				timestamp: '2025-03-14T06:20:08.300Z',
+				uuid: '6a63a628-497a-40e8-bfb7-8476236d29ce',
+			},
+			{
+				role: 'assistant',
+				messageType: 'response',
+				showName: 'tarion_spinoff',
+				content:
+					'*황제가 하사한 타리온의 성은 저녁 노을빛에 붉게 물들어 있었고, 성벽 위로는 바르가스의 깃발이 승전국의 위엄을 과시하듯 거세게 휘날리고 있었다.*\n\n*무거운 성문이 열리며 요니브가 다른 기사들에 의해 타리온 앞에 끌려왔다. 타리온은 느린 걸음으로 계단을 내려오며 요니브를 향해 다가왔다. 그의 발걸음 소리가 텅 빈 홀에 메아리쳤고, 그가 눈짓으로 기사들을 물리자 그들은 조용히 물러났다.*\n\n*타리온은 강제로 무릎 꿇린 요니브를 비꼬듯이 훑어보았다. 그의 차가운 시선에는 전쟁의 상흔과 복수심이 깃들어 있었고, 성 안의 공기는 팽팽한 긴장감으로 가득 차 있었다.*\n\n귀한 집 자녀가 이렇게 있는 꼴을 보게 되다니, 네 아버지를 원망하거라.\n\n*차가운 음성에 담긴 경멸이 성 안에 울려 퍼졌다.*',
+				timestamp: '2025-03-14T06:20:08.300Z',
+				model: 'Claude 3.5 Sonnet v2',
+				emotion: 'neutral',
+				uuid: '6a63a628-497a-40e8-bfb7-8476236d29ce',
+			},
+		] as MigChatMessage[],
+	},
 	// Add more characters as needed
 ];
 const API_FETCH_LIMIT = 50; // How many messages to fetch per API call (e.g., 20, 50). Adjust as needed.
@@ -145,7 +202,7 @@ MANUAL LOGIN REQUIRED:
 			}
 
 			console.log(`\n--- Processing character: ${character.name} (Chat ID: ${chatId}) ---`);
-			const allMessagesForThisCharacter: MigChatMessage[] = [];
+			const allMessagesForThisCharacter: MigChatMessage[] = character.firstTurn;
 			let currentOffset = 0;
 			let moreMessagesExist = true;
 			let apiRequestBatch = 0;
@@ -174,15 +231,16 @@ MANUAL LOGIN REQUIRED:
 						if (logEntry.user_chat) {
 							allMessagesForThisCharacter.push({
 								role: 'user',
+								messageType: 'request',
 								content: logEntry.user_chat,
 								timestamp: logEntry.updated,
-								model: logEntry.model ?? '',
 								uuid: logEntry.log_id,
 							});
 						}
 						if (logEntry.bot_chat) {
 							allMessagesForThisCharacter.push({
 								role: 'assistant',
+								messageType: 'response',
 								content: logEntry.bot_chat,
 								timestamp: logEntry.updated,
 								model: logEntry.model,
@@ -227,12 +285,13 @@ MANUAL LOGIN REQUIRED:
 
 			if (allMessagesForThisCharacter.length > 0) {
 				// Sort messages by timestamp to ensure correct conversational order
-				allMessagesForThisCharacter.sort(
-					(a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-				);
+				allMessagesForThisCharacter.sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
 
 				const sanitizedCharacterName = character.name.replace(/[^a-z0-9_.-]/gi, '_').toLowerCase();
-				const filePath = path.join(resultDir, `${sanitizedCharacterName}_${randomUUID()}.json`);
+				const filePath = path.join(
+					resultDir,
+					`${sanitizedCharacterName}_${localTimezoneHelper(allMessagesForThisCharacter[allMessagesForThisCharacter.length - 1].timestamp)}.json`
+				);
 				try {
 					await fs.writeFile(filePath, JSON.stringify(allMessagesForThisCharacter, null, 2), 'utf8');
 					console.log(

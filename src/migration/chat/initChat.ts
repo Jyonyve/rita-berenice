@@ -5,11 +5,11 @@ import path from 'node:path';
 import { ChromaClient, Collection } from 'chromadb';
 import { fileURLToPath } from 'node:url';
 
-import { COLLECTIONS, METADATA_TYPES } from '../../src/shared/domain/chromadb/ChromaInterfaces.ts';
-import { ChatMessage, ChatTurn, MigChatMessage } from '../../src/shared/domain/chat/ChatTypes.ts';
-import { buildMessageId, buildSessionId, buildTurnId } from '../../src/shared/util/idUtils.ts';
-import { isValidEmotionKeyword } from '../../src/shared/config/emotionWordsMapper.ts';
-import { parseTextToEntries } from '../../src/shared/util/chatParseUtils.ts';
+import { COLLECTIONS, METADATA_TYPES } from '../../shared/domain/chromadb/ChromaInterfaces.ts';
+import { ChatMessage, ChatTurn, MigChatMessage } from '../../shared/domain/index.ts';
+import { buildMessageId, buildSessionId, buildTurnId } from '../../server/util/buildIdUtils.ts';
+import { isValidEmotionKeyword } from '../../shared/config/emotionWordsMapper.ts';
+import { parseTextToEntries } from '../../shared/util/chatParseUtils.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -140,12 +140,12 @@ async function initChatFromLogFiles() {
 
 			let sequence = 0;
 			const sortedLogIds = Array.from(turnsMap.keys()).sort((a, b) => {
-				const timeA = new Date(
-					turnsMap.get(a)?.user?.timestamp || turnsMap.get(a)?.bot?.timestamp || 0
-				).getTime();
-				const timeB = new Date(
-					turnsMap.get(b)?.user?.timestamp || turnsMap.get(b)?.bot?.timestamp || 0
-				).getTime();
+				const timeA = Date.parse(
+					turnsMap.get(a)?.user?.timestamp || turnsMap.get(a)?.bot?.timestamp || ''
+				);
+				const timeB = Date.parse(
+					turnsMap.get(b)?.user?.timestamp || turnsMap.get(b)?.bot?.timestamp || ''
+				);
 				return timeA - timeB;
 			});
 
@@ -166,6 +166,7 @@ async function initChatFromLogFiles() {
 						emotion: EMOTION_DEFAULT,
 						timestamp: requestTimestamp,
 						showName: '요니브',
+						type: METADATA_TYPES.MESSAGE,
 					};
 
 					const responseMessage: ChatMessage = {
@@ -177,6 +178,7 @@ async function initChatFromLogFiles() {
 							botLog.emotion && isValidEmotionKeyword(botLog.emotion) ? botLog.emotion : EMOTION_DEFAULT,
 						timestamp: responseTimestamp,
 						showName: '타리온',
+						type: METADATA_TYPES.MESSAGE,
 					};
 
 					const chatTurn: ChatTurn = {
@@ -184,9 +186,8 @@ async function initChatFromLogFiles() {
 						sequence: sequence,
 						request: requestMessage,
 						response: responseMessage,
-						// modelUsed and originalLogId are no longer in ChatTurn in your provided version
-						// Add them back to ChatTypes.ts if you need them in the document.
-						// For now, they are only in metadata.
+						chatTurnId: '',
+						type: METADATA_TYPES.SET,
 					};
 
 					const turnId = buildTurnId(TARGET_SESSION_ID, sequence);

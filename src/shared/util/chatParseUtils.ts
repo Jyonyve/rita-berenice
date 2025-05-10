@@ -8,7 +8,7 @@ import {
 	ChatMessageType,
 	METADATA_TYPES,
 } from '@shared/domain/index.ts';
-import { buildMessageId } from './idUtils.ts';
+import { buildMessageId } from '../../server/util/buildIdUtils.ts';
 import { DEFAULT_EMOTION, isValidEmotionKeyword } from '../config/index.ts';
 
 export const parseTextToEntries = (text: string): ChatEntry[] => {
@@ -67,4 +67,29 @@ export const convertMessageContentToString = (content: MessageContent): string =
 	} else {
 		return JSON.stringify(content);
 	}
+};
+
+export const parseSessionId = (
+	sessionId: string
+): { charName: string; variant: string; uuid: string } => {
+	const parts = sessionId.split('_');
+	if (parts.length < 3) {
+		throw new Error(`Invalid session ID format: ${sessionId}`);
+	}
+	return {
+		charName: parts[0],
+		variant: parts[1],
+		uuid: parts[2], // In case UUID contains underscores
+	};
+};
+
+export const parseMessageId = (
+	messageId: string
+): { sessionId: string; sequence: number; type: ChatMessageType; index?: number } => {
+	const parts = messageId.split('_');
+	if (parts.length < 3) {
+		throw new Error(`Invalid message ID format: ${messageId}`);
+	}
+
+	return { sessionId: parts[0], sequence: parseInt(parts[1]), type: parts[2] as ChatMessageType };
 };
