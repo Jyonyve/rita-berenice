@@ -1,14 +1,22 @@
-import { CharacterInfo, METADATA_TYPES, ProfileInfo, ProfileInfo } from '#root/src/shared/index.ts';
+import { METADATA_TYPES } from '#root/src/shared/index.ts';
 import { Collection, IncludeEnum } from 'chromadb';
-import { chromaDbClient } from '#server/db/chromaDbClient.ts';
+import { chromaDbClient, ChromaResponse } from '../db/chromaDbClient.ts';
 
-const {
-	getProfileCollection,
-	addRecord: addDocument,
-	upsertRecord: upsertDocument,
-	getDocumentById,
-	queryRecords: queryDocuments,
-} = chromaDbClient;
+const { getProfileCollection, addRecord, upsertRecord, getRecordById, getRecords, queryRecords } =
+	chromaDbClient;
+
+interface BasicCharacterInfo {
+	characterId: string;
+	showName: string;
+	description: string;
+	instruction: string;
+	updatedAt: string;
+}
+
+interface CharacterChromaResponse extends ChromaResponse {
+	basicCharInfo?: BasicCharacterInfo;
+	basicCharInfos: BasicCharacterInfo[];
+}
 
 export const profileService = {
 	// Cache for profile collection
@@ -67,7 +75,7 @@ export const profileService = {
 		const collection = await profileService._getCollection();
 
 		try {
-			const result = await getDocumentById(collection, id);
+			const result = await getRecordById(collection, id);
 			if (!result) return null;
 
 			return JSON.parse(result) as ProfileInfo;
@@ -109,7 +117,7 @@ export const profileService = {
 		const collection = await profileService._getCollection();
 
 		try {
-			await upsertDocument(collection, profile.profileId, JSON.stringify(profile), {
+			await upsertRecord(collection, profile.profileId, JSON.stringify(profile), {
 				...profile.metadata,
 				type: METADATA_TYPES.PROFILE, // Make sure this is added
 			});
@@ -123,7 +131,7 @@ export const profileService = {
 		const collection = await profileService._getCollection();
 
 		try {
-			const results = await queryDocuments(
+			const results = await queryRecords(
 				collection,
 				queryText,
 				{ type: METADATA_TYPES.PROFILE },

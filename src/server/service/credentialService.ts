@@ -1,9 +1,9 @@
-import { chromaDbClient } from '#server/db/index.ts';
+import { chromaDbClient } from '../db/index.ts';
 import { SECRET_DOC_ID } from '#root/src/shared/index.ts';
 import type { Collection } from 'chromadb'; // Use Collection type
-import { decrypt, encrypt } from '../util/cryptoUtils.ts';
+import { decrypt, encrypt } from '../util/index.ts';
 
-const { getCredentialCollection, upsertRecord: upsertDocument, getDocumentById } = chromaDbClient;
+const { getCredentialCollection, upsertRecord, getRecordById } = chromaDbClient;
 
 export const credentialService = {
 	// Internal cache for the secret collection
@@ -38,7 +38,7 @@ export const credentialService = {
 		try {
 			const collection = await credentialService._getCollection();
 			// Use the generic upsertDocument method directly
-			await upsertDocument(
+			await upsertRecord(
 				collection,
 				SECRET_DOC_ID, // Use the fixed ID
 				encryptedContent, // The encrypted string is the document content
@@ -62,7 +62,7 @@ export const credentialService = {
 		try {
 			const collection = await credentialService._getCollection();
 			// Use the generic getDocumentById method directly
-			encryptedContent = await getDocumentById(collection, SECRET_DOC_ID);
+			encryptedContent = (await getRecordById(collection, SECRET_DOC_ID)).documents[0]; // Get the content of the first document
 		} catch (error) {
 			// Catch errors during collection getting or document fetching
 			console.error(`Error retrieving secret document (ID: ${SECRET_DOC_ID}) from DB:`, error);

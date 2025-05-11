@@ -1,8 +1,12 @@
 import { CharacterInfo, COLLECTIONS, METADATA_TYPES } from '#root/src/shared/domain/index.ts';
 import { Collection, IncludeEnum, Document, Where } from 'chromadb';
 import { chromaDbClient, ChromaResponse } from '../db/index.ts';
-import { buildCharacterDocument } from '../util/documentUtils.ts';
-import { buildCharacterId, validateResult, validateServiceId } from '../util/index.ts';
+import {
+	buildCharacterId,
+	validateResult,
+	validateServiceId,
+	buildCharacterDocument,
+} from '../util/index.ts';
 
 const { getCharacterCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
 

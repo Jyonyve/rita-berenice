@@ -6,10 +6,6 @@ import {
 	DEFAULT_IMAGE_NUMBER,
 	getImageNumberForEmotion,
 	ChatMessage,
-	parseEntriesToText,
-	DEFAULT_LOADING_TURN_COUNT,
-	ChatTurn,
-	// Add other necessary types/constants
 } from '#root/src/shared/index.ts';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { llmService } from './llmService.ts';
@@ -18,7 +14,7 @@ import {
 	EMOTION_TEMPLATE,
 	buildLogContextPrompt,
 	buildRelationshipContextSystemPrompt,
-} from '../util/templateUtils.ts'; // Adjust path as needed
+} from '../util/index.ts'; // Adjust path as needed
 import { chatService } from './chatService.ts'; // To fetch relationship recap
 import { recapService } from './recapService.ts';
 
