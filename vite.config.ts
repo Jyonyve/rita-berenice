@@ -48,6 +48,7 @@ export default defineConfig({
 
 			// Shared alias
 			'@shared': path.resolve(__dirname, './src/shared'),
+			'#shared': path.resolve(__dirname, './src/shared'),
 
 			// Server-side aliases (Using # prefix is fine, ensure consistency)
 			// Adjusted to plural folder names

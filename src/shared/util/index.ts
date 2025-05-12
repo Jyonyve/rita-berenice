@@ -3,5 +3,5 @@ export * from './testUtils.ts';
 export * from './aiModelUtils.ts';
 export * from './axiosUtils.ts';
 // export * from './awsCredentialUtils';
-export * from './apiPathUtils.ts';
+export * from './apiUtils.ts';
 export * from './llmClientUtils.ts';

@@ -15,6 +15,7 @@ export const DEFAULT_QUERY_LIMIT: number = 10 as const;
 export const SECRET_DOC_ID = 'user_api_keys' as const;
 
 export const MODULE_NAMES = { ...COLLECTIONS, LLM: 'llm' } as const;
+export type MODULE_TYPES = (typeof MODULE_NAMES)[keyof typeof MODULE_NAMES];
 
 export const ENV_CONSTANTS = {
 	VITE_API_URL: 'http://localhost:3000',

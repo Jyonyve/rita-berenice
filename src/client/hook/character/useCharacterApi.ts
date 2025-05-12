@@ -1,97 +1,81 @@
 // src/client/hooks/useCharacter.ts
-import { apiClient, CharacterInfo, genApiUrl, MODULE_NAMES } from '@shared/index.ts';
+import {
+	apiClient,
+	genApiUrl,
+	MODULE_NAMES,
+	BasicCharacterInfo,
+	CharacterResponse,
+} from '@shared/index.ts';
 import { useCallback, useEffect, useState } from 'react';
+import { CharacterInfo } from '@shared/index.ts';
 
 export const useCharacterApi = () => {
 	const MODULE_NAME = MODULE_NAMES.CHARACTER;
+
 	// --- State ---
-	const [characters, setCharacters] = useState<CharacterInfo[]>([]);
-	const [currentCharacter, setCurrentCharacter] = useState<CharacterInfo | undefined>(undefined); // Use undefined initially
-	const [loading, setLoading] = useState<boolean>(false); // Track loading state for all async operations
+	const [characters, setCharacters] = useState<BasicCharacterInfo[]>([]);
+	const [currentCharacter, setCurrentCharacter] = useState<BasicCharacterInfo>();
+	const [loading, setLoading] = useState<boolean>(false);
+	const [error, setError] = useState<string>('');
+
+	// --- API Response Handlers ---
+	const handleCharacterResponse = (response: CharacterResponse): BasicCharacterInfo[] => {
+		if (!response || !response.basicCharacterInfos?.length) {
+			throw new Error('No characters found in response');
+		}
+		return response.basicCharacterInfos;
+	};
 
 	// --- API Call Functions ---
-
-	// Fetch all characters from the API
-	const getAllCharacters = useCallback(async (): Promise<CharacterInfo[]> => {
-		console.log('Fetching all characters from API...');
+	const getAllCharacters = useCallback(async (): Promise<BasicCharacterInfo[]> => {
 		setLoading(true);
+		setError('');
 		try {
 			const url = genApiUrl(MODULE_NAME, 'getAllCharacters');
-			const response = await apiClient.get<CharacterInfo[]>(url);
-			setCharacters(response.data);
-			console.log('Fetched characters:', response.data);
-			return response.data;
+			const response = await apiClient.get<CharacterResponse>(url);
+			const basicCharacterInfos = handleCharacterResponse(response.data);
+			setCharacters(basicCharacterInfos);
+			return basicCharacterInfos;
 		} catch (error) {
-			console.error('Failed to fetch characters from API:', error);
-			setCharacters([]); // Clear on error
-			return []; // Return empty array on error
+			setError(error instanceof Error ? error.message : 'Failed to fetch characters');
+			return [];
 		} finally {
 			setLoading(false);
 		}
-	}, []); // No dependencies, safe for useCallback
+	}, []);
 
-	// Fetch a single character by ID from the API
-	const getCharacterById = useCallback(async (id: string): Promise<CharacterInfo | null> => {
-		console.log(`Fetching character by ID ${id} from API...`);
+	const getCharacterById = useCallback(async (id: string): Promise<BasicCharacterInfo | null> => {
 		setLoading(true);
+		setError('');
 		try {
-			const url = genApiUrl(MODULE_NAME, 'getCharacterById', [id]);
-			const response = await apiClient.get<CharacterInfo>(url); // Expect single CharacterInfo
-			// Optionally update local state if needed, or just return
-			return response.data;
-		} catch (error: any) {
-			console.error(`Failed to fetch character by ID ${id} from API:`, error);
-			// Handle 404 specifically? Axios error object has response.status
-			if (error.response?.status === 404) {
-				console.log(`Character with ID ${id} not found.`);
-				return null;
+			const url = genApiUrl(MODULE_NAME, 'getCharacter', [id]);
+			const response = await apiClient.get<CharacterResponse>(url);
+
+			if (!response.data?.basicCharacterInfo) {
+				throw new Error('Character not found');
 			}
-			// Re-throw other errors or return null
+
+			setCurrentCharacter(response.data.basicCharacterInfo);
+			return response.data.basicCharacterInfo;
+		} catch (error) {
+			setError(error instanceof Error ? error.message : 'Failed to fetch character');
 			return null;
 		} finally {
 			setLoading(false);
 		}
-	}, []); // No dependencies
+	}, []);
 
-	// Store (create or update) a character via the API
-	const storeCharacter = useCallback(
-		async (characterData: CharacterInfo): Promise<CharacterInfo | null> => {
-			console.log('Storing character via API:', characterData);
+	const getCharactersByShowName = useCallback(
+		async (showName: string): Promise<BasicCharacterInfo[]> => {
 			setLoading(true);
+			setError('');
 			try {
-				const url = genApiUrl(MODULE_NAME, 'storeCharacter');
-				// API expects full CharacterInfo, including ID for upsert
-				const response = await apiClient.post<CharacterInfo>(url, characterData);
-				console.log('Character stored successfully via API:', response.data);
-
-				// Refresh the list after storing to ensure UI consistency
-				await getAllCharacters(); // Call the refactored function
-
-				return response.data; // Return the stored/updated character data from response
+				const url = genApiUrl(MODULE_NAME, 'getCharactersByShowName', [showName]);
+				const response = await apiClient.get<CharacterResponse>(url);
+				return handleCharacterResponse(response.data);
 			} catch (error) {
-				console.error('Failed to store character via API:', error);
-				throw error; // Re-throw for component-level handling
-			} finally {
-				setLoading(false);
-			}
-		},
-		[getAllCharacters] // Depends on getAllCharacters to refresh the list
-	);
-
-	// Query characters via API (Example - implement if needed)
-	const queryCharacters = useCallback(
-		async (query: string, limit: number = 10): Promise<CharacterInfo[]> => {
-			console.log(`Querying characters with "${query}" from API...`);
-			setLoading(true);
-			try {
-				const url = genApiUrl(MODULE_NAME, 'queryCharacters');
-				const response = await apiClient.get<CharacterInfo[]>(url, { params: { q: query, limit } });
-				console.log('Query results:', response.data);
-				// Maybe update local state? Or just return results for specific use cases.
-				return response.data;
-			} catch (error) {
-				console.error('Failed to query characters from API:', error);
-				return []; // Return empty array on error
+				setError(error instanceof Error ? error.message : 'Failed to fetch characters by show');
+				return [];
 			} finally {
 				setLoading(false);
 			}
@@ -99,53 +83,57 @@ export const useCharacterApi = () => {
 		[]
 	);
 
-	// --- Client-Side Logic ---
+	const storeCharacter = useCallback(
+		async (characterData: CharacterInfo): Promise<CharacterInfo> => {
+			setLoading(true);
+			setError('');
+			try {
+				const url = genApiUrl(MODULE_NAME, 'storeCharacter');
+				const response = await apiClient.post<CharacterInfo>(url, characterData);
 
-	// Initial fetch on mount
-	useEffect(() => {
-		getAllCharacters(); // Call the refactored function
-	}, [getAllCharacters]); // Add getAllCharacters as dependency
+				// Update local state
+				setCharacters((prev) => {
+					const existing = prev.find((c) => c.characterId === response.data.characterId);
+					return existing
+						? prev.map((c) => (c.characterId === response.data.characterId ? response.data : c))
+						: [...prev, response.data];
+				});
 
-	// Change current character based on selection (purely client-side state change)
-	const changeCharacter = useCallback(
-		(characterId: string) => {
-			const characterInfo = characters.find((info) => info.characterId === characterId);
-			if (characterInfo) {
-				console.log(
-					`Changing current character to: ${characterInfo.metadata?.name} (${characterInfo.characterId})`
-				);
-				setCurrentCharacter(characterInfo);
-			} else {
-				console.warn(`Character with ID ${characterId} not found in local state.`);
-				// Optionally trigger a fetch? getCharacterById(characterId).then(setCurrentCharacter);
+				return response.data;
+			} catch (error) {
+				setError(error instanceof Error ? error.message : 'Failed to store character');
+				throw error;
+			} finally {
+				setLoading(false);
 			}
 		},
-		[characters] // Depends on the local characters list
+		[]
 	);
 
-	// Get character from local state (client-side lookup)
-	const getCharacterFromState = useCallback(
-		(characterId: string): CharacterInfo | undefined => {
-			// Note: Renamed to avoid confusion with API call `getCharacterById`
-			return characters.find((info) => info.characterId === characterId);
-		},
-		[characters]
-	);
+	// --- Client-Side State Management ---
+	useEffect(() => {
+		getAllCharacters();
+	}, [getAllCharacters]);
 
-	// --- Return Hook Values ---
+	const updateLocalCharacter = useCallback((updated: BasicCharacterInfo) => {
+		setCharacters((prev) => prev.map((c) => (c.characterId === updated.characterId ? updated : c)));
+		setCurrentCharacter((prev) => (prev?.characterId === updated.characterId ? updated : prev));
+	}, []);
+
 	return {
-		characters, // The list of all characters (local state)
-		currentCharacter, // The currently selected character (local state)
-		loading, // Loading indicator for API calls
+		characters,
+		currentCharacter,
+		loading,
+		error,
 
-		// API functions
-		getAllCharacters, // Fetches all characters and updates state
-		getCharacterById, // Fetches a single character by ID (doesn't update state directly, returns value)
-		storeCharacter, // Creates/Updates a character via API and refreshes state
-		queryCharacters, // Queries characters via API (returns results)
+		// API Methods
+		getAllCharacters,
+		getCharacterById,
+		getCharactersByShowName,
+		storeCharacter,
 
-		// Client-side functions
-		changeCharacter, // Sets the currentCharacter from local state
-		getCharacterFromState, // Finds a character in the local state
+		// Local State Management
+		updateLocalCharacter,
+		setCurrentCharacter,
 	};
 };

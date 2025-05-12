@@ -1,11 +1,7 @@
-import {
-	COLLECTIONS,
-	CollectionType,
-	METADATA_TYPES,
-	MetadataType,
-} from '#root/src/shared/domain/index.ts';
-import { DEFAULT_QUERY_LIMIT } from '#root/src/shared/index.ts';
-import { ChromaClient, Collection, IncludeEnum, Metadata, GetResponse, Where } from 'chromadb';
+// src/server/db/chromaDbClient.ts
+import { COLLECTIONS, MetadataType } from '#root/src/shared/domain/index.ts';
+import { DEFAULT_QUERY_LIMIT, ChromaResponse } from '#root/src/shared/index.ts';
+import { ChromaClient, Collection, IncludeEnum, GetResponse, Where } from 'chromadb';
 
 const CHROMA_URL = process.env.CHROMA_API_URL || 'http://localhost:8000';
 const chromaClient = new ChromaClient({ path: CHROMA_URL });
@@ -17,16 +13,15 @@ let profileCollection: Collection | null = null;
 let credentialCollection: Collection | null = null;
 let tempChatCollection: Collection | null = null;
 let recapCollection: Collection | null = null;
-export type ChromaResponse = Pick<GetResponse, 'ids' | 'metadatas' | 'documents'>;
-const _returnResponse = (results: ChromaResponse) => {
-	const { ids } = results;
 
-	if (!ids || ids.length === 0) {
-		console.log(`[ChromaClient.queryRecords] No documents found for the query.`);
-		return null;
+const _returnResponse = (results: GetResponse | ChromaResponse): ChromaResponse => {
+	const { ids, metadatas, documents } = results;
+	let result = { ids, metadatas, documents };
+	if (ids.length === 0) {
+		console.log(`[ChromaClient._returnResponse] No documents found for the query.`);
 	}
-	console.log(`[ChromaClient.queryRecords] Found ${ids.length} entries.`);
-	return results;
+	console.log(`[ChromaClient._returnResponse] Found ${ids.length} entries.`);
+	return result;
 };
 
 export const chromaDbClient = {
@@ -146,16 +141,21 @@ export const chromaDbClient = {
 		await collection.upsert(params);
 	},
 
-	getRecordById: async (collection: Collection, id: string): Promise<GetResponse> => {
-		const result = await collection.get({ ids: [id], include: [IncludeEnum.Metadatas] });
-		return result;
+	getRecordById: async (collection: Collection, id: string): Promise<ChromaResponse> => {
+		try {
+			const result = await collection.get({ ids: [id], include: [IncludeEnum.Metadatas] });
+			return _returnResponse(result);
+		} catch (error) {
+			console.error(`[ChromaClient.getRecordById] Error fetching data`, error);
+			throw new Error(`ChromaDB get failed for ID ${id}: ${(error as Error).message}`);
+		}
 	},
 
 	getRecordsByMetadataType: async (
 		collection: Collection,
 		type: MetadataType,
 		options: { offset?: number; limit?: number } = {}
-	): Promise<ChromaResponse | null> => {
+	): Promise<ChromaResponse> => {
 		const whereFilter: Where = { type: { $eq: type } }; // For just type
 
 		console.log(
@@ -176,7 +176,7 @@ export const chromaDbClient = {
 				`[ChromaClient.getDocumentsByMetadata] Error fetching documents by metadata type:`,
 				error
 			);
-			return null;
+			throw new Error(`ChromaDB get failed for type ${type}: ${(error as Error).message}`);
 		}
 	},
 
@@ -184,7 +184,7 @@ export const chromaDbClient = {
 		collection: Collection,
 		whereClause?: Where,
 		limit: number = DEFAULT_QUERY_LIMIT
-	): Promise<ChromaResponse | null> => {
+	): Promise<ChromaResponse> => {
 		try {
 			console.log(
 				`[ChromaClient.queryRecords] filter: ${JSON.stringify(whereClause)}, limit: ${limit}`
@@ -197,7 +197,9 @@ export const chromaDbClient = {
 			return _returnResponse(results);
 		} catch (error) {
 			console.error(`[ChromaClient.queryRecords] Failed to query records:`, error);
-			return null;
+			throw new Error(
+				`ChromaDB get failed for where ${JSON.stringify(whereClause)}: ${(error as Error).message}`
+			);
 		}
 	},
 
@@ -228,7 +230,7 @@ export const chromaDbClient = {
 				.filter((r): r is ChromaResponse => r !== null);
 		} catch (error) {
 			console.error(`[ChromaClient.queryRecords] Failed to query records:`, error);
-			return [];
+			throw new Error(`ChromaDB get failed for queryText ${queryText}: ${(error as Error).message}`);
 		}
 	},
 

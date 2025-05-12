@@ -1,20 +1,16 @@
-import {
-	ChatTurn,
-	DEFAULT_RECAP_MODEL_FREE,
-	METADATA_TYPES,
-} from '#root/src/shared/domain/index.ts';
 import { Collection, IncludeEnum } from 'chromadb';
 import { chromaDbClient } from '../db/index.ts';
 import {
 	buildChatTurnToJsonString,
-	buildRecapId,
-	buildRelationshipRecapId,
+	ChatTurn,
+	DEFAULT_RECAP_MODEL_FREE,
+	METADATA_TYPES,
 } from '#root/src/shared/index.ts';
 import { buildLlmRecapPrompt, buildLlmRelationshipRecapPrompt } from '../util/templateUtils.ts';
 import { llmService } from './index.ts';
-import { buildChatMessageDocument, buildChatTurnDocument } from '../util/index.ts';
+import { buildChatTurnDocument, buildRecapId, buildRelationshipRecapId } from '../util/index.ts';
 
-const { getRecapCollection, upsertRecord } = chromaDbClient;
+const { getRecapCollection, upsertRecord, getRecordById } = chromaDbClient;
 
 export const recapService = {
 	// Cache for lore collection
@@ -68,8 +64,8 @@ export const recapService = {
 
 		// 2. Format prompt
 		const recapPromptContent = buildLlmRelationshipRecapPrompt(
-			simpleChatLogs[0].userName,
-			simpleChatLogs[0].charName,
+			turnsForRecap[0].request.showName,
+			turnsForRecap[0].response.showName,
 			simpleChatLogs.map((log) => JSON.stringify(log)).join('\n\n')
 		);
 
@@ -102,7 +98,7 @@ export const recapService = {
 		const collection = await recapService._getCollection();
 		const recapId = buildRecapId(sessionId);
 		try {
-			const recap = await getDocumentById(collection, recapId);
+			const recap = (await getRecordById(collection, recapId)).documents?.[0];
 			return recap || '';
 		} catch (error) {
 			console.warn(`No recap found for session ${sessionId}`);
@@ -114,7 +110,7 @@ export const recapService = {
 		const collection = await recapService._getCollection();
 		const relationshipRecapId = buildRelationshipRecapId(sessionId);
 		try {
-			const recap = await getDocumentById(collection, relationshipRecapId);
+			const recap = (await getRecordById(collection, relationshipRecapId)).documents?.[0];
 			return recap || '';
 		} catch (error) {
 			// It's common for a recap not to exist initially, so log as warn or info

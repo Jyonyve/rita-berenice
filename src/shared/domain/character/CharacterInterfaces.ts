@@ -13,12 +13,13 @@ export interface CharacterInfo extends BasicBeingInfo {
 	variant: string; // specifier (ex: original| uuid)
 	instruction: string; // Field for LLM instructions/persona rules
 	type: typeof METADATA_TYPES.CHARACTER;
-	creator?: string;
-	creatorContact?: string;
+	creator: string;
+	creatorContact: string;
 }
 
 export interface ProfileInfo extends BasicBeingInfo {
-	profileId: string;
+	profileId: string; //${name}_${sessionId}
+	sessionId: string;
 	type: typeof METADATA_TYPES.PROFILE;
 }
 

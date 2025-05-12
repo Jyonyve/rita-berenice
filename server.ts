@@ -12,9 +12,10 @@ import {
 	profileRoutes,
 	llmRoutes,
 	tempChatRoutes,
-} from '#root/src/server/route/index.ts';
+} from '#server/route/index.ts';
 import sirv from 'sirv';
-import { MODULE_NAMES } from './src/shared/index.ts';
+import { MODULE_NAMES, ApiErrorResponse } from '#shared/index.ts';
+import { ApiError } from '#server/util/index.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === 'production';
@@ -142,12 +143,36 @@ async function createServer() {
 		}
 	});
 
+	// --- Route-level 404 handler (MUST be after all routes and SSR) ---
+	app.use((req: Request, res: Response, next: NextFunction) => {
+		res.status(404).json({ status: 'error', code: 404, message: 'Route not found' });
+	});
+
 	// --- Default Express Error Handler ---
-	app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-		console.error('Unhandled Error Caught:', err.stack || err);
-		const statusCode = (err as any).statusCode || 500;
-		const message = isProduction ? 'Internal Server Error' : err.message || 'Something went wrong';
-		res.status(statusCode).json({ error: message });
+	app.use((err: Error | ApiError, req: Request, res: Response, next: NextFunction): void => {
+		let apiErrorResponse: ApiErrorResponse;
+
+		if (err instanceof ApiError) {
+			apiErrorResponse = {
+				status: 'error',
+				code: err.status,
+				message: err.clientMessage || err.message,
+				details: err.details,
+			};
+			if (process.env.NODE_ENV === 'development' && !err.clientMessage) {
+				apiErrorResponse.debug = err.message;
+			}
+		} else {
+			console.error('Unhandled Server Error:', err.stack || err);
+			apiErrorResponse = { status: 'error', code: 500, message: 'Internal Server Error' };
+			if (process.env.NODE_ENV === 'development') {
+				apiErrorResponse.debug = err.message;
+			}
+		}
+		if (apiErrorResponse.details === undefined) {
+			delete apiErrorResponse.details;
+		}
+		res.status(apiErrorResponse.code).json(apiErrorResponse);
 	});
 
 	// --- Start HTTP Server ---

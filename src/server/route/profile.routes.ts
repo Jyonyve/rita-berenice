@@ -1,62 +1,56 @@
 // src/server/routes/profile.routes.ts
-import { genRoutePattern, MODULE_NAMES, ProfileInfo } from '#root/src/shared/index.ts';
 import express, { type Request, type Response } from 'express';
-import { profileService } from '#server/service/index.ts';
+import { profileService } from '../service/index.ts';
+import { COLLECTIONS, genRoutePattern, ProfileInfo } from '#shared/index.ts';
+import { asyncHandler, validateRequestData, validateServiceId } from '../util/index.ts';
 
 const router = express.Router();
+const collectionType = COLLECTIONS.PROFILE;
 
 // --- GET /api/profile/get-all-profiles ---
 // Corresponds to profileService.getAllProfiles
-router.get(genRoutePattern('getAllProfiles'), async (req: Request, res: Response): Promise<any> => {
-	const path = genRoutePattern('getAllProfiles');
-	console.log(`API HIT: GET ${path}`);
-	try {
-		const profiles = await profileService.getAllProfiles();
-		return res.json(profiles);
-	} catch (error: any) {
-		console.error(`Error in GET ${path}:`, error);
-		return res.status(500).json({ error: 'Failed to fetch profiles' });
-	}
-});
+router.get(
+	genRoutePattern('getAllProfiles'),
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		const path = genRoutePattern('getAllProfiles');
+		console.log(`API HIT: GET ${path}`);
+		validateRequestData(req.body, 'body');
+	})
+);
 
 // --- GET /api/profile/get-profile-by-id/:id ---
 // Corresponds to profileService.getProfileById
 router.get(
-	genRoutePattern('getProfileById', ['id']),
-	async (req: Request<{ id: string }>, res: Response): Promise<any> => {
-		const { id } = req.params;
-		const path = genRoutePattern('getProfileById', ['id']);
-		console.log(`API HIT: GET ${path.replace(':id', id)}`);
-		try {
-			const profile = await profileService.getProfileById(id);
-			if (!profile) {
-				return res.status(404).json({ error: 'Profile not found' });
-			}
-			return res.json(profile);
-		} catch (error: any) {
-			console.error(`Error in GET ${path.replace(':id', id)}:`, error);
-			return res.status(500).json({ error: 'Failed to fetch profile details' });
-		}
-	}
+	genRoutePattern('getProfile', ['profileId']),
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		const { profileId } = req.params;
+		validateServiceId(profileId, collectionType);
+		validateRequestData(req.body, 'body');
+
+		const path = genRoutePattern('getProfile', ['profileId']);
+		console.log(`API HIT: GET ${path.replace(':profileId', profileId)}`);
+		const response = await profileService.getProfile(profileId);
+
+		res.status(200).json(response);
+		return;
+	})
 );
 
 // --- GET /api/profile/get-profiles-by-session-id/:sessionId ---
 // Corresponds to profileService.getProfilesBySessionId
 router.get(
-	genRoutePattern('getProfilesBySessionId', ['sessionId']),
-	async (req: Request<{ sessionId: string }>, res: Response): Promise<any> => {
+	genRoutePattern('getProfileBySessionId', ['sessionId']),
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		validateRequestData(req.params, 'params', ['sessionId']);
 		const { sessionId } = req.params;
-		const path = genRoutePattern('getProfilesBySessionId', ['sessionId']);
+		const path = genRoutePattern('getProfileBySessionId', ['sessionId']);
 		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
-		try {
-			const profiles = await profileService.getProfilesBySessionId(sessionId);
-			// Service already handles empty array case, just return results
-			return res.json(profiles);
-		} catch (error: any) {
-			console.error(`Error in GET ${path.replace(':sessionId', sessionId)}:`, error);
-			return res.status(500).json({ error: 'Failed to fetch profiles for session' });
-		}
-	}
+
+		const response = await profileService.getProfileBySessionId(sessionId);
+
+		res.status(200).json(response);
+		return;
+	})
 );
 
 // --- POST /api/profile/store-profile ---
@@ -65,7 +59,7 @@ router.get(
 router.post(
 	genRoutePattern('storeProfile'),
 	async (req: Request<{}, any, ProfileInfo>, res: Response): Promise<any> => {
-		const profileData = req.body;
+		validateRequestData(req.body, 'body');
 		const path = genRoutePattern('storeProfile');
 		console.log(`API HIT: POST ${path} for ID: ${profileData?.profileId}`);
 
@@ -75,16 +69,16 @@ router.post(
 			!profileData.profileId ||
 			!profileData.metadata?.name
 		) {
-			return res.status(400).json({ error: 'Invalid profile data in request body' });
+			res.status(400).json({ error: 'Invalid profile data in request body' });
 		}
 
 		try {
 			await profileService.storeProfile(profileData);
 			// Respond with the data that was stored/updated
-			return res.status(200).json(profileData); // 200 OK for upsert
+			res.status(200).json(profileData); // 200 OK for upsert
 		} catch (error: any) {
 			console.error(`Error in POST ${path}:`, error);
-			return res.status(500).json({ error: 'Failed to store profile' });
+			res.status(500).json({ error: 'Failed to store profile' });
 		}
 	}
 );
@@ -98,15 +92,15 @@ router.get(genRoutePattern('queryProfiles'), async (req: Request, res: Response)
 	console.log(`API HIT: GET ${path}?q=${query}&limit=${limit}`);
 
 	if (!query) {
-		return res.status(400).json({ error: 'Missing query parameter "q"' });
+		res.status(400).json({ error: 'Missing query parameter "q"' });
 	}
 
 	try {
 		const profiles = await profileService.queryProfiles(query, limit);
-		return res.json(profiles);
+		res.json(profiles);
 	} catch (error: any) {
 		console.error(`Error in GET ${path}:`, error);
-		return res.status(500).json({ error: 'Failed to query profiles' });
+		res.status(500).json({ error: 'Failed to query profiles' });
 	}
 });
 

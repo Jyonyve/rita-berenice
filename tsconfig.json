@@ -43,6 +43,7 @@
 			"#server/db/*": ["./src/server/db/*"], // Alias for src/server
 			"#server/route/*": ["./src/server/route/*"], // Alias for src/server
 			"#server/service/*": ["./src/server/service/*"], // Alias for src/server
+			"#server/util/*": ["./src/server/util/*"], // Alias for src/server
 
 			"@client/*": ["./src/client/*"], // General alias for src (consider if this should be more specific, e.g., "./src/client/*")
 			"@client/domain/*": ["./src/client/domain/*"],
@@ -50,7 +51,8 @@
 			"@client/hook/*": ["./src/client/hook/*"],
 			"@client/asset/*": ["./src/client/asset/*"],
 
-			"@shared/*": ["./src/shared/*"]
+			"@shared/*": ["./src/shared/*"],
+			"#shared/*": ["./src/shared/*"]
 		}
 	},
 	// Define which files TypeScript should include for type checking

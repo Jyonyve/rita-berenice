@@ -1,4 +1,4 @@
-// src/shared/utils/apiPaths.ts
+// src/shared/utils/apiUtils.ts
 
 /**
  * Converts a camelCase or PascalCase string to kebab-case.

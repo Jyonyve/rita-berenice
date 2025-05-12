@@ -1,22 +1,18 @@
-import { METADATA_TYPES } from '#root/src/shared/index.ts';
-import { Collection, IncludeEnum } from 'chromadb';
-import { chromaDbClient, ChromaResponse } from '../db/chromaDbClient.ts';
+import { COLLECTIONS, METADATA_TYPES, ProfileInfo } from '#root/src/shared/index.ts';
+import { Collection, IncludeEnum, Document, Where } from 'chromadb';
+import { chromaDbClient } from '../db/chromaDbClient.ts';
+import { BasicProfileInfo, ProfileResponse } from '#shared/api/index.ts';
 
-const { getProfileCollection, addRecord, upsertRecord, getRecordById, getRecords, queryRecords } =
+import {
+	validateChromaResponse,
+	buildProfileId,
+	buildProfileDocument,
+	handleServiceError,
+} from '../util/index.ts';
+
+const { getProfileCollection, upsertRecord, getRecordById, getRecords, queryRecords } =
 	chromaDbClient;
-
-interface BasicCharacterInfo {
-	characterId: string;
-	showName: string;
-	description: string;
-	instruction: string;
-	updatedAt: string;
-}
-
-interface CharacterChromaResponse extends ChromaResponse {
-	basicCharInfo?: BasicCharacterInfo;
-	basicCharInfos: BasicCharacterInfo[];
-}
+const collectionType = COLLECTIONS.PROFILE;
 
 export const profileService = {
 	// Cache for profile collection
@@ -35,122 +31,127 @@ export const profileService = {
 		return collection;
 	},
 
+	_parseDocToBasicProfileInfo: (documents: (Document | null)[]) => {
+		return documents
+			.map((doc, index) => {
+				if (doc === null) return null;
+				try {
+					return JSON.parse(doc);
+				} catch (e) {
+					console.error(`Error parsing character info: ${index}`, e);
+					return null;
+				}
+			})
+			.filter((char): char is BasicProfileInfo => char !== null);
+	},
+
 	// Profile Operations
-	getAllProfiles: async (): Promise<ProfileInfo[]> => {
+	getAllProfiles: async (): Promise<ProfileResponse> => {
 		const collection = await profileService._getCollection();
 		try {
-			const results = await collection.get({
+			const rawResults = await collection.get({
 				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
 				where: { type: METADATA_TYPES.PROFILE },
 			});
 
-			if (!results.documents || results.documents.length === 0) {
-				return [];
-			}
-
-			return results.documents
-				.map((doc, index) => {
-					if (doc === null) return null;
-					try {
-						const fullMetaData = JSON.parse(doc) as ProfileInfo;
-						return {
-							profileId: fullMetaData.profileId,
-							name: fullMetaData.name,
-							showName: fullMetaData.showName,
-							metadata: fullMetaData,
-						} as ProfileInfo;
-					} catch (e) {
-						console.error('Error parsing profile info:', e);
-						return null;
-					}
-				})
-				.filter((profile): profile is ProfileInfo => profile !== null);
+			const results = validateChromaResponse(rawResults, 'getList', collectionType);
+			const { ids, documents, metadatas } = results;
+			const parsedInfos = profileService._parseDocToBasicProfileInfo(rawResults.documents);
+			return { ids, documents, metadatas, basicProfileInfos: parsedInfos };
 		} catch (error) {
-			console.error('Failed to get all profiles:', error);
-			return [];
+			handleServiceError(
+				error,
+				'An internal error occurred while do [getAllProfiles].',
+				'Failed to get all profiles:'
+			);
 		}
 	},
 
-	getProfileById: async (id: string): Promise<ProfileInfo | null> => {
+	getProfile: async (profileId: string): Promise<ProfileResponse> => {
 		const collection = await profileService._getCollection();
-
 		try {
-			const result = await getRecordById(collection, id);
-			if (!result) return null;
-
-			return JSON.parse(result) as ProfileInfo;
+			const rawResult = await getRecordById(collection, profileId);
+			const results = validateChromaResponse(rawResult, 'getOne', collectionType);
+			const { ids, documents, metadatas } = results;
+			const parsedInfos = profileService._parseDocToBasicProfileInfo(results.documents);
+			return {
+				ids,
+				documents,
+				metadatas,
+				basicProfileInfo: parsedInfos[0],
+				basicProfileInfos: parsedInfos,
+			};
 		} catch (error) {
-			console.error(`Failed to get profile with ID ${id}:`, error);
-			return null;
+			handleServiceError(
+				error,
+				'An internal error occurred while do [getProfile].',
+				`Failed to get profile with ID ${profileId}:`
+			);
 		}
 	},
 
-	getProfilesBySessionId: async (sessionId: string): Promise<ProfileInfo[]> => {
+	getProfileBySessionId: async (sessionId: string): Promise<ProfileResponse> => {
 		const collection = await profileService._getCollection();
 
 		try {
-			const results = await collection.get({ where: { sessionId }, include: [IncludeEnum.Documents] });
-
-			if (!results.documents || results.documents.length === 0) {
-				return [];
-			}
-
-			return results.documents
-				.map((doc) => {
-					if (doc === null) return null;
-					try {
-						return JSON.parse(doc) as ProfileInfo;
-					} catch (e) {
-						console.error('Error parsing profile:', e);
-						return null;
-					}
-				})
-				.filter((profile): profile is ProfileInfo => profile !== null);
+			const rawResults = await collection.get({
+				where: { sessionId },
+				include: [IncludeEnum.Metadatas],
+				limit: 1,
+			});
+			const results = validateChromaResponse(rawResults, 'getList', collectionType);
+			const { ids, documents, metadatas } = results;
+			const parsedBasicInfos = profileService._parseDocToBasicProfileInfo(documents);
+			return {
+				ids,
+				documents,
+				metadatas,
+				basicProfileInfos: parsedBasicInfos,
+				basicProfileInfo: parsedBasicInfos[0],
+			};
 		} catch (error) {
-			console.error(`Failed to get profiles for session ${sessionId}:`, error);
-			return [];
+			handleServiceError(
+				error,
+				'An internal error occurred while do [getProfileBySessionId].',
+				`Failed to get profile with sessionId ${sessionId}:`
+			);
+		}
+	},
+
+	getProfilesByShowName: async (showName: string, limit: number = -1): Promise<ProfileResponse> => {
+		const collection = await profileService._getCollection();
+		const where: Where = {
+			$and: [{ type: { $eq: METADATA_TYPES.PROFILE } }, { showName: { $in: showName } }],
+		};
+		try {
+			const rawResults = await getRecords(collection, where, limit);
+			const results = validateChromaResponse(rawResults, 'getList', collectionType);
+			const { ids, documents, metadatas } = results;
+			const parsedBasicInfos = profileService._parseDocToBasicProfileInfo(documents);
+			return { ids, documents, metadatas, basicProfileInfos: parsedBasicInfos };
+		} catch (error) {
+			handleServiceError(
+				error,
+				'An internal error occurred while do [getProfilesByShowName].',
+				`Failed to get profiles by showName '${showName}'`
+			);
 		}
 	},
 
 	// In profileService
-	storeProfile: async (profile: ProfileInfo): Promise<void> => {
+	storeProfile: async (profile: ProfileInfo): Promise<string> => {
 		const collection = await profileService._getCollection();
-
+		profile.profileId = buildProfileId(profile.name, profile.sessionId);
+		const documentForEmbedding = buildProfileDocument(profile);
 		try {
-			await upsertRecord(collection, profile.profileId, JSON.stringify(profile), {
-				...profile.metadata,
-				type: METADATA_TYPES.PROFILE, // Make sure this is added
-			});
+			await upsertRecord(collection, profile.profileId, documentForEmbedding, profile);
+			return JSON.stringify({ profileId: profile.profileId });
 		} catch (error) {
-			console.error('Failed to store profile:', error);
-			throw error;
-		}
-	},
-
-	queryProfiles: async (queryText: string, limit: number = 10): Promise<ProfileInfo[]> => {
-		const collection = await profileService._getCollection();
-
-		try {
-			const results = await queryRecords(
-				collection,
-				queryText,
-				{ type: METADATA_TYPES.PROFILE },
-				limit
+			handleServiceError(
+				error,
+				'An internal error occurred while do [storeProfile].',
+				`Failed to store character: ${profile.profileId}`
 			);
-
-			return results
-				.map((doc) => {
-					try {
-						return JSON.parse(doc) as ProfileInfo;
-					} catch (e) {
-						console.error('Error parsing profile from query:', e);
-						return null;
-					}
-				})
-				.filter((profile): profile is ProfileInfo => profile !== null);
-		} catch (error) {
-			console.error('Failed to query profiles:', error);
-			return [];
 		}
 	},
 

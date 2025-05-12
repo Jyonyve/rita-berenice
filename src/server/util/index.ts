@@ -1,5 +1,6 @@
 export * from './cryptoUtils.ts';
 export * from './templateUtils.ts';
 export * from './documentUtils.ts';
-export * from './serviceHelperUtils.ts';
+export * from './serviceHelpers.ts';
 export * from './buildIdUtils.ts';
+export * from './routeHelpers.ts';

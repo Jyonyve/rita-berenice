@@ -1,27 +1,16 @@
-import { CharacterInfo, COLLECTIONS, METADATA_TYPES } from '#root/src/shared/domain/index.ts';
+import { CharacterInfo, COLLECTIONS, METADATA_TYPES } from '#shared/domain/index.ts';
 import { Collection, IncludeEnum, Document, Where } from 'chromadb';
-import { chromaDbClient, ChromaResponse } from '../db/index.ts';
+import { chromaDbClient } from '../db/index.ts';
+import { BasicCharacterInfo, CharacterResponse } from '#shared/api/index.ts';
 import {
 	buildCharacterId,
-	validateResult,
-	validateServiceId,
 	buildCharacterDocument,
+	validateChromaResponse,
+	handleServiceError,
 } from '../util/index.ts';
 
 const { getCharacterCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
-
-interface BasicCharacterInfo {
-	characterId: string;
-	showName: string;
-	description: string;
-	instruction: string;
-	updatedAt: string;
-}
-
-interface CharacterChromaResponse extends ChromaResponse {
-	basicCharInfo?: BasicCharacterInfo;
-	basicCharInfos: BasicCharacterInfo[];
-}
+const collectionType = COLLECTIONS.CHARACTER;
 
 export const characterService = {
 	// Cache for character collection
@@ -39,14 +28,14 @@ export const characterService = {
 		return collection;
 	},
 
-	_parseDocToBasicCharInfo: (documents: (Document | null)[]) => {
+	_parseDocToBasicCharacterInfo: (documents: (Document | null)[]) => {
 		return documents
 			.map((doc, index) => {
 				if (doc === null) return null;
 				try {
 					return JSON.parse(doc);
 				} catch (e) {
-					console.error('Error parsing character info:', e);
+					console.error(`Error parsing character info: ${index}`, e);
 					return null;
 				}
 			})
@@ -54,84 +43,117 @@ export const characterService = {
 	},
 
 	// Character Operations
-	getAllCharacters: async (): Promise<CharacterChromaResponse | null> => {
+	getAllCharacters: async (): Promise<CharacterResponse> => {
 		const collection = await characterService._getCollection();
 
 		try {
-			const results = await collection.get({
+			const rawResults = await collection.get({
 				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
 				where: { type: METADATA_TYPES.CHARACTER },
 			});
-
-			if (!!results) {
-				const { ids, documents, metadatas } = results;
-				const parsedInfos = characterService._parseDocToBasicCharInfo(results.documents);
-				parsedInfos.sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
-				return { ids, documents, metadatas, basicCharInfos: parsedInfos.reverse() };
-			} else {
-				console.warn(`no characters are fetched.`);
-				return null;
-			}
+			const results = validateChromaResponse(rawResults, 'getList', collectionType);
+			const { ids, documents, metadatas } = results;
+			const parsedInfos = characterService._parseDocToBasicCharacterInfo(results.documents);
+			parsedInfos.sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
+			return { ids, documents, metadatas, basicCharacterInfos: parsedInfos.reverse() };
 		} catch (error) {
-			console.error('Failed to get all characters:', error);
-			return null;
+			handleServiceError(
+				error,
+				'An internal error occurred while do [getAllCharacters].',
+				'Failed to get all characters:'
+			);
 		}
 	},
 
-	getCharacter: async (characterId: string): Promise<CharacterChromaResponse | null> => {
+	getCharacter: async (characterId: string): Promise<CharacterResponse> => {
 		const collection = await characterService._getCollection();
-		validateServiceId(characterId, COLLECTIONS.CHARACTER);
 		try {
-			const result = await getRecordById(collection, characterId);
-			const { ids, documents, metadatas } = result;
-			if (!ids || ids.length === 0) {
-				console.warn(`no character is fetched by characterId: ${characterId}`);
-				return null;
-			}
-			const parsedInfos = characterService._parseDocToBasicCharInfo(result.documents);
-			return { ids, documents, metadatas, basicCharInfo: parsedInfos[0], basicCharInfos: parsedInfos };
-		} catch (error) {
-			console.error(`Failed to get character with ID ${characterId}:`, error);
-			return null;
-		}
-	},
+			const rawResult = await getRecordById(collection, characterId);
+			const results = validateChromaResponse(rawResult, 'getOne', collectionType);
 
-	storeCharacter: async (character: CharacterInfo): Promise<void> => {
-		const collection = await characterService._getCollection();
-		character.characterId = buildCharacterId(character.name, character.variant);
-		const documentForEmbedding = buildCharacterDocument(character);
-		try {
-			await upsertRecord(collection, character.characterId, documentForEmbedding, character);
+			const { ids, documents, metadatas } = results;
+			const parsedInfos = characterService._parseDocToBasicCharacterInfo(results.documents);
+			return {
+				ids,
+				documents,
+				metadatas,
+				basicCharacterInfo: parsedInfos[0],
+				basicCharacterInfos: parsedInfos,
+			};
 		} catch (error) {
-			console.error('Failed to store character:', error);
-			throw error;
+			handleServiceError(
+				error,
+				'An internal error occurred while do [getCharacter].',
+				`Failed to get character with ID ${characterId}`
+			);
 		}
 	},
 
 	getCharactersByShowName: async (
 		showName: string,
 		limit: number = -1
-	): Promise<CharacterChromaResponse | null> => {
+	): Promise<CharacterResponse> => {
 		const collection = await characterService._getCollection();
 		const where: Where = {
 			$and: [{ type: { $eq: METADATA_TYPES.CHARACTER } }, { showName: { $in: showName } }],
 		};
 		try {
-			const results = await getRecords(collection, where, limit);
-			console.log(
-				`[CharacterService.queryCharactersByShowName] Fetching characters with filter: ${JSON.stringify(where)}`
+			const rawResults = await getRecords(collection, where, limit);
+			const results = validateChromaResponse(rawResults, 'getList', collectionType);
+
+			const { ids, documents, metadatas } = results;
+			const parsedBasicInfos = characterService._parseDocToBasicCharacterInfo(documents);
+			return { ids, documents, metadatas, basicCharacterInfos: parsedBasicInfos };
+		} catch (error: any) {
+			handleServiceError(
+				error,
+				'An internal error occurred while do [getCharactersByShowName].',
+				`Failed to get characters by showName '${showName}'`
+			);
+		}
+	},
+
+	storeCharacter: async (characterInput: CharacterInfo): Promise<string> => {
+		const collection = await characterService._getCollection();
+		const now = new Date().toISOString();
+
+		// Prepare the data to be upserted
+		const characterToUpsert: CharacterInfo = {
+			...characterInput, // Start with all fields from input
+			characterId:
+				characterInput.characterId || buildCharacterId(characterInput.name, characterInput.variant), // Ensure ID is set
+			updatedAt: now,
+			createdAt: characterInput.createdAt || now,
+		};
+
+		const documentForEmbedding = buildCharacterDocument(characterToUpsert);
+
+		try {
+			// chromaDbClient.upsertRecord is Promise<void> and throws generic Error on underlying failure
+			await chromaDbClient.upsertRecord(
+				collection,
+				characterToUpsert.characterId,
+				documentForEmbedding,
+				characterToUpsert as any // Cast if CharacterInfo has fields ChromaDB metadata doesn't expect directly
 			);
 
-			if (validateResult(results)) {
-				const { ids, documents, metadatas } = results;
-				const parsedBasicInfos = characterService._parseDocToBasicCharInfo(documents);
-				return { ids, documents, metadatas, basicCharInfos: parsedBasicInfos };
-			}
-			console.warn(`failed to getCharactersByShowName, showName : ${showName}`);
-			return null;
-		} catch (error) {
-			console.error('Failed to query characters:', error);
-			return null;
+			return JSON.stringify({
+				message: 'Character stored successfully.',
+				characterId: characterToUpsert.characterId,
+				updatedAt: characterToUpsert.updatedAt, // Reflect the timestamp set
+			});
+		} catch (error: any) {
+			// Use your error handling utility or inline handling
+			handleServiceError(
+				// Assuming you have this utility
+				error,
+				`Failed to store character '${characterToUpsert.characterId}'`,
+				'An internal error occurred while saving the character.'
+			);
+			// If not using handleServiceError, your inline catch block:
+			// if (error instanceof ApiError) throw error;
+			// console.error(`Service: Failed to store character '${characterToUpsert.characterId}':`, error);
+			// throw new ApiError(500, `DB op error: ${error.message}`, "Failed to store character.");
 		}
 	},
 

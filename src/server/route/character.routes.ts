@@ -1,103 +1,102 @@
 // src/server/routes/character.routes.ts
-import { CharacterInfo } from '#root/src/shared/domain/index.ts';
-import { genRoutePattern } from '#root/src/shared/index.ts';
+import { genRoutePattern, CharacterInfo, COLLECTIONS } from '#shared/index.ts';
 import express, { type Request, type Response } from 'express';
-import { characterService } from '#server/service/index.ts';
+import { characterService } from '../service/index.ts';
+import { asyncHandler, validateRequestData, validateServiceId } from '../util/index.ts';
 
 const router = express.Router();
+const collectionType = COLLECTIONS.CHARACTER;
 
-// --- GET /api/character/get-all-characters ---
-// Corresponds to characterService.getAllCharacters
+/**
+ * GET /api/character/get-all-characters
+ * Retrieves all registered characters from the database
+ * @returns {CharacterResponse} Array of character objects
+ * @throws {500} Internal server error if database fetch fails
+ */
 router.get(
 	genRoutePattern('getAllCharacters'),
-	async (req: Request, res: Response): Promise<any> => {
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const path = genRoutePattern('getAllCharacters');
 		console.log(`API HIT: GET ${path}`);
-		try {
-			const characters = await characterService.getAllCharacters();
-			return res.json(characters);
-		} catch (error: any) {
-			console.error(`Error in GET ${path}:`, error);
-			return res.status(500).json({ error: 'Failed to fetch characters' });
-		}
-	}
+
+		validateRequestData(req.body, 'body');
+		const response = await characterService.getAllCharacters();
+		res.status(200).json(response);
+		return;
+	})
 );
 
-// --- GET /api/character/get-character-by-id/:id ---
-// Corresponds to characterService.getCharacterById
+/**
+ * GET /api/character/get-character/:characterId
+ * Retrieves a specific character by unique identifier
+ * @param {string} characterId - UUID of the character to retrieve
+ * @returns {CharacterResponse} Complete character data
+ * @throws {404} Character not found with specified ID
+ * @throws {500} Internal server error if database fetch fails
+ */
 router.get(
-	genRoutePattern('getCharacterById', ['id']),
-	async (req: Request<{ id: string }>, res: Response): Promise<any> => {
-		const { id } = req.params;
-		const path = genRoutePattern('getCharacterById', ['id']);
-		console.log(`API HIT: GET ${path.replace(':id', id)}`);
-		try {
-			const character = await characterService.getCharacter(id);
-			if (!character) {
-				return res.status(404).json({ error: 'Character not found' });
-			}
-			return res.json(character);
-		} catch (error: any) {
-			console.error(`Error in GET ${path.replace(':id', id)}:`, error);
-			return res.status(500).json({ error: 'Failed to fetch character details' });
-		}
-	}
+	genRoutePattern('getCharacter', ['characterId']),
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		const { characterId } = req.params;
+		validateServiceId(characterId, collectionType);
+		validateRequestData(req.body, 'body');
+
+		const path = genRoutePattern('getCharacter', ['characterId']);
+		console.log(`API HIT: GET ${path.replace(':characterId', characterId)}`);
+		const response = await characterService.getCharacter(characterId);
+
+		res.status(200).json(response);
+		return;
+	})
 );
 
-// --- POST /api/character/store-character ---
-// Corresponds to characterService.storeCharacter (which uses upsert)
-// Expects a full CharacterInfo object in the body
+/**
+ * GET /api/character/get-characters-by-show-name/:showName
+ * Retrieves characters associated with a specific show
+ * @param {string} showName - Exact name of the show to filter by
+ * @returns {CharacterResponse} Array of matching character objects
+ * @throws {404} No characters found for specified show name
+ * @throws {500} Internal server error if database fetch fails
+ */
+router.get(
+	genRoutePattern('getCharactersByShowName', ['showName']),
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		validateRequestData(req.params, 'params', ['showName']);
+		const { showName } = req.params;
+		const path = genRoutePattern('getCharactersByShowName', ['showName']);
+		console.log(`API HIT: GET ${path.replace(':showName', showName)}`);
+
+		const response = await characterService.getCharactersByShowName(showName);
+
+		res.status(200).json(response);
+		return;
+	})
+);
+
+/**
+ * POST /api/character/store-character
+ * Creates or updates a character record in the database
+ * @param {CharacterInfo} req.body - Complete character data payload
+ * @returns {void} Successfully stored character data
+ * @throws {400} Invalid request body structure
+ * @throws {500} Internal server error if database operation fails
+ */
 router.post(
 	genRoutePattern('storeCharacter'),
-	async (req: Request<{}, any, CharacterInfo>, res: Response): Promise<any> => {
-		const characterData = req.body; // Expects full CharacterInfo
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		// req validation
+		const requiredFields: (keyof CharacterInfo)[] = ['characterId', 'description', 'instruction'];
+		validateRequestData(req.body, 'body', requiredFields);
+
+		// api
 		const path = genRoutePattern('storeCharacter');
-		console.log(`API HIT: POST ${path} for ID: ${characterData?.characterId}`);
+		console.log(`API HIT: POST ${path} for ID: ${req.body?.characterId}`);
 
-		// Basic validation
-		if (
-			!characterData ||
-			typeof characterData !== 'object' ||
-			!characterData.characterId ||
-			!characterData.metadata?.name
-		) {
-			return res.status(400).json({ error: 'Invalid character data in request body' });
-		}
+		const response = await characterService.storeCharacter(req.body);
 
-		try {
-			// Call the service which handles upsert logic
-			await characterService.storeCharacter(characterData);
-			// Respond with the data that was stored/updated
-			return res.status(200).json(characterData); // 200 OK since it's an upsert
-		} catch (error: any) {
-			console.error(`Error in POST ${path}:`, error);
-			return res.status(500).json({ error: 'Failed to store character' });
-		}
-	}
-);
-
-// --- GET /api/character/query-characters?q=...&limit=... ---
-// Corresponds to characterService.queryCharacters
-router.get(
-	genRoutePattern('queryCharacters'),
-	async (req: Request, res: Response): Promise<any> => {
-		const query = req.query.q as string | undefined;
-		const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10; // Default limit
-		const path = genRoutePattern('queryCharacters');
-		console.log(`API HIT: GET ${path}?q=${query}&limit=${limit}`);
-
-		if (!query) {
-			return res.status(400).json({ error: 'Missing query parameter "q"' });
-		}
-
-		try {
-			const characters = await characterService.getCharactersByShowName(query, limit);
-			return res.json(characters);
-		} catch (error: any) {
-			console.error(`Error in GET ${path}:`, error);
-			return res.status(500).json({ error: 'Failed to query characters' });
-		}
-	}
+		res.status(200).json(response);
+		return;
+	})
 );
 
 export default router;

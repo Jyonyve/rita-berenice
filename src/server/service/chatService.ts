@@ -8,7 +8,7 @@ import {
 	COLLECTIONS,
 } from '#root/src/shared/index.ts';
 import { Collection, IncludeEnum, Where } from 'chromadb';
-import { chromaDbClient, ChromaResponse } from '../db/chromaDbClient.ts';
+import { chromaDbClient } from '../db/chromaDbClient.ts';
 import {
 	buildChatMessageDocument,
 	buildChatTurnDocument,
@@ -29,10 +29,6 @@ const {
 	deleteRecordById,
 	queryRecords,
 } = chromaDbClient;
-
-interface ChatChromaResponse extends ChromaResponse {
-	chatTurns: ChatTurn[];
-}
 
 export const chatService = {
 	// Cache for session collections
