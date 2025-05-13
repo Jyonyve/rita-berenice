@@ -28,6 +28,7 @@ export const validateServiceId = (serviceId: string, collection: CollectionType)
 			`valid ${collection === 'chat' ? 'session' : collection} ID is required.`
 		);
 };
+
 /**
  * Validates a given data source (e.g., req.body, req.params, req.query).
  * Throws an ApiError if validation fails.
@@ -78,4 +79,31 @@ export const validateRequestData = (
 			throw new ApiError(vld.status, vld.errorMessage, vld.clientMessage, vld.details);
 		}
 	});
+};
+
+export const validateSequenceRule = (
+	seqParamName: string,
+	options?: { status?: number; errorMessage?: string; clientMessage?: string; allowZero?: boolean }
+): CustomValidationRule => {
+	const allowZero = options?.allowZero ?? true;
+	// --- This IS the CustomValidationRule object ---
+	const sequenceCustomValidationRule: CustomValidationRule = {
+		predicate: (dataSource: any) => {
+			// dataSource is req.query, req.params, or req.body
+			const value = dataSource[seqParamName]; // Access the field dynamically using its name
+			if (typeof value !== 'string') return true; // Fails validation
+			const num = parseInt(value, 10);
+			if (isNaN(num)) return true; // Fails
+			return allowZero ? num < 0 : num <= 0; // Fails if not in the allowed range
+		},
+		status: options?.status || 400,
+		errorMessage:
+			options?.errorMessage ||
+			`Parameter '${seqParamName}' must be a string representing a ${allowZero ? 'non-negative' : 'positive'} integer.`,
+		clientMessage:
+			options?.clientMessage ||
+			`A valid ${allowZero ? 'non-negative' : 'positive'} '${seqParamName}' number is required.`,
+	};
+
+	return sequenceCustomValidationRule;
 };

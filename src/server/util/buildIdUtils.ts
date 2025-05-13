@@ -46,7 +46,7 @@ export const buildMessageId = (
 	return `${sessionId}_${sequence}_${messageType}`;
 };
 
-export const buildTurnId = (sessionId: string, sequence: number): string => {
+export const buildChatTurnId = (sessionId: string, sequence: number): string => {
 	return `${sessionId}_${sequence}_${SUFFIX.SET}`;
 };
 

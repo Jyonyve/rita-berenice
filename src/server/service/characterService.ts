@@ -1,4 +1,4 @@
-import { CharacterInfo, COLLECTIONS, METADATA_TYPES } from '#shared/domain/index.ts';
+import { CharacterMetadata, COLLECTIONS, METADATA_TYPES } from '#shared/domain/index.ts';
 import { Collection, IncludeEnum, Document, Where } from 'chromadb';
 import { chromaDbClient } from '../db/index.ts';
 import { BasicCharacterInfo, CharacterResponse } from '#shared/api/index.ts';
@@ -15,6 +15,7 @@ const collectionType = COLLECTIONS.CHARACTER;
 export const characterService = {
 	// Cache for character collection
 	_characterCollection: null as Collection | null,
+
 	// Get collection with caching
 	_getCollection: async (): Promise<Collection> => {
 		// First check if it's in the cache (non-async operation)
@@ -113,47 +114,41 @@ export const characterService = {
 		}
 	},
 
-	storeCharacter: async (characterInput: CharacterInfo): Promise<string> => {
+	storeCharacter: async (characterInfo: CharacterMetadata): Promise<string> => {
 		const collection = await characterService._getCollection();
 		const now = new Date().toISOString();
 
 		// Prepare the data to be upserted
-		const characterToUpsert: CharacterInfo = {
-			...characterInput, // Start with all fields from input
+		const character: CharacterMetadata = {
+			...characterInfo, // Start with all fields from input
 			characterId:
-				characterInput.characterId || buildCharacterId(characterInput.name, characterInput.variant), // Ensure ID is set
+				characterInfo.characterId || buildCharacterId(characterInfo.name, characterInfo.variant),
 			updatedAt: now,
-			createdAt: characterInput.createdAt || now,
+			createdAt: characterInfo.createdAt || now,
 		};
 
-		const documentForEmbedding = buildCharacterDocument(characterToUpsert);
+		const documentForEmbedding = buildCharacterDocument(character);
 
 		try {
 			// chromaDbClient.upsertRecord is Promise<void> and throws generic Error on underlying failure
 			await chromaDbClient.upsertRecord(
 				collection,
-				characterToUpsert.characterId,
+				character.characterId,
 				documentForEmbedding,
-				characterToUpsert as any // Cast if CharacterInfo has fields ChromaDB metadata doesn't expect directly
+				character
 			);
 
 			return JSON.stringify({
 				message: 'Character stored successfully.',
-				characterId: characterToUpsert.characterId,
-				updatedAt: characterToUpsert.updatedAt, // Reflect the timestamp set
+				characterId: character.characterId,
+				updatedAt: character.updatedAt, // Reflect the timestamp set
 			});
-		} catch (error: any) {
-			// Use your error handling utility or inline handling
+		} catch (error) {
 			handleServiceError(
-				// Assuming you have this utility
 				error,
-				`Failed to store character '${characterToUpsert.characterId}'`,
-				'An internal error occurred while saving the character.'
+				'An internal error occurred while saving the character.',
+				`Failed to store character '${character.characterId}'`
 			);
-			// If not using handleServiceError, your inline catch block:
-			// if (error instanceof ApiError) throw error;
-			// console.error(`Service: Failed to store character '${characterToUpsert.characterId}':`, error);
-			// throw new ApiError(500, `DB op error: ${error.message}`, "Failed to store character.");
 		}
 	},
 

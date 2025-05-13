@@ -1,4 +1,4 @@
-import { COLLECTIONS, METADATA_TYPES, ProfileInfo } from '#root/src/shared/index.ts';
+import { COLLECTIONS, METADATA_TYPES, ProfileMetadata } from '#root/src/shared/index.ts';
 import { Collection, IncludeEnum, Document, Where } from 'chromadb';
 import { chromaDbClient } from '../db/chromaDbClient.ts';
 import { BasicProfileInfo, ProfileResponse } from '#shared/api/index.ts';
@@ -10,8 +10,7 @@ import {
 	handleServiceError,
 } from '../util/index.ts';
 
-const { getProfileCollection, upsertRecord, getRecordById, getRecords, queryRecords } =
-	chromaDbClient;
+const { getProfileCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.PROFILE;
 
 export const profileService = {
@@ -139,18 +138,31 @@ export const profileService = {
 	},
 
 	// In profileService
-	storeProfile: async (profile: ProfileInfo): Promise<string> => {
+	storeProfile: async (profileInfo: ProfileMetadata): Promise<string> => {
 		const collection = await profileService._getCollection();
-		profile.profileId = buildProfileId(profile.name, profile.sessionId);
+		const now = new Date().toISOString();
+
+		const profile: ProfileMetadata = {
+			...profileInfo,
+			profileId: profileInfo.profileId || buildProfileId(profileInfo.name, profileInfo.sessionId),
+			createdAt: profileInfo.createdAt || now,
+			updatedAt: now,
+		};
+
 		const documentForEmbedding = buildProfileDocument(profile);
+
 		try {
 			await upsertRecord(collection, profile.profileId, documentForEmbedding, profile);
-			return JSON.stringify({ profileId: profile.profileId });
+			return JSON.stringify({
+				message: 'profile stored successfully.',
+				characterId: profile.profileId,
+				updatedAt: profile.updatedAt, // Reflect the timestamp set
+			});
 		} catch (error) {
 			handleServiceError(
 				error,
 				'An internal error occurred while do [storeProfile].',
-				`Failed to store character: ${profile.profileId}`
+				`Failed to store profile: ${profileInfo.profileId}`
 			);
 		}
 	},

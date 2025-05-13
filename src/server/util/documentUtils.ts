@@ -1,43 +1,44 @@
 import {
+	BasicCharacterInfo,
 	CharacterHistory,
-	CharacterInfo,
+	CharacterMetadata,
 	CharacterLore,
+	ChatMessage,
 	ChatMessageType,
 	ChatTurn,
 	parseEntriesToText,
-	ProfileInfo,
-} from '#root/src/shared/index.ts';
+	ProfileMetadata,
+	ChatEntry,
+} from '#shared/index.ts';
 
-export const buildChatTurnDocument = (chatTurn: ChatTurn) => {
+export const buildChatTurnDocument = (chatTurn: ChatTurn): string => {
 	const { request, response } = chatTurn;
-	const document = {
-		userName: request.showName,
-		userPrompt: parseEntriesToText(request.entries),
-		charName: response.showName,
-		charPrompt: parseEntriesToText(response.entries),
-		charEmotion: response.emotion,
-	};
-	return JSON.stringify(document).trim();
+	const userPrompt = parseEntriesToText(request.entries);
+	const charResponse = parseEntriesToText(response.entries);
+
+	let documentText = `User Prompt by ${request.showName}: ${userPrompt}\n`;
+	documentText += `Character Response by ${response.showName} (Emotion: ${response.emotion}) : ${charResponse}`;
+
+	return documentText.trim();
 };
 
-export const buildChatMessageDocument = (chatTurn: ChatTurn, type: ChatMessageType) => {
-	const { request, response } = chatTurn;
-	const chatMessage = type === 'request' ? request : response;
-	const document = {
-		showName: chatMessage.showName,
-		prompt: parseEntriesToText(chatMessage.entries),
-		emotion: chatMessage.emotion,
-	};
-	return JSON.stringify(document).trim();
+export const buildChatMessageDocument = (entries: ChatEntry[]) => {
+	return parseEntriesToText(entries).trim();
 };
 
-export const buildCharacterDocument = (character: CharacterInfo) => {
+export const buildCharacterDocument = (character: CharacterMetadata) => {
 	const { characterId, showName, description, instruction, updatedAt } = character;
-	const document = { characterId, showName, description, instruction, updatedAt };
+	const document: BasicCharacterInfo = {
+		characterId,
+		showName,
+		description,
+		instruction,
+		updatedAt,
+	};
 	return JSON.stringify(document).trim();
 };
 
-export const buildProfileDocument = (profile: ProfileInfo) => {
+export const buildProfileDocument = (profile: ProfileMetadata) => {
 	const { profileId, showName, description } = profile;
 	const document = { profileId, showName, description };
 	return JSON.stringify(document).trim();

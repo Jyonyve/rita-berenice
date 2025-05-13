@@ -1,5 +1,5 @@
 import { GetResponse } from 'chromadb';
-import { ChatTurn } from '../domain/index.ts';
+import { ChatMessageType, ChatTurn } from '../domain/index.ts';
 // File: shared/api/ApiInterfaces.ts
 
 export interface ApiErrorResponse {
@@ -46,4 +46,12 @@ interface ChatChromaResponse extends ChromaResponse {
 	chatTurns: ChatTurn[];
 }
 
-export type ChatResponse = ChatChromaResponse | null;
+export type ChatResponse = ChatChromaResponse;
+
+// chat
+export interface QueryChatLogsRequest {
+	sessionId: string;
+	queryText: string;
+	messageType?: ChatMessageType;
+	limit?: number;
+}

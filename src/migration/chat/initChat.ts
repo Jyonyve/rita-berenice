@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 import { COLLECTIONS, METADATA_TYPES } from '../../shared/domain/chromadb/ChromaInterfaces.ts';
 import { ChatMessage, ChatTurn, MigChatMessage } from '../../shared/domain/index.ts';
-import { buildMessageId, buildSessionId, buildTurnId } from '../../server/util/buildIdUtils.ts';
+import { buildMessageId, buildSessionId, buildChatTurnId } from '../../server/util/buildIdUtils.ts';
 import { isValidEmotionKeyword } from '../../shared/config/emotionWordsMapper.ts';
 import { parseTextToEntries } from '../../shared/util/chatParseUtils.ts';
 
@@ -187,13 +187,13 @@ async function initChatFromLogFiles() {
 						request: requestMessage,
 						response: responseMessage,
 						chatTurnId: '',
-						type: METADATA_TYPES.SET,
+						type: METADATA_TYPES.TURN,
 					};
 
-					const turnId = buildTurnId(TARGET_SESSION_ID, sequence);
+					const turnId = buildChatTurnId(TARGET_SESSION_ID, sequence);
 					const turnDocument = JSON.stringify(chatTurn);
 					const turnMetadata = {
-						type: METADATA_TYPES.SET,
+						type: METADATA_TYPES.TURN,
 						sessionId: TARGET_SESSION_ID,
 						sequence,
 						timestamp: requestTimestamp,

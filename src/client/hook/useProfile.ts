@@ -1,5 +1,5 @@
 // src/client/hooks/useProfile.ts
-import { ProfileInfo, genApiUrl, apiClient } from '#root/src/shared/index.ts';
+import { ProfileMetadata, genApiUrl, apiClient } from '#root/src/shared/index.ts';
 import { useState, useCallback, useEffect } from 'react';
 
 // Define the module name used in API paths
@@ -7,18 +7,18 @@ const MODULE_NAME = 'profile';
 
 export const useProfile = () => {
 	// --- State ---
-	const [profiles, setProfiles] = useState<ProfileInfo[]>([]);
-	const [currentProfile, setCurrentProfile] = useState<ProfileInfo>(); // Optional: if you need to track a selected profile
+	const [profiles, setProfiles] = useState<ProfileMetadata[]>([]);
+	const [currentProfile, setCurrentProfile] = useState<ProfileMetadata>(); // Optional: if you need to track a selected profile
 	const [loading, setLoading] = useState<boolean>(false);
 
 	// --- API Call Functions ---
 
-	const getAllProfiles = useCallback(async (): Promise<ProfileInfo[]> => {
+	const getAllProfiles = useCallback(async (): Promise<ProfileMetadata[]> => {
 		console.log('Fetching all profiles from API...');
 		setLoading(true);
 		try {
 			const url = genApiUrl(MODULE_NAME, 'getAllProfiles');
-			const response = await apiClient.get<ProfileInfo[]>(url);
+			const response = await apiClient.get<ProfileMetadata[]>(url);
 			setProfiles(response.data); // Update local state
 			console.log('Fetched profiles:', response.data);
 			return response.data;
@@ -31,12 +31,12 @@ export const useProfile = () => {
 		}
 	}, []);
 
-	const getProfileById = useCallback(async (id: string): Promise<ProfileInfo | null> => {
+	const getProfileById = useCallback(async (id: string): Promise<ProfileMetadata | null> => {
 		console.log(`Fetching profile by ID ${id} from API...`);
 		setLoading(true);
 		try {
 			const url = genApiUrl(MODULE_NAME, 'getProfileById', [id]);
-			const response = await apiClient.get<ProfileInfo>(url);
+			const response = await apiClient.get<ProfileMetadata>(url);
 			return response.data;
 		} catch (error: any) {
 			console.error(`Failed to fetch profile by ID ${id} from API:`, error);
@@ -50,29 +50,32 @@ export const useProfile = () => {
 		}
 	}, []);
 
-	const getProfilesBySessionId = useCallback(async (sessionId: string): Promise<ProfileInfo[]> => {
-		console.log(`Fetching profiles by SessionID ${sessionId} from API...`);
-		setLoading(true);
-		try {
-			const url = genApiUrl(MODULE_NAME, 'getProfilesBySessionId', [sessionId]);
-			const response = await apiClient.get<ProfileInfo[]>(url);
-			// This typically just returns the result, doesn't need to set global 'profiles' state
-			return response.data;
-		} catch (error) {
-			console.error(`Failed to fetch profiles by SessionID ${sessionId} from API:`, error);
-			return []; // Return empty array on error
-		} finally {
-			setLoading(false);
-		}
-	}, []);
+	const getProfilesBySessionId = useCallback(
+		async (sessionId: string): Promise<ProfileMetadata[]> => {
+			console.log(`Fetching profiles by SessionID ${sessionId} from API...`);
+			setLoading(true);
+			try {
+				const url = genApiUrl(MODULE_NAME, 'getProfilesBySessionId', [sessionId]);
+				const response = await apiClient.get<ProfileMetadata[]>(url);
+				// This typically just returns the result, doesn't need to set global 'profiles' state
+				return response.data;
+			} catch (error) {
+				console.error(`Failed to fetch profiles by SessionID ${sessionId} from API:`, error);
+				return []; // Return empty array on error
+			} finally {
+				setLoading(false);
+			}
+		},
+		[]
+	);
 
 	const storeProfile = useCallback(
-		async (profileData: ProfileInfo): Promise<ProfileInfo | null> => {
+		async (profileData: ProfileMetadata): Promise<ProfileMetadata | null> => {
 			console.log('Storing profile via API:', profileData);
 			setLoading(true);
 			try {
 				const url = genApiUrl(MODULE_NAME, 'storeProfile');
-				const response = await apiClient.post<ProfileInfo>(url, profileData);
+				const response = await apiClient.post<ProfileMetadata>(url, profileData);
 				console.log('Profile stored successfully via API:', response.data);
 
 				// Refresh the main list after storing
@@ -90,12 +93,12 @@ export const useProfile = () => {
 	);
 
 	const queryProfiles = useCallback(
-		async (query: string, limit: number = 10): Promise<ProfileInfo[]> => {
+		async (query: string, limit: number = 10): Promise<ProfileMetadata[]> => {
 			console.log(`Querying profiles with "${query}" from API...`);
 			setLoading(true);
 			try {
 				const url = genApiUrl(MODULE_NAME, 'queryProfiles');
-				const response = await apiClient.get<ProfileInfo[]>(url, { params: { q: query, limit } });
+				const response = await apiClient.get<ProfileMetadata[]>(url, { params: { q: query, limit } });
 				console.log('Query results:', response.data);
 				// Usually just returns results, doesn't set global state unless needed
 				return response.data;

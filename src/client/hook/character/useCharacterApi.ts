@@ -7,7 +7,7 @@ import {
 	CharacterResponse,
 } from '@shared/index.ts';
 import { useCallback, useEffect, useState } from 'react';
-import { CharacterInfo } from '@shared/index.ts';
+import { CharacterMetadata } from '@shared/index.ts';
 
 export const useCharacterApi = () => {
 	const MODULE_NAME = MODULE_NAMES.CHARACTER;
@@ -84,12 +84,12 @@ export const useCharacterApi = () => {
 	);
 
 	const storeCharacter = useCallback(
-		async (characterData: CharacterInfo): Promise<CharacterInfo> => {
+		async (characterData: CharacterMetadata): Promise<CharacterMetadata> => {
 			setLoading(true);
 			setError('');
 			try {
 				const url = genApiUrl(MODULE_NAME, 'storeCharacter');
-				const response = await apiClient.post<CharacterInfo>(url, characterData);
+				const response = await apiClient.post<CharacterMetadata>(url, characterData);
 
 				// Update local state
 				setCharacters((prev) => {

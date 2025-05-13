@@ -1,7 +1,7 @@
 // src/services/personaEngine.ts
 import {
 	EmotionKey,
-	CharacterInfo,
+	CharacterMetadata,
 	AiModelInfo,
 	DEFAULT_IMAGE_NUMBER,
 	getImageNumberForEmotion,
@@ -24,7 +24,7 @@ export interface PersonaResponse {
 }
 
 export const createPersonaEngine = (
-	persona: CharacterInfo, // Contains persona.name (charName) and persona.instructions
+	persona: CharacterMetadata, // Contains persona.name (charName) and persona.instructions
 	aiModelInfo: AiModelInfo,
 	sessionId: string, // Session ID is needed to fetch recaps
 	userName: string = 'the user' // User's name/identifier
@@ -116,7 +116,7 @@ export const createPersonaEngine = (
 		}
 
 		if (isFullLogQuery || !context) {
-			const turns = await chatService.queryChatTurnDocs(sessionId, userInput, -1);
+			const turns = await chatService.queryChatTurnEntries(sessionId, userInput, -1);
 			context = turns.join('\n');
 		}
 

@@ -11,16 +11,20 @@ export type ChatEntry = DefaultChatEntry; // expand if needed
 export type ChatMessageType = 'request' | 'response';
 export type ChatMessageSet = { request: ChatMessage; response: ChatMessage };
 
-export interface ChatMessage {
-	role: ChatRoleType;
-	messageId: string;
+export interface ChatMessageMetadata {
+	sessionId: string;
+	sequence: number;
 	messageType: ChatMessageType;
-	entries: ChatEntry[];
+	role: ChatRoleType;
 	showName: string;
+	messageId: string;
 	timestamp: string; // ISO 8601 format
 	emotion: (typeof allEmotionKeywordsList)[number];
-	model?: string;
 	type: typeof METADATA_TYPES.MESSAGE;
+}
+export interface ChatMessage extends ChatMessageMetadata {
+	entries: ChatEntry[];
+	model?: string;
 }
 
 export interface MigChatMessage {
@@ -34,17 +38,25 @@ export interface MigChatMessage {
 	model?: string;
 }
 
-export interface ChatTurn {
-	chatTurnId: string;
+export interface ChatTurnMetadata {
 	sessionId: string;
 	sequence: number;
+	chatTurnId: string;
+	requestMessageId: string;
+	responseMessageId: string;
+	createdAt: string; // ISO 8601 format, dont record updatedAt as sequence fix the order, createdAt is just for information
+	type: typeof METADATA_TYPES.TURN;
+	fullTurnString: string; // JSON.stringify(ChatTurn) to easy parse
+}
+
+export interface ChatTurn extends ChatTurnMetadata {
 	request: ChatMessage;
 	response: ChatMessage;
-	type: typeof METADATA_TYPES.SET;
 }
 
 export interface TempChatTurn {
 	sessionId: string;
 	sequence: number;
 	chatTurnSets: ChatMessageSet[];
+	type: typeof METADATA_TYPES.TEMP;
 }

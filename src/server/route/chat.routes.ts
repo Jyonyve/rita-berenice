@@ -1,132 +1,96 @@
 // src/server/routes/chat.routes.ts
 import express, { type Request, type Response } from 'express';
+import { chatService, recapService } from '../service/index.ts';
 import {
+	DEFAULT_LOADING_TURN_COUNT,
+	DEFAULT_RECENT_TURN_COUNT,
+	genRoutePattern,
 	ChatTurn,
 	ChatMessageType,
-	SUFFIX,
 	METADATA_TYPES,
-} from '#root/src/shared/domain/index.ts'; // Added ChatMessageType
-import { chatService } from '#root/src/server/service/index.ts';
-import { genRoutePattern, buildTurnId } from '#root/src/shared/util/index.ts'; // Added buildTurnId
-import { DEFAULT_LOADING_TURN_COUNT, DEFAULT_RECENT_TURN_COUNT } from '#root/src/shared/index.ts';
-import { chromaDbClient } from '#server/db/chromaDbClient.ts'; // Added chromaDbClient for direct access in one route
+	COLLECTIONS,
+	QueryChatLogsRequest,
+} from '#shared/index.ts';
+import { chromaDbClient } from '../db/chromaDbClient.ts'; // Added chromaDbClient for direct access in one route
 import { IncludeEnum } from 'chromadb';
+import {
+	asyncHandler,
+	CustomValidationRule,
+	validateRequestData,
+	validateSequenceRule,
+	validateServiceId,
+} from '../util/index.ts';
 
 const router = express.Router();
+const collectioinType = COLLECTIONS.CHAT;
 
-// --- POST /api/chat/store-chat-turn/:sessionId ---
+// --- POST /api/chat/store-chat-turn/ ---
 // Stores a completed (fixed) chat turn
 router.post(
-	genRoutePattern('storeChatTurn', ['sessionId']),
-	async (req: Request<{ sessionId: string }>, res: Response): Promise<any> => {
-		const { sessionId } = req.params;
-		const { chatTurn } = req.body;
-		const path = genRoutePattern('storeChatTurn', [sessionId]);
-		console.log(`API HIT: POST ${path}`);
+	genRoutePattern('storeChatTurn'),
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		const requiredFields: (keyof ChatTurn)[] = ['sessionId', 'sequence', 'request', 'response'];
+		validateRequestData(req.body, 'body', requiredFields);
 
-		if (!chatTurn) {
-			res.status(400).json({ error: 'Missing chatTurn in request body' });
-			return;
-		}
-		// Basic validation: Ensure session ID matches if needed, or rely on chatTurn's ID
-		if (!chatTurn.sessionId || chatTurn.sessionId !== sessionId) {
-			res
-				.status(400)
-				.json({
-					error: `Session ID mismatch or missing in chatTurn. Param: ${sessionId}, Body: ${chatTurn.sessionId}`,
-				});
-			return;
-		}
-		if (typeof chatTurn.sequence !== 'number') {
-			res.status(400).json({ error: 'Invalid or missing sequence in chatTurn' });
-			return;
-		}
+		const path = genRoutePattern('storeChatTurn');
+		console.log(`API HIT: POST ${path} for ID: ${req.body?.sessionId}`);
+		const response = await chatService.storeChatTurn(req.body);
 
-		try {
-			// storeChatTurn handles storing messages, full turn, deleting temp, and recap trigger
-			await chatService.storeChatTurn(chatTurn as ChatTurn);
-			return res.status(201).json({ message: 'Chat turn stored successfully' });
-		} catch (error: any) {
-			console.error(`Error in POST ${path}:`, error);
-			return res.status(500).json({ error: error.message || 'Failed to store chat turn' });
-		}
-	}
+		res.status(200).json(response);
+	})
 );
 
 // --- GET /api/chat/get-recent-chat-turns/:sessionId ---
 // Gets the most recent fixed chat turns for initial load
 router.get(
 	genRoutePattern('getRecentChatTurns', ['sessionId']),
-	async (req: Request<{ sessionId: string }>, res: Response): Promise<any> => {
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { sessionId } = req.params;
+		validateServiceId(sessionId, collectioinType);
+
 		// Use query param for limit, default to constant
 		const limitParam = req.query.limit as string | undefined;
 		const limit = limitParam ? parseInt(limitParam, 10) : DEFAULT_RECENT_TURN_COUNT;
-		const path = genRoutePattern('getRecentChatTurns', [sessionId]);
-		console.log(`API HIT: GET ${path}?limit=${limit}`);
+		const path = genRoutePattern('getRecentChatTurns', ['sessionId']);
+		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}?limit=${limit}`);
+		const response = await chatService.getRecentChatTurns(sessionId, limit);
 
-		if (!sessionId) {
-			res.status(400).json({ error: 'Missing sessionId parameter' });
-			return;
-		}
-		if (isNaN(limit) || limit <= 0) {
-			res.status(400).json({ error: 'Invalid limit parameter, must be a positive number' });
-			return;
-		}
-
-		try {
-			const results = await chatService.getRecentChatTurns(sessionId, limit);
-			return res.json(results); // Returns ChatTurn[] parsed on the server
-		} catch (error: any) {
-			console.error(`Error in GET ${path}:`, error);
-			return res.status(500).json({ error: error.message || 'Failed to get recent chat turns' });
-		}
-	}
+		res.status(200).json(response);
+		return;
+	})
 );
 
 // --- GET /api/chat/get-loading-chat-turns/:sessionId ---
 // Gets older fixed chat turns for infinite scroll
 router.get(
 	genRoutePattern('getLoadingChatTurns', ['sessionId']),
-	async (req: Request<{ sessionId: string }>, res: Response): Promise<any> => {
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { sessionId } = req.params;
-		const beforeSequenceParam = req.query.beforeSequence as string | undefined;
-		const limitParam = req.query.limit as string | undefined;
 
-		const limit = limitParam ? parseInt(limitParam, 10) : DEFAULT_LOADING_TURN_COUNT;
-		const path = genRoutePattern('getLoadingChatTurns', [sessionId]);
-		console.log(`API HIT: GET ${path}?beforeSequence=${beforeSequenceParam}&limit=${limit}`);
+		// --- Validate Route Parameter: sessionId ---
+		validateServiceId(sessionId, collectioinType);
 
-		if (!sessionId) {
-			res.status(400).json({ error: 'Missing sessionId parameter' });
-			return;
-		}
-		if (beforeSequenceParam === undefined) {
-			// beforeSequence is mandatory for loading older turns
-			res.status(400).json({ error: 'Missing beforeSequence query parameter' });
-			return;
-		}
-		const beforeSequence = parseInt(beforeSequenceParam, 10);
-		if (isNaN(beforeSequence) || beforeSequence < 0) {
-			// Allow 0 if sequence can be 0, adjust if sequence starts at 1
-			res
-				.status(400)
-				.json({ error: 'Invalid beforeSequence query parameter, must be a non-negative number' });
-			return;
-		}
-		if (isNaN(limit) || limit <= 0) {
-			res.status(400).json({ error: 'Invalid limit query parameter, must be a positive number' });
-			return;
-		}
+		// --- Validate Query Parameter: beforeSequence ---
+		const queryRequiredField = 'beforeSequence';
+		validateRequestData(
+			req.query,
+			'query',
+			[queryRequiredField],
+			[validateSequenceRule(queryRequiredField)]
+		);
 
-		try {
-			const results = await chatService.getLoadingChatTurns(sessionId, beforeSequence, limit);
-			return res.json(results); // Returns ChatTurn[] parsed on the server
-		} catch (error: any) {
-			console.error(`Error in GET ${path}:`, error);
-			return res.status(500).json({ error: error.message || 'Failed to load older chat turns' });
-		}
-	}
+		const beforeSequenceString = req.query?.[queryRequiredField] as string;
+		const beforeSequence = parseInt(beforeSequenceString, 10);
+
+		// --- Log and Call Service ---
+		const path = genRoutePattern('getLoadingChatTurns', ['sessionId']);
+		console.log(
+			`API HIT: GET ${path.replace(':sessionId', sessionId)}?beforeSequence=${beforeSequence}`
+		);
+
+		const response = await chatService.getLoadingChatTurns(sessionId, beforeSequence);
+		res.status(200).json(response);
+	})
 );
 
 // --- GET /api/chat/get-chat-turn-by-sequence/:sessionId/:sequence ---
@@ -136,7 +100,7 @@ router.get(
 	async (req: Request<{ sessionId: string; sequence: string }>, res: Response): Promise<any> => {
 		const { sessionId } = req.params;
 		const sequenceParam = req.params.sequence;
-		const path = genRoutePattern('getChatTurnBySequence', [sessionId, sequenceParam]);
+		const path = genRoutePattern('getChatTurnBySequence', ['sessionId', 'sequence']);
 		console.log(`API HIT: GET ${path}`);
 
 		if (!sessionId) {
@@ -154,7 +118,7 @@ router.get(
 			// Directly fetch and parse here for clarity, matching service logic implicitly
 			const collection = await chatService._getCollection(sessionId); // Access internal method carefully
 			const turnId = buildTurnId(sessionId, sequence);
-			const turnJson = await chromaDbClient.getDocumentById(collection, turnId);
+			const turnJson = await chromaDbClient.getRecordById(collection, turnId);
 
 			if (!turnJson) {
 				res.status(404).json({ error: `Chat turn with sequence ${sequence} not found` });
@@ -167,7 +131,7 @@ router.get(
 				.metadatas?.[0];
 
 			// Ensure it's a 'full_turn' type we are serving
-			if (!metadata || metadata.type !== METADATA_TYPES.SET) {
+			if (!metadata || metadata.type !== METADATA_TYPES.TURN) {
 				console.warn(`Attempted to fetch non- via sequence endpoint: ${turnId}`);
 				res
 					.status(404)
@@ -198,7 +162,7 @@ router.get(
 		}
 
 		try {
-			const recap = await chatService.getRecap(sessionId);
+			const recap = await recapService.getRecap(sessionId);
 			// Return empty string if no recap, consistent with service
 			res.json({ recap: recap ?? '' });
 		} catch (error: any) {
@@ -208,43 +172,24 @@ router.get(
 	}
 );
 
-// --- GET /api/chat/query-chat-log/:sessionId ---
+// --- POST /api/chat/query-chat-log/ ---
 // Performs a semantic query against the chat log messages (request/response)
 // Example: /api/chat/query-chat-log/session123?q=search%20term&limit=5
-router.get(
-	genRoutePattern('queryChatLog', ['sessionId']),
-	async (req: Request<{ sessionId: string }>, res: Response): Promise<any> => {
-		const { sessionId } = req.params;
-		const queryText = req.query.q as string | undefined;
-		const limitParam = req.query.limit as string | undefined;
-		const limit = limitParam ? parseInt(limitParam, 10) : 10; // Default query limit
+router.post(
+	genRoutePattern('queryChatLogs'),
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		const requiredFields: (keyof QueryChatLogsRequest)[] = ['sessionId', 'queryText'];
+		validateRequestData(req.body, 'body', requiredFields);
 
-		const path = genRoutePattern('queryChatLog', [sessionId]);
-		console.log(`API HIT: GET ${path}?q=${queryText}&limit=${limit}`);
+		const { sessionId, queryText, messageType, limit } = req.body as QueryChatLogsRequest;
+		const path = genRoutePattern('queryChatLogs');
+		console.log(`API HIT: GET ${path}`);
 
-		if (!sessionId) {
-			res.status(400).json({ error: 'Missing sessionId parameter' });
-			return;
-		}
-		if (!queryText) {
-			res.status(400).json({ error: 'Missing query parameter "q"' });
-			return;
-		}
-		if (isNaN(limit) || limit <= 0) {
-			res.status(400).json({ error: 'Invalid limit parameter, must be a positive number' });
-			return;
-		}
+		const response = await chatService.queryChatMessages(sessionId, queryText, messageType, limit);
 
-		try {
-			// Define which message types to query (likely request and response)
-			const messageTypesToQuery: ChatMessageType[] = ['request', 'response'];
-			const results = await chatService.queryIndividualChatLogs(sessionId, queryText, limit);
-			return res.json(results); // Returns string[] of matching document contents
-		} catch (error: any) {
-			console.error(`Error in GET ${path}:`, error);
-			res.status(500).json({ error: error.message || 'Failed to query chat log' });
-		}
-	}
+		res.status(200).json(response);
+		return;
+	})
 );
 
 // --- POST /api/chat/build-user-prompt-from-log/:sessionId ---

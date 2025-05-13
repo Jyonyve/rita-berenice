@@ -1,23 +1,26 @@
+// src/shared/domain/character/CharacterInterfaces.ts
+// if type is stored as metadata, it should be premitive type.
 import { EmotionKey } from '../../config/emotionWordsMapper.ts';
 import { METADATA_TYPES } from '../chromadb/ChromaInterfaces.ts';
 
-export interface BasicBeingInfo {
+interface BeingMetadata {
 	name: string;
 	description: string;
 	showName: string;
 	createdAt: string;
 	updatedAt: string;
-}
-export interface CharacterInfo extends BasicBeingInfo {
-	characterId: string;
-	variant: string; // specifier (ex: original| uuid)
-	instruction: string; // Field for LLM instructions/persona rules
-	type: typeof METADATA_TYPES.CHARACTER;
 	creator: string;
 	creatorContact: string;
 }
 
-export interface ProfileInfo extends BasicBeingInfo {
+export interface CharacterMetadata extends BeingMetadata {
+	characterId: string;
+	variant: string;
+	instruction: string;
+	type: typeof METADATA_TYPES.CHARACTER;
+}
+
+export interface ProfileMetadata extends BeingMetadata {
 	profileId: string; //${name}_${sessionId}
 	sessionId: string;
 	type: typeof METADATA_TYPES.PROFILE;

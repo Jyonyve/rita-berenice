@@ -44,7 +44,7 @@ export const METADATA_TYPES = {
 	CHARACTER: 'character',
 	PROFILE: 'profile',
 	MESSAGE: 'message',
-	SET: 'set',
+	TURN: 'turn',
 	RECAP: 'recap',
 	LORE: 'lore',
 	HISTORY: 'history',

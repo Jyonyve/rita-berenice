@@ -1,5 +1,5 @@
 // src/server/routes/character.routes.ts
-import { genRoutePattern, CharacterInfo, COLLECTIONS } from '#shared/index.ts';
+import { genRoutePattern, CharacterMetadata, COLLECTIONS } from '#shared/index.ts';
 import express, { type Request, type Response } from 'express';
 import { characterService } from '../service/index.ts';
 import { asyncHandler, validateRequestData, validateServiceId } from '../util/index.ts';
@@ -39,7 +39,6 @@ router.get(
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { characterId } = req.params;
 		validateServiceId(characterId, collectionType);
-		validateRequestData(req.body, 'body');
 
 		const path = genRoutePattern('getCharacter', ['characterId']);
 		console.log(`API HIT: GET ${path.replace(':characterId', characterId)}`);
@@ -76,7 +75,7 @@ router.get(
 /**
  * POST /api/character/store-character
  * Creates or updates a character record in the database
- * @param {CharacterInfo} req.body - Complete character data payload
+ * @param {CharacterMetadata} req.body - Complete character data payload
  * @returns {void} Successfully stored character data
  * @throws {400} Invalid request body structure
  * @throws {500} Internal server error if database operation fails
@@ -85,7 +84,7 @@ router.post(
 	genRoutePattern('storeCharacter'),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		// req validation
-		const requiredFields: (keyof CharacterInfo)[] = ['characterId', 'description', 'instruction'];
+		const requiredFields: (keyof CharacterMetadata)[] = ['characterId', 'description', 'instruction'];
 		validateRequestData(req.body, 'body', requiredFields);
 
 		// api

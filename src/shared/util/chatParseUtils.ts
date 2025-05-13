@@ -40,20 +40,22 @@ export const buildChatMessage = (
 	role: ChatRoleType,
 	sequence: number,
 	showName: string,
-	text: string,
+	entriesString: string,
 	sessionId: string,
 	emotion = DEFAULT_EMOTION
 ): ChatMessage => {
-	const entries: ChatEntry[] = parseTextToEntries(text);
+	const entries: ChatEntry[] = parseTextToEntries(entriesString);
 	const messageType: ChatMessageType = role === 'user' ? 'request' : 'response';
 	return {
 		role,
-		messageId: buildMessageId(sessionId, sequence, messageType),
+		sequence,
+		sessionId,
+		entries,
+		messageId: '',
 		messageType,
 		showName,
-		entries,
 		emotion: isValidEmotionKeyword(emotion) ? emotion : DEFAULT_EMOTION,
-		timestamp: new Date().toISOString(),
+		timestamp: '',
 		type: METADATA_TYPES.MESSAGE,
 	};
 };
