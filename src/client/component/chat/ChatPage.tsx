@@ -1,102 +1,82 @@
-import React, { useState, useEffect, useCallback, useRef, FC, ChangeEvent } from 'react';
+import React, { useState, useEffect, useCallback, ChangeEvent } from 'react';
+
+// Import the new components
+import { CharacterPortrait } from '../character/index.ts';
+import { ChatLog } from './ChatLog.tsx';
+import { UserInput } from './UserInput.tsx';
 import {
 	useChatApi,
 	useChatState,
 	useAiModel,
 	useCredential,
 	useCharacterState,
-} from '@client/hook/index.ts';
-import { ChatTurn, TempChatTurn } from '@shared/domain/index.ts';
-import { buildChatMessage, parseEntriesToText, parseSessionId } from '@shared/util/index.ts';
-
-// Import the new components
-import { CharacterPortrait } from '../character/index.ts';
-import { ChatLog } from './ChatLog.tsx';
-import { UserInput } from './UserInput.tsx';
+} from '../../hook/index.ts';
 
 // MUI Components
-import { Grid, Box } from '@mui/material'; // Correct imports
+import { Grid, Box, Typography } from '@mui/material'; // Correct imports
 import { useNavigate, useParams } from 'react-router-dom';
-import { DEFAULT_EMOTION } from '#root/src/shared/index.ts';
+import {
+	DEFAULT_LOADING_BATCH_TURN_COUNT,
+	buildChatMessage,
+	parseEntriesToText,
+	parseSessionId,
+	METADATA_TYPES,
+	TempChatTurn,
+	ChatTurn,
+} from '@shared/index.ts';
 
 export const ChatPage = () => {
 	// init
 	const { sessionId } = useParams();
 	const navigate = useNavigate();
 
-	// Initial Load
-	useEffect(() => {
-		if (!sessionId) {
-			console.log('Session ID missing, redirecting to 404...');
-			navigate('/not-found-sessionId', { replace: true });
-		} else {
-			const loadInitialChatTurn = async () => {
-				setIsLoadingHistory(true);
-				try {
-					const [fixed, temp] = await Promise.all([
-						getRecentChatTurns(sessionId, 10),
-						getTempChatTurn(sessionId),
-					]);
-					setInitialData(fixed, temp ?? undefined);
-					setHasMoreHistory(fixed.length === 10);
-				} catch (err: any) {
-					setClientError('Failed to load initial chat history.');
-					console.error('Initial Load Error:', err);
-				} finally {
-					setIsLoadingHistory(false);
-				}
-			};
-			loadInitialChatTurn();
-		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [sessionId, navigate]);
-
 	if (!sessionId) return;
-
 	// const
 	const { charName, variant } = parseSessionId(sessionId);
 	const characterId = `${charName}_${variant}`;
-
-	// --- STATE ---
-	const [userInput, setUserInput] = useState('');
-	const [userEditInput, setUserEditInput] = useState('');
-	const [isProcessing, setIsProcessing] = useState(false);
-	const [errorState, setErrorState] = useState<string>();
+	const { portraitMap, getImageNumberForEmotion } = useCharacterState(characterId);
 
 	// --- HOOKS ---
-	const { portraitMap } = useCharacterState(characterId);
 	const {
 		chatTurns,
 		tempChatTurn,
-		isLoadingHistory,
+		isLoadingChat,
 		clientError,
-		hasMoreHistory,
-		setInitialData,
-		addOlderChatTurns,
+		hasMore,
+		initializeSession,
+		loadOlderMessages,
 		addChatTurn,
 		changeTempChatTurn,
-		setIsLoadingHistory,
-		setClientError,
-		setHasMoreHistory,
 		getNextSequence,
-	} = useChatState();
+	} = useChatState(sessionId);
 
-	const {
-		getRecentChatTurns,
-		getLoadingChatTurns,
-		storeChatTurn,
-		getTempChatTurn,
-		saveTempChatTurn,
-		genResponseFromLlm,
-	} = useChatApi(sessionId);
+	const { getLoadingChatTurns, storeChatTurn, saveTempChatTurn, genResponseFromLlm } =
+		useChatApi(sessionId);
 
 	const { aiModelInfo } = useAiModel();
 	const { credential, isLoadingCredential, credentialError } = useCredential();
 
-	// --- EFFECTS ---
+	// --- STATE ---
+	const [userInput, setUserInput] = useState('');
+	const [userEditInput, setUserEditInput] = useState('');
+	const [imageUrl, setImageUrl] = useState('');
+	const [isProcessing, setIsProcessing] = useState(false);
+	const [pageError, setPageError] = useState<string>();
+
+	// --- Initial Data Load ---
+	useEffect(() => {
+		if (!sessionId) {
+			navigate('/not-found-sessionId', { replace: true });
+			return;
+		}
+		// Pass the fetcher to initializeSession
+		initializeSession(getLoadingChatTurns, DEFAULT_LOADING_BATCH_TURN_COUNT);
+
+		return () => {};
+	}, [sessionId, navigate, initializeSession, getLoadingChatTurns]);
 
 	// --- CALLBACKS / HANDLERS ---
-	const _checkError = () => {
+	const _validateDefaultCondition = () => {
 		if (
 			!userInput.trim() ||
 			isProcessing ||
@@ -105,14 +85,30 @@ export const ChatPage = () => {
 			!credential ||
 			!aiModelInfo
 		) {
-			setErrorState('Cannot send message. Check input, credentials, and model selection.');
+			setPageError('Cannot send message. Check input, credentials, and model selection.');
 		}
 	};
 
+	// Load Character Image
+	const _handleChatacterImage = (emotion: string) => {
+		const imageNumber = getImageNumberForEmotion(emotion);
+		const newImageUrl = portraitMap[imageNumber];
+		newImageUrl && setImageUrl(newImageUrl);
+	};
+
+	// Scroll Handler
+	const handleTriggerLoadOlder = useCallback(() => {
+		if (sessionId && hasMore && !isLoadingChat) {
+			// loadOlderMessages from useChatState expects the fetcher
+			loadOlderMessages(getLoadingChatTurns, 10); // Pass batch size
+		}
+	}, [sessionId, loadOlderMessages, getLoadingChatTurns, hasMore, isLoadingChat]);
+
 	// Send Message (includes auto-fix)
 	const handleSendMessage = useCallback(async () => {
-		setErrorState(undefined);
-		_checkError();
+		_validateDefaultCondition();
+
+		setPageError(undefined);
 		setIsProcessing(true);
 		try {
 			const currentSequence = getNextSequence();
@@ -128,6 +124,9 @@ export const ChatPage = () => {
 				aiModelInfo
 			);
 			const { response, emotion } = JSON.parse(stringifyResponse);
+			// image
+			_handleChatacterImage(emotion);
+			// ai
 			const aiMsg = buildChatMessage(
 				'assistant',
 				currentSequence,
@@ -136,19 +135,18 @@ export const ChatPage = () => {
 				sessionId,
 				emotion
 			);
-
 			const newTempChatTurn: TempChatTurn = {
 				sessionId,
 				sequence: currentSequence,
 				chatTurnSets: [{ request: userMsg, response: aiMsg }],
+				type: METADATA_TYPES.TEMP,
 			};
 			changeTempChatTurn(newTempChatTurn);
 			await saveTempChatTurn(newTempChatTurn);
 			setUserInput('');
 		} catch (sendErr: any) {
 			console.error('Send Message Error:', sendErr);
-			setErrorState(`Failed to send message: ${sendErr.message || 'Unknown error'}`);
-			changeTempChatTurn(tempChatTurn); // Revert client state on failure
+			setPageError(`Failed to send message: ${sendErr.message || 'Unknown error'}`);
 		} finally {
 			setIsProcessing(false);
 		}
@@ -167,11 +165,11 @@ export const ChatPage = () => {
 	// Regenerate Response
 	const handleRegenerateResponse = useCallback(async () => {
 		if (!tempChatTurn || !tempChatTurn.chatTurnSets[0]?.request || !aiModelInfo) {
-			setErrorState('Cannot regenerate: Missing data or AI model info.');
+			setPageError('Cannot regenerate: Missing data or AI model info.');
 			return;
 		}
 		setIsProcessing(true);
-		setErrorState(undefined);
+		setPageError(undefined);
 		try {
 			const sequence = tempChatTurn.sequence; // Use existing sequence
 
@@ -200,7 +198,7 @@ export const ChatPage = () => {
 			await saveTempChatTurn(updatedTempChatTurn);
 		} catch (err: any) {
 			console.error('Regenerate Error:', err);
-			setErrorState(`Failed to regenerate response: ${err.message || 'Unknown error'}`);
+			setPageError(`Failed to regenerate response: ${err.message || 'Unknown error'}`);
 		} finally {
 			setIsProcessing(false);
 		}
@@ -224,53 +222,6 @@ export const ChatPage = () => {
 		[sessionId, parseEntriesToText]
 	);
 
-	// Load Older Messages
-	const handleOlderMessages = useCallback(async () => {
-		if (isLoadingHistory || !hasMoreHistory) return;
-		setIsLoadingHistory(true);
-		try {
-			const oldestSeq = chatTurns.length > 0 ? chatTurns[0].sequence : undefined;
-			if (oldestSeq === undefined || oldestSeq <= 0) {
-				setHasMoreHistory(false);
-				setIsLoadingHistory(false);
-				return;
-			}
-			const older = await getLoadingChatTurns(sessionId, oldestSeq, 10);
-			if (older.length === 0) {
-				setHasMoreHistory(false);
-			} else {
-				addOlderChatTurns(older);
-				// Keep hasMoreHistory true only if we received a full batch
-				if (older.length < 10) setHasMoreHistory(false);
-			}
-		} catch (err: any) {
-			console.error('Load Older Error:', err);
-			setClientError('Failed to load older messages.');
-		} finally {
-			setIsLoadingHistory(false);
-		}
-	}, [
-		isLoadingHistory,
-		hasMoreHistory,
-		chatTurns,
-		getLoadingChatTurns,
-		sessionId,
-		addOlderChatTurns,
-		setHasMoreHistory,
-		setIsLoadingHistory,
-		setClientError,
-	]);
-
-	// Scroll Handler
-	const handleListScroll = useCallback(
-		({ scrollOffset }: { scrollOffset: number }) => {
-			if (scrollOffset < 50 && hasMoreHistory && !isLoadingHistory) {
-				handleOlderMessages();
-			}
-		},
-		[isLoadingHistory, hasMoreHistory, handleOlderMessages]
-	);
-
 	// User Input Change Handler
 	const handleUserInput = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
 		setUserInput(e.target.value);
@@ -285,26 +236,40 @@ export const ChatPage = () => {
 		<Grid container spacing={2} sx={{ height: 'calc(100vh - 100px)', p: 2 }}>
 			{/* Portrait Section */}
 			<Grid size={{ xs: 12, md: 3 }}>
-				<CharacterPortrait imageUrl={''} />
+				<CharacterPortrait imageUrl={imageUrl} />
 			</Grid>
 
 			{/* Chat Area Section */}
-			<Grid size={{ xs: 12, md: 9 }}>
+			<Grid size={{ xs: 12, md: 9 }} sx={{ height: '100%' }}>
 				<Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-					{/* Chat Log */}
-					<ChatLog
-						chatTurns={chatTurns}
-						tempChatTurn={tempChatTurn}
-						isLoadingHistory={isLoadingHistory}
-						isProcessing={isProcessing} // Pass down for TempTurnDisplay
-						clientError={clientError}
-						credentialError={credentialError}
-						errorState={errorState}
-						onEditTurn={handleEditTurn}
-						onRegenerateResponse={handleRegenerateResponse}
-						onScroll={handleListScroll}
-					/>
-
+					<Box
+						id="chat-log-container" // Give it an ID if needed for styling/targeting
+						sx={{
+							flexGrow: 1,
+							overflowY: 'auto', // Makes this Box scrollable
+							display: 'flex',
+							flexDirection: 'column-reverse', // Newest items at bottom
+							height: 'calc(100% - 60px)', // Adjust based on UserInput height
+						}}
+					>
+						{/* Chat Log */}
+						<ChatLog
+							chatTurns={chatTurns}
+							tempChatTurn={tempChatTurn}
+							hasMore={hasMore}
+							isLoadingChat={isLoadingChat}
+							isProcessing={isProcessing} // Pass down for TempTurnDisplay
+							clientError={clientError}
+							onEditTurn={handleEditTurn}
+							onRegenerateResponse={handleRegenerateResponse}
+							loadOlderMessages={handleTriggerLoadOlder}
+						/>
+					</Box>
+					{pageError && (
+						<Typography color="error" sx={{ p: 1 }}>
+							{pageError}
+						</Typography>
+					)}
 					{/* User Input */}
 					<UserInput
 						sessionId={sessionId}

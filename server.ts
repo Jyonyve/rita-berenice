@@ -64,7 +64,7 @@ async function createServer() {
 	app.use(`${BASE_API}${MODULE_NAMES.CHAT}`, chatRoutes);
 	app.use(`${BASE_API}${MODULE_NAMES.LLM}`, llmRoutes);
 	app.use(`${BASE_API}${MODULE_NAMES.PROFILE}`, profileRoutes);
-	app.use(`${BASE_API}${MODULE_NAMES.TEMP_CHAT}`, tempChatRoutes);
+	app.use(`${BASE_API}${MODULE_NAMES.TEMP}`, tempChatRoutes);
 
 	// --- SSR Catch-all Handler ---
 	app.get('/{*splat}', async (req: Request, res: Response, next: NextFunction) => {

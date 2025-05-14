@@ -130,7 +130,7 @@ export const chatService = {
 		try {
 			const collection = await chatService._getTempCollection(); // Assumes _getTempCollection exists
 			const rawResult = await chromaDbClient.getRecordById(collection, sessionId);
-			const result = validateChromaResponse(rawResult, 'getOne', COLLECTIONS.TEMP_CHAT);
+			const result = validateChromaResponse(rawResult, 'getOne', COLLECTIONS.TEMP);
 			return JSON.parse(result.documents?.[0] ?? '') as TempChatTurn;
 		} catch (error) {
 			handleServiceError(
@@ -279,18 +279,13 @@ export const chatService = {
 	},
 
 	/** Loads multiple FIXED turns (for inifinity scroll, history view) */
-	getLoadingChatTurns: async (
-		sessionId: string,
-		beforeSequence: number,
-		limit: number = DEFAULT_LOADING_TURN_COUNT
-	): Promise<ChatResponse> => {
+	getLoadingChatTurns: async (sessionId: string, beforeSequence: number): Promise<ChatResponse> => {
 		const collection = await chatService._getCollection(sessionId);
 		const where: Where = { type: METADATA_TYPES.TURN, sessionId, sequence: { $lt: beforeSequence } };
 		try {
 			const rawResults = await collection.get({
 				where,
 				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
-				// We cannot reliably use limit/offset here to get the *highest* sequences < beforeSequence.
 			});
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 			const { ids, documents, metadatas } = results;
@@ -311,7 +306,7 @@ export const chatService = {
 	getRecentChatTurns: async (
 		sessionId: string,
 		limit: number = DEFAULT_RECENT_TURN_COUNT
-	): Promise<ChatChromaResponse> => {
+	): Promise<ChatResponse> => {
 		const collection = await chatService._getCollection(sessionId);
 		try {
 			const whereClause: Where = {

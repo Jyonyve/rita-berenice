@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { openDB } from 'idb';
 import {
 	AiModelInfo,
 	ChatRoleType,
@@ -202,12 +203,9 @@ export const useChatApi = (sessionId: string) => {
 	const getTempChatTurn = useCallback(
 		async (sessionId: string): Promise<TempChatTurn | null> => {
 			try {
-				return await _makeApiCall<TempChatTurn | null>(
-					MODULE_NAMES.TEMP_CHAT,
-					'getTempChatTurn',
-					'get',
-					[sessionId]
-				);
+				return await _makeApiCall<TempChatTurn | null>(MODULE_NAMES.TEMP, 'getTempChatTurn', 'get', [
+					sessionId,
+				]);
 			} catch (error: any) {
 				if (error.response?.status === 404) return null;
 				throw error;
@@ -222,7 +220,7 @@ export const useChatApi = (sessionId: string) => {
 			// POST /api/temp-chat/save-temp-chat-turn [1]
 			// Body: { tempData: TempChatTurn }
 			await _makeApiCall<void>(
-				MODULE_NAMES.TEMP_CHAT,
+				MODULE_NAMES.TEMP,
 				'saveTempChatTurn',
 				'post',
 				[], // No URL params
@@ -238,7 +236,7 @@ export const useChatApi = (sessionId: string) => {
 			if (!sessionId) throw new Error('Session ID required');
 			// DELETE /api/temp-chat/remove-temp-chat-turn/:sessionId [1]
 			await _makeApiCall<void>(
-				MODULE_NAMES.TEMP_CHAT,
+				MODULE_NAMES.TEMP,
 				'removeTempChatTurn',
 				'delete',
 				[sessionId] // sessionId as path param value

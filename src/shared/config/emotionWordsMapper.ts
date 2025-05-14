@@ -728,28 +728,3 @@ export const allEmotionKeywords: Readonly<Set<string>> = new Set(
  * Array version of all emotion keywords (if you need an array).
  */
 export const allEmotionKeywordsList: readonly string[] = Array.from(allEmotionKeywords);
-
-/**
- * Returns the image number associated with an emotion keyword.
- * If not found, returns DEFAULT_IMAGE_NUMBER and logs a warning.
- */
-export function getImageNumberForEmotion(emotion: string): EmotionKey {
-	const lowerEmotion = emotion.toLowerCase();
-	for (const [numStr, keywords] of Object.entries(numberToEmotionWordsMap)) {
-		if ((keywords as readonly string[]).includes(lowerEmotion)) {
-			return Number(numStr) as EmotionKey;
-		}
-	}
-	console.warn(
-		`Emotion keyword "${emotion}" not found. Returning default image number ${DEFAULT_IMAGE_NUMBER}.`
-	);
-	return DEFAULT_IMAGE_NUMBER;
-}
-
-export function isValidEmotionKeyword(emotion?: string): boolean {
-	if (!emotion) return false;
-	const lowerEmotion = emotion?.toLowerCase();
-	if (allEmotionKeywords.has(lowerEmotion)) return true;
-	console.warn(`Invalid or unmapped emotion keyword: "${emotion}".`);
-	return false;
-}

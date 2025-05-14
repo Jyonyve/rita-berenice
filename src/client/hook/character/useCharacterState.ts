@@ -1,11 +1,18 @@
 // src/client/hooks/useCharacterState.ts
 
 import { useState, useEffect, useRef } from 'react';
-// Correctly import the utility function
-import { loadNumberedPortraits } from '../../util/index.ts';
-// CharacterAsset might not be needed here if not returned/used
-// import { CharacterAsset } from '#root/src/shared/index.ts';
-import { PortraitMap } from '@shared/config/index.ts';
+import {
+	allEmotionKeywords,
+	DEFAULT_IMAGE_NUMBER,
+	EmotionKey,
+	numberToEmotionWordsMap,
+	PortraitMap,
+	validEmotionKeyNumbers,
+} from '@shared/config/index.ts';
+
+function escapeRegExp(string: string): string {
+	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
 
 /**
  * Hook to load and manage numbered portrait images for a specific character.
@@ -19,8 +26,77 @@ export const useCharacterState = (characterId?: string) => {
 	// --- Hooks called at TOP LEVEL (Correct) ---
 	const [portraitMap, setPortraitMap] = useState<PortraitMap>({}); // Use PortraitMap type
 	const [isLoading, setIsLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null); // Use string | null for error message
+	const [portraitError, setPortraitError] = useState<string>();
 	const loadingRef = useRef<string | null>(null);
+
+	// --- functions  ---
+	/**
+	 * Loads portrait images for a given characterId from the asset directory.
+	 * Images are expected to be named like: {characterId}_{NUMBER}.webp or .avif,
+	 * where {NUMBER} corresponds to an EmotionKey (e.g., 0, 1, 2...).
+	 */
+	const initPortraitMap = async (characterId: string): Promise<PortraitMap> => {
+		console.log(`[loadNumberedPortraits] Loading portraits for character: ${characterId}`);
+		const imageMap: PortraitMap = {};
+
+		// Vite's import.meta.glob for dynamic bulk import of image URLs
+		const imageModules = import.meta.glob<{ default: string }>(
+			[
+				'/src/client/asset/character/*/*.webp', // .webp files
+				'/src/client/asset/character/*/*.avif', // .avif files
+			],
+			{
+				eager: true,
+				import: 'default', // must be a literal string, not a variable
+			}
+		) as Record<string, { default: string }>;
+
+		const characterAssetPathPrefix = `/src/client/asset/character/${characterId}/`;
+		const characterFilenamePrefix = `${characterId}_`;
+		// Support both .webp and .avif extensions
+		const filenameRegex = new RegExp(
+			`^${escapeRegExp(characterFilenamePrefix)}(\\d+)\\.(webp|avif)$`
+		);
+
+		for (const originalPath in imageModules) {
+			if (originalPath.startsWith(characterAssetPathPrefix)) {
+				const filenameWithExt = originalPath.substring(characterAssetPathPrefix.length);
+				const match = filenameWithExt.match(filenameRegex);
+
+				if (match && match[1]) {
+					const imageNumber = parseInt(match[1], 10);
+
+					if (validEmotionKeyNumbers.has(imageNumber as EmotionKey)) {
+						imageMap[imageNumber as EmotionKey] = imageModules[originalPath].default;
+					} else {
+						console.warn(
+							`[loadNumberedPortraits] Parsed image number ${imageNumber} from "${originalPath}" is not a valid EmotionKey. Skipping.`
+						);
+					}
+				} else {
+					if (!filenameWithExt.includes('thumbnail') && !filenameWithExt.startsWith('.')) {
+						console.warn(
+							`[loadNumberedPortraits] File "${originalPath}" in character folder for ${characterId} does not match expected portrait naming pattern (${characterFilenamePrefix}{NUMBER}.webp|avif).`
+						);
+					}
+				}
+			}
+		}
+
+		if (Object.keys(imageMap).length === 0) {
+			console.warn(
+				`[loadNumberedPortraits] No valid portraits loaded for ${characterId}. ` +
+					`Please check filenames in ${characterAssetPathPrefix} match the pattern: ${characterFilenamePrefix}{NUMBER}.webp or .avif, ` +
+					`where {NUMBER} is a key in numberToEmotionWordsMap (e.g., 0, 1, ...).`
+			);
+		} else {
+			console.log(
+				`[loadNumberedPortraits] Loaded ${Object.keys(imageMap).length} portraits for ${characterId}. Keys: ${Object.keys(imageMap).join(', ')}`
+			);
+		}
+
+		return imageMap;
+	};
 
 	// --- useEffect Hook (Correct) ---
 	useEffect(() => {
@@ -28,7 +104,7 @@ export const useCharacterState = (characterId?: string) => {
 		if (!characterId) {
 			setPortraitMap({});
 			setIsLoading(false);
-			setError(null);
+			setPortraitError(undefined);
 			loadingRef.current = null;
 			console.log('[useCharacterState] Character ID cleared, resetting state.');
 			return;
@@ -45,12 +121,12 @@ export const useCharacterState = (characterId?: string) => {
 			console.log(`[useCharacterState] Initiating portrait load for ${characterId}`);
 			loadingRef.current = characterId;
 			setIsLoading(true);
-			setError(null);
+			setPortraitError(undefined);
 			setPortraitMap({});
 
 			try {
 				// Correctly call the imported utility function
-				const images = await loadNumberedPortraits(characterId);
+				const images = await initPortraitMap(characterId);
 				console.log(images);
 				// Race Condition Check
 				if (loadingRef.current === characterId) {
@@ -58,12 +134,12 @@ export const useCharacterState = (characterId?: string) => {
 					if (Object.keys(images).length === 0) {
 						const errMsg = `No portrait images found for character ID: ${characterId}. Check asset path/naming.`;
 						console.warn(`[useCharacterState] ${errMsg}`);
-						setError(errMsg);
+						setPortraitError(errMsg);
 					} else {
 						console.log(
 							`[useCharacterState] Successfully loaded ${Object.keys(images).length} portraits for ${characterId}.`
 						);
-						setError(null);
+						setPortraitError(undefined);
 					}
 					setIsLoading(false);
 					loadingRef.current = null;
@@ -75,7 +151,7 @@ export const useCharacterState = (characterId?: string) => {
 			} catch (err) {
 				console.error(`[useCharacterState] Failed to load portraits for ${characterId}`, err);
 				if (loadingRef.current === characterId) {
-					setError(err instanceof Error ? err.message : 'Failed to load character images.');
+					setPortraitError(err instanceof Error ? err.message : 'Failed to load character images.');
 					setIsLoading(false);
 					setPortraitMap({});
 					loadingRef.current = null;
@@ -90,6 +166,27 @@ export const useCharacterState = (characterId?: string) => {
 		loadPortraits();
 	}, [characterId]); // Dependency array is correct
 
+	function getImageNumberForEmotion(emotion: string): EmotionKey {
+		const lowerEmotion = emotion.toLowerCase();
+
+		if (!_isValidEmotionKeyword(lowerEmotion)) return DEFAULT_IMAGE_NUMBER;
+		for (const [numStr, keywords] of Object.entries(numberToEmotionWordsMap)) {
+			if ((keywords as readonly string[]).includes(lowerEmotion)) {
+				return Number(numStr) as EmotionKey;
+			}
+		}
+		console.warn(
+			`Emotion keyword "${emotion}" not found. Returning default image number ${DEFAULT_IMAGE_NUMBER}.`
+		);
+		return DEFAULT_IMAGE_NUMBER;
+	}
+
+	function _isValidEmotionKeyword(emotion?: string): boolean {
+		if (!emotion) return false;
+		if (allEmotionKeywords.has(emotion)) return true;
+		console.warn(`Invalid or unmapped emotion keyword: "${emotion}".`);
+		return false;
+	}
 	// --- Return statement (Correct) ---
-	return { portraitMap, isLoadingPortraits: isLoading, error };
+	return { portraitMap, isLoadingPortraits: isLoading, portraitError, getImageNumberForEmotion };
 };

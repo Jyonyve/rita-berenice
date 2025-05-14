@@ -60,8 +60,8 @@ export const chromaDbClient = {
 	getTempChatCollection: async (): Promise<Collection> => {
 		if (!tempChatCollection) {
 			tempChatCollection = await chromaClient.getOrCreateCollection({
-				name: COLLECTIONS.TEMP_CHAT,
-				metadata: { type: COLLECTIONS.TEMP_CHAT },
+				name: COLLECTIONS.TEMP,
+				metadata: { type: COLLECTIONS.TEMP },
 			});
 		}
 		return tempChatCollection;

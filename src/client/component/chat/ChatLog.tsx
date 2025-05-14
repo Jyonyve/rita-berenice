@@ -1,116 +1,160 @@
 // ChatLog.tsx
-import React, { FC, useRef, useCallback, useEffect } from 'react';
-import { Box, Typography, CircularProgress } from '@mui/material';
+import React, { FC, useRef, useCallback, useEffect, memo } from 'react';
+import { Box, Typography, CircularProgress, Button } from '@mui/material'; // Added Button for retry
 import { ChatTurn, TempChatTurn } from '@shared/domain/index.ts';
-// Removed TempTurnDisplay import here, it's used by ChatLogRow now
 import styles from './ChatComp.module.scss';
-import { VariableSizeList as List } from 'react-window';
+import { VariableSizeList as List, ListOnScrollProps } from 'react-window'; // Import ListOnScrollProps
 import AutoSizer from 'react-virtualized-auto-sizer';
-// Import the updated Row component and its data type
 import ChatLogRow, { ChatLogRowData } from './ChatLogRow.tsx';
 
-// --- Helper Hook for Dynamic Sizes ---
-const useDynamicListSizes = () => {
+// --- Helper Hook for Dynamic Sizes (largely okay, minor tweak for initial scroll) ---
+const useDynamicListSizes = (itemCountForScroll: number) => {
+	// Pass itemCount for scroll logic
 	const listRef = useRef<List>(null);
-	// Use Record<number, number> for the size map type
-	const sizeMap = useRef<Record<number, number>>({}); // <<< UPDATED TYPE
+	const sizeMap = useRef<Record<number, number>>({});
 
 	const setSize = useCallback((index: number, size: number) => {
-		// Ensure size is a valid number before updating
 		if (typeof size === 'number' && !isNaN(size) && sizeMap.current[index] !== size) {
 			sizeMap.current = { ...sizeMap.current, [index]: size };
-			// Check if listRef.current exists before calling resetAfterIndex
 			if (listRef.current) {
 				listRef.current.resetAfterIndex(index);
 			}
 		}
-	}, []); // setSize depends only on refs, so empty dependency array is okay
+	}, []);
 
 	const getSize = useCallback((index: number) => {
-		// Return cached size or a default estimate
-		return sizeMap.current[index] ?? 100; // Default estimate: 100px
-	}, []); // getSize depends only on ref, so empty dependency array is okay
+		return sizeMap.current[index] ?? 150; // Default estimate, adjust
+	}, []);
+
+	// Effect to scroll to bottom when itemCountForScroll (e.g., chatTurns.length + tempTurn) changes
+	useEffect(() => {
+		if (listRef.current && itemCountForScroll > 0) {
+			listRef.current.scrollToItem(itemCountForScroll - 1, 'end');
+		}
+	}, [itemCountForScroll]); // Trigger when the relevant item count changes
 
 	return { listRef, setSize, getSize };
 };
 
-// --- ChatLog Component ---
+// --- ChatLog Component Props ---
 interface ChatLogProps {
-	chatTurns: ChatTurn[];
+	chatTurns: ChatTurn[]; // Sorted [oldest, ..., newest]
 	tempChatTurn?: TempChatTurn;
-	isLoadingHistory: boolean;
-	isProcessing: boolean; // Still needed for itemData
-	clientError?: string;
-	credentialError?: Error;
-	errorState?: string;
+	isLoadingChat: boolean; // From useChatState, for loading older messages
+	hasMore: boolean; // From useChatState
+	isProcessing: boolean; // From ChatPage, for temp turn processing indicator
+	clientError?: string; // From useChatState
 	onEditTurn: (turn: ChatTurn) => void;
-	onRegenerateResponse: () => void; // Still needed for itemData
-	onScroll: (event: { scrollOffset: number; scrollDirection: 'forward' | 'backward' }) => void;
+	onRegenerateResponse: () => void;
+	loadOlderMessages: () => void; // Callback from ChatPage to trigger loading older
 }
 
-export const ChatLog: FC<ChatLogProps> = ({
-	chatTurns,
-	tempChatTurn,
-	isLoadingHistory,
-	isProcessing,
-	clientError,
-	credentialError,
-	errorState,
-	onEditTurn,
-	onRegenerateResponse,
-	onScroll,
-}) => {
-	const { listRef, setSize, getSize } = useDynamicListSizes();
+export const ChatLog: FC<ChatLogProps> = memo(
+	({
+		chatTurns,
+		tempChatTurn,
+		isLoadingChat: isLoadingHistory,
+		hasMore: hasMoreHistory,
+		isProcessing: isProcessingNewMessage,
+		clientError,
+		onEditTurn,
+		onRegenerateResponse,
+		loadOlderMessages,
+	}) => {
+		const itemCount = chatTurns.length + (tempChatTurn ? 1 : 0);
+		const { listRef, setSize, getSize } = useDynamicListSizes(itemCount); // Pass current total item count
 
-	// Calculate itemCount including the potential temp turn
-	const itemCount = chatTurns.length + (tempChatTurn ? 1 : 0);
+		const itemData = React.useMemo<ChatLogRowData>(
+			() => ({
+				chatTurns,
+				tempChatTurn,
+				isProcessing: isProcessingNewMessage,
+				onEditTurn,
+				onRegenerateResponse,
+				setSize,
+			}),
+			[chatTurns, tempChatTurn, isProcessingNewMessage, onEditTurn, onRegenerateResponse, setSize]
+		);
 
-	// Prepare itemData including tempTurn and related props/callbacks
-	const itemData = React.useMemo<ChatLogRowData>(
-		() => ({
-			chatTurns,
-			tempChatTurn, // Pass tempTurn down
-			isProcessing, // Pass isProcessing down
-			onEditTurn,
-			onRegenerateResponse, // Pass regenerate callback down
-			setSize,
-		}),
-		[chatTurns, tempChatTurn, isProcessing, onEditTurn, onRegenerateResponse, setSize]
-	);
+		// <<< --- SCROLL HANDLER FOR INFINITE LOAD --- >>>
+		const handleScroll = useCallback(
+			({ scrollOffset, scrollDirection }: ListOnScrollProps) => {
+				// Trigger loading older messages when scrolling up and near the top
+				// For lists where items are prepended, "top" means scrollOffset is small.
+				if (
+					scrollDirection === 'backward' &&
+					scrollOffset < 200 &&
+					hasMoreHistory &&
+					!isLoadingHistory
+				) {
+					// console.log('ChatLog: Requesting older messages...');
+					loadOlderMessages();
+				}
+			},
+			[loadOlderMessages, hasMoreHistory, isLoadingHistory]
+		);
 
-	return (
-		<Box
-			className={styles.logContainer}
-			sx={{ flexGrow: 1, overflow: 'hidden', mb: 2, height: '100%', position: 'relative' }}
-		>
-			<AutoSizer>
-				{({ height, width }) => (
-					<>
-						{/* ... isLoadingHistory indicator ... */}
-						<List<ChatLogRowData>
-							ref={listRef} // Assign the ref from the hook
-							height={height}
-							width={width}
-							itemCount={itemCount}
-							itemSize={getSize} // Use getSize from the hook
-							itemData={itemData}
-							onScroll={onScroll}
-							overscanCount={5}
-						>
-							{ChatLogRow}
-						</List>
-					</>
+		return (
+			<Box
+				// className={styles.logContainer} // Use sx for consistency if other MUI styling is used
+				sx={{
+					flexGrow: 1,
+					overflow: 'hidden', // AutoSizer needs this on its direct parent
+					height: '100%', // Ensure AutoSizer has a bounded height
+					position: 'relative',
+					display: 'flex',
+					flexDirection: 'column', // To stack loader and list
+				}}
+			>
+				{/* Loading indicator for older messages, shown at the "top" of the visual list */}
+				{isLoadingHistory && (
+					<Box sx={{ textAlign: 'center', py: 1, width: '100%' }}>
+						<CircularProgress size={24} /> Loading older...
+					</Box>
 				)}
-			</AutoSizer>
 
-			{/* Errors can remain below */}
-			<Box sx={{ p: 1 }}>
-				{errorState && <Typography color="error">{errorState}</Typography>}
-				{clientError && <Typography color="error">{clientError}</Typography>}
-				{credentialError && (
-					<Typography color="error">Credential Error: {credentialError.message}</Typography>
+				<Box
+					sx={{
+						flexGrow: 1,
+						width: '100%',
+						height: 'calc(100% - 40px)' /* Adjust if loader is present */,
+					}}
+				>
+					<AutoSizer>
+						{({ height, width }) => (
+							<List<ChatLogRowData>
+								ref={listRef}
+								height={height}
+								width={width}
+								itemCount={itemCount}
+								itemSize={getSize}
+								itemData={itemData}
+								onScroll={handleScroll} // <<< USE THE CORRECT SCROLL HANDLER
+								overscanCount={5}
+								// For inverse chat (newest at bottom, rendered via CSS flex-direction: column-reverse on parent in ChatPage):
+								// react-window still renders items from index 0 at the "top" of its virtual space.
+								// Scrolling to itemCount - 1 brings the newest item into view at the bottom.
+								// When older items are prepended to chatTurns, react-window re-renders.
+								// The scroll position might jump unless explicitly managed, but for "load older",
+								// some jump is acceptable as new content appears above.
+							>
+								{ChatLogRow}
+							</List>
+						)}
+					</AutoSizer>
+				</Box>
+
+				{/* Error display, potentially with a retry button */}
+				{clientError && (
+					<Typography color="error" sx={{ p: 1, textAlign: 'center' }}>
+						{clientError}{' '}
+						<Button size="small" onClick={loadOlderMessages} disabled={isLoadingHistory}>
+							Retry
+						</Button>
+					</Typography>
 				)}
+				{/* pageError and credentialError are likely better handled directly in ChatPage */}
 			</Box>
-		</Box>
-	);
-};
+		);
+	}
+);
