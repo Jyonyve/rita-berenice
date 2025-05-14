@@ -77,7 +77,7 @@ export const chatService = {
 		await upsertRecord(collection, chatTurn.chatTurnId, documentForEmbedding, updatedMetadata);
 	},
 
-	_parseMetadataToChatTurnsString: (queryResults: ChromaResponse[]) => {
+	_parseResMetaToChatTurnsString: (queryResults: ChromaResponse[]) => {
 		return queryResults
 			.flatMap((result) => {
 				if (result.metadatas && result.metadatas.length > 0) {
@@ -94,23 +94,6 @@ export const chatService = {
 				return [];
 			})
 			.filter((turn) => !!turn);
-	},
-
-	_checkAndGetRecapTurns: async (
-		sessionId: string,
-		sequence: number,
-		interval: number
-	): Promise<ChatTurn[]> => {
-		// validation
-		if (sequence === 0 || sequence % DEFAULT_RECAP_INTERVAL !== 0) return [];
-		console.log(`Attempting to generate recap for session ${sessionId}, sequence ${sequence}`);
-
-		const turnsForRecap = await chatService.getRecentChatTurns(sessionId, interval);
-		if (!turnsForRecap) {
-			console.warn(`No turns found for recap generation (Session: ${sessionId}, Seq: ${sequence})`);
-			return [];
-		}
-		return turnsForRecap.chatTurns;
 	},
 
 	// --- Temporary Turn Operations ---
@@ -201,7 +184,7 @@ export const chatService = {
 
 	// Chat Turn Operations
 	storeChatTurn: async (chatTurn: ChatTurn): Promise<void> => {
-		const { sequence, sessionId, request, response } = chatTurn;
+		const { sessionId, request, response } = chatTurn;
 		try {
 			await chatService.storeRequest(request);
 			await chatService.storeResponse(response);
@@ -209,24 +192,6 @@ export const chatService = {
 			// Store the full turn as JSON only when it's fixed
 			await chatService._storeFullChatTurn(chatTurn);
 			await chatService.removeTempChatTurn(sessionId);
-
-			// check and store recap
-			const recapTurns = await chatService._checkAndGetRecapTurns(
-				sessionId,
-				sequence,
-				DEFAULT_RECAP_INTERVAL
-			);
-			if (recapTurns.length > 0) {
-				await recapService.storeRecap(sessionId, recapTurns);
-			}
-			const relationRecapTurns = await chatService._checkAndGetRecapTurns(
-				sessionId,
-				sequence,
-				DEFAULT_RELATIONSHIP_RECAP_INTERVAL
-			);
-			if (relationRecapTurns.length > 0) {
-				await recapService.storeRelationshipRecap(sessionId, relationRecapTurns);
-			}
 		} catch (error) {
 			handleServiceError(
 				error,
@@ -266,7 +231,7 @@ export const chatService = {
 			const queryResults = await queryRecords(collection, queryText, whereClause, limit ?? 50); // Use a sensible default for limit
 			queryResults.forEach((result) => validateChromaResponse(result, 'getList', collectionType)); // Validate each result
 
-			const chatTurnStrings = chatService._parseMetadataToChatTurnsString(queryResults);
+			const chatTurnStrings = chatService._parseResMetaToChatTurnsString(queryResults);
 
 			return chatTurnStrings;
 		} catch (error) {
@@ -290,7 +255,7 @@ export const chatService = {
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 			const { ids, documents, metadatas } = results;
 			const chatTurns = chatService
-				._parseMetadataToChatTurnsString([results])
+				._parseResMetaToChatTurnsString([results])
 				.map((turn) => JSON.parse(turn) as ChatTurn);
 			return { ids, documents, metadatas, chatTurns };
 		} catch (error) {
@@ -303,48 +268,58 @@ export const chatService = {
 	},
 
 	/** Loads multiple FIXED turns */
-	getRecentChatTurns: async (
-		sessionId: string,
-		limit: number = DEFAULT_RECENT_TURN_COUNT
-	): Promise<ChatResponse> => {
-		const collection = await chatService._getCollection(sessionId);
-		try {
-			const whereClause: Where = {
-				type: METADATA_TYPES.TURN, // Only fetch fixed, full turn documents
-				sessionId,
-			};
-			// Fetch FULL_TURN documents, sort by sequence descending, take limit
-			const results = await getRecords(collection, whereClause);
-			if (validateResult(results)) {
-				const { ids, documents, metadatas } = results;
+	// getRecentChatTurns: async (
+	// 	sessionId: string,
+	// 	limit: number = DEFAULT_RECENT_TURN_COUNT
+	// ): Promise<ChatResponse> => {
+	// 	const collection = await chatService._getCollection(sessionId);
+	// 	try {
+	// 		const whereClause: Where = {
+	// 			type: METADATA_TYPES.TURN, // Only fetch fixed, full turn documents
+	// 			sessionId,
+	// 		};
+	// 		// Fetch FULL_TURN documents, sort by sequence descending, take limit
+	// 		const results = await getRecords(collection, whereClause);
+	// 		if (validateResult(results)) {
+	// 			const { ids, documents, metadatas } = results;
 
-				const parsedTurns = chatService._parseMetadataToChatTurnsString(metadatas);
-				parsedTurns.sort((a, b) => b.sequence - a.sequence);
-				const limitedTurns = parsedTurns.slice(0, limit);
-				return { ids, documents, metadatas, chatTurns: limitedTurns.reverse() };
-			}
-			console.warn(`fail to get recent chat turns condition: ${whereClause}`);
-			return null;
-			//return part
-		} catch (error) {
-			console.error(`Error fetching recent fixed turns for session ${sessionId}:`, error);
-			return null;
-		}
-	},
+	// 			const parsedTurns = chatService._parseMetadataToChatTurnsString(metadatas);
+	// 			parsedTurns.sort((a, b) => b.sequence - a.sequence);
+	// 			const limitedTurns = parsedTurns.slice(0, limit);
+	// 			return { ids, documents, metadatas, chatTurns: limitedTurns.reverse() };
+	// 		}
+	// 		console.warn(`fail to get recent chat turns condition: ${whereClause}`);
+	// 		return null;
+	// 		//return part
+	// 	} catch (error) {
+	// 		console.error(`Error fetching recent fixed turns for session ${sessionId}:`, error);
+	// 		return null;
+	// 	}
+	// },
 
 	/** Gets a single FIXED turn by sequence */
-	getChatTurnBySequence: async (sessionId: string, sequence: number): Promise<ChatTurn> => {
+	getChatTurnBySequence: async (sessionId: string, sequence: number): Promise<ChatResponse> => {
 		const collection = await chatService._getCollection(sessionId);
 		const turnId = buildChatTurnId(sessionId, sequence);
 		try {
-			const turnJson = await getRecordById(collection, turnId);
-			return turnJson ? (turnJson as unknown as ChatTurn) : null;
+			const rawResult = await getRecordById(collection, turnId);
+			const results = validateChromaResponse(rawResult, 'getOne', collectionType);
+
+			const parsedChatTurn = chatService._parseResMetaToChatTurnsString([results]);
+			const chatTurns = parsedChatTurn.map((turn) => JSON.parse(turn) as ChatTurn);
+			return {
+				ids: results.ids,
+				documents: results.documents,
+				metadatas: results.metadatas,
+				chatTurns: chatTurns,
+				chatTurn: chatTurns[0],
+			};
 		} catch (error) {
-			console.error(
-				`Error fetching recent fixed turn sequence ${sequence} for session ${sessionId}:`,
-				error
+			handleServiceError(
+				error,
+				'An internal error occurred while do [getChatTurnBySequence].',
+				`Failed to get chat turn by sequence for session ${sessionId}:`
 			);
-			return null;
 		}
 	},
 

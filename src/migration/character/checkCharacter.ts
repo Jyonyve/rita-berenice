@@ -1,10 +1,8 @@
 // Save this file as scripts/checkCharacterData.ts
 
+import { COLLECTIONS, METADATA_TYPES, CharacterMetadata } from '#root/src/shared/index.ts';
 import { ChromaClient, Collection, IncludeEnum } from 'chromadb';
 // Adjust path based on your project structure
-import { COLLECTIONS, METADATA_TYPES } from '../../src/shared/domain/index.ts';
-// Import the type definition for stricter checking (optional but good)
-import type { CharacterMetadata } from '../../src/shared/domain/character/CharacterInterfaces.ts'; // Adjust path if needed
 
 // --- Configuration ---
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev'; // Use env var or default

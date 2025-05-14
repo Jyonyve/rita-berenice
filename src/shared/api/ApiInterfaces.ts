@@ -44,6 +44,7 @@ export type ProfileResponse = ProfileChromaResponse;
 
 interface ChatChromaResponse extends ChromaResponse {
 	chatTurns: ChatTurn[];
+	chatTurn?: ChatTurn;
 }
 
 export type ChatResponse = ChatChromaResponse;
