@@ -3,9 +3,11 @@ import { chromaDbClient } from '../db/index.ts';
 import {
 	buildChatTurnToJsonString,
 	ChatTurn,
+	DEFAULT_RECAP_INTERVAL,
 	DEFAULT_RECAP_MODEL_FREE,
+	DEFAULT_RELATIONSHIP_RECAP_INTERVAL,
 	METADATA_TYPES,
-} from '#root/src/shared/index.ts';
+} from '#shared/index.ts';
 import { buildLlmRecapPrompt, buildLlmRelationshipRecapPrompt } from '../util/templateUtils.ts';
 import { llmService } from './index.ts';
 import { buildChatTurnDocument, buildRecapId, buildRelationshipRecapId } from '../util/index.ts';
@@ -22,6 +24,23 @@ export const recapService = {
 		const collection = await getRecapCollection();
 		recapService._recapCollection = collection;
 		return collection;
+	},
+
+	_checkAndGetRecapTurns: async (
+		sessionId: string,
+		sequence: number,
+		interval: typeof DEFAULT_RECAP_INTERVAL | typeof DEFAULT_RELATIONSHIP_RECAP_INTERVAL
+	): Promise<ChatTurn[]> => {
+		// validation
+		if (sequence === 0 || sequence % interval !== 0) return [];
+		console.log(`Attempting to generate recap for session ${sessionId}, sequence ${sequence}`);
+
+		// const turnsForRecap = await chatService.getRecentChatTurns(sessionId, interval);
+		if (!turnsForRecap) {
+			console.warn(`No turns found for recap generation (Session: ${sessionId}, Seq: ${sequence})`);
+			return [];
+		}
+		return turnsForRecap.chatTurns;
 	},
 
 	storeRecap: async (sessionId: string, turnsForRecap: ChatTurn[]): Promise<void> => {
