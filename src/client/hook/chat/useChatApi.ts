@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { openDB } from 'idb';
 import {
 	AiModelInfo,
 	ChatRoleType,

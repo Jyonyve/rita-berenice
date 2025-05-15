@@ -12,7 +12,7 @@ const CharacterItem: React.FC<{ characterId: string; showName: string }> = ({
 	showName,
 }) => {
 	// Use the hook *per character* to load its specific assets
-	const { portraitMap, isLoadingPortraits, error } = useCharacterState(characterId);
+	const { portraitMap, isLoadingPortraits, portraitError } = useCharacterState(characterId);
 	console.log(characterId);
 	// Get the URL for the default portrait from the map
 	console.log(portraitMap);
@@ -21,15 +21,15 @@ const CharacterItem: React.FC<{ characterId: string; showName: string }> = ({
 
 	return (
 		<Box key={characterId} sx={{ border: '1px solid grey', p: 2, mb: 2 }}>
-			{/* Conditionally render portrait based on loading/error/success */}
+			{/* Conditionally render portrait based on loading/portraitError/success */}
 			{isLoadingPortraits ? (
 				<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 100 }}>
 					<CircularProgress size={24} /> {/* Show loading spinner */}
 				</Box>
-			) : error ? (
-				<Typography color="error" variant="caption">
+			) : portraitError ? (
+				<Typography color="portraitError" variant="caption">
 					Image Error
-				</Typography> // Show error
+				</Typography> // Show portraitError
 			) : defaultImageUrl ? (
 				<CharacterPortrait imageUrl={defaultImageUrl} charName={showName} /> // Show portrait
 			) : (
@@ -71,7 +71,7 @@ export const CharacterPage = () => {
 	}
 
 	// if (listError) {
-	//      return <Typography color="error">Error loading character list: {listError.message}</Typography>
+	//      return <Typography color="portraitError">Error loading character list: {listError.message}</Typography>
 	// }
 
 	if (characters.length === 0) {

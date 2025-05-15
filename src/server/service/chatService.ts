@@ -72,6 +72,7 @@ export const chatService = {
 			responseMessageId: response.messageId,
 			createdAt: now,
 			fullTurnString: JSON.stringify(chatTurn),
+			type: METADATA_TYPES.TURN,
 		};
 		const documentForEmbedding = buildChatTurnDocument(chatTurn);
 		await upsertRecord(collection, chatTurn.chatTurnId, documentForEmbedding, updatedMetadata);
@@ -101,7 +102,8 @@ export const chatService = {
 		// shoould get the document to get whole temp data
 		const collection = await chatService._getTempCollection();
 		await upsertRecord(collection, tempData.sessionId, JSON.stringify(tempData), {
-			type: tempData.type,
+			type: METADATA_TYPES.TEMP,
+			sequence: tempData.sequence,
 			sessionId: tempData.sessionId,
 			timestamp: new Date().toISOString(),
 			setCount: tempData.chatTurnSets?.length || 0,
@@ -143,6 +145,7 @@ export const chatService = {
 			...requestMetadata,
 			messageId: messageId || buildMessageId(sessionId, sequence, 'request'),
 			timestamp: now,
+			type: METADATA_TYPES.MESSAGE,
 		};
 
 		const collection = await chatService._getCollection(sessionId);
@@ -167,6 +170,7 @@ export const chatService = {
 			...responseMetadata,
 			messageId: messageId || buildMessageId(sessionId, sequence, 'response'),
 			timestamp: now,
+			type: METADATA_TYPES.MESSAGE,
 		};
 
 		const collection = await chatService._getCollection(sessionId);

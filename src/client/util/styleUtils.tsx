@@ -12,7 +12,8 @@ import {
 	InputLabel,
 } from '@mui/material';
 // import { initializeAwsCredentials } from '@util/awsCredentialUtils';
-import { supportAiModelInfo } from '#root/src/shared/index.ts';
+import { ChatRoleType, ChatType, supportAiModelInfo } from '@shared/index.ts';
+import styles from '../component/chat/ChatComp.module.scss';
 
 export const useErrorDialog = (initialOpen: boolean = false, initialMessage?: string) => {
 	const [open, setOpen] = useState(initialOpen);
@@ -72,21 +73,14 @@ export const SelectAiModel = ({ id }: { id?: string }) => {
 		</FormControl>
 	);
 };
-// export const AwsLoginChecker = () => {
-// 	const [status, setStatus] = useState('');
 
-// 	const checkLogin = async () => {
-// 		try {
-// 			await initializeAwsCredentials();
-// 			setStatus('✅');
-// 		} catch (error) {
-// 			setStatus('❌');
-// 		}
-// 	};
+export const styleEntryFont = (role: ChatRoleType, type: ChatType): string => {
+	if (role === 'user') {
+		return type === 'dialogue' ? styles.userDialogue : styles.userAction;
+	} else {
+		// assistant
+		return type === 'dialogue' ? styles.assistantDialogue : styles.assistantAction;
+	}
+};
 
-// 	return (
-// 		<Button onClick={checkLogin} color={status === '✅' ? 'success' : 'error'}>
-// 			Check AWS Login<p>{status}</p>
-// 		</Button>
-// 	);
-// };
+export const commonStyle = styles;

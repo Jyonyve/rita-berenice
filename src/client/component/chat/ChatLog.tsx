@@ -40,6 +40,8 @@ const useDynamicListSizes = (itemCountForScroll: number) => {
 interface ChatLogProps {
 	chatTurns: ChatTurn[]; // Sorted [oldest, ..., newest]
 	tempChatTurn?: TempChatTurn;
+	currentTempSetNo: number; // For FixedTurnDisplay
+	changeTempSetNo: (index: number) => void;
 	isLoadingChat: boolean; // From useChatState, for loading older messages
 	hasMore: boolean; // From useChatState
 	isProcessing: boolean; // From ChatPage, for temp turn processing indicator
@@ -53,9 +55,11 @@ export const ChatLog: FC<ChatLogProps> = memo(
 	({
 		chatTurns,
 		tempChatTurn,
-		isLoadingChat: isLoadingHistory,
-		hasMore: hasMoreHistory,
-		isProcessing: isProcessingNewMessage,
+		currentTempSetNo,
+		changeTempSetNo,
+		isLoadingChat,
+		hasMore,
+		isProcessing,
 		clientError,
 		onEditTurn,
 		onRegenerateResponse,
@@ -68,12 +72,25 @@ export const ChatLog: FC<ChatLogProps> = memo(
 			() => ({
 				chatTurns,
 				tempChatTurn,
-				isProcessing: isProcessingNewMessage,
+				currentTempSetNo,
+				changeTempSetNo,
+				isProcessing,
 				onEditTurn,
 				onRegenerateResponse,
 				setSize,
 			}),
-			[chatTurns, tempChatTurn, isProcessingNewMessage, onEditTurn, onRegenerateResponse, setSize]
+			[
+				chatTurns,
+				tempChatTurn,
+				changeTempSetNo,
+				currentTempSetNo,
+				isProcessing,
+				hasMore,
+				clientError,
+				onEditTurn,
+				onRegenerateResponse,
+				setSize,
+			]
 		);
 
 		// <<< --- SCROLL HANDLER FOR INFINITE LOAD --- >>>
@@ -81,17 +98,12 @@ export const ChatLog: FC<ChatLogProps> = memo(
 			({ scrollOffset, scrollDirection }: ListOnScrollProps) => {
 				// Trigger loading older messages when scrolling up and near the top
 				// For lists where items are prepended, "top" means scrollOffset is small.
-				if (
-					scrollDirection === 'backward' &&
-					scrollOffset < 200 &&
-					hasMoreHistory &&
-					!isLoadingHistory
-				) {
+				if (scrollDirection === 'backward' && scrollOffset < 200 && hasMore && !isLoadingChat) {
 					// console.log('ChatLog: Requesting older messages...');
 					loadOlderMessages();
 				}
 			},
-			[loadOlderMessages, hasMoreHistory, isLoadingHistory]
+			[loadOlderMessages, hasMore, isLoadingChat]
 		);
 
 		return (
@@ -107,7 +119,7 @@ export const ChatLog: FC<ChatLogProps> = memo(
 				}}
 			>
 				{/* Loading indicator for older messages, shown at the "top" of the visual list */}
-				{isLoadingHistory && (
+				{isLoadingChat && (
 					<Box sx={{ textAlign: 'center', py: 1, width: '100%' }}>
 						<CircularProgress size={24} /> Loading older...
 					</Box>
@@ -148,7 +160,7 @@ export const ChatLog: FC<ChatLogProps> = memo(
 				{clientError && (
 					<Typography color="error" sx={{ p: 1, textAlign: 'center' }}>
 						{clientError}{' '}
-						<Button size="small" onClick={loadOlderMessages} disabled={isLoadingHistory}>
+						<Button size="small" onClick={loadOlderMessages} disabled={isLoadingChat}>
 							Retry
 						</Button>
 					</Typography>

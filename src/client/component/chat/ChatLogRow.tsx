@@ -8,6 +8,8 @@ import { FixedTurnDisplay, TempTurnDisplay } from './index.ts';
 export interface ChatLogRowData {
 	chatTurns: ChatTurn[];
 	tempChatTurn?: TempChatTurn; // Make tempTurn available
+	currentTempSetNo?: number; // For FixedTurnDisplay
+	changeTempSetNo: (index: number) => void;
 	isProcessing: boolean; // Needed for TempTurnDisplay
 	onEditTurn: (turn: ChatTurn) => void;
 	onRegenerateResponse: () => void; // Needed for TempTurnDisplay
@@ -16,7 +18,16 @@ export interface ChatLogRowData {
 
 // Define the Row component as the default export
 const ChatLogRow: FC<ListChildComponentProps<ChatLogRowData>> = ({ index, style, data }) => {
-	const { chatTurns, tempChatTurn, isProcessing, onEditTurn, onRegenerateResponse, setSize } = data;
+	const {
+		chatTurns,
+		tempChatTurn,
+		currentTempSetNo,
+		changeTempSetNo,
+		isProcessing,
+		onEditTurn,
+		onRegenerateResponse,
+		setSize,
+	} = data;
 	const rowRef = useRef<HTMLDivElement>(null);
 
 	// Measure height after render and update cache
@@ -35,9 +46,11 @@ const ChatLogRow: FC<ListChildComponentProps<ChatLogRowData>> = ({ index, style,
 			{isTempTurnRow ? (
 				// Render TempTurnDisplay if it's the last item and tempTurn exists
 				<TempTurnDisplay
-					tempTurn={tempChatTurn}
 					isProcessing={isProcessing}
 					onRegenerate={onRegenerateResponse}
+					tempTurn={tempChatTurn}
+					currentTempSetNo={currentTempSetNo ?? 0}
+					changeTempSetNo={changeTempSetNo}
 				/>
 			) : (
 				// Otherwise, render FixedTurnDisplay for regular turns

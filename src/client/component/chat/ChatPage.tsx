@@ -45,8 +45,9 @@ export const ChatPage = () => {
 		hasMore,
 		initializeSession,
 		loadOlderMessages,
-		addChatTurn,
+		addChatTurnIndexedDB,
 		changeTempChatTurn,
+		getCurrentSequence,
 		getNextSequence,
 	} = useChatState(sessionId);
 
@@ -57,6 +58,7 @@ export const ChatPage = () => {
 	const { credential, isLoadingCredential, credentialError } = useCredential();
 
 	// --- STATE ---
+	const [currentTempSetNo, setCurrentTempSetNo] = useState(0);
 	const [userInput, setUserInput] = useState('');
 	const [userEditInput, setUserEditInput] = useState('');
 	const [imageUrl, setImageUrl] = useState('');
@@ -89,6 +91,29 @@ export const ChatPage = () => {
 		}
 	};
 
+	const _storeNewChatTurn = async (tempChatTurn: TempChatTurn) => {
+		if (!tempChatTurn) return;
+		const newChatTurn: ChatTurn = {
+			sessionId,
+			sequence: tempChatTurn.sequence,
+			chatTurnId: '',
+			requestMessageId: '',
+			responseMessageId: '',
+			createdAt: '',
+			fullTurnString: '',
+			request: tempChatTurn.chatTurnSets[currentTempSetNo].request,
+			response: tempChatTurn.chatTurnSets[currentTempSetNo].response,
+			type: METADATA_TYPES.TURN,
+		};
+		try {
+			await storeChatTurn(newChatTurn);
+			await addChatTurnIndexedDB(newChatTurn);
+		} catch (err: any) {
+			console.error('Error storing new chat turn:', err);
+			setPageError(`Failed to store chat turn: ${err.message || 'Unknown error'}`);
+		}
+	};
+
 	// Load Character Image
 	const _handleChatacterImage = (emotion: string) => {
 		const imageNumber = getImageNumberForEmotion(emotion);
@@ -111,11 +136,12 @@ export const ChatPage = () => {
 		setPageError(undefined);
 		setIsProcessing(true);
 		try {
-			const currentSequence = getNextSequence();
-			tempChatTurn && saveTempChatTurn(tempChatTurn);
+			const newTempSequence = getNextSequence();
+			if (tempChatTurn) {
+			}
 
 			//user
-			const userMsg = buildChatMessage('user', currentSequence, 'the user', userInput, sessionId);
+			const userMsg = buildChatMessage('user', newTempSequence, 'the user', userInput, sessionId);
 			//character
 			const { stringifyResponse } = await genResponseFromLlm(
 				sessionId,
@@ -129,7 +155,7 @@ export const ChatPage = () => {
 			// ai
 			const aiMsg = buildChatMessage(
 				'assistant',
-				currentSequence,
+				newTempSequence,
 				charName,
 				response,
 				sessionId,
@@ -137,7 +163,7 @@ export const ChatPage = () => {
 			);
 			const newTempChatTurn: TempChatTurn = {
 				sessionId,
-				sequence: currentSequence,
+				sequence: newTempSequence,
 				chatTurnSets: [{ request: userMsg, response: aiMsg }],
 				type: METADATA_TYPES.TEMP,
 			};
@@ -155,7 +181,7 @@ export const ChatPage = () => {
 		getNextSequence,
 		sessionId,
 		genResponseFromLlm,
-		addChatTurn,
+		addChatTurnIndexedDB,
 		storeChatTurn,
 		changeTempChatTurn,
 		saveTempChatTurn,
@@ -263,6 +289,8 @@ export const ChatPage = () => {
 							onEditTurn={handleEditTurn}
 							onRegenerateResponse={handleRegenerateResponse}
 							loadOlderMessages={handleTriggerLoadOlder}
+							currentTempSetNo={currentTempSetNo}
+							changeTempSetNo={(index: number) => setCurrentTempSetNo(index)}
 						/>
 					</Box>
 					{pageError && (

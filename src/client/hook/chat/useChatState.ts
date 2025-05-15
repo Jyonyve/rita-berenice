@@ -1,7 +1,7 @@
 // src/hook/useChatState.ts
 import { useState, useCallback, useEffect } from 'react';
 import { ChatTurn, TempChatTurn } from '@shared/index.ts';
-import { getCachedMessages, saveMessagesToCache, loadAllCachedMessages } from '../../util/index.ts'; // Ensure this path is correct
+import { getCachedMessages, saveMessagesToCache, loadAllCachedMessages } from '../../util/index.ts';
 
 // Type for the function that will be passed in to fetch older turns
 type FetchOlderTurnsFunction = (
@@ -77,12 +77,12 @@ export const useChatState = (sessionId: string) => {
 	);
 
 	// Add a new fixed turn (appended at the end - newest)
-	const addChatTurn = useCallback(async (turn: ChatTurn) => {
+	const addChatTurnIndexedDB = useCallback(async (turn: ChatTurn) => {
 		setChatTurns((prev) => [...prev, turn].sort((a, b) => a.sequence - b.sequence));
 		await saveMessagesToCache([turn]);
 	}, []);
 
-	const addMultipleTurns = useCallback(
+	const addChatTurnsIndexedDB = useCallback(
 		async (newTurns: ChatTurn[]) => {
 			if (newTurns.length === 0) return;
 
@@ -180,8 +180,8 @@ export const useChatState = (sessionId: string) => {
 		hasMore,
 		initializeSession, // Expose for ChatPage to call on mount
 		loadOlderMessages, // Expose for InfiniteScroll, ChatPage will pass the fetcher
-		addChatTurn,
-		addMultipleTurns,
+		addChatTurnIndexedDB,
+		addChatTurnsIndexedDB,
 		changeTempChatTurn,
 		setIsLoadingChat: setIsLoading,
 		setClientError,
