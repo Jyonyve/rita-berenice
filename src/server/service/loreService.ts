@@ -7,37 +7,26 @@ import {
 	METADATA_TYPES,
 } from '#root/src/shared/index.ts'; // Adjust path
 import { Collection, Where } from 'chromadb';
-import { chromaDbClient, ChromaResponse } from '../db/index.ts'; // Adjust path
 import {
 	buildHistoryDocument,
 	buildHistoryId,
 	buildLoreDocument,
 	buildLoreId,
-	validateResult,
-	validateServiceId,
 } from '../util/index.ts';
+import { chromaDbClient } from '../db/index.ts';
 
 const { getLoreCollection, upsertRecord, getRecords } = chromaDbClient;
 
-interface LoreChromaResponse extends ChromaResponse {
-	lores: CharacterLore[];
-	loreContents: string[];
-	histrories: CharacterHistory[];
-	historyContents: string[];
-}
-
 export const loreService = {
+	// Cache for lore collection
 	_loreCollection: null as Collection | null,
 
 	_getCollection: async (): Promise<Collection> => {
 		if (loreService._loreCollection) {
 			return loreService._loreCollection;
 		}
-		console.log('[LoreService._getCollection] Fetching lore collection...');
-		// Ensure getLoreCollection() in chromaDbClient returns the correct collection name
 		const collection = await getLoreCollection();
 		loreService._loreCollection = collection;
-		console.log('[LoreService._getCollection] Lore collection obtained.');
 		return collection;
 	},
 

@@ -4,9 +4,10 @@ import {
 	CharacterMetadata,
 	AiModelInfo,
 	DEFAULT_IMAGE_NUMBER,
-	getImageNumberForEmotion,
 	ChatMessage,
-} from '#root/src/shared/index.ts';
+	DEFAULT_EMOTION,
+	EmotionValue,
+} from '#shared/index.ts';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { llmService } from './llmService.ts';
 // Import template utils
@@ -20,7 +21,7 @@ import { recapService } from './recapService.ts';
 
 export interface PersonaResponse {
 	response: string;
-	emotion: EmotionKey;
+	emotion: string;
 }
 
 export const createPersonaEngine = (
@@ -96,12 +97,9 @@ export const createPersonaEngine = (
 			}
 		} catch (err: any) {
 			console.error(`LLM (session ${sessionId}) returned invalid JSON: ${rawJsonResponse}`, err);
-			return { response: rawJsonResponse, emotion: DEFAULT_IMAGE_NUMBER }; // Fallback
+			return { response: rawJsonResponse, emotion: DEFAULT_EMOTION }; // Fallback
 		}
-
-		const matchedEmotionKey = getImageNumberForEmotion(parsed.emotion);
-		// console.log(`PersonaEngine (session ${sessionId}) mapped emotion "${parsed.emotion}" to key: ${matchedEmotionKey}`);
-		return { response: parsed.response, emotion: matchedEmotionKey };
+		return { response: parsed.response, emotion: parsed.emotion };
 	};
 
 	const getPriorLogContext = async (

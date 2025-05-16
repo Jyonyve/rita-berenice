@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import {
-	allEmotionKeywords,
+	validEmotions,
 	DEFAULT_IMAGE_NUMBER,
 	EmotionKey,
 	numberToEmotionWordsMap,
-	PortraitMap,
-	validEmotionKeyNumbers,
+	PortraitUrlMap,
+	validEmotionKeys,
 } from '@shared/config/index.ts';
 
 function escapeRegExp(string: string): string {
@@ -24,7 +24,7 @@ function escapeRegExp(string: string): string {
 // Ensure types for state are set correctly
 export const useCharacterState = (characterId?: string) => {
 	// --- Hooks called at TOP LEVEL (Correct) ---
-	const [portraitMap, setPortraitMap] = useState<PortraitMap>({}); // Use PortraitMap type
+	const [portraitMap, setPortraitMap] = useState<PortraitUrlMap>({}); // Use PortraitMap type
 	const [isLoading, setIsLoading] = useState(false);
 	const [portraitError, setPortraitError] = useState<string>();
 	const loadingRef = useRef<string | null>(null);
@@ -35,9 +35,9 @@ export const useCharacterState = (characterId?: string) => {
 	 * Images are expected to be named like: {characterId}_{NUMBER}.webp or .avif,
 	 * where {NUMBER} corresponds to an EmotionKey (e.g., 0, 1, 2...).
 	 */
-	const initPortraitMap = async (characterId: string): Promise<PortraitMap> => {
+	const initPortraitMap = async (characterId: string): Promise<PortraitUrlMap> => {
 		console.log(`[loadNumberedPortraits] Loading portraits for character: ${characterId}`);
-		const imageMap: PortraitMap = {};
+		const imageMap: PortraitUrlMap = {};
 
 		// Vite's import.meta.glob for dynamic bulk import of image URLs
 		const imageModules = import.meta.glob<{ default: string }>(
@@ -66,7 +66,7 @@ export const useCharacterState = (characterId?: string) => {
 				if (match && match[1]) {
 					const imageNumber = parseInt(match[1], 10);
 
-					if (validEmotionKeyNumbers.has(imageNumber as EmotionKey)) {
+					if (validEmotionKeys.has(imageNumber as EmotionKey)) {
 						imageMap[imageNumber as EmotionKey] = imageModules[originalPath].default;
 					} else {
 						console.warn(
@@ -169,10 +169,11 @@ export const useCharacterState = (characterId?: string) => {
 	function getImageNumberForEmotion(emotion: string): EmotionKey {
 		const lowerEmotion = emotion.toLowerCase();
 
-		if (!_isValidEmotionKeyword(lowerEmotion)) return DEFAULT_IMAGE_NUMBER;
-		for (const [numStr, keywords] of Object.entries(numberToEmotionWordsMap)) {
-			if ((keywords as readonly string[]).includes(lowerEmotion)) {
-				return Number(numStr) as EmotionKey;
+		if (_isValidEmotion(lowerEmotion)) {
+			for (const [numStr, keywords] of Object.entries(numberToEmotionWordsMap)) {
+				if ((keywords as readonly string[]).includes(lowerEmotion)) {
+					return Number(numStr) as EmotionKey;
+				}
 			}
 		}
 		console.warn(
@@ -181,9 +182,9 @@ export const useCharacterState = (characterId?: string) => {
 		return DEFAULT_IMAGE_NUMBER;
 	}
 
-	function _isValidEmotionKeyword(emotion?: string): boolean {
+	function _isValidEmotion(emotion?: string): boolean {
 		if (!emotion) return false;
-		if (allEmotionKeywords.has(emotion)) return true;
+		if (validEmotions.has(emotion)) return true;
 		console.warn(`Invalid or unmapped emotion keyword: "${emotion}".`);
 		return false;
 	}

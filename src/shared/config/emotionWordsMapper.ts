@@ -705,26 +705,28 @@ export const numberToEmotionWordsMap = {
 
 // Default portrait number
 export type EmotionKey = keyof typeof numberToEmotionWordsMap;
+export type EmotionValue = (typeof numberToEmotionWordsMap)[EmotionKey][number];
 export const DEFAULT_IMAGE_NUMBER: EmotionKey = 0 as const;
-export const DEFAULT_EMOTION = 'default' as const;
-export const validEmotionKeyNumbers: Readonly<Set<EmotionKey>> = new Set(
-	Object.keys(numberToEmotionWordsMap).map((k) => Number(k) as EmotionKey)
-);
+export const DEFAULT_EMOTION: EmotionValue = 'default' as const;
 
 // The PortraitMap stores loaded image URLs, keyed by their valid EmotionKey (image number).
 // It's Partial because not every EmotionKey defined in numberToEmotionWordsMap
 // will necessarily have a corresponding image file available.
-export type PortraitMap = Partial<Record<EmotionKey, string>>;
+export type PortraitUrlMap = Partial<Record<EmotionKey, string>>;
 /**
  * Flattened set of all unique emotion keywords (lowercase) for fast lookup.
  */
-export const allEmotionKeywords: Readonly<Set<string>> = new Set(
+export const validEmotions: Readonly<Set<string>> = new Set(
 	Object.values(numberToEmotionWordsMap)
 		.flat()
-		.map((w) => w.toLowerCase())
+		.map((word) => word.toLowerCase())
+);
+
+export const validEmotionKeys: Readonly<Set<EmotionKey>> = new Set(
+	Object.keys(numberToEmotionWordsMap).map((k) => Number(k) as EmotionKey)
 );
 
 /**
  * Array version of all emotion keywords (if you need an array).
  */
-export const allEmotionKeywordsList: readonly string[] = Array.from(allEmotionKeywords);
+export const allEmotionKeywordsList: readonly string[] = Array.from(validEmotions);

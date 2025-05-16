@@ -125,6 +125,7 @@ export const characterService = {
 				characterInfo.characterId || buildCharacterId(characterInfo.name, characterInfo.variant),
 			updatedAt: now,
 			createdAt: characterInfo.createdAt || now,
+			type: METADATA_TYPES.CHARACTER,
 		};
 
 		const documentForEmbedding = buildCharacterDocument(character);

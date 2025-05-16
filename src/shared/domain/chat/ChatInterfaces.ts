@@ -46,7 +46,6 @@ export interface ChatTurnMetadata {
 	responseMessageId: string;
 	createdAt: string; // ISO 8601 format, dont record updatedAt as sequence fix the order, createdAt is just for information
 	type: typeof METADATA_TYPES.TURN;
-	fullTurnString: string; // JSON.stringify(ChatTurn) to easy parse
 }
 
 export interface ChatTurn extends ChatTurnMetadata {

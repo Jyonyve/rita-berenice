@@ -2,8 +2,7 @@ import React, { FC } from 'react';
 import { Box, IconButton } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import { ChatTurn } from '@shared/domain/index.ts';
-import { styleEntryFont } from '../../util/chatCompUtils.ts';
-import styles from './ChatComp.module.scss'; // Assuming shared styles
+import { styleEntryFont, commonStyle } from '../../util/index.ts';
 
 interface FixedTurnDisplayProps {
 	turn: ChatTurn;
@@ -12,7 +11,7 @@ interface FixedTurnDisplayProps {
 
 export const FixedTurnDisplay: FC<FixedTurnDisplayProps> = ({ turn, onEdit }) => {
 	return (
-		<Box key={`${turn.sessionId}-${turn.sequence}`} className={styles.turnContainer}>
+		<Box key={`${turn.sessionId}-${turn.sequence}`} className={commonStyle.turnContainer}>
 			{/* Render Request Entries */}
 			{turn.request.entries.map((entry, idx) => (
 				<span key={`req-${turn.sequence}-${idx}`} className={styleEntryFont('user', entry.type)}>
@@ -26,7 +25,7 @@ export const FixedTurnDisplay: FC<FixedTurnDisplayProps> = ({ turn, onEdit }) =>
 				</span>
 			))}
 			{/* Buttons for Fixed Turn */}
-			<Box className={styles.buttonGroup}>
+			<Box className={commonStyle.buttonGroup}>
 				<IconButton
 					size="small"
 					aria-label="edit turn"

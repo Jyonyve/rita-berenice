@@ -5,11 +5,7 @@ import {
 	ChatMessage,
 	ChatMessageMetadata,
 	ChatTurnMetadata,
-	DEFAULT_LOADING_TURN_COUNT,
-	DEFAULT_RECAP_INTERVAL,
-	DEFAULT_RECENT_TURN_COUNT,
 	METADATA_TYPES,
-	DEFAULT_RELATIONSHIP_RECAP_INTERVAL,
 	COLLECTIONS,
 	ChromaResponse,
 	ChatResponse,
@@ -24,7 +20,6 @@ import {
 	handleServiceError,
 	validateChromaResponse,
 } from '../util/index.ts';
-import { recapService } from './recapService.ts';
 
 // Destructure outside the object
 const {
@@ -59,6 +54,58 @@ export const chatService = {
 		return collection;
 	},
 
+	// Store request (public for non-regen editing)
+	_storeRequest: async (request: ChatMessage): Promise<ChatMessage> => {
+		const { entries, model, ...requestMetadata } = request;
+		const { sessionId, sequence, messageId } = requestMetadata;
+		const now = new Date().toISOString();
+		const updatedMetadata: ChatMessageMetadata = {
+			...requestMetadata,
+			messageId: messageId || buildMessageId(sessionId, sequence, 'request'),
+			timestamp: now,
+			type: METADATA_TYPES.MESSAGE,
+		};
+
+		const collection = await chatService._getCollection(sessionId);
+		try {
+			const documentForEmbedding = buildChatMessageDocument(request.entries);
+			await upsertRecord(collection, updatedMetadata.messageId, documentForEmbedding, updatedMetadata);
+			return { entries, model, ...updatedMetadata };
+		} catch (error) {
+			handleServiceError(
+				error,
+				'An internal error occurred while do [storeRequest].',
+				`Failed to store request message for session ${sessionId}:`
+			);
+		}
+	},
+
+	// Store response (public for non-regen editing)
+	_storeResponse: async (response: ChatMessage): Promise<ChatMessage> => {
+		const { entries, model, ...responseMetadata } = response;
+		const { sessionId, sequence, messageId } = responseMetadata;
+		const now = new Date().toISOString();
+		const updatedMetadata: ChatMessageMetadata = {
+			...responseMetadata,
+			messageId: messageId || buildMessageId(sessionId, sequence, 'response'),
+			timestamp: now,
+			type: METADATA_TYPES.MESSAGE,
+		};
+
+		const collection = await chatService._getCollection(sessionId);
+		try {
+			const documentForEmbedding = buildChatMessageDocument(response.entries);
+			await upsertRecord(collection, updatedMetadata.messageId, documentForEmbedding, updatedMetadata);
+			return { entries, model, ...updatedMetadata };
+		} catch (error) {
+			handleServiceError(
+				error,
+				'An internal error occurred while do [storeResponse].',
+				`Failed to store response message for session ${sessionId}:`
+			);
+		}
+	},
+
 	// store fixed chat turn as json string
 	_storeFullChatTurn: async (chatTurn: ChatTurn): Promise<void> => {
 		const now = new Date().toISOString();
@@ -71,7 +118,6 @@ export const chatService = {
 			requestMessageId: request.messageId,
 			responseMessageId: response.messageId,
 			createdAt: now,
-			fullTurnString: JSON.stringify(chatTurn),
 			type: METADATA_TYPES.TURN,
 		};
 		const documentForEmbedding = buildChatTurnDocument(chatTurn);
@@ -136,66 +182,22 @@ export const chatService = {
 		}
 	},
 
-	// Store request (public for non-regen editing)
-	storeRequest: async (request: ChatMessage): Promise<void> => {
-		const { entries, model, ...requestMetadata } = request;
-		const { sessionId, sequence, messageId } = requestMetadata;
-		const now = new Date().toISOString();
-		const updatedMetadata: ChatMessageMetadata = {
-			...requestMetadata,
-			messageId: messageId || buildMessageId(sessionId, sequence, 'request'),
-			timestamp: now,
-			type: METADATA_TYPES.MESSAGE,
-		};
-
-		const collection = await chatService._getCollection(sessionId);
-		try {
-			const documentForEmbedding = buildChatMessageDocument(request.entries);
-			await upsertRecord(collection, updatedMetadata.messageId, documentForEmbedding, updatedMetadata);
-		} catch (error) {
-			handleServiceError(
-				error,
-				'An internal error occurred while do [storeRequest].',
-				`Failed to store request message for session ${sessionId}:`
-			);
-		}
-	},
-
-	// Store response (public for non-regen editing)
-	storeResponse: async (response: ChatMessage): Promise<void> => {
-		const { entries, model, ...responseMetadata } = response;
-		const { sessionId, sequence, messageId } = responseMetadata;
-		const now = new Date().toISOString();
-		const updatedMetadata: ChatMessageMetadata = {
-			...responseMetadata,
-			messageId: messageId || buildMessageId(sessionId, sequence, 'response'),
-			timestamp: now,
-			type: METADATA_TYPES.MESSAGE,
-		};
-
-		const collection = await chatService._getCollection(sessionId);
-		try {
-			const documentForEmbedding = buildChatMessageDocument(response.entries);
-			await upsertRecord(collection, updatedMetadata.messageId, documentForEmbedding, updatedMetadata);
-		} catch (error) {
-			handleServiceError(
-				error,
-				'An internal error occurred while do [storeResponse].',
-				`Failed to store response message for session ${sessionId}:`
-			);
-		}
-	},
-
 	// Chat Turn Operations
-	storeChatTurn: async (chatTurn: ChatTurn): Promise<void> => {
-		const { sessionId, request, response } = chatTurn;
+	storeChatTurn: async (chatTurn: ChatTurn): Promise<string> => {
+		const { sessionId, request, response, ...currentChatTurn } = chatTurn;
 		try {
-			await chatService.storeRequest(request);
-			await chatService.storeResponse(response);
-
+			const updatedRequest = await chatService._storeRequest(request);
+			const updatedResponse = await chatService._storeResponse(response);
+			const updatedChatTurn = {
+				...currentChatTurn,
+				sessionId,
+				request: updatedRequest,
+				response: updatedResponse,
+			};
 			// Store the full turn as JSON only when it's fixed
-			await chatService._storeFullChatTurn(chatTurn);
+			await chatService._storeFullChatTurn(updatedChatTurn);
 			await chatService.removeTempChatTurn(sessionId);
+			return JSON.stringify(updatedChatTurn);
 		} catch (error) {
 			handleServiceError(
 				error,
@@ -247,15 +249,12 @@ export const chatService = {
 		}
 	},
 
-	/** Loads multiple FIXED turns (for inifinity scroll, history view) */
-	getLoadingChatTurns: async (sessionId: string, beforeSequence: number): Promise<ChatResponse> => {
+	/** Loads multiple FIXED turns  */
+	getChatTurns: async (sessionId: string, beforeSequence: number): Promise<ChatResponse> => {
 		const collection = await chatService._getCollection(sessionId);
 		const where: Where = { type: METADATA_TYPES.TURN, sessionId, sequence: { $lt: beforeSequence } };
 		try {
-			const rawResults = await collection.get({
-				where,
-				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
-			});
+			const rawResults = await getRecords(collection, where, -1);
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 			const { ids, documents, metadatas } = results;
 			const chatTurns = chatService
@@ -270,36 +269,6 @@ export const chatService = {
 			);
 		}
 	},
-
-	/** Loads multiple FIXED turns */
-	// getRecentChatTurns: async (
-	// 	sessionId: string,
-	// 	limit: number = DEFAULT_RECENT_TURN_COUNT
-	// ): Promise<ChatResponse> => {
-	// 	const collection = await chatService._getCollection(sessionId);
-	// 	try {
-	// 		const whereClause: Where = {
-	// 			type: METADATA_TYPES.TURN, // Only fetch fixed, full turn documents
-	// 			sessionId,
-	// 		};
-	// 		// Fetch FULL_TURN documents, sort by sequence descending, take limit
-	// 		const results = await getRecords(collection, whereClause);
-	// 		if (validateResult(results)) {
-	// 			const { ids, documents, metadatas } = results;
-
-	// 			const parsedTurns = chatService._parseMetadataToChatTurnsString(metadatas);
-	// 			parsedTurns.sort((a, b) => b.sequence - a.sequence);
-	// 			const limitedTurns = parsedTurns.slice(0, limit);
-	// 			return { ids, documents, metadatas, chatTurns: limitedTurns.reverse() };
-	// 		}
-	// 		console.warn(`fail to get recent chat turns condition: ${whereClause}`);
-	// 		return null;
-	// 		//return part
-	// 	} catch (error) {
-	// 		console.error(`Error fetching recent fixed turns for session ${sessionId}:`, error);
-	// 		return null;
-	// 	}
-	// },
 
 	/** Gets a single FIXED turn by sequence */
 	getChatTurnBySequence: async (sessionId: string, sequence: number): Promise<ChatResponse> => {

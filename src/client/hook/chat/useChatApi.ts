@@ -77,49 +77,49 @@ export const useChatApi = (sessionId: string) => {
 		[_makeApiCall]
 	);
 
-	const storeRequest = useCallback(
-		async (chatTurn: ChatTurn): Promise<void> => {
-			const sessionId = chatTurn.sessionId;
+	const storeFactualRecap = useCallback(
+		async (recapTurns: ChatTurn[]): Promise<void> => {
+			const sessionId = recapTurns[recapTurns.length - 1].sessionId; // Get the last turn's sessionId
 			if (!sessionId) throw new Error('Session ID required');
-			// POST /api/chat/store-request/:sessionId
-			// Body: { chatTurn: ChatTurn }
+			// POST /api/recap/store-factual-recap/:sessionId
+			// Body: { recapTurns: ChatTurn[] }
 			await _makeApiCall<void>(
-				MODULE_NAMES.CHAT,
-				'storeRequest',
+				MODULE_NAMES.RECAP,
+				'storeFactualRecap',
 				'post',
 				[sessionId],
 				{},
-				{ chatTurn } // Body structure as defined in route [2]
+				{ recapTurns } // Body structure as defined in route [2]
 			);
 		},
 		[_makeApiCall]
 	);
 
-	const storeResponse = useCallback(
-		async (chatTurn: ChatTurn): Promise<void> => {
-			const sessionId = chatTurn.sessionId;
+	const storeRelationshipRecap = useCallback(
+		async (recapTurns: ChatTurn[]): Promise<void> => {
+			const sessionId = recapTurns[recapTurns.length - 1].sessionId;
 			if (!sessionId) throw new Error('Session ID required');
-			// POST /api/chat/store-response/:sessionId
-			// Body: { chatTurn: ChatTurn }
+			// POST /api/chat/store-relationship-recap/:sessionId
+			// Body: { recapTurns: ChatTurn[] }
 			await _makeApiCall<void>(
 				MODULE_NAMES.CHAT,
-				'storeResponse',
+				'storeRelationshipRecap',
 				'post',
 				[sessionId],
 				{},
-				{ chatTurn } // Body structure as defined in route [2]
+				{ recapTurns } // Body structure as defined in route [2]
 			);
 		},
 		[_makeApiCall]
 	);
 
 	const storeChatTurn = useCallback(
-		async (chatTurn: ChatTurn): Promise<void> => {
+		async (chatTurn: ChatTurn): Promise<string> => {
 			const sessionId = chatTurn.sessionId;
 			if (!sessionId) throw new Error('Session ID required');
 			// POST /api/chat/store-chat-turn/:sessionId
 			// Body: { chatTurn: ChatTurn }
-			await _makeApiCall<void>(
+			return await _makeApiCall<string>(
 				MODULE_NAMES.CHAT,
 				'storeChatTurn',
 				'post',
@@ -250,8 +250,8 @@ export const useChatApi = (sessionId: string) => {
 		getRecentChatTurns,
 		getLoadingChatTurns,
 		storeChatTurn,
-		storeRequest,
-		storeResponse,
+		// storeRequest,
+		// storeResponse,
 		getChatTurnBySequence,
 		getRecap,
 		queryChatLog,

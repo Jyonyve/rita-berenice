@@ -1,2 +1,2 @@
-export * from './styleUtils.ts';
+export * from './styleUtils.tsx';
 export * from './idbUtils.ts';

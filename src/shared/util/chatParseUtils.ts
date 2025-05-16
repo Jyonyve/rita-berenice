@@ -8,8 +8,7 @@ import {
 	ChatMessageType,
 	METADATA_TYPES,
 } from '@shared/domain/index.ts';
-import { buildMessageId } from '../../server/util/buildIdUtils.ts';
-import { DEFAULT_EMOTION, isValidEmotionKeyword } from '../config/index.ts';
+import { DEFAULT_EMOTION } from '../config/index.ts';
 
 export const parseTextToEntries = (text: string): ChatEntry[] => {
 	const entries: ChatEntry[] = [];
@@ -54,7 +53,7 @@ export const buildChatMessage = (
 		messageId: '',
 		messageType,
 		showName,
-		emotion: isValidEmotionKeyword(emotion) ? emotion : DEFAULT_EMOTION,
+		emotion,
 		timestamp: '',
 		type: METADATA_TYPES.MESSAGE,
 	};

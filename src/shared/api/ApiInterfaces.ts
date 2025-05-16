@@ -1,5 +1,6 @@
 import { GetResponse } from 'chromadb';
 import { ChatMessageType, ChatTurn } from '../domain/index.ts';
+import { HistoryInfo, LoreInfo } from '../domain/lore/LoreInterfaces.ts';
 // File: shared/api/ApiInterfaces.ts
 
 export interface ApiErrorResponse {
@@ -42,17 +43,33 @@ interface ProfileChromaResponse extends ChromaResponse {
 
 export type ProfileResponse = ProfileChromaResponse;
 
+// Chat
+export interface QueryChatLogsApiRequest {
+	// Define a more specific request body type for this route
+	sessionId: string;
+	queryText: string;
+	messageType: ChatMessageType; // Service handles 'both' or array
+	limit?: number;
+}
 interface ChatChromaResponse extends ChromaResponse {
 	chatTurns: ChatTurn[];
 	chatTurn?: ChatTurn;
 }
-
 export type ChatResponse = ChatChromaResponse;
 
-// chat
-export interface QueryChatLogsRequest {
-	sessionId: string;
-	queryText: string;
-	messageType?: ChatMessageType;
-	limit?: number;
+// Lore
+interface LoreChromaResponse extends ChromaResponse {
+	lore: LoreInfo;
+	loreContent: string;
+	lores: LoreInfo[];
+	loreContents: string[];
 }
+export type LoreResponse = LoreChromaResponse;
+
+interface HistoryChromaResponse extends ChromaResponse {
+	history: HistoryInfo;
+	historyContent: string;
+	histrories: HistoryInfo[];
+	historyContents: string[];
+}
+export type HistoryResponse = HistoryChromaResponse;

@@ -46,6 +46,7 @@ export const METADATA_TYPES = {
 	MESSAGE: 'message',
 	TURN: 'turn',
 	RECAP: 'recap',
+	RELATIONSHIP: 'relationship',
 	LORE: 'lore',
 	HISTORY: 'history',
 	TEMP: 'temp',

@@ -92,7 +92,6 @@ export const ChatPage = () => {
 	};
 
 	const _storeNewChatTurn = async (tempChatTurn: TempChatTurn) => {
-		if (!tempChatTurn) return;
 		const newChatTurn: ChatTurn = {
 			sessionId,
 			sequence: tempChatTurn.sequence,
@@ -100,14 +99,16 @@ export const ChatPage = () => {
 			requestMessageId: '',
 			responseMessageId: '',
 			createdAt: '',
-			fullTurnString: '',
 			request: tempChatTurn.chatTurnSets[currentTempSetNo].request,
 			response: tempChatTurn.chatTurnSets[currentTempSetNo].response,
 			type: METADATA_TYPES.TURN,
 		};
 		try {
-			await storeChatTurn(newChatTurn);
-			await addChatTurnIndexedDB(newChatTurn);
+			//server
+			const newChatTurnString = await storeChatTurn(newChatTurn);
+			//client
+			const updatedChatTurn = JSON.parse(newChatTurnString) as ChatTurn;
+			await addChatTurnIndexedDB(updatedChatTurn);
 		} catch (err: any) {
 			console.error('Error storing new chat turn:', err);
 			setPageError(`Failed to store chat turn: ${err.message || 'Unknown error'}`);
@@ -136,9 +137,10 @@ export const ChatPage = () => {
 		setPageError(undefined);
 		setIsProcessing(true);
 		try {
+			if (!tempChatTurn) return;
+			_storeNewChatTurn(tempChatTurn);
+
 			const newTempSequence = getNextSequence();
-			if (tempChatTurn) {
-			}
 
 			//user
 			const userMsg = buildChatMessage('user', newTempSequence, 'the user', userInput, sessionId);

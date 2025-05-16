@@ -1,63 +1,50 @@
 // src/server/routes/chat.routes.ts
 import express, { type Request, type Response } from 'express';
-import { chatService, recapService } from '../service/index.ts';
+import { chatService } from '../service/index.ts'; // recapService not directly used by these chat routes
 import {
-	DEFAULT_LOADING_TURN_COUNT,
-	DEFAULT_RECENT_TURN_COUNT,
 	genRoutePattern,
-	ChatTurn,
-	ChatMessageType,
-	METADATA_TYPES,
+	ChatTurn, // Used for request body validation
 	COLLECTIONS,
-	QueryChatLogsRequest,
+	ChatResponse,
+	QueryChatLogsApiRequest,
 } from '#shared/index.ts';
-import { chromaDbClient } from '../db/chromaDbClient.ts'; // Added chromaDbClient for direct access in one route
-import { IncludeEnum } from 'chromadb';
+// chromaDbClient and IncludeEnum should ideally not be used directly in routes if service handles DB interaction
 import {
 	asyncHandler,
-	CustomValidationRule,
+	CustomValidationRule, // For type if needed, but validateSequenceRule is specific
 	validateRequestData,
-	validateSequenceRule,
 	validateServiceId,
-} from '../util/index.ts';
+	validateSequenceRule, // For throwing specific HTTP errors from routes if needed
+} from '../util/index.ts'; // Assuming createNonNegativeIntStringRule is in ../util/index.ts
 
 const router = express.Router();
-const collectioinType = COLLECTIONS.CHAT;
+const collectionType = COLLECTIONS.CHAT; // Used for validateServiceId
 
-// --- POST /api/chat/store-chat-turn/ ---
-// Stores a completed (fixed) chat turn
+// --- POST /api/chat/store-chat-turn ---
+// Stores a completed (fixed) chat turn.
+// The service method chatService.storeChatTurn now returns a string (JSON of the stored turn).
 router.post(
 	genRoutePattern('storeChatTurn'),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const requiredFields: (keyof ChatTurn)[] = ['sessionId', 'sequence', 'request', 'response'];
-		validateRequestData(req.body, 'body', requiredFields);
+	asyncHandler(
+		async (req: Request<object, string, ChatTurn>, res: Response<string>): Promise<void> => {
+			// Validate the entire ChatTurn body structure
+			validateServiceId(req.body.sessionId, collectionType);
+			// Validate request body
+			const requiredFields: (keyof ChatTurn)[] = ['sessionId', 'sequence', 'request', 'response'];
+			validateRequestData(req.body, 'body', requiredFields);
 
-		const path = genRoutePattern('storeChatTurn');
-		console.log(`API HIT: POST ${path} for ID: ${req.body?.sessionId}`);
-		const response = await chatService.storeChatTurn(req.body);
+			const path = genRoutePattern('storeChatTurn');
+			console.log(
+				`API HIT: POST ${path} for sessionId: ${req.body.sessionId}, sequence: ${req.body.sequence}`
+			);
 
-		res.status(200).json(response);
-	})
-);
+			// chatService.storeChatTurn is expected to handle storing request, response, and the full turn.
+			// It returns a stringified version of the successfully stored ChatTurn.
+			const storedTurnString = await chatService.storeChatTurn(req.body);
 
-// --- GET /api/chat/get-recent-chat-turns/:sessionId ---
-// Gets the most recent fixed chat turns for initial load
-router.get(
-	genRoutePattern('getRecentChatTurns', ['sessionId']),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { sessionId } = req.params;
-		validateServiceId(sessionId, collectioinType);
-
-		// Use query param for limit, default to constant
-		const limitParam = req.query.limit as string | undefined;
-		const limit = limitParam ? parseInt(limitParam, 10) : DEFAULT_RECENT_TURN_COUNT;
-		const path = genRoutePattern('getRecentChatTurns', ['sessionId']);
-		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}?limit=${limit}`);
-		const response = await chatService.getRecentChatTurns(sessionId, limit);
-
-		res.status(200).json(response);
-		return;
-	})
+			res.status(201).json(storedTurnString); // 201 Created is often more appropriate for successful POST
+		}
+	)
 );
 
 // --- GET /api/chat/get-loading-chat-turns/:sessionId ---
@@ -68,7 +55,7 @@ router.get(
 		const { sessionId } = req.params;
 
 		// --- Validate Route Parameter: sessionId ---
-		validateServiceId(sessionId, collectioinType);
+		validateServiceId(sessionId, collectionType);
 
 		// --- Validate Query Parameter: beforeSequence ---
 		const queryRequiredField = 'beforeSequence';
@@ -88,149 +75,82 @@ router.get(
 			`API HIT: GET ${path.replace(':sessionId', sessionId)}?beforeSequence=${beforeSequence}`
 		);
 
-		const response = await chatService.getLoadingChatTurns(sessionId, beforeSequence);
+		const response = await chatService.getChatTurns(sessionId, beforeSequence);
 		res.status(200).json(response);
 	})
 );
 
 // --- GET /api/chat/get-chat-turn-by-sequence/:sessionId/:sequence ---
-// Gets a specific fixed turn by its sequence number
+// Gets a specific fixed turn by its sequence number.
 router.get(
 	genRoutePattern('getChatTurnBySequence', ['sessionId', 'sequence']),
-	async (req: Request<{ sessionId: string; sequence: string }>, res: Response): Promise<any> => {
-		const { sessionId } = req.params;
-		const sequenceParam = req.params.sequence;
-		const path = genRoutePattern('getChatTurnBySequence', ['sessionId', 'sequence']);
-		console.log(`API HIT: GET ${path}`);
+	asyncHandler(async (req: Request, res: Response<ChatResponse>): Promise<void> => {
+		const { sessionId, sequence: sequenceParam } = req.params;
 
-		if (!sessionId) {
-			res.status(400).json({ error: 'Missing sessionId parameter' });
-			return;
-		}
+		// Validate Route Parameters
+		validateServiceId(sessionId, collectionType);
+		validateRequestData(req.params, 'params', ['sequence'], [validateSequenceRule('sequence')]);
+
 		const sequence = parseInt(sequenceParam, 10);
-		if (isNaN(sequence) || sequence < 0) {
-			// Adjust if sequence starts at 1
-			res.status(400).json({ error: 'Invalid sequence parameter, must be a non-negative number' });
-			return;
-		}
 
-		try {
-			// Directly fetch and parse here for clarity, matching service logic implicitly
-			const collection = await chatService._getCollection(sessionId); // Access internal method carefully
-			const turnId = buildTurnId(sessionId, sequence);
-			const turnJson = await chromaDbClient.getRecordById(collection, turnId);
+		const path = genRoutePattern('getChatTurnBySequence', ['sessionId', 'sequence']);
+		console.log(
+			`API HIT: GET ${path.replace(':sessionId', sessionId).replace(':sequence', sequenceParam)}`
+		);
 
-			if (!turnJson) {
-				res.status(404).json({ error: `Chat turn with sequence ${sequence} not found` });
-				return;
-			}
-
-			// Parse and validate type before sending
-			const turn = JSON.parse(turnJson) as ChatTurn;
-			const metadata = (await collection.get({ ids: [turnId], include: [IncludeEnum.Metadatas] }))
-				.metadatas?.[0];
-
-			// Ensure it's a 'full_turn' type we are serving
-			if (!metadata || metadata.type !== METADATA_TYPES.TURN) {
-				console.warn(`Attempted to fetch non- via sequence endpoint: ${turnId}`);
-				res
-					.status(404)
-					.json({ error: `Chat turn with sequence ${sequence} not found (or not a fixed turn)` });
-				return;
-			}
-
-			return res.json(turn);
-		} catch (error: any) {
-			console.error(`Error in GET ${path}:`, error);
-			res.status(500).json({ error: error.message || 'Failed to get chat turn by sequence' });
-		}
-	}
-);
-
-// --- GET /api/chat/get-recap/:sessionId ---
-// Gets the generated recap for the session
-router.get(
-	genRoutePattern('getRecap', ['sessionId']),
-	async (req: Request<{ sessionId: string }>, res: Response): Promise<void> => {
-		const { sessionId } = req.params;
-		const path = genRoutePattern('getRecap', [sessionId]);
-		console.log(`API HIT: GET ${path}`);
-
-		if (!sessionId) {
-			res.status(400).json({ error: 'Missing sessionId parameter' });
-			return;
-		}
-
-		try {
-			const recap = await recapService.getRecap(sessionId);
-			// Return empty string if no recap, consistent with service
-			res.json({ recap: recap ?? '' });
-		} catch (error: any) {
-			console.error(`Error in GET ${path}:`, error);
-			res.status(500).json({ error: error.message || 'Failed to get recap' });
-		}
-	}
-);
-
-// --- POST /api/chat/query-chat-log/ ---
-// Performs a semantic query against the chat log messages (request/response)
-// Example: /api/chat/query-chat-log/session123?q=search%20term&limit=5
-router.post(
-	genRoutePattern('queryChatLogs'),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const requiredFields: (keyof QueryChatLogsRequest)[] = ['sessionId', 'queryText'];
-		validateRequestData(req.body, 'body', requiredFields);
-
-		const { sessionId, queryText, messageType, limit } = req.body as QueryChatLogsRequest;
-		const path = genRoutePattern('queryChatLogs');
-		console.log(`API HIT: GET ${path}`);
-
-		const response = await chatService.queryChatMessages(sessionId, queryText, messageType, limit);
-
-		res.status(200).json(response);
-		return;
+		const chatResponse = await chatService.getChatTurnBySequence(sessionId, sequence);
+		res.status(200).json(chatResponse);
 	})
 );
 
-// --- POST /api/chat/build-user-prompt-from-log/:sessionId ---
-// Builds a context-aware prompt using recap or recent turns
+// --- POST /api/chat/query-chat-logs ---
+// Performs a semantic query against chat messages.
+// Request body: { sessionId: string, queryText: string, messageType?: ChatMessageType | ChatMessageType[], limit?: number }
+
 router.post(
-	genRoutePattern('buildUserPromptFromLog', ['sessionId']),
-	async (req: Request<{ sessionId: string }>, res: Response): Promise<any> => {
-		const { sessionId } = req.params;
-		const { userText, isFullLogQuery } = req.body; // isFullLogQuery is optional flag
-		const path = genRoutePattern('buildUserPromptFromLog', [sessionId]);
-		console.log(`API HIT: POST ${path}`);
+	genRoutePattern('queryChatLogs'), // Assuming this is /api/chat/query-chat-logs
+	asyncHandler(
+		async (
+			req: Request<object, string[], QueryChatLogsApiRequest>,
+			res: Response<string[]>
+		): Promise<void> => {
+			validateServiceId(req.body.sessionId, collectionType);
 
-		if (!sessionId) {
-			res.status(400).json({ error: 'Missing sessionId parameter' });
-			return;
-		}
-		if (typeof userText !== 'string') {
-			res
-				.status(400)
-				.json({ error: 'Missing or invalid userText in request body (must be a string)' });
-			return;
-		}
-		// Validate isFullLogQuery if present
-		if (isFullLogQuery !== undefined && typeof isFullLogQuery !== 'boolean') {
-			res.status(400).json({ error: 'Invalid isFullLogQuery in request body (must be boolean)' });
-			return;
-		}
+			const requiredFields: (keyof QueryChatLogsApiRequest)[] = ['sessionId', 'queryText'];
+			const customValidations: CustomValidationRule[] = [
+				{
+					// Validate queryText is non-empty string
+					predicate: (body: QueryChatLogsApiRequest) =>
+						typeof body.queryText !== 'string' || body.queryText.trim() === '',
+					status: 400,
+					errorMessage: "Body field 'queryText' must be a non-empty string.",
+					clientMessage: 'A search query is required.',
+				},
+				{
+					// Validate limit if provided
+					predicate: (body: QueryChatLogsApiRequest) =>
+						body.limit !== undefined &&
+						(typeof body.limit !== 'number' || body.limit <= 0 || !Number.isInteger(body.limit)),
+					status: 400,
+					errorMessage: "Body field 'limit', if provided, must be a positive integer.",
+					clientMessage: 'If a limit is specified, it must be a positive number.',
+				},
+				// messageType validation could be added if specific values are enforced at route level
+			];
+			validateRequestData(req.body, 'body', requiredFields, customValidations);
 
-		try {
-			const prompt = await chatService.buildUserPromptFromLog(
-				sessionId,
-				userText,
-				!!isFullLogQuery // Convert to boolean, defaults to false if undefined
+			const { sessionId, queryText, messageType, limit } = req.body;
+			const path = genRoutePattern('queryChatLogs');
+			console.log(
+				`API HIT: POST ${path} for session ${sessionId} with query: "${queryText.substring(0, 30)}..."`
 			);
-			// Return the generated prompt string
-			return res.json({ prompt: prompt ?? '' });
-		} catch (error: any) {
-			console.error(`Error in POST ${path}:`, error);
-			return res.status(500).json({ error: error.message || 'Failed to build prompt from log' });
+
+			// Assuming service method is queryChatMessages and it handles the messageType logic ('request', 'response', 'both', or array)
+			const documents = await chatService.queryChatMessages(sessionId, queryText, messageType, limit);
+
+			res.status(201).json(documents);
 		}
-	}
+	)
 );
 
 export default router;
