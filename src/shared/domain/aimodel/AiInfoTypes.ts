@@ -47,7 +47,7 @@ export const DEFAULT_CHAT_MODEL_FREE: AiModelInfo = {
 export const DEFAULT_RECAP_MODEL_FREE: AiModelInfo = {
 	platform: 'openrouter',
 	provider: 'google',
-	model: 'google/gemini-2.0-flash-thinking-exp:free',
+	model: 'google/gemma-3n-e4b-it:free',
 };
 
 export const DEFAULT_LOCAL_MODEL: AiModelInfo = {

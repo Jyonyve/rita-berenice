@@ -19,6 +19,7 @@
 		"chat:init": "tsx ./src/migration/chat/initChat.ts",
 		"chat:check": "tsx ./src/migration/chat/checkChat.ts",
 		"chat:delete": "tsx ./src/migration/chat/deleteChat.ts",
+		"recap:init": "tsx ./src/migration/chat/recapChat.ts",
 		"drop": "tsx ./scripts/dropCollection.ts",
 		"source:parse": "tsx ./src/migration/source/htmlParserCheerio.ts"
 	},

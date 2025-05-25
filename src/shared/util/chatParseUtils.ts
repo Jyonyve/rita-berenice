@@ -29,11 +29,10 @@ export const parseTextToEntries = (text: string): ChatEntry[] => {
 export const parseEntriesToText = (entries: ChatEntry[]): string => {
 	return entries
 		.map((entry) => (entry.type === 'action' ? `*${entry.prompt}*` : entry.prompt))
-		.join(' ');
+		.join('\n');
 };
 
-export const buildChatTurnToJsonString = (chatTurn: ChatTurn): string =>
-	JSON.stringify(chatTurn, null, 2);
+export const buildChatTurnToJsonString = (chatTurn: ChatTurn): string => JSON.stringify(chatTurn);
 
 export const buildChatMessage = (
 	role: ChatRoleType,
@@ -54,7 +53,8 @@ export const buildChatMessage = (
 		messageType,
 		showName,
 		emotion,
-		timestamp: '',
+		createdAt: '',
+		updatedAt: '',
 		type: METADATA_TYPES.MESSAGE,
 	};
 };

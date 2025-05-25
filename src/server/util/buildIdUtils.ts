@@ -8,7 +8,8 @@ const _genNanoId = (length: number) => customAlphabet(ALPHANUMERIC_ALPHABET, len
 export const SUFFIX = {
 	REQUEST: 'request',
 	RESPONSE: 'response',
-	SET: 'set',
+	TURN: 'turn',
+	STORY: ' story',
 	RELATIONSHIP: 'relationship',
 	RECAP: 'recap',
 	LORE: 'lore',
@@ -47,7 +48,7 @@ export const buildMessageId = (
 };
 
 export const buildChatTurnId = (sessionId: string, sequence: number): string => {
-	return `${sessionId}_${sequence}_${SUFFIX.SET}`;
+	return `${sessionId}_${sequence}_${SUFFIX.TURN}`;
 };
 
 // other collections
@@ -57,4 +58,7 @@ export const buildRecapId = (sessionId: string): string => {
 
 export const buildRelationshipRecapId = (sessionId: string): string => {
 	return `${sessionId}_${SUFFIX.RELATIONSHIP}`;
+};
+export const buildStoryRecapId = (sessionId: string, type?: 'NSFW'): string => {
+	return type ? `${sessionId}_${SUFFIX.STORY}_${type}` : `${sessionId}_${SUFFIX.STORY}`;
 };

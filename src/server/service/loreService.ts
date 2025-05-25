@@ -1,10 +1,11 @@
 // src/server/service/loreService.ts
 
 import {
-	CharacterHistory,
-	CharacterLore,
+	LoreInfo,
+	HistoryInfo,
 	COLLECTIONS,
 	METADATA_TYPES,
+	LoreResponse,
 } from '#root/src/shared/index.ts'; // Adjust path
 import { Collection, Where } from 'chromadb';
 import {
@@ -12,10 +13,13 @@ import {
 	buildHistoryId,
 	buildLoreDocument,
 	buildLoreId,
+	validateChromaResponse,
+	validateServiceId,
 } from '../util/index.ts';
 import { chromaDbClient } from '../db/index.ts';
 
 const { getLoreCollection, upsertRecord, getRecords } = chromaDbClient;
+const collectionType = COLLECTIONS.LORE;
 
 export const loreService = {
 	// Cache for lore collection
@@ -30,27 +34,27 @@ export const loreService = {
 		return collection;
 	},
 
-	_parseMetadataToLores: (metadatas: (Record<string, any> | null)[]): CharacterLore[] => {
-		return metadatas.filter((meta): meta is CharacterLore => meta?.type === METADATA_TYPES.LORE);
+	_parseMetadataToLores: (metadatas: (Record<string, any> | null)[]): LoreInfo[] => {
+		return metadatas.filter((meta): meta is LoreInfo => meta?.type === METADATA_TYPES.LORE);
 	},
 
-	_parseMetadataToHistories: (metadatas: (Record<string, any> | null)[]): CharacterHistory[] => {
-		return metadatas.filter(
-			(meta): meta is CharacterHistory => meta?.type === METADATA_TYPES.HISTORY
-		);
+	_parseMetadataToHistories: (metadatas: (Record<string, any> | null)[]): HistoryInfo[] => {
+		return metadatas.filter((meta): meta is HistoryInfo => meta?.type === METADATA_TYPES.HISTORY);
 	},
 
 	// --- Get a lores by character ID ---
-	getLores: async (characterId: string, limit = -1): Promise<LoreChromaResponse | null> => {
+	getLores: async (characterId: string, limit = -1): Promise<LoreResponse> => {
 		validateServiceId(characterId, COLLECTIONS.LORE); // Ensure characterId is valid
 		const collection = await loreService._getCollection();
-		try {
-			console.log(`[LoreService] Querying Lores for characterId: ${characterId}`);
-			const whereClause: Where = { type: METADATA_TYPES.LORE, characterId };
-			const results = await getRecords(collection, whereClause, limit);
+		const where: Where = { type: METADATA_TYPES.LORE, characterId };
 
-			if (validateResult(results)) {
-				const { ids, documents, metadatas } = results;
+		try {
+			const rawResults = await getRecords(collection, where, limit);
+			const results = validateChromaResponse(rawResults, 'getList', collectionType);
+			const { ids, documents, metadatas } = results;
+
+			if (validateResult(rawResults)) {
+				const { ids, documents, metadatas } = rawResults;
 				const parsedLores = loreService._parseMetadataToLores(metadatas);
 				return {
 					ids,

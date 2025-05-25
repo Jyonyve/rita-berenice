@@ -3,7 +3,7 @@ import { COLLECTIONS, MetadataType } from '#root/src/shared/domain/index.ts';
 import { DEFAULT_QUERY_LIMIT, ChromaResponse } from '#root/src/shared/index.ts';
 import { ChromaClient, Collection, IncludeEnum, GetResponse, Where } from 'chromadb';
 
-const CHROMA_URL = process.env.CHROMA_API_URL || 'http://localhost:8000';
+const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev';
 const chromaClient = new ChromaClient({ path: CHROMA_URL });
 
 // Collection caches

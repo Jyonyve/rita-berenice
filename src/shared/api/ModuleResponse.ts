@@ -13,7 +13,12 @@ export interface ApiErrorResponse {
 }
 
 export type ChromaResponse = Pick<GetResponse, 'ids' | 'metadatas' | 'documents'>;
-export type AllResponse = CharacterResponse | ProfileResponse;
+export type AllResponse =
+	| CharacterResponse
+	| ProfileResponse
+	| ChatResponse
+	| LoreResponse
+	| HistoryResponse;
 
 //character
 export interface BasicCharacterInfo {

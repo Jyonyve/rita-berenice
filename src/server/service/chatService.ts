@@ -62,7 +62,8 @@ export const chatService = {
 		const updatedMetadata: ChatMessageMetadata = {
 			...requestMetadata,
 			messageId: messageId || buildMessageId(sessionId, sequence, 'request'),
-			timestamp: now,
+			createdAt: request.createdAt || now,
+			updatedAt: now,
 			type: METADATA_TYPES.MESSAGE,
 		};
 
@@ -88,7 +89,8 @@ export const chatService = {
 		const updatedMetadata: ChatMessageMetadata = {
 			...responseMetadata,
 			messageId: messageId || buildMessageId(sessionId, sequence, 'response'),
-			timestamp: now,
+			createdAt: response.createdAt || now,
+			updatedAt: now,
 			type: METADATA_TYPES.MESSAGE,
 		};
 
@@ -121,6 +123,14 @@ export const chatService = {
 			type: METADATA_TYPES.TURN,
 		};
 		const documentForEmbedding = buildChatTurnDocument(chatTurn);
+
+		await chromaDbClient.upsertRecord(collection, chatTurn.chatTurnId, documentForEmbedding, {
+			sessionId: chatTurn.sessionId,
+			sequence: chatTurn.sequence,
+			type: METADATA_TYPES.TURN,
+			chatTurnId: chatTurn.chatTurnId,
+		});
+
 		await upsertRecord(collection, chatTurn.chatTurnId, documentForEmbedding, updatedMetadata);
 	},
 
