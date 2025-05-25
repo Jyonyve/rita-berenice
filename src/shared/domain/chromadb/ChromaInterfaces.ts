@@ -45,6 +45,7 @@ export const METADATA_TYPES = {
 	PROFILE: 'profile',
 	MESSAGE: 'message',
 	TURN: 'turn',
+	STORY: 'story',
 	RECAP: 'recap',
 	RELATIONSHIP: 'relationship',
 	LORE: 'lore',
