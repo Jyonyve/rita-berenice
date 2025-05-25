@@ -2,7 +2,6 @@ import * as puppeteer from 'puppeteer';
 import fs from 'fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { randomUUID } from 'node:crypto';
 import { MigChatMessage } from '../../shared/domain/index.ts';
 
 function localTimezoneHelper(timestamp: string): string {
@@ -30,7 +29,8 @@ const CHARACTERS = [
 				role: 'user',
 				messageType: 'request',
 				content: '유저가 채팅방에 입장하였습니다. 다음 AI 어시스턴트의 답변부터 대화가 시작됩니다.',
-				timestamp: '2025-02-18T13:21:07.300Z',
+				createdAt: '2025-02-18T13:21:07.300Z',
+				updatedAt: '2025-02-18T13:21:07.300Z',
 				uuid: '41cebfbc-3808-43a9-bce4-cdb29eab8cfa',
 			} as MigChatMessage,
 			{
@@ -65,7 +65,8 @@ const CHARACTERS = [
 				showName: 'tarion_spinoff',
 				content:
 					'*황제가 하사한 타리온의 성은 저녁 노을빛에 붉게 물들어 있었고, 성벽 위로는 바르가스의 깃발이 승전국의 위엄을 과시하듯 거세게 휘날리고 있었다.*\n\n*무거운 성문이 열리며 요니브가 다른 기사들에 의해 타리온 앞에 끌려왔다. 타리온은 느린 걸음으로 계단을 내려오며 요니브를 향해 다가왔다. 그의 발걸음 소리가 텅 빈 홀에 메아리쳤고, 그가 눈짓으로 기사들을 물리자 그들은 조용히 물러났다.*\n\n*타리온은 강제로 무릎 꿇린 요니브를 비꼬듯이 훑어보았다. 그의 차가운 시선에는 전쟁의 상흔과 복수심이 깃들어 있었고, 성 안의 공기는 팽팽한 긴장감으로 가득 차 있었다.*\n\n귀한 집 자녀가 이렇게 있는 꼴을 보게 되다니, 네 아버지를 원망하거라.\n\n*차가운 음성에 담긴 경멸이 성 안에 울려 퍼졌다.*',
-				timestamp: '2025-03-14T06:20:08.300Z',
+				createdAt: '2025-03-14T06:20:08.300Z',
+				updatedAt: '2025-03-14T06:20:08.300Z',
 				model: 'Claude 3.5 Sonnet v2',
 				emotion: 'neutral',
 				uuid: '6a63a628-497a-40e8-bfb7-8476236d29ce',
@@ -233,7 +234,8 @@ MANUAL LOGIN REQUIRED:
 								role: 'user',
 								messageType: 'request',
 								content: logEntry.user_chat,
-								timestamp: logEntry.updated,
+								createdAt: logEntry.created,
+								updatedAt: logEntry.updated,
 								uuid: logEntry.log_id,
 							});
 						}
@@ -242,7 +244,8 @@ MANUAL LOGIN REQUIRED:
 								role: 'assistant',
 								messageType: 'response',
 								content: logEntry.bot_chat,
-								timestamp: logEntry.updated,
+								createdAt: logEntry.created,
+								updatedAt: logEntry.updated,
 								model: logEntry.model,
 								emotion: logEntry.emotion,
 								uuid: logEntry.log_id, // Assuming log_id might be same if user/bot chat are part of one turn
@@ -285,12 +288,12 @@ MANUAL LOGIN REQUIRED:
 
 			if (allMessagesForThisCharacter.length > 0) {
 				// Sort messages by timestamp to ensure correct conversational order
-				allMessagesForThisCharacter.sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
+				allMessagesForThisCharacter.sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
 
 				const sanitizedCharacterName = character.name.replace(/[^a-z0-9_.-]/gi, '_').toLowerCase();
 				const filePath = path.join(
 					resultDir,
-					`${sanitizedCharacterName}_${localTimezoneHelper(allMessagesForThisCharacter[allMessagesForThisCharacter.length - 1].timestamp)}.json`
+					`${sanitizedCharacterName}_${localTimezoneHelper(allMessagesForThisCharacter[allMessagesForThisCharacter.length - 1].createdAt)}.json`
 				);
 				try {
 					await fs.writeFile(filePath, JSON.stringify(allMessagesForThisCharacter, null, 2), 'utf8');

@@ -18,7 +18,8 @@ export interface ChatMessageMetadata {
 	role: ChatRoleType;
 	showName: string;
 	messageId: string;
-	timestamp: string; // ISO 8601 format
+	createdAt: string; // ISO 8601 format
+	updatedAt: string; // ISO 8601 format
 	emotion: (typeof allEmotionKeywordsList)[number];
 	type: typeof METADATA_TYPES.MESSAGE;
 }
@@ -32,7 +33,8 @@ export interface MigChatMessage {
 	role: ChatRoleType;
 	messageType: ChatMessageType;
 	content: string;
-	timestamp: string;
+	createdAt: string;
+	updatedAt: string;
 	showName?: string;
 	emotion?: string;
 	model?: string;

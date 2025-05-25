@@ -6,10 +6,21 @@ import { ChromaClient, Collection } from 'chromadb';
 import { fileURLToPath } from 'node:url';
 
 import { COLLECTIONS, METADATA_TYPES } from '../../shared/domain/chromadb/ChromaInterfaces.ts';
-import { ChatMessage, ChatTurn, MigChatMessage } from '../../shared/domain/index.ts';
-import { buildMessageId, buildSessionId, buildChatTurnId } from '../../server/util/buildIdUtils.ts';
-import { isValidEmotionKeyword } from '../../shared/config/emotionWordsMapper.ts';
+import {
+	ChatMessage,
+	ChatTurn,
+	ChatTurnMetadata,
+	MigChatMessage,
+} from '../../shared/domain/index.ts';
+import {
+	buildMessageId,
+	buildSessionId,
+	buildChatTurnId,
+	buildCharacterId,
+} from '../../server/util/buildIdUtils.ts';
 import { parseTextToEntries } from '../../shared/util/chatParseUtils.ts';
+import { buildChatTurnDocument } from '#root/src/server/index.ts';
+import { validEmotions } from '../../shared/config/index.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -109,7 +120,8 @@ async function initChatFromLogFiles() {
 
 		for (const logFile of logFilesToProcess) {
 			// Changed from allLogFiles to logFilesToProcess
-			const characterId = path.basename(logFile, '.json');
+			const fileNameArr = path.basename(logFile, '.json').split('_');
+			const characterId = buildCharacterId(fileNameArr[0], fileNameArr[1]);
 			const TARGET_SESSION_ID = buildSessionId(characterId);
 
 			const filePath = path.join(CRAWLER_RESULT_DIR, logFile);
@@ -138,73 +150,93 @@ async function initChatFromLogFiles() {
 				turnsMap.set(log.uuid, turnData);
 			});
 
-			let sequence = 0;
 			const sortedLogIds = Array.from(turnsMap.keys()).sort((a, b) => {
 				const timeA = Date.parse(
-					turnsMap.get(a)?.user?.timestamp || turnsMap.get(a)?.bot?.timestamp || ''
+					turnsMap.get(a)?.user?.createdAt || turnsMap.get(a)?.bot?.createdAt || ''
 				);
 				const timeB = Date.parse(
-					turnsMap.get(b)?.user?.timestamp || turnsMap.get(b)?.bot?.timestamp || ''
+					turnsMap.get(b)?.user?.createdAt || turnsMap.get(b)?.bot?.createdAt || ''
 				);
 				return timeA - timeB;
 			});
 
-			for (const logId of sortedLogIds) {
+			// 기존 코드의 문제가 있는 부분을 수정
+			for (const [index, logId] of sortedLogIds.entries()) {
 				const turnPair = turnsMap.get(logId);
 
 				if (turnPair?.user && turnPair?.bot) {
 					const userLog = turnPair.user;
 					const botLog = turnPair.bot;
-					const requestTimestamp = userLog.timestamp;
-					const responseTimestamp = botLog.timestamp;
+
+					// sequence는 index와 동일하게 설정
+					const currentSequence = index;
 
 					const requestMessage: ChatMessage = {
 						role: 'user',
-						messageId: buildMessageId(TARGET_SESSION_ID, sequence, 'request'),
+						messageId: buildMessageId(TARGET_SESSION_ID, currentSequence, 'request'),
 						messageType: 'request',
 						entries: parseTextToEntries(userLog.content),
 						emotion: EMOTION_DEFAULT,
-						timestamp: requestTimestamp,
+						createdAt: userLog.createdAt,
+						updatedAt: userLog.updatedAt,
 						showName: '요니브',
 						type: METADATA_TYPES.MESSAGE,
+						sessionId: TARGET_SESSION_ID,
+						sequence: currentSequence,
 					};
+
+					function _isValidEmotion(emotion?: string): boolean {
+						if (!emotion) return false;
+						if (validEmotions.has(emotion)) return true;
+						console.warn(`Invalid or unmapped emotion keyword: "${emotion}".`);
+						return false;
+					}
 
 					const responseMessage: ChatMessage = {
 						role: 'assistant',
-						messageId: buildMessageId(TARGET_SESSION_ID, sequence, 'response'),
+						messageId: buildMessageId(TARGET_SESSION_ID, currentSequence, 'response'),
 						messageType: 'response',
 						entries: parseTextToEntries(botLog.content),
-						emotion:
-							botLog.emotion && isValidEmotionKeyword(botLog.emotion) ? botLog.emotion : EMOTION_DEFAULT,
-						timestamp: responseTimestamp,
+						emotion: botLog.emotion && _isValidEmotion(botLog.emotion) ? botLog.emotion : EMOTION_DEFAULT,
+						createdAt: botLog.createdAt,
+						updatedAt: botLog.updatedAt,
+						model: botLog.model,
+						sessionId: TARGET_SESSION_ID,
 						showName: '타리온',
 						type: METADATA_TYPES.MESSAGE,
+						sequence: currentSequence,
 					};
+
+					// ChatTurn 객체의 빈 필드들을 올바르게 설정
+					const chatTurnId = buildChatTurnId(TARGET_SESSION_ID, currentSequence);
 
 					const chatTurn: ChatTurn = {
 						sessionId: TARGET_SESSION_ID,
-						sequence: sequence,
+						sequence: currentSequence,
 						request: requestMessage,
 						response: responseMessage,
-						chatTurnId: '',
+						chatTurnId,
 						type: METADATA_TYPES.TURN,
+						requestMessageId: requestMessage.messageId,
+						responseMessageId: responseMessage.messageId,
+						createdAt: userLog.createdAt,
 					};
 
-					const turnId = buildChatTurnId(TARGET_SESSION_ID, sequence);
-					const turnDocument = JSON.stringify(chatTurn);
-					const turnMetadata = {
-						type: METADATA_TYPES.TURN,
+					const turnDocument = buildChatTurnDocument(chatTurn);
+					const turnMetadata: ChatTurnMetadata & { originalLogId: string } = {
 						sessionId: TARGET_SESSION_ID,
-						sequence,
-						timestamp: requestTimestamp,
-						model: botLog.model, // Renamed from modelUsed
-						originalLogId: logId, // This is the log.uuid
+						sequence: currentSequence,
+						chatTurnId: chatTurnId,
+						requestMessageId: requestMessage.messageId,
+						responseMessageId: responseMessage.messageId,
+						createdAt: userLog.createdAt,
+						type: METADATA_TYPES.TURN,
+						originalLogId: logId,
 					};
 
-					allTurnIdsForFile.push(turnId);
+					allTurnIdsForFile.push(chatTurnId);
 					allTurnDocumentsForFile.push(turnDocument);
 					allTurnMetadatasForFile.push(turnMetadata);
-					sequence++;
 				} else {
 					console.warn(
 						`  Incomplete turn data for log_id "${logId}" (uuid from log) in session "${TARGET_SESSION_ID}". User message found: ${!!turnPair?.user}, Bot message found: ${!!turnPair?.bot}. Skipping this turn.`

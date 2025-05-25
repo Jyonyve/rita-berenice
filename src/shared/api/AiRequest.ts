@@ -1,5 +1,5 @@
-import { ChatRoleType } from '../chat/ChatInterfaces.ts';
-import { AiModelInfo } from './AiInfoTypes.ts';
+import { ChatRoleType } from '../domain/chat/ChatInterfaces.ts';
+import { AiModelInfo } from '../domain/aimodel/AiInfoTypes.ts';
 
 // Common message structure
 interface MessageContent {

@@ -84,7 +84,7 @@ router.post(
 	genRoutePattern('storeCharacter'),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		// req validation
-		const requiredFields: (keyof CharacterMetadata)[] = ['characterId', 'description', 'instruction'];
+		const requiredFields = ['characterId', 'description', 'instruction'];
 		validateRequestData(req.body, 'body', requiredFields);
 
 		// api

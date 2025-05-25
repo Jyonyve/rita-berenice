@@ -13,14 +13,14 @@
 		"preview": "cross-env NODE_ENV=production node --env-file .env.production dist/server.js",
 		"start": "cross-env NODE_ENV=production node --env-file .env.production dist/server.js",
 		"prod": "npm run build && npm start",
-		"char:init": "tsx ./scripts/character/initCharacter.ts",
-		"char:check": "tsx ./scripts/character/checkCharacter.ts",
-		"chat:crawl": "tsx ./scripts/chat/crawlChat.ts",
-		"chat:init": "tsx ./scripts/chat/initChat.ts",
-		"chat:check": "tsx ./scripts/chat/checkChat.ts",
-		"chat:delete": "tsx ./scripts/chat/deleteChat.ts",
+		"char:init": "tsx ./src/migration/character/initCharacter.ts",
+		"char:check": "tsx ./src/migration/character/checkCharacter.ts",
+		"chat:crawl": "tsx ./src/migration/chat/crawlChat.ts",
+		"chat:init": "tsx ./src/migration/chat/initChat.ts",
+		"chat:check": "tsx ./src/migration/chat/checkChat.ts",
+		"chat:delete": "tsx ./src/migration/chat/deleteChat.ts",
 		"drop": "tsx ./scripts/dropCollection.ts",
-		"source:parse": "tsx ./scripts/source/htmlParserCheerio.ts"
+		"source:parse": "tsx ./src/migration/source/htmlParserCheerio.ts"
 	},
 	"dependencies": {
 		"@emotion/cache": "^11.14.0",

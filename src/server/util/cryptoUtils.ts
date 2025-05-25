@@ -3,7 +3,9 @@ import crypto from 'crypto';
 // --- Crypto Configuration ---
 // !!! IMPORTANT: Store this key securely, NEVER commit it to Git !!!
 // Load from environment variables or a secure configuration source.
-const ENCRYPTION_KEY = process.env.SECRET_ENCRYPTION_KEY;
+const ENCRYPTION_KEY =
+	process.env.SECRET_ENCRYPTION_KEY ??
+	'db41d3cdf8a2bc3fa8d0468bea9d67833d59637d4abea453350e209abc0e1e92';
 const ALGORITHM = 'aes-256-cbc';
 // Use a fixed IV derived from the key for simplicity.
 // **Security Warning:** Using a unique IV per encryption stored with the

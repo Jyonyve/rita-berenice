@@ -135,6 +135,7 @@ export const numberToEmotionWordsMap = {
 	// 2: Represents anger and related negative emotions like frustration and irritation. (분노 / 좌절)
 	2: [
 		'angry', // 화난
+		'anger', // 분노
 		'mad', // (몹시) 화가 난
 		'furious', // 몹시 화가 난, 격노한
 		'irate', // 노한, 격앙된
@@ -186,6 +187,8 @@ export const numberToEmotionWordsMap = {
 	// 3: Represents sadness and related negative emotions like grief and worry. (슬픔 / 걱정 / 비탄)
 	3: [
 		'sad', // 슬픈
+		'sadness', // 슬픔
+		'grief', // 비탄, 슬픔
 		'unhappy', // 불행한, 슬픈
 		'sorrowful', // (매우) 슬픈, 비탄에 잠긴
 		'depressed', // 우울한, 의기소침한
@@ -198,6 +201,7 @@ export const numberToEmotionWordsMap = {
 		'worried', // 걱정하는, 염려하는
 		'anxious', // 불안해하는, 염려하는
 		'nervous', // 초조한, 불안한
+		'nervousness', // 초조함, 불안감
 		'concerned', // 걱정하는, 염려하는
 		'apprehensive', // 걱정되는, 불안한
 		'blue', // 우울한 (기분)
@@ -257,6 +261,7 @@ export const numberToEmotionWordsMap = {
 		'stunned', // (놀람·충격으로) 망연자실한, 어리벙벙한
 		'suspicion', // 의심, 혐의
 		'tense', // 긴장한, 신경이 날카로운
+		'annoyance', // 짜증, 불쾌, 조바심심
 		'uneasy', // (마음이) 불안한, 불편한
 		'unnerved', // 불안하게 만들다, 기력을 잃게 하다
 		'wary', // 경계하는, 조심하는
