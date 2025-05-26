@@ -159,7 +159,10 @@ export const chromaDbClient = {
 
 	getRecordById: async (collection: Collection, id: string): Promise<ChromaResponse> => {
 		try {
-			const result = await collection.get({ ids: [id], include: [IncludeEnum.Metadatas] });
+			const result = await collection.get({
+				ids: [id],
+				include: [IncludeEnum.Metadatas, IncludeEnum.Documents],
+			});
 			return _returnResponse(result);
 		} catch (error) {
 			console.error(`[ChromaClient.getRecordById] Error fetching data`, error);
