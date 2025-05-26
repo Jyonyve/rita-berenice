@@ -107,6 +107,22 @@ export const chromaDbClient = {
 		return sessionCollections[sessionId];
 	},
 
+	/**
+	 * 컬렉션의 전체 문서 수를 반환합니다.
+	 * @param collection - 문서 수를 가져올 Collection 객체
+	 * @returns 컬렉션 내 문서의 총 수
+	 */
+	getCollectionCount: async (collection: Collection): Promise<number> => {
+		try {
+			const count = await collection.count();
+			console.log(`[ChromaClient.getCollectionCount] Collection has ${count} documents.`);
+			return count;
+		} catch (error) {
+			console.error('[ChromaClient.getCollectionCount] Error fetching collection count:', error);
+			throw new Error(`ChromaDB count failed for collection: ${(error as Error).message}`);
+		}
+	},
+
 	// Enhanced CRUD operations with embedding support
 
 	addRecord: async (

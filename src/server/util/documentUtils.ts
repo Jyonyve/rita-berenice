@@ -17,7 +17,7 @@ export const buildNaturalChatText = (request: ChatMessage, response: ChatMessage
 	const charResponse = parseEntriesToText(response.entries);
 
 	let documentText = `User Prompt by ${request.showName}: ${userPrompt}\n`;
-	documentText += `Character Response by ${response.showName} (Emotion: ${response.emotion}) : ${charResponse}`;
+	documentText += `Character Response by ${response.showName} (Emotion: ${response.emotion}) : ${charResponse}\n\n`;
 
 	return documentText.trim();
 };

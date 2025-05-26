@@ -6,7 +6,6 @@ import {
 	METADATA_TYPES,
 	DEFAULT_RECAP_INTERVAL,
 	DEFAULT_RELATIONSHIP_RECAP_INTERVAL,
-	buildChatTurnToJsonString,
 } from '../../shared/index.ts';
 import {
 	buildLlmFactualRecapPrompt,
@@ -15,7 +14,6 @@ import {
 } from '../../server/util/templateUtils.ts';
 import { chromaDbClient } from '../../server/db/index.ts';
 import {
-	buildChatTurnDocument,
 	buildNaturalChatText,
 	buildRecapId,
 	buildRelationshipRecapId,
@@ -23,29 +21,34 @@ import {
 	handleServiceError,
 	validateChromaResponse,
 } from '../../server/util/index.ts';
-import path from 'path';
 
 // --- Configuration ---
-const GEMINI_MODEL = 'gemini-2.0-flash-001'; // 빠르고 효율적인 recap용
-const STORY_MODEL = 'gemini-2.0-flash-001';
+
 // 'gemini-2.5-pro-preview-05-06'; // 고품질 스토리용
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const RECAP_MODEL = GEMINI_MODEL || 'google/gemma-3n-e4b-it:free';
-const API_PROVIDER = 'gemini';
+const OPENROUTER_API_KEY =
+	process.env.OPENROUTER_API_KEY ||
+	'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';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDcw_sDLQSjD0fJARHJNaRoIZv_Se6YGj8';
 
 const PROGRESS_DIR = './src/migration/recap';
-const PROGRESS_FILE = `${PROGRESS_DIR}/recap-progress.json`;
 const OUTPUT_DIR = `${PROGRESS_DIR}/output`;
 
-// Target session selection
-const MONDAY_ORIGINAL_SESSIONID = 'monday_original_oaO9n1lto41rry8v';
-// const TARION_ORIGINAL_SESSIONID = 'tarion_original_oI3vdiZ9lKnayZIN';
-// const TARION_SPINOFF_SESSIONID = 'tarion_spinoff_1fIU84jfpe80sbjE';
+const RECAP_MODEL = 'gemini-2.0-flash-001'; // 빠르고 효율적인 recap용
+const STORY_MODEL = 'google/gemma-3-27b-it:free';
+// 'mistralai/devstral-small:free';
+// 'google/gemini-2.5-flash-preview-05-20';
+// 'google/gemma-3n-e4b-it:free';
+// 'nousresearch/deephermes-3-mistral-24b-preview:free';
 const TARGET_COLLECTION_NAME = COLLECTIONS.CHAT;
-const TARGET_SESSION_ID = MONDAY_ORIGINAL_SESSIONID ?? '';
+const USER_NAME = '요니브';
+
+// Target session selection
+// const MONDAY_ORIGINAL_SESSIONID = 'monday_original_moH1Pu9n3BXz3OmY';
+// const TARION_ORIGINAL_SESSIONID = 'tarion_original_1NkO7v690JDWN9Ey';
+const TARION_SPINOFF_SESSIONID = 'tarion_spinoff_U2Hc22mzJufwQvSX';
+// const TARGET_SESSION_ID = MONDAY_ORIGINAL_SESSIONID ?? '';
 // const TARGET_SESSION_ID = TARION_ORIGINAL_SESSIONID ?? '';
-// const TARGET_SESSION_ID = TARION_SPINOFF_SESSIONID ?? '';
+const TARGET_SESSION_ID = TARION_SPINOFF_SESSIONID ?? '';
 
 // --- Types ---
 interface ProgressState {
@@ -56,26 +59,29 @@ interface ProgressState {
 	lastError?: string;
 	timestamp: string;
 	lastUpdated: string;
-	// 누적된 recap 내용을 저장
 	accumulatedFactualRecap: string;
 	accumulatedRelationshipRecap: string;
-	// 스토리 문서 관련 필드 추가
+	// 단계별 완료 플래그
+	factualRecapCompleted?: boolean;
+	relationshipRecapCompleted?: boolean;
 	nsfwStoryCompleted?: boolean;
 	sfwStoryCompleted?: boolean;
+	// 스토리 콘텐츠
 	nsfwStoryContent?: string;
 	sfwStoryContent?: string;
+	// 스토리 청킹 진행 상황 (선택적 추가)
+	nsfwStoryProcessedTurnCount?: number;
+	sfwStoryProcessedTurnCount?: number;
 }
 
 // --- Gemini API Functions ---
-const generateRecapWithGemini = async (
-	prompt: string,
-	useStoryModel: boolean = false
-): Promise<string> => {
+const generateRecapWithGemini = async (prompt: string): Promise<string> => {
 	if (!GEMINI_API_KEY) {
 		throw new Error('GEMINI_API_KEY environment variable is required');
 	}
 
-	const model = useStoryModel ? STORY_MODEL : RECAP_MODEL;
+	// Recap은 항상 RECAP_MODEL (Gemini Flash) 사용
+	const model = RECAP_MODEL;
 
 	try {
 		const response = await fetch(
@@ -87,7 +93,7 @@ const generateRecapWithGemini = async (
 					contents: [{ parts: [{ text: prompt }] }],
 					generationConfig: {
 						temperature: 0.7,
-						maxOutputTokens: useStoryModel ? 8000 : 2000, // 스토리는 더 긴 출력
+						maxOutputTokens: 4096, // Recap용 토큰
 					},
 				}),
 			}
@@ -100,7 +106,7 @@ const generateRecapWithGemini = async (
 				const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : 5000;
 				console.log(`⏳ Gemini rate limited. Waiting ${waitTime}ms before retry...`);
 				await new Promise((resolve) => setTimeout(resolve, waitTime));
-				return generateRecapWithGemini(prompt, useStoryModel); // 재시도
+				return generateRecapWithGemini(prompt); // 재시도
 			}
 			throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
 		}
@@ -119,37 +125,115 @@ const generateRecapWithGemini = async (
 	}
 };
 
-// 기존 generateRecap 함수를 Gemini로 교체
+// generateRecap 함수는 이제 Gemini 전용
 const generateRecap = async (prompt: string): Promise<string> => {
-	return generateRecapWithGemini(prompt, false); // Recap용 Flash 모델 사용
+	return generateRecapWithGemini(prompt);
 };
 
-// 스토리 생성용 별도 함수
+// --- OpenRouter LLM Functions ---
+const generateStoryWithOpenRouter = async (prompt: string): Promise<string> => {
+	if (!OPENROUTER_API_KEY) {
+		throw new Error('OPENROUTER_API_KEY is required');
+	}
+
+	const model = STORY_MODEL; // OpenRouter용 모델 사용
+
+	try {
+		const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+			method: 'POST',
+			headers: {
+				Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+				'Content-Type': 'application/json',
+				'HTTP-Referer': 'https://github.com/Jyonyve/rita-berenice',
+				'X-Title': 'Rita Berenice Story Generator',
+			},
+			body: JSON.stringify({
+				model: model, // OpenRouter 모델 지정
+				messages: [{ role: 'system', content: prompt }],
+				temperature: 0.7,
+				max_tokens: 8000, // 스토리는 더 긴 출력
+			}),
+		});
+
+		if (!response.ok) {
+			// OpenRouter Rate Limit 처리
+			if (response.status === 429) {
+				const retryAfter = response.headers.get('retry-after');
+				const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : 5000;
+
+				// 일일 제한인지 확인
+				const rateLimitReset = response.headers.get('x-ratelimit-reset-requests'); // OpenRouter 헤더
+				if (rateLimitReset) {
+					const resetTime = new Date(parseInt(rateLimitReset) * 1000);
+					const now = new Date();
+					const hoursUntilReset = (resetTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+					if (hoursUntilReset > 6) {
+						// 6시간 이상이면 일일 제한으로 판단
+						console.error(
+							`🚫 OpenRouter Daily rate limit exceeded for stories. Resets at: ${resetTime.toLocaleString()}`
+						);
+						console.error(`⏰ Wait time: ${Math.ceil(hoursUntilReset)} hours`);
+						throw new Error(`OPENROUTER_DAILY_RATE_LIMIT_EXCEEDED:${resetTime.getTime()}`);
+					}
+				}
+
+				console.log(`⏳ OpenRouter rate limited. Waiting ${waitTime}ms before retry...`);
+				await new Promise((resolve) => setTimeout(resolve, waitTime));
+				return generateStoryWithOpenRouter(prompt); // 재시도
+			}
+			throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
+		}
+
+		const data = await response.json();
+		// ✅ 응답 검증 추가
+		if (!data || !data.choices || data.choices.length === 0) {
+			console.error('OpenRouter API response missing choices:', data);
+			throw new Error('Invalid response from OpenRouter: No choices found');
+		}
+
+		const choice = data.choices[0];
+		if (!choice || !choice.message || !choice.message.content) {
+			console.error('OpenRouter API response missing message content:', data);
+			throw new Error('Invalid response from OpenRouter: No message content');
+		}
+
+		const content = choice.message.content;
+
+		if (!content || content.trim() === '') {
+			// content가 빈 문자열일 수도 있음
+			throw new Error('Empty response from OpenRouter API');
+		}
+
+		return content;
+	} catch (error) {
+		console.error('Error calling OpenRouter API:', error);
+		throw error;
+	}
+};
+
+// generateStory 함수는 이제 OpenRouter 전용
 const generateStory = async (prompt: string): Promise<string> => {
-	return generateRecapWithGemini(prompt, true); // Story용 Pro 모델 사용
+	return generateStoryWithOpenRouter(prompt);
 };
 
 // --- Progress Management Functions ---
 const loadProgress = async (): Promise<ProgressState> => {
+	const PROGRESS_FILE = `${PROGRESS_DIR}/recap-progress-${TARGET_SESSION_ID}.json`;
 	try {
 		await access(PROGRESS_FILE);
 		const data = await readFile(PROGRESS_FILE, 'utf-8');
 		const existingProgress = JSON.parse(data);
 
-		// 세션 ID가 다르면 새로 시작
 		if (existingProgress.sessionId !== TARGET_SESSION_ID) {
 			console.log(
 				`📋 Different session detected. Previous: ${existingProgress.sessionId}, Current: ${TARGET_SESSION_ID}`
 			);
-
-			// 기존 progress를 백업
 			const backupFileName = `${PROGRESS_DIR}/recap-progress-${existingProgress.sessionId}-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
 			await writeFile(backupFileName, JSON.stringify(existingProgress, null, 2));
 			console.log(`📋 Previous progress backed up to: ${backupFileName}`);
-
 			console.log('📋 Starting fresh for new session...');
 
-			// 새 세션을 위한 초기 상태 생성
 			const initialState: ProgressState = {
 				sessionId: TARGET_SESSION_ID,
 				factualBatchIndex: 0,
@@ -159,15 +243,34 @@ const loadProgress = async (): Promise<ProgressState> => {
 				lastUpdated: new Date().toISOString(),
 				accumulatedFactualRecap: '',
 				accumulatedRelationshipRecap: '',
+				factualRecapCompleted: false,
+				relationshipRecapCompleted: false,
+				nsfwStoryCompleted: false,
+				sfwStoryCompleted: false,
+				nsfwStoryContent: '',
+				sfwStoryContent: '',
+				nsfwStoryProcessedTurnCount: 0,
+				sfwStoryProcessedTurnCount: 0,
 			};
-
-			// 새 progress 파일로 저장
-			await saveProgress(initialState);
+			await saveProgress(initialState); // 새 세션의 초기 상태 저장
 			return initialState;
 		}
 
 		console.log('📋 Progress file loaded successfully for same session');
-		return existingProgress;
+		// 로드된 progress에 새 필드가 없을 경우 기본값 추가
+		return {
+			accumulatedFactualRecap: '', // 이전 버전 호환성을 위해 기본값 제공
+			accumulatedRelationshipRecap: '',
+			factualRecapCompleted: false,
+			relationshipRecapCompleted: false,
+			nsfwStoryCompleted: false,
+			sfwStoryCompleted: false,
+			nsfwStoryContent: '',
+			sfwStoryContent: '',
+			nsfwStoryProcessedTurnCount: 0,
+			sfwStoryProcessedTurnCount: 0,
+			...existingProgress, // 기존 값으로 덮어쓰기
+		};
 	} catch (error) {
 		console.log('📋 No existing progress file found, starting fresh');
 		await ensureDirectoryExists(PROGRESS_DIR);
@@ -181,12 +284,21 @@ const loadProgress = async (): Promise<ProgressState> => {
 			lastUpdated: new Date().toISOString(),
 			accumulatedFactualRecap: '',
 			accumulatedRelationshipRecap: '',
+			factualRecapCompleted: false,
+			relationshipRecapCompleted: false,
+			nsfwStoryCompleted: false,
+			sfwStoryCompleted: false,
+			nsfwStoryContent: '',
+			sfwStoryContent: '',
+			nsfwStoryProcessedTurnCount: 0,
+			sfwStoryProcessedTurnCount: 0,
 		};
 		return initialState;
 	}
 };
 
 const saveProgress = async (progressState: ProgressState): Promise<void> => {
+	const PROGRESS_FILE = `${PROGRESS_DIR}/recap-progress-${TARGET_SESSION_ID}.json`;
 	progressState.lastUpdated = new Date().toISOString();
 	await writeFile(PROGRESS_FILE, JSON.stringify(progressState, null, 2));
 };
@@ -223,57 +335,15 @@ const displayProgress = (progressState: ProgressState): void => {
 	console.log('');
 };
 
-// --- OpenRouter LLM Functions ---
-const generateOpenRouterRecap = async (prompt: string): Promise<string> => {
-	if (!OPENROUTER_API_KEY) {
-		throw new Error('OPENROUTER_API_KEY is required');
-	}
-
-	try {
-		const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-			method: 'POST',
-			headers: {
-				Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-				'Content-Type': 'application/json',
-				'HTTP-Referer': 'https://github.com/Jyonyve/rita-berenice',
-				'X-Title': 'Rita Berenice Recap Generator',
-			},
-			body: JSON.stringify({
-				model: RECAP_MODEL,
-				messages: [{ role: 'system', content: prompt }],
-				temperature: 0.7,
-				max_tokens: 2000,
-			}),
-		});
-
-		if (!response.ok) {
-			// Rate limit 에러 처리 추가
-			if (response.status === 429) {
-				const retryAfter = response.headers.get('retry-after');
-				const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : 5000;
-				console.log(`⏳ Rate limited. Waiting ${waitTime}ms before retry...`);
-				await new Promise((resolve) => setTimeout(resolve, waitTime));
-				return generateRecap(prompt); // 재시도
-			}
-			throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
-		}
-
-		const data = await response.json();
-		return data.choices[0]?.message?.content || '';
-	} catch (error) {
-		console.error('Error calling OpenRouter API:', error);
-		throw error;
-	}
-};
-
 // --- Data Retrieval Functions ---
 const getSessionChatTurns = async (sessionId: string): Promise<ChatTurn[]> => {
 	try {
 		const collection = await chromaDbClient.getSessionCollection(sessionId);
+		const count = await collection.count();
 		const rawResults = await chromaDbClient.getRecords(
 			collection,
 			{ $and: [{ sessionId: { $eq: sessionId } }, { type: { $eq: METADATA_TYPES.TURN } }] },
-			2000
+			count
 		);
 
 		const results = validateChromaResponse(rawResults, 'getList', TARGET_COLLECTION_NAME);
@@ -388,87 +458,96 @@ const exportRecapsToFiles = async (
 	progressState: ProgressState
 ): Promise<void> => {
 	try {
-		await ensureDirectoryExists(OUTPUT_DIR);
-		const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+		const outputDirForSession = `${OUTPUT_DIR}/${sessionId}`;
+		await ensureDirectoryExists(outputDirForSession);
+		const timestampIso = new Date().toISOString().replace(/[:.]/g, '-');
 
 		// Factual recap 파일
-		const factualFileName = `${OUTPUT_DIR}/${sessionId}_factual_recap_${timestamp}.md`;
-		const factualContent = `# Factual Recap for Session: ${sessionId}
+		const factualRecapContent =
+			progressState.accumulatedFactualRecap || 'No factual recap content generated.';
+		const factualFileName = `${outputDirForSession}/${sessionId}_factual_recap_${timestampIso}.md`;
+		const factualFileContent = `# Factual Recap for Session: ${sessionId}
 
 Generated on: ${new Date().toISOString()}
-Model: ${RECAP_MODEL}
+Model (Gemini): ${RECAP_MODEL}
 Total Batches Processed: ${progressState.factualBatchIndex}
 
 ---
-
-${progressState.accumulatedFactualRecap || 'No factual recap content generated.'}
+${factualRecapContent}
 `;
-		await writeFile(factualFileName, factualContent);
+		await writeFile(factualFileName, factualFileContent);
 		console.log(`📄 Factual recap exported to: ${factualFileName}`);
 
 		// Relationship recap 파일
-		const relationshipFileName = `${OUTPUT_DIR}/${sessionId}_relationship_recap_${timestamp}.md`;
-		const relationshipContent = `# Relationship Recap for Session: ${sessionId}
+		const relationshipRecapData =
+			progressState.accumulatedRelationshipRecap || 'No relationship recap content generated.';
+		const relationshipFileName = `${outputDirForSession}/${sessionId}_relationship_recap_${timestampIso}.md`;
+		const relationshipFileContent = `# Relationship Recap for Session: ${sessionId}
 
 Generated on: ${new Date().toISOString()}
-Model: ${RECAP_MODEL}
+Model (Gemini): ${RECAP_MODEL}
 Total Batches Processed: ${progressState.relationshipBatchIndex}
 
 ---
-
-${progressState.accumulatedRelationshipRecap || 'No relationship recap content generated.'}
+${relationshipRecapData}
 `;
-		await writeFile(relationshipFileName, relationshipContent);
+		await writeFile(relationshipFileName, relationshipFileContent);
 		console.log(`📄 Relationship recap exported to: ${relationshipFileName}`);
 
-		// NSFW 스토리 파일 (개인용)
-		if (progressState.nsfwStoryContent) {
-			const nsfwStoryFileName = `${OUTPUT_DIR}/${sessionId}_story_PERSONAL_${timestamp}.md`;
-			const nsfwContent = `# ${sessionId}의 이야기 (개인용)
+		// NSFW 스토리 파일 (OpenRouter)
+		if (progressState.nsfwStoryCompleted && progressState.nsfwStoryContent) {
+			const nsfwStoryFileName = `${outputDirForSession}/${sessionId}_story_PERSONAL_${timestampIso}.md`;
+			const nsfwFileContent = `# ${sessionId}의 이야기 (개인용)
 
 ⚠️ 이 문서는 개인적인 기억 보존용입니다.
 
 Generated on: ${new Date().toISOString()}
-Model: ${RECAP_MODEL}
+Model (OpenRouter): ${STORY_MODEL}
 
 ---
-
 ${progressState.nsfwStoryContent}
-`;
-			await writeFile(nsfwStoryFileName, nsfwContent);
+`; // nsfwStoryContent가 문자열임을 보장
+			await writeFile(nsfwStoryFileName, nsfwFileContent);
 			console.log(`📄 Personal story document exported to: ${nsfwStoryFileName}`);
+		} else {
+			console.log('⏩ NSFW Story not completed or content missing, skipping export.');
 		}
 
-		// SFW 스토리 파일 (공유용)
-		if (progressState.sfwStoryContent) {
-			const sfwStoryFileName = `${OUTPUT_DIR}/${sessionId}_story_SHAREABLE_${timestamp}.md`;
-			const sfwContent = `# ${sessionId}의 이야기 (공유용)
+		// SFW 스토리 파일 (OpenRouter)
+		if (progressState.sfwStoryCompleted && progressState.sfwStoryContent) {
+			// sfwStoryCompleted 플래그도 확인
+			const sfwStoryFileName = `${outputDirForSession}/${sessionId}_story_SHAREABLE_${timestampIso}.md`;
+			const sfwFileContent = `# ${sessionId}의 이야기 (공유용)
 
 💝 이 문서는 다른 사람들과 공유하기에 적합합니다.
 
 Generated on: ${new Date().toISOString()}
-Model: ${RECAP_MODEL}
+Model (OpenRouter): ${STORY_MODEL}
 
 ---
-
 ${progressState.sfwStoryContent}
-`;
-			await writeFile(sfwStoryFileName, sfwContent);
+`; // sfwStoryContent가 문자열임을 보장
+			await writeFile(sfwStoryFileName, sfwFileContent);
 			console.log(`📄 Shareable story document exported to: ${sfwStoryFileName}`);
+		} else {
+			console.log('⏩ SFW Story not completed or content missing, skipping export.');
 		}
 
 		// 요약 파일
-		const summaryFileName = `${OUTPUT_DIR}/${sessionId}_recap_summary_${timestamp}.json`;
+		const summaryFileName = `${outputDirForSession}/${sessionId}_recap_summary_${timestampIso}.json`;
 		const summaryContent = {
 			sessionId,
 			generatedAt: new Date().toISOString(),
-			model: RECAP_MODEL,
+			recapModel: RECAP_MODEL,
+			storyModel: STORY_MODEL,
 			factualBatchesProcessed: progressState.factualBatchIndex,
 			relationshipBatchesProcessed: progressState.relationshipBatchIndex,
-			factualRecapLength: progressState.accumulatedFactualRecap.length,
-			relationshipRecapLength: progressState.accumulatedRelationshipRecap.length,
+			factualRecapLength: (progressState.accumulatedFactualRecap || '').length,
+			relationshipRecapLength: (progressState.accumulatedRelationshipRecap || '').length,
 			nsfwStoryGenerated: !!progressState.nsfwStoryCompleted,
 			sfwStoryGenerated: !!progressState.sfwStoryCompleted,
+			nsfwStoryLength: (progressState.nsfwStoryContent || '').length,
+			sfwStoryLength: (progressState.sfwStoryContent || '').length,
 		};
 		await writeFile(summaryFileName, JSON.stringify(summaryContent, null, 2));
 		console.log(`📄 Summary exported to: ${summaryFileName}`);
@@ -521,8 +600,16 @@ const processFactualRecap = async (
 				`  Generating factual recap for batch ${batchIndex + 1}/${batches.length} (sequence ${lastTurn.sequence})`
 			);
 
-			const stringifiedTurns = batch.map((turn) => buildChatTurnToJsonString(turn)).join('\n\n');
-			const prompt = buildLlmFactualRecapPrompt(charName, stringifiedTurns);
+			const stringifiedTurns = batch
+				.map((turn) => JSON.stringify({ user: turn.request, character: turn.response }))
+				.join('\n\n');
+			const prompt = buildLlmFactualRecapPrompt(
+				USER_NAME,
+				sessionId.startsWith('monday') ? '먼데이' : '타리온',
+				'female',
+				'male',
+				stringifiedTurns
+			);
 			const recapContent = await generateRecap(prompt);
 
 			if (!recapContent || recapContent.trim() === '') {
@@ -595,8 +682,16 @@ const processRelationshipRecap = async (
 				`  Generating relationship recap for batch ${batchIndex + 1}/${batches.length} (sequence ${lastTurn.sequence})`
 			);
 
-			const naturalLanguageTurns = batch.map((turn) => buildChatTurnDocument(turn)).join('\n\n');
-			const prompt = buildLlmRelationshipRecapPrompt(userName, charName, naturalLanguageTurns);
+			const naturalLanguageTurns = batch
+				.map((turn) => JSON.stringify({ user: turn.request, character: turn.response }))
+				.join('\n\n');
+			const prompt = buildLlmRelationshipRecapPrompt(
+				userName,
+				sessionId.startsWith('monday') ? '먼데이' : '타리온',
+				'female',
+				'male',
+				naturalLanguageTurns
+			);
 			const recapContent = await generateRecap(prompt);
 
 			if (!recapContent || recapContent.trim() === '') {
@@ -639,34 +734,28 @@ const processRelationshipRecap = async (
 
 const processStoryDocument = async (
 	sessionId: string,
-	chatTurns: ChatTurn[],
 	progressState: ProgressState
 ): Promise<ProgressState> => {
-	if (chatTurns.length === 0) {
-		console.log(`Session ${sessionId}: No chat turns for story document`);
+	if (!progressState.accumulatedFactualRecap || !progressState.accumulatedRelationshipRecap) {
+		console.log(`Session ${sessionId}: Recaps not yet generated. Skipping story document.`);
 		return progressState;
 	}
 
 	try {
-		const userName = chatTurns[0].request.showName;
-		const charName = chatTurns[0].response.showName;
-
-		// 모든 채팅 턴을 자연어 형태로 변환
-		const naturalLanguageTurns = chatTurns
-			.map((turn) => buildChatTurnDocument(turn)) // buildNaturalChatText 대신 기존 함수 사용
-			.filter((text) => text.trim() !== '')
-			.join('\n\n');
-
-		// NSFW 버전 생성 (개인용) - Gemini Pro 사용
-		console.log(`  📖 Generating NSFW story document (personal) with ${STORY_MODEL}...`);
+		// NSFW 버전 생성 (OpenRouter 사용)
+		console.log(`  📖 Generating NSFW story document (personal) with OpenRouter (${STORY_MODEL})...`);
 		const nsfwPrompt = buildLlmStoryDocumentPrompt(
-			userName,
-			charName,
-			naturalLanguageTurns,
+			USER_NAME,
+			sessionId.startsWith('monday') ? '먼데이' : '타리온',
+			'female',
+			'male',
+			progressState.accumulatedFactualRecap,
+			progressState.accumulatedRelationshipRecap,
 			true,
 			false
 		);
-		const nsfwStoryContent = await generateStory(nsfwPrompt); // Pro 모델 사용
+		// generateStory 함수는 이제 OpenRouter를 호출
+		const nsfwStoryContent = await generateStory(nsfwPrompt);
 
 		if (!nsfwStoryContent || nsfwStoryContent.trim() === '') {
 			throw new Error('Empty NSFW story document generated');
@@ -675,19 +764,23 @@ const processStoryDocument = async (
 		await storeStoryDocument(sessionId, nsfwStoryContent, true);
 		console.log(`  ✓ NSFW story document generated successfully`);
 
-		// Rate limiting - Gemini는 더 관대하지만 안전하게
-		await new Promise((resolve) => setTimeout(resolve, 2000));
+		// Rate limiting (OpenRouter는 더 엄격하므로 안전하게)
+		await new Promise((resolve) => setTimeout(resolve, 5000));
 
-		// SFW 버전 생성 (공유용) - Gemini Pro 사용
-		console.log(`  📖 Generating SFW story document (shareable) with ${STORY_MODEL}...`);
+		// SFW 버전 생성 (OpenRouter 사용)
+		console.log(`  📖 Generating SFW story document (shareable) with OpenRouter (${STORY_MODEL})...`);
 		const sfwPrompt = buildLlmStoryDocumentPrompt(
-			userName,
-			charName,
-			naturalLanguageTurns,
+			USER_NAME,
+			sessionId.startsWith('monday') ? '먼데이' : '타리온',
+			'female',
+			'male',
+			progressState.accumulatedFactualRecap,
+			progressState.accumulatedRelationshipRecap,
 			false,
 			false
 		);
-		const sfwStoryContent = await generateStory(sfwPrompt); // Pro 모델 사용
+		// generateStory 함수는 이제 OpenRouter를 호출
+		const sfwStoryContent = await generateStory(sfwPrompt);
 
 		if (!sfwStoryContent || sfwStoryContent.trim() === '') {
 			throw new Error('Empty SFW story document generated');
@@ -715,7 +808,7 @@ const storeStoryDocument = async (
 	nsfw?: boolean
 ): Promise<void> => {
 	try {
-		const storyId = nsfw ? `${sessionId}_story_nsfw` : `${sessionId}_story_sfw`;
+		const storyId = nsfw ? buildStoryRecapId(sessionId, 'NSFW') : buildStoryRecapId(sessionId);
 		const collection = await chromaDbClient.getRecapCollection();
 
 		await chromaDbClient.upsertRecord(collection, storyId, storyContent, {
@@ -739,21 +832,29 @@ const storeStoryDocument = async (
 const generateInitialRecaps = async (): Promise<void> => {
 	if (!GEMINI_API_KEY) {
 		console.error('Error: GEMINI_API_KEY environment variable is required');
-		console.error('Please set your Gemini API key from Google AI Studio');
 		process.exit(1);
 	}
+	if (!OPENROUTER_API_KEY) {
+		console.error('Error: OPENROUTER_API_KEY environment variable is required');
+		process.exit(1);
+	}
+	const PROGRESS_FILE = `${PROGRESS_DIR}/recap-progress-${TARGET_SESSION_ID}.json`;
 
 	let progressState = await loadProgress();
 
 	console.log('🚀 Starting initial recap generation...');
-	console.log(`Using Recap model: ${RECAP_MODEL}`);
-	console.log(`Using Story model: ${STORY_MODEL}`);
+	console.log(`Using Recap model (Gemini): ${RECAP_MODEL}`);
+	console.log(`Using Story model (OpenRouter): ${STORY_MODEL}`);
 	console.log(`Target session: ${TARGET_SESSION_ID}`);
 
 	displayProgress(progressState);
 
+	// 이미 모든 주요 단계가 완료된 경우 (completed 플래그가 true일 때)
 	if (progressState.completed) {
-		console.log('✅ Session already completed!');
+		console.log('✅ Session already fully completed! Exporting files if needed...');
+		// 완료된 상태에서도 파일 추출을 원할 수 있으므로, exportRecapsToFiles를 호출할 수 있습니다.
+		// 또는 여기서 바로 종료할 수 있습니다.
+		await exportRecapsToFiles(TARGET_SESSION_ID, progressState);
 		return;
 	}
 
@@ -761,6 +862,7 @@ const generateInitialRecaps = async (): Promise<void> => {
 
 	try {
 		const chatTurns = await getSessionChatTurns(TARGET_SESSION_ID);
+		// PROGRESS_FILE 상수는 함수 내에서 재정의하지 않습니다.
 
 		if (chatTurns.length === 0) {
 			console.log(`  ⚠️  No chat turns found for session ${TARGET_SESSION_ID}`);
@@ -770,32 +872,70 @@ const generateInitialRecaps = async (): Promise<void> => {
 
 		console.log(`  Found ${chatTurns.length} chat turns`);
 
-		console.log(`  🔍 Generating factual recaps with ${RECAP_MODEL}...`);
-		let currentState = await processFactualRecap(TARGET_SESSION_ID, chatTurns, progressState);
+		let currentState = progressState;
 
-		console.log(`  💝 Generating relationship recaps with ${RECAP_MODEL}...`);
-		currentState = await processRelationshipRecap(TARGET_SESSION_ID, chatTurns, currentState);
+		if (!currentState.factualRecapCompleted) {
+			console.log(`  🔍 Generating factual recaps with ${RECAP_MODEL}...`);
+			currentState = await processFactualRecap(TARGET_SESSION_ID, chatTurns, currentState);
+			currentState = updateProgress(currentState, { factualRecapCompleted: true });
+			await saveProgress(currentState);
+		} else {
+			console.log(`  👍 Factual recaps already completed.`);
+		}
 
-		console.log(`  📖 Generating story documents with ${STORY_MODEL}...`);
-		currentState = await processStoryDocument(TARGET_SESSION_ID, chatTurns, currentState);
+		if (!currentState.relationshipRecapCompleted) {
+			console.log(`  💝 Generating relationship recaps with ${RECAP_MODEL}...`);
+			currentState = await processRelationshipRecap(TARGET_SESSION_ID, chatTurns, currentState);
+			currentState = updateProgress(currentState, { relationshipRecapCompleted: true });
+			await saveProgress(currentState);
+		} else {
+			console.log(`  👍 Relationship recaps already completed.`);
+		}
 
-		const completedState = markCompleted(currentState);
-		await saveProgress(completedState);
-		console.log(`  ✅ Session ${TARGET_SESSION_ID} completed successfully`);
+		// Story 생성은 nsfw와 sfw 둘 다 완료되지 않았을 때 시도
+		if (!currentState.nsfwStoryCompleted || !currentState.sfwStoryCompleted) {
+			console.log(`  📖 Generating story documents with ${STORY_MODEL}...`); // STORY_MODEL -> STORY_MODEL
+			// processStoryDocument는 이제 chatTurns가 아닌 currentState(progressState)를 직접 받거나,
+			// 필요한 정보를 (userName, charName, 성별 등) 다른 방식으로 전달받아야 합니다.
+			// 현재는 recap 내용을 currentState에서 사용하고, 이름/성별은 chatTurns에서 가져오도록 가정합니다.
+			currentState = await processStoryDocument(TARGET_SESSION_ID, currentState);
+			// processStoryDocument 내부에서 nsfwStoryCompleted, sfwStoryCompleted가 true로 설정되고 저장됩니다.
+		} else {
+			console.log(`  👍 Story documents already completed.`);
+		}
 
-		// 완료 후 물리적 파일로 추출
+		if (
+			currentState.factualRecapCompleted &&
+			currentState.relationshipRecapCompleted &&
+			currentState.nsfwStoryCompleted &&
+			currentState.sfwStoryCompleted
+		) {
+			currentState = markCompleted(currentState);
+			await saveProgress(currentState);
+			console.log(`  ✅ All tasks for session ${TARGET_SESSION_ID} completed successfully`);
+		} else {
+			console.log(`  🔄 Session ${TARGET_SESSION_ID} processing is ongoing or partially completed.`);
+		}
+
 		console.log('\n📁 Exporting recaps to files...');
-		await exportRecapsToFiles(TARGET_SESSION_ID, completedState);
+		await exportRecapsToFiles(TARGET_SESSION_ID, currentState);
 
-		console.log('\n🎉 Recap generation completed successfully!');
-		console.log(`📊 Progress file: ${PROGRESS_FILE}`);
-		console.log(`📁 Output directory: ${OUTPUT_DIR}`);
+		console.log('\n🎉 Recap generation completed (or resumed) successfully!');
+		console.log(`📊 Progress file: ${PROGRESS_FILE}`); // 전역 PROGRESS_FILE 사용
+		console.log(`📁 Output directory: ${OUTPUT_DIR}/${TARGET_SESSION_ID}`);
 
-		try {
-			await writeFile(PROGRESS_FILE + '.completed', JSON.stringify(completedState, null, 2));
-			console.log('📋 Progress file backed up as .completed');
-		} catch (error) {
-			console.warn('Warning: Could not backup progress file:', error);
+		// 완료된 progress 파일을 별도로 백업하는 것은 좋은 생각입니다.
+		if (currentState.completed) {
+			try {
+				// completedState 대신 currentState 사용
+				await writeFile(
+					`${PROGRESS_FILE}.completed-${TARGET_SESSION_ID}-${new Date().toISOString().replace(/[:.]/g, '-')}.json`,
+					JSON.stringify(currentState, null, 2)
+				);
+				console.log('📋 Final progress file backed up as .completed');
+			} catch (error) {
+				console.warn('Warning: Could not backup final progress file:', error);
+			}
 		}
 	} catch (error) {
 		console.error(`  ❌ Error processing session ${TARGET_SESSION_ID}:`, error);
@@ -805,7 +945,6 @@ const generateInitialRecaps = async (): Promise<void> => {
 		process.exit(1);
 	}
 };
-
 // --- Run the script ---
 generateInitialRecaps().catch((error) => {
 	console.error('Fatal error during recap generation:', error);

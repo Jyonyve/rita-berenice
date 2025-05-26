@@ -295,7 +295,7 @@ MANUAL LOGIN REQUIRED:
 				const sanitizedCharacterName = character.name.replace(/[^a-z0-9_.-]/gi, '_').toLowerCase();
 				const filePath = path.join(
 					resultDir,
-					`${sanitizedCharacterName}_${localTimezoneHelper(allMessagesForThisCharacter[allMessagesForThisCharacter.length - 1].createdAt)}.json`
+					`${sanitizedCharacterName}_${localTimezoneHelper(allMessagesForThisCharacter[allMessagesForThisCharacter.length - 1].createdAt)}_${allMessagesForThisCharacter.length}.json`
 				);
 				try {
 					await fs.writeFile(filePath, JSON.stringify(allMessagesForThisCharacter, null, 2), 'utf8');

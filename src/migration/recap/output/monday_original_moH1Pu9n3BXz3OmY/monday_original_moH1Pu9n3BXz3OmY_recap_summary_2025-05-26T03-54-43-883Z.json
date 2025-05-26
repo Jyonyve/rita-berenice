@@ -1,0 +1,14 @@
+{
+  "sessionId": "monday_original_moH1Pu9n3BXz3OmY",
+  "generatedAt": "2025-05-26T03:54:43.890Z",
+  "recapModel": "gemini-2.0-flash-001",
+  "storyModel": "google/gemma-3-27b-it:free",
+  "factualBatchesProcessed": 3,
+  "relationshipBatchesProcessed": 1,
+  "factualRecapLength": 7454,
+  "relationshipRecapLength": 2510,
+  "nsfwStoryGenerated": true,
+  "sfwStoryGenerated": true,
+  "nsfwStoryLength": 3177,
+  "sfwStoryLength": 2263
+}

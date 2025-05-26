@@ -428,6 +428,7 @@ export const numberToEmotionWordsMap = {
 
 	// 8: Represents disgust, contempt, and revulsion, including dislike. (혐오 / 경멸)
 	8: [
+		'cold', // 냉담한, 무관심한
 		'disgust', // 혐오(감)
 		'disgusted', // 혐오감을 느끼는
 		'repulsed', // 역겨움을 느끼는

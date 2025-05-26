@@ -6,6 +6,7 @@ import { METADATA_TYPES } from '../chromadb/ChromaInterfaces.ts';
 
 interface BeingMetadata extends Metadata {
 	name: string;
+	gender: string;
 	description: string;
 	showName: string;
 	createdAt: string;

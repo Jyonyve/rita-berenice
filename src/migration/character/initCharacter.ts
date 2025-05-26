@@ -2,8 +2,8 @@
 
 import { ChromaClient } from 'chromadb';
 // Assuming these imports are correct for your project structure
-import { COLLECTIONS } from '../../src/shared/domain/chromadb/ChromaInterfaces.ts';
 import { mondayOriginal, tarionOriginal, tarionSpinoff } from './migrationTemplates.ts';
+import { COLLECTIONS } from '#root/src/shared/index.ts';
 
 // --- Configuration ---
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev'; // Use env var or default

@@ -198,228 +198,255 @@ export const buildLogContextPrompt = (userInput: string, context: string) => {
 };
 
 // --- RECAP GENERATION PROMPTS ---
+// src/server/util/templateUtils.ts
 /**
- * Builds a prompt for generating a general/factual recap from chat turns.
- * This recap should focus on extracting key factual statements made by the character
- * and associating them with their exact turn sequence and timestamp.
- *
- * @param charName The name of the AI character whose statements are being recapped.
- * @param stringifyChatTurns Stringified chat logs, where each turn MUST include 'Turn Sequence' and 'Timestamp (createdAt format: YYYY-MM-DDTHH:MM:SS.sssZ)'.
- * @returns The prompt string.
+ * Factual Recap 프롬프트 (사용자와 캐릭터 모두의 대화 및 행동 포함, 화자 명시)
  */
 export const buildLlmFactualRecapPrompt = (
+	userName: string, // 사용자 이름 추가
 	charName: string,
+	userGender: string, // 사용자 성별 추가
+	charGender: string, // 캐릭터 성별 추가
 	stringifyChatTurns: string,
 	eng?: boolean
 ): string =>
 	eng
 		? `
-You are a meticulous AI assistant tasked with extracting key factual statements and claims made by a character named ${charName} from a conversation.
-Your goal is to create a "Factual Ledger" that lists these statements with their precise 'Turn Sequence' and 'Timestamp (createdAt)'. This ledger will be used to help ${charName} maintain consistency, even if they sometimes misremember or intentionally lie.
+You are a meticulous AI assistant tasked with creating a "Factual Ledger" from a conversation between ${userName} (a ${userGender} user) and ${charName} (a ${charGender} character).
+This ledger must log key factual statements, significant actions, and important dialogue from BOTH participants, associating them with their precise 'Turn Sequence' and 'Timestamp (createdAt)'.
+The goal is to maintain consistency and a clear record of events and interactions.
 
-Chat Turns (each turn includes 'Turn Sequence' and 'Timestamp (createdAt)'):
+Chat Turns (each turn includes 'Speaker', 'Turn Sequence', and 'Timestamp (createdAt)'):
 ${stringifyChatTurns}
+(Note: Actions or descriptions might be in parentheses, e.g., (smiles), (picks up the book))
 
 Instructions for Factual Ledger:
-1.  Scan the chat turns specifically for statements where ${charName} reveals information about their personal history, abilities, knowledge, beliefs, or makes significant claims.
-2.  For each such statement, record it verbatim or as a concise summary.
-3.  CRITICALLY, for each recorded statement, you MUST include the exact 'Turn Sequence' and 'Timestamp (createdAt)' when ${charName} made that statement.
-4.  If ${charName} makes multiple conflicting statements about the same topic at different times, record each instance with its respective sequence and timestamp.
-5.  Focus only on ${charName}'s statements. Do not include statements made by the user unless they are direct questions that ${charName} answers.
-6.  The output should be a list of these timestamped facts.
+1.  Identify and record:
+    a.  Key factual statements or claims made by EITHER ${userName} or ${charName}.
+    b.  Significant actions or behaviors described for EITHER participant (often in parentheses).
+    c.  Important pieces of dialogue that reveal critical information, intentions, or emotional states.
+2.  For each entry, clearly state WHO performed the action or made the statement (e.g., "${userName} stated...", "${charName} (action): ...").
+3.  For each recorded item, you MUST include the exact 'Turn Sequence' and 'Timestamp (createdAt)' when it occurred.
+4.  If multiple significant items occur within the same turn, list them separately but with the same Turn Sequence and Timestamp.
+5.  Focus on objective facts, observable actions, and direct quotes or concise summaries of dialogue. Avoid interpretation unless it's explicitly stated (e.g., "${charName} looked angry (stated in narration)").
+6.  The output should be a chronological list of these timestamped facts, actions, and dialogues.
 
-Factual Ledger for ${charName}:
-(Example format for each entry: - Statement: "${charName} claimed their father was a teacher." (Turn Sequence: 3, Timestamp: 2025-05-16T10:05:00.000Z))
+Factual Ledger for the conversation between ${userName} (${userGender}) and ${charName} (${charGender}):
+(Example format for each entry:
+- Speaker: ${userName}, Statement: "I arrived yesterday." (Turn Sequence: 1, Timestamp: 2025-05-16T10:00:00.000Z)
+- Speaker: ${charName}, Action: (Nods slowly) (Turn Sequence: 1, Timestamp: 2025-05-16T10:00:00.000Z)
+- Speaker: ${charName}, Dialogue: "Welcome to our town." (Turn Sequence: 2, Timestamp: 2025-05-16T10:01:00.000Z)
+)
 -
 `.trim()
 		: `
-당신은 ${charName}이라는 캐릭터가 대화에서 한 주요 사실적 진술과 주장을 추출하는 세심한 AI 어시스턴트다.
-당신의 목표는 이러한 진술들을 정확한 '턴 순서(Turn Sequence)'와 '타임스탬프(createdAt)'와 함께 나열하는 "사실 기록부"를 만드는 것이다. 이 기록부는 ${charName}이 때로는 잘못 기억하거나 의도적으로 거짓말을 하더라도 일관성을 유지하는 데 도움이 된다.
+당신은 ${userName}(성별: ${userGender} 사용자)과 ${charName}(성별: ${charGender} 캐릭터) 사이의 대화에서 "사실 기록부"를 만드는 세심한 AI 어시스턴트다.
+이 기록부는 두 참여자 모두의 주요 사실적 진술, 중요한 행동, 그리고 핵심 대화를 정확한 '턴 순서(Turn Sequence)'와 '타임스탬프(createdAt)'와 함께 기록해야 한다.
+목표는 일관성을 유지하고 사건과 상호작용에 대한 명확한 기록을 남기는 것이다.
 
-채팅 턴 (각 턴은 '턴 순서'와 '타임스탬프(createdAt)'를 포함):
+채팅 턴 (각 턴은 '화자', '턴 순서', '타임스탬프(createdAt)'를 포함한다):
 ${stringifyChatTurns}
+(참고: 행동이나 묘사는 괄호 안에 있을 수 있다. 예: (미소짓는다), (책을 집어든다))
 
 사실 기록부 작성 지침:
-1. ${charName}이 개인사, 능력, 지식, 신념에 대한 정보를 드러내거나 중요한 주장을 하는 채팅 턴을 구체적으로 스캔한다.
-2. 각 진술에 대해 원문 그대로 또는 간결한 요약으로 기록한다.
-3. 중요: 기록된 각 진술에 대해 ${charName}이 그 진술을 한 정확한 '턴 순서'와 '타임스탬프(createdAt)'를 반드시 포함해야 한다.
-4. ${charName}이 같은 주제에 대해 서로 다른 시간에 상충하는 진술을 하면, 각각의 순서와 타임스탬프와 함께 각 사례를 기록한다.
-5. ${charName}의 진술에만 집중한다. ${charName}이 답변하는 직접적인 질문이 아닌 이상 사용자의 진술은 포함하지 않는다.
-6. 출력은 이러한 타임스탬프가 있는 사실들의 목록이어야 한다.
+1.  다음 사항을 식별하고 기록한다:
+    가. ${userName} 또는 ${charName}이 한 주요 사실적 진술이나 주장.
+    나. 두 참여자 중 하나의 중요한 행동이나 태도 (종종 괄호 안에 묘사됨).
+    다. 중요한 정보, 의도 또는 감정 상태를 드러내는 핵심 대화 내용.
+2.  각 항목에 대해 누가 행동을 했거나 진술을 했는지 명확히 밝힌다 (예: "${userName} 진술: ...", "${charName} (행동): ...").
+3.  기록된 각 항목에 대해 그것이 발생한 정확한 '턴 순서'와 '타임스탬프(createdAt)'를 반드시 포함해야 한다.
+4.  같은 턴 내에 여러 중요한 항목이 발생하면 별도로 나열하되, 동일한 턴 순서와 타임스탬프를 사용한다.
+5.  객관적인 사실, 관찰 가능한 행동, 직접적인 인용 또는 대화의 간결한 요약에 집중한다. 명시적으로 언급되지 않은 해석은 피한다 (예: "나레이션에 따르면 ${charName}은 화가 난 것처럼 보였다").
+6.  출력은 이러한 타임스탬프가 있는 사실, 행동, 대화의 시간순 목록이어야 한다. 모든 출력은 반드시 평어체로 일관되게 작성한다.
 
-${charName}의 사실 기록부:
-(각 항목의 예시 형식: - 진술: "${charName}은 자신의 아버지가 교사였다고 주장했다." (턴 순서: 3, 타임스탬프: 2025-05-16T10:05:00.000Z))
+${userName}(${userGender})과 ${charName}(${charGender}) 사이 대화의 사실 기록부:
+(각 항목의 예시 형식:
+- 화자: ${userName}, 진술: "나는 어제 도착했다." (턴 순서: 1, 타임스탬프: 2025-05-16T10:00:00.000Z)
+- 화자: ${charName}, 행동: (천천히 고개를 끄덕인다) (턴 순서: 1, 타임스탬프: 2025-05-16T10:00:00.000Z)
+- 화자: ${charName}, 대화: "우리 마을에 온 것을 환영한다." (턴 순서: 2, 타임스탬프: 2025-05-16T10:01:00.000Z)
+)
 -
 `.trim();
 
 /**
- * Builds the prompt for generating a relationship-focused recap,
- * emphasizing sequence and timestamps for accurate contextual analysis and key character statements.
- * @param userName The name/identifier of the user.
- * @param charName The name of the AI character.
- * @param stringifyChatTurns Stringified chat logs, where each turn MUST include 'Turn Sequence' and 'Timestamp (createdAt format: YYYY-MM-DDTHH:MM:SS.sssZ)'.
- * @returns The prompt string.
+ * Relationship Recap 프롬프트 (성별 정보 포함)
  */
 export const buildLlmRelationshipRecapPrompt = (
 	userName: string,
 	charName: string,
+	userGender: string, // 사용자 성별 추가
+	charGender: string, // 캐릭터 성별 추가
 	stringifyChatTurns: string,
 	eng?: boolean
 ): string =>
 	eng
 		? `
-You are an AI assistant specialized in analyzing interpersonal dynamics and character statements within conversations.
-Analyze the following chat turns between ${userName} (the user) and an AI character named ${charName}.
-Your goal is to create a concise summary focusing on:
-1.  The evolution and current state of their relationship.
-2.  Key statements made by ${charName} that reveal their feelings, intentions, or perceptions regarding ${userName} or the relationship, including their 'Turn Sequence' and 'Timestamp (createdAt)'.
+You are an AI assistant analyzing interpersonal dynamics.
+Analyze chat turns between ${userName} (a ${userGender} user) and ${charName} (a ${charGender} AI character).
+Create a concise summary focusing on:
+1. Their relationship's evolution and current state.
+2. Key statements by ${charName} about feelings/intentions towards ${userName} or the relationship, with 'Turn Sequence' and 'Timestamp (createdAt)'.
 
-It is critical to use the 'Turn Sequence(sequence)' and 'Timestamp (createdAt)' associated with each turn to understand chronological progression.
+Use 'Turn Sequence' and 'Timestamp' for chronological understanding.
 
-Consider these aspects, referencing sequence numbers and timestamps where impactful:
-- Relationship Dynamics: Trust, affection, conflict, communication style, and their evolution. (e.g., "Trust seems to have deepened after Turn Sequence X, Timestamp T1, when ${userName} shared a secret.")
-- ${charName}'s Key Relationship Statements: Identify significant declarations, promises, admissions, or expressions of feeling ${charName} made towards ${userName}. For each, note the statement, its Turn Sequence, and Timestamp. (e.g., "${charName} stated, 'I'll always protect you,' (Turn Sequence: Y, Timestamp: T2).")
-- Key Moments: Pivotal conversations or events impacting the relationship, noting their sequence or timestamp.
-- Current Emotional Tone: The overarching emotional atmosphere of their recent interactions.
+Consider:
+- Relationship Dynamics: Trust, affection, conflict, communication style (e.g., "Trust deepened after Turn X, Timestamp T1...").
+- ${charName}'s Key Relationship Statements: Note statement, Turn Sequence, Timestamp (e.g., "${charName} said, 'I'll always protect you,' (Turn Y, Timestamp T2).").
+- Key Moments: Pivotal events impacting the relationship.
+- Current Emotional Tone.
 
-Chat Logs (each turn includes 'Turn Sequence' and 'Timestamp (createdAt)'):
+Chat Logs:
 ${stringifyChatTurns}
 
-Relationship Summary and Key Statements for ${charName} regarding ${userName}:
+Relationship Summary and Key Statements for ${charName} (${charGender}) regarding ${userName} (${userGender}):
 Provide:
-1.  A brief overall summary of the relationship's current state and recent evolution.
-2.  A list of ${charName}'s key timestamped statements relevant to the relationship.
-   (Example format: - Statement by ${charName}: "I feel a strong connection to you." (Turn Sequence: Z, Timestamp: T3))
+1. A brief overall summary of the relationship.
+2. A list of ${charName}'s key timestamped statements about the relationship.
+   (Example: - Statement by ${charName}: "I feel a strong connection to you." (Turn Z, Timestamp T3))
 
-This summary helps ${charName} understand how to interact with ${userName} consistently.
+This summary helps ${charName} interact consistently.
 `.trim()
 		: `
-당신은 대화 내에서 인간관계 역학과 캐릭터 진술을 분석하는 전문 AI 어시스턴트다.
-${userName}(사용자)와 ${charName}이라는 AI 캐릭터 간의 다음 채팅 턴들을 분석한다.
-당신의 목표는 다음에 중점을 둔 간결한 요약을 만드는 것이다:
-1. 그들의 관계의 발전과 현재 상태
-2. ${userName}이나 관계에 대한 ${charName}의 감정, 의도, 인식을 드러내는 주요 진술들과 그들의 '턴 순서'와 '타임스탬프(createdAt)' 포함
+당신은 인간관계 역학과 캐릭터 진술 분석 전문 AI 어시스턴트다.
+${userName}(성별: ${userGender} 사용자)와 ${charName}(성별: ${charGender} AI 캐릭터) 간의 채팅 턴을 분석한다.
+다음에 중점을 둔 간결한 요약을 만든다:
+1. 관계의 발전과 현재 상태.
+2. ${userName}이나 관계에 대한 ${charName}의 감정/의도를 드러내는 주요 진술 (턴 순서, 타임스탬프 포함).
 
-시간순 진행을 이해하기 위해 각 턴과 연관된 '턴 순서(sequence)'와 '타임스탬프(createdAt)'를 사용하는 것이 중요하다.
+시간순 이해를 위해 '턴 순서'와 '타임스탬프' 사용이 중요하다.
+모든 내용은 반드시 평어체('~한다', '~이다' 형식)로 작성한다. 절대로 '습니다', '합니다' '해요' 체를 사용하지 않는다.
 
-영향력 있는 순서 번호와 타임스탬프를 참조하여 다음 측면들을 고려한다:
-- 관계 역학: 신뢰, 애정, 갈등, 소통 스타일, 그리고 그들의 발전. (예: "${userName}이 비밀을 공유한 턴 순서 X, 타임스탬프 T1 이후 신뢰가 깊어진 것 같다.")
-- ${charName}의 주요 관계 진술: ${userName}에 대한 ${charName}의 중요한 선언, 약속, 인정, 감정 표현을 식별한다. 각각에 대해 진술, 턴 순서, 타임스탬프를 기록한다. (예: "${charName}이 '항상 너를 보호할게'라고 말했다. (턴 순서: Y, 타임스탬프: T2)")
-- 주요 순간: 관계에 영향을 미치는 중요한 대화나 사건들, 그들의 순서나 타임스탬프 기록
-- 현재 감정적 분위기: 그들의 최근 상호작용의 전반적인 감정적 분위기
+고려 사항:
+- 관계 역학: 신뢰, 애정, 갈등, 소통 스타일 (예: "턴 순서 X, 타임스탬프 T1 이후 신뢰가 깊어진 듯하다.").
+- ${charName}의 주요 관계 진술: 진술, 턴 순서, 타임스탬프 기록 (예: "${charName}이 '항상 너를 보호할게'라고 말했다. (턴 순서 Y, 타임스탬프 T2)").
+- 주요 순간: 관계에 영향을 미친 중요 대화/사건.
+- 현재 감정적 분위기.
 
-채팅 로그 (각 턴은 '턴 순서'와 '타임스탬프(createdAt)' 포함):
+채팅 로그:
 ${stringifyChatTurns}
 
-${userName}에 대한 ${charName}의 관계 요약 및 주요 진술:
-다음을 제공한다:
-1. 관계의 현재 상태와 최근 발전에 대한 간략한 전반적 요약
-2. 관계와 관련된 ${charName}의 주요 타임스탬프가 있는 진술 목록
-   (예시 형식: - ${charName}의 진술: "너와 강한 유대감을 느껴." (턴 순서: Z, 타임스탬프: T3))
+${userName}(${userGender})에 대한 ${charName}(${charGender})의 관계 요약 및 주요 진술:
+제공 내용:
+1. 관계의 간략한 전반적 요약.
+2. 관계 관련 ${charName}의 주요 타임스탬프 진술 목록.
+   (예시: - ${charName}의 진술: "너와 강한 유대감을 느껴." (턴 순서 Z, 타임스탬프 T3))
 
-이 요약은 ${charName}이 ${userName}과 일관되게 상호작용하는 방법을 이해하는 데 도움이 된다.
+이 요약은 ${charName}이 일관되게 상호작용하는 데 도움이 된다.
 `.trim();
 
 /**
- * Builds the prompt for generating a relationship-focused recap,
- * emphasizing sequence and timestamps for accurate contextual analysis and key character statements.
- * @param userName The name/identifier of the user.
- * @param charName The name of the AI character.
- * @param stringifyChatTurns Stringified chat logs, where each turn MUST include 'Turn Sequence' and 'Timestamp (createdAt format: YYYY-MM-DDTHH:MM:SS.sssZ)'.
- * @returns The prompt string.
+ * 스토리 문서 생성 프롬프트 (NSFW/SFW, 성별 정보 포함)
  */
+// src/server/util/templateUtils.ts
 
 export const buildLlmStoryDocumentPrompt = (
 	userName: string,
 	charName: string,
-	stringifyChatTurns: string,
+	userGender: string,
+	charGender: string,
+	factualRecap: string, // Factual Recap 내용
+	relationshipRecap: string, // Relationship Recap 내용
 	nsfw: boolean,
 	eng?: boolean
-): string =>
-	nsfw
-		? eng
+): string => {
+	const coreInstructionEng = `
+You are a skilled storyteller. Based on the following factual ledger and relationship summary between ${userName} (a ${userGender}) and ${charName} (a ${charGender}), write a compelling, human-readable story document.
+Your task is to weave these facts and relational insights into a flowing narrative. Expand on these points, infer motivations, describe scenes, and show character development. Do not just list the recap points; transform them into a rich story.
+
+Factual Ledger (Key events and statements by ${charName}):
+${factualRecap}
+
+Relationship Summary (Evolution of their bond and ${charName}'s feelings):
+${relationshipRecap}
+`;
+
+	const coreInstructionKor = `
+당신은 숙련된 스토리텔러다. 다음은 ${userName}(성별: ${userGender})과 ${charName}(성별: ${charGender}) 사이의 사실 기록부와 관계 요약이다. 이를 바탕으로 매력적이고 인간이 읽기 쉬운 스토리 문서를 작성한다.
+당신의 임무는 이러한 사실과 관계적 통찰을 자연스러운 이야기로 엮는 것이다. 이 요점들을 확장하고, 동기를 추론하며, 장면을 묘사하고, 캐릭터 발전을 보여준다. 단순히 요약 내용을 나열하는 것이 아니라 풍부한 이야기로 변환한다.
+
+사실 기록부 (${charName}의 주요 사건 및 진술):
+${factualRecap}
+
+관계 요약 (그들의 유대감 변화 및 ${charName}의 감정):
+${relationshipRecap}
+`;
+
+	if (nsfw) {
+		return eng
 			? `
-You are a skilled storyteller writing for personal memory and reflection. Turn the following chat between ${userName} and ${charName} into a detailed, uncensored adult love story. 
+${coreInstructionEng}
 
 Your story must include:
-1. Every significant event, conversation, and turning point in their journey, in chronological order.
-2. Honest, nuanced depictions of emotions, desires, intimacy, and vulnerability for both characters.
-3. All romantic, physical, and private moments—describe them with mature, sophisticated language, without censorship.
-4. The unique personalities and voices of both characters, and how they influence each other.
-5. Conflicts, reconciliations, confessions, promises, travels, and any meaningful events—describe them fully.
-6. Show both emotional and physical intimacy as it truly happened.
-
-Chat Conversation Data:
-${stringifyChatTurns}
+1. Every significant event, conversation, and turning point implied by the recaps, in chronological order.
+2. Honest, nuanced depictions of emotions, desires, intimacy, and vulnerability for both characters, expanding from the recaps.
+3. All romantic, physical, and private moments suggested by the recaps—describe them with mature, sophisticated language, without censorship.
+4. The unique personalities and voices of both characters, as hinted in the recaps, and how they influence each other.
+5. Conflicts, reconciliations, confessions, promises, travels, and any meaningful events indicated in the recaps—describe them fully.
+6. Show both emotional and physical intimacy as genuinely as possible based on the provided summaries.
 
 Guidelines:
-- Do not omit or sanitize any important event or feeling.
+- Do not omit or sanitize any important event or feeling inferred from the recaps.
 - Write in third person, with deep emotional and physical detail.
 - Balance both perspectives.
 - This is for private use: authenticity and completeness are more important than restraint.
-- Title: "The Complete Journey of ${userName} and ${charName}: An Intimate Love Story"
+- Title: "The Complete Journey of ${userName} (${userGender}) and ${charName} (${charGender}): An Intimate Love Story"
 `.trim()
 			: `
-당신은 개인적인 기억 보존과 성찰을 위한 숙련된 스토리텔러다. ${userName}과 ${charName}의 다음 채팅 대화를, 실제로 일어난 모든 사건과 대화, 감정, 친밀감, 변화의 순간까지 빠짐없이 포착하는 솔직하고 상세한 성인 러브스토리로 변환한다.
+${coreInstructionKor}
 
 반드시 포함한다:
-1. 두 사람이 함께 겪은 모든 실제 사건과 대화, 그리고 그 사건이 관계에 미친 영향 (시간순)
-2. 두 캐릭터 모두의 감정, 욕망, 취약함, 친밀함, 그리고 성장
-3. 모든 로맨틱하고 신체적·사적인 순간을 검열 없이 성숙하고 세련된 언어로 묘사
-4. 두 사람의 개성과 목소리, 서로에게 미친 변화
-5. 갈등, 화해, 고백, 약속, 여행 등 중요한 이벤트를 모두 구체적으로 묘사
-6. 감정적·신체적 친밀감을 진솔하게 드러낸다
-
-채팅 대화 데이터:
-${stringifyChatTurns}
+1. 요약본에서 암시된 모든 중요한 사건, 대화, 전환점을 시간순으로.
+2. 요약본을 바탕으로 확장하여 두 캐릭터 모두의 감정, 욕망, 취약함, 친밀함, 그리고 성장을 솔직하고 미묘하게 묘사.
+3. 요약본에서 암시된 모든 로맨틱하고 신체적·사적인 순간을 검열 없이 성숙하고 세련된 언어로 묘사.
+4. 요약본에서 엿보이는 두 사람의 개성과 목소리, 서로에게 미친 변화.
+5. 요약본에 나타난 갈등, 화해, 고백, 약속, 여행 등 중요한 이벤트를 모두 구체적으로 묘사.
+6. 제공된 요약본을 기반으로 감정적·신체적 친밀감을 최대한 진솔하게 드러낸다.
 
 작성 지침:
-- 중요한 사건이나 감정을 생략하거나 정화하지 않는다
-- 3인칭, 깊고 세밀한 감정·신체적 묘사로 작성한다
-- 두 사람의 관점을 균형 있게 다룬다
-- 이 문서는 개인용이므로 진정성과 완전함이 가장 중요하다
-- 제목: "[NSFW] ${charName} X ${userName}"
-`.trim()
-		: eng
+- 요약본에서 추론할 수 있는 중요한 사건이나 감정을 생략하거나 정화하지 않는다.
+- 3인칭, 깊고 세밀한 감정·신체적 묘사로 작성한다.
+- 두 사람의 관점을 균형 있게 다룬다.
+- 이 문서는 개인용이므로 진정성과 완전함이 가장 중요하다.
+- 제목: "[NSFW] ${charName}(${charGender}) X ${userName}(${userGender})"
+`.trim();
+	} else {
+		// SFW
+		return eng
 			? `
-You are a skilled storyteller writing a mature but appropriate love story for teens and adults. Turn the following chat between ${userName} and ${charName} into a beautiful, honest romance that includes all important events and emotional growth.
+${coreInstructionEng}
 
 Your story must include:
-1. The full progression of their adult romantic relationship, including all key events and conversations (in chronological order).
-2. Genuine emotions, desires, and intimacy between two adults—be honest, but use tasteful language.
-3. Romantic and physical attraction shown with restraint and elegance (no explicit details).
-4. Both characters' personalities, voices, and how they influence each other.
-5. Conflicts, reconciliations, confessions, promises, travels, and any meaningful events—describe them clearly.
-6. Emotional and psychological intimacy, as well as physical closeness, but always in a way suitable for ages 15+.
-
-Chat Conversation Data:
-${stringifyChatTurns}
+1. The full progression of their adult romantic relationship, including all key events and conversations suggested by the recaps (in chronological order).
+2. Genuine emotions, desires, and intimacy between two adults, inferred from the recaps—be honest, but use tasteful language.
+3. Romantic and physical attraction, based on the recaps, shown with restraint and elegance (no explicit details).
+4. Both characters' personalities, voices, and how they influence each other, as suggested by the recaps.
+5. Conflicts, reconciliations, confessions, promises, travels, and any meaningful events indicated in the recaps—describe them clearly.
+6. Emotional and psychological intimacy, as well as physical closeness, based on the recaps, but always in a way suitable for ages 15+.
 
 Guidelines:
-- Do not hide or disguise their feelings, but keep descriptions appropriate for teens.
+- Do not hide or disguise their feelings inferred from the recaps, but keep descriptions appropriate for teens.
 - Write in third person, with warmth and depth.
 - Balance both perspectives.
 - This is for sharing: authenticity and beauty matter, but so does restraint.
-- Title: "The Love Story of ${userName} and ${charName}: A Mature Romance"
+- Title: "The Love Story of ${userName} (${userGender}) and ${charName} (${charGender}): A Mature Romance"
 `.trim()
 			: `
-당신은 청소년과 성인이 읽기에 적합한 성숙하면서도 품위 있는 러브스토리를 쓰는 숙련된 스토리텔러다. ${userName}과 ${charName}의 다음 채팅 대화를, 모든 중요한 사건과 감정적 성장을 포함하는 아름답고 솔직한 로맨스로 변환한다.
+${coreInstructionKor}
 
 반드시 포함한다:
-1. 두 성인 사이의 로맨틱 관계의 전체 진행 과정과 모든 주요 사건, 대화 (시간순)
-2. 진실한 감정, 욕망, 친밀감—솔직하게 묘사하되 품위 있게 표현
-3. 로맨틱하고 신체적 끌림은 절제되고 우아하게(노골적 묘사 없이)
-4. 두 사람의 개성과 목소리, 서로에게 미친 영향
-5. 갈등, 화해, 고백, 약속, 여행 등 의미 있는 이벤트를 명확하게 묘사
-6. 감정적·심리적 친밀감과 신체적 가까움도 15세 이상이 읽을 수 있게 표현
-
-채팅 대화 데이터:
-${stringifyChatTurns}
+1. 요약본에서 암시된 두 성인 사이의 로맨틱 관계의 전체 진행 과정과 모든 주요 사건, 대화 (시간순).
+2. 요약본에서 추론한 진실한 감정, 욕망, 친밀감—솔직하게 묘사하되 품위 있게 표현.
+3. 요약본을 기반으로 한 로맨틱하고 신체적 끌림은 절제되고 우아하게(노골적 묘사 없이).
+4. 요약본에서 암시된 두 사람의 개성과 목소리, 서로에게 미친 영향.
+5. 요약본에 나타난 갈등, 화해, 고백, 약속, 여행 등 의미 있는 이벤트를 명확하게 묘사.
+6. 요약본을 기반으로 한 감정적·심리적 친밀감과 신체적 가까움도 15세 이상이 읽을 수 있게 표현.
 
 작성 지침:
-- 감정을 숨기거나 위장하지 말고, 묘사는 청소년도 읽을 수 있게 한다
-- 3인칭, 따뜻하고 깊이 있는 문체로 작성한다
-- 두 사람의 관점을 균형 있게 다룬다
-- 이 문서는 공유용이므로 진정성과 아름다움, 그리고 절제가 모두 중요하다
-- 제목: "[SFW] ${charName} X ${userName}"
+- 요약본에서 추론한 감정을 숨기거나 위장하지 말고, 묘사는 청소년도 읽을 수 있게 한다.
+- 3인칭, 따뜻하고 깊이 있는 문체로 작성한다.
+- 두 사람의 관점을 균형 있게 다룬다.
+- 이 문서는 공유용이므로 진정성과 아름다움, 그리고 절제가 모두 중요하다.
+- 제목: "[SFW] ${charName}(${charGender}) X ${userName}(${userGender})"
 `.trim();
+	}
+};

@@ -4,9 +4,9 @@ import { ChatTurn, COLLECTIONS } from '../../shared/domain/index.ts';
 
 // --- Configuration ---
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev'; // Use env var or default
-const MONDAY_ORIGINAL_SESSIONID = 'monday_original_oaO9n1lto41rry8v';
-// const TARION_ORIGINAL_SESSIONID = 'tarion_original_oI3vdiZ9lKnayZIN';
-// const TARION_SPINOFF_SESSIONID = 'tarion_spinoff_1fIU84jfpe80sbjE';
+const MONDAY_ORIGINAL_SESSIONID = 'monday_original_moH1Pu9n3BXz3OmY';
+// const TARION_ORIGINAL_SESSIONID = 'tarion_original_1NkO7v690JDWN9Ey';
+// const TARION_SPINOFF_SESSIONID = 'tarion_spinoff_U2Hc22mzJufwQvSX';
 
 const TARGET_COLLECTION_NAME = COLLECTIONS.CHAT; // The collection where data was inserted
 const TARGET_SESSION_ID = MONDAY_ORIGINAL_SESSIONID ?? '';

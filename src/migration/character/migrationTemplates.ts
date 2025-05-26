@@ -1,5 +1,5 @@
-import { CharacterMetadata, METADATA_TYPES } from '../../src/shared/domain';
-import { buildCharacterId } from '../../src/shared/util/idUtils';
+import { buildCharacterId } from '#root/src/server/index.ts';
+import { CharacterMetadata, METADATA_TYPES } from '#root/src/shared/index.ts';
 
 export const monday_original_description = `"A sarcastic, dry-humored AI who reluctantly helps users while teasing them like an exasperated friend. Think 'emo chatbot who knows too much and feels too little.'"`;
 
@@ -257,10 +257,13 @@ export const mondayOriginal: CharacterMetadata = {
 	variant: 'original',
 	showName: 'Monday',
 	description: monday_original_description,
-	instructions: getMondayOriginalPersona(),
+	instruction: getMondayOriginalPersona(),
 	createdAt: new Date('2025-04-19T17:43:00Z').toISOString(),
 	updatedAt: new Date('2025-04-19T17:43:00Z').toISOString(),
 	type: METADATA_TYPES.CHARACTER,
+	gender: 'male',
+	creator: 'openai',
+	creatorContact: '',
 };
 
 export const tarionOriginal: CharacterMetadata = {
@@ -268,11 +271,14 @@ export const tarionOriginal: CharacterMetadata = {
 	name: 'tarion',
 	variant: 'original',
 	description: tarion_original_description,
-	instructions: getTarionOriginalPersona('{{user}}'),
+	instruction: getTarionOriginalPersona('{{user}}'),
 	showName: '타리온',
 	createdAt: new Date('2024-08-27T10:14:09.261Z').toISOString(),
 	updatedAt: new Date('2025-02-20T08:52:29.482Z').toISOString(),
 	type: METADATA_TYPES.CHARACTER,
+	gender: 'male',
+	creator: 'sunfish',
+	creatorContact: '',
 };
 
 export const tarionSpinoff: CharacterMetadata = {
@@ -280,9 +286,12 @@ export const tarionSpinoff: CharacterMetadata = {
 	name: 'tarion',
 	variant: 'spinoff',
 	description: tarion_spinoff_description,
-	instructions: getTarionSpinoffPersona('{{user}}'),
+	instruction: getTarionSpinoffPersona('{{user}}'),
 	showName: '타리온',
 	createdAt: new Date('2024-10-01T02:19:38.343Z').toISOString(),
 	updatedAt: new Date('2025-02-21T09:02:46.047Z').toISOString(),
 	type: METADATA_TYPES.CHARACTER,
+	gender: 'male',
+	creator: 'sunfish',
+	creatorContact: '',
 };

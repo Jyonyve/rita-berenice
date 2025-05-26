@@ -188,7 +188,7 @@ async function initChatFromLogFiles() {
 					function _isValidEmotion(emotion?: string): boolean {
 						if (!emotion) return false;
 						if (validEmotions.has(emotion)) return true;
-						console.warn(`Invalid or unmapped emotion keyword: "${emotion}".`);
+						console.warn(` ⚠️ Invalid or unmapped emotion keyword: "${emotion}".`);
 						return false;
 					}
 
@@ -202,7 +202,7 @@ async function initChatFromLogFiles() {
 						updatedAt: botLog.updatedAt,
 						model: botLog.model,
 						sessionId: TARGET_SESSION_ID,
-						showName: '타리온',
+						showName: characterId.startsWith('tarion') ? '타리온' : '먼데이',
 						type: METADATA_TYPES.MESSAGE,
 						sequence: currentSequence,
 					};
