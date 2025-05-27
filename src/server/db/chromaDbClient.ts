@@ -1,7 +1,7 @@
 // src/server/db/chromaDbClient.ts
 import { COLLECTIONS, MetadataType } from '#root/src/shared/domain/index.ts';
 import { DEFAULT_QUERY_LIMIT, ChromaResponse } from '#root/src/shared/index.ts';
-import { ChromaClient, Collection, IncludeEnum, GetResponse, Where } from 'chromadb';
+import { ChromaClient, Collection, IncludeEnum, GetResponse, Where, WhereDocument } from 'chromadb';
 
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev';
 const chromaClient = new ChromaClient({ path: CHROMA_URL });
@@ -227,20 +227,22 @@ export const chromaDbClient = {
 
 	queryRecords: async (
 		collection: Collection,
-		queryText: string,
-		whereClause?: Where,
+		queryTexts: string[],
+		where?: Where,
+		whereDocument?: WhereDocument,
 		limit?: number
 	): Promise<ChromaResponse[]> => {
 		try {
 			console.log(
-				`[ChromaClient.queryRecords] Querying with text: "${queryText.substring(0, 50)}...", filter: ${JSON.stringify(whereClause)}, limit: ${limit}`
+				`[ChromaClient.queryRecords] Querying with text: "${queryTexts.slice(0, 3)}...",\n filter: ${JSON.stringify(where)}, ${JSON.stringify(whereDocument)},\n limit: ${limit}`
 			);
 			const MAX = await collection.count(); // Ensure the collection is initialized
 			const results = await collection.query({
-				queryTexts: [queryText], // queryTexts expects an array of strings
+				queryTexts, // queryTexts expects an array of strings
 				nResults: limit ?? MAX,
 				include: [IncludeEnum.Documents, IncludeEnum.Metadatas, IncludeEnum.Distances], // Also include distances
-				where: whereClause, // Pass the metadata filter
+				where, // Pass the metadata filter
+				whereDocument,
 			});
 
 			return results.ids
@@ -253,7 +255,9 @@ export const chromaDbClient = {
 				.filter((r): r is ChromaResponse => r !== null);
 		} catch (error) {
 			console.error(`[ChromaClient.queryRecords] Failed to query records:`, error);
-			throw new Error(`ChromaDB get failed for queryText ${queryText}: ${(error as Error).message}`);
+			throw new Error(
+				`ChromaDB get failed for queryText ${queryTexts.slice(0, 3)}: ${(error as Error).message}`
+			);
 		}
 	},
 

@@ -10,7 +10,7 @@ import {
 	ChromaResponse,
 	ChatResponse,
 } from '#shared/index.ts';
-import { Collection, IncludeEnum, Where } from 'chromadb';
+import { Collection, IncludeEnum, Where, WhereDocument } from 'chromadb';
 import { chromaDbClient } from '../db/chromaDbClient.ts';
 import {
 	buildChatMessageDocument,
@@ -195,16 +195,61 @@ export const chatService = {
 	// Enhanced Query Operations
 	queryChatMessages: async (
 		sessionId: string,
-		queryText: string,
+		queryTexts: string[],
 		messageType: ChatMessageType,
+		where?: Where,
+		whereDocumennt?: WhereDocument,
 		limit?: number
 	): Promise<string[]> => {
-		const collection = await chatService._getCollection(sessionId);
 		try {
+			const collection = await chatService._getCollection(sessionId);
+
 			// Create a where clause that includes the specified message types
-			const whereClause: Where = { type: METADATA_TYPES.MESSAGE, sessionId, messageType };
-			const results = await queryRecords(collection, queryText, whereClause, limit);
-			return results.flatMap((result) => result.documents.filter((doc) => doc !== null));
+			const defaultWhere: Where = {
+				$and: [
+					{ sessionId: { $eq: sessionId } },
+					{ type: { $eq: METADATA_TYPES.MESSAGE } },
+					{ messageType: { $eq: messageType } },
+				],
+			};
+			const whereClause = where ? { ...defaultWhere, ...where } : defaultWhere;
+
+			const results = await queryRecords(collection, queryTexts, where, whereDocumennt, limit);
+		} catch (error) {
+			console.error(`Failed to query chat log for session ${sessionId}:`, error);
+			return [];
+		}
+	},
+
+	queryChatTurns: async (
+		sessionId: string,
+		queryTexts: string[],
+		where?: Where,
+		whereDocumennt?: WhereDocument,
+		limit?: number
+	): Promise<ChatResponse> => {
+		try {
+			const collection = await chatService._getCollection(sessionId);
+
+			// Create a where clause that includes the specified message types
+			const defaultWhere: Where = {
+				$and: [{ sessionId: { $eq: sessionId } }, { type: { $eq: METADATA_TYPES.TURN } }],
+			};
+			const whereClause = where ? { ...defaultWhere, ...where } : defaultWhere;
+			const rawResults = await queryRecords(
+				collection,
+				queryTexts,
+				whereClause,
+				whereDocumennt,
+				limit
+			);
+
+			const results = rawResults.map((raw) => validateChromaResponse(raw, 'getList', collectionType));
+			return results.flatMap((result) => {
+				const { ids, documents, metadatas } = result;
+				const chatTurns = buildFullEntity([result]) as ChatTurn[];
+				return { ids, documents, metadatas, chatTurns };
+			});
 		} catch (error) {
 			console.error(`Failed to query chat log for session ${sessionId}:`, error);
 			return [];
@@ -216,7 +261,7 @@ export const chatService = {
 		const collection = await chatService._getCollection(sessionId);
 		const where: Where = { type: METADATA_TYPES.TURN, sessionId, sequence: { $lt: beforeSequence } };
 		try {
-			const rawResults = await getRecords(collection, where, -1);
+			const rawResults = await getRecords(collection, where);
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 			const { ids, documents, metadatas } = results;
 			const chatTurns = buildFullEntity([results]) as ChatTurn[];

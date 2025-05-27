@@ -13,6 +13,7 @@ import {
 	buildLlmStoryDocumentPrompt,
 } from '../../server/util/templateUtils.ts';
 import { chromaDbClient } from '../../server/db/index.ts';
+import { Where } from 'chromadb';
 import {
 	buildNaturalChatText,
 	buildRecapId,
@@ -340,11 +341,10 @@ const getSessionChatTurns = async (sessionId: string): Promise<ChatTurn[]> => {
 	try {
 		const collection = await chromaDbClient.getSessionCollection(sessionId);
 		const count = await collection.count();
-		const rawResults = await chromaDbClient.getRecords(
-			collection,
-			{ $and: [{ sessionId: { $eq: sessionId } }, { type: { $eq: METADATA_TYPES.TURN } }] },
-			count
-		);
+		const where: Where = {
+			$and: [{ sessionId: { $eq: sessionId } }, { type: { $eq: METADATA_TYPES.TURN } }],
+		};
+		const rawResults = await chromaDbClient.getRecords(collection, where, count);
 
 		const results = validateChromaResponse(rawResults, 'getList', TARGET_COLLECTION_NAME);
 
