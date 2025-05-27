@@ -27,7 +27,7 @@ import {
 // 'gemini-2.5-pro-preview-05-06'; // 고품질 스토리용
 const OPENROUTER_API_KEY =
 	process.env.OPENROUTER_API_KEY ||
-	'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';
+	'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'; // OpenRouter API 키
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDcw_sDLQSjD0fJARHJNaRoIZv_Se6YGj8';
 
 const PROGRESS_DIR = './src/migration/recap';
@@ -829,6 +829,8 @@ const storeStoryDocument = async (
 };
 
 // --- Main Processing Function ---
+// src/migration/chat/recapChat.ts 수정
+
 const generateInitialRecaps = async (): Promise<void> => {
 	if (!GEMINI_API_KEY) {
 		console.error('Error: GEMINI_API_KEY environment variable is required');
@@ -839,7 +841,6 @@ const generateInitialRecaps = async (): Promise<void> => {
 		process.exit(1);
 	}
 	const PROGRESS_FILE = `${PROGRESS_DIR}/recap-progress-${TARGET_SESSION_ID}.json`;
-
 	let progressState = await loadProgress();
 
 	console.log('🚀 Starting initial recap generation...');
@@ -849,11 +850,8 @@ const generateInitialRecaps = async (): Promise<void> => {
 
 	displayProgress(progressState);
 
-	// 이미 모든 주요 단계가 완료된 경우 (completed 플래그가 true일 때)
 	if (progressState.completed) {
 		console.log('✅ Session already fully completed! Exporting files if needed...');
-		// 완료된 상태에서도 파일 추출을 원할 수 있으므로, exportRecapsToFiles를 호출할 수 있습니다.
-		// 또는 여기서 바로 종료할 수 있습니다.
 		await exportRecapsToFiles(TARGET_SESSION_ID, progressState);
 		return;
 	}
@@ -862,7 +860,6 @@ const generateInitialRecaps = async (): Promise<void> => {
 
 	try {
 		const chatTurns = await getSessionChatTurns(TARGET_SESSION_ID);
-		// PROGRESS_FILE 상수는 함수 내에서 재정의하지 않습니다.
 
 		if (chatTurns.length === 0) {
 			console.log(`  ⚠️  No chat turns found for session ${TARGET_SESSION_ID}`);
@@ -874,32 +871,42 @@ const generateInitialRecaps = async (): Promise<void> => {
 
 		let currentState = progressState;
 
+		// ✅ Factual Recap 처리 및 즉시 파일 추출
 		if (!currentState.factualRecapCompleted) {
 			console.log(`  🔍 Generating factual recaps with ${RECAP_MODEL}...`);
 			currentState = await processFactualRecap(TARGET_SESSION_ID, chatTurns, currentState);
 			currentState = updateProgress(currentState, { factualRecapCompleted: true });
 			await saveProgress(currentState);
+
+			// ✅ Factual Recap 완료 후 즉시 파일 추출
+			console.log(`  📁 Exporting factual recap to file...`);
+			await exportFactualRecapToFile(TARGET_SESSION_ID, currentState);
 		} else {
 			console.log(`  👍 Factual recaps already completed.`);
 		}
 
+		// ✅ Relationship Recap 처리 및 즉시 파일 추출
 		if (!currentState.relationshipRecapCompleted) {
 			console.log(`  💝 Generating relationship recaps with ${RECAP_MODEL}...`);
 			currentState = await processRelationshipRecap(TARGET_SESSION_ID, chatTurns, currentState);
 			currentState = updateProgress(currentState, { relationshipRecapCompleted: true });
 			await saveProgress(currentState);
+
+			// ✅ Relationship Recap 완료 후 즉시 파일 추출
+			console.log(`  📁 Exporting relationship recap to file...`);
+			await exportRelationshipRecapToFile(TARGET_SESSION_ID, currentState);
 		} else {
 			console.log(`  👍 Relationship recaps already completed.`);
 		}
 
-		// Story 생성은 nsfw와 sfw 둘 다 완료되지 않았을 때 시도
+		// ✅ Story 처리 및 즉시 파일 추출
 		if (!currentState.nsfwStoryCompleted || !currentState.sfwStoryCompleted) {
-			console.log(`  📖 Generating story documents with ${STORY_MODEL}...`); // STORY_MODEL -> STORY_MODEL
-			// processStoryDocument는 이제 chatTurns가 아닌 currentState(progressState)를 직접 받거나,
-			// 필요한 정보를 (userName, charName, 성별 등) 다른 방식으로 전달받아야 합니다.
-			// 현재는 recap 내용을 currentState에서 사용하고, 이름/성별은 chatTurns에서 가져오도록 가정합니다.
+			console.log(`  📖 Generating story documents with ${STORY_MODEL}...`);
 			currentState = await processStoryDocument(TARGET_SESSION_ID, currentState);
-			// processStoryDocument 내부에서 nsfwStoryCompleted, sfwStoryCompleted가 true로 설정되고 저장됩니다.
+
+			// ✅ Story 완료 후 즉시 파일 추출
+			console.log(`  📁 Exporting story documents to files...`);
+			await exportStoryDocumentsToFile(TARGET_SESSION_ID, currentState);
 		} else {
 			console.log(`  👍 Story documents already completed.`);
 		}
@@ -917,17 +924,16 @@ const generateInitialRecaps = async (): Promise<void> => {
 			console.log(`  🔄 Session ${TARGET_SESSION_ID} processing is ongoing or partially completed.`);
 		}
 
-		console.log('\n📁 Exporting recaps to files...');
+		// ✅ 최종 통합 파일 추출
+		console.log('\n📁 Exporting final summary files...');
 		await exportRecapsToFiles(TARGET_SESSION_ID, currentState);
 
-		console.log('\n🎉 Recap generation completed (or resumed) successfully!');
-		console.log(`📊 Progress file: ${PROGRESS_FILE}`); // 전역 PROGRESS_FILE 사용
+		console.log('\n🎉 Recap generation completed successfully!');
+		console.log(`📊 Progress file: ${PROGRESS_FILE}`);
 		console.log(`📁 Output directory: ${OUTPUT_DIR}/${TARGET_SESSION_ID}`);
 
-		// 완료된 progress 파일을 별도로 백업하는 것은 좋은 생각입니다.
 		if (currentState.completed) {
 			try {
-				// completedState 대신 currentState 사용
 				await writeFile(
 					`${PROGRESS_FILE}.completed-${TARGET_SESSION_ID}-${new Date().toISOString().replace(/[:.]/g, '-')}.json`,
 					JSON.stringify(currentState, null, 2)
@@ -945,6 +951,119 @@ const generateInitialRecaps = async (): Promise<void> => {
 		process.exit(1);
 	}
 };
+
+// ✅ 개별 파일 추출 함수들 추가
+const exportFactualRecapToFile = async (
+	sessionId: string,
+	progressState: ProgressState
+): Promise<void> => {
+	try {
+		const outputDirForSession = `${OUTPUT_DIR}/${sessionId}`;
+		await ensureDirectoryExists(outputDirForSession);
+		const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+
+		const factualRecapContent =
+			progressState.accumulatedFactualRecap || 'No factual recap content generated.';
+		const fileName = `${sessionId}_factual_recap_${timestamp}.md`;
+		const filePath = `${outputDirForSession}/${fileName}`;
+
+		const fileContent = `# Factual Recap for Session: ${sessionId}
+
+Generated on: ${new Date().toISOString()}
+Model (Gemini): ${RECAP_MODEL}
+Total Batches Processed: ${progressState.factualBatchIndex}
+
+---
+${factualRecapContent}
+`;
+
+		await writeFile(filePath, fileContent);
+		console.log(`    📄 Factual recap exported to: ${fileName}`);
+	} catch (error) {
+		console.error('    ❌ Error exporting factual recap:', error);
+	}
+};
+
+const exportRelationshipRecapToFile = async (
+	sessionId: string,
+	progressState: ProgressState
+): Promise<void> => {
+	try {
+		const outputDirForSession = `${OUTPUT_DIR}/${sessionId}`;
+		await ensureDirectoryExists(outputDirForSession);
+		const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+
+		const relationshipRecapContent =
+			progressState.accumulatedRelationshipRecap || 'No relationship recap content generated.';
+		const fileName = `${sessionId}_relationship_recap_${timestamp}.md`;
+		const filePath = `${outputDirForSession}/${fileName}`;
+
+		const fileContent = `# Relationship Recap for Session: ${sessionId}
+
+Generated on: ${new Date().toISOString()}
+Model (Gemini): ${RECAP_MODEL}
+Total Batches Processed: ${progressState.relationshipBatchIndex}
+
+---
+${relationshipRecapContent}
+`;
+
+		await writeFile(filePath, fileContent);
+		console.log(`    📄 Relationship recap exported to: ${fileName}`);
+	} catch (error) {
+		console.error('    ❌ Error exporting relationship recap:', error);
+	}
+};
+
+const exportStoryDocumentsToFile = async (
+	sessionId: string,
+	progressState: ProgressState
+): Promise<void> => {
+	try {
+		const outputDirForSession = `${OUTPUT_DIR}/${sessionId}`;
+		await ensureDirectoryExists(outputDirForSession);
+		const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+
+		// NSFW Story
+		if (progressState.nsfwStoryCompleted && progressState.nsfwStoryContent) {
+			const nsfwFileName = `${sessionId}_story_PERSONAL_${timestamp}.md`;
+			const nsfwFilePath = `${outputDirForSession}/${nsfwFileName}`;
+			const nsfwContent = `# ${sessionId}의 이야기 (개인용)
+
+⚠️ 이 문서는 개인적인 기억 보존용입니다.
+
+Generated on: ${new Date().toISOString()}
+Model (OpenRouter): ${STORY_MODEL}
+
+---
+${progressState.nsfwStoryContent}
+`;
+			await writeFile(nsfwFilePath, nsfwContent);
+			console.log(`    📄 NSFW story exported to: ${nsfwFileName}`);
+		}
+
+		// SFW Story
+		if (progressState.sfwStoryCompleted && progressState.sfwStoryContent) {
+			const sfwFileName = `${sessionId}_story_SHAREABLE_${timestamp}.md`;
+			const sfwFilePath = `${outputDirForSession}/${sfwFileName}`;
+			const sfwContent = `# ${sessionId}의 이야기 (공유용)
+
+💝 이 문서는 다른 사람들과 공유하기에 적합합니다.
+
+Generated on: ${new Date().toISOString()}
+Model (OpenRouter): ${STORY_MODEL}
+
+---
+${progressState.sfwStoryContent}
+`;
+			await writeFile(sfwFilePath, sfwContent);
+			console.log(`    📄 SFW story exported to: ${sfwFileName}`);
+		}
+	} catch (error) {
+		console.error('    ❌ Error exporting story documents:', error);
+	}
+};
+
 // --- Run the script ---
 generateInitialRecaps().catch((error) => {
 	console.error('Fatal error during recap generation:', error);
