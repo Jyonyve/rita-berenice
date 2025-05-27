@@ -2,7 +2,7 @@ import { Metadata } from 'chromadb'; // Alias to avoid confusion if you have you
 import { METADATA_TYPES } from '../chromadb/index.ts';
 
 // --- BASE ---
-interface BaseLoreHistoryMetadata extends Metadata {
+interface BaseLoreHistoryMetadata {
 	characterId: string;
 	type: typeof METADATA_TYPES.LORE | typeof METADATA_TYPES.HISTORY;
 	createdAt: string;
@@ -16,7 +16,6 @@ export interface LoreMetadata extends BaseLoreHistoryMetadata {
 	type: typeof METADATA_TYPES.LORE;
 	category: string; // Optional, if used for filtering
 	source: string; // Optional, if used for filtering
-	// 'keywordsString' is inherited
 }
 
 export type LoreInfo = LoreMetadata & {
@@ -34,10 +33,9 @@ interface TemporalRelationship {
 export interface HistoryMetadata extends BaseLoreHistoryMetadata {
 	historyId: string;
 	type: typeof METADATA_TYPES.HISTORY;
-	title: string; // Optional in metadata, might be long. Full title always in HistoryInfo.
 	periodLabel: string;
 	periodConfidence: number;
-	estimatedEventDateString: string; // For basic string filtering if useful
+	estimatedEventDate: string; // For basic string filtering if useful
 	dateType: 'absolute_date' | 'estimated_year' | 'relative_to_event' | 'era_defined';
 	dateConfidence: number;
 	keyThemesString: string; // Stringified array of key themes
@@ -48,14 +46,14 @@ export interface HistoryMetadata extends BaseLoreHistoryMetadata {
 	// 'keywordsString' is inherited
 }
 
-export type HistoryInfo = Omit<
-	HistoryMetadata,
-	'keywordsString' | 'keyThemesString' | 'relatedEventIdsString' | 'estimatedEventDateString'
-> & {
+export type HistoryInfo = HistoryMetadata & {
+	// Omit<HistoryMetadata,	'keywordsString' | 'keyThemesString' | 'relatedEventIdsString' | 'estimatedEventDateString'>
 	content: string; // Full textual content of the history event
 	keywordsArray: string[]; // Actual array of keywords (if different from keywordsString)
 	keyThemesArray: string[]; // Actual array of key themes
 	temporalRelations: TemporalRelationship[]; // Full structured temporal relations
-	estimatedEventDate: string; // The canonical event date string (could be different from a simplified metadata version)
 	title: string; // Make title required in Info if it always exists for a history item
 };
+
+export type HistoryCdo = Pick<HistoryInfo, 'content' | 'title'>;
+export type LoreCdo = Pick<LoreInfo, 'content'>;

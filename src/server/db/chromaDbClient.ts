@@ -179,11 +179,13 @@ export const chromaDbClient = {
 		);
 
 		try {
+			const MAX = await collection.count(); // Ensure the collection is initialized
+
 			const results = await collection.get({
 				where: whereFilter,
 				include: [IncludeEnum.Documents, IncludeEnum.Metadatas], // Include IDs (implicit), documents, and metadatas
 				offset: options.offset,
-				limit: options.limit,
+				limit: options.limit ?? MAX,
 			});
 
 			return _returnResponse(results);
@@ -199,16 +201,17 @@ export const chromaDbClient = {
 	getRecords: async (
 		collection: Collection,
 		whereClause?: Where,
-		limit: number = DEFAULT_QUERY_LIMIT
+		limit?: number
 	): Promise<ChromaResponse> => {
 		try {
 			console.log(
 				`[ChromaClient.queryRecords] filter: ${JSON.stringify(whereClause)}, limit: ${limit}`
 			);
+			const MAX = await collection.count(); // Ensure the collection is initialized
 			const results = await collection.get({
 				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
 				where: whereClause,
-				limit,
+				limit: limit ?? MAX,
 			});
 			return _returnResponse(results);
 		} catch (error) {
@@ -223,15 +226,16 @@ export const chromaDbClient = {
 		collection: Collection,
 		queryText: string,
 		whereClause?: Where,
-		limit: number = DEFAULT_QUERY_LIMIT
+		limit?: number
 	): Promise<ChromaResponse[]> => {
 		try {
 			console.log(
 				`[ChromaClient.queryRecords] Querying with text: "${queryText.substring(0, 50)}...", filter: ${JSON.stringify(whereClause)}, limit: ${limit}`
 			);
+			const MAX = await collection.count(); // Ensure the collection is initialized
 			const results = await collection.query({
 				queryTexts: [queryText], // queryTexts expects an array of strings
-				nResults: limit,
+				nResults: limit ?? MAX,
 				include: [IncludeEnum.Documents, IncludeEnum.Metadatas, IncludeEnum.Distances], // Also include distances
 				where: whereClause, // Pass the metadata filter
 			});

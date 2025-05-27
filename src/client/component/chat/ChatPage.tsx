@@ -23,6 +23,7 @@ import {
 	METADATA_TYPES,
 	TempChatTurn,
 	ChatTurn,
+	ChatTurnCdo,
 } from '@shared/index.ts';
 
 export const ChatPage = () => {
@@ -92,16 +93,11 @@ export const ChatPage = () => {
 	};
 
 	const _storeNewChatTurn = async (tempChatTurn: TempChatTurn) => {
-		const newChatTurn: ChatTurn = {
+		const newChatTurn: ChatTurnCdo = {
 			sessionId,
 			sequence: tempChatTurn.sequence,
-			chatTurnId: '',
-			requestMessageId: '',
-			responseMessageId: '',
-			createdAt: '',
 			request: tempChatTurn.chatTurnSets[currentTempSetNo].request,
 			response: tempChatTurn.chatTurnSets[currentTempSetNo].response,
-			type: METADATA_TYPES.TURN,
 		};
 		try {
 			//server

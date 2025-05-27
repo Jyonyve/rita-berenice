@@ -1,5 +1,6 @@
 // src/util/templateUtils.ts (or your path)
 import { allEmotionKeywordsList } from '#root/src/shared/config/index.ts';
+import { ChatMessage, parseEntriesToText } from '#root/src/shared/index.ts';
 
 // --- EMOTION TEMPLATE (Unchanged, it's good) ---
 export const EMOTION_TEMPLATE = `
@@ -98,31 +99,81 @@ ${EMOTION_TEMPLATE}
 `.trim();
 };
 
-// --- LEGACY/ALTERNATIVE CONTEXT PROMPT (May need to be deprecated or adapted) ---
-/**
- * Builds a system prompt string to provide relationship context to the LLM for generating a character response.
- * @param relationshipRecapContent The content of the stored relationship recap.
- * @param userName The actual name or identifier of the user/persona the character is interacting with.
- * @param charName The name of the AI character (e.g., Tarion).
- * @returns A formatted string for the system message, or an empty string if no recap.
- */
-export const buildRelationshipContextSystemPrompt = (
-	// This might be incorporated into buildPersonaSystemPrompt
-	relationshipRecapContent: string,
-	userName: string = 'the user',
-	charName: string
+export const buildChatTurnMetadataPrompt = (
+	userName: string,
+	userGender: string, // Assuming you get this from profile
+	userRequest: ChatMessage,
+	charName: string,
+	charGender: string, // Assuming you get this from character definition
+	charResponse: ChatMessage,
+	existingLoreIds: string[], // Pass available Lore IDs for linking
+	existingHistoryIds: string[] // Pass available History IDs for linking
 ): string => {
-	if (!relationshipRecapContent || relationshipRecapContent.trim() === '') {
-		return '';
-	}
-	// This is now a simplified version, as the main prompt handles more.
-	// It could be used if you *only* want to inject relationship context without the full persona/lore structure.
-	return `
-[Relationship Context with ${userName}]
-Remember this summary of your (${charName}'s) current relationship dynamics with ${userName}:
-"${relationshipRecapContent}"
-Let this guide your feelings and attitude towards ${userName}.
-`.trim();
+	const userRequestContent = parseEntriesToText(userRequest.entries);
+	const charResponseContent = parseEntriesToText(charResponse.entries);
+
+	const prompt = `
+You are an expert AI assistant specializing in analyzing conversational turns to extract rich metadata for a Retrieval Augmented Generation (RAG) system.
+Analyze the following single turn of conversation between ${userName} (a ${userGender} user) and ${charName} (a ${charGender} character).
+
+**Conversation Turn:**
+*   **Session ID:** ${userRequest.sessionId} (for context, not for output field)
+*   **Turn Sequence:** ${userRequest.sequence}
+*   **User (${userName}, Initial Emotion: ${userRequest.emotion}):** ${userRequestContent}
+*   **Character (${charName}, Initial Emotion: ${charResponse.emotion}, Model: ${charResponse.model || 'N/A'}):** ${charResponseContent}
+
+**Your Task:**
+Generate a JSON object conforming to the 'EnrichedChatTurnMetadataOutput' interface.
+Provide values for ALL fields. If information is not present or not applicable, use default values as specified (e.g., "N/A" for strings, [] for arrays, neutral emotion objects).
+
+**Output JSON Structure (EnrichedChatTurnMetadataOutput):**
+\`\`\`json
+{
+  "turnSummary": "string (Max 50 words, e.g., 'User asks about Tarion's past, Tarion evades.')",
+  "keyEntities": ["string (Format: 'type:name', e.g., 'character:Tarion', 'location:DarkForest', 'item:MagicSword')"],
+  "extractedTopics": ["string (Keywords or short phrases representing main topics, e.g., 'betrayal', 'quest_for_artifact')"],
+  "userEmotionalTone": { 
+    "primary": "string (One of: ${allEmotionKeywordsList.join(', ')}, or 'mixed')", 
+    "intensity": "number (0.0 to 1.0)", 
+    "nuances": ["string (Specific emotion words, e.g., 'frustration', 'curiosity')"] 
+  },
+  "characterEmotionalTone": { 
+    "primary": "string (One of: ${allEmotionKeywordsList.join(', ')}, or 'mixed')", 
+    "intensity": "number (0.0 to 1.0)", 
+    "nuances": ["string (Specific emotion words, e.g., 'defensive', 'sadness')"] 
+  },
+  "relationshipDynamicsShift": ["string (Format: 'Entity1-Entity2:dynamic_change', e.g., '${charName}-${userName}:trust_increased', '${charName}-OtherChar:conflict_hinted')"],
+  "dialogueAct": "string (Classify the primary communicative function of the turn, e.g., 'question', 'answer', 'statement_opinion', 'statement_fact', 'command', 'suggestion', 'apology', 'greeting', 'farewell', 'revelation', 'evasion', 'threat', 'promise', 'flirtation', 'action_narration')",
+  "keyActionsDescribed": ["string (Observable actions described in text, e.g., '${charName}_draws_sword', '${userName}_offers_potion', '${charName}_looks_away')"],
+  "loreReferences": [{ "loreId": "string (ID from provided list: ${existingLoreIds.join(', ')})", "relevance": "number (0.0 to 1.0)" }],
+  "historyReferences": [{ "historyId": "string (ID from provided list: ${existingHistoryIds.join(', ')})", "relevance": "number (0.0 to 1.0)" }],
+  "triggerFlags": ["string (Specific flags based on content, e.g., 'new_lore_revealed', 'character_goal_updated', 'major_plot_point', 'user_expressed_strong_emotion', 'character_made_promise', 'new_entity_introduced', 'past_event_mentioned')"],
+  "memoryChunk": "string (A concise, self-contained statement (max 100 words) of what was learned or happened in this turn, suitable for direct RAG retrieval. Example: 'In turn ${userRequest.sequence}, ${charName} reluctantly revealed a fragment of their past involvement with the Shadow Syndicate when pressed by ${userName}, expressing fear and regret. This event seems to connect to the 'Syndicate_Lore' entry.')"
+}
+\`\`\`
+
+**Analysis Guidelines:**
+*   **turnSummary:** Overall gist of the turn.
+*   **keyEntities:** Identify all proper nouns and significant objects/concepts. Use 'character:[Name]', 'location:[Name]', 'item:[Name]', 'organization:[Name]', 'concept:[Name]'.
+*   **extractedTopics:** Broader themes or subjects discussed.
+*   **EmotionalTone:** Analyze the text and context. The 'primary' emotion should be a general category. 'nuances' can specify further.
+*   **relationshipDynamicsShift:** Focus on changes between characters mentioned or implied in this turn. If no shift, use an empty array.
+*   **dialogueAct:** Consider the main purpose of the turn's communication.
+*   **keyActionsDescribed:** List actions by prefixing with the actor's name (e.g., "${userName}_smiles").
+*   **loreReferences/historyReferences:** If the conversation clearly refers to or elaborates on known lore/history, link to it with a relevance score. Only include if relevance is > 0.5.
+*   **triggerFlags:** Identify predefined significant event types.
+*   **memoryChunk:** This is CRITICAL. Synthesize the most important takeaway from this turn into a dense, searchable memory. It should encapsulate what happened, who was involved, key information revealed, and potential impact.
+
+Ensure the output is a single, valid JSON object.
+Provide values for ALL fields, using defaults (empty arrays [], "N/A" for strings, neutral emotion objects) where appropriate.
+Example default for emotional tone: { "primary": "neutral", "intensity": 0.5, "nuances": [] }
+Example default for turnSummary: "No specific summary."
+Example default for dialogueAct: "N/A"
+Example default for memoryChunk: "No specific memory chunk generated for this turn."
+
+JSON Output:
+`;
+	return prompt.trim();
 };
 
 // --- UNCHANGED PROMPTS (Assumed to serve different specific functions) ---

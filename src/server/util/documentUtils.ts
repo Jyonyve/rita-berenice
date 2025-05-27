@@ -10,6 +10,9 @@ import {
 	ChatMessage,
 	LoreMetadata,
 	HistoryMetadata,
+	CharacterInfo,
+	ProfileInfo,
+	ChromaResponse,
 } from '#shared/index.ts';
 
 export const buildNaturalChatText = (request: ChatMessage, response: ChatMessage): string => {
@@ -27,16 +30,11 @@ export const buildChatMessageDocument = (entries: ChatEntry[]) => {
 };
 
 export const buildChatTurnDocument = (chatTurn: ChatTurn): string => {
-	const document = {
-		sessionId: chatTurn.sessionId,
-		sequence: chatTurn.sequence,
-		request: chatTurn.request,
-		response: chatTurn.response,
-	};
+	const document = { request: chatTurn.request, response: chatTurn.response };
 	return JSON.stringify(document).trim();
 };
 
-export const buildCharacterDocument = (character: CharacterMetadata) => {
+export const buildCharacterDocument = (character: CharacterInfo) => {
 	const { characterId, showName, description, instruction, updatedAt } = character;
 	const document: BasicCharacterInfo = {
 		characterId,
@@ -48,20 +46,44 @@ export const buildCharacterDocument = (character: CharacterMetadata) => {
 	return JSON.stringify(document).trim();
 };
 
-export const buildProfileDocument = (profile: ProfileMetadata) => {
+export const buildProfileDocument = (profile: ProfileInfo) => {
 	const { profileId, showName, description } = profile;
 	const document = { profileId, showName, description };
 	return JSON.stringify(document).trim();
 };
 
-export const buildLoreDocument = (lore: LoreMetadata) => {
-	const { characterId, loreId, content, keywords, updatedAt } = lore;
-	const document = { characterId, loreId, content, keywords, updatedAt };
+export const buildLoreDocument = (lore: LoreInfo) => {
+	const { content, keywordsArray } = lore;
+	const document = { content, keywordsArray };
 	return JSON.stringify(document).trim();
 };
 
-export const buildHistoryDocument = (history: HistoryMetadata) => {
-	const { characterId, historyId, title, content, periodLabel, updatedAt } = history;
-	const document = { characterId, historyId, title, content, periodLabel, updatedAt };
+export const buildHistoryDocument = (history: HistoryInfo) => {
+	const { content, keywordsArray, keyThemesArray, temporalRelations, estimatedEventDate, title } =
+		history;
+	const document = {
+		keywordsArray,
+		keyThemesArray,
+		title,
+		content,
+		temporalRelations,
+		estimatedEventDate,
+	};
 	return JSON.stringify(document).trim();
+};
+
+// parse metadata and document to entity
+export const buildFullEntity = (queryResults: ChromaResponse[]) => {
+	return queryResults
+		.map((result) => {
+			const { ids, metadatas, documents } = result;
+			if (ids.length === 0 || metadatas.length === 0 || documents.length === 0) {
+				return null;
+			}
+			if (!metadatas[0] || !documents[0]) {
+				return null;
+			}
+			return { ...metadatas[0], ...JSON.parse(documents[0]) };
+		})
+		.filter((entity) => !!entity);
 };

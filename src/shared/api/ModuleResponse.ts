@@ -74,7 +74,7 @@ export type LoreResponse = LoreChromaResponse;
 interface HistoryChromaResponse extends ChromaResponse {
 	history: HistoryInfo;
 	historyContent: string;
-	histrories: HistoryInfo[];
+	histories: HistoryInfo[];
 	historyContents: string[];
 }
 export type HistoryResponse = HistoryChromaResponse;
