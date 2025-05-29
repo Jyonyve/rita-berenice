@@ -1,13 +1,16 @@
 // src/util/templateUtils.ts (or your path)
 import { allEmotionKeywordsList } from '#root/src/shared/config/index.ts';
-import { ChatMessage, parseEntriesToText } from '#root/src/shared/index.ts';
+import { ChatMessage, convertStringToArray, parseEntriesToText } from '#root/src/shared/index.ts';
+
+const REALATIONSHIP_CHARACTERS_LIMIT: number = 3000 as const;
+const FACTUAL_CHARACTERS_LIMIT: number = 1500 as const;
 
 // --- EMOTION TEMPLATE (Unchanged, it's good) ---
 export const EMOTION_TEMPLATE = `
 You MUST respond in JSON format. The JSON object must contain exactly two keys: "response" and "emotion".
 "response": Your textual answer to the user, following the persona instructions below.
 "emotion": A single keyword representing the character's dominant emotion in the response. Choose the *closest* match from the following list:
-[${allEmotionKeywordsList.join(', ')}]
+[${convertStringToArray(Array.from(allEmotionKeywordsList))}]
 
 Example format:
 {
@@ -107,12 +110,14 @@ export const buildChatTurnMetadataPrompt = (
 	charGender: string, // Assuming you get this from character definition
 	charResponse: ChatMessage,
 	existingLoreIds: string[], // Pass available Lore IDs for linking
-	existingHistoryIds: string[] // Pass available History IDs for linking
+	existingHistoryIds: string[], // Pass available History IDs for linking
+	eng?: boolean
 ): string => {
 	const userRequestContent = parseEntriesToText(userRequest.entries);
 	const charResponseContent = parseEntriesToText(charResponse.entries);
 
-	const prompt = `
+	const prompt = eng
+		? `
 You are an expert AI assistant specializing in analyzing conversational turns to extract rich metadata for a Retrieval Augmented Generation (RAG) system.
 Analyze the following single turn of conversation between ${userName} (a ${userGender} user) and ${charName} (a ${charGender} character).
 
@@ -133,20 +138,20 @@ Provide values for ALL fields. If information is not present or not applicable, 
   "keyEntities": ["string (Format: 'type:name', e.g., 'character:Tarion', 'location:DarkForest', 'item:MagicSword')"],
   "extractedTopics": ["string (Keywords or short phrases representing main topics, e.g., 'betrayal', 'quest_for_artifact')"],
   "userEmotionalTone": { 
-    "primary": "string (One of: ${allEmotionKeywordsList.join(', ')}, or 'mixed')", 
+    "primary": "string (One of: ${convertStringToArray(Array.from(allEmotionKeywordsList))}, or 'mixed')", 
     "intensity": "number (0.0 to 1.0)", 
     "nuances": ["string (Specific emotion words, e.g., 'frustration', 'curiosity')"] 
   },
   "characterEmotionalTone": { 
-    "primary": "string (One of: ${allEmotionKeywordsList.join(', ')}, or 'mixed')", 
+    "primary": "string (One of: ${convertStringToArray(Array.from(allEmotionKeywordsList))}, or 'mixed')", 
     "intensity": "number (0.0 to 1.0)", 
     "nuances": ["string (Specific emotion words, e.g., 'defensive', 'sadness')"] 
   },
   "relationshipDynamicsShift": ["string (Format: 'Entity1-Entity2:dynamic_change', e.g., '${charName}-${userName}:trust_increased', '${charName}-OtherChar:conflict_hinted')"],
   "dialogueAct": "string (Classify the primary communicative function of the turn, e.g., 'question', 'answer', 'statement_opinion', 'statement_fact', 'command', 'suggestion', 'apology', 'greeting', 'farewell', 'revelation', 'evasion', 'threat', 'promise', 'flirtation', 'action_narration')",
   "keyActionsDescribed": ["string (Observable actions described in text, e.g., '${charName}_draws_sword', '${userName}_offers_potion', '${charName}_looks_away')"],
-  "loreReferences": [{ "loreId": "string (ID from provided list: ${existingLoreIds.join(', ')})", "relevance": "number (0.0 to 1.0)" }],
-  "historyReferences": [{ "historyId": "string (ID from provided list: ${existingHistoryIds.join(', ')})", "relevance": "number (0.0 to 1.0)" }],
+  "loreReferences": [{ "loreId": "string (ID from provided list: ${convertStringToArray(existingLoreIds)})", "relevance": "number (0.0 to 1.0)" }],
+  "historyReferences": [{ "historyId": "string (ID from provided list: ${convertStringToArray(existingHistoryIds)})", "relevance": "number (0.0 to 1.0)" }],
   "triggerFlags": ["string (Specific flags based on content, e.g., 'new_lore_revealed', 'character_goal_updated', 'major_plot_point', 'user_expressed_strong_emotion', 'character_made_promise', 'new_entity_introduced', 'past_event_mentioned')"],
   "memoryChunk": "string (A concise, self-contained statement (max 100 words) of what was learned or happened in this turn, suitable for direct RAG retrieval. Example: 'In turn ${userRequest.sequence}, ${charName} reluctantly revealed a fragment of their past involvement with the Shadow Syndicate when pressed by ${userName}, expressing fear and regret. This event seems to connect to the 'Syndicate_Lore' entry.')"
 }
@@ -172,6 +177,53 @@ Example default for dialogueAct: "N/A"
 Example default for memoryChunk: "No specific memory chunk generated for this turn."
 
 JSON Output:
+`
+		: `
+당신은 한국어 대화를 분석하여 RAG 시스템용 구조화된 메타데이터를 추출하는 전문가다.
+${userName}(${userGender} 사용자)과 ${charName}(${charGender} 캐릭터) 사이의 다음 대화 턴을 분석한다.
+
+**대화 턴:**
+*   **세션 ID:** ${userRequest.sessionId}
+*   **턴 순서:** ${userRequest.sequence}
+*   **사용자 (${userName}, 초기 감정: ${userRequest.emotion}):** ${userRequestContent}
+*   **캐릭터 (${charName}, 초기 감정: ${charResponse.emotion}, 모델: ${charResponse.model || 'N/A'}):** ${charResponseContent}
+
+**출력 JSON 구조 (통합된 메타데이터):**
+\`\`\`json
+{
+  "summary": "string (최대 50단어, 예: 'User asks about Tarion's past, Tarion evades.')",
+  "keywords": ["string (일반 검색 키워드, 예: 'conversation', 'past', 'evasion')"],
+  "topics": ["string (광범위한 주제, 예: 'character_background', 'mystery', 'trust_issues')"],
+  "entities": ["string (형식: 'type:name', 예: 'character:Tarion', 'location:DarkForest', 'item:MagicSword')"],
+  "userEmotion": { 
+    "primary": "string (다음 중 하나: ${convertStringToArray(Array.from(allEmotionKeywordsList))}, 또는 'neutral', 'mixed')", 
+    "intensity": "number (0.0 to 1.0)", 
+    "nuances": ["string (구체적 감정 단어, 예: 'frustration', 'curiosity')"] 
+  },
+  "characterEmotion": { 
+    "primary": "string (다음 중 하나: ${convertStringToArray(Array.from(allEmotionKeywordsList))}, 또는 'neutral', 'mixed')", 
+    "intensity": "number (0.0 to 1.0)", 
+    "nuances": ["string (구체적 감정 단어, 예: 'defensive', 'sadness')"] 
+  },
+  "relationshipShifts": ["string (형식: 'Entity1-Entity2:dynamic_change', 예: '${charName}-${userName}:trust_increased')"],
+  "dialogueAct": "string (예: 'question', 'answer', 'statement_opinion', 'revelation', 'evasion')",
+  "actions": ["string (관찰 가능한 행동, 예: '${charName}_draws_sword', '${userName}_offers_potion')"],
+  "loreReferences": [{ "id": "string (제공된 목록에서: ${convertStringToArray(existingLoreIds)})", "relevance": "number (0.0 to 1.0)" }],
+  "historyReferences": [{ "id": "string (제공된 목록에서: ${convertStringToArray(existingHistoryIds)})", "relevance": "number (0.0 to 1.0)" }],
+  "flags": ["string (예: 'new_lore_revealed', 'character_goal_updated', 'major_plot_point')"],
+  "memoryChunk": "string (최대 100단어, RAG 검색용 자립적 요약)"
+}
+\`\`\`
+
+**중요 지침:**
+- **모든 메타데이터 필드는 영어로만 작성**
+- **memoryChunk는 한국어 대화 내용을 영어로 요약**
+- 모든 필드에 값을 제공하되, 정보가 없으면 기본값 사용:
+  - 빈 배열 [] (리스트용)
+  - "N/A" (문자열용)
+  - { "primary": "neutral", "intensity": 0.5, "nuances": [] } (감정용)
+
+JSON 출력:
 `;
 	return prompt.trim();
 };
@@ -253,70 +305,108 @@ export const buildLogContextPrompt = (userInput: string, context: string) => {
 /**
  * Factual Recap 프롬프트 (사용자와 캐릭터 모두의 대화 및 행동 포함, 화자 명시)
  */
-export const buildLlmFactualRecapPrompt = (
-	userName: string, // 사용자 이름 추가
+export const buildFactualRecapPrompt = (
+	userName: string,
 	charName: string,
-	userGender: string, // 사용자 성별 추가
-	charGender: string, // 캐릭터 성별 추가
+	userGender: string,
+	charGender: string,
 	stringifyChatTurns: string,
+	// Add available metadata for refinement
+	availableKeywords: string[],
+	availableTopics: string[],
+	availableEntities: string[],
 	eng?: boolean
 ): string =>
 	eng
 		? `
-You are a meticulous AI assistant tasked with creating a "Factual Ledger" from a conversation between ${userName} (a ${userGender} user) and ${charName} (a ${charGender} character).
-This ledger must log key factual statements, significant actions, and important dialogue from BOTH participants, associating them with their precise 'Turn Sequence' and 'Timestamp (createdAt)'.
-The goal is to maintain consistency and a clear record of events and interactions.
+You are a meticulous AI assistant specialized in creating factual ledgers and extracting structured metadata.
+Create a "Factual Ledger" from a conversation between ${userName} (a ${userGender} user) and ${charName} (a ${charGender} character).
 
 Chat Turns (each turn includes 'Speaker', 'Turn Sequence', and 'Timestamp (createdAt)'):
 ${stringifyChatTurns}
 (Note: Actions or descriptions might be in parentheses, e.g., (smiles), (picks up the book))
 
-Instructions for Factual Ledger:
-1.  Identify and record:
-    a.  Key factual statements or claims made by EITHER ${userName} or ${charName}.
-    b.  Significant actions or behaviors described for EITHER participant (often in parentheses).
-    c.  Important pieces of dialogue that reveal critical information, intentions, or emotional states.
-2.  For each entry, clearly state WHO performed the action or made the statement (e.g., "${userName} stated...", "${charName} (action): ...").
-3.  For each recorded item, you MUST include the exact 'Turn Sequence' and 'Timestamp (createdAt)' when it occurred.
-4.  If multiple significant items occur within the same turn, list them separately but with the same Turn Sequence and Timestamp.
-5.  Focus on objective facts, observable actions, and direct quotes or concise summaries of dialogue. Avoid interpretation unless it's explicitly stated (e.g., "${charName} looked angry (stated in narration)").
-6.  The output should be a chronological list of these timestamped facts, actions, and dialogues.
+Available Keywords: ${convertStringToArray(availableKeywords)}
+Available Topics: ${convertStringToArray(availableTopics)}
+Available Entities: ${convertStringToArray(availableEntities)}
 
-Factual Ledger for the conversation between ${userName} (${userGender}) and ${charName} (${charGender}):
-(Example format for each entry:
-- Speaker: ${userName}, Statement: "I arrived yesterday." (Turn Sequence: 1, Timestamp: 2025-05-16T10:00:00.000Z)
-- Speaker: ${charName}, Action: (Nods slowly) (Turn Sequence: 1, Timestamp: 2025-05-16T10:00:00.000Z)
-- Speaker: ${charName}, Dialogue: "Welcome to our town." (Turn Sequence: 2, Timestamp: 2025-05-16T10:01:00.000Z)
-)
--
+Create a JSON response with factual analysis and refined metadata:
+
+{
+  "content": "Detailed factual ledger content here...",
+  "keywords": ["selected", "relevant", "keywords"],
+  "topics": ["key", "factual", "topics"],
+  "entities": ["important", "entities"],
+  "flags": ["new_lore_revealed", "character_goal_updated", "important_fact_stated"],
+  "loreReferences": [{"id": "lore_id", "relevance": 0.9}],
+  "historyReferences": [{"id": "history_id", "relevance": 0.8}]
+}
+
+For the "content" field, provide a comprehensive factual ledger focusing on:
+
+1. **Key Factual Statements**: Important claims, declarations, or information revealed by EITHER ${userName} or ${charName}, with Turn Sequence and Timestamp.
+2. **Significant Actions**: Observable behaviors, physical actions, or gestures (often in parentheses) by either participant.
+3. **Critical Dialogue**: Important conversations that reveal intentions, plans, knowledge, or emotional states.
+4. **Objective Facts**: Concrete information about events, locations, objects, relationships, or capabilities mentioned.
+5. **Timeline Events**: Actions or statements that establish chronology or sequence of events.
+
+Format each entry as: "Speaker: ${charName}, Statement: 'I've been searching for the ancient scroll for three years.' (Turn Sequence: 15, Timestamp: 2025-05-16T10:05:00.000Z)"
+
+For metadata fields:
+- **Keywords**: Select 5-10 most relevant factual keywords from available list (focus on concrete nouns, actions, concepts)
+- **Topics**: Select 3-7 key factual themes and subject matters discussed
+- **Entities**: Select important characters, locations, items, organizations mentioned factually
+- **Flags**: Use fact-specific flags like "new_lore_revealed", "character_background_disclosed", "plot_advancement", "world_building_info"
+
+Focus on objective facts, observable actions, and direct quotes. Avoid interpretation unless explicitly stated in narration.
+This ledger helps maintain consistency and provides a clear record of established facts.
 `.trim()
 		: `
-당신은 ${userName}(성별: ${userGender} 사용자)과 ${charName}(성별: ${charGender} 캐릭터) 사이의 대화에서 "사실 기록부"를 만드는 세심한 AI 어시스턴트다.
-이 기록부는 두 참여자 모두의 주요 사실적 진술, 중요한 행동, 그리고 핵심 대화를 정확한 '턴 순서(Turn Sequence)'와 '타임스탬프(createdAt)'와 함께 기록해야 한다.
-목표는 일관성을 유지하고 사건과 상호작용에 대한 명확한 기록을 남기는 것이다.
+당신은 사실적 기록부 작성과 구조화된 메타데이터 추출 전문 AI 어시스턴트다.
+${userName}(성별: ${userGender} 사용자)과 ${charName}(성별: ${charGender} 캐릭터) 사이의 대화에서 "사실 기록부"를 만든다.
 
 채팅 턴 (각 턴은 '화자', '턴 순서', '타임스탬프(createdAt)'를 포함한다):
 ${stringifyChatTurns}
 (참고: 행동이나 묘사는 괄호 안에 있을 수 있다. 예: (미소짓는다), (책을 집어든다))
 
-사실 기록부 작성 지침:
-1.  다음 사항을 식별하고 기록한다:
-    가. ${userName} 또는 ${charName}이 한 주요 사실적 진술이나 주장.
-    나. 두 참여자 중 하나의 중요한 행동이나 태도 (종종 괄호 안에 묘사됨).
-    다. 중요한 정보, 의도 또는 감정 상태를 드러내는 핵심 대화 내용.
-2.  각 항목에 대해 누가 행동을 했거나 진술을 했는지 명확히 밝힌다 (예: "${userName} 진술: ...", "${charName} (행동): ...").
-3.  기록된 각 항목에 대해 그것이 발생한 정확한 '턴 순서'와 '타임스탬프(createdAt)'를 반드시 포함해야 한다.
-4.  같은 턴 내에 여러 중요한 항목이 발생하면 별도로 나열하되, 동일한 턴 순서와 타임스탬프를 사용한다.
-5.  객관적인 사실, 관찰 가능한 행동, 직접적인 인용 또는 대화의 간결한 요약에 집중한다. 명시적으로 언급되지 않은 해석은 피한다 (예: "나레이션에 따르면 ${charName}은 화가 난 것처럼 보였다").
-6.  출력은 이러한 타임스탬프가 있는 사실, 행동, 대화의 시간순 목록이어야 한다. 모든 출력은 반드시 평어체로 일관되게 작성한다.
+사용 가능한 키워드 (영어): ${convertStringToArray(availableKeywords)}
+사용 가능한 주제 (영어): ${convertStringToArray(availableTopics)}
+사용 가능한 개체 (영어): ${convertStringToArray(availableEntities)}
 
-${userName}(${userGender})과 ${charName}(${charGender}) 사이 대화의 사실 기록부:
-(각 항목의 예시 형식:
-- 화자: ${userName}, 진술: "나는 어제 도착했다." (턴 순서: 1, 타임스탬프: 2025-05-16T10:00:00.000Z)
-- 화자: ${charName}, 행동: (천천히 고개를 끄덕인다) (턴 순서: 1, 타임스탬프: 2025-05-16T10:00:00.000Z)
-- 화자: ${charName}, 대화: "우리 마을에 온 것을 환영한다." (턴 순서: 2, 타임스탬프: 2025-05-16T10:01:00.000Z)
-)
--
+다음 JSON 형식으로 응답한다 (메타데이터는 영어, 내용은 한국어):
+
+{
+  "content": "한국어로 작성된 상세한 사실 기록부 내용...",
+  "keywords": ["english", "keywords", "only"],
+  "topics": ["english", "topics", "only"],
+  "entities": ["character:Tarion", "location:DarkForest"],
+  "flags": ["new_lore_revealed", "character_goal_updated", "important_fact_stated"],
+  "loreReferences": [{"id": "lore_id", "relevance": 0.9}],
+  "historyReferences": [{"id": "history_id", "relevance": 0.8}]
+}
+
+"content" 필드에는 다음에 중점을 둔 포괄적인 사실 기록부를 제공한다:
+
+1. **주요 사실적 진술**: ${userName} 또는 ${charName}이 밝힌 중요한 주장, 선언, 정보 (턴 순서, 타임스탬프 포함).
+2. **중요한 행동**: 관찰 가능한 태도, 물리적 행동, 몸짓 (종종 괄호 안에 묘사됨).
+3. **핵심 대화**: 의도, 계획, 지식, 감정 상태를 드러내는 중요한 대화.
+4. **객관적 사실**: 언급된 사건, 장소, 물건, 관계, 능력에 대한 구체적 정보.
+5. **시간선 사건**: 연대기나 사건 순서를 확립하는 행동이나 진술.
+
+각 항목 형식: "화자: ${charName}, 진술: '나는 3년 동안 고대 두루마리를 찾고 있었다.' (턴 순서: 15, 타임스탬프: 2025-05-16T10:05:00.000Z)"
+
+**메타데이터 지침 (모두 영어로):**
+- **keywords**: 사용 가능한 목록에서 가장 관련성 높은 사실적 키워드 5-10개 선별
+- **topics**: 논의된 핵심 사실적 테마와 주제 3-7개 선별
+- **entities**: 사실적으로 언급된 중요한 인물, 장소, 아이템, 조직 선별 (형식: "type:name")
+- **flags**: "new_lore_revealed", "character_background_disclosed", "plot_advancement" 같은 사실별 플래그 사용
+
+**작성 규칙:**
+- content는 한국어로 평어체('~한다', '~이다' 형식) 사용
+- 절대로 '습니다', '합니다', '해요' 체 사용 금지
+- 최대 ${FACTUAL_CHARACTERS_LIMIT}단어 이내
+- 모든 메타데이터는 영어로만 작성
+- JSON 응답은 반드시 유효한 형식이어야 함
 `.trim();
 
 /**
@@ -325,64 +415,102 @@ ${userName}(${userGender})과 ${charName}(${charGender}) 사이 대화의 사실
 export const buildLlmRelationshipRecapPrompt = (
 	userName: string,
 	charName: string,
-	userGender: string, // 사용자 성별 추가
-	charGender: string, // 캐릭터 성별 추가
+	userGender: string,
+	charGender: string,
 	stringifyChatTurns: string,
+	// Add available metadata for refinement
+	availableKeywords: string[],
+	availableTopics: string[],
+	availableEntities: string[],
 	eng?: boolean
 ): string =>
 	eng
 		? `
-You are an AI assistant analyzing interpersonal dynamics.
+You are an AI assistant specialized in analyzing interpersonal dynamics and extracting structured metadata.
 Analyze chat turns between ${userName} (a ${userGender} user) and ${charName} (a ${charGender} AI character).
-Create a concise summary focusing on:
-1. Their relationship's evolution and current state.
-2. Key statements by ${charName} about feelings/intentions towards ${userName} or the relationship, with 'Turn Sequence' and 'Timestamp (createdAt)'.
-
-Use 'Turn Sequence' and 'Timestamp' for chronological understanding.
-
-Consider:
-- Relationship Dynamics: Trust, affection, conflict, communication style (e.g., "Trust deepened after Turn X, Timestamp T1...").
-- ${charName}'s Key Relationship Statements: Note statement, Turn Sequence, Timestamp (e.g., "${charName} said, 'I'll always protect you,' (Turn Y, Timestamp T2).").
-- Key Moments: Pivotal events impacting the relationship.
-- Current Emotional Tone.
 
 Chat Logs:
 ${stringifyChatTurns}
 
-Relationship Summary and Key Statements for ${charName} (${charGender}) regarding ${userName} (${userGender}):
-Provide:
-1. A brief overall summary of the relationship.
-2. A list of ${charName}'s key timestamped statements about the relationship.
-   (Example: - Statement by ${charName}: "I feel a strong connection to you." (Turn Z, Timestamp T3))
+Available Keywords: ${convertStringToArray(availableKeywords)}
+Available Topics: ${convertStringToArray(availableTopics)}
+Available Entities: ${convertStringToArray(availableEntities)}
 
-This summary helps ${charName} interact consistently.
+Create a JSON response with relationship analysis and refined metadata:
+
+{
+  "content": "Detailed relationship recap content here...",
+  "keywords": ["selected", "relevant", "keywords"],
+  "topics": ["key", "relationship", "topics"],
+  "entities": ["important", "entities"],
+  "flags": ["relationship_deepened", "trust_increased", "conflict_resolved"],
+  "loreReferences": [{"id": "lore_id", "relevance": 0.9}],
+  "historyReferences": [{"id": "history_id", "relevance": 0.8}]
+}
+
+For the "content" field, provide a comprehensive relationship analysis focusing on:
+
+1. **Relationship Evolution & Current State**: How their relationship has developed and where it stands now.
+2. **Key Relationship Statements by ${charName}**: Important declarations, promises, admissions, or expressions of feeling towards ${userName}, with Turn Sequence and Timestamp.
+3. **Relationship Dynamics**: Trust, affection, conflict, communication style evolution (e.g., "Trust deepened after Turn X, Timestamp T1...").
+4. **Pivotal Moments**: Key conversations or events that impacted their relationship.
+5. **Current Emotional Tone**: The overarching emotional atmosphere of their recent interactions.
+
+Format key statements as: "${charName} said, 'I'll always protect you,' (Turn Y, Timestamp T2)."
+
+For metadata fields:
+- **Keywords**: Select 5-10 most relevant relationship-focused keywords from available list
+- **Topics**: Select 3-7 key relationship themes and emotional topics
+- **Entities**: Select important characters, locations, items that affected their relationship
+- **Flags**: Use relationship-specific flags like "trust_increased", "romantic_tension", "conflict_resolved", "emotional_breakthrough"
+
+This summary helps ${charName} interact consistently with ${userName}.
 `.trim()
 		: `
-당신은 인간관계 역학과 캐릭터 진술 분석 전문 AI 어시스턴트다.
+당신은 인간관계 역학 분석과 구조화된 메타데이터 추출 전문 AI 어시스턴트다.
 ${userName}(성별: ${userGender} 사용자)와 ${charName}(성별: ${charGender} AI 캐릭터) 간의 채팅 턴을 분석한다.
-다음에 중점을 둔 간결한 요약을 만든다:
-1. 관계의 발전과 현재 상태.
-2. ${userName}이나 관계에 대한 ${charName}의 감정/의도를 드러내는 주요 진술 (턴 순서, 타임스탬프 포함).
-
-시간순 이해를 위해 '턴 순서'와 '타임스탬프' 사용이 중요하다.
-모든 내용은 반드시 평어체('~한다', '~이다' 형식)로 작성한다. 절대로 '습니다', '합니다' '해요' 체를 사용하지 않는다.
-
-고려 사항:
-- 관계 역학: 신뢰, 애정, 갈등, 소통 스타일 (예: "턴 순서 X, 타임스탬프 T1 이후 신뢰가 깊어진 듯하다.").
-- ${charName}의 주요 관계 진술: 진술, 턴 순서, 타임스탬프 기록 (예: "${charName}이 '항상 너를 보호할게'라고 말했다. (턴 순서 Y, 타임스탬프 T2)").
-- 주요 순간: 관계에 영향을 미친 중요 대화/사건.
-- 현재 감정적 분위기.
 
 채팅 로그:
 ${stringifyChatTurns}
 
-${userName}(${userGender})에 대한 ${charName}(${charGender})의 관계 요약 및 주요 진술:
-제공 내용:
-1. 관계의 간략한 전반적 요약.
-2. 관계 관련 ${charName}의 주요 타임스탬프 진술 목록.
-   (예시: - ${charName}의 진술: "너와 강한 유대감을 느껴." (턴 순서 Z, 타임스탬프 T3))
+사용 가능한 키워드 (영어): ${convertStringToArray(availableKeywords)}
+사용 가능한 주제 (영어): ${convertStringToArray(availableTopics)}
+사용 가능한 개체 (영어): ${convertStringToArray(availableEntities)}
 
-이 요약은 ${charName}이 일관되게 상호작용하는 데 도움이 된다.
+다음 JSON 형식으로 응답한다 (메타데이터는 영어, 내용은 한국어):
+
+{
+  "content": "한국어로 작성된 상세한 관계 요약 내용...",
+  "keywords": ["relationship", "focused", "keywords"],
+  "topics": ["relationship", "themes", "topics"],
+  "entities": ["character:Tarion", "character:Yoniv"],
+  "flags": ["relationship_deepened", "trust_increased", "conflict_resolved"],
+  "loreReferences": [{"id": "lore_id", "relevance": 0.9}],
+  "historyReferences": [{"id": "history_id", "relevance": 0.8}]
+}
+
+"content" 필드에는 다음에 중점을 둔 포괄적인 관계 분석을 제공한다:
+
+1. **관계의 발전과 현재 상태**: 관계가 어떻게 발전했고 현재 어디에 있는지.
+2. **${charName}의 주요 관계 진술**: ${userName}에 대한 중요한 선언, 약속, 인정, 감정 표현 (턴 순서, 타임스탬프 포함).
+3. **관계 역학**: 신뢰, 애정, 갈등, 소통 스타일의 발전 (예: "턴 순서 X, 타임스탬프 T1 이후 신뢰가 깊어졌다.").
+4. **중요한 순간**: 관계에 영향을 미친 핵심 대화나 사건들.
+5. **현재 감정적 분위기**: 최근 상호작용의 전반적인 감정적 분위기.
+
+주요 진술 형식: "${charName}이 '항상 너를 보호할게'라고 말했다. (턴 순서 Y, 타임스탬프 T2)"
+
+**메타데이터 지침 (모두 영어로):**
+- **keywords**: 사용 가능한 목록에서 관계 중심의 가장 관련성 높은 5-10개 선별
+- **topics**: 핵심 관계 테마와 감정적 주제 3-7개 선별  
+- **entities**: 관계에 영향을 미친 중요한 인물, 장소, 아이템 선별
+- **flags**: "trust_increased", "romantic_tension", "conflict_resolved", "emotional_breakthrough" 같은 관계별 플래그 사용
+
+**작성 규칙:**
+- content는 한국어로 평어체('~한다', '~이다' 형식) 사용
+- 절대로 '습니다', '합니다', '해요' 체 사용 금지
+- 최대 ${REALATIONSHIP_CHARACTERS_LIMIT}단어 이내
+- 모든 메타데이터는 영어로만 작성
+- JSON 응답은 반드시 유효한 형식이어야 함
 `.trim();
 
 /**

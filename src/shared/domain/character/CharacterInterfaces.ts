@@ -4,7 +4,7 @@ import { Metadata } from 'chromadb';
 import { EmotionKey } from '../../config/emotionWordsMapper.ts';
 import { METADATA_TYPES } from '../chromadb/ChromaInterfaces.ts';
 
-interface BeingMetadata extends Metadata {
+interface BeingMetadata {
 	name: string;
 	gender: string;
 	description: string;
@@ -14,6 +14,7 @@ interface BeingMetadata extends Metadata {
 	creator: string;
 	creatorContact: string;
 }
+export type BasicBeingInfo = Pick<BeingMetadata, 'name' | 'showName' | 'gender'>;
 
 export interface CharacterMetadata extends BeingMetadata {
 	characterId: string;

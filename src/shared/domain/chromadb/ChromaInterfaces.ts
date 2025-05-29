@@ -51,6 +51,7 @@ export const METADATA_TYPES = {
 	LORE: 'lore',
 	HISTORY: 'history',
 	TEMP: 'temp',
+	DOCUMENT: 'document',
 } as const;
 
 export type MetadataType = (typeof METADATA_TYPES)[keyof typeof METADATA_TYPES];

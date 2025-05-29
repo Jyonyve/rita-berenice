@@ -11,6 +11,14 @@ import {
 import { DEFAULT_EMOTION } from '../config/index.ts';
 import { buildCharacterId } from '#root/src/server/index.ts';
 
+export const convertStringToArray = (input: string): string[] => {
+	return input.split(',').map((item) => item.trim());
+};
+
+export const convertArrayToString = (input: string[]): string => {
+	return input.join(',').trim();
+};
+
 export const parseTextToEntries = (text: string): ChatEntry[] => {
 	const entries: ChatEntry[] = [];
 	const regex = /\*([^*]+)\*|([^*]+)/g;
@@ -31,6 +39,59 @@ export const parseEntriesToText = (entries: ChatEntry[]): string => {
 	return entries
 		.map((entry) => (entry.type === 'action' ? `*${entry.prompt}*` : entry.prompt))
 		.join('\n');
+};
+
+export const parseChatTurnToMetadata = (turn: ChatTurn): any => {
+	const joinOrEmpty = (arr: string[]): string => {
+		return arr && arr.length > 0 ? arr.join(',') : '';
+	};
+
+	const jsonStringifyOrEmpty = (obj: any): string => {
+		try {
+			return obj && Array.isArray(obj) ? JSON.stringify(obj) : '[]';
+		} catch {
+			return '[]';
+		}
+	};
+
+	return {
+		// Core metadata
+		sessionId: turn.sessionId,
+		sequence: turn.sequence,
+		chatTurnId: turn.chatTurnId,
+		requestMessageId: turn.requestMessageId,
+		responseMessageId: turn.responseMessageId,
+		createdAt: turn.createdAt,
+		updatedAt: turn.updatedAt,
+		type: turn.type,
+		characterId: turn.characterId,
+
+		// Enriched metadata (flattened for ChromaDB)
+		summary: turn.summary || 'N/A',
+		keywords: joinOrEmpty(turn.keywords),
+		topics: joinOrEmpty(turn.topics),
+		entities: joinOrEmpty(turn.entities),
+
+		// Flattened emotion objects
+		userEmotionPrimary: turn.userEmotion?.primary || 'neutral',
+		userEmotionIntensity: turn.userEmotion?.intensity || 0.5,
+		userEmotionNuances: joinOrEmpty(turn.userEmotion?.nuances || []),
+
+		characterEmotionPrimary: turn.characterEmotion?.primary || 'neutral',
+		characterEmotionIntensity: turn.characterEmotion?.intensity || 0.5,
+		characterEmotionNuances: joinOrEmpty(turn.characterEmotion?.nuances || []),
+
+		// Other fields
+		dialogueAct: turn.dialogueAct || 'N/A',
+		actions: joinOrEmpty(turn.actions),
+		relationshipShifts: joinOrEmpty(turn.relationshipShifts),
+		flags: joinOrEmpty(turn.flags),
+		memoryChunk: turn.memoryChunk || 'N/A',
+
+		// Complex objects as JSON strings
+		loreReferences: jsonStringifyOrEmpty(turn.loreReferences),
+		historyReferences: jsonStringifyOrEmpty(turn.historyReferences),
+	};
 };
 
 export const buildChatMessage = (

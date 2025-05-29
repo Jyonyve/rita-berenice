@@ -1,7 +1,12 @@
-import { CharacterMetadata, COLLECTIONS, METADATA_TYPES } from '#shared/domain/index.ts';
+import {
+	CharacterInfo,
+	CharacterMetadata,
+	COLLECTIONS,
+	METADATA_TYPES,
+} from '#shared/domain/index.ts';
 import { Collection, IncludeEnum, Document, Where } from 'chromadb';
 import { chromaDbClient } from '../db/index.ts';
-import { BasicCharacterInfo, CharacterResponse } from '#shared/api/index.ts';
+import { CharacterResponse } from '#shared/api/index.ts';
 import {
 	buildCharacterId,
 	buildCharacterDocument,
@@ -40,7 +45,7 @@ export const characterService = {
 					return null;
 				}
 			})
-			.filter((char): char is BasicCharacterInfo => char !== null);
+			.filter((char): char is CharacterInfo => char !== null);
 	},
 
 	// Character Operations

@@ -1,5 +1,4 @@
 import {
-	BasicCharacterInfo,
 	HistoryInfo,
 	CharacterMetadata,
 	LoreInfo,
@@ -13,6 +12,7 @@ import {
 	CharacterInfo,
 	ProfileInfo,
 	ChromaResponse,
+	RecapInfo,
 } from '#shared/index.ts';
 
 export const buildNaturalChatText = (request: ChatMessage, response: ChatMessage): string => {
@@ -36,13 +36,7 @@ export const buildChatTurnDocument = (chatTurn: ChatTurn): string => {
 
 export const buildCharacterDocument = (character: CharacterInfo) => {
 	const { characterId, showName, description, instruction, updatedAt } = character;
-	const document: BasicCharacterInfo = {
-		characterId,
-		showName,
-		description,
-		instruction,
-		updatedAt,
-	};
+	const document = { characterId, showName, description, instruction, updatedAt };
 	return JSON.stringify(document).trim();
 };
 
@@ -52,23 +46,9 @@ export const buildProfileDocument = (profile: ProfileInfo) => {
 	return JSON.stringify(document).trim();
 };
 
-export const buildLoreDocument = (lore: LoreInfo) => {
-	const { content, keywordsArray } = lore;
-	const document = { content, keywordsArray };
-	return JSON.stringify(document).trim();
-};
-
-export const buildHistoryDocument = (history: HistoryInfo) => {
-	const { content, keywordsArray, keyThemesArray, temporalRelations, estimatedEventDate, title } =
-		history;
-	const document = {
-		keywordsArray,
-		keyThemesArray,
-		title,
-		content,
-		temporalRelations,
-		estimatedEventDate,
-	};
+export const buildLoreOrHistoryDocument = (lore: LoreInfo | HistoryInfo) => {
+	const { content, title } = lore;
+	const document = { title, content };
 	return JSON.stringify(document).trim();
 };
 

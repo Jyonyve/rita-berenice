@@ -52,13 +52,23 @@ export const buildChatTurnId = (sessionId: string, sequence: number): string => 
 };
 
 // other collections
-export const buildRecapId = (sessionId: string): string => {
-	return `${sessionId}_${SUFFIX.RECAP}`;
+export const buildRecapId = (sessionId: string, turnStart: number, turnEnd: number): string => {
+	return `${sessionId}_${turnStart}to${turnEnd}_${SUFFIX.RECAP}`;
 };
 
-export const buildRelationshipRecapId = (sessionId: string): string => {
-	return `${sessionId}_${SUFFIX.RELATIONSHIP}`;
+export const buildRelationshipRecapId = (
+	sessionId: string,
+	turnStart: number,
+	turnEnd: number
+): string => {
+	return `${sessionId}_${turnStart}to${turnEnd}_${SUFFIX.RELATIONSHIP}`;
 };
-export const buildStoryRecapId = (sessionId: string, type?: 'NSFW'): string => {
+
+export const buildRecapDocId = (sessionId: string): string => `${sessionId}_${SUFFIX.RECAP}`;
+
+export const buildRelationshipRecapDocId = (sessionId: string): string =>
+	`${sessionId}_${SUFFIX.RELATIONSHIP}`;
+
+export const buildStoryId = (sessionId: string, type?: 'NSFW'): string => {
 	return type ? `${sessionId}_${SUFFIX.STORY}_${type}` : `${sessionId}_${SUFFIX.STORY}`;
 };

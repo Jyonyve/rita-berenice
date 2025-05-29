@@ -1,4 +1,3 @@
-import { Metadata } from 'chromadb'; // Alias to avoid confusion if you have your own Metadata type
 import { METADATA_TYPES } from '../chromadb/index.ts';
 import { BaseMetadataType } from '../chat/index.ts';
 

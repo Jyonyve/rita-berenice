@@ -124,7 +124,6 @@ export const chromaDbClient = {
 	},
 
 	// Enhanced CRUD operations with embedding support
-
 	addRecord: async (
 		collection: Collection,
 		id: string,
