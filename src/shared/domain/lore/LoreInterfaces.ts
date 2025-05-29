@@ -1,61 +1,45 @@
 import { Metadata } from 'chromadb'; // Alias to avoid confusion if you have your own Metadata type
 import { METADATA_TYPES } from '../chromadb/index.ts';
+import { BaseMetadataType } from '../chat/index.ts';
 
 // --- BASE ---
-interface BaseLoreHistoryMetadata extends Metadata {
-	characterId: string;
-	type: typeof METADATA_TYPES.LORE | typeof METADATA_TYPES.HISTORY;
-	createdAt: string;
-	updatedAt: string;
-	keywordsString: string; // Stringified array of keywords (e.g., "keyword1,keyword2")
-}
-
-// --- LORE ---
-export interface LoreMetadata extends BaseLoreHistoryMetadata {
+export interface LoreMetadata extends BaseMetadataType {
 	loreId: string;
 	type: typeof METADATA_TYPES.LORE;
-	category: string; // Optional, if used for filtering
-	source: string; // Optional, if used for filtering
-	// 'keywordsString' is inherited
+	category: string;
+	source: string;
+	title: string; // Added for consistency
 }
 
-export type LoreInfo = LoreMetadata & {
-	content: string; // Full textual content
-	keywordsArray: string[]; // The actual array of keywords
-};
-
-// --- HISTORY ---
-interface TemporalRelationship {
-	type: 'precedes' | 'succeeds' | 'concurrent_with' | 'caused_by' | 'results_in';
-	relatedEventId: string; // historyId of the related event
-	description: string;
+export interface LoreInfo extends LoreMetadata {
+	content: string;
 }
 
-export interface HistoryMetadata extends BaseLoreHistoryMetadata {
+// --- HISTORY METADATA ---
+export interface HistoryMetadata extends BaseMetadataType {
 	historyId: string;
 	type: typeof METADATA_TYPES.HISTORY;
-	title: string; // Optional in metadata, might be long. Full title always in HistoryInfo.
-	periodLabel: string;
-	periodConfidence: number;
-	estimatedEventDateString: string; // For basic string filtering if useful
-	dateType: 'absolute_date' | 'estimated_year' | 'relative_to_event' | 'era_defined';
-	dateConfidence: number;
-	keyThemesString: string; // Stringified array of key themes
-	// For temporalRelations, decide if a string version in metadata is useful for filtering.
-	// e.g., a string listing relatedEventIds: "histId1,histId2"
-	relatedEventIdsString: string;
-	sequence: number; // Crucial for ordering timeline events
-	// 'keywordsString' is inherited
+	title: string;
+
+	// Temporal information (unified structure)
+	period: {
+		label: string;
+		confidence: number; // 0.0 to 1.0
+	};
+	eventDate: {
+		value: string;
+		type: 'absolute_date' | 'estimated_year' | 'relative_to_event' | 'era_defined';
+		confidence: number;
+	};
+
+	// Relationships (simplified)
+	relatedEvents: Array<{
+		id: string; // historyId of related event
+		relationship: 'precedes' | 'succeeds' | 'concurrent_with' | 'caused_by' | 'results_in';
+		description: string;
+	}>;
 }
 
-export type HistoryInfo = Omit<
-	HistoryMetadata,
-	'keywordsString' | 'keyThemesString' | 'relatedEventIdsString' | 'estimatedEventDateString'
-> & {
-	content: string; // Full textual content of the history event
-	keywordsArray: string[]; // Actual array of keywords (if different from keywordsString)
-	keyThemesArray: string[]; // Actual array of key themes
-	temporalRelations: TemporalRelationship[]; // Full structured temporal relations
-	estimatedEventDate: string; // The canonical event date string (could be different from a simplified metadata version)
-	title: string; // Make title required in Info if it always exists for a history item
-};
+export interface HistoryInfo extends HistoryMetadata {
+	content: string;
+}
