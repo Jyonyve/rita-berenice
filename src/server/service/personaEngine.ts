@@ -14,7 +14,7 @@ import { llmService } from './llmService.ts';
 import {
 	EMOTION_TEMPLATE,
 	buildLogContextPrompt,
-	buildRelationshipContextSystemPrompt,
+	buildLlmRelationshipRecapPrompt,
 } from '../util/index.ts'; // Adjust path as needed
 import { chatService } from './chatService.ts'; // To fetch relationship recap
 import { recapService } from './recapService.ts';

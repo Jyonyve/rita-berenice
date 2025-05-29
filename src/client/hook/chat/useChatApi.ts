@@ -3,6 +3,7 @@ import {
 	AiModelInfo,
 	ChatRoleType,
 	ChatTurn,
+	ChatTurnCdo,
 	MODULE_NAMES,
 	TempChatTurn,
 	apiClient,
@@ -114,7 +115,7 @@ export const useChatApi = (sessionId: string) => {
 	);
 
 	const storeChatTurn = useCallback(
-		async (chatTurn: ChatTurn): Promise<string> => {
+		async (chatTurn: ChatTurnCdo): Promise<string> => {
 			const sessionId = chatTurn.sessionId;
 			if (!sessionId) throw new Error('Session ID required');
 			// POST /api/chat/store-chat-turn/:sessionId

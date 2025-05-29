@@ -110,3 +110,5 @@ export interface TempChatTurn {
 	chatTurnSets: ChatMessageSet[];
 	type: typeof METADATA_TYPES.TEMP;
 }
+
+export type ChatTurnCdo = Pick<ChatTurn, 'sessionId' | 'sequence' | 'request' | 'response'>;

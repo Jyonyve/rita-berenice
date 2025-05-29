@@ -9,6 +9,7 @@ import {
 	METADATA_TYPES,
 } from '@shared/domain/index.ts';
 import { DEFAULT_EMOTION } from '../config/index.ts';
+import { buildCharacterId } from '#root/src/server/index.ts';
 
 export const parseTextToEntries = (text: string): ChatEntry[] => {
 	const entries: ChatEntry[] = [];
@@ -31,8 +32,6 @@ export const parseEntriesToText = (entries: ChatEntry[]): string => {
 		.map((entry) => (entry.type === 'action' ? `*${entry.prompt}*` : entry.prompt))
 		.join('\n');
 };
-
-export const buildChatTurnToJsonString = (chatTurn: ChatTurn): string => JSON.stringify(chatTurn);
 
 export const buildChatMessage = (
 	role: ChatRoleType,
@@ -72,7 +71,7 @@ export const convertMessageContentToString = (content: MessageContent): string =
 
 export const parseSessionId = (
 	sessionId: string
-): { charName: string; variant: string; uuid: string } => {
+): { charName: string; variant: string; uuid: string; characterId: string } => {
 	const parts = sessionId.split('_');
 	if (parts.length < 3) {
 		throw new Error(`Invalid session ID format: ${sessionId}`);
@@ -81,6 +80,7 @@ export const parseSessionId = (
 		charName: parts[0],
 		variant: parts[1],
 		uuid: parts[2], // In case UUID contains underscores
+		characterId: buildCharacterId(parts[0], parts[1]),
 	};
 };
 
