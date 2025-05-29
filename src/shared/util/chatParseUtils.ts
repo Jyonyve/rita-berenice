@@ -12,6 +12,9 @@ import { DEFAULT_EMOTION } from '../config/index.ts';
 import { buildCharacterId } from '#root/src/server/index.ts';
 
 export const convertStringToArray = (input: string): string[] => {
+	if (!input || typeof input !== 'string') {
+		return [];
+	}
 	return input.split(',').map((item) => item.trim());
 };
 

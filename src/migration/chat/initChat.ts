@@ -1,32 +1,25 @@
 // scripts/chat/initChat.ts
 
 import fs from 'node:fs/promises';
-import path, { parse } from 'node:path';
+import path from 'node:path';
 import { ChromaClient, Collection } from 'chromadb';
 import { fileURLToPath } from 'node:url';
-import {
-	ChatMessage,
-	ChatTurn,
-	ChatTurnMetadata,
-	MigChatMessage,
-	COLLECTIONS,
-	METADATA_TYPES,
-} from '../../shared/domain/index.ts';
-import {
-	buildMessageId,
-	buildSessionId,
-	buildChatTurnId,
-	buildCharacterId,
-	buildChatTurnDocument,
-	buildChatTurnMetadataPrompt,
-} from '../../server/util/index.ts';
+import { ChatMessage, ChatTurn, MigChatMessage } from '#shared/domain/chat/ChatInterfaces.ts';
+import { buildChatTurnMetadataPrompt } from '#root/src/server/util/templateUtils.ts';
 import {
 	convertArrayToString,
-	convertStringToArray,
 	parseChatTurnToMetadata,
 	parseTextToEntries,
-} from '../../shared/util/index.ts';
-import { validEmotions } from '../../shared/config/index.ts';
+} from '#root/src/shared/util/chatParseUtils.ts';
+import { buildChatTurnDocument } from '#root/src/server/util/documentUtils.ts';
+import { COLLECTIONS, METADATA_TYPES } from '#root/src/shared/domain/chromadb/ChromaInterfaces.ts';
+import {
+	buildCharacterId,
+	buildChatTurnId,
+	buildMessageId,
+	buildSessionId,
+} from '#root/src/server/util/buildIdUtils.ts';
+import { validEmotions } from '#root/src/shared/config/emotionWordsMapper.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -99,6 +92,39 @@ const createInitialProgress = (sessionId: string, totalTurns: number): InitChatP
 		status: 'in_progress',
 		errors: [],
 	};
+};
+
+const extractJsonFromMarkdown = (response: string): any => {
+	let cleaned = response.trim();
+
+	try {
+		// Method 1: Remove code blocks with proper escaping
+		cleaned = cleaned.replace(/``````/gi, (match) => {
+			// Extract content between ``````
+			return match.replace(/^``````$/i, '');
+		});
+
+		// Method 2: Remove any remaining code blocks
+		cleaned = cleaned.replace(/``````/g, '$1');
+
+		// Method 3: Remove standalone backticks
+		cleaned = cleaned.replace(/`/g, '');
+
+		// Trim and find JSON
+		cleaned = cleaned.trim();
+
+		// Extract JSON object
+		const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+		if (jsonMatch) {
+			return JSON.parse(jsonMatch[0]);
+		}
+
+		return JSON.parse(cleaned);
+	} catch (error) {
+		console.error('JSON extraction failed:', error);
+		console.error('Cleaned text was:', cleaned);
+		return {};
+	}
 };
 
 // --- LLM Functions ---
@@ -177,8 +203,7 @@ const enrichChatTurnWithMetadata = async (
 		// Parse LLM JSON response
 		let enrichedMetadata: any;
 		try {
-			const cleanedResponse = llmResponse.replace(/``````/g, '').trim();
-			enrichedMetadata = JSON.parse(cleanedResponse);
+			enrichedMetadata = extractJsonFromMarkdown(llmResponse);
 		} catch (parseError) {
 			console.warn(`    ⚠️ Failed to parse LLM metadata for turn ${turn.sequence}:`, parseError);
 			enrichedMetadata = {};
