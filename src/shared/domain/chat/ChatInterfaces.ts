@@ -23,9 +23,9 @@ interface BaseMetadata {
 	updatedAt: string; // ISO 8601 format
 
 	// Content categorization (unified approach)
-	keywords: string[]; // Always array, not string
-	topics: string[]; // Unified from extractedTopics/keyThemes
-	entities: string[]; // Unified from keyEntities
+	keywords: string;
+	topics: string;
+	entities: string;
 
 	// Sequence/ordering (where applicable)
 	sequence: number;
@@ -50,44 +50,77 @@ export interface ChatMessage extends ChatMessageMetadata {
 	model?: string;
 }
 
-export interface ChatTurnMetadata extends BaseMetadataType {
+// src/shared/domain/ChatInterfaces.ts
+
+// This is what gets stored in ChromaDB (all primitives)
+export interface ChatTurnMetadata extends BaseMetadata {
 	chatTurnId: string;
 	requestMessageId: string;
 	responseMessageId: string;
 	type: typeof METADATA_TYPES.TURN;
 
-	// LLM-generated enrichment (all required with defaults)
-	summary: string; // Renamed from turnSummary for consistency
+	// LLM-generated enrichment (ChromaDB-compatible - all primitives)
+	summary: string;
 
-	// Emotional analysis (unified structure)
-	userEmotion: {
-		primary: string;
-		intensity: number; // 0.0 to 1.0
-		nuances: string[];
-	};
-	characterEmotion: { primary: string; intensity: number; nuances: string[] };
+	// Arrays stored as comma-separated strings
+	keywords: string; // "keyword1,keyword2,keyword3"
+	topics: string; // "topic1,topic2,topic3"
+	entities: string; // "character:Tarion,location:Forest"
 
-	// Interaction analysis
-	dialogueAct: string; // question, statement, command, etc.
-	actions: string[]; // Renamed from keyActionsDescribed
-	relationshipShifts: string[]; // Renamed from relationshipDynamicsShift
+	// Emotion objects flattened to primitives
+	userEmotionPrimary: string;
+	userEmotionIntensity: number;
+	userEmotionNuances: string; // "frustrated,curious"
+	characterEmotionPrimary: string;
+	characterEmotionIntensity: number;
+	characterEmotionNuances: string; // "defensive,hurt"
 
-	// Cross-references (unified structure)
-	loreReferences: Array<{
-		id: string; // Renamed from loreId for consistency
-		relevance: number; // 0.0 to 1.0
-	}>;
-	historyReferences: Array<{
-		id: string; // Renamed from historyId for consistency
-		relevance: number;
-	}>;
+	// Other fields as strings
+	dialogueAct: string;
+	actions: string; // "action1,action2"
+	relationshipShifts: string; // "Tarion-User:trust_increased"
+	flags: string; // "flag1,flag2,flag3"
+	memoryChunk: string;
 
-	// Flags and memory
-	flags: string[]; // Renamed from triggerFlags
-	memoryChunk: string; // Key field for RAG retrieval
+	// Complex objects as JSON strings
+	loreReferences: string; // JSON.stringify([{id, relevance}])
+	historyReferences: string; // JSON.stringify([{id, relevance}])
 }
 
-export interface ChatTurn extends ChatTurnMetadata {
+// This is what your application works with (rich objects)
+// In your ChatInterfaces.ts, update the ChatTurn interface:
+
+export interface ChatTurn
+	extends Omit<
+		ChatTurnMetadata,
+		| 'keywords'
+		| 'topics'
+		| 'entities'
+		| 'userEmotionPrimary'
+		| 'userEmotionIntensity'
+		| 'userEmotionNuances'
+		| 'characterEmotionPrimary'
+		| 'characterEmotionIntensity'
+		| 'characterEmotionNuances'
+		| 'actions'
+		| 'relationshipShifts'
+		| 'flags'
+		| 'loreReferences'
+		| 'historyReferences'
+	> {
+	// Rich metadata for application use
+	keywords: string[];
+	topics: string[];
+	entities: string[];
+	userEmotion: { primary: string; intensity: number; nuances: string[] };
+	characterEmotion: { primary: string; intensity: number; nuances: string[] };
+	actions: string[];
+	relationshipShifts: string[];
+	flags: string[];
+	loreReferences: Array<{ id: string; relevance: number }>;
+	historyReferences: Array<{ id: string; relevance: number }>;
+
+	// Full message objects
 	request: ChatMessage;
 	response: ChatMessage;
 }

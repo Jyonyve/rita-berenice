@@ -23,6 +23,8 @@ export interface AiModelInfo {
 	platform: AiPlatform;
 	provider: AiProvider<AiPlatform>; // Fixed: Make provider properly typed
 	model: AllModelNames; // Fixed: Use AllModelNames type
+	temperature?: number; // Optional temperature setting
+	maxTokens?: number; // Optional max tokens setting
 	// apiKey?: string;
 }
 
@@ -47,7 +49,9 @@ export const DEFAULT_CHAT_MODEL_FREE: AiModelInfo = {
 export const DEFAULT_RECAP_MODEL_FREE: AiModelInfo = {
 	platform: 'openrouter',
 	provider: 'google',
-	model: 'google/gemma-3n-e4b-it:free',
+	model: 'gemini-2.0-flash-001',
+	temperature: 0.7,
+	maxTokens: 5000,
 };
 
 export const DEFAULT_LOCAL_MODEL: AiModelInfo = {

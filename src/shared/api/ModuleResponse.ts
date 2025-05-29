@@ -1,5 +1,12 @@
 import { GetResponse } from 'chromadb';
-import { ChatMessageType, ChatTurn } from '../domain/index.ts';
+import {
+	CharacterInfo,
+	ChatMessageType,
+	ChatTurn,
+	ProfileInfo,
+	RecapInfo,
+	RecapResult,
+} from '../domain/index.ts';
 import { HistoryInfo, LoreInfo } from '../domain/lore/LoreInterfaces.ts';
 // File: shared/api/ApiInterfaces.ts
 
@@ -21,29 +28,16 @@ export type AllResponse =
 	| HistoryResponse;
 
 //character
-export interface BasicCharacterInfo {
-	characterId: string;
-	showName: string;
-	description: string;
-	instruction: string;
-	updatedAt: string;
-}
 interface CharacterChromaResponse extends ChromaResponse {
-	basicCharacterInfo?: BasicCharacterInfo;
-	basicCharacterInfos: BasicCharacterInfo[];
+	basicCharacterInfo?: CharacterInfo;
+	basicCharacterInfos: CharacterInfo[];
 }
 export type CharacterResponse = CharacterChromaResponse;
 
 // profile
-export interface BasicProfileInfo {
-	profileId: string;
-	showName: string;
-	description: string;
-}
-
 interface ProfileChromaResponse extends ChromaResponse {
-	basicProfileInfo?: BasicProfileInfo;
-	basicProfileInfos: BasicProfileInfo[];
+	basicProfileInfo?: ProfileInfo;
+	basicProfileInfos: ProfileInfo[];
 }
 
 export type ProfileResponse = ProfileChromaResponse;
@@ -78,3 +72,8 @@ interface HistoryChromaResponse extends ChromaResponse {
 	historyContents: string[];
 }
 export type HistoryResponse = HistoryChromaResponse;
+
+interface RecapChromaResponse extends ChromaResponse {
+	recapInfo: RecapInfo;
+}
+export type RecapResponse = RecapChromaResponse;

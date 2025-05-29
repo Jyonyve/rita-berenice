@@ -11,6 +11,14 @@ import {
 import { DEFAULT_EMOTION } from '../config/index.ts';
 import { buildCharacterId } from '#root/src/server/index.ts';
 
+export const convertStringToArray = (input: string): string[] => {
+	return input.split(',').map((item) => item.trim());
+};
+
+export const convertArrayToString = (input: string[]): string => {
+	return input.join(',').trim();
+};
+
 export const parseTextToEntries = (text: string): ChatEntry[] => {
 	const entries: ChatEntry[] = [];
 	const regex = /\*([^*]+)\*|([^*]+)/g;
@@ -31,6 +39,48 @@ export const parseEntriesToText = (entries: ChatEntry[]): string => {
 	return entries
 		.map((entry) => (entry.type === 'action' ? `*${entry.prompt}*` : entry.prompt))
 		.join('\n');
+};
+
+export const parseChatTurnToMetadata = (turn: ChatTurn) => {
+	// In your initChat.ts, update the metadata preparation:
+	// In your upsertEnrichedInBatches function, convert rich ChatTurn objects to ChromaDB primitives:
+	return {
+		// Core metadata
+		sessionId: turn.sessionId,
+		sequence: turn.sequence,
+		chatTurnId: turn.chatTurnId,
+		requestMessageId: turn.requestMessageId,
+		responseMessageId: turn.responseMessageId,
+		createdAt: turn.createdAt,
+		updatedAt: turn.updatedAt,
+		type: METADATA_TYPES.TURN,
+		characterId: turn.characterId,
+
+		// Convert rich objects to ChromaDB primitives
+		summary: turn.summary,
+		keywords: convertArrayToString(turn.keywords), // Array → String
+		topics: convertArrayToString(turn.topics), // Array → String
+		entities: convertArrayToString(turn.entities), // Array → String
+
+		// Flatten emotion objects to primitives
+		userEmotionPrimary: turn.userEmotion.primary,
+		userEmotionIntensity: turn.userEmotion.intensity,
+		userEmotionNuances: convertArrayToString(turn.userEmotion.nuances), // Array → String
+		characterEmotionPrimary: turn.characterEmotion.primary,
+		characterEmotionIntensity: turn.characterEmotion.intensity,
+		characterEmotionNuances: convertArrayToString(turn.characterEmotion.nuances), // Array → String
+
+		// Convert other arrays to strings
+		dialogueAct: turn.dialogueAct,
+		actions: convertArrayToString(turn.actions), // Array → String
+		relationshipShifts: convertArrayToString(turn.relationshipShifts), // Array → String
+		flags: convertArrayToString(turn.flags), // Array → String
+		memoryChunk: turn.memoryChunk,
+
+		// Convert complex objects to JSON strings
+		loreReferences: JSON.stringify(turn.loreReferences), // Object Array → JSON String
+		historyReferences: JSON.stringify(turn.historyReferences), // Object Array → JSON String
+	};
 };
 
 export const buildChatMessage = (

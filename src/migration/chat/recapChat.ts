@@ -8,7 +8,7 @@ import {
 	DEFAULT_RELATIONSHIP_RECAP_INTERVAL,
 } from '../../shared/index.ts';
 import {
-	buildLlmFactualRecapPrompt,
+	buildFactualRecapPrompt,
 	buildLlmRelationshipRecapPrompt,
 	buildLlmStoryDocumentPrompt,
 } from '../../server/util/templateUtils.ts';
@@ -18,7 +18,7 @@ import {
 	buildNaturalChatText,
 	buildRecapId,
 	buildRelationshipRecapId,
-	buildStoryRecapId,
+	buildStoryId,
 	handleServiceError,
 	validateChromaResponse,
 } from '../../server/util/index.ts';
@@ -603,7 +603,7 @@ const processFactualRecap = async (
 			const stringifiedTurns = batch
 				.map((turn) => JSON.stringify({ user: turn.request, character: turn.response }))
 				.join('\n\n');
-			const prompt = buildLlmFactualRecapPrompt(
+			const prompt = buildFactualRecapPrompt(
 				USER_NAME,
 				sessionId.startsWith('monday') ? '먼데이' : '타리온',
 				'female',
@@ -687,7 +687,7 @@ const processRelationshipRecap = async (
 				.join('\n\n');
 			const prompt = buildLlmRelationshipRecapPrompt(
 				userName,
-				sessionId.startsWith('monday') ? '먼데이' : '타리온',
+				charName,
 				'female',
 				'male',
 				naturalLanguageTurns
@@ -808,7 +808,7 @@ const storeStoryDocument = async (
 	nsfw?: boolean
 ): Promise<void> => {
 	try {
-		const storyId = nsfw ? buildStoryRecapId(sessionId, 'NSFW') : buildStoryRecapId(sessionId);
+		const storyId = nsfw ? buildStoryId(sessionId, 'NSFW') : buildStoryId(sessionId);
 		const collection = await chromaDbClient.getRecapCollection();
 
 		await chromaDbClient.upsertRecord(collection, storyId, storyContent, {

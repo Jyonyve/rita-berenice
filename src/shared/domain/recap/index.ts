@@ -1,1 +1,1 @@
-export * from './recapInterfaces.ts';
+export * from './RecapInterfacess.ts';

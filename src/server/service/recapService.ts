@@ -1,27 +1,34 @@
-import { Collection, IncludeEnum } from 'chromadb';
-import { chromaDbClient } from '../db/index.ts';
+// src/server/services/recapService.ts
+
 import {
-	buildChatTurnToJsonString,
 	ChatTurn,
-	DEFAULT_RECAP_MODEL_FREE,
+	RecapMetadata,
+	RecapInfo,
 	METADATA_TYPES,
+	COLLECTIONS,
+	parseSessionId,
+	RecapResult,
+	convertStringToArray,
+	convertArrayToString,
 } from '#shared/index.ts';
+import { Collection } from 'chromadb';
+import { chromaDbClient } from '../db/index.ts';
+
 import {
-	buildLlmFactualRecapPrompt,
-	buildLlmRelationshipRecapPrompt,
-} from '../util/templateUtils.ts';
-import { llmService } from './index.ts';
-import {
-	buildChatTurnDocument,
+	buildRecapDocId,
 	buildRecapId,
+	buildRelationshipRecapDocId,
 	buildRelationshipRecapId,
 	handleServiceError,
+	validateChromaResponse,
 } from '../util/index.ts';
 
-const { getRecapCollection, upsertRecord, getRecordById } = chromaDbClient;
+// Destructure chromaDbClient methods
+const { getRecapCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
+const collectionType = COLLECTIONS.RECAP;
 
 export const recapService = {
-	// Cache for lore collection
+	// Cache for recap collection
 	_recapCollection: null as Collection | null,
 
 	_getCollection: async (): Promise<Collection> => {
@@ -34,176 +41,143 @@ export const recapService = {
 	},
 
 	/**
-	 * Stores a factual recap based on the provided turns.
-	 * Assumes turns are client-selected and appropriate for recap.
+	 * Store a factual recap with unified metadata structure
 	 */
-	storeFactualRecap: async (sessionId: string, recapTurns: ChatTurn[]): Promise<void> => {
-		if (!recapTurns || recapTurns.length === 0) {
-			console.warn(`[FactualRecap] Received empty turns for session ${sessionId}. Skipping.`);
+	storeFactualRecap: async (recapResult: RecapResult): Promise<void> => {
+		if (!recapResult.content || recapResult.content.trim() === '') {
+			console.warn(`[RecapService] Received empty recap content. Skipping factual recap.`);
 			return;
 		}
 
-		// Get sequence and character name from the last turn provided
-		const lastTurn = recapTurns[recapTurns.length - 1];
-		if (!lastTurn || !lastTurn.response) {
-			// Ensure lastTurn and its response exist
-			console.warn(
-				`[FactualRecap] Last turn or its response is invalid for session ${sessionId}. Skipping.`
-			);
-			return;
-		}
-		const { sequence, response } = lastTurn;
-		const charName = response.showName;
+		const { sessionId, turnStart, turnEnd, model } = recapResult;
+		const characterId = parseSessionId(sessionId).characterId;
 
 		console.log(
-			`[FactualRecap] Attempting for session ${sessionId}, up to sequence ${sequence} with ${recapTurns.length} turns.`
+			`[RecapService] Storing factual recap for session ${sessionId}, turns ${turnStart}-${turnEnd}`
 		);
 
 		try {
-			// 1. Format prompt (was step 2)
-			const recapPromptContent = buildLlmFactualRecapPrompt(
-				charName,
-				recapTurns.map((turn) => buildChatTurnToJsonString(turn)).join('\n\n')
-			);
-
-			// 2. Get Recap Model Info (was step 3)
-			const recapModelInfo = DEFAULT_RECAP_MODEL_FREE;
-
-			// 3. Invoke LLM (was step 4)
-			const recapContent = await llmService.invokeLlm('system', recapPromptContent, recapModelInfo);
-
-			if (!recapContent || recapContent.trim() === '' || recapContent.startsWith('[Error')) {
-				console.warn(
-					`[FactualRecap] LLM generation for session ${sessionId}, sequence ${sequence} returned empty or error: "${recapContent}"`
-				);
-				return; // Don't store an empty or error recap
-			}
-
-			// 4. Save the Recap (was step 5)
-			const recapId = buildRecapId(sessionId); // Typically one factual recap per session, updated
-			const collection = await recapService._getCollection();
-			await upsertRecord(collection, recapId, recapContent, {
+			const now = new Date().toISOString();
+			const recapMetadata: RecapMetadata = {
+				// Base metadata fields (unified)
 				sessionId,
-				sequence, // Sequence number of the last turn included in this recap
-				timestamp: new Date().toISOString(),
-				type: METADATA_TYPES.RECAP, // Assuming METADATA_TYPES.RECAP is for factual
+				characterId,
+				type: METADATA_TYPES.RECAP,
+				createdAt: now,
+				updatedAt: now,
+				keywords: convertArrayToString(recapResult.keywords),
+				topics: convertArrayToString(recapResult.topics),
+				entities: convertArrayToString(recapResult.entities),
+				sequence: recapResult.turnEnd, // Use end as the sequence
+
+				// Recap-specific fields (flattened)
+				recapId: buildRecapId(sessionId, turnStart, turnEnd),
+				turnStart,
+				turnEnd,
+				model,
+			};
+
+			const collection = await recapService._getCollection();
+			await upsertRecord(collection, recapMetadata.recapId, recapResult.content, recapMetadata);
+			// whole texts document
+			await upsertRecord(collection, buildRecapDocId(sessionId), recapResult.content, {
+				sessionId,
+				type: METADATA_TYPES.DOCUMENT,
+				timeStamp: now,
 			});
-			console.log(
-				`[FactualRecap] Successfully stored for session ${sessionId}, up to sequence ${sequence}.`
-			);
+
+			console.log(`[RecapService] Successfully stored factual recap for session ${sessionId}`);
 		} catch (error) {
-			// Use your centralized error handler
 			handleServiceError(
 				error,
-				`[FactualRecap] Internal error for session ${sessionId}, sequence ${sequence}.`, // Context for server logs
-				`Failed to store factual recap for session ${sessionId}` // More generic for client if rethrown
+				`[RecapService] Internal error storing factual recap, session ${sessionId}`,
+				`Failed to store factual recap for session ${sessionId}`
 			);
-			// Depending on handleServiceError, you might rethrow or it might handle the response
 		}
 	},
 
 	/**
-	 * Stores a relationship recap based on the provided turns.
-	 * Assumes turns are client-selected and appropriate for recap.
+	 * Store a relationship recap (no LLM generation, just storage)
 	 */
-	storeRelationshipRecap: async (sessionId: string, turnsForRecap: ChatTurn[]): Promise<void> => {
-		if (!turnsForRecap || turnsForRecap.length < 1) {
-			// Need at least one turn for speaker names
-			console.warn(
-				`[RelationshipRecap] Received insufficient turns for session ${sessionId}. Skipping.`
-			);
+	storeRelationshipRecap: async (recapResult: RecapResult): Promise<void> => {
+		if (!recapResult.content || recapResult.content.trim() === '') {
+			console.warn(`[RecapService] Received empty recap content. Skipping relationship recap.`);
 			return;
 		}
-
-		const lastTurn = turnsForRecap[turnsForRecap.length - 1];
-		if (!lastTurn || !lastTurn.request || !lastTurn.response) {
-			console.warn(
-				`[RelationshipRecap] Last turn or its request/response is invalid for session ${sessionId}. Skipping.`
-			);
-			return;
-		}
-		const { sequence } = lastTurn;
-		const requestorName = turnsForRecap[0].request.showName; // Assuming first turn has representative names
-		const responderName = turnsForRecap[0].response.showName;
+		const { sessionId, turnStart, turnEnd, model } = recapResult;
+		const characterId = parseSessionId(sessionId).characterId;
 
 		console.log(
-			`[RelationshipRecap] Attempting for session ${sessionId}, up to sequence ${sequence} with ${turnsForRecap.length} turns.`
+			`[RecapService] Storing relationship recap for session ${sessionId}, turns ${turnStart}-${turnEnd}`
 		);
 
 		try {
-			// 1. Format prompt
-			// Using buildChatTurnDocument to get natural language representation for relationship recap
-			const naturalLanguageTurns = turnsForRecap
-				.map((turn) => buildChatTurnDocument(turn))
-				.join('\n\n');
-			const recapPromptContent = buildLlmRelationshipRecapPrompt(
-				requestorName,
-				responderName,
-				naturalLanguageTurns
-			);
-
-			// 2. Get Recap Model Info
-			const recapModelInfo = DEFAULT_RECAP_MODEL_FREE;
-
-			// 3. Invoke LLM
-			const recapContent = await llmService.invokeLlm('system', recapPromptContent, recapModelInfo);
-
-			if (!recapContent || recapContent.trim() === '' || recapContent.startsWith('[Error')) {
-				console.warn(
-					`[RelationshipRecap] LLM generation for session ${sessionId}, sequence ${sequence} returned empty or error: "${recapContent}"`
-				);
-				return;
-			}
-
-			// 4. Save the Recap
-			const relationshipRecapId = buildRelationshipRecapId(sessionId); // One relationship recap, updated
-			const collection = await recapService._getCollection();
-			await upsertRecord(collection, relationshipRecapId, recapContent, {
+			const now = new Date().toISOString();
+			const recapMetadata: RecapMetadata = {
+				// Base metadata fields (unified)
 				sessionId,
-				sequence, // Sequence number of the last turn included
-				timestamp: new Date().toISOString(),
-				type: METADATA_TYPES.RELATIONSHIP, // Use a distinct type
+				characterId,
+				type: METADATA_TYPES.RECAP,
+				createdAt: now,
+				updatedAt: now,
+				keywords: convertArrayToString(recapResult.keywords),
+				topics: convertArrayToString(recapResult.topics),
+				entities: convertArrayToString(recapResult.entities),
+				sequence: recapResult.turnEnd, // Use end as the sequence
+
+				// Recap-specific fields (flattened)
+				recapId: buildRelationshipRecapId(sessionId, turnStart, turnEnd),
+				turnStart,
+				turnEnd,
+				model,
+			};
+			const collection = await recapService._getCollection();
+			await upsertRecord(collection, recapMetadata.recapId, recapResult.content, recapMetadata);
+			// whole texts document
+			await upsertRecord(collection, buildRelationshipRecapDocId(sessionId), recapResult.content, {
+				sessionId,
+				type: METADATA_TYPES.DOCUMENT,
+				timeStamp: now,
 			});
-			console.log(
-				`[RelationshipRecap] Successfully stored for session ${sessionId}, up to sequence ${sequence}.`
-			);
+
+			console.log(`[RecapService] Successfully stored relationship recap for session ${sessionId}`);
 		} catch (error) {
 			handleServiceError(
 				error,
-				`[RelationshipRecap] Internal error for session ${sessionId}, sequence ${sequence}.`,
+				`[RecapService] Internal error storing relationship recap, session ${sessionId}`,
 				`Failed to store relationship recap for session ${sessionId}`
 			);
 		}
 	},
 
-	getRecap: async (sessionId: string): Promise<string> => {
+	/**
+	 * Get whole document recap for a session
+	 */
+	getRecapWholeDoc: async (
+		sessionId: string,
+		type: typeof METADATA_TYPES.RECAP | typeof METADATA_TYPES.RELATIONSHIP
+	): Promise<string> => {
 		const collection = await recapService._getCollection();
-		const recapId = buildRecapId(sessionId);
+		const recapDocId =
+			type === METADATA_TYPES.RECAP
+				? buildRecapDocId(sessionId)
+				: buildRelationshipRecapDocId(sessionId);
+		console.log(`[RecapService] Fetching recap document for session ${sessionId}, type: ${type}`);
+
 		try {
-			const recap = (await getRecordById(collection, recapId)).documents?.[0];
-			return recap || '';
+			const result = await getRecordById(collection, recapDocId);
+			return result.documents?.[0] || '';
 		} catch (error) {
-			console.warn(`No recap found for session ${sessionId}`);
+			console.info(`[RecapService] No factual recap found for session ${sessionId}`);
 			return '';
 		}
 	},
 
-	getRelationshipRecap: async (sessionId: string): Promise<string> => {
-		const collection = await recapService._getCollection();
-		const relationshipRecapId = buildRelationshipRecapId(sessionId);
-		try {
-			const recap = (await getRecordById(collection, relationshipRecapId)).documents?.[0];
-			return recap || '';
-		} catch (error) {
-			// It's common for a recap not to exist initially, so log as warn or info
-			console.info(
-				`No relationship recap found for ID ${relationshipRecapId} (session ${sessionId}). This may be normal.`
-			);
-			return '';
-		}
-	},
-	// Method to clear the cache
+	/**
+	 * Clear collection cache
+	 */
 	clearCollectionCache: (): void => {
+		console.log('[RecapService] Clearing cached recap collection.');
 		recapService._recapCollection = null;
 	},
 };
