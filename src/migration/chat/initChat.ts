@@ -20,7 +20,10 @@ import {
 	buildMessageId,
 	buildSessionId,
 } from '#root/src/server/util/buildIdUtils.ts';
-import { validEmotions } from '#root/src/shared/config/emotionWordsMapper.ts';
+import {
+	allEmotionKeywordsList,
+	validEmotions,
+} from '#root/src/shared/config/emotionWordsMapper.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,7 +40,6 @@ const ENRICHMENT_MODEL = 'gemini-2.0-flash-001'; // Fast model for metadata extr
 
 // --- ADJUST THESE FOR DEBUGGING ---
 const UPSERT_BATCH_SIZE = 10; // Smaller batch size for enriched turns
-const DELAY_BETWEEN_BATCHES_MS = 2000; // Longer delay due to LLM calls
 const DELAY_BETWEEN_LLM_CALLS_MS = 1000; // Delay between individual LLM calls
 // ---
 
@@ -45,19 +47,18 @@ const DELAY_BETWEEN_LLM_CALLS_MS = 1000; // Delay between individual LLM calls
 const PROGRESS_DIR = path.join(__dirname, 'progress');
 const PROGRESS_FILE_PREFIX = 'initchat-progress';
 
-// ✅ Add Progress Interface
 interface InitChatProgress {
 	sessionId: string;
-	totalTurns: number;
-	processedTurns: number;
+	totalTurnsInLogFile: number;
 	lastProcessedSequence: number;
+	successfullyEnrichedTurnsCount: number;
+	fallbackSavedTurnsCount: number;
 	startedAt: string;
-	lastUpdated: string;
+	lastUpdatedAt: string;
 	status: 'in_progress' | 'completed' | 'failed';
-	errors: string[];
+	errors: Array<{ sequence: number; error: string; timestamp: string }>;
 }
 
-// ✅ Add Progress Helper Functions
 const getProgressFilePath = (sessionId: string): string => {
 	return path.join(PROGRESS_DIR, `${PROGRESS_FILE_PREFIX}-${sessionId}.json`);
 };
@@ -68,29 +69,39 @@ const loadInitProgress = async (sessionId: string): Promise<InitChatProgress | n
 		const progressFile = getProgressFilePath(sessionId);
 		const data = await fs.readFile(progressFile, 'utf-8');
 		return JSON.parse(data);
-	} catch {
+	} catch (error) {
+		// If file not found or other error, return null
+		if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+			return null;
+		}
+		console.warn(`Warning: Could not load progress file for ${sessionId}:`, error);
 		return null;
 	}
 };
 
 const saveInitProgress = async (progress: InitChatProgress): Promise<void> => {
+	progress.lastUpdatedAt = new Date().toISOString();
 	try {
 		await fs.mkdir(PROGRESS_DIR, { recursive: true });
 		const progressFile = getProgressFilePath(progress.sessionId);
 		await fs.writeFile(progressFile, JSON.stringify(progress, null, 2));
 	} catch (error) {
-		console.error('Failed to save progress:', error);
+		console.error(`Failed to save progress for session ${progress.sessionId}:`, error);
 	}
 };
 
-const createInitialProgress = (sessionId: string, totalTurns: number): InitChatProgress => {
+const createInitialProgress = (
+	sessionId: string,
+	totalTurnsInLogFile: number
+): InitChatProgress => {
 	return {
 		sessionId,
-		totalTurns,
-		processedTurns: 0,
+		totalTurnsInLogFile,
 		lastProcessedSequence: -1,
+		successfullyEnrichedTurnsCount: 0,
+		fallbackSavedTurnsCount: 0,
 		startedAt: new Date().toISOString(),
-		lastUpdated: new Date().toISOString(),
+		lastUpdatedAt: new Date().toISOString(),
 		status: 'in_progress',
 		errors: [],
 	};
@@ -98,41 +109,40 @@ const createInitialProgress = (sessionId: string, totalTurns: number): InitChatP
 
 const extractJsonFromMarkdown = (response: string): any => {
 	let cleaned = response.trim();
-
 	try {
-		// Method 1: Remove code blocks with proper escaping
-		cleaned = cleaned.replace(/``````/gi, (match) => {
-			// Extract content between ``````
-			return match.replace(/^``````$/i, '');
-		});
-
-		// Method 2: Remove any remaining code blocks
-		cleaned = cleaned.replace(/``````/g, '$1');
-
-		// Method 3: Remove standalone backticks
-		cleaned = cleaned.replace(/`/g, '');
-
-		// Trim and find JSON
-		cleaned = cleaned.trim();
-
-		// Extract JSON object
-		const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-		if (jsonMatch) {
-			return JSON.parse(jsonMatch[0]);
+		// Try to find JSON between markdown code blocks first
+		const codeBlockMatch = cleaned.match(/``````/i);
+		if (codeBlockMatch && codeBlockMatch[1]) {
+			return JSON.parse(codeBlockMatch[1]);
 		}
 
+		// If no code blocks, try to find a JSON object directly
+		const jsonMatch = cleaned.match(/(\{[\s\S]*\})/);
+		if (jsonMatch && jsonMatch[1]) {
+			return JSON.parse(jsonMatch[1]);
+		}
+
+		// Fallback for cases where LLM might forget closing braces or includes extra text
+		if (!cleaned.startsWith('{') && cleaned.includes('{') && cleaned.includes('}')) {
+			const firstBrace = cleaned.indexOf('{');
+			const lastBrace = cleaned.lastIndexOf('}');
+			if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+				cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+			}
+		}
 		return JSON.parse(cleaned);
 	} catch (error) {
-		console.error('JSON extraction failed:', error);
-		console.error('Cleaned text was:', cleaned);
-		return {};
+		console.error(
+			'JSON extraction failed. Raw text snippet for debugging:',
+			cleaned.substring(0, 500)
+		);
+		return {}; // Return empty object to allow default filling
 	}
 };
 
-// --- LLM Functions ---
-const generateEnrichedMetadata = async (prompt: string, attempt = 1): Promise<string> => {
+const generateEnrichedMetadataLLM = async (prompt: string, attempt = 1): Promise<string> => {
 	if (!GEMINI_API_KEY) {
-		throw new Error('GEMINI_API_KEY environment variable is required');
+		throw new Error('GEMINI_API_KEY environment variable is required for LLM calls.');
 	}
 
 	console.log(`    📞 Calling Gemini API (Attempt ${attempt}/${MAX_LLM_RETRIES})...`);
@@ -146,486 +156,508 @@ const generateEnrichedMetadata = async (prompt: string, attempt = 1): Promise<st
 				body: JSON.stringify({
 					contents: [{ parts: [{ text: prompt }] }],
 					generationConfig: {
-						temperature: 0.3, // Lower temperature for consistent metadata
-						maxOutputTokens: 1024, // Enough for JSON metadata
+						temperature: 0.3,
+						maxOutputTokens: 1536, // Increased for potentially larger JSON
 					},
 				}),
 			}
 		);
 
 		if (!response.ok) {
-			// Handle 429 (Rate Limit) specifically
-			if (response.status === 429) {
-				const retryAfterHeader = response.headers.get('retry-after');
-				const waitTimeSeconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 60; // Default to 60 seconds if no header
-				const waitTimeMs = Math.max(waitTimeSeconds * 1000, 5000); // Ensure at least 5 seconds wait
-
-				console.warn(
-					`    ⏳ Gemini rate limited (Status 429). Waiting ${waitTimeMs / 1000}s before retry...`
-				);
-				if (attempt < MAX_LLM_RETRIES) {
-					await new Promise((resolve) => setTimeout(resolve, waitTimeMs));
-					return generateEnrichedMetadata(prompt, attempt + 1); // Retry
-				} else {
-					console.error(
-						`    ❌ Gemini rate limited after ${MAX_LLM_RETRIES} attempts. Aborting for this turn.`
-					);
-					throw new Error(`Gemini API rate limited after ${MAX_LLM_RETRIES} attempts (Status 429)`);
-				}
-			}
-			// For other non-ok responses
 			const errorBody = await response.text();
-			console.error(
-				`    ❌ Gemini API error (Status ${response.status}): ${response.statusText}. Body: ${errorBody}`
+			console.warn(
+				`    ⚠️ Gemini API non-OK response (Status ${response.status}): ${response.statusText}. Body: ${errorBody.substring(0, 200)}`
 			);
-			throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+			if (response.status === 429) {
+				if (attempt < MAX_LLM_RETRIES) {
+					const retryAfterHeader = response.headers.get('retry-after');
+					const waitTimeSeconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 60;
+					const waitTimeMs = Math.max(waitTimeSeconds * 1000, 5000);
+					console.warn(`    ⏳ Gemini rate limited. Waiting ${waitTimeMs / 1000}s (Attempt ${attempt})`);
+					await new Promise((resolve) => setTimeout(resolve, waitTimeMs));
+					return generateEnrichedMetadataLLM(prompt, attempt + 1);
+				}
+				throw new Error(`Gemini API rate limited after ${MAX_LLM_RETRIES} attempts (Status 429)`);
+			}
+			if (attempt < MAX_LLM_RETRIES) {
+				const backoffTime = Math.pow(2, attempt) * 1000 + Math.random() * 1000; // Exponential backoff for other errors
+				console.warn(`    ↪️ Retrying LLM due to non-429 error in ${backoffTime / 1000}s...`);
+				await new Promise((resolve) => setTimeout(resolve, backoffTime));
+				return generateEnrichedMetadataLLM(prompt, attempt + 1);
+			}
+			throw new Error(
+				`Gemini API Error: ${response.status} ${response.statusText} after ${attempt} attempts.`
+			);
 		}
 
 		const data = await response.json();
-		const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+		const candidate = data.candidates?.[0];
+		const content = candidate?.content?.parts?.[0]?.text || '';
 
-		if (!content && data.candidates?.[0]?.finishReason === 'SAFETY') {
-			console.warn('    ⚠️ Gemini API: Content blocked due to safety settings.');
-			throw new Error('Gemini API: Content blocked due to safety settings.');
-		}
-		if (!content && data.candidates?.[0]?.finishReason === 'RECITATION') {
-			console.warn('    ⚠️ Gemini API: Content blocked due to recitation policy.');
-			throw new Error('Gemini API: Content blocked due to recitation policy.');
+		if (
+			candidate?.finishReason &&
+			candidate.finishReason !== 'STOP' &&
+			candidate.finishReason !== 'MAX_TOKENS'
+		) {
+			console.warn(
+				`    ⚠️ Gemini API finishReason: ${candidate.finishReason}. Content might be incomplete or problematic.`
+			);
+			if (candidate.finishReason === 'SAFETY') {
+				throw new Error('Gemini API: Content blocked due to safety settings.');
+			}
 		}
 		if (!content) {
 			console.warn(
-				'    ⚠️ Empty response from Gemini API. Response data:',
-				JSON.stringify(data).substring(0, 200)
+				'    ⚠️ Empty content from Gemini API. Full response:',
+				JSON.stringify(data).substring(0, 500)
 			);
-			throw new Error('Empty response from Gemini API');
+			throw new Error('Empty response content from Gemini API');
 		}
-		console.log(`    🗣️ Gemini API response received.`);
+		console.log(`    🗣️ Gemini API response received (length: ${content.length}).`);
 		return content;
 	} catch (error) {
 		console.error(
-			`    💥 Error calling Gemini API for metadata enrichment (Attempt ${attempt}/${MAX_LLM_RETRIES}):`,
+			`    💥 LLM Error (Attempt ${attempt}/${MAX_LLM_RETRIES}):`,
 			error instanceof Error ? error.message : String(error)
 		);
 		if (attempt < MAX_LLM_RETRIES) {
-			// Implement exponential backoff for general errors
-			const backoffTime = Math.pow(2, attempt) * 1000 + Math.random() * 1000; // e.g., 2s, 4s, 8s, 16s
-			console.warn(`    ↪️ Retrying in ${backoffTime / 1000}s...`);
+			const backoffTime = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+			console.warn(`    ↪️ Retrying LLM in ${backoffTime / 1000}s...`);
 			await new Promise((resolve) => setTimeout(resolve, backoffTime));
-			return generateEnrichedMetadata(prompt, attempt + 1); // Retry
-		} else {
-			console.error(`    🚫 Failed after ${MAX_LLM_RETRIES} attempts. Giving up for this turn.`);
-			// Re-throw the last error to stop the process for this specific turn
-			throw error;
+			return generateEnrichedMetadataLLM(prompt, attempt + 1);
 		}
+		console.error(`    🚫 Failed LLM call after ${MAX_LLM_RETRIES} attempts.`);
+		throw error;
 	}
 };
 
-const enrichChatTurnWithMetadata = async (
-	turn: ChatTurn,
-	existingLoreIds: string[] = [],
-	existingHistoryIds: string[] = []
-): Promise<ChatTurn> => {
-	try {
-		console.log(`    🧠 Enriching turn ${turn.sequence} with LLM metadata...`);
-
-		// Get character info from turn
-		const userName = `${turn.request.showName}(yonyve)`;
-		const charName = `${turn.response.showName}(tarion)`;
-		const userGender = 'female'; // You can derive this from profile if available
-		const charGender = 'male'; // Adjust as needed
-
-		const prompt = buildChatTurnMetadataPrompt(
-			userName,
-			userGender,
-			turn.request,
-			charName,
-			charGender,
-			turn.response,
-			existingLoreIds,
-			existingHistoryIds
-		);
-		const llmResponse = await generateEnrichedMetadata(prompt);
-
-		// Parse LLM JSON response
-		let enrichedMetadata: any;
-		try {
-			enrichedMetadata = extractJsonFromMarkdown(llmResponse);
-		} catch (parseError) {
-			console.warn(`    ⚠️ Failed to parse LLM metadata for turn ${turn.sequence}:`, parseError);
-			enrichedMetadata = {};
-		}
-
-		// Create enriched ChatTurn with RICH OBJECTS (not flattened)
-		const enrichedTurn: ChatTurn = {
-			...turn,
-			// Add enriched metadata fields (rich object structure for ChatTurn)
-			summary: enrichedMetadata.summary || 'N/A',
-			keywords: enrichedMetadata.keywords || [],
-			topics: enrichedMetadata.topics || [],
-			entities: enrichedMetadata.entities || [],
-
-			// Keep emotion objects as rich structures for ChatTurn interface
-			userEmotion: {
-				primary: enrichedMetadata.userEmotion?.primary || 'neutral',
-				intensity: enrichedMetadata.userEmotion?.intensity || 0.5,
-				nuances: enrichedMetadata.userEmotion?.nuances || [],
-			},
-			characterEmotion: {
-				primary: enrichedMetadata.characterEmotion?.primary || 'neutral',
-				intensity: enrichedMetadata.characterEmotion?.intensity || 0.5,
-				nuances: enrichedMetadata.characterEmotion?.nuances || [],
-			},
-
-			relationshipShifts: enrichedMetadata.relationshipShifts || [],
-			dialogueAct: enrichedMetadata.dialogueAct || 'N/A',
-			actions: enrichedMetadata.actions || [],
-			loreReferences: enrichedMetadata.loreReferences || [],
-			historyReferences: enrichedMetadata.historyReferences || [],
-			flags: enrichedMetadata.flags || [],
-			memoryChunk: enrichedMetadata.memoryChunk || 'N/A',
-
-			// Add required base metadata fields
-			characterId: parseSessionId(turn.sessionId).characterId,
-			updatedAt: new Date().toISOString(),
-		};
-
-		console.log(`    ✅ Turn ${turn.sequence} enriched successfully`);
-		return enrichedTurn;
-	} catch (error) {
-		console.error(`    ❌ Error enriching turn ${turn.sequence}:`, error);
-		// Return original turn with default enriched metadata (rich objects)
-		return {
-			...turn,
-			...getDefaultEnrichedMetadata(), // Now returns rich objects
-			characterId: parseSessionId(turn.sessionId).characterId,
-			updatedAt: new Date().toISOString(),
-		};
-	}
-};
-
-// In your initChat.ts, update getDefaultEnrichedMetadata to return rich objects:
-
+// This function should return the rich object structure expected by ChatTurn
 const getDefaultEnrichedMetadata = () => ({
 	summary: 'N/A',
-	keywords: [], // Array for ChatTurn interface
-	topics: [], // Array for ChatTurn interface
-	entities: [], // Array for ChatTurn interface
-	// Rich emotion objects (not flattened)
+	keywords: [],
+	topics: [],
+	entities: [],
 	userEmotion: { primary: 'neutral', intensity: 0.5, nuances: [] },
 	characterEmotion: { primary: 'neutral', intensity: 0.5, nuances: [] },
-	relationshipShifts: [], // Array for ChatTurn interface
+	relationshipShifts: [],
 	dialogueAct: 'N/A',
-	actions: [], // Array for ChatTurn interface
-	loreReferences: [], // Array of objects for ChatTurn interface
-	historyReferences: [], // Array of objects for ChatTurn interface
-	flags: [], // Array for ChatTurn interface
+	actions: [],
+	loreReferences: [],
+	historyReferences: [],
+	flags: [],
 	memoryChunk: 'N/A',
 });
 
-// Helper function to upsert enriched data in batches
-// Updated upsertEnrichedInBatches function with progressive saving and helper usage
+const enrichChatTurnWithMetadata = async (
+	basicTurn: ChatTurn, // Input is a basic ChatTurn (from logs, with default rich metadata)
+	existingLoreIds: string[] = [],
+	existingHistoryIds: string[] = []
+): Promise<ChatTurn> => {
+	// Output is a ChatTurn with LLM-generated rich metadata
+	// Derive display names with English spellings
+	const userNameDisplay = `${basicTurn.request.showName}(Yonyve)`; // Replace with actual logic if needed
+	const charNameDisplay = `${basicTurn.response.showName}(Tarion)`; // Replace with actual logic if needed
+	const userGender = 'female'; // Placeholder - fetch from profile if available
+	const charGender = basicTurn.response.showName === '타리온' ? 'male' : 'male'; // Placeholder
 
-async function upsertEnrichedInBatchesWithProgress(
-	collection: Collection,
-	turns: ChatTurn[],
-	batchSize: number,
-	sessionId: string,
-	progress: InitChatProgress
-) {
-	console.log(
-		`Starting enriched processing for session "${sessionId}". Remaining turns: ${turns.length}`
+	const prompt = buildChatTurnMetadataPrompt(
+		userNameDisplay,
+		userGender,
+		basicTurn.request,
+		charNameDisplay,
+		charGender,
+		basicTurn.response,
+		existingLoreIds,
+		existingHistoryIds
 	);
 
-	for (let i = 0; i < turns.length; i++) {
-		const turn = turns[i];
-		const globalIndex = progress.processedTurns + i;
+	const llmResponse = await generateEnrichedMetadataLLM(prompt);
+	const parsedLlmJson = extractJsonFromMarkdown(llmResponse);
+	const defaults = getDefaultEnrichedMetadata();
 
-		try {
-			console.log(
-				`    🧠 Processing turn ${turn.sequence} (${globalIndex + 1}/${progress.totalTurns})...`
-			);
-
-			// Enrich with LLM
-			const enrichedTurn = await enrichChatTurnWithMetadata(turn);
-
-			// Use helper function to convert to ChromaDB metadata
-			const turnMetadata = parseChatTurnToMetadata(enrichedTurn);
-			const turnDocument = buildChatTurnDocument(enrichedTurn);
-
-			// Save individual turn immediately
-			await collection.upsert({
-				ids: [enrichedTurn.chatTurnId],
-				documents: [turnDocument],
-				metadatas: [turnMetadata],
-			});
-
-			// ✅ Update progress after successful save
-			progress.processedTurns = globalIndex + 1;
-			progress.lastProcessedSequence = turn.sequence;
-			progress.lastUpdated = new Date().toISOString();
-			await saveInitProgress(progress);
-
-			console.log(
-				`    ✅ Turn ${turn.sequence} enriched and saved (${progress.processedTurns}/${progress.totalTurns})`
-			);
-
-			// Delay between LLM calls
-			if (i < turns.length - 1) {
-				await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_LLM_CALLS_MS));
-			}
-		} catch (error) {
-			console.error(`    ❌ Error processing turn ${turn.sequence}:`, error);
-
-			// ✅ Record error in progress
-			progress.errors.push(
-				`Turn ${turn.sequence}: ${error instanceof Error ? error.message : String(error)}`
-			);
-			await saveInitProgress(progress);
-
-			// Save with default metadata
-			try {
-				const fallbackTurn = {
-					...turn,
-					...getDefaultEnrichedMetadata(),
-					characterId: parseSessionId(turn.sessionId).characterId,
-					updatedAt: new Date().toISOString(),
-				};
-
-				const fallbackMetadata = parseChatTurnToMetadata(fallbackTurn);
-				const fallbackDocument = buildChatTurnDocument(fallbackTurn);
-
-				await collection.upsert({
-					ids: [fallbackTurn.chatTurnId],
-					documents: [fallbackDocument],
-					metadatas: [fallbackMetadata],
-				});
-
-				// ✅ Update progress even for fallback
-				progress.processedTurns = globalIndex + 1;
-				progress.lastProcessedSequence = turn.sequence;
-				progress.lastUpdated = new Date().toISOString();
-				await saveInitProgress(progress);
-
-				console.log(`    ⚠️ Turn ${turn.sequence} saved with default metadata`);
-			} catch (saveError) {
-				console.error(`    💥 Failed to save turn ${turn.sequence}:`, saveError);
-				progress.status = 'failed';
-				await saveInitProgress(progress);
-				throw saveError;
-			}
-		}
-	}
-
-	// ✅ Mark as completed
-	progress.status = 'completed';
-	progress.lastUpdated = new Date().toISOString();
-	await saveInitProgress(progress);
-
-	console.log(`✅ Completed enriched processing for session "${sessionId}"`);
-}
-
-const cleanupCompletedProgress = async (): Promise<void> => {
-	try {
-		const progressFiles = await fs.readdir(PROGRESS_DIR);
-		for (const file of progressFiles) {
-			if (file.startsWith(PROGRESS_FILE_PREFIX)) {
-				const filePath = path.join(PROGRESS_DIR, file);
-				const data = await fs.readFile(filePath, 'utf-8');
-				const progress: InitChatProgress = JSON.parse(data);
-
-				if (progress.status === 'completed') {
-					await fs.unlink(filePath);
-					console.log(`🧹 Cleaned up completed progress file: ${file}`);
-				}
-			}
-		}
-	} catch (error) {
-		console.warn('Failed to cleanup progress files:', error);
-	}
+	// Merge LLM response with defaults to create the rich object structure
+	return {
+		...basicTurn, // Spread the original basic turn (includes request, response, sequence, etc.)
+		summary: parsedLlmJson.summary || defaults.summary,
+		keywords: parsedLlmJson.keywords || defaults.keywords,
+		topics: parsedLlmJson.topics || defaults.topics,
+		entities: parsedLlmJson.entities || defaults.entities,
+		userEmotion: {
+			// Ensure nested objects are correctly formed
+			primary: parsedLlmJson.userEmotion?.primary || defaults.userEmotion.primary,
+			intensity: parsedLlmJson.userEmotion?.intensity || defaults.userEmotion.intensity,
+			nuances: parsedLlmJson.userEmotion?.nuances || defaults.userEmotion.nuances,
+		},
+		characterEmotion: {
+			primary: parsedLlmJson.characterEmotion?.primary || defaults.characterEmotion.primary,
+			intensity: parsedLlmJson.characterEmotion?.intensity || defaults.characterEmotion.intensity,
+			nuances: parsedLlmJson.characterEmotion?.nuances || defaults.characterEmotion.nuances,
+		},
+		relationshipShifts: parsedLlmJson.relationshipShifts || defaults.relationshipShifts,
+		dialogueAct: parsedLlmJson.dialogueAct || defaults.dialogueAct,
+		actions: parsedLlmJson.actions || defaults.actions,
+		loreReferences: parsedLlmJson.loreReferences || defaults.loreReferences,
+		historyReferences: parsedLlmJson.historyReferences || defaults.historyReferences,
+		flags: parsedLlmJson.flags || defaults.flags,
+		memoryChunk: parsedLlmJson.memoryChunk || defaults.memoryChunk,
+		// Ensure characterId is present and updatedAt is refreshed
+		characterId: basicTurn.characterId || parseSessionId(basicTurn.sessionId).characterId,
+		updatedAt: new Date().toISOString(),
+	};
 };
 
-// --- Main Seeding Logic ---
+async function processAndUpsertTurn(
+	collection: Collection,
+	turnToProcess: ChatTurn, // This is a basic turn from the log file
+	progress: InitChatProgress
+) {
+	let enrichedTurnResult: ChatTurn; // This will hold the ChatTurn with rich metadata
+	let wasEnrichedSuccessfully = false;
+
+	try {
+		console.log(
+			`    🧠 Enriching turn ${turnToProcess.sequence} (${progress.lastProcessedSequence + 2}/${progress.totalTurnsInLogFile})...`
+		);
+		enrichedTurnResult = await enrichChatTurnWithMetadata(turnToProcess);
+		wasEnrichedSuccessfully = true;
+		progress.successfullyEnrichedTurnsCount++;
+		console.log(`    🗣️ Turn ${turnToProcess.sequence} LLM enrichment successful.`);
+	} catch (enrichmentError) {
+		const errorMessage =
+			enrichmentError instanceof Error ? enrichmentError.message : String(enrichmentError);
+		console.error(`    ❌ LLM Enrichment failed for turn ${turnToProcess.sequence}: ${errorMessage}`);
+		progress.errors.push({
+			sequence: turnToProcess.sequence,
+			error: `Enrichment failed: ${errorMessage}`,
+			timestamp: new Date().toISOString(),
+		});
+
+		// Create a fallback turn with default (rich) enriched metadata
+		enrichedTurnResult = {
+			...turnToProcess, // Start with the basic turn from the log
+			...getDefaultEnrichedMetadata(), // Spread the default rich metadata
+			characterId: turnToProcess.characterId || parseSessionId(turnToProcess.sessionId).characterId,
+			updatedAt: new Date().toISOString(),
+		};
+		console.warn(`    ↪️ Using default (rich) metadata for turn ${turnToProcess.sequence}.`);
+		progress.fallbackSavedTurnsCount++;
+	}
+
+	// Convert the (either enriched or fallback) RICH ChatTurn object to PRIMITIVE metadata for ChromaDB
+	const chromaCompatibleMetadata = parseChatTurnToMetadata(enrichedTurnResult);
+	const documentForEmbedding = buildChatTurnDocument(enrichedTurnResult);
+
+	try {
+		await collection.upsert({
+			ids: [enrichedTurnResult.chatTurnId],
+			documents: [documentForEmbedding],
+			metadatas: [chromaCompatibleMetadata],
+		});
+
+		progress.lastProcessedSequence = enrichedTurnResult.sequence;
+		console.log(
+			`    ✅ Turn ${enrichedTurnResult.sequence} ${wasEnrichedSuccessfully ? 'enriched' : 'fallback'} and saved. Progress: ${progress.lastProcessedSequence + 1}/${progress.totalTurnsInLogFile}`
+		);
+	} catch (dbError) {
+		const dbErrorMessage = dbError instanceof Error ? dbError.message : String(dbError);
+		console.error(
+			`    💥 CRITICAL DB Error saving turn ${enrichedTurnResult.sequence}: ${dbErrorMessage}`
+		);
+		progress.errors.push({
+			sequence: enrichedTurnResult.sequence,
+			error: `DB Upsert failed: ${dbErrorMessage}`,
+			timestamp: new Date().toISOString(),
+		});
+		progress.status = 'failed';
+		await saveInitProgress(progress); // Save progress before throwing
+		throw new Error(`CRITICAL DB Error for turn ${enrichedTurnResult.sequence}: ${dbErrorMessage}`);
+	}
+}
+
 async function initChatFromLogFiles() {
 	console.log(`🚀 Starting chat initialization with LLM enrichment...`);
+	if (!GEMINI_API_KEY) {
+		console.error('🚨 GEMINI_API_KEY is not set. Aborting.');
+		process.exit(1); // Critical error, stop execution
+	}
 	console.log(`Connecting to ChromaDB at: ${CHROMA_URL}`);
 	console.log(`Using enrichment model: ${ENRICHMENT_MODEL}`);
 
 	const chroma = new ChromaClient({ path: CHROMA_URL });
+	let collection: Collection;
 
 	try {
 		console.log(`Ensuring main collection "${COLLECTIONS.CHAT}" exists...`);
-		const collection: Collection = await chroma.getOrCreateCollection({
+		collection = await chroma.getOrCreateCollection({
 			name: COLLECTIONS.CHAT,
 			metadata: {
 				description: 'Stores enriched chat session turns with LLM-generated metadata.',
 				created_by_script: 'initChat.ts',
-				type: COLLECTIONS.CHAT,
+				type: COLLECTIONS.CHAT, // Ensure this matches your METADATA_TYPES
 				enrichment_model: ENRICHMENT_MODEL,
 			},
 		});
 		console.log(`Collection "${COLLECTIONS.CHAT}" ready.`);
-
-		const allLogFiles = (await fs.readdir(CRAWLER_RESULT_DIR)).filter((file) =>
-			file.endsWith('.json')
+	} catch (e) {
+		const collectionError = e instanceof Error ? e.message : String(e);
+		console.error(
+			`🚨 Failed to get or create ChromaDB collection "${COLLECTIONS.CHAT}". Aborting. Error: ${collectionError}`
 		);
-
-		if (allLogFiles.length === 0) {
-			console.log(`No JSON log files found in ${CRAWLER_RESULT_DIR}. Nothing to process.`);
-			return;
-		}
-		console.log(`Found the following log files to process: ${joinOrEmpty(allLogFiles)}`);
-
-		const logFilesToProcess = allLogFiles;
-
-		for (const logFile of logFilesToProcess) {
-			const fileNameArr = path.basename(logFile, '.json').split('_');
-			const characterId = buildCharacterId(fileNameArr[0], fileNameArr[1]);
-			const TARGET_SESSION_ID = buildSessionId(characterId);
-
-			console.log(`\n📝 Processing log file: "${logFile}" for session ID: "${TARGET_SESSION_ID}"...`);
-
-			// ✅ Load or create progress
-			let progress = await loadInitProgress(TARGET_SESSION_ID);
-
-			const filePath = path.join(CRAWLER_RESULT_DIR, logFile);
-			const fileContent = await fs.readFile(filePath, 'utf-8');
-			const crawledLogs: MigChatMessage[] = JSON.parse(fileContent);
-
-			if (!Array.isArray(crawledLogs) || crawledLogs.length === 0) {
-				console.warn(`  No logs found or invalid format in "${logFile}". Skipping.`);
-				continue;
-			}
-
-			// Create basic ChatTurn objects first
-			const basicTurns: ChatTurn[] = [];
-			const turnsMap = new Map<string, { user?: MigChatMessage; bot?: MigChatMessage }>();
-
-			crawledLogs.forEach((log) => {
-				const turnData = turnsMap.get(log.uuid) || {};
-				if (log.role === 'user') {
-					turnData.user = log;
-				} else {
-					turnData.bot = log;
-				}
-				turnsMap.set(log.uuid, turnData);
-			});
-
-			const sortedLogIds = Array.from(turnsMap.keys()).sort((a, b) => {
-				const timeA = Date.parse(
-					turnsMap.get(a)?.user?.createdAt || turnsMap.get(a)?.bot?.createdAt || ''
-				);
-				const timeB = Date.parse(
-					turnsMap.get(b)?.user?.createdAt || turnsMap.get(b)?.bot?.createdAt || ''
-				);
-				return timeA - timeB;
-			});
-
-			// Create basic ChatTurn objects
-			for (const [index, logId] of sortedLogIds.entries()) {
-				const turnPair = turnsMap.get(logId);
-
-				if (turnPair?.user && turnPair?.bot) {
-					const userLog = turnPair.user;
-					const botLog = turnPair.bot;
-					const currentSequence = index;
-
-					const requestMessage: ChatMessage = {
-						role: 'user',
-						messageId: buildMessageId(TARGET_SESSION_ID, currentSequence, 'request'),
-						messageType: 'request',
-						entries: parseTextToEntries(userLog.content),
-						emotion: EMOTION_DEFAULT,
-						createdAt: userLog.createdAt,
-						updatedAt: userLog.updatedAt,
-						showName: '요니브',
-						type: METADATA_TYPES.MESSAGE,
-						sessionId: TARGET_SESSION_ID,
-						sequence: currentSequence,
-					};
-
-					function _isValidEmotion(emotion?: string): boolean {
-						if (!emotion) return false;
-						if (validEmotions.has(emotion)) return true;
-						console.warn(` ⚠️ Invalid or unmapped emotion keyword: "${emotion}".`);
-						return false;
-					}
-
-					const responseMessage: ChatMessage = {
-						role: 'assistant',
-						messageId: buildMessageId(TARGET_SESSION_ID, currentSequence, 'response'),
-						messageType: 'response',
-						entries: parseTextToEntries(botLog.content),
-						emotion: botLog.emotion && _isValidEmotion(botLog.emotion) ? botLog.emotion : EMOTION_DEFAULT,
-						createdAt: botLog.createdAt,
-						updatedAt: botLog.updatedAt,
-						model: botLog.model,
-						sessionId: TARGET_SESSION_ID,
-						showName: characterId.startsWith('tarion') ? '타리온' : '먼데이',
-						type: METADATA_TYPES.MESSAGE,
-						sequence: currentSequence,
-					};
-
-					const chatTurnId = buildChatTurnId(TARGET_SESSION_ID, currentSequence);
-
-					const basicTurn: ChatTurn = {
-						sessionId: TARGET_SESSION_ID,
-						sequence: currentSequence,
-						request: requestMessage,
-						response: responseMessage,
-						chatTurnId,
-						type: METADATA_TYPES.TURN,
-						requestMessageId: requestMessage.messageId,
-						responseMessageId: responseMessage.messageId,
-						createdAt: userLog.createdAt,
-						// Add required base metadata fields with defaults
-						characterId,
-						updatedAt: new Date().toISOString(),
-						// Add default enriched metadata (will be overwritten by LLM)
-						...getDefaultEnrichedMetadata(),
-					};
-
-					basicTurns.push(basicTurn);
-				} else {
-					console.warn(
-						`  Incomplete turn data for log_id "${logId}" in session "${TARGET_SESSION_ID}". Skipping.`
-					);
-				}
-			}
-
-			if (basicTurns.length > 0) {
-				// ✅ Initialize progress if not exists
-				if (!progress) {
-					progress = createInitialProgress(TARGET_SESSION_ID, basicTurns.length);
-					await saveInitProgress(progress);
-				}
-
-				// ✅ Skip already processed turns
-				const turnsToProcess = basicTurns.slice(progress.processedTurns);
-
-				if (turnsToProcess.length === 0) {
-					console.log(`  ✅ All turns already processed for session "${TARGET_SESSION_ID}".`);
-					continue;
-				}
-
-				console.log(
-					`  📊 Processing ${turnsToProcess.length} remaining turns (${progress.processedTurns}/${basicTurns.length} already done)`
-				);
-
-				// ✅ Pass progress to the batch function
-				await upsertEnrichedInBatchesWithProgress(
-					collection,
-					turnsToProcess,
-					UPSERT_BATCH_SIZE,
-					TARGET_SESSION_ID,
-					progress
-				);
-			}
-		}
-	} catch (error) {
-		console.error('❌ Error during enriched chat initialization:', error);
 		process.exit(1);
 	}
+
+	const allLogFiles = (await fs.readdir(CRAWLER_RESULT_DIR)).filter((file) =>
+		file.endsWith('.json')
+	);
+
+	if (allLogFiles.length === 0) {
+		console.log(`No JSON log files found in ${CRAWLER_RESULT_DIR}. Nothing to process.`);
+		return;
+	}
+	console.log(`Found the following log files to process: ${allLogFiles.join(', ')}`);
+
+	for (const logFile of allLogFiles) {
+		const fileNameParts = path.basename(logFile, '.json').split('_');
+		// Expecting format like: characterName_variant_timestamp.json
+		if (fileNameParts.length < 2) {
+			console.warn(`  ⚠️ Invalid log file name format: "${logFile}". Skipping.`);
+			continue;
+		}
+		const characterNameFromFile = fileNameParts[0];
+		const characterVariantFromFile = fileNameParts[1]; // e.g., "original", "spinoff"
+
+		const characterId = buildCharacterId(characterNameFromFile, characterVariantFromFile);
+		const TARGET_SESSION_ID = buildSessionId(characterId);
+
+		console.log(
+			`\n📝 Processing log file: "${logFile}" for session ID: "${TARGET_SESSION_ID}" (Character: ${characterId})...`
+		);
+		let progress = await loadInitProgress(TARGET_SESSION_ID);
+
+		const filePath = path.join(CRAWLER_RESULT_DIR, logFile);
+		let crawledLogs: MigChatMessage[];
+		try {
+			const fileContent = await fs.readFile(filePath, 'utf-8');
+			crawledLogs = JSON.parse(fileContent);
+		} catch (fileError) {
+			console.error(`  ❌ Error reading or parsing log file "${logFile}":`, fileError);
+			if (progress) {
+				// If progress file exists, mark this attempt as problematic
+				progress.errors.push({
+					sequence: -1,
+					error: `Failed to read/parse log file: ${fileError instanceof Error ? fileError.message : String(fileError)}`,
+					timestamp: new Date().toISOString(),
+				});
+				await saveInitProgress(progress);
+			}
+			continue; // Skip to next file
+		}
+
+		if (!Array.isArray(crawledLogs) || crawledLogs.length === 0) {
+			console.warn(`  No logs found or invalid format in "${logFile}". Skipping.`);
+			continue;
+		}
+
+		// Convert MigChatMessage to basic ChatTurn objects
+		const basicTurnsFromLog: ChatTurn[] = [];
+		const turnsMap = new Map<string, { user?: MigChatMessage; bot?: MigChatMessage }>();
+
+		crawledLogs.forEach((log) => {
+			const turnUuid = log.uuid || `${log.createdAt}_${log.role}`; // Use a fallback if uuid is missing
+			const turnData = turnsMap.get(turnUuid) || {};
+			if (log.role === 'user') {
+				turnData.user = log;
+			} else {
+				turnData.bot = log;
+			}
+			turnsMap.set(turnUuid, turnData);
+		});
+
+		const sortedUuids = Array.from(turnsMap.keys()).sort((a, b) => {
+			const timeA = Date.parse(
+				turnsMap.get(a)?.user?.createdAt || turnsMap.get(a)?.bot?.createdAt || '0'
+			);
+			const timeB = Date.parse(
+				turnsMap.get(b)?.user?.createdAt || turnsMap.get(b)?.bot?.createdAt || '0'
+			);
+			return timeA - timeB;
+		});
+
+		for (const [index, uuid] of sortedUuids.entries()) {
+			const turnPair = turnsMap.get(uuid);
+
+			if (turnPair?.user && turnPair?.bot) {
+				const userLog = turnPair.user;
+				const botLog = turnPair.bot;
+				const currentSequence = index; // This is the 0-indexed sequence for the session
+
+				const requestMessage: ChatMessage = {
+					role: 'user',
+					messageId: buildMessageId(TARGET_SESSION_ID, currentSequence, 'request'),
+					messageType: 'request',
+					entries: parseTextToEntries(userLog.content),
+					emotion: EMOTION_DEFAULT,
+					createdAt: userLog.createdAt,
+					updatedAt: userLog.updatedAt || userLog.createdAt,
+					showName: userLog.showName || '요니브', // Provide a default if showName is missing
+					type: METADATA_TYPES.MESSAGE,
+					sessionId: TARGET_SESSION_ID,
+					sequence: currentSequence,
+				};
+
+				const responseMessage: ChatMessage = {
+					role: 'assistant',
+					messageId: buildMessageId(TARGET_SESSION_ID, currentSequence, 'response'),
+					messageType: 'response',
+					entries: parseTextToEntries(botLog.content),
+					emotion:
+						botLog.emotion && validEmotions.has(botLog.emotion) ? botLog.emotion : EMOTION_DEFAULT,
+					createdAt: botLog.createdAt,
+					updatedAt: botLog.updatedAt || botLog.createdAt,
+					model: botLog.model,
+					sessionId: TARGET_SESSION_ID,
+					showName: botLog.showName || characterNameFromFile, // Use character name from file
+					type: METADATA_TYPES.MESSAGE,
+					sequence: currentSequence,
+				};
+
+				const chatTurnId = buildChatTurnId(TARGET_SESSION_ID, currentSequence);
+
+				// Create a basic ChatTurn with default RICH OBJECTS for enriched fields
+				const basicTurn: ChatTurn = {
+					sessionId: TARGET_SESSION_ID,
+					sequence: currentSequence,
+					request: requestMessage,
+					response: responseMessage,
+					chatTurnId,
+					type: METADATA_TYPES.TURN,
+					requestMessageId: requestMessage.messageId,
+					responseMessageId: responseMessage.messageId,
+					createdAt: userLog.createdAt,
+					characterId, // Assign derived characterId
+					updatedAt: new Date().toISOString(), // Initial updatedAt
+					...getDefaultEnrichedMetadata(), // Spread default rich metadata
+				};
+				basicTurnsFromLog.push(basicTurn);
+			} else {
+				console.warn(
+					`  Incomplete turn data for UUID "${uuid}" in session "${TARGET_SESSION_ID}". Skipping.`
+				);
+			}
+		}
+
+		if (!progress) {
+			progress = createInitialProgress(TARGET_SESSION_ID, basicTurnsFromLog.length);
+		} else if (progress.status === 'completed') {
+			console.log(`  ✅ Session "${TARGET_SESSION_ID}" already fully completed. Skipping.`);
+			continue;
+		} else if (progress.status === 'failed') {
+			console.warn(
+				`  ❌ Session "${TARGET_SESSION_ID}" previously failed. Last error for seq ${progress.errors[progress.errors.length - 1]?.sequence}: ${progress.errors[progress.errors.length - 1]?.error}. Review and consider resetting progress file if safe.`
+			);
+			continue;
+		}
+		progress.totalTurnsInLogFile = basicTurnsFromLog.length; // Update total, in case log file changed
+
+		const nextSequenceToProcess = progress.lastProcessedSequence + 1;
+		const turnsToProcessThisRun = basicTurnsFromLog.filter(
+			(turn) => turn.sequence >= nextSequenceToProcess
+		);
+
+		if (turnsToProcessThisRun.length === 0) {
+			console.log(
+				`  No new turns to process for session "${TARGET_SESSION_ID}" (Last processed sequence: ${progress.lastProcessedSequence}).`
+			);
+			if (
+				progress.lastProcessedSequence + 1 >= progress.totalTurnsInLogFile &&
+				progress.totalTurnsInLogFile > 0
+			) {
+				progress.status = 'completed';
+				console.log(`  Marking session "${TARGET_SESSION_ID}" as completed.`);
+			} else if (progress.totalTurnsInLogFile === 0) {
+				progress.status = 'completed'; // No turns in log, consider it completed
+				console.log(
+					`  Log file for session "${TARGET_SESSION_ID}" has no processable turns. Marking as completed.`
+				);
+			}
+			await saveInitProgress(progress);
+			continue;
+		}
+
+		console.log(
+			`  📊 Starting processing of ${turnsToProcessThisRun.length} turns for session "${TARGET_SESSION_ID}" (from sequence ${nextSequenceToProcess}). Total in log: ${basicTurnsFromLog.length}`
+		);
+		await saveInitProgress(progress); // Save progress before starting the loop
+
+		for (let i = 0; i < turnsToProcessThisRun.length; i++) {
+			const turn = turnsToProcessThisRun[i];
+			try {
+				await processAndUpsertTurn(collection, turn, progress);
+				await saveInitProgress(progress); // Save progress after each turn is successfully processed and upserted
+			} catch (turnProcessingError) {
+				// Error already logged and progress status updated in processAndUpsertTurn
+				// If a CRITICAL DB error occurred, it would have been rethrown and caught by the outer catch block.
+				// For LLM errors leading to fallback, processing continues.
+				// If processAndUpsertTurn throws (e.g. on critical DB error), we stop this session.
+				console.error(
+					`  🛑 Halting processing for session "${TARGET_SESSION_ID}" due to critical error on turn ${turn.sequence}.`
+				);
+				break; // Stop processing more turns for THIS session
+			}
+
+			if (i < turnsToProcessThisRun.length - 1 && progress.status !== 'failed') {
+				// Don't delay if session failed
+				await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_LLM_CALLS_MS));
+			}
+		}
+
+		// Final status update for the session
+		if (progress.status !== 'failed') {
+			// Only update to completed if not already marked as failed
+			if (progress.lastProcessedSequence + 1 >= progress.totalTurnsInLogFile) {
+				progress.status = 'completed';
+				console.log(
+					`🎉 Session "${TARGET_SESSION_ID}" fully completed! Processed ${progress.lastProcessedSequence + 1} turns.`
+				);
+			} else {
+				console.log(
+					`🟡 Session "${TARGET_SESSION_ID}" processing partially complete. Processed up to sequence ${progress.lastProcessedSequence}.`
+				);
+			}
+		}
+		await saveInitProgress(progress);
+	}
+
+	console.log('\n🎉 Chat initialization with LLM enrichment finished for all files.');
 	await cleanupCompletedProgress();
 }
 
-initChatFromLogFiles();
+initChatFromLogFiles().catch((err) => {
+	console.error('🚨🚨🚨 FATAL Unhandled error in initChatFromLogFiles outer scope:', err);
+	process.exit(1); // Exit with error code
+});
+
+async function cleanupCompletedProgress(): Promise<void> {
+	try {
+		const files = await fs.readdir(PROGRESS_DIR);
+		for (const file of files) {
+			if (file.startsWith(PROGRESS_FILE_PREFIX) && file.endsWith('.json')) {
+				const filePath = path.join(PROGRESS_DIR, file);
+				try {
+					const progressData = JSON.parse(await fs.readFile(filePath, 'utf-8')) as InitChatProgress;
+					if (progressData.status === 'completed') {
+						await fs.unlink(filePath);
+						console.log(`🧹 Cleaned up completed progress file: ${file}`);
+					}
+				} catch (e) {
+					console.warn(`⚠️ Could not read or parse progress file ${file} for cleanup:`, e);
+				}
+			}
+		}
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+			// Ignore if progress dir doesn't exist
+			console.warn('⚠️ Failed to cleanup progress files:', error);
+		}
+	}
+}

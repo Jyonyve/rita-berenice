@@ -132,6 +132,7 @@ export interface MigChatMessage {
 	content: string;
 	createdAt: string;
 	updatedAt: string;
+	name: string;
 	showName: string;
 	emotion: string;
 	model?: string;
