@@ -7,7 +7,6 @@ import { fileURLToPath } from 'node:url';
 import { ChatMessage, ChatTurn, MigChatMessage } from '#shared/domain/chat/ChatInterfaces.ts';
 import { buildChatTurnMetadataPrompt } from '#root/src/server/util/templateUtils.ts';
 import {
-	joinOrEmpty,
 	parseChatTurnToMetadata,
 	parseSessionId,
 	parseTextToEntries,
@@ -35,7 +34,8 @@ const EMOTION_DEFAULT = 'default';
 const MAX_LLM_RETRIES = 5;
 
 // LLM Configuration
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDcw_sDLQSjD0fJARHJNaRoIZv_Se6YGj8';
+// const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDcw_sDLQSjD0fJARHJNaRoIZv_Se6YGj8';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyAfhl_AyupNyz9CpxscySkvGmxRsJKcXxk';
 const ENRICHMENT_MODEL = 'gemini-2.0-flash-001'; // Fast model for metadata extraction
 
 // --- ADJUST THESE FOR DEBUGGING ---
