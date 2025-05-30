@@ -1,12 +1,12 @@
 // Save this file as scripts/checkMondayChat.ts
-import { ChromaClient, Collection, IncludeEnum } from 'chromadb';
-import { ChatTurn, COLLECTIONS } from '../../shared/domain/index.ts';
+import { ChromaClient, Collection, IncludeEnum, Where } from 'chromadb';
+import { ChatTurn, COLLECTIONS, METADATA_TYPES } from '../../shared/domain/index.ts';
 
 // --- Configuration ---
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev'; // Use env var or default
 // const MONDAY_ORIGINAL_SESSIONID = 'monday_original_moH1Pu9n3BXz3OmY';
-const TARION_ORIGINAL_SESSIONID = 'tarion_original_OlAaEnCgQSIXAh8B';
-// const TARION_SPINOFF_SESSIONID = 'tarion_spinoff_U2Hc22mzJufwQvSX';
+const TARION_ORIGINAL_SESSIONID = 'tarion_original_QWE04yIbc8QN7NPw';
+// const TARION_SPINOFF_SESSIONID = 'tarion_spinoff_0RWsIE7zKLQ3ANEN';
 
 const TARGET_COLLECTION_NAME = COLLECTIONS.CHAT; // The collection where data was inserted
 // const TARGET_SESSION_ID = MONDAY_ORIGINAL_SESSIONID ?? '';
@@ -45,12 +45,12 @@ async function checkSeededData() {
 
 		// 2. Query the collection by Session ID metadata
 		console.log(`Querying for documents with sessionId: "${TARGET_SESSION_ID}"...`);
-
+		const whereClause: Where = {
+			$and: [{ sessionId: { $eq: TARGET_SESSION_ID } }, { type: { $eq: METADATA_TYPES.TURN } }],
+		};
 		const results = await collection.get({
-			where: {
-				sessionId: TARGET_SESSION_ID,
-				// type: METADATA_TYPES.FULL_TURN
-			},
+			// ids: [TARGET_SESSION_ID], // Empty array to get all documents
+			where: whereClause,
 			include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
 			// limit: 5 // Optional limit
 		});

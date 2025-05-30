@@ -34,8 +34,8 @@ const EMOTION_DEFAULT = 'default';
 const MAX_LLM_RETRIES = 5;
 
 // LLM Configuration
-// const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDcw_sDLQSjD0fJARHJNaRoIZv_Se6YGj8';
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyAfhl_AyupNyz9CpxscySkvGmxRsJKcXxk';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDcw_sDLQSjD0fJARHJNaRoIZv_Se6YGj8';
+// const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyAfhl_AyupNyz9CpxscySkvGmxRsJKcXxk';
 const ENRICHMENT_MODEL = 'gemini-2.0-flash-001'; // Fast model for metadata extraction
 
 // --- ADJUST THESE FOR DEBUGGING ---
@@ -427,7 +427,8 @@ async function initChatFromLogFiles() {
 		const characterVariantFromFile = fileNameParts[1]; // e.g., "original", "spinoff"
 
 		const characterId = buildCharacterId(characterNameFromFile, characterVariantFromFile);
-		const TARGET_SESSION_ID = buildSessionId(characterId);
+		// const TARGET_SESSION_ID = buildSessionId(characterId); // initially, we used this, but if proccess stopped, now we use a fixed session ID
+		const TARGET_SESSION_ID = 'tarion_spinoff_0RWsIE7zKLQ3ANEN';
 
 		console.log(
 			`\n📝 Processing log file: "${logFile}" for session ID: "${TARGET_SESSION_ID}" (Character: ${characterId})...`
@@ -629,7 +630,7 @@ async function initChatFromLogFiles() {
 	}
 
 	console.log('\n🎉 Chat initialization with LLM enrichment finished for all files.');
-	await cleanupCompletedProgress();
+	await cleanupAndBackupCompletedProgress();
 }
 
 initChatFromLogFiles().catch((err) => {
@@ -637,27 +638,43 @@ initChatFromLogFiles().catch((err) => {
 	process.exit(1); // Exit with error code
 });
 
-async function cleanupCompletedProgress(): Promise<void> {
+const cleanupAndBackupCompletedProgress = async (): Promise<void> => {
+	console.log('🧹 Starting cleanup and backup of completed progress files...');
 	try {
 		const files = await fs.readdir(PROGRESS_DIR);
+		let processedCount = 0;
 		for (const file of files) {
 			if (file.startsWith(PROGRESS_FILE_PREFIX) && file.endsWith('.json')) {
 				const filePath = path.join(PROGRESS_DIR, file);
 				try {
 					const progressData = JSON.parse(await fs.readFile(filePath, 'utf-8')) as InitChatProgress;
 					if (progressData.status === 'completed') {
-						await fs.unlink(filePath);
-						console.log(`🧹 Cleaned up completed progress file: ${file}`);
+						// Create a backup filename
+						const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+						const backupFileName = `${path.basename(file, '.json')}_completed_${timestamp}.json`;
+						const backupFilePath = path.join(PROGRESS_DIR, backupFileName);
+
+						// Rename the file to back it up
+						await fs.rename(filePath, backupFilePath);
+						console.log(`  💾 Backed up completed progress file: ${file} -> ${backupFileName}`);
+						processedCount++;
 					}
 				} catch (e) {
-					console.warn(`⚠️ Could not read or parse progress file ${file} for cleanup:`, e);
+					console.warn(`  ⚠️ Could not read, parse, or backup progress file ${file} for cleanup:`, e);
 				}
 			}
+		}
+		if (processedCount > 0) {
+			console.log(`🧹 Cleanup finished. Backed up ${processedCount} completed progress file(s).`);
+		} else {
+			console.log('🧹 No completed progress files found to backup.');
 		}
 	} catch (error) {
 		if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
 			// Ignore if progress dir doesn't exist
-			console.warn('⚠️ Failed to cleanup progress files:', error);
+			console.warn('⚠️ Failed to read progress directory for cleanup:', error);
+		} else {
+			console.log('🧹 Progress directory does not exist. No cleanup needed.');
 		}
 	}
-}
+};
