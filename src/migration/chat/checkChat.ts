@@ -4,13 +4,13 @@ import { ChatTurn, COLLECTIONS } from '../../shared/domain/index.ts';
 
 // --- Configuration ---
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev'; // Use env var or default
-const MONDAY_ORIGINAL_SESSIONID = 'monday_original_moH1Pu9n3BXz3OmY';
-// const TARION_ORIGINAL_SESSIONID = 'tarion_original_1NkO7v690JDWN9Ey';
+// const MONDAY_ORIGINAL_SESSIONID = 'monday_original_moH1Pu9n3BXz3OmY';
+const TARION_ORIGINAL_SESSIONID = 'tarion_original_OlAaEnCgQSIXAh8B';
 // const TARION_SPINOFF_SESSIONID = 'tarion_spinoff_U2Hc22mzJufwQvSX';
 
 const TARGET_COLLECTION_NAME = COLLECTIONS.CHAT; // The collection where data was inserted
-const TARGET_SESSION_ID = MONDAY_ORIGINAL_SESSIONID ?? '';
-// const TARGET_SESSION_ID = TARION_ORIGINAL_SESSIONID ??'';
+// const TARGET_SESSION_ID = MONDAY_ORIGINAL_SESSIONID ?? '';
+const TARGET_SESSION_ID = TARION_ORIGINAL_SESSIONID ?? '';
 // const TARGET_SESSION_ID = TARION_SPINOFF_SESSIONID ?? '';
 
 // --- Main Checking Logic ---
@@ -71,8 +71,7 @@ async function checkSeededData() {
 					// Safely access documents and parse
 					const docString = results.documents?.[i];
 					if (docString) {
-						const chatTurnData: ChatTurn = JSON.parse(docString);
-						console.log(`Content (Sequence ${chatTurnData.sequence}):`);
+						const chatTurnData = JSON.parse(docString);
 						console.log(
 							`  Request Prompt: ${chatTurnData.request?.entries?.[0]?.type}\n"${chatTurnData.request?.entries?.[0]?.prompt?.substring(0, 80)}..."`
 						);

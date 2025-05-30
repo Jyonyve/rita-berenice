@@ -7,8 +7,9 @@ import { fileURLToPath } from 'node:url';
 import { ChatMessage, ChatTurn, MigChatMessage } from '#shared/domain/chat/ChatInterfaces.ts';
 import { buildChatTurnMetadataPrompt } from '#root/src/server/util/templateUtils.ts';
 import {
-	convertArrayToString,
+	joinOrEmpty,
 	parseChatTurnToMetadata,
+	parseSessionId,
 	parseTextToEntries,
 } from '#root/src/shared/util/chatParseUtils.ts';
 import { buildChatTurnDocument } from '#root/src/server/util/documentUtils.ts';
@@ -28,6 +29,7 @@ const __dirname = path.dirname(__filename);
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev';
 const CRAWLER_RESULT_DIR = path.join(__dirname, 'result');
 const EMOTION_DEFAULT = 'default';
+const MAX_LLM_RETRIES = 5;
 
 // LLM Configuration
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDcw_sDLQSjD0fJARHJNaRoIZv_Se6YGj8';
@@ -128,10 +130,12 @@ const extractJsonFromMarkdown = (response: string): any => {
 };
 
 // --- LLM Functions ---
-const generateEnrichedMetadata = async (prompt: string): Promise<string> => {
+const generateEnrichedMetadata = async (prompt: string, attempt = 1): Promise<string> => {
 	if (!GEMINI_API_KEY) {
 		throw new Error('GEMINI_API_KEY environment variable is required');
 	}
+
+	console.log(`    📞 Calling Gemini API (Attempt ${attempt}/${MAX_LLM_RETRIES})...`);
 
 	try {
 		const response = await fetch(
@@ -150,27 +154,69 @@ const generateEnrichedMetadata = async (prompt: string): Promise<string> => {
 		);
 
 		if (!response.ok) {
+			// Handle 429 (Rate Limit) specifically
 			if (response.status === 429) {
-				const retryAfter = response.headers.get('retry-after');
-				const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : 5000;
-				console.log(`⏳ Gemini rate limited. Waiting ${waitTime}ms before retry...`);
-				await new Promise((resolve) => setTimeout(resolve, waitTime));
-				return generateEnrichedMetadata(prompt); // Retry
+				const retryAfterHeader = response.headers.get('retry-after');
+				const waitTimeSeconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 60; // Default to 60 seconds if no header
+				const waitTimeMs = Math.max(waitTimeSeconds * 1000, 5000); // Ensure at least 5 seconds wait
+
+				console.warn(
+					`    ⏳ Gemini rate limited (Status 429). Waiting ${waitTimeMs / 1000}s before retry...`
+				);
+				if (attempt < MAX_LLM_RETRIES) {
+					await new Promise((resolve) => setTimeout(resolve, waitTimeMs));
+					return generateEnrichedMetadata(prompt, attempt + 1); // Retry
+				} else {
+					console.error(
+						`    ❌ Gemini rate limited after ${MAX_LLM_RETRIES} attempts. Aborting for this turn.`
+					);
+					throw new Error(`Gemini API rate limited after ${MAX_LLM_RETRIES} attempts (Status 429)`);
+				}
 			}
+			// For other non-ok responses
+			const errorBody = await response.text();
+			console.error(
+				`    ❌ Gemini API error (Status ${response.status}): ${response.statusText}. Body: ${errorBody}`
+			);
 			throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
 		}
 
 		const data = await response.json();
-		const content = data.candidates[0]?.content?.parts[0]?.text || '';
+		const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
+		if (!content && data.candidates?.[0]?.finishReason === 'SAFETY') {
+			console.warn('    ⚠️ Gemini API: Content blocked due to safety settings.');
+			throw new Error('Gemini API: Content blocked due to safety settings.');
+		}
+		if (!content && data.candidates?.[0]?.finishReason === 'RECITATION') {
+			console.warn('    ⚠️ Gemini API: Content blocked due to recitation policy.');
+			throw new Error('Gemini API: Content blocked due to recitation policy.');
+		}
 		if (!content) {
+			console.warn(
+				'    ⚠️ Empty response from Gemini API. Response data:',
+				JSON.stringify(data).substring(0, 200)
+			);
 			throw new Error('Empty response from Gemini API');
 		}
-
+		console.log(`    🗣️ Gemini API response received.`);
 		return content;
 	} catch (error) {
-		console.error('Error calling Gemini API for metadata enrichment:', error);
-		throw error;
+		console.error(
+			`    💥 Error calling Gemini API for metadata enrichment (Attempt ${attempt}/${MAX_LLM_RETRIES}):`,
+			error instanceof Error ? error.message : String(error)
+		);
+		if (attempt < MAX_LLM_RETRIES) {
+			// Implement exponential backoff for general errors
+			const backoffTime = Math.pow(2, attempt) * 1000 + Math.random() * 1000; // e.g., 2s, 4s, 8s, 16s
+			console.warn(`    ↪️ Retrying in ${backoffTime / 1000}s...`);
+			await new Promise((resolve) => setTimeout(resolve, backoffTime));
+			return generateEnrichedMetadata(prompt, attempt + 1); // Retry
+		} else {
+			console.error(`    🚫 Failed after ${MAX_LLM_RETRIES} attempts. Giving up for this turn.`);
+			// Re-throw the last error to stop the process for this specific turn
+			throw error;
+		}
 	}
 };
 
@@ -183,8 +229,8 @@ const enrichChatTurnWithMetadata = async (
 		console.log(`    🧠 Enriching turn ${turn.sequence} with LLM metadata...`);
 
 		// Get character info from turn
-		const userName = turn.request.showName;
-		const charName = turn.response.showName;
+		const userName = `${turn.request.showName}(yonyve)`;
+		const charName = `${turn.response.showName}(tarion)`;
 		const userGender = 'female'; // You can derive this from profile if available
 		const charGender = 'male'; // Adjust as needed
 
@@ -239,7 +285,7 @@ const enrichChatTurnWithMetadata = async (
 			memoryChunk: enrichedMetadata.memoryChunk || 'N/A',
 
 			// Add required base metadata fields
-			characterId: turn.sessionId.split('_')[0],
+			characterId: parseSessionId(turn.sessionId).characterId,
 			updatedAt: new Date().toISOString(),
 		};
 
@@ -251,7 +297,7 @@ const enrichChatTurnWithMetadata = async (
 		return {
 			...turn,
 			...getDefaultEnrichedMetadata(), // Now returns rich objects
-			characterId: turn.sessionId.split('_')[0],
+			characterId: parseSessionId(turn.sessionId).characterId,
 			updatedAt: new Date().toISOString(),
 		};
 	}
@@ -341,7 +387,7 @@ async function upsertEnrichedInBatchesWithProgress(
 				const fallbackTurn = {
 					...turn,
 					...getDefaultEnrichedMetadata(),
-					characterId: turn.sessionId.split('_')[0],
+					characterId: parseSessionId(turn.sessionId).characterId,
 					updatedAt: new Date().toISOString(),
 				};
 
@@ -427,7 +473,7 @@ async function initChatFromLogFiles() {
 			console.log(`No JSON log files found in ${CRAWLER_RESULT_DIR}. Nothing to process.`);
 			return;
 		}
-		console.log(`Found the following log files to process: ${convertArrayToString(allLogFiles)}`);
+		console.log(`Found the following log files to process: ${joinOrEmpty(allLogFiles)}`);
 
 		const logFilesToProcess = allLogFiles;
 
@@ -532,7 +578,7 @@ async function initChatFromLogFiles() {
 						responseMessageId: responseMessage.messageId,
 						createdAt: userLog.createdAt,
 						// Add required base metadata fields with defaults
-						characterId: characterId,
+						characterId,
 						updatedAt: new Date().toISOString(),
 						// Add default enriched metadata (will be overwritten by LLM)
 						...getDefaultEnrichedMetadata(),

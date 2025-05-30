@@ -18,8 +18,8 @@ export const convertStringToArray = (input: string): string[] => {
 	return input.split(',').map((item) => item.trim());
 };
 
-export const convertArrayToString = (input: string[]): string => {
-	return input.join(',').trim();
+export const joinOrEmpty = (arr: string[]): string => {
+	return arr && arr.length > 0 ? arr.join(',') : '';
 };
 
 export const parseTextToEntries = (text: string): ChatEntry[] => {
@@ -45,10 +45,6 @@ export const parseEntriesToText = (entries: ChatEntry[]): string => {
 };
 
 export const parseChatTurnToMetadata = (turn: ChatTurn): any => {
-	const joinOrEmpty = (arr: string[]): string => {
-		return arr && arr.length > 0 ? arr.join(',') : '';
-	};
-
 	const jsonStringifyOrEmpty = (obj: any): string => {
 		try {
 			return obj && Array.isArray(obj) ? JSON.stringify(obj) : '[]';

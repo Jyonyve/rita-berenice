@@ -9,7 +9,7 @@ import {
 	parseSessionId,
 	RecapResult,
 	convertStringToArray,
-	convertArrayToString,
+	joinOrEmpty,
 } from '#shared/index.ts';
 import { Collection } from 'chromadb';
 import { chromaDbClient } from '../db/index.ts';
@@ -65,9 +65,9 @@ export const recapService = {
 				type: METADATA_TYPES.RECAP,
 				createdAt: now,
 				updatedAt: now,
-				keywords: convertArrayToString(recapResult.keywords),
-				topics: convertArrayToString(recapResult.topics),
-				entities: convertArrayToString(recapResult.entities),
+				keywords: joinOrEmpty(recapResult.keywords),
+				topics: joinOrEmpty(recapResult.topics),
+				entities: joinOrEmpty(recapResult.entities),
 				sequence: recapResult.turnEnd, // Use end as the sequence
 
 				// Recap-specific fields (flattened)
@@ -120,9 +120,9 @@ export const recapService = {
 				type: METADATA_TYPES.RECAP,
 				createdAt: now,
 				updatedAt: now,
-				keywords: convertArrayToString(recapResult.keywords),
-				topics: convertArrayToString(recapResult.topics),
-				entities: convertArrayToString(recapResult.entities),
+				keywords: joinOrEmpty(recapResult.keywords),
+				topics: joinOrEmpty(recapResult.topics),
+				entities: joinOrEmpty(recapResult.entities),
 				sequence: recapResult.turnEnd, // Use end as the sequence
 
 				// Recap-specific fields (flattened)

@@ -1,6 +1,6 @@
 // src/util/templateUtils.ts (or your path)
 import { allEmotionKeywordsList } from '#root/src/shared/config/index.ts';
-import { ChatMessage, convertStringToArray, parseEntriesToText } from '#root/src/shared/index.ts';
+import { ChatMessage, joinOrEmpty, parseEntriesToText } from '#root/src/shared/index.ts';
 
 const REALATIONSHIP_CHARACTERS_LIMIT: number = 3000 as const;
 const FACTUAL_CHARACTERS_LIMIT: number = 1500 as const;
@@ -10,7 +10,7 @@ export const EMOTION_TEMPLATE = `
 You MUST respond in JSON format. The JSON object must contain exactly two keys: "response" and "emotion".
 "response": Your textual answer to the user, following the persona instructions below.
 "emotion": A single keyword representing the character's dominant emotion in the response. Choose the *closest* match from the following list:
-[${convertStringToArray(Array.from(allEmotionKeywordsList))}]
+[${joinOrEmpty(Array.from(allEmotionKeywordsList))}]
 
 Example format:
 {
@@ -138,20 +138,20 @@ Provide values for ALL fields. If information is not present or not applicable, 
   "keyEntities": ["string (Format: 'type:name', e.g., 'character:Tarion', 'location:DarkForest', 'item:MagicSword')"],
   "extractedTopics": ["string (Keywords or short phrases representing main topics, e.g., 'betrayal', 'quest_for_artifact')"],
   "userEmotionalTone": { 
-    "primary": "string (One of: ${convertStringToArray(Array.from(allEmotionKeywordsList))}, or 'mixed')", 
+    "primary": "string (One of: ${joinOrEmpty(Array.from(allEmotionKeywordsList))}, or 'mixed')", 
     "intensity": "number (0.0 to 1.0)", 
     "nuances": ["string (Specific emotion words, e.g., 'frustration', 'curiosity')"] 
   },
   "characterEmotionalTone": { 
-    "primary": "string (One of: ${convertStringToArray(Array.from(allEmotionKeywordsList))}, or 'mixed')", 
+    "primary": "string (One of: ${joinOrEmpty(Array.from(allEmotionKeywordsList))}, or 'mixed')", 
     "intensity": "number (0.0 to 1.0)", 
     "nuances": ["string (Specific emotion words, e.g., 'defensive', 'sadness')"] 
   },
   "relationshipDynamicsShift": ["string (Format: 'Entity1-Entity2:dynamic_change', e.g., '${charName}-${userName}:trust_increased', '${charName}-OtherChar:conflict_hinted')"],
   "dialogueAct": "string (Classify the primary communicative function of the turn, e.g., 'question', 'answer', 'statement_opinion', 'statement_fact', 'command', 'suggestion', 'apology', 'greeting', 'farewell', 'revelation', 'evasion', 'threat', 'promise', 'flirtation', 'action_narration')",
   "keyActionsDescribed": ["string (Observable actions described in text, e.g., '${charName}_draws_sword', '${userName}_offers_potion', '${charName}_looks_away')"],
-  "loreReferences": [{ "loreId": "string (ID from provided list: ${convertStringToArray(existingLoreIds)})", "relevance": "number (0.0 to 1.0)" }],
-  "historyReferences": [{ "historyId": "string (ID from provided list: ${convertStringToArray(existingHistoryIds)})", "relevance": "number (0.0 to 1.0)" }],
+  "loreReferences": [{ "loreId": "string (ID from provided list: ${joinOrEmpty(existingLoreIds)})", "relevance": "number (0.0 to 1.0)" }],
+  "historyReferences": [{ "historyId": "string (ID from provided list: ${joinOrEmpty(existingHistoryIds)})", "relevance": "number (0.0 to 1.0)" }],
   "triggerFlags": ["string (Specific flags based on content, e.g., 'new_lore_revealed', 'character_goal_updated', 'major_plot_point', 'user_expressed_strong_emotion', 'character_made_promise', 'new_entity_introduced', 'past_event_mentioned')"],
   "memoryChunk": "string (A concise, self-contained statement (max 100 words) of what was learned or happened in this turn, suitable for direct RAG retrieval. Example: 'In turn ${userRequest.sequence}, ${charName} reluctantly revealed a fragment of their past involvement with the Shadow Syndicate when pressed by ${userName}, expressing fear and regret. This event seems to connect to the 'Syndicate_Lore' entry.')"
 }
@@ -196,20 +196,20 @@ ${userName}(${userGender} 사용자)과 ${charName}(${charGender} 캐릭터) 사
   "topics": ["string (광범위한 주제, 예: 'character_background', 'mystery', 'trust_issues')"],
   "entities": ["string (형식: 'type:name', 예: 'character:Tarion', 'location:DarkForest', 'item:MagicSword')"],
   "userEmotion": { 
-    "primary": "string (다음 중 하나: ${convertStringToArray(Array.from(allEmotionKeywordsList))}, 또는 'neutral', 'mixed')", 
+    "primary": "string (다음 중 하나: ${joinOrEmpty(Array.from(allEmotionKeywordsList))}, 또는 'neutral', 'mixed')", 
     "intensity": "number (0.0 to 1.0)", 
     "nuances": ["string (구체적 감정 단어, 예: 'frustration', 'curiosity')"] 
   },
   "characterEmotion": { 
-    "primary": "string (다음 중 하나: ${convertStringToArray(Array.from(allEmotionKeywordsList))}, 또는 'neutral', 'mixed')", 
+    "primary": "string (다음 중 하나: ${joinOrEmpty(Array.from(allEmotionKeywordsList))}, 또는 'neutral', 'mixed')", 
     "intensity": "number (0.0 to 1.0)", 
     "nuances": ["string (구체적 감정 단어, 예: 'defensive', 'sadness')"] 
   },
   "relationshipShifts": ["string (형식: 'Entity1-Entity2:dynamic_change', 예: '${charName}-${userName}:trust_increased')"],
   "dialogueAct": "string (예: 'question', 'answer', 'statement_opinion', 'revelation', 'evasion')",
   "actions": ["string (관찰 가능한 행동, 예: '${charName}_draws_sword', '${userName}_offers_potion')"],
-  "loreReferences": [{ "id": "string (제공된 목록에서: ${convertStringToArray(existingLoreIds)})", "relevance": "number (0.0 to 1.0)" }],
-  "historyReferences": [{ "id": "string (제공된 목록에서: ${convertStringToArray(existingHistoryIds)})", "relevance": "number (0.0 to 1.0)" }],
+  "loreReferences": [{ "id": "string (제공된 목록에서: ${joinOrEmpty(existingLoreIds)})", "relevance": "number (0.0 to 1.0)" }],
+  "historyReferences": [{ "id": "string (제공된 목록에서: ${joinOrEmpty(existingHistoryIds)})", "relevance": "number (0.0 to 1.0)" }],
   "flags": ["string (예: 'new_lore_revealed', 'character_goal_updated', 'major_plot_point')"],
   "memoryChunk": "string (최대 100단어, RAG 검색용 자립적 요약)"
 }
@@ -326,9 +326,9 @@ Chat Turns (each turn includes 'Speaker', 'Turn Sequence', and 'Timestamp (creat
 ${stringifyChatTurns}
 (Note: Actions or descriptions might be in parentheses, e.g., (smiles), (picks up the book))
 
-Available Keywords: ${convertStringToArray(availableKeywords)}
-Available Topics: ${convertStringToArray(availableTopics)}
-Available Entities: ${convertStringToArray(availableEntities)}
+Available Keywords: ${joinOrEmpty(availableKeywords)}
+Available Topics: ${joinOrEmpty(availableTopics)}
+Available Entities: ${joinOrEmpty(availableEntities)}
 
 Create a JSON response with factual analysis and refined metadata:
 
@@ -369,9 +369,9 @@ ${userName}(성별: ${userGender} 사용자)과 ${charName}(성별: ${charGender
 ${stringifyChatTurns}
 (참고: 행동이나 묘사는 괄호 안에 있을 수 있다. 예: (미소짓는다), (책을 집어든다))
 
-사용 가능한 키워드 (영어): ${convertStringToArray(availableKeywords)}
-사용 가능한 주제 (영어): ${convertStringToArray(availableTopics)}
-사용 가능한 개체 (영어): ${convertStringToArray(availableEntities)}
+사용 가능한 키워드 (영어): ${joinOrEmpty(availableKeywords)}
+사용 가능한 주제 (영어): ${joinOrEmpty(availableTopics)}
+사용 가능한 개체 (영어): ${joinOrEmpty(availableEntities)}
 
 다음 JSON 형식으로 응답한다 (메타데이터는 영어, 내용은 한국어):
 
@@ -432,9 +432,9 @@ Analyze chat turns between ${userName} (a ${userGender} user) and ${charName} (a
 Chat Logs:
 ${stringifyChatTurns}
 
-Available Keywords: ${convertStringToArray(availableKeywords)}
-Available Topics: ${convertStringToArray(availableTopics)}
-Available Entities: ${convertStringToArray(availableEntities)}
+Available Keywords: ${joinOrEmpty(availableKeywords)}
+Available Topics: ${joinOrEmpty(availableTopics)}
+Available Entities: ${joinOrEmpty(availableEntities)}
 
 Create a JSON response with relationship analysis and refined metadata:
 
@@ -473,9 +473,9 @@ ${userName}(성별: ${userGender} 사용자)와 ${charName}(성별: ${charGender
 채팅 로그:
 ${stringifyChatTurns}
 
-사용 가능한 키워드 (영어): ${convertStringToArray(availableKeywords)}
-사용 가능한 주제 (영어): ${convertStringToArray(availableTopics)}
-사용 가능한 개체 (영어): ${convertStringToArray(availableEntities)}
+사용 가능한 키워드 (영어): ${joinOrEmpty(availableKeywords)}
+사용 가능한 주제 (영어): ${joinOrEmpty(availableTopics)}
+사용 가능한 개체 (영어): ${joinOrEmpty(availableEntities)}
 
 다음 JSON 형식으로 응답한다 (메타데이터는 영어, 내용은 한국어):
 
