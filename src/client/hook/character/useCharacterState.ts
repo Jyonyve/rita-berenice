@@ -9,7 +9,7 @@ import {
 	PortraitUrlMap,
 	validEmotionKeys,
 } from '@shared/config/index.ts';
-import { convertStringToArray } from '#root/src/shared/index.ts';
+import { convertArrayToString, convertStringToArray } from '#root/src/shared/index.ts';
 
 function escapeRegExp(string: string): string {
 	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
@@ -92,7 +92,7 @@ export const useCharacterState = (characterId?: string) => {
 			);
 		} else {
 			console.log(
-				`[loadNumberedPortraits] Loaded ${Object.keys(imageMap).length} portraits for ${characterId}. Keys: ${convertStringToArray(Object.keys(imageMap)))}`
+				`[loadNumberedPortraits] Loaded ${Object.keys(imageMap).length} portraits for ${characterId}. Keys: ${convertArrayToString(Object.keys(imageMap))}`
 			);
 		}
 

@@ -203,7 +203,7 @@ export const removeCharacterFromLore = (
 
 // --- CHAT TURN HELPERS ---
 
-export const chatTurnToMetadata = (chatTurn: ChatTurn): ChatTurnMetadata => {
+export const stringifyChatTurnToMetadata = (chatTurn: ChatTurn): ChatTurnMetadata => {
 	return {
 		// Base metadata fields (from BaseMetadata)
 		sessionId: chatTurn.sessionId,

@@ -22,7 +22,10 @@ import {
 	validateChromaResponse,
 	inflateChatTurnDoc,
 } from '../util/index.ts';
-import { chatTurnToMetadata, metadataToChatTurn } from '#root/src/shared/util/dbConvertUtils.ts';
+import {
+	stringifyChatTurnToMetadata,
+	metadataToChatTurn,
+} from '#root/src/shared/util/dbConvertUtils.ts';
 
 // Destructure outside the object
 const {
@@ -117,7 +120,7 @@ export const chatService = {
 		const { request, response, ...chatTurnMetadata } = chatTurn;
 		const { sessionId, sequence } = chatTurnMetadata;
 		const collection = await chatService._getCollection(sessionId);
-		const updatedMetadata: ChatTurnMetadata = chatTurnToMetadata(chatTurn);
+		const updatedMetadata: ChatTurnMetadata = stringifyChatTurnToMetadata(chatTurn);
 		const documentForEmbedding = chatTurnToDocument(chatTurn);
 
 		await upsertRecord(collection, updatedMetadata.chatTurnId, documentForEmbedding, updatedMetadata);

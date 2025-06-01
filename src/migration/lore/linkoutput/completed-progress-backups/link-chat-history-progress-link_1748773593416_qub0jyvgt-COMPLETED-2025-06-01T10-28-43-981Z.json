@@ -1,0 +1,21 @@
+{
+  "processId": "link_1748773593416_qub0jyvgt",
+  "totalChatTurns": 1574,
+  "processedChatTurns": 1574,
+  "lastProcessedChatTurnId": "tarion_spinoff_0RWsIE7zKLQ3ANEN_1168_turn",
+  "totalHistoryEvents": 2,
+  "updatedChatTurns": 10,
+  "totalReferencesAdded": 11,
+  "startedAt": "2025-06-01T10:26:45.549Z",
+  "lastUpdatedAt": "2025-06-01T10:28:43.955Z",
+  "status": "completed",
+  "currentBatch": 157,
+  "totalBatches": 79,
+  "errors": [],
+  "statistics": {
+    "averageRelevanceScore": 0.2616798308643229,
+    "highestRelevanceScore": 0.27692307692307694,
+    "chatTurnsWithNoMatches": 1564,
+    "chatTurnsAlreadyLinked": 0
+  }
+}
