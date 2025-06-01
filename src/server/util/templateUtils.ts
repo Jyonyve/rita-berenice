@@ -1,14 +1,15 @@
 // src/util/templateUtils.ts (or your path)
-import { allEmotionKeywordsList } from '#root/src/shared/config/index.ts';
-import {
-	BasicBeingInfo,
-	ChatMessage,
-	convertArrayToString,
-	parseEntriesToText,
-} from '#root/src/shared/index.ts';
+import { allEmotionKeywordsList } from '#shared/config/index.ts';
+import { BasicBeingInfo } from '#shared/domain/character/CharacterInterfaces.ts';
+import { ChatMessage } from '#shared/domain/chat/ChatInterfaces.ts';
+import { parseEntriesToText } from '#shared/util/chatParseUtils.ts';
 
 const REALATIONSHIP_CHARACTERS_LIMIT: number = 3000 as const;
 const FACTUAL_CHARACTERS_LIMIT: number = 1500 as const;
+
+const convertArrayToString = (arr: string[]): string => {
+	return arr && arr.length > 0 ? arr.join(',') : '';
+};
 
 // --- EMOTION TEMPLATE (Unchanged, it's good) ---
 export const EMOTION_TEMPLATE = `
@@ -622,24 +623,27 @@ export const buildHistoryMetadataPrompt = (
 		originalTitle: string;
 		historyId: string;
 		generatedTitle: string;
-	}> = []
+	}> = [],
+	existingLoreIds: string[] = []
 ): string =>
 	`
 당신은 캐릭터 역사(시간순 사건) 텍스트를 분석하여 메타데이터를 추출하는 전문가다.
-다음 역사 사건을 분석하여 구조화된 메타데이터를 생성한다.
 
 원본 제목: ${originalTitle}
 사건 내용:
 ${content}
 
-사용 가능한 캐릭터 ID: ${convertArrayToString(availableCharacterIds)}
+사용 가능한 캐릭터 ID: ${availableCharacterIds.join(', ')}
+
 기존 역사 사건들:
 ${existingHistoryEntries.map((h) => `- "${h.originalTitle}" → "${h.generatedTitle}" (ID: ${h.historyId})`).join('\n')}
+
+기존 로어 ID들: ${existingLoreIds.join(', ')}
 
 다음 JSON 형식으로 응답한다 (메타데이터는 영어로만):
 
 {
-  "generatedEnglishTitle": "Childhood Protection Desire",
+  "generatedEnglishTitle": "Childhood Protection Desire Inherited from Tarion's Father",
   "englishId": "childhood-protection-desire",
   "keywords": ["childhood", "protection", "trauma"],
   "topics": ["character_development", "emotional_growth"],
@@ -667,7 +671,7 @@ ${existingHistoryEntries.map((h) => `- "${h.originalTitle}" → "${h.generatedTi
 
 **메타데이터 지침:**
 - **generatedEnglishTitle**: 내용을 바탕으로 한 구체적이고 설명적인 영어 제목 생성
-- **englishId**: 영어 제목을 기반으로 한 3단어 이하의 kebab-case 식별자
+- **englishId**: 영어 제목을 기반으로 한 **최대 3단어**의 kebab-case 식별자 (예: "childhood-protection-desire", "sword-betrayal", "final-battle")
 - **keywords**: 역사 사건에서 중요한 키워드 5-10개 (영어)
 - **topics**: 주요 테마나 주제 3-7개 (예: "war", "betrayal", "coming_of_age")
 - **entities**: 언급된 인물, 장소, 아이템 등 (형식: "type:name")
@@ -680,8 +684,13 @@ ${existingHistoryEntries.map((h) => `- "${h.originalTitle}" → "${h.generatedTi
 
 **시간 관계 규칙:**
 - relatedEventId는 반드시 기존 역사 사건의 historyId를 사용
-- 관계가 명확하지 않으면 빈 배열 사용
-- type은 PRECEDES, SUCCEEDS, CONCURRENT_WITH, CAUSED_BY, RESULTS_IN 중 선택
+- 기존 역사 사건이 없으면 빈 배열 사용
+- 로어 참조는 별도 필드에서 처리 (향후 확장 가능)
+
+**englishId 생성 규칙:**
+- 최대 3단어로 제한 (예: "childhood-protection-desire", "sword-betrayal")
+- kebab-case 형식 사용 (단어 사이에 하이픈)
+- 사건의 핵심을 간결하게 표현
 
 **작성 규칙:**
 - 모든 메타데이터는 영어로만 작성

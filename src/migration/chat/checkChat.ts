@@ -1,7 +1,6 @@
 // Save this file as scripts/checkMondayChat.ts
 import { ChromaClient, Collection, IncludeEnum, Where } from 'chromadb';
 import { ChatTurn, COLLECTIONS, METADATA_TYPES } from '#shared/domain/index.ts';
-import { buildFullEntities } from '#root/src/shared/util/chatParseUtils.ts';
 
 // --- Configuration ---
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev'; // Use env var or default
@@ -64,17 +63,12 @@ async function checkSeededData() {
 		} else {
 			console.log(`Found ${results.ids.length} documents for sessionId "${TARGET_SESSION_ID}":`);
 			console.log('---');
-			const chatTurns: ChatTurn[] = buildFullEntities([
-				{ ids: [results.ids[0]], metadatas: [results.metadatas[0]], documents: [results.documents[0]] },
-				{ ids: [results.ids[1]], metadatas: [results.metadatas[1]], documents: [results.documents[1]] },
-				{ ids: [results.ids[2]], metadatas: [results.metadatas[2]], documents: [results.documents[2]] },
-			]);
-
-			chatTurns.forEach((chatTurn, index) => {
-				console.log(`Chat Turn ${index + 1}:`);
-				console.log(JSON.stringify(chatTurn, null, 2));
+			results.metadatas.slice(0, 3).forEach((metadata, index) => {
+				console.log(`Metadata for Document ${index + 1}:`);
+				console.log(JSON.stringify(metadata, null, 2));
 				console.log('---');
 			});
+
 			if (results.ids.length > 3) {
 				console.log(`(... and ${results.ids.length - 3} more documents)`);
 				console.log('---');

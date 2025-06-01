@@ -2,7 +2,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { ChromaClient, Collection } from 'chromadb';
+import { ChromaClient, Collection, IncludeEnum, Where } from 'chromadb';
 import { fileURLToPath } from 'node:url';
 
 import { HistoryInfo } from '../../shared/domain/lore/LoreInterfaces.ts';
@@ -11,6 +11,7 @@ import { stringifyHistoryMetadata } from '../../shared/util/dbConvertUtils.ts';
 import { buildHistoryId } from '../../server/util/buildIdUtils.ts';
 import { buildLoreOrHistoryDocument } from '../../server/util/documentUtils.ts';
 import { buildHistoryMetadataPrompt } from '../../server/util/templateUtils.ts';
+import e from 'express';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,8 +19,8 @@ const __dirname = path.dirname(__filename);
 // Configuration
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev';
 const HISTORY_RESULT_DIR = path.join(__dirname, 'result');
-const CHARACTER_IDS = ['tarion_original', 'tarion_spinoff']; // Multiple characters can be affected
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const CHARACTER_IDS = ['tarion_original', 'tarion_spinoff'];
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyAfhl_AyupNyz9CpxscySkvGmxRsJKcXxk';
 const ENRICHMENT_MODEL = 'gemini-2.0-flash-001';
 const MAX_LLM_RETRIES = 3;
 
@@ -59,6 +60,70 @@ const extractJsonFromMarkdown = (response: string): any => {
 			temporalRelations: [],
 			category: 'character_history',
 		};
+	}
+};
+
+// ✅ NEW: Function to query existing histories for relationship building
+const queryExistingHistories = async (
+	collection: Collection,
+	characterIds: string[]
+): Promise<Array<{ originalTitle: string; historyId: string; generatedTitle: string }>> => {
+	try {
+		console.log(`    🔍 Querying existing histories for characters: ${characterIds.join(', ')}`);
+
+		const where: Where = {
+			$and: [{ type: { $eq: METADATA_TYPES.HISTORY } }, { characterId: { $in: characterIds } }],
+		};
+		const results = await collection.get({ where, include: [IncludeEnum.Metadatas] });
+
+		if (!results || !results.metadatas || results.metadatas.length === 0) {
+			console.log(`    📝 No existing histories found for characters: ${characterIds.join(', ')}`);
+			return [];
+		}
+
+		const existingHistories = results.metadatas.map((metadata) => {
+			const typed = metadata;
+			return {
+				originalTitle: (typed?.title ?? '') as string,
+				historyId: (typed?.historyId ?? '') as string,
+				generatedTitle: (typed?.generatedTitle ?? typed?.title ?? 'Untitled History') as string,
+			};
+		});
+
+		console.log(
+			`    📚 Found ${existingHistories.length} existing histories for relationship building`
+		);
+		return existingHistories;
+	} catch (error) {
+		console.warn(`    ⚠️ Error querying existing histories:`, error);
+		return [];
+	}
+};
+
+// ✅ NEW: Function to query existing lore for context
+const queryExistingLore = async (
+	collection: Collection,
+	characterIds: string[]
+): Promise<string[]> => {
+	try {
+		console.log(`    🔍 Querying existing lore for characters: ${characterIds.join(', ')}`);
+
+		const where: Where = {
+			$and: [{ type: { $eq: METADATA_TYPES.LORE } }, { characterId: { $in: characterIds } }],
+		};
+
+		const results = await collection.get({ where, include: [IncludeEnum.Metadatas] });
+
+		if (!results || !results.metadatas || results.metadatas.length === 0) {
+			return [];
+		}
+
+		const loreIds = results.metadatas.map((metadata) => (metadata as any).loreId);
+		console.log(`    📖 Found ${loreIds.length} existing lore entries`);
+		return loreIds;
+	} catch (error) {
+		console.warn(`    ⚠️ Error querying existing lore:`, error);
+		return [];
 	}
 };
 
@@ -120,21 +185,27 @@ const enrichHistoryWithMetadata = async (
 	originalTitle: string,
 	content: string,
 	availableCharacterIds: string[],
-	existingHistoryEntries: Array<{ originalTitle: string; historyId: string; generatedTitle: string }>
+	existingHistoryEntries: Array<{
+		originalTitle: string;
+		historyId: string;
+		generatedTitle: string;
+	}>,
+	existingLoreIds: string[] = []
 ): Promise<any> => {
 	try {
 		const prompt = buildHistoryMetadataPrompt(
 			originalTitle,
 			content,
 			availableCharacterIds,
-			existingHistoryEntries
+			existingHistoryEntries,
+			existingLoreIds
 		);
 		const llmResponse = await generateHistoryMetadataLLM(prompt);
 		const parsedMetadata = extractJsonFromMarkdown(llmResponse);
 
 		return {
 			generatedEnglishTitle: parsedMetadata.generatedEnglishTitle || originalTitle,
-			englishId: parsedMetadata.englishId || `event_${Date.now()}`,
+			englishId: parsedMetadata.englishId || ``,
 			keywords: parsedMetadata.keywords || [],
 			topics: parsedMetadata.topics || [],
 			entities: parsedMetadata.entities || [],
@@ -210,11 +281,17 @@ async function initHistoryFromFiles() {
 
 		console.log(`Found ${jsonFiles.length} history files: ${jsonFiles.join(', ')}`);
 
+		// ✅ Query existing data BEFORE processing new files
+		console.log('\n🔍 Querying existing data for relationship building...');
+		const existingHistories = await queryExistingHistories(collection, CHARACTER_IDS);
+		const existingLoreIds = await queryExistingLore(collection, CHARACTER_IDS);
+
 		// First pass: collect all titles and create unique historyIds
 		const historyEntries: Array<{
 			fileName: string;
 			originalTitle: string;
-			historyId: string;
+			englishId?: string; // ✅ Optional until LLM provides it
+			historyId?: string; // ✅ Optional until LLM provides englishId
 			generatedTitle: string;
 			content: string;
 		}> = [];
@@ -226,18 +303,11 @@ async function initHistoryFromFiles() {
 				const data: HistoryFileContent = JSON.parse(fileContent);
 
 				if (data.title && data.content) {
-					// ✅ Generate unique historyId first
-					const basicEnglishId = `event_${index}_${fileName
-						.replace('.json', '')
-						.toLowerCase()
-						.replace(/[^a-z0-9]/g, '_')}`;
-					const historyId = buildHistoryId(basicEnglishId);
-
 					historyEntries.push({
 						fileName,
 						originalTitle: data.title,
-						historyId, // ✅ Use unique historyId
-						generatedTitle: data.title, // Will be updated in second pass
+						// ✅ NO englishId or historyId generation here
+						generatedTitle: data.title,
 						content: data.content,
 					});
 				}
@@ -246,31 +316,49 @@ async function initHistoryFromFiles() {
 			}
 		}
 
-		// Second pass: process each history with full context
+		// Second pass: process each history with LLM and generate IDs
 		for (const [index, historyEntry] of historyEntries.entries()) {
 			console.log(
 				`\n📜 Processing history file: "${historyEntry.fileName}" (${index + 1}/${historyEntries.length})...`
 			);
-			console.log(`  📖 Original Title: "${historyEntry.originalTitle}"`);
 
 			try {
 				const now = new Date().toISOString();
 
-				console.log(`  🧠 Extracting metadata for "${historyEntry.originalTitle}"...`);
+				// ✅ Get existing histories that already have historyIds
+				const allAvailableHistories = [
+					...existingHistories,
+					...historyEntries
+						.slice(0, index) // Only include already processed entries
+						.filter((h) => h.historyId) // Only include those with historyId
+						.map((h) => ({
+							originalTitle: h.originalTitle,
+							historyId: h.historyId!,
+							generatedTitle: h.generatedTitle,
+						})),
+				];
+
+				console.log(
+					`  🧠 Extracting metadata for "${historyEntry.originalTitle}" with ${allAvailableHistories.length} existing histories...`
+				);
+
 				const enrichedMetadata = await enrichHistoryWithMetadata(
 					historyEntry.originalTitle,
 					historyEntry.content,
 					CHARACTER_IDS,
-					historyEntries.filter((h) => h.originalTitle !== historyEntry.originalTitle)
+					allAvailableHistories,
+					existingLoreIds
 				);
 
-				// Update the entry with LLM-generated data
+				// ✅ NOW generate historyId using LLM-provided englishId
+				historyEntry.englishId = enrichedMetadata.englishId;
+				historyEntry.historyId = buildHistoryId(enrichedMetadata.englishId); // ✅ Use LLM englishId
 				historyEntry.generatedTitle = enrichedMetadata.generatedEnglishTitle;
 
-				// ✅ Create HistoryInfo with correct structure
+				// ✅ Create HistoryInfo with LLM-generated historyId
 				const historyInfo: HistoryInfo = {
 					sessionId: '',
-					characterId: CHARACTER_IDS[0], // Primary character
+					characterId: CHARACTER_IDS[0],
 					type: METADATA_TYPES.HISTORY,
 					createdAt: now,
 					updatedAt: now,
@@ -278,22 +366,17 @@ async function initHistoryFromFiles() {
 					topics: enrichedMetadata.topics,
 					entities: enrichedMetadata.entities,
 					sequence: index,
-					historyId: historyEntry.historyId, // ✅ Use pre-generated unique ID
+					historyId: buildHistoryId(enrichedMetadata.englishId), // ✅ Use LLM-generated englishId
+					englishId: enrichedMetadata.englishId,
 					title: historyEntry.originalTitle,
 					generatedTitle: enrichedMetadata.generatedEnglishTitle,
-					englishId: enrichedMetadata.englishId,
 					category: enrichedMetadata.category,
-
-					// ✅ Temporal information (flattened fields)
 					periodLabel: enrichedMetadata.period.label,
 					periodConfidence: enrichedMetadata.period.confidence,
 					eventDateValue: enrichedMetadata.eventDate.value,
 					eventDateType: enrichedMetadata.eventDate.type,
 					eventDateConfidence: enrichedMetadata.eventDate.confidence,
-
 					content: historyEntry.content.trim(),
-
-					// ✅ Rich arrays for application use
 					ownerCharacterIdArray: enrichedMetadata.ownerCharacterIds,
 					sideCharacterIdArray: enrichedMetadata.sideCharacterIds,
 					allAffectedCharacterIdArray: [
@@ -307,28 +390,16 @@ async function initHistoryFromFiles() {
 				const documentForEmbedding = buildLoreOrHistoryDocument(historyInfo);
 
 				await collection.upsert({
-					ids: [historyEntry.historyId],
+					ids: [historyEntry.historyId], // ✅ Use LLM-generated historyId
 					documents: [documentForEmbedding],
-					metadatas: [chromaMetadata as any], // Cast to any to avoid type issues
+					metadatas: [chromaMetadata as any],
 				});
 
 				console.log(
-					`  ✅ Successfully stored history "${historyEntry.originalTitle}" with ID: ${historyEntry.historyId}`
+					`  ✅ Successfully stored history "${historyInfo.title}" with ID: ${historyInfo.historyId}`
 				);
 				console.log(`     Generated Title: "${enrichedMetadata.generatedEnglishTitle}"`);
 				console.log(`     English ID: ${enrichedMetadata.englishId}`);
-				console.log(
-					`     Period: ${enrichedMetadata.period.label} (confidence: ${enrichedMetadata.period.confidence})`
-				);
-				console.log(
-					`     Event Date: ${enrichedMetadata.eventDate.value} (${enrichedMetadata.eventDate.type})`
-				);
-				console.log(`     Keywords: ${enrichedMetadata.keywords.join(', ')}`);
-				console.log(`     Topics: ${enrichedMetadata.topics.join(', ')}`);
-				console.log(`     Owner Characters: ${enrichedMetadata.ownerCharacterIds.join(', ')}`);
-				console.log(`     Side Characters: ${enrichedMetadata.sideCharacterIds.join(', ')}`);
-				console.log(`     Temporal Relations: ${enrichedMetadata.temporalRelations.length} relations`);
-				console.log(`     Content preview: ${historyEntry.content.substring(0, 100)}...`);
 
 				await new Promise((resolve) => setTimeout(resolve, 1000));
 			} catch (fileError) {
@@ -336,8 +407,6 @@ async function initHistoryFromFiles() {
 				continue;
 			}
 		}
-
-		console.log(`\n🎉 History initialization completed! Processed ${historyEntries.length} files.`);
 	} catch (error) {
 		console.error('❌ Error during history initialization:', error);
 		process.exit(1);

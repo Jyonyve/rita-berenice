@@ -307,66 +307,6 @@ export const metadataToChatTurn = (
 	};
 };
 
-// --- CHAT MESSAGE HELPERS ---
-
-export const parseTextToEntries = (text: string): ChatEntry[] => {
-	if (!text || typeof text !== 'string') {
-		return [];
-	}
-
-	// Simple implementation - you can enhance this based on your needs
-	// This assumes text might contain both action and dialogue
-	const entries: ChatEntry[] = [];
-
-	// Split by action markers (text in parentheses or asterisks)
-	const parts = text.split(/(\([^)]*\)|\*[^*]*\*)/);
-
-	for (const part of parts) {
-		const trimmed = part.trim();
-		if (!trimmed) continue;
-
-		if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
-			// Action in parentheses
-			entries.push({
-				type: 'action',
-				prompt: trimmed.slice(1, -1), // Remove parentheses
-			});
-		} else if (trimmed.startsWith('*') && trimmed.endsWith('*')) {
-			// Action in asterisks
-			entries.push({
-				type: 'action',
-				prompt: trimmed.slice(1, -1), // Remove asterisks
-			});
-		} else {
-			// Regular dialogue
-			entries.push({ type: 'dialogue', prompt: trimmed });
-		}
-	}
-
-	// If no special formatting found, treat entire text as dialogue
-	if (entries.length === 0) {
-		entries.push({ type: 'dialogue', prompt: text.trim() });
-	}
-
-	return entries;
-};
-
-export const parseEntriesToText = (entries: ChatEntry[]): string => {
-	if (!entries || entries.length === 0) {
-		return '';
-	}
-
-	return entries
-		.map((entry) => {
-			if (entry.type === 'action') {
-				return `(${entry.prompt})`;
-			}
-			return entry.prompt;
-		})
-		.join(' ')
-		.trim();
-};
-
 // --- UTILITY HELPERS ---
 
 export const addLoreReference = (

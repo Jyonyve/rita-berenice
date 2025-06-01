@@ -250,19 +250,10 @@ const enrichChatTurnWithMetadata = async (
 	existingLoreIds: string[] = [],
 	existingHistoryIds: string[] = []
 ): Promise<ChatTurn> => {
-	// Output is a ChatTurn with LLM-generated rich metadata
-	// Derive display names with English spellings
-	const userNameDisplay = `${basicTurn.request.showName}(Yonyve)`; // Replace with actual logic if needed
-	const charNameDisplay = `${basicTurn.response.showName}(Tarion)`; // Replace with actual logic if needed
-	const userGender = 'female'; // Placeholder - fetch from profile if available
-	const charGender = basicTurn.response.showName === '타리온' ? 'male' : 'male'; // Placeholder
-
 	const prompt = buildChatTurnMetadataPrompt(
-		userNameDisplay,
-		userGender,
+		{ showName: basicTurn.request.showName, name: 'yonyve', gender: 'female' },
 		basicTurn.request,
-		charNameDisplay,
-		charGender,
+		{ showName: basicTurn.response.showName, name: 'tarion', gender: 'male' },
 		basicTurn.response,
 		existingLoreIds,
 		existingHistoryIds

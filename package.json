@@ -22,8 +22,9 @@
 		"init:recap": "tsx ./src/migration/chat/recapChat.ts",
 		"export:recap": "tsx ./src/migration/recap/exportSingleRecap.ts",
 		"init:his": "tsx ./src/migration/lore/initHistory.ts",
+		"check:his": "tsx ./src/migration/lore/checkHistory.ts",
 		"extract:lore": "tsx ./src/migration/source/htmlParserCheerio.ts",
-		"drop": "tsx ./scripts/dropCollection.ts"
+		"drop": "tsx ./src/migration/dropCollection.ts"
 	},
 	"dependencies": {
 		"@emotion/cache": "^11.14.0",

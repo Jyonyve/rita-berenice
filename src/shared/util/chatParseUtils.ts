@@ -10,7 +10,6 @@ import {
 } from '@shared/domain/index.ts';
 import { DEFAULT_EMOTION } from '../config/index.ts';
 import { buildCharacterId } from '#root/src/server/index.ts';
-import { ChromaResponse } from '../api/ModuleResponse.ts';
 
 export const convertStringToArray = (input: string): string[] => {
 	if (!input || typeof input !== 'string') {
