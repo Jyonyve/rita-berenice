@@ -145,8 +145,9 @@ router.post(
 				`API HIT: POST ${path} for session ${sessionId} with query: "${queryText.substring(0, 30)}..."`
 			);
 
+			// TODO : queryText's type fix(array or string)
 			// Assuming service method is queryChatMessages and it handles the messageType logic ('request', 'response', 'both', or array)
-			const documents = await chatService.queryChatMessages(sessionId, queryText, messageType, limit);
+			const documents = await chatService.queryChatTurns(sessionId, [queryText], limit);
 
 			res.status(201).json(documents);
 		}

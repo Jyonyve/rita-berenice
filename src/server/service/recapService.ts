@@ -1,14 +1,11 @@
 // src/server/services/recapService.ts
 
 import {
-	ChatTurn,
 	RecapMetadata,
-	RecapInfo,
 	METADATA_TYPES,
 	COLLECTIONS,
 	parseSessionId,
 	RecapResult,
-	convertStringToArray,
 	convertArrayToString,
 } from '#shared/index.ts';
 import { Collection } from 'chromadb';
@@ -20,7 +17,6 @@ import {
 	buildRelationshipRecapDocId,
 	buildRelationshipRecapId,
 	handleServiceError,
-	validateChromaResponse,
 } from '../util/index.ts';
 
 // Destructure chromaDbClient methods

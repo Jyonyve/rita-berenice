@@ -11,7 +11,7 @@ import {
 	parseSessionId,
 	parseTextToEntries,
 } from '#root/src/shared/util/chatParseUtils.ts';
-import { chatTurnToDocument } from '#server/util/documentUtils.ts';
+import { flatChatTurnToDoc } from '#server/util/documentUtils.ts';
 import { COLLECTIONS, METADATA_TYPES } from '#shared/domain/chromadb/ChromaInterfaces.ts';
 import {
 	buildCharacterId,
@@ -333,7 +333,7 @@ async function processAndUpsertTurn(
 
 	// Convert the (either enriched or fallback) RICH ChatTurn object to PRIMITIVE metadata for ChromaDB
 	const chromaCompatibleMetadata = parseChatTurnToMetadata(enrichedTurnResult);
-	const documentForEmbedding = chatTurnToDocument(enrichedTurnResult);
+	const documentForEmbedding = flatChatTurnToDoc(enrichedTurnResult);
 
 	try {
 		await collection.upsert({

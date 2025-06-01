@@ -1,0 +1,14 @@
+// src/shared/domain/glossaryInterfaces.ts
+
+import { BaseMetadataType } from '../chat/ChatInterfaces.ts';
+import { METADATA_TYPES } from '../chromadb/ChromaInterfaces.ts';
+
+export interface TermMetadata
+	extends Pick<BaseMetadataType, 'sessionId' | 'createdAt' | 'updatedAt'> {
+	termId: string; // Unique ID for this glossary entry (e.g., UUID)
+	koreanTerm: string; // The Korean proper noun, e.g., "라이타 베르니스"
+	englishTerm: string; // The *current* English translation to be used for summarization guidance.
+	initialTerm: string; // The very first English translation suggested by an LLM for this koreanTerm
+	type: typeof METADATA_TYPES.TERM;
+}
+export type TermInfo = TermMetadata;

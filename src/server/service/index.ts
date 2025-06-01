@@ -5,3 +5,4 @@ export * from './credentialService.ts';
 export * from './llmService.ts';
 export * from './recapService.ts';
 export * from './loreService.ts';
+export * from './termService.ts';

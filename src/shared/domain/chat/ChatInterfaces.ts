@@ -1,7 +1,6 @@
 import { allEmotionKeywordsList } from '../../config/index.ts';
 import { DefaultAiRole } from '../index.ts';
 import { METADATA_TYPES, MetadataType } from '../chromadb/index.ts';
-import { Metadata } from 'chromadb';
 
 export type ChatType = 'dialogue' | 'action';
 export type ChatRoleType = DefaultAiRole;

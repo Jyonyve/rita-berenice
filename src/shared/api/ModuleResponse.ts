@@ -6,6 +6,7 @@ import {
 	ProfileInfo,
 	RecapInfo,
 	RecapResult,
+	TermInfo,
 } from '../domain/index.ts';
 import { HistoryInfo, LoreInfo } from '../domain/lore/LoreInterfaces.ts';
 // File: shared/api/ApiInterfaces.ts
@@ -73,7 +74,15 @@ interface HistoryChromaResponse extends ChromaResponse {
 }
 export type HistoryResponse = HistoryChromaResponse;
 
+// recap
 interface RecapChromaResponse extends ChromaResponse {
 	recapInfo: RecapInfo;
 }
 export type RecapResponse = RecapChromaResponse;
+
+// term
+interface TermChromaResponse extends ChromaResponse {
+	term: Pick<TermInfo, 'koreanTerm' | 'englishTerm' | 'sessionId'>;
+	terms: Pick<TermInfo, 'koreanTerm' | 'englishTerm' | 'sessionId'>[];
+}
+export type TermResponse = TermChromaResponse;

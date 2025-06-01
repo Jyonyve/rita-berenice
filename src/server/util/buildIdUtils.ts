@@ -14,6 +14,7 @@ export const SUFFIX = {
 	RECAP: 'recap',
 	LORE: 'lore',
 	HISTORY: 'history',
+	TERM: 'term',
 } as const;
 export type SuffixType = (typeof SUFFIX)[keyof typeof SUFFIX];
 
@@ -56,6 +57,10 @@ export const buildChatTurnId = (sessionId: string, sequence: number): string => 
 // other collections
 export const buildRecapId = (sessionId: string, turnStart: number, turnEnd: number): string => {
 	return `${sessionId}_${turnStart}to${turnEnd}_${SUFFIX.RECAP}`;
+};
+
+export const buildTermId = (sessionId: string): string => {
+	return `${sessionId}_${_genNanoId(8)}_${SUFFIX.TERM}`;
 };
 
 export const buildRelationshipRecapId = (

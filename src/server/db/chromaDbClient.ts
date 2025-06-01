@@ -13,6 +13,8 @@ let profileCollection: Collection | null = null;
 let credentialCollection: Collection | null = null;
 let tempChatCollection: Collection | null = null;
 let recapCollection: Collection | null = null;
+let termCollection: Collection | null = null;
+let loreCollection: Collection | null = null;
 
 const _returnResponse = (results: GetResponse | ChromaResponse): ChromaResponse => {
 	const { ids, metadatas, documents } = results;
@@ -78,13 +80,23 @@ export const chromaDbClient = {
 	},
 
 	getLoreCollection: async (): Promise<Collection> => {
-		if (!recapCollection) {
-			recapCollection = await chromaClient.getOrCreateCollection({
+		if (!loreCollection) {
+			loreCollection = await chromaClient.getOrCreateCollection({
 				name: COLLECTIONS.LORE,
 				metadata: { type: COLLECTIONS.LORE },
 			});
 		}
-		return recapCollection;
+		return loreCollection;
+	},
+
+	getTermCollection: async (): Promise<Collection> => {
+		if (!termCollection) {
+			termCollection = await chromaClient.getOrCreateCollection({
+				name: COLLECTIONS.TERM,
+				metadata: { type: COLLECTIONS.TERM },
+			});
+		}
+		return termCollection;
 	},
 
 	getSessionCollection: async (sessionId: string): Promise<Collection> => {

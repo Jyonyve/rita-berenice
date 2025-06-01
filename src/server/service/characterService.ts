@@ -9,7 +9,7 @@ import { chromaDbClient } from '../db/index.ts';
 import { CharacterResponse } from '#shared/api/index.ts';
 import {
 	buildCharacterId,
-	buildCharacterDocument,
+	flatCharacterToDoc,
 	validateChromaResponse,
 	handleServiceError,
 } from '../util/index.ts';
@@ -133,7 +133,7 @@ export const characterService = {
 			type: METADATA_TYPES.CHARACTER,
 		};
 
-		const documentForEmbedding = buildCharacterDocument(character);
+		const documentForEmbedding = flatCharacterToDoc(character);
 
 		try {
 			// chromaDbClient.upsertRecord is Promise<void> and throws generic Error on underlying failure

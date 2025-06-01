@@ -1,19 +1,14 @@
 import {
 	HistoryInfo,
-	CharacterMetadata,
 	LoreInfo,
 	ChatTurn,
 	parseEntriesToText,
-	ProfileMetadata,
 	ChatEntry,
 	ChatMessage,
-	LoreMetadata,
-	HistoryMetadata,
 	CharacterInfo,
 	ProfileInfo,
-	ChromaResponse,
-	RecapInfo,
 	parseTextToEntries,
+	TermInfo,
 } from '#shared/index.ts';
 
 export const buildNaturalChatText = (request: ChatMessage, response: ChatMessage): string => {
@@ -26,7 +21,7 @@ export const buildNaturalChatText = (request: ChatMessage, response: ChatMessage
 	return documentText.trim();
 };
 
-export const chatMessageToDocument = (entries: ChatEntry[]) => {
+export const flatChatMessageToDoc = (entries: ChatEntry[]) => {
 	return parseEntriesToText(entries).trim();
 };
 
@@ -34,7 +29,7 @@ export const inflateChatMessageDoc = (document: string) => {
 	return parseTextToEntries(document);
 };
 
-export const chatTurnToDocument = (chatTurn: ChatTurn): string => {
+export const flatChatTurnToDoc = (chatTurn: ChatTurn): string => {
 	const document = { request: chatTurn.request, response: chatTurn.response };
 	return JSON.stringify(document).trim();
 };
@@ -52,7 +47,7 @@ export const inflateChatTurnDoc = (document: string) => {
 	return { request, response };
 };
 
-export const buildCharacterDocument = (character: CharacterInfo) => {
+export const flatCharacterToDoc = (character: CharacterInfo) => {
 	const { description, instruction } = character;
 	const document = { description, instruction };
 	return JSON.stringify(document).trim();
@@ -65,7 +60,7 @@ export const inflateCharacterDoc = (
 	return { description: parsed.description, instruction: parsed.instruction };
 };
 
-export const buildProfileDocument = (profile: ProfileInfo) => {
+export const flatProfileToDoc = (profile: ProfileInfo) => {
 	const document = { description: profile.description };
 	return JSON.stringify(document).trim();
 };
@@ -75,7 +70,7 @@ export const inflateProfileDoc = (document: string): { description: string } => 
 	return { description: parsed.description };
 };
 
-export const buildLoreOrHistoryDocument = (lore: LoreInfo | HistoryInfo) => {
+export const flatLoreOrHistoryToDoc = (lore: LoreInfo | HistoryInfo) => {
 	const { content, title } = lore;
 	const document = { title, content };
 	return JSON.stringify(document).trim();
@@ -84,4 +79,21 @@ export const buildLoreOrHistoryDocument = (lore: LoreInfo | HistoryInfo) => {
 export const inflateLoreOrHistoryDoc = (document: string): { title: string; content: string } => {
 	const parsed = JSON.parse(document);
 	return { title: parsed.title, content: parsed.content };
+};
+
+export const flatTermToDoc = (lore: TermInfo) => {
+	const { koreanTerm, englishTerm, sessionId } = lore;
+	const document = { koreanTerm, englishTerm, sessionId };
+	return JSON.stringify(document).trim();
+};
+
+export const inflateTermDoc = (
+	document: string
+): { koreanTerm: string; englishTerm: string; sessionId: string } => {
+	const parsed = JSON.parse(document);
+	return {
+		koreanTerm: parsed.koreanTerm,
+		englishTerm: parsed.englishTerm,
+		sessionId: parsed.sessionId,
+	};
 };

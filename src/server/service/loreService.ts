@@ -15,7 +15,7 @@ import { Collection, Where } from 'chromadb';
 import { chromaDbClient } from '../db/index.ts';
 import {
 	buildHistoryId,
-	buildLoreOrHistoryDocument,
+	flatLoreOrHistoryToDoc,
 	buildLoreId,
 	handleServiceError,
 	validateChromaResponse,
@@ -215,7 +215,7 @@ export const loreService = {
 		};
 		try {
 			const collection = await loreService._getCollection();
-			const documentForEmbedding = buildLoreOrHistoryDocument(loreInfo);
+			const documentForEmbedding = flatLoreOrHistoryToDoc(loreInfo);
 			await upsertRecord(collection, loreMetadata.loreId, documentForEmbedding, loreMetadata);
 
 			console.log(
@@ -278,7 +278,7 @@ export const loreService = {
 		};
 		try {
 			const collection = await loreService._getCollection();
-			const documentForEmbedding = buildLoreOrHistoryDocument(historyInfo);
+			const documentForEmbedding = flatLoreOrHistoryToDoc(historyInfo);
 			await upsertRecord(collection, historyMetadata.historyId, documentForEmbedding, historyMetadata);
 
 			console.log(

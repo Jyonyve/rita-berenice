@@ -34,6 +34,7 @@ export const COLLECTIONS = {
 	TEMP: 'temp',
 	RECAP: 'recap',
 	LORE: 'lore',
+	TERM: 'term',
 	CREDENTIAL: 'credential',
 } as const;
 
@@ -52,6 +53,7 @@ export const METADATA_TYPES = {
 	HISTORY: 'history',
 	TEMP: 'temp',
 	DOCUMENT: 'document',
+	TERM: 'term',
 } as const;
 
 export type MetadataType = (typeof METADATA_TYPES)[keyof typeof METADATA_TYPES];

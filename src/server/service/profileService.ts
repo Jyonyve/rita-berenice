@@ -6,7 +6,7 @@ import { BasicProfileInfo, ProfileResponse } from '#shared/api/index.ts';
 import {
 	validateChromaResponse,
 	buildProfileId,
-	buildProfileDocument,
+	flatProfileToDoc,
 	handleServiceError,
 } from '../util/index.ts';
 
@@ -149,7 +149,7 @@ export const profileService = {
 			updatedAt: now,
 		};
 
-		const documentForEmbedding = buildProfileDocument(profile);
+		const documentForEmbedding = flatProfileToDoc(profile);
 
 		try {
 			await upsertRecord(collection, profile.profileId, documentForEmbedding, profile);

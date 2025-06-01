@@ -14,8 +14,8 @@ import {
 import { Collection, IncludeEnum, Metadata, Where, WhereDocument } from 'chromadb';
 import { chromaDbClient } from '../db/chromaDbClient.ts';
 import {
-	chatMessageToDocument,
-	chatTurnToDocument,
+	flatChatMessageToDoc,
+	flatChatTurnToDoc,
 	buildMessageId,
 	buildChatTurnId,
 	handleServiceError,
@@ -75,7 +75,7 @@ export const chatService = {
 
 		const collection = await chatService._getCollection(sessionId);
 		try {
-			const documentForEmbedding = chatMessageToDocument(request.entries);
+			const documentForEmbedding = flatChatMessageToDoc(request.entries);
 			await upsertRecord(collection, updatedMetadata.messageId, documentForEmbedding, updatedMetadata);
 			return { entries, model, ...updatedMetadata };
 		} catch (error) {
@@ -102,7 +102,7 @@ export const chatService = {
 		try {
 			const collection = await chatService._getCollection(sessionId);
 
-			const documentForEmbedding = chatMessageToDocument(response.entries);
+			const documentForEmbedding = flatChatMessageToDoc(response.entries);
 			await upsertRecord(collection, updatedMetadata.messageId, documentForEmbedding, updatedMetadata);
 			return { entries, model, ...updatedMetadata };
 		} catch (error) {
@@ -121,7 +121,7 @@ export const chatService = {
 		const { sessionId, sequence } = chatTurnMetadata;
 		const collection = await chatService._getCollection(sessionId);
 		const updatedMetadata: ChatTurnMetadata = stringifyChatTurnToMetadata(chatTurn);
-		const documentForEmbedding = chatTurnToDocument(chatTurn);
+		const documentForEmbedding = flatChatTurnToDoc(chatTurn);
 
 		await upsertRecord(collection, updatedMetadata.chatTurnId, documentForEmbedding, updatedMetadata);
 	},
