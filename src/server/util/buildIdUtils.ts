@@ -26,12 +26,14 @@ export const buildProfileId = (profileName: string, sessionId: string) => {
 	return `${profileName}_${sessionId}`;
 };
 
-export const buildLoreId = (characterId: string, createdAt: string) => {
-	return `${characterId}_${Date.parse(createdAt)}_${SUFFIX.LORE}`;
+export const buildLoreId = (englishId: string) => {
+	// englishId is the kebab-case summary of the lore title
+	return `${englishId}_${_genNanoId(8)}_${SUFFIX.LORE}`;
 };
 
-export const buildHistoryId = (characterId: string, createdAt: string) => {
-	return `${characterId}_${Date.parse(createdAt)}_${SUFFIX.HISTORY}`;
+export const buildHistoryId = (englishId: string) => {
+	// englishId is the kebab-case summary of the history title
+	return `${englishId}_${_genNanoId(8)}_${SUFFIX.HISTORY}`;
 };
 
 /* chat id */

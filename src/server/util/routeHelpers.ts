@@ -1,6 +1,11 @@
 // File: server/util/routeHelpers.ts
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import { AllResponse, CollectionType, joinOrEmpty, convertStringToArray } from '#shared/index.ts';
+import {
+	AllResponse,
+	CollectionType,
+	convertArrayToString,
+	convertStringToArray,
+} from '#shared/index.ts';
 import { ApiError } from './serviceHelpers.ts';
 
 /** Router part */
@@ -65,7 +70,7 @@ export const validateRequestData = (
 		if (missing.length > 0) {
 			throw new ApiError(
 				400,
-				`Missing required fields in request ${sourceName}: ${joinOrEmpty(missing)}`,
+				`Missing required fields in request ${sourceName}: ${convertArrayToString(missing)}`,
 				'Some required information is missing. Please fill in all fields.',
 				{ source: sourceName, missing }
 			);

@@ -9,11 +9,11 @@ import {
 	HistoryResponse,
 	COLLECTIONS,
 	METADATA_TYPES,
+	buildFullEntities,
 } from '#shared/index.ts';
 import { Collection, Where } from 'chromadb';
 import { chromaDbClient } from '../db/index.ts';
 import {
-	buildFullEntity,
 	buildHistoryId,
 	buildLoreOrHistoryDocument,
 	buildLoreId,
@@ -57,7 +57,7 @@ export const loreService = {
 			const { ids, documents, metadatas } = results;
 
 			// Build full entities using the unified metadata structure
-			const lores = buildFullEntity([results]) as LoreInfo[];
+			const lores = buildFullEntities([results]) as LoreInfo[];
 
 			return {
 				ids,
@@ -87,7 +87,7 @@ export const loreService = {
 		try {
 			const rawResult = await getRecordById(collection, loreId);
 			const results = validateChromaResponse(rawResult, 'getOne', collectionType);
-			const lores = buildFullEntity([results]) as LoreInfo[];
+			const lores = buildFullEntities([results]) as LoreInfo[];
 
 			return {
 				ids: results.ids,
@@ -150,7 +150,7 @@ export const loreService = {
 
 			for (const rawResult of rawResults) {
 				const results = validateChromaResponse(rawResult, 'getList', collectionType);
-				const lores = buildFullEntity([results]) as LoreInfo[];
+				const lores = buildFullEntities([results]) as LoreInfo[];
 
 				allLores.push(...lores);
 				allIds.push(...results.ids);
@@ -238,7 +238,7 @@ export const loreService = {
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 			const { ids, documents, metadatas } = results;
 
-			const histories = buildFullEntity([results]) as HistoryInfo[];
+			const histories = buildFullEntities([results]) as HistoryInfo[];
 			// Sort by sequence for chronological order
 			histories.sort((a, b) => a.sequence - b.sequence);
 

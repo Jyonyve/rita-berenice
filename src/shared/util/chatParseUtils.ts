@@ -10,6 +10,7 @@ import {
 } from '@shared/domain/index.ts';
 import { DEFAULT_EMOTION } from '../config/index.ts';
 import { buildCharacterId } from '#root/src/server/index.ts';
+import { ChromaResponse } from '../api/ModuleResponse.ts';
 
 export const convertStringToArray = (input: string): string[] => {
 	if (!input || typeof input !== 'string') {
@@ -18,7 +19,7 @@ export const convertStringToArray = (input: string): string[] => {
 	return input.split(',').map((item) => item.trim());
 };
 
-export const joinOrEmpty = (arr: string[]): string => {
+export const convertArrayToString = (arr: string[]): string => {
 	return arr && arr.length > 0 ? arr.join(',') : '';
 };
 
@@ -67,24 +68,24 @@ export const parseChatTurnToMetadata = (turn: ChatTurn): any => {
 
 		// Enriched metadata (flattened for ChromaDB)
 		summary: turn.summary || 'N/A',
-		keywords: joinOrEmpty(turn.keywords),
-		topics: joinOrEmpty(turn.topics),
-		entities: joinOrEmpty(turn.entities),
+		keywords: convertArrayToString(turn.keywords),
+		topics: convertArrayToString(turn.topics),
+		entities: convertArrayToString(turn.entities),
 
 		// Flattened emotion objects
 		userEmotionPrimary: turn.userEmotion?.primary || 'neutral',
 		userEmotionIntensity: turn.userEmotion?.intensity || 0.5,
-		userEmotionNuances: joinOrEmpty(turn.userEmotion?.nuances || []),
+		userEmotionNuances: convertArrayToString(turn.userEmotion?.nuances || []),
 
 		characterEmotionPrimary: turn.characterEmotion?.primary || 'neutral',
 		characterEmotionIntensity: turn.characterEmotion?.intensity || 0.5,
-		characterEmotionNuances: joinOrEmpty(turn.characterEmotion?.nuances || []),
+		characterEmotionNuances: convertArrayToString(turn.characterEmotion?.nuances || []),
 
 		// Other fields
 		dialogueAct: turn.dialogueAct || 'N/A',
-		actions: joinOrEmpty(turn.actions),
-		relationshipShifts: joinOrEmpty(turn.relationshipShifts),
-		flags: joinOrEmpty(turn.flags),
+		actions: convertArrayToString(turn.actions),
+		relationshipShifts: convertArrayToString(turn.relationshipShifts),
+		flags: convertArrayToString(turn.flags),
 		memoryChunk: turn.memoryChunk || 'N/A',
 
 		// Complex objects as JSON strings

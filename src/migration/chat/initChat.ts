@@ -5,24 +5,21 @@ import path from 'node:path';
 import { ChromaClient, Collection } from 'chromadb';
 import { fileURLToPath } from 'node:url';
 import { ChatMessage, ChatTurn, MigChatMessage } from '#shared/domain/chat/ChatInterfaces.ts';
-import { buildChatTurnMetadataPrompt } from '#root/src/server/util/templateUtils.ts';
+import { buildChatTurnMetadataPrompt } from '#server/util/templateUtils.ts';
 import {
 	parseChatTurnToMetadata,
 	parseSessionId,
 	parseTextToEntries,
 } from '#root/src/shared/util/chatParseUtils.ts';
-import { buildChatTurnDocument } from '#root/src/server/util/documentUtils.ts';
-import { COLLECTIONS, METADATA_TYPES } from '#root/src/shared/domain/chromadb/ChromaInterfaces.ts';
+import { chatTurnToDocument } from '#server/util/documentUtils.ts';
+import { COLLECTIONS, METADATA_TYPES } from '#shared/domain/chromadb/ChromaInterfaces.ts';
 import {
 	buildCharacterId,
 	buildChatTurnId,
 	buildMessageId,
 	buildSessionId,
-} from '#root/src/server/util/buildIdUtils.ts';
-import {
-	allEmotionKeywordsList,
-	validEmotions,
-} from '#root/src/shared/config/emotionWordsMapper.ts';
+} from '#server/util/buildIdUtils.ts';
+import { allEmotionKeywordsList, validEmotions } from '#shared/config/emotionWordsMapper.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -345,7 +342,7 @@ async function processAndUpsertTurn(
 
 	// Convert the (either enriched or fallback) RICH ChatTurn object to PRIMITIVE metadata for ChromaDB
 	const chromaCompatibleMetadata = parseChatTurnToMetadata(enrichedTurnResult);
-	const documentForEmbedding = buildChatTurnDocument(enrichedTurnResult);
+	const documentForEmbedding = chatTurnToDocument(enrichedTurnResult);
 
 	try {
 		await collection.upsert({

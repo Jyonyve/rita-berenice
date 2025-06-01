@@ -1,6 +1,11 @@
 // src/util/templateUtils.ts (or your path)
 import { allEmotionKeywordsList } from '#root/src/shared/config/index.ts';
-import { ChatMessage, joinOrEmpty, parseEntriesToText } from '#root/src/shared/index.ts';
+import {
+	BasicBeingInfo,
+	ChatMessage,
+	convertArrayToString,
+	parseEntriesToText,
+} from '#root/src/shared/index.ts';
 
 const REALATIONSHIP_CHARACTERS_LIMIT: number = 3000 as const;
 const FACTUAL_CHARACTERS_LIMIT: number = 1500 as const;
@@ -10,7 +15,7 @@ export const EMOTION_TEMPLATE = `
 You MUST respond in JSON format. The JSON object must contain exactly two keys: "response" and "emotion".
 "response": Your textual answer to the user, following the persona instructions below.
 "emotion": A single keyword representing the character's dominant emotion in the response. Choose the *closest* match from the following list:
-[${joinOrEmpty(Array.from(allEmotionKeywordsList))}]
+[${convertArrayToString(Array.from(allEmotionKeywordsList))}]
 
 Example format:
 {
@@ -103,125 +108,104 @@ ${EMOTION_TEMPLATE}
 };
 
 export const buildChatTurnMetadataPrompt = (
-	userName: string,
-	userGender: string, // Assuming you get this from profile
+	userInfo: BasicBeingInfo,
 	userRequest: ChatMessage,
-	charName: string,
-	charGender: string, // Assuming you get this from character definition
+	charInfo: BasicBeingInfo,
 	charResponse: ChatMessage,
-	existingLoreIds: string[], // Pass available Lore IDs for linking
-	existingHistoryIds: string[], // Pass available History IDs for linking
+	existingLoreIds: string[],
+	existingHistoryIds: string[],
 	eng?: boolean
 ): string => {
 	const userRequestContent = parseEntriesToText(userRequest.entries);
 	const charResponseContent = parseEntriesToText(charResponse.entries);
 
+	const { showName: userKor, name: userEng, gender: userGender } = userInfo;
+	const { showName: charKor, name: charEng, gender: charGender } = charInfo;
+
 	const prompt = eng
 		? `
 You are an expert AI assistant specializing in analyzing conversational turns to extract rich metadata for a Retrieval Augmented Generation (RAG) system.
-Analyze the following single turn of conversation between ${userName} (a ${userGender} user) and ${charName} (a ${charGender} character).
+Analyze the following single turn of conversation between ${userKor} (English: ${userEng}, a ${userGender} user) and ${charKor} (English: ${charEng}, a ${charGender} character).
 
 **Conversation Turn:**
-*   **Session ID:** ${userRequest.sessionId} (for context, not for output field)
+*   **Session ID:** ${userRequest.sessionId}
 *   **Turn Sequence:** ${userRequest.sequence}
-*   **User (${userName}, Initial Emotion: ${userRequest.emotion}):** ${userRequestContent}
-*   **Character (${charName}, Initial Emotion: ${charResponse.emotion}, Model: ${charResponse.model || 'N/A'}):** ${charResponseContent}
+*   **User (${userKor}/${userEng}, Initial Emotion: ${userRequest.emotion}):** ${userRequestContent}
+*   **Character (${charKor}/${charEng}, Initial Emotion: ${charResponse.emotion}, Model: ${charResponse.model || 'N/A'}):** ${charResponseContent}
 
-**Your Task:**
-Generate a JSON object conforming to the 'EnrichedChatTurnMetadataOutput' interface.
-Provide values for ALL fields. If information is not present or not applicable, use default values as specified (e.g., "N/A" for strings, [] for arrays, neutral emotion objects).
-
-**Output JSON Structure (EnrichedChatTurnMetadataOutput):**
-\`\`\`json
+**Output JSON Structure:**
 {
-  "turnSummary": "string (Max 50 words, e.g., 'User asks about Tarion's past, Tarion evades.')",
-  "keyEntities": ["string (Format: 'type:name', e.g., 'character:Tarion', 'location:DarkForest', 'item:MagicSword')"],
-  "extractedTopics": ["string (Keywords or short phrases representing main topics, e.g., 'betrayal', 'quest_for_artifact')"],
-  "userEmotionalTone": { 
-    "primary": "string (One of: ${joinOrEmpty(Array.from(allEmotionKeywordsList))}, or 'mixed')", 
+  "summary": "string (Max 50 words, e.g., 'User asks about ${charEng}'s past, ${charEng} evades.')",
+  "keywords": ["string (General keywords, e.g., 'conversation', 'past', 'evasion')"],
+  "topics": ["string (Broader themes, e.g., 'character_background', 'mystery', 'trust_issues')"],
+  "entities": ["string (Format: 'type:name', e.g., 'character:${charEng}', 'character:${userEng}', 'location:DarkForest')"],
+  "userEmotion": { 
+    "primary": "string (One of: ${convertArrayToString(Array.from(allEmotionKeywordsList))}, or 'neutral', 'mixed')", 
     "intensity": "number (0.0 to 1.0)", 
     "nuances": ["string (Specific emotion words, e.g., 'frustration', 'curiosity')"] 
   },
-  "characterEmotionalTone": { 
-    "primary": "string (One of: ${joinOrEmpty(Array.from(allEmotionKeywordsList))}, or 'mixed')", 
+  "characterEmotion": { 
+    "primary": "string (One of: ${convertArrayToString(Array.from(allEmotionKeywordsList))}, or 'neutral', 'mixed')", 
     "intensity": "number (0.0 to 1.0)", 
     "nuances": ["string (Specific emotion words, e.g., 'defensive', 'sadness')"] 
   },
-  "relationshipDynamicsShift": ["string (Format: 'Entity1-Entity2:dynamic_change', e.g., '${charName}-${userName}:trust_increased', '${charName}-OtherChar:conflict_hinted')"],
-  "dialogueAct": "string (Classify the primary communicative function of the turn, e.g., 'question', 'answer', 'statement_opinion', 'statement_fact', 'command', 'suggestion', 'apology', 'greeting', 'farewell', 'revelation', 'evasion', 'threat', 'promise', 'flirtation', 'action_narration')",
-  "keyActionsDescribed": ["string (Observable actions described in text, e.g., '${charName}_draws_sword', '${userName}_offers_potion', '${charName}_looks_away')"],
-  "loreReferences": [{ "loreId": "string (ID from provided list: ${joinOrEmpty(existingLoreIds)})", "relevance": "number (0.0 to 1.0)" }],
-  "historyReferences": [{ "historyId": "string (ID from provided list: ${joinOrEmpty(existingHistoryIds)})", "relevance": "number (0.0 to 1.0)" }],
-  "triggerFlags": ["string (Specific flags based on content, e.g., 'new_lore_revealed', 'character_goal_updated', 'major_plot_point', 'user_expressed_strong_emotion', 'character_made_promise', 'new_entity_introduced', 'past_event_mentioned')"],
-  "memoryChunk": "string (A concise, self-contained statement (max 100 words) of what was learned or happened in this turn, suitable for direct RAG retrieval. Example: 'In turn ${userRequest.sequence}, ${charName} reluctantly revealed a fragment of their past involvement with the Shadow Syndicate when pressed by ${userName}, expressing fear and regret. This event seems to connect to the 'Syndicate_Lore' entry.')"
+  "relationshipShifts": ["string (Format: 'Entity1-Entity2:dynamic_change', e.g., '${charEng}-${userEng}:trust_increased')"],
+  "dialogueAct": "string (e.g., 'question', 'answer', 'statement_opinion', 'revelation', 'evasion')",
+  "actions": ["string (Observable actions, e.g., '${charEng}_draws_sword', '${userEng}_offers_potion')"],
+  "loreReferences": [{ "id": "string (loreId from: ${convertArrayToString(existingLoreIds)})", "relevance": "number (0.0 to 1.0)" }],
+  "historyReferences": [{ "id": "string (historyId from: ${convertArrayToString(existingHistoryIds)})", "relevance": "number (0.0 to 1.0)" }],
+  "flags": ["string (e.g., 'new_lore_revealed', 'character_goal_updated', 'major_plot_point')"],
+  "memoryChunk": "string (Max 100 words, self-contained summary for RAG retrieval)"
 }
-\`\`\`
 
 **Analysis Guidelines:**
-*   **turnSummary:** Overall gist of the turn.
-*   **keyEntities:** Identify all proper nouns and significant objects/concepts. Use 'character:[Name]', 'location:[Name]', 'item:[Name]', 'organization:[Name]', 'concept:[Name]'.
-*   **extractedTopics:** Broader themes or subjects discussed.
-*   **EmotionalTone:** Analyze the text and context. The 'primary' emotion should be a general category. 'nuances' can specify further.
-*   **relationshipDynamicsShift:** Focus on changes between characters mentioned or implied in this turn. If no shift, use an empty array.
-*   **dialogueAct:** Consider the main purpose of the turn's communication.
-*   **keyActionsDescribed:** List actions by prefixing with the actor's name (e.g., "${userName}_smiles").
-*   **loreReferences/historyReferences:** If the conversation clearly refers to or elaborates on known lore/history, link to it with a relevance score. Only include if relevance is > 0.5.
-*   **triggerFlags:** Identify predefined significant event types.
-*   **memoryChunk:** This is CRITICAL. Synthesize the most important takeaway from this turn into a dense, searchable memory. It should encapsulate what happened, who was involved, key information revealed, and potential impact.
-
-Ensure the output is a single, valid JSON object.
-Provide values for ALL fields, using defaults (empty arrays [], "N/A" for strings, neutral emotion objects) where appropriate.
-Example default for emotional tone: { "primary": "neutral", "intensity": 0.5, "nuances": [] }
-Example default for turnSummary: "No specific summary."
-Example default for dialogueAct: "N/A"
-Example default for memoryChunk: "No specific memory chunk generated for this turn."
+- Use English names (${charEng}, ${userEng}) in entities and relationships
+- All metadata fields must be in English
+- Use unique loreId/historyId for references, not englishId
+- Provide values for ALL fields, using defaults where appropriate
 
 JSON Output:
 `
 		: `
 당신은 한국어 대화를 분석하여 RAG 시스템용 구조화된 메타데이터를 추출하는 전문가다.
-${userName}(${userGender} 사용자)과 ${charName}(${charGender} 캐릭터) 사이의 다음 대화 턴을 분석한다.
+${userKor}(영어명: ${userEng}, ${userGender} 사용자)과 ${charKor}(영어명: ${charEng}, ${charGender} 캐릭터) 사이의 다음 대화 턴을 분석한다.
 
 **대화 턴:**
 *   **세션 ID:** ${userRequest.sessionId}
 *   **턴 순서:** ${userRequest.sequence}
-*   **사용자 (${userName}, 초기 감정: ${userRequest.emotion}):** ${userRequestContent}
-*   **캐릭터 (${charName}, 초기 감정: ${charResponse.emotion}, 모델: ${charResponse.model || 'N/A'}):** ${charResponseContent}
+*   **사용자 (${userKor}/${userEng}, 초기 감정: ${userRequest.emotion}):** ${userRequestContent}
+*   **캐릭터 (${charKor}/${charEng}, 초기 감정: ${charResponse.emotion}, 모델: ${charResponse.model || 'N/A'}):** ${charResponseContent}
 
-**출력 JSON 구조 (통합된 메타데이터):**
-\`\`\`json
+**출력 JSON 구조:**
 {
-  "summary": "string (최대 50단어, 예: 'User asks about Tarion's past, Tarion evades.')",
+  "summary": "string (최대 50단어, 예: 'User asks about ${charEng}'s past, ${charEng} evades.')",
   "keywords": ["string (일반 검색 키워드, 예: 'conversation', 'past', 'evasion')"],
   "topics": ["string (광범위한 주제, 예: 'character_background', 'mystery', 'trust_issues')"],
-  "entities": ["string (형식: 'type:name', 예: 'character:Tarion', 'location:DarkForest', 'item:MagicSword')"],
+  "entities": ["string (형식: 'type:name', 예: 'character:${charEng}', 'character:${userEng}', 'location:DarkForest')"],
   "userEmotion": { 
-    "primary": "string (다음 중 하나: ${joinOrEmpty(Array.from(allEmotionKeywordsList))}, 또는 'neutral', 'mixed')", 
+    "primary": "string (다음 중 하나: ${convertArrayToString(Array.from(allEmotionKeywordsList))}, 또는 'neutral', 'mixed')", 
     "intensity": "number (0.0 to 1.0)", 
     "nuances": ["string (구체적 감정 단어, 예: 'frustration', 'curiosity')"] 
   },
   "characterEmotion": { 
-    "primary": "string (다음 중 하나: ${joinOrEmpty(Array.from(allEmotionKeywordsList))}, 또는 'neutral', 'mixed')", 
+    "primary": "string (다음 중 하나: ${convertArrayToString(Array.from(allEmotionKeywordsList))}, 또는 'neutral', 'mixed')", 
     "intensity": "number (0.0 to 1.0)", 
     "nuances": ["string (구체적 감정 단어, 예: 'defensive', 'sadness')"] 
   },
-  "relationshipShifts": ["string (형식: 'Entity1-Entity2:dynamic_change', 예: '${charName}-${userName}:trust_increased')"],
+  "relationshipShifts": ["string (형식: 'Entity1-Entity2:dynamic_change', 예: '${charEng}-${userEng}:trust_increased')"],
   "dialogueAct": "string (예: 'question', 'answer', 'statement_opinion', 'revelation', 'evasion')",
-  "actions": ["string (관찰 가능한 행동, 예: '${charName}_draws_sword', '${userName}_offers_potion')"],
-  "loreReferences": [{ "id": "string (제공된 목록에서: ${joinOrEmpty(existingLoreIds)})", "relevance": "number (0.0 to 1.0)" }],
-  "historyReferences": [{ "id": "string (제공된 목록에서: ${joinOrEmpty(existingHistoryIds)})", "relevance": "number (0.0 to 1.0)" }],
+  "actions": ["string (관찰 가능한 행동, 예: '${charEng}_draws_sword', '${userEng}_offers_potion')"],
+  "loreReferences": [{ "id": "string (loreId 목록에서: ${convertArrayToString(existingLoreIds)})", "relevance": "number (0.0 to 1.0)" }],
+  "historyReferences": [{ "id": "string (historyId 목록에서: ${convertArrayToString(existingHistoryIds)})", "relevance": "number (0.0 to 1.0)" }],
   "flags": ["string (예: 'new_lore_revealed', 'character_goal_updated', 'major_plot_point')"],
   "memoryChunk": "string (최대 100단어, RAG 검색용 자립적 요약)"
 }
-\`\`\`
 
 **중요 지침:**
-- **모든 메타데이터 필드는 영어로만 작성**
-- **memoryChunk는 한국어 대화 내용을 영어로 요약**
-- 모든 필드에 값을 제공하되, 정보가 없으면 기본값 사용:
-  - 빈 배열 [] (리스트용)
-  - "N/A" (문자열용)
-  - { "primary": "neutral", "intensity": 0.5, "nuances": [] } (감정용)
+- entities와 relationships에서 영어 이름 사용 (${charEng}, ${userEng})
+- 모든 메타데이터 필드는 영어로만 작성
+- 참조에는 고유한 loreId/historyId 사용 (englishId 아님)
+- 모든 필드에 값을 제공하되, 정보가 없으면 기본값 사용
 
 JSON 출력:
 `;
@@ -326,9 +310,9 @@ Chat Turns (each turn includes 'Speaker', 'Turn Sequence', and 'Timestamp (creat
 ${stringifyChatTurns}
 (Note: Actions or descriptions might be in parentheses, e.g., (smiles), (picks up the book))
 
-Available Keywords: ${joinOrEmpty(availableKeywords)}
-Available Topics: ${joinOrEmpty(availableTopics)}
-Available Entities: ${joinOrEmpty(availableEntities)}
+Available Keywords: ${convertArrayToString(availableKeywords)}
+Available Topics: ${convertArrayToString(availableTopics)}
+Available Entities: ${convertArrayToString(availableEntities)}
 
 Create a JSON response with factual analysis and refined metadata:
 
@@ -369,9 +353,9 @@ ${userName}(성별: ${userGender} 사용자)과 ${charName}(성별: ${charGender
 ${stringifyChatTurns}
 (참고: 행동이나 묘사는 괄호 안에 있을 수 있다. 예: (미소짓는다), (책을 집어든다))
 
-사용 가능한 키워드 (영어): ${joinOrEmpty(availableKeywords)}
-사용 가능한 주제 (영어): ${joinOrEmpty(availableTopics)}
-사용 가능한 개체 (영어): ${joinOrEmpty(availableEntities)}
+사용 가능한 키워드 (영어): ${convertArrayToString(availableKeywords)}
+사용 가능한 주제 (영어): ${convertArrayToString(availableTopics)}
+사용 가능한 개체 (영어): ${convertArrayToString(availableEntities)}
 
 다음 JSON 형식으로 응답한다 (메타데이터는 영어, 내용은 한국어):
 
@@ -432,9 +416,9 @@ Analyze chat turns between ${userName} (a ${userGender} user) and ${charName} (a
 Chat Logs:
 ${stringifyChatTurns}
 
-Available Keywords: ${joinOrEmpty(availableKeywords)}
-Available Topics: ${joinOrEmpty(availableTopics)}
-Available Entities: ${joinOrEmpty(availableEntities)}
+Available Keywords: ${convertArrayToString(availableKeywords)}
+Available Topics: ${convertArrayToString(availableTopics)}
+Available Entities: ${convertArrayToString(availableEntities)}
 
 Create a JSON response with relationship analysis and refined metadata:
 
@@ -473,9 +457,9 @@ ${userName}(성별: ${userGender} 사용자)와 ${charName}(성별: ${charGender
 채팅 로그:
 ${stringifyChatTurns}
 
-사용 가능한 키워드 (영어): ${joinOrEmpty(availableKeywords)}
-사용 가능한 주제 (영어): ${joinOrEmpty(availableTopics)}
-사용 가능한 개체 (영어): ${joinOrEmpty(availableEntities)}
+사용 가능한 키워드 (영어): ${convertArrayToString(availableKeywords)}
+사용 가능한 주제 (영어): ${convertArrayToString(availableTopics)}
+사용 가능한 개체 (영어): ${convertArrayToString(availableEntities)}
 
 다음 JSON 형식으로 응답한다 (메타데이터는 영어, 내용은 한국어):
 
@@ -629,3 +613,80 @@ ${coreInstructionKor}
 `.trim();
 	}
 };
+
+export const buildHistoryMetadataPrompt = (
+	originalTitle: string,
+	content: string,
+	availableCharacterIds: string[],
+	existingHistoryEntries: Array<{
+		originalTitle: string;
+		historyId: string;
+		generatedTitle: string;
+	}> = []
+): string =>
+	`
+당신은 캐릭터 역사(시간순 사건) 텍스트를 분석하여 메타데이터를 추출하는 전문가다.
+다음 역사 사건을 분석하여 구조화된 메타데이터를 생성한다.
+
+원본 제목: ${originalTitle}
+사건 내용:
+${content}
+
+사용 가능한 캐릭터 ID: ${convertArrayToString(availableCharacterIds)}
+기존 역사 사건들:
+${existingHistoryEntries.map((h) => `- "${h.originalTitle}" → "${h.generatedTitle}" (ID: ${h.historyId})`).join('\n')}
+
+다음 JSON 형식으로 응답한다 (메타데이터는 영어로만):
+
+{
+  "generatedEnglishTitle": "Childhood Protection Desire",
+  "englishId": "childhood-protection-desire",
+  "keywords": ["childhood", "protection", "trauma"],
+  "topics": ["character_development", "emotional_growth"],
+  "entities": ["character:Tarion", "location:Village"],
+  "ownerCharacterIds": ["tarion_original", "tarion_spinoff"],
+  "sideCharacterIds": ["kassar_original"],
+  "period": {
+    "label": "Childhood",
+    "confidence": 0.9
+  },
+  "eventDate": {
+    "value": "Age 8-12",
+    "type": "relative_to_birth",
+    "confidence": 0.8
+  },
+  "temporalRelations": [
+    {
+        "type": "PRECEDES",
+        "relatedEventId": "existing_history_id_here",
+        "description": "This childhood event shaped later decisions"
+    }
+  ],
+  "category": "character_history"
+}
+
+**메타데이터 지침:**
+- **generatedEnglishTitle**: 내용을 바탕으로 한 구체적이고 설명적인 영어 제목 생성
+- **englishId**: 영어 제목을 기반으로 한 3단어 이하의 kebab-case 식별자
+- **keywords**: 역사 사건에서 중요한 키워드 5-10개 (영어)
+- **topics**: 주요 테마나 주제 3-7개 (예: "war", "betrayal", "coming_of_age")
+- **entities**: 언급된 인물, 장소, 아이템 등 (형식: "type:name")
+- **ownerCharacterIds**: 이 역사 사건의 주인공 캐릭터 ID들
+- **sideCharacterIds**: 이 역사 사건에 등장하는 조연 캐릭터 ID들
+- **period**: 사건이 일어난 시기/시대 (라벨과 확신도)
+- **eventDate**: 구체적인 날짜나 시점 (값, 타입, 확신도)
+- **temporalRelations**: 기존 사건들과의 시간적 관계 (historyId로 참조)
+- **category**: 역사 카테고리 (예: "character_history", "world_event", "relationship")
+
+**시간 관계 규칙:**
+- relatedEventId는 반드시 기존 역사 사건의 historyId를 사용
+- 관계가 명확하지 않으면 빈 배열 사용
+- type은 PRECEDES, SUCCEEDS, CONCURRENT_WITH, CAUSED_BY, RESULTS_IN 중 선택
+
+**작성 규칙:**
+- 모든 메타데이터는 영어로만 작성
+- JSON 형식을 정확히 지켜서 작성
+- 마크다운 코드 블록 없이 순수 JSON만 출력
+
+JSON 출력:
+`.trim();

@@ -1,11 +1,11 @@
 {
   "sessionId": "tarion_spinoff_0RWsIE7zKLQ3ANEN",
   "totalTurnsInLogFile": 1169,
-  "lastProcessedSequence": 1142,
-  "successfullyEnrichedTurnsCount": 1143,
+  "lastProcessedSequence": 1168,
+  "successfullyEnrichedTurnsCount": 1169,
   "fallbackSavedTurnsCount": 0,
   "startedAt": "2025-05-30T02:41:55.314Z",
-  "lastUpdatedAt": "2025-05-30T08:02:54.600Z",
-  "status": "in_progress",
+  "lastUpdatedAt": "2025-05-30T12:40:44.698Z",
+  "status": "completed",
   "errors": []
 }

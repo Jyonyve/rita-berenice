@@ -1,13 +1,11 @@
 import { allEmotionKeywordsList } from '../../config/index.ts';
 import { DefaultAiRole } from '../index.ts';
 import { METADATA_TYPES, MetadataType } from '../chromadb/index.ts';
+import { Metadata } from 'chromadb';
 
 export type ChatType = 'dialogue' | 'action';
 export type ChatRoleType = DefaultAiRole;
-
-type DefaultChatEntry = { type: ChatType; prompt: string };
-export type ChatEntry = DefaultChatEntry; // expand if needed
-
+export type ChatEntry = { type: ChatType; prompt: string };
 export type ChatMessageType = 'request' | 'response';
 export type ChatMessageSet = { request: ChatMessage; response: ChatMessage };
 

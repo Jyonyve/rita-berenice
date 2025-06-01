@@ -19,17 +19,21 @@ export type BasicBeingInfo = Pick<BeingMetadata, 'name' | 'showName' | 'gender'>
 export interface CharacterMetadata extends BeingMetadata {
 	characterId: string;
 	variant: string;
-	instruction: string;
 	type: typeof METADATA_TYPES.CHARACTER;
 }
-export type CharacterInfo = CharacterMetadata;
+export interface CharacterInfo extends CharacterMetadata {
+	description: string;
+	instruction: string;
+}
 
 export interface ProfileMetadata extends BeingMetadata {
 	profileId: string; //${name}_${sessionId}
 	sessionId: string;
 	type: typeof METADATA_TYPES.PROFILE;
 }
-export type ProfileInfo = ProfileMetadata;
+export interface ProfileInfo extends ProfileMetadata {
+	description: string;
+}
 
 export type CharacterImages = Record<string, string[]>;
 

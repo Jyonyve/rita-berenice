@@ -9,18 +9,22 @@ import {
 	COLLECTIONS,
 	ChromaResponse,
 	ChatResponse,
+	parseTextToEntries,
 } from '#shared/index.ts';
-import { Collection, IncludeEnum, Where, WhereDocument } from 'chromadb';
+import { Collection, IncludeEnum, Metadata, Where, WhereDocument } from 'chromadb';
 import { chromaDbClient } from '../db/chromaDbClient.ts';
 import {
-	buildChatMessageDocument,
-	buildChatTurnDocument,
+	chatMessageToDocument,
+	chatTurnToDocument,
 	buildMessageId,
 	buildChatTurnId,
 	handleServiceError,
 	validateChromaResponse,
-	buildFullEntity,
+	inflateChatTurnDoc,
 } from '../util/index.ts';
+import { chatTurnToMetadata, metadataToChatTurn } from '#root/src/shared/util/dbConvertUtils.ts';
+import { inflate } from 'zlib';
+import { Chat } from 'openai/resources/index.mjs';
 
 // Destructure outside the object
 const {
@@ -70,7 +74,7 @@ export const chatService = {
 
 		const collection = await chatService._getCollection(sessionId);
 		try {
-			const documentForEmbedding = buildChatMessageDocument(request.entries);
+			const documentForEmbedding = chatMessageToDocument(request.entries);
 			await upsertRecord(collection, updatedMetadata.messageId, documentForEmbedding, updatedMetadata);
 			return { entries, model, ...updatedMetadata };
 		} catch (error) {
@@ -97,7 +101,7 @@ export const chatService = {
 		try {
 			const collection = await chatService._getCollection(sessionId);
 
-			const documentForEmbedding = buildChatMessageDocument(response.entries);
+			const documentForEmbedding = chatMessageToDocument(response.entries);
 			await upsertRecord(collection, updatedMetadata.messageId, documentForEmbedding, updatedMetadata);
 			return { entries, model, ...updatedMetadata };
 		} catch (error) {
@@ -115,17 +119,22 @@ export const chatService = {
 		const { request, response, ...chatTurnMetadata } = chatTurn;
 		const { sessionId, sequence } = chatTurnMetadata;
 		const collection = await chatService._getCollection(sessionId);
-		const updatedMetadata: ChatTurnMetadata = {
-			...chatTurnMetadata,
-			chatTurnId: chatTurn.chatTurnId || buildChatTurnId(sessionId, sequence),
-			requestMessageId: request.messageId,
-			responseMessageId: response.messageId,
-			createdAt: now,
-			type: METADATA_TYPES.TURN,
-		};
-		const documentForEmbedding = buildChatTurnDocument(chatTurn);
+		const updatedMetadata: ChatTurnMetadata = chatTurnToMetadata(chatTurn);
+		const documentForEmbedding = chatTurnToDocument(chatTurn);
 
 		await upsertRecord(collection, updatedMetadata.chatTurnId, documentForEmbedding, updatedMetadata);
+	},
+
+	_constuctChatTurn: (results: ChromaResponse): ChatResponse => {
+		const { ids, documents, metadatas } = results;
+		const chatTurns = ids.map((id, index) => {
+			const metadata = metadatas[index];
+			const document = documents[index];
+			const inflatedDoc = inflateChatTurnDoc(document!);
+			const chatTurn = metadataToChatTurn(metadata!, inflatedDoc.request, inflatedDoc.response);
+			return chatTurn;
+		});
+		return { ids, documents, metadatas, chatTurns, chatTurn: chatTurns[0] || null };
 	},
 
 	// --- Temporary Turn Operations ---
@@ -214,7 +223,21 @@ export const chatService = {
 			};
 			const whereClause = where ? { ...defaultWhere, ...where } : defaultWhere;
 
-			const results = await queryRecords(collection, queryTexts, where, whereDocumennt, limit);
+			const rawResults = await queryRecords(
+				collection,
+				queryTexts,
+				whereClause,
+				whereDocumennt,
+				limit
+			);
+			const results = rawResults.map((raw) => validateChromaResponse(raw, 'getList', collectionType));
+			return results.flatMap((result) => {
+				const chatMessages = result.documents
+					.flatMap((doc) => (typeof doc === 'string' ? parseTextToEntries(doc) : []))
+					.filter((msg) => msg !== null);
+
+				return chatMessages.map((msg) => JSON.stringify(msg));
+			});
 		} catch (error) {
 			console.error(`Failed to query chat log for session ${sessionId}:`, error);
 			return [];
@@ -225,7 +248,7 @@ export const chatService = {
 		sessionId: string,
 		queryTexts: string[],
 		where?: Where,
-		whereDocumennt?: WhereDocument,
+		whereDocument?: WhereDocument,
 		limit?: number
 	): Promise<ChatResponse> => {
 		try {
@@ -236,26 +259,36 @@ export const chatService = {
 				$and: [{ sessionId: { $eq: sessionId } }, { type: { $eq: METADATA_TYPES.TURN } }],
 			};
 			const whereClause = where ? { ...defaultWhere, ...where } : defaultWhere;
-			const rawResults = await queryRecords(
-				collection,
-				queryTexts,
-				whereClause,
-				whereDocumennt,
-				limit
-			);
+			const rawResults = await queryRecords(collection, queryTexts, whereClause, whereDocument, limit);
 
 			const results = rawResults.map((raw) => validateChromaResponse(raw, 'getList', collectionType));
-			return results.flatMap((result) => {
-				const { ids, documents, metadatas } = result;
-				const chatTurns = buildFullEntity([result]) as ChatTurn[];
-				return { ids, documents, metadatas, chatTurns };
+
+			// Collect all results
+			const allChatTurns: ChatTurn[] = [];
+			const allIds: string[] = [];
+			const allDocuments: (string | null)[] = [];
+			const allMetadatas: (Metadata | null)[] = [];
+
+			results.forEach((result) => {
+				const { ids, documents, metadatas, chatTurns } = chatService._constuctChatTurn(result);
+				allChatTurns.push(...chatTurns);
+				allIds.push(...ids);
+				allDocuments.push(...documents);
+				allMetadatas.push(...metadatas);
 			});
+
+			// Return a single ChatResponse with all results merged
+			return {
+				ids: allIds,
+				documents: allDocuments,
+				metadatas: allMetadatas,
+				chatTurns: allChatTurns,
+			};
 		} catch (error) {
 			console.error(`Failed to query chat log for session ${sessionId}:`, error);
-			return [];
+			return { ids: [], documents: [], metadatas: [], chatTurns: [] };
 		}
 	},
-
 	/** Loads multiple FIXED turns  */
 	getChatTurns: async (sessionId: string, beforeSequence: number): Promise<ChatResponse> => {
 		const collection = await chatService._getCollection(sessionId);
@@ -263,9 +296,7 @@ export const chatService = {
 		try {
 			const rawResults = await getRecords(collection, where);
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
-			const { ids, documents, metadatas } = results;
-			const chatTurns = buildFullEntity([results]) as ChatTurn[];
-			return { ids, documents, metadatas, chatTurns };
+			return chatService._constuctChatTurn(results);
 		} catch (error) {
 			handleServiceError(
 				error,
@@ -282,15 +313,7 @@ export const chatService = {
 		try {
 			const rawResult = await getRecordById(collection, turnId);
 			const results = validateChromaResponse(rawResult, 'getOne', collectionType);
-
-			const chatTurns = buildFullEntity([results]) as ChatTurn[];
-			return {
-				ids: results.ids,
-				documents: results.documents,
-				metadatas: results.metadatas,
-				chatTurns: chatTurns,
-				chatTurn: chatTurns[0],
-			};
+			return chatService._constuctChatTurn(results);
 		} catch (error) {
 			handleServiceError(
 				error,

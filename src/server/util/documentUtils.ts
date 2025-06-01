@@ -13,6 +13,7 @@ import {
 	ProfileInfo,
 	ChromaResponse,
 	RecapInfo,
+	parseTextToEntries,
 } from '#shared/index.ts';
 
 export const buildNaturalChatText = (request: ChatMessage, response: ChatMessage): string => {
@@ -25,25 +26,53 @@ export const buildNaturalChatText = (request: ChatMessage, response: ChatMessage
 	return documentText.trim();
 };
 
-export const buildChatMessageDocument = (entries: ChatEntry[]) => {
+export const chatMessageToDocument = (entries: ChatEntry[]) => {
 	return parseEntriesToText(entries).trim();
 };
 
-export const buildChatTurnDocument = (chatTurn: ChatTurn): string => {
+export const inflateChatMessageDoc = (document: string) => {
+	return parseTextToEntries(document);
+};
+
+export const chatTurnToDocument = (chatTurn: ChatTurn): string => {
 	const document = { request: chatTurn.request, response: chatTurn.response };
 	return JSON.stringify(document).trim();
 };
 
+export const inflateChatTurnDoc = (document: string) => {
+	const parsed = JSON.parse(document);
+	const request: ChatMessage = parsed.request;
+	const response: ChatMessage = parsed.response;
+
+	// Ensure the request and response are valid ChatMessage objects
+	if (!request || !response) {
+		throw new Error('Invalid document format for ChatTurn');
+	}
+
+	return { request, response };
+};
+
 export const buildCharacterDocument = (character: CharacterInfo) => {
-	const { characterId, showName, description, instruction, updatedAt } = character;
-	const document = { characterId, showName, description, instruction, updatedAt };
+	const { description, instruction } = character;
+	const document = { description, instruction };
 	return JSON.stringify(document).trim();
 };
 
+export const inflateCharacterDoc = (
+	document: string
+): { description: string; instruction: string } => {
+	const parsed = JSON.parse(document);
+	return { description: parsed.description, instruction: parsed.instruction };
+};
+
 export const buildProfileDocument = (profile: ProfileInfo) => {
-	const { profileId, showName, description } = profile;
-	const document = { profileId, showName, description };
+	const document = { description: profile.description };
 	return JSON.stringify(document).trim();
+};
+
+export const inflateProfileDoc = (document: string): { description: string } => {
+	const parsed = JSON.parse(document);
+	return { description: parsed.description };
 };
 
 export const buildLoreOrHistoryDocument = (lore: LoreInfo | HistoryInfo) => {
@@ -52,18 +81,7 @@ export const buildLoreOrHistoryDocument = (lore: LoreInfo | HistoryInfo) => {
 	return JSON.stringify(document).trim();
 };
 
-// parse metadata and document to entity
-export const buildFullEntity = (queryResults: ChromaResponse[]) => {
-	return queryResults
-		.map((result) => {
-			const { ids, metadatas, documents } = result;
-			if (ids.length === 0 || metadatas.length === 0 || documents.length === 0) {
-				return null;
-			}
-			if (!metadatas[0] || !documents[0]) {
-				return null;
-			}
-			return { ...metadatas[0], ...JSON.parse(documents[0]) };
-		})
-		.filter((entity) => !!entity);
+export const inflateLoreOrHistoryDoc = (document: string): { title: string; content: string } => {
+	const parsed = JSON.parse(document);
+	return { title: parsed.title, content: parsed.content };
 };
