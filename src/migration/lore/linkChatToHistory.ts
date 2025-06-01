@@ -299,7 +299,7 @@ const calculateRelevance = (
 async function linkChatToHistory() {
 	// ✅ Generate processId and setup logger AT THE START
 	const processId = `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-	const logFilePath = path.join(SCRIPT_OUTPUT_DIR, `link-chat-history-run-${processId}.log`);
+	const logFilePath = path.join(SCRIPT_OUTPUT_DIR, `link-chat-history-run-${processId}.txt`);
 	await setupFileLogger(logFilePath);
 
 	console.log('🔗 Starting chat-to-history linking process with progress tracking...');
