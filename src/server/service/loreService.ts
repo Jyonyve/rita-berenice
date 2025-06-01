@@ -9,7 +9,7 @@ import {
 	HistoryResponse,
 	COLLECTIONS,
 	METADATA_TYPES,
-	buildFullEntities,
+	ChromaResponse,
 } from '#shared/index.ts';
 import { Collection, Where } from 'chromadb';
 import { chromaDbClient } from '../db/index.ts';
@@ -20,7 +20,14 @@ import {
 	handleServiceError,
 	validateChromaResponse,
 	validateServiceId,
+	inflateLoreOrHistoryDoc,
 } from '../util/index.ts';
+import {
+	metadataToHistory,
+	metadataToLore,
+	stringifyHistoryMetadata,
+	stringifyLoreMetadata,
+} from '#shared/util/dbConvertUtils.ts';
 
 // Destructure chromaDbClient methods
 const { getLoreCollection, upsertRecord, getRecords, getRecordById, queryRecords } = chromaDbClient;
@@ -39,8 +46,45 @@ export const loreService = {
 		return collection;
 	},
 
-	// --- LORE OPERATIONS ---
+	_constuctLore: (results: ChromaResponse): LoreResponse => {
+		const { ids, documents, metadatas } = results;
+		const lores = ids.map((id, index) => {
+			const metadata = metadatas[index] as unknown as LoreMetadata;
+			const document = documents[index];
+			const inflatedDoc = inflateLoreOrHistoryDoc(document!);
+			return metadataToLore(metadata, inflatedDoc.content);
+		});
+		return {
+			ids,
+			documents,
+			metadatas,
+			lores,
+			lore: lores[0] || null,
+			loreContent: lores.length > 0 ? lores[0].content : '',
+			loreContents: lores.map((lore) => lore.content),
+		};
+	},
 
+	_constuctHistory: (results: ChromaResponse): HistoryResponse => {
+		const { ids, documents, metadatas } = results;
+		const histories = ids.map((id, index) => {
+			const metadata = metadatas[index] as unknown as HistoryMetadata;
+			const document = documents[index];
+			const inflatedDoc = inflateLoreOrHistoryDoc(document!);
+			return metadataToHistory(metadata!, inflatedDoc.content);
+		});
+		return {
+			ids,
+			documents,
+			metadatas,
+			histories,
+			history: histories[0] || null,
+			historyContent: histories.length > 0 ? histories[0].content : '',
+			historyContents: histories.map((history) => history.content),
+		};
+	},
+
+	// --- LORE OPERATIONS ---
 	/**
 	 * Get all lore entries for a specific character
 	 */
@@ -57,17 +101,7 @@ export const loreService = {
 			const { ids, documents, metadatas } = results;
 
 			// Build full entities using the unified metadata structure
-			const lores = buildFullEntities([results]) as LoreInfo[];
-
-			return {
-				ids,
-				documents,
-				metadatas,
-				lores,
-				loreContents: lores.map((lore) => lore.content),
-				lore: lores[0] || null,
-				loreContent: lores.length > 0 ? lores[0].content : '',
-			};
+			return loreService._constuctLore(results);
 		} catch (error) {
 			handleServiceError(
 				error,
@@ -87,17 +121,7 @@ export const loreService = {
 		try {
 			const rawResult = await getRecordById(collection, loreId);
 			const results = validateChromaResponse(rawResult, 'getOne', collectionType);
-			const lores = buildFullEntities([results]) as LoreInfo[];
-
-			return {
-				ids: results.ids,
-				documents: results.documents,
-				metadatas: results.metadatas,
-				lores,
-				loreContents: lores.map((lore) => lore.content),
-				lore: lores[0] || null,
-				loreContent: lores.length > 0 ? lores[0].content : '',
-			};
+			return loreService._constuctLore(results);
 		} catch (error) {
 			handleServiceError(
 				error,
@@ -150,7 +174,7 @@ export const loreService = {
 
 			for (const rawResult of rawResults) {
 				const results = validateChromaResponse(rawResult, 'getList', collectionType);
-				const lores = buildFullEntities([results]) as LoreInfo[];
+				const lores = loreService._constuctLore(results).lores;
 
 				allLores.push(...lores);
 				allIds.push(...results.ids);
@@ -180,43 +204,28 @@ export const loreService = {
 	 * Store a new lore entry with unified metadata structure
 	 */
 	storeLore: async (loreInfo: LoreInfo): Promise<void> => {
-		const { content, ...loreData } = loreInfo;
-		const { characterId } = loreData;
 		const now = new Date().toISOString();
 
-		// Create unified metadata structure
 		const loreMetadata: LoreMetadata = {
-			// Base metadata fields (unified)
-			sessionId: loreData.sessionId || '', // May need to be provided or derived
-			characterId,
+			...stringifyLoreMetadata(loreInfo),
+			loreId: loreInfo.loreId || buildLoreId(loreInfo.englishId),
+			createdAt: loreInfo.createdAt || now,
 			type: METADATA_TYPES.LORE,
-			createdAt: loreData.createdAt || now,
 			updatedAt: now,
-			keywords: loreData.keywords || '', // Unified array field
-			topics: loreData.topics || '', // Unified array field
-			entities: loreData.entities || '', // Unified array field
-			sequence: loreData.sequence || 0, // May not be applicable for lore
-
-			// Lore-specific fields
-			loreId: loreData.loreId || buildLoreId(characterId, now),
-			category: loreData.category || 'general',
-			source: loreData.source || 'manual',
-			title: loreData.title || 'Untitled Lore',
 		};
-
 		try {
 			const collection = await loreService._getCollection();
 			const documentForEmbedding = buildLoreOrHistoryDocument(loreInfo);
 			await upsertRecord(collection, loreMetadata.loreId, documentForEmbedding, loreMetadata);
 
 			console.log(
-				`[LoreService] Successfully stored lore ${loreMetadata.loreId} for character ${characterId}`
+				`[LoreService] Successfully stored lore ${loreMetadata.loreId} for character ${loreMetadata.characterId}`
 			);
 		} catch (error) {
 			handleServiceError(
 				error,
 				'An internal error occurred while do [storeLore].',
-				`Failed to store lore for characterId ${characterId}`
+				`Failed to store lore for characterId ${loreMetadata.characterId}`
 			);
 		}
 	},
@@ -236,20 +245,15 @@ export const loreService = {
 		try {
 			const rawResults = await getRecords(collection, where);
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
-			const { ids, documents, metadatas } = results;
-
-			const histories = buildFullEntities([results]) as HistoryInfo[];
+			const historyInfos = loreService._constuctHistory(results);
 			// Sort by sequence for chronological order
-			histories.sort((a, b) => a.sequence - b.sequence);
+			const sorted = historyInfos.histories.sort((a, b) => a.sequence - b.sequence);
 
 			return {
-				ids,
-				documents,
-				metadatas,
-				histories,
-				historyContents: histories.map((history) => history.content),
-				history: histories[0] || null,
-				historyContent: histories.length > 0 ? histories[0].content : '',
+				...historyInfos,
+				historyContents: sorted.map((history) => history.content),
+				history: sorted[0] || null,
+				historyContent: sorted.length > 0 ? sorted[0].content : '',
 			};
 		} catch (error) {
 			handleServiceError(
@@ -264,44 +268,27 @@ export const loreService = {
 	 * Store a new history entry with unified metadata structure
 	 */
 	storeHistory: async (historyInfo: HistoryInfo): Promise<void> => {
-		const { content, ...historyData } = historyInfo;
-		const { characterId } = historyData;
 		const now = new Date().toISOString();
-
-		// Create unified metadata structure
 		const historyMetadata: HistoryMetadata = {
-			// Base metadata fields (unified)
-			sessionId: historyData.sessionId || '', // May need to be provided or derived
-			characterId,
+			...stringifyHistoryMetadata(historyInfo),
+			historyId: historyInfo.historyId || buildHistoryId(historyInfo.englishId),
+			createdAt: historyInfo.createdAt || now,
 			type: METADATA_TYPES.HISTORY,
-			createdAt: historyData.createdAt || now,
 			updatedAt: now,
-			keywords: historyData.keywords || '', // Unified array field
-			topics: historyData.topics || '', // Unified array field
-			entities: historyData.entities || '', // Unified array field
-			sequence: historyData.sequence || 0,
-
-			// History-specific fields (unified structure)
-			historyId: historyData.historyId || buildHistoryId(characterId, now),
-			title: historyData.title || 'Untitled Event',
-			period: historyData.period || { label: 'Unknown', confidence: 0.5 },
-			eventDate: historyData.eventDate || { value: 'Unknown', type: 'era_defined', confidence: 0.5 },
-			relatedEvents: historyData.relatedEvents || [],
 		};
-
 		try {
 			const collection = await loreService._getCollection();
 			const documentForEmbedding = buildLoreOrHistoryDocument(historyInfo);
 			await upsertRecord(collection, historyMetadata.historyId, documentForEmbedding, historyMetadata);
 
 			console.log(
-				`[LoreService] Successfully stored history ${historyMetadata.historyId} for character ${characterId}`
+				`[LoreService] Successfully stored history ${historyMetadata.historyId} for character ${historyInfo.characterId}`
 			);
 		} catch (error) {
 			handleServiceError(
 				error,
 				'An internal error occurred while do [storeHistory].',
-				`Failed to store history for characterId ${characterId}`
+				`Failed to store history for characterId ${historyInfo.characterId}`
 			);
 		}
 	},

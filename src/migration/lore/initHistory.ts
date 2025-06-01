@@ -138,7 +138,7 @@ const enrichHistoryWithMetadata = async (
 			keywords: parsedMetadata.keywords || [],
 			topics: parsedMetadata.topics || [],
 			entities: parsedMetadata.entities || [],
-			ownerCharacterIds: parsedMetadata.ownerCharacterIds || [CHARACTER_IDS[0]],
+			ownerCharacterIds: parsedMetadata.ownerCharacterIds || CHARACTER_IDS,
 			sideCharacterIds: parsedMetadata.sideCharacterIds || [],
 			period: parsedMetadata.period || { label: 'Unknown', confidence: 0.5 },
 			eventDate: parsedMetadata.eventDate || {
@@ -157,7 +157,7 @@ const enrichHistoryWithMetadata = async (
 			keywords: [],
 			topics: [],
 			entities: [],
-			ownerCharacterIds: [CHARACTER_IDS[0]],
+			ownerCharacterIds: CHARACTER_IDS,
 			sideCharacterIds: [],
 			period: { label: 'Unknown', confidence: 0.5 },
 			eventDate: { value: 'Unknown', type: 'era_specific', confidence: 0.5 },
@@ -281,6 +281,7 @@ async function initHistoryFromFiles() {
 					historyId: historyEntry.historyId, // ✅ Use pre-generated unique ID
 					title: historyEntry.originalTitle,
 					generatedTitle: enrichedMetadata.generatedEnglishTitle,
+					englishId: enrichedMetadata.englishId,
 					category: enrichedMetadata.category,
 
 					// ✅ Temporal information (flattened fields)

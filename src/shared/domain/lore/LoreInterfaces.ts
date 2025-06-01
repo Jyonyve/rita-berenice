@@ -11,6 +11,7 @@ export interface LoreMetadata extends BaseMetadataType {
 	source: string; // ✅ Added missing source field
 	title: string;
 	generatedTitle: string; // Auto-generated title based on content
+	englishId: string; // kebab-case version of the title summary
 
 	// Character ownership and involvement (flattened for ChromaDB)
 	ownerCharacterIds: string; // "tarion_original,tarion_spinoff" - who owns this story
@@ -34,6 +35,7 @@ export interface HistoryMetadata extends BaseMetadataType {
 	type: typeof METADATA_TYPES.HISTORY;
 	title: string;
 	generatedTitle: string;
+	englishId: string; // kebab-case version of the title summary
 	category: string; // ✅ Added category field for consistency
 
 	// Character ownership and involvement (flattened for ChromaDB)

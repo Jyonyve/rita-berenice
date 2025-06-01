@@ -47,6 +47,7 @@ export const stringifyLoreMetadata = (loreInfo: LoreInfo): LoreMetadata => {
 		source: loreInfo.source,
 		title: loreInfo.title,
 		generatedTitle: loreInfo.generatedTitle,
+		englishId: loreInfo.englishId, // kebab-case version of the title summary
 
 		// Stringify character arrays
 		ownerCharacterIds: loreInfo.ownerCharacterIdArray.join(','),
@@ -55,7 +56,7 @@ export const stringifyLoreMetadata = (loreInfo: LoreInfo): LoreMetadata => {
 	};
 };
 
-export const parseLoreMetadata = (metadata: LoreMetadata, content: string): LoreInfo => {
+export const metadataToLore = (metadata: LoreMetadata, content: string): LoreInfo => {
 	return {
 		// Base metadata fields (from BaseMetadataType)
 		sessionId: metadata.sessionId,
@@ -76,6 +77,7 @@ export const parseLoreMetadata = (metadata: LoreMetadata, content: string): Lore
 		source: metadata.source,
 		title: metadata.title,
 		generatedTitle: metadata.generatedTitle,
+		englishId: metadata.englishId, // kebab-case version of the title summary
 
 		// Content
 		content,
@@ -119,6 +121,7 @@ export const stringifyHistoryMetadata = (historyInfo: HistoryInfo): HistoryMetad
 		historyId: historyInfo.historyId,
 		title: historyInfo.title,
 		generatedTitle: historyInfo.generatedTitle,
+		englishId: historyInfo.englishId, // kebab-case version of the title summary
 		category: historyInfo.category, // ✅ Added missing category field
 
 		// Stringify character arrays
@@ -138,7 +141,7 @@ export const stringifyHistoryMetadata = (historyInfo: HistoryInfo): HistoryMetad
 	};
 };
 
-export const parseHistoryMetadata = (metadata: HistoryMetadata, content: string): HistoryInfo => {
+export const metadataToHistory = (metadata: HistoryMetadata, content: string): HistoryInfo => {
 	return {
 		// Base metadata fields (from BaseMetadataType)
 		sessionId: metadata.sessionId,
@@ -157,6 +160,7 @@ export const parseHistoryMetadata = (metadata: HistoryMetadata, content: string)
 		historyId: metadata.historyId,
 		title: metadata.title,
 		generatedTitle: metadata.generatedTitle,
+		englishId: metadata.englishId, // kebab-case version of the title summary
 		category: metadata.category, // ✅ Added missing category field
 
 		// Temporal information (flattened fields from metadata)

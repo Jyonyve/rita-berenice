@@ -23,8 +23,6 @@ import {
 	inflateChatTurnDoc,
 } from '../util/index.ts';
 import { chatTurnToMetadata, metadataToChatTurn } from '#root/src/shared/util/dbConvertUtils.ts';
-import { inflate } from 'zlib';
-import { Chat } from 'openai/resources/index.mjs';
 
 // Destructure outside the object
 const {
