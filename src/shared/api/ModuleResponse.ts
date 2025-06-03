@@ -44,13 +44,6 @@ interface ProfileChromaResponse extends ChromaResponse {
 export type ProfileResponse = ProfileChromaResponse;
 
 // Chat
-export interface QueryChatLogsApiRequest {
-	// Define a more specific request body type for this route
-	sessionId: string;
-	queryText: string;
-	messageType: ChatMessageType; // Service handles 'both' or array
-	limit?: number;
-}
 interface ChatChromaResponse extends ChromaResponse {
 	chatTurns: ChatTurn[];
 	chatTurn?: ChatTurn;
@@ -82,7 +75,10 @@ export type RecapResponse = RecapChromaResponse;
 
 // term
 interface TermChromaResponse extends ChromaResponse {
-	term: Pick<TermInfo, 'koreanTerm' | 'englishTerm' | 'sessionId'>;
-	terms: Pick<TermInfo, 'koreanTerm' | 'englishTerm' | 'sessionId'>[];
+	term: Term;
+	terms: Term[];
+	termInfo: TermInfo;
+	termInfos: TermInfo[];
 }
 export type TermResponse = TermChromaResponse;
+export type Term = Pick<TermInfo, 'koreanTerm' | 'englishTerm' | 'termId'>;

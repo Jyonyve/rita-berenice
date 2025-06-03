@@ -215,14 +215,14 @@ export const chatService = {
 			const collection = await chatService._getCollection(sessionId);
 
 			// Create a where clause that includes the specified message types
-			const defaultWhere: Where = {
+			const whereClause: Where = {
 				$and: [
 					{ sessionId: { $eq: sessionId } },
 					{ type: { $eq: METADATA_TYPES.MESSAGE } },
 					{ messageType: { $eq: messageType } },
+					...(Array.isArray(where?.$and) ? where.$and : []),
 				],
 			};
-			const whereClause = where ? { ...defaultWhere, ...where } : defaultWhere;
 
 			const rawResults = await queryRecords(
 				collection,
@@ -255,11 +255,13 @@ export const chatService = {
 		try {
 			const collection = await chatService._getCollection(sessionId);
 
-			// Create a where clause that includes the specified message types
-			const defaultWhere: Where = {
-				$and: [{ sessionId: { $eq: sessionId } }, { type: { $eq: METADATA_TYPES.TURN } }],
+			const whereClause: Where = {
+				$and: [
+					{ sessionId: { $eq: sessionId } },
+					{ type: { $eq: METADATA_TYPES.TURN } },
+					...(Array.isArray(where?.$and) ? where.$and : []),
+				],
 			};
-			const whereClause = where ? { ...defaultWhere, ...where } : defaultWhere;
 			const rawResults = await queryRecords(collection, queryTexts, whereClause, whereDocument, limit);
 
 			const results = rawResults.map((raw) => validateChromaResponse(raw, 'getList', collectionType));

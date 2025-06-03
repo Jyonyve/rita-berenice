@@ -1,13 +1,12 @@
 // src/server/routes/glossary.routes.ts
 import express, { type Request, type Response } from 'express';
 import { TermInfo, genRoutePattern, COLLECTIONS } from '#shared/index.ts'; // Assuming MODULE_NAMES is not directly used in routes
-import { chatService, termService } from '../service/index.ts'; // Correct path
+import { termService } from '../service/index.ts'; // Correct path
 import {
 	asyncHandler,
 	validateRequestData, // For body validation
 	validateServiceId, // For sessionId path param
 } from '../util/index.ts'; // Assuming these are in your util
-import {} from '#root/src/shared/domain/term/TermInterfaces.ts';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.TERM; // For validating sessionId if it were used as a serviceId elsewhere
@@ -30,14 +29,14 @@ router.post(
 	})
 );
 
-// Example: GET /api/glossary/get-entry-by-korean-term/:koreanTerm
+// Example: GET /api/term/get-entry-by-korean-term/:sessionId/:koreanTerm
 router.get(
-	genRoutePattern('getTermByKorean', ['koreanTerm', 'sessionId']),
+	genRoutePattern('getTermByKorean', ['sessionId', 'koreanTerm']),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		validateRequestData(req.params, 'params', ['koreanTerm', 'sessionId']);
-		const { koreanTerm, sessionId } = req.params;
+		validateRequestData(req.params, 'params', ['sessionId', 'koreanTerm']);
+		const { sessionId, koreanTerm } = req.params;
 
-		const response = await termService.getTermByKorean(koreanTerm, sessionId);
+		const response = await termService.getTermByKorean(sessionId, koreanTerm);
 		res.status(200).json(response);
 	})
 );

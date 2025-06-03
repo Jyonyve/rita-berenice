@@ -12,3 +12,5 @@ export interface TermMetadata
 	type: typeof METADATA_TYPES.TERM;
 }
 export type TermInfo = TermMetadata;
+
+export type TermCdo = Pick<TermInfo, 'initialTerm' | 'koreanTerm' | 'sessionId' | 'termId'>;

@@ -82,18 +82,14 @@ export const inflateLoreOrHistoryDoc = (document: string): { title: string; cont
 };
 
 export const flatTermToDoc = (lore: TermInfo) => {
-	const { koreanTerm, englishTerm, sessionId } = lore;
-	const document = { koreanTerm, englishTerm, sessionId };
+	const { koreanTerm, englishTerm, termId } = lore;
+	const document = { koreanTerm, englishTerm, termId };
 	return JSON.stringify(document).trim();
 };
 
 export const inflateTermDoc = (
 	document: string
-): { koreanTerm: string; englishTerm: string; sessionId: string } => {
+): { koreanTerm: string; englishTerm: string; termId: string } => {
 	const parsed = JSON.parse(document);
-	return {
-		koreanTerm: parsed.koreanTerm,
-		englishTerm: parsed.englishTerm,
-		sessionId: parsed.sessionId,
-	};
+	return { koreanTerm: parsed.koreanTerm, englishTerm: parsed.englishTerm, termId: parsed.termId };
 };
