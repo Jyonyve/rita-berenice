@@ -30,14 +30,14 @@ export type AllResponse =
 
 //character
 interface CharacterChromaResponse extends ChromaResponse {
-	basicCharacterInfo?: CharacterInfo;
+	basicCharacterInfo: CharacterInfo;
 	basicCharacterInfos: CharacterInfo[];
 }
 export type CharacterResponse = CharacterChromaResponse;
 
 // profile
 interface ProfileChromaResponse extends ChromaResponse {
-	basicProfileInfo?: ProfileInfo;
+	basicProfileInfo: ProfileInfo;
 	basicProfileInfos: ProfileInfo[];
 }
 
@@ -46,7 +46,7 @@ export type ProfileResponse = ProfileChromaResponse;
 // Chat
 interface ChatChromaResponse extends ChromaResponse {
 	chatTurns: ChatTurn[];
-	chatTurn?: ChatTurn;
+	chatTurn: ChatTurn;
 }
 export type ChatResponse = ChatChromaResponse;
 

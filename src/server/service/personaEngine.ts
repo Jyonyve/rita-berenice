@@ -1,158 +1,120 @@
-// src/services/personaEngine.ts
+// src/server/services/personaEngine.ts
+
 import {
-	EmotionKey,
 	CharacterMetadata,
 	AiModelInfo,
-	DEFAULT_IMAGE_NUMBER,
 	ChatMessage,
 	DEFAULT_EMOTION,
-	EmotionValue,
+	BasicBeingInfo,
+	ChatTurn, // We now work with the enriched turn
+	parseEntriesToText,
+	CharacterInfo,
+	ProfileInfo,
+	DEFAULT_CHAT_MODEL_FREE, // Assuming you have a default chat model defined
 } from '#shared/index.ts';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
-import { llmService } from './llmService.ts';
-// Import template utils
-import {
-	EMOTION_TEMPLATE,
-	buildLogContextPrompt,
-	buildLlmRelationshipRecapPrompt,
-} from '../util/index.ts'; // Adjust path as needed
-import { chatService } from './chatService.ts'; // To fetch relationship recap
-import { recapService } from './recapService.ts';
+import { llmService, recapService, loreService } from './index.ts';
+import { buildPersonaSystemPrompt } from '../util/templateUtils.ts'; // Import the new, correct prompt builder [1]
 
 export interface PersonaResponse {
 	response: string;
 	emotion: string;
 }
 
-export const createPersonaEngine = (
-	persona: CharacterMetadata, // Contains persona.name (charName) and persona.instructions
-	aiModelInfo: AiModelInfo,
-	sessionId: string, // Session ID is needed to fetch recaps
-	userName: string = 'the user' // User's name/identifier
-) => {
-	let memory: ChatMessage[] = [];
-
-	const buildPrompt = async (userInput: string): Promise<ChatCompletionMessageParam[]> => {
-		const systemPromptParts: string[] = [];
-
-		// 1. Core Persona Instructions
-		systemPromptParts.push(persona.instruction);
-
-		// 2. Relationship Context (fetched from chatService)
-		const relationshipRecapText = await recapService.getRelationshipRecap(sessionId);
-		const relationshipContext = buildRelationshipContextSystemPrompt(
-			relationshipRecapText,
-			userName,
-			persona.name // charName from persona metadata
-		);
-		if (relationshipContext) {
-			systemPromptParts.push(relationshipContext);
+// A helper to robustly parse the LLM's JSON response
+const _parseLlmJsonResponse = (jsonString: string): PersonaResponse => {
+	if (!jsonString) {
+		return { response: '[LLM returned empty response]', emotion: DEFAULT_EMOTION };
+	}
+	try {
+		const parsed = JSON.parse(jsonString);
+		// Basic validation of the parsed object's structure
+		if (typeof parsed.response === 'string' && typeof parsed.emotion === 'string') {
+			return parsed;
 		}
-
-		// 3. General Recap (Optional, if you decide to fetch and add it here too)
-		// const generalRecapText = await chatService.getRecap(sessionId);
-		// if (generalRecapText) {
-		//   systemPromptParts.push(`\n[General Conversation Recap]\n"${generalRecapText}"`);
-		// }
-
-		// 4. Emotion Template
-		systemPromptParts.push(EMOTION_TEMPLATE);
-
-		const finalSystemContent = systemPromptParts.join('\n\n---\n\n'); // Join with a clear separator
-
-		const prompt: ChatCompletionMessageParam[] = [{ role: 'system', content: finalSystemContent }];
-
-		// Add memory (past messages)
-		for (const msg of memory) {
-			const content = msg.entries?.map((e) => e.prompt).join('\n') || '';
-			if (content && (msg.role === 'user' || msg.role === 'assistant')) {
-				const role = msg.role as 'user' | 'assistant';
-				prompt.push({ role, content });
-			}
-		}
-
-		prompt.push({ role: 'user', content: userInput });
-		return prompt;
-	};
-
-	const loadMemory = (messages: ChatMessage[]): void => {
-		memory = messages;
-		// console.log(`PersonaEngine loaded ${messages.length} messages into memory for session ${sessionId}.`);
-	};
-
-	const ask = async (userInput: string): Promise<PersonaResponse> => {
-		// console.log(`PersonaEngine (session ${sessionId}) asking with input: "${userInput}" for user "${userName}"`);
-		const messages = await buildPrompt(userInput); // buildPrompt is now async
-
-		// console.log(`PersonaEngine (session ${sessionId}) invoking LLM with messages:`, JSON.stringify(messages, null, 2));
-
-		const rawJsonResponse = await llmService.invokeLlmFromMessages(messages, aiModelInfo);
-		// console.log(`PersonaEngine (session ${sessionId}) received raw response:`, rawJsonResponse);
-
-		let parsed: { response: string; emotion: string };
-		try {
-			parsed = JSON.parse(rawJsonResponse);
-			if (typeof parsed.response !== 'string' || typeof parsed.emotion !== 'string') {
-				throw new Error('Parsed JSON does not match expected structure');
-			}
-		} catch (err: any) {
-			console.error(`LLM (session ${sessionId}) returned invalid JSON: ${rawJsonResponse}`, err);
-			return { response: rawJsonResponse, emotion: DEFAULT_EMOTION }; // Fallback
-		}
-		return { response: parsed.response, emotion: parsed.emotion };
-	};
-
-	const getPriorLogContext = async (
-		sessionId: string,
-		userInput: string,
-		isFullLogQuery = false
-	): Promise<string> => {
-		let context = '';
-
-		if (!isFullLogQuery) {
-			context = await recapService.getRecap(sessionId);
-		}
-
-		if (isFullLogQuery || !context) {
-			const turns = await chatService.queryChatTurnEntries(sessionId, userInput, -1);
-			context = turns.join('\n');
-		}
-
-		return buildLogContextPrompt(userInput, context);
-	};
-
-	return { loadMemory, ask, getPriorLogContext };
+		// If structure is wrong, return the raw string as response
+		return { response: jsonString, emotion: DEFAULT_EMOTION };
+	} catch (err) {
+		console.error(`[personaEngine] LLM returned invalid JSON, using raw response. Error:`, err);
+		return { response: jsonString, emotion: DEFAULT_EMOTION };
+	}
 };
 
-// Example Usage (conceptual, where you create the engine):
-/*
-  async function handleChatRequest(
-	sessionId: string,
-	userInput: string,
-	modelInfo: AiModelInfo,
-	characterData: CharacterMetadata, // Includes characterData.name
-	userName: string // The name of the user interacting with Tarion
-  ) {
-	const history = await chatService.getRecentChatTurns(sessionId, 10); // Fetch limited history for engine memory
-	// Convert ChatTurn[] to ChatMessage[] if necessary, or adjust createPersonaEngine memory type
-	const engineMemory: ChatMessage[] = history.map(turn => ({
-		role: 'user', // This needs more sophisticated mapping from ChatTurn to ChatMessage
-		entries: turn.request.entries,
-		// ... other ChatMessage fields
-	})).concat(
-	  history.map(turn => ({
-		role: 'assistant',
-		entries: turn.response.entries,
-		// ...
-	  }))
-	);
-  
-  
-	const engine = createPersonaEngine(characterData, modelInfo, sessionId, userName);
-	engine.loadMemory(engineMemory); // Or a more suitable representation of history for the engine's memory
-	const result = await engine.ask(userInput);
-  
-	// ... then you'd call chatService.storeChatTurn, passing characterData.name and userName
-	// await chatService.storeChatTurn(newChatTurn, characterData.name, userName);
-  }
-  */
+// Define the model for this specific task.
+// Using DEFAULT_CHAT_MODEL ensures consistency.
+const PERSONA_RESPONSE_MODEL: AiModelInfo = DEFAULT_CHAT_MODEL_FREE;
+
+export const personaEngine = {
+	/**
+	 * Generates a character's conversational response based on persona, memory, and an enriched context.
+	 * This is a stateless method that receives all necessary information.
+	 * @param enrichedTurn The ChatTurn object, now containing enrichedMetadata from memoryEngine.
+	 * @param characterInfo The full metadata for the character persona.
+	 * @param userInfo The basic info for the user.
+	 * @param history The recent chat history as an array of ChatMessage.
+	 * @param options An object containing the AbortSignal for timeout control.
+	 * @returns A promise that resolves to the character's response and emotion.
+	 */
+	async generateResponse(
+		enrichedTurn: ChatTurn,
+		characterInfo: CharacterInfo,
+		userInfo: ProfileInfo,
+		history: ChatMessage[],
+		options?: { signal?: AbortSignal }
+	): Promise<PersonaResponse> {
+		console.log(`[personaEngine] Generating response for turn ${enrichedTurn.sequence}...`);
+		const { sessionId } = enrichedTurn;
+		const { characterId } = characterInfo;
+
+		try {
+			// --- 1. GATHER ALL CONTEXTUAL DATA IN PARALLEL ---
+			// Your new strategy: fetch multiple, specific memory sources.
+			const [factualRecap, relationshipRecap, lore] = await Promise.all([
+				recapService.getFactualRecap(sessionId), // Gets what the character has stated as fact
+				recapService.getRelationshipRecap(sessionId), // Gets how the character feels about the user
+				loreService.getLore(characterId), // Gets the absolute "ground truth" for the character
+			]);
+
+			// --- 2. BUILD THE COMPREHENSIVE SYSTEM PROMPT ---
+			// Use the new, powerful prompt builder from your template file.
+			const systemPromptContent = buildPersonaSystemPrompt(
+				characterInfo.instruction,
+				factualRecap.content,
+				relationshipRecap.content,
+				lore.content,
+				characterInfo.name,
+				userInfo.name
+			);
+
+			const messages: ChatCompletionMessageParam[] = [
+				{ role: 'system', content: systemPromptContent },
+			];
+
+			// --- 3. CONSTRUCT THE FULL MESSAGE HISTORY ---
+			// Append the recent chat history to the prompt context.
+			for (const msg of history) {
+				const content = parseEntriesToText(msg.entries);
+				if (content && (msg.role === 'user' || msg.role === 'assistant')) {
+					messages.push({ role: msg.role, content });
+				}
+			}
+			// Finally, add the current user's request.
+			messages.push({ role: 'user', content: parseEntriesToText(enrichedTurn.request.entries) });
+
+			// --- 4. INVOKE LLM WITH TIMEOUT AND PARSE RESPONSE ---
+			// Pass the timeout signal down to the LLM service.
+			const rawJsonResponse = await llmService.invokeLlmFromMessages(
+				messages,
+				PERSONA_RESPONSE_MODEL,
+				options
+			);
+
+			return _parseLlmJsonResponse(rawJsonResponse);
+		} catch (error) {
+			console.error(`[personaEngine] Failed to generate response for session ${sessionId}:`, error);
+			// Re-throw the error to be caught by the main orchestrator (handleChatRequest).
+			// This will trigger the global failure/timeout handling.
+			throw error;
+		}
+	},
+};

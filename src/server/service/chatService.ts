@@ -22,14 +22,11 @@ import {
 	validateChromaResponse,
 	inflateChatTurnDoc,
 } from '../util/index.ts';
-import {
-	stringifyChatTurnToMetadata,
-	metadataToChatTurn,
-} from '#root/src/shared/util/dbConvertUtils.ts';
+import { chatTurnToMetadata, metadataToChatTurn } from '#root/src/shared/util/dbConvertUtils.ts';
 
 // Destructure outside the object
 const {
-	getSessionCollection,
+	getChatCollection,
 	getTempChatCollection,
 	upsertRecord,
 	getRecordById,
@@ -41,15 +38,14 @@ const collectionType = COLLECTIONS.CHAT;
 
 export const chatService = {
 	// Cache for session collections
-	_sessionCollections: new Map<string, Collection>(),
+	_chatCollection: null as Collection | null,
 	_tempChatCollection: null as Collection | null,
 
 	// Get collection methods with caching
-	_getCollection: async (sessionId: string): Promise<Collection> => {
-		const cached = chatService._sessionCollections.get(sessionId);
-		if (cached) return cached;
-		const collection = await getSessionCollection(sessionId);
-		chatService._sessionCollections.set(sessionId, collection);
+	_getChatCollection: async (): Promise<Collection> => {
+		if (chatService._chatCollection) return chatService._chatCollection;
+		const collection = await getChatCollection();
+		chatService._chatCollection = collection;
 		return collection;
 	},
 
@@ -73,7 +69,7 @@ export const chatService = {
 			type: METADATA_TYPES.MESSAGE,
 		};
 
-		const collection = await chatService._getCollection(sessionId);
+		const collection = await chatService._getChatCollection();
 		try {
 			const documentForEmbedding = flatChatMessageToDoc(request.entries);
 			await upsertRecord(collection, updatedMetadata.messageId, documentForEmbedding, updatedMetadata);
@@ -100,7 +96,7 @@ export const chatService = {
 			type: METADATA_TYPES.MESSAGE,
 		};
 		try {
-			const collection = await chatService._getCollection(sessionId);
+			const collection = await chatService._getChatCollection();
 
 			const documentForEmbedding = flatChatMessageToDoc(response.entries);
 			await upsertRecord(collection, updatedMetadata.messageId, documentForEmbedding, updatedMetadata);
@@ -119,8 +115,8 @@ export const chatService = {
 		const now = new Date().toISOString();
 		const { request, response, ...chatTurnMetadata } = chatTurn;
 		const { sessionId, sequence } = chatTurnMetadata;
-		const collection = await chatService._getCollection(sessionId);
-		const updatedMetadata: ChatTurnMetadata = stringifyChatTurnToMetadata(chatTurn);
+		const collection = await chatService._getChatCollection();
+		const updatedMetadata: ChatTurnMetadata = chatTurnToMetadata(chatTurn);
 		const documentForEmbedding = flatChatTurnToDoc(chatTurn);
 
 		await upsertRecord(collection, updatedMetadata.chatTurnId, documentForEmbedding, updatedMetadata);
@@ -212,7 +208,7 @@ export const chatService = {
 		limit?: number
 	): Promise<string[]> => {
 		try {
-			const collection = await chatService._getCollection(sessionId);
+			const collection = await chatService._getChatCollection();
 
 			// Create a where clause that includes the specified message types
 			const whereClause: Where = {
@@ -253,7 +249,7 @@ export const chatService = {
 		limit?: number
 	): Promise<ChatResponse> => {
 		try {
-			const collection = await chatService._getCollection(sessionId);
+			const collection = await chatService._getChatCollection();
 
 			const whereClause: Where = {
 				$and: [
@@ -286,15 +282,16 @@ export const chatService = {
 				documents: allDocuments,
 				metadatas: allMetadatas,
 				chatTurns: allChatTurns,
+				chatTurn: allChatTurns[0],
 			};
 		} catch (error) {
 			console.error(`Failed to query chat log for session ${sessionId}:`, error);
-			return { ids: [], documents: [], metadatas: [], chatTurns: [] };
+			return { ids: [], documents: [], metadatas: [], chatTurns: [], chatTurn: {} as ChatTurn };
 		}
 	},
 	/** Loads multiple FIXED turns  */
 	getChatTurns: async (sessionId: string, beforeSequence: number): Promise<ChatResponse> => {
-		const collection = await chatService._getCollection(sessionId);
+		const collection = await chatService._getChatCollection();
 		const where: Where = { type: METADATA_TYPES.TURN, sessionId, sequence: { $lt: beforeSequence } };
 		try {
 			const rawResults = await getRecords(collection, where);
@@ -311,7 +308,7 @@ export const chatService = {
 
 	/** Gets a single FIXED turn by sequence */
 	getChatTurnBySequence: async (sessionId: string, sequence: number): Promise<ChatResponse> => {
-		const collection = await chatService._getCollection(sessionId);
+		const collection = await chatService._getChatCollection();
 		const turnId = buildChatTurnId(sessionId, sequence);
 		try {
 			const rawResult = await getRecordById(collection, turnId);
@@ -327,11 +324,10 @@ export const chatService = {
 	},
 
 	// Method to clear the cache if needed (e.g., for testing or memory management)
-	clearCollectionCache: (sessionId?: string): void => {
-		if (sessionId) {
-			chatService._sessionCollections.delete(sessionId);
-		} else {
-			chatService._sessionCollections.clear();
-		}
+	clearChatCollectionCache: (): void => {
+		chatService._chatCollection = null;
+	},
+	clearTempChatCollectionCache: (): void => {
+		chatService._tempChatCollection = null;
 	},
 };

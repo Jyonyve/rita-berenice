@@ -35,6 +35,11 @@ export interface ProfileInfo extends ProfileMetadata {
 	description: string;
 }
 
+export type ProfileCdo = Pick<
+	ProfileInfo,
+	'creatorContact' | 'description' | 'gender' | 'name' | 'showName'
+>;
+
 export type CharacterImages = Record<string, string[]>;
 
 export interface CharacterAsset {
@@ -45,3 +50,8 @@ export interface CharacterAsset {
 export interface CharacterAssets {
 	[characterId: string]: Partial<Record<EmotionKey, CharacterAsset>>;
 }
+
+export type CharacterCdo = Pick<
+	CharacterInfo,
+	'creator' | 'creatorContact' | 'description' | 'instruction' | 'gender' | 'name' | 'showName'
+>;

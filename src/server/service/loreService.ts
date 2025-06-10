@@ -25,8 +25,8 @@ import {
 import {
 	metadataToHistory,
 	metadataToLore,
-	stringifyHistoryMetadata,
-	stringifyLoreMetadata,
+	historyToMetadata,
+	loreToMetadata,
 } from '#shared/util/dbConvertUtils.ts';
 
 // Destructure chromaDbClient methods
@@ -98,8 +98,6 @@ export const loreService = {
 		try {
 			const rawResults = await getRecords(collection, where);
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
-			const { ids, documents, metadatas } = results;
-
 			// Build full entities using the unified metadata structure
 			return loreService._constuctLore(results);
 		} catch (error) {
@@ -207,7 +205,7 @@ export const loreService = {
 		const now = new Date().toISOString();
 
 		const loreMetadata: LoreMetadata = {
-			...stringifyLoreMetadata(loreInfo),
+			...loreToMetadata(loreInfo),
 			loreId: loreInfo.loreId || buildLoreId(loreInfo.englishId),
 			createdAt: loreInfo.createdAt || now,
 			type: METADATA_TYPES.LORE,
@@ -270,7 +268,7 @@ export const loreService = {
 	storeHistory: async (historyInfo: HistoryInfo): Promise<void> => {
 		const now = new Date().toISOString();
 		const historyMetadata: HistoryMetadata = {
-			...stringifyHistoryMetadata(historyInfo),
+			...historyToMetadata(historyInfo),
 			historyId: historyInfo.historyId || buildHistoryId(historyInfo.englishId),
 			createdAt: historyInfo.createdAt || now,
 			type: METADATA_TYPES.HISTORY,

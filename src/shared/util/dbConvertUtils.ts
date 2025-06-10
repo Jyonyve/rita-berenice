@@ -19,7 +19,7 @@ import { DEFAULT_EMOTION } from '../config/emotionWordsMapper.ts';
 
 // --- LORE HELPERS ---
 
-export const stringifyLoreMetadata = (loreInfo: LoreInfo): LoreMetadata => {
+export const loreToMetadata = (loreInfo: LoreInfo): LoreMetadata => {
 	// Combine owner and side characters for the allAffected field
 	const allAffectedCharacters = [
 		...loreInfo.ownerCharacterIdArray,
@@ -37,9 +37,9 @@ export const stringifyLoreMetadata = (loreInfo: LoreInfo): LoreMetadata => {
 		sequence: loreInfo.sequence,
 
 		// Stringify arrays from BaseMetadataType
-		keywords: Array.isArray(loreInfo.keywords) ? loreInfo.keywords.join(',') : loreInfo.keywords,
-		topics: Array.isArray(loreInfo.topics) ? loreInfo.topics.join(',') : loreInfo.topics,
-		entities: Array.isArray(loreInfo.entities) ? loreInfo.entities.join(',') : loreInfo.entities,
+		keywords: loreInfo.keywords,
+		topics: loreInfo.topics,
+		entities: loreInfo.entities,
 
 		// Lore-specific fields
 		loreId: loreInfo.loreId,
@@ -50,9 +50,9 @@ export const stringifyLoreMetadata = (loreInfo: LoreInfo): LoreMetadata => {
 		englishId: loreInfo.englishId, // kebab-case version of the title summary
 
 		// Stringify character arrays
-		ownerCharacterIds: loreInfo.ownerCharacterIdArray.join(','),
-		sideCharacterIds: loreInfo.sideCharacterIdArray.join(','),
-		allAffectedCharacterIds: uniqueAllAffected.join(','),
+		ownerCharacterIds: convertArrayToString(loreInfo.ownerCharacterIdArray),
+		sideCharacterIds: convertArrayToString(loreInfo.sideCharacterIdArray),
+		allAffectedCharacterIds: convertArrayToString(uniqueAllAffected)
 	};
 };
 
@@ -91,7 +91,7 @@ export const metadataToLore = (metadata: LoreMetadata, content: string): LoreInf
 
 // --- HISTORY HELPERS ---
 
-export const stringifyHistoryMetadata = (historyInfo: HistoryInfo): HistoryMetadata => {
+export const historyToMetadata = (historyInfo: HistoryInfo): HistoryMetadata => {
 	// Combine owner and side characters for the allAffected field
 	const allAffectedCharacters = [
 		...historyInfo.ownerCharacterIdArray,
@@ -109,13 +109,9 @@ export const stringifyHistoryMetadata = (historyInfo: HistoryInfo): HistoryMetad
 		sequence: historyInfo.sequence,
 
 		// Stringify arrays from BaseMetadataType
-		keywords: Array.isArray(historyInfo.keywords)
-			? historyInfo.keywords.join(',')
-			: historyInfo.keywords,
-		topics: Array.isArray(historyInfo.topics) ? historyInfo.topics.join(',') : historyInfo.topics,
-		entities: Array.isArray(historyInfo.entities)
-			? historyInfo.entities.join(',')
-			: historyInfo.entities,
+		keywords:  historyInfo.keywords,
+		topics:historyInfo.topics,
+		entities: historyInfo.entities,
 
 		// History-specific fields
 		historyId: historyInfo.historyId,
@@ -125,9 +121,9 @@ export const stringifyHistoryMetadata = (historyInfo: HistoryInfo): HistoryMetad
 		category: historyInfo.category, // ✅ Added missing category field
 
 		// Stringify character arrays
-		ownerCharacterIds: historyInfo.ownerCharacterIdArray.join(','),
-		sideCharacterIds: historyInfo.sideCharacterIdArray.join(','),
-		allAffectedCharacterIds: uniqueAllAffected.join(','),
+		ownerCharacterIds: convertArrayToString(historyInfo.ownerCharacterIdArray),
+		sideCharacterIds: convertArrayToString(historyInfo.sideCharacterIdArray),
+		allAffectedCharacterIds: convertArrayToString(uniqueAllAffected),
 
 		// Flatten temporal objects
 		periodLabel: historyInfo.periodLabel,
@@ -203,7 +199,7 @@ export const removeCharacterFromLore = (
 
 // --- CHAT TURN HELPERS ---
 
-export const stringifyChatTurnToMetadata = (chatTurn: ChatTurn): ChatTurnMetadata => {
+export const chatTurnToMetadata = (chatTurn: ChatTurn): ChatTurnMetadata => {
 	return {
 		// Base metadata fields (from BaseMetadata)
 		sessionId: chatTurn.sessionId,

@@ -1,0 +1,11 @@
+{
+  "sessionId": "tarion_original_tNdg2L3DmmNng3ka",
+  "totalTurnsInLogFile": 403,
+  "lastProcessedSequence": 402,
+  "successfullyEnrichedTurnsCount": 403,
+  "fallbackSavedTurnsCount": 0,
+  "startedAt": "2025-06-10T12:45:13.632Z",
+  "lastUpdatedAt": "2025-06-10T13:19:15.678Z",
+  "status": "completed",
+  "errors": []
+}

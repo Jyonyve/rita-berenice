@@ -1,123 +1,67 @@
 // src/server/db/chromaDbClient.ts
 import { COLLECTIONS, MetadataType } from '#root/src/shared/domain/index.ts';
-import { DEFAULT_QUERY_LIMIT, ChromaResponse } from '#root/src/shared/index.ts';
+import { ChromaResponse } from '#root/src/shared/index.ts';
 import { ChromaClient, Collection, IncludeEnum, GetResponse, Where, WhereDocument } from 'chromadb';
 
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev';
 const chromaClient = new ChromaClient({ path: CHROMA_URL });
 
-// Collection caches
-const sessionCollections: Record<string, Collection> = {};
-let characterCollection: Collection | null = null;
-let profileCollection: Collection | null = null;
-let credentialCollection: Collection | null = null;
-let tempChatCollection: Collection | null = null;
-let recapCollection: Collection | null = null;
-let termCollection: Collection | null = null;
-let loreCollection: Collection | null = null;
+/**
+ * A centralized Map to cache all singleton Collection objects.
+ * This avoids repetitive caching logic for each collection type.
+ * Structure: Map<collectionName, Collection>
+ */
+const _collectionCache: Map<string, Collection> = new Map();
+
+/**
+ * A generic, caching helper for retrieving singleton collections.
+ * It checks the cache first and only calls the DB if the collection object is not yet cached.
+ * @param collectionName The name of the collection from the COLLECTIONS enum.
+ * @returns A Promise that resolves to the ChromaDB Collection object.
+ */
+const _getOrCreateSingletonCollection = async (collectionName: string): Promise<Collection> => {
+	// 1. Check the central cache first
+	if (_collectionCache.has(collectionName)) {
+		return _collectionCache.get(collectionName)!;
+	}
+
+	// 2. If not in cache (cache miss), fetch it from ChromaDB
+	console.log(`[ChromaClient] Cache MISS for singleton collection: ${collectionName}. Creating...`);
+	const collection = await chromaClient.getOrCreateCollection({
+		name: collectionName,
+		// The collection's metadata 'type' is set to its own name for consistency.
+		metadata: { type: collectionName },
+	});
+
+	// 3. Store the new collection object in the cache for future requests
+	_collectionCache.set(collectionName, collection);
+	return collection;
+};
 
 const _returnResponse = (results: GetResponse | ChromaResponse): ChromaResponse => {
 	const { ids, metadatas, documents } = results;
-	let result = { ids, metadatas, documents };
-	if (ids.length === 0) {
+	if (!ids || ids.length === 0) {
 		console.log(`[ChromaClient._returnResponse] No documents found for the query.`);
+		return { ids: [], metadatas: [], documents: [] };
 	}
 	console.log(`[ChromaClient._returnResponse] Found ${ids.length} entries.`);
-	return result;
+	return { ids, metadatas, documents };
 };
 
 export const chromaDbClient = {
-	// Basic collection management
-	getCredentialCollection: async (): Promise<Collection> => {
-		if (!credentialCollection) {
-			credentialCollection = await chromaClient.getOrCreateCollection({
-				// Use a consistent name for the secrets collection
-				name: COLLECTIONS.CREDENTIAL,
-				metadata: { type: COLLECTIONS.CREDENTIAL },
-			});
-		}
-		return credentialCollection;
-	},
-
-	getCharacterCollection: async (): Promise<Collection> => {
-		if (!characterCollection) {
-			characterCollection = await chromaClient.getOrCreateCollection({
-				name: COLLECTIONS.CHARACTER,
-				metadata: { type: COLLECTIONS.CHARACTER },
-			});
-		}
-		return characterCollection;
-	},
-
-	getProfileCollection: async (): Promise<Collection> => {
-		if (!profileCollection) {
-			profileCollection = await chromaClient.getOrCreateCollection({
-				name: COLLECTIONS.PROFILE,
-				metadata: { type: COLLECTIONS.PROFILE },
-			});
-		}
-		return profileCollection;
-	},
-
-	getTempChatCollection: async (): Promise<Collection> => {
-		if (!tempChatCollection) {
-			tempChatCollection = await chromaClient.getOrCreateCollection({
-				name: COLLECTIONS.TEMP,
-				metadata: { type: COLLECTIONS.TEMP },
-			});
-		}
-		return tempChatCollection;
-	},
-
-	getRecapCollection: async (): Promise<Collection> => {
-		if (!recapCollection) {
-			recapCollection = await chromaClient.getOrCreateCollection({
-				name: COLLECTIONS.RECAP,
-				metadata: { type: COLLECTIONS.RECAP },
-			});
-		}
-		return recapCollection;
-	},
-
-	getLoreCollection: async (): Promise<Collection> => {
-		if (!loreCollection) {
-			loreCollection = await chromaClient.getOrCreateCollection({
-				name: COLLECTIONS.LORE,
-				metadata: { type: COLLECTIONS.LORE },
-			});
-		}
-		return loreCollection;
-	},
-
-	getTermCollection: async (): Promise<Collection> => {
-		if (!termCollection) {
-			termCollection = await chromaClient.getOrCreateCollection({
-				name: COLLECTIONS.TERM,
-				metadata: { type: COLLECTIONS.TERM },
-			});
-		}
-		return termCollection;
-	},
-
-	getSessionCollection: async (sessionId: string): Promise<Collection> => {
-		if (!sessionId) {
-			throw new Error('Session ID is required');
-		}
-
-		if (!sessionCollections[sessionId]) {
-			const characterName = sessionId.split('-')[0];
-			sessionCollections[sessionId] = await chromaClient.getOrCreateCollection({
-				name: COLLECTIONS.CHAT,
-				metadata: {
-					type: COLLECTIONS.CHAT,
-					sessionId,
-					characterName,
-					createdAt: new Date().toISOString(),
-				},
-			});
-		}
-		return sessionCollections[sessionId];
-	},
+	// --- Collection Getters (Now refactored to use the generic helper) ---
+	getCredentialCollection: (): Promise<Collection> =>
+		_getOrCreateSingletonCollection(COLLECTIONS.CREDENTIAL),
+	getCharacterCollection: (): Promise<Collection> =>
+		_getOrCreateSingletonCollection(COLLECTIONS.CHARACTER),
+	getProfileCollection: (): Promise<Collection> =>
+		_getOrCreateSingletonCollection(COLLECTIONS.PROFILE),
+	getTempChatCollection: (): Promise<Collection> =>
+		_getOrCreateSingletonCollection(COLLECTIONS.TEMP),
+	getRecapCollection: (): Promise<Collection> => _getOrCreateSingletonCollection(COLLECTIONS.RECAP),
+	getLoreCollection: (): Promise<Collection> => _getOrCreateSingletonCollection(COLLECTIONS.LORE),
+	getTermCollection: (): Promise<Collection> => _getOrCreateSingletonCollection(COLLECTIONS.TERM),
+	getChatCollection: (): Promise<Collection> => _getOrCreateSingletonCollection(COLLECTIONS.CHAT),
 
 	/**
 	 * 컬렉션의 전체 문서 수를 반환합니다.

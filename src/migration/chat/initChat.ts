@@ -19,7 +19,7 @@ import {
 	buildMessageId,
 	buildSessionId,
 } from '#server/util/buildIdUtils.ts';
-import { allEmotionKeywordsList, validEmotions } from '#shared/config/emotionWordsMapper.ts';
+import { validEmotions } from '#shared/config/emotionWordsMapper.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -415,8 +415,7 @@ async function initChatFromLogFiles() {
 		const characterVariantFromFile = fileNameParts[1]; // e.g., "original", "spinoff"
 
 		const characterId = buildCharacterId(characterNameFromFile, characterVariantFromFile);
-		// const TARGET_SESSION_ID = buildSessionId(characterId); // initially, we used this, but if proccess stopped, now we use a fixed session ID
-		const TARGET_SESSION_ID = 'tarion_spinoff_0RWsIE7zKLQ3ANEN';
+		const TARGET_SESSION_ID = buildSessionId(characterId); // initially, we used this, but if proccess stopped, now we use a fixed session ID
 
 		console.log(
 			`\n📝 Processing log file: "${logFile}" for session ID: "${TARGET_SESSION_ID}" (Character: ${characterId})...`
