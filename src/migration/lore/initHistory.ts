@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 import { HistoryInfo } from '../../shared/domain/lore/LoreInterfaces.ts';
 import { COLLECTIONS, METADATA_TYPES } from '../../shared/domain/chromadb/ChromaInterfaces.ts';
-import { stringifyHistoryMetadata } from '../../shared/util/dbConvertUtils.ts';
+import { historyToMetadata } from '../../shared/util/dbConvertUtils.ts';
 import { buildHistoryId } from '../../server/util/buildIdUtils.ts';
 import { flatLoreOrHistoryToDoc } from '../../server/util/documentUtils.ts';
 import { buildHistoryMetadataPrompt } from '../../server/util/templateUtils.ts';
@@ -386,7 +386,7 @@ async function initHistoryFromFiles() {
 					relatedEventsArray: enrichedMetadata.temporalRelations,
 				};
 
-				const chromaMetadata = stringifyHistoryMetadata(historyInfo);
+				const chromaMetadata = historyToMetadata(historyInfo);
 				const documentForEmbedding = flatLoreOrHistoryToDoc(historyInfo);
 
 				await collection.upsert({

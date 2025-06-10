@@ -1,7 +1,12 @@
-import { COLLECTIONS, METADATA_TYPES, ProfileMetadata } from '#root/src/shared/index.ts';
+import {
+	COLLECTIONS,
+	METADATA_TYPES,
+	ProfileInfo,
+	ProfileMetadata,
+} from '#root/src/shared/index.ts';
 import { Collection, IncludeEnum, Document, Where } from 'chromadb';
 import { chromaDbClient } from '../db/chromaDbClient.ts';
-import { BasicProfileInfo, ProfileResponse } from '#shared/api/index.ts';
+import { ProfileResponse } from '#shared/api/index.ts';
 
 import {
 	validateChromaResponse,
@@ -41,7 +46,7 @@ export const profileService = {
 					return null;
 				}
 			})
-			.filter((char): char is BasicProfileInfo => char !== null);
+			.filter((char): char is ProfileInfo => char !== null);
 	},
 
 	// Profile Operations
@@ -56,7 +61,13 @@ export const profileService = {
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 			const { ids, documents, metadatas } = results;
 			const parsedInfos = profileService._parseDocToBasicProfileInfo(rawResults.documents);
-			return { ids, documents, metadatas, basicProfileInfos: parsedInfos };
+			return {
+				ids,
+				documents,
+				metadatas,
+				basicProfileInfos: parsedInfos,
+				basicProfileInfo: parsedInfos[0],
+			};
 		} catch (error) {
 			handleServiceError(
 				error,
@@ -117,17 +128,23 @@ export const profileService = {
 		}
 	},
 
-	getProfilesByShowName: async (showName: string, limit: number = -1): Promise<ProfileResponse> => {
+	getProfilesByShowName: async (showName: string): Promise<ProfileResponse> => {
 		const collection = await profileService._getCollection();
 		const where: Where = {
 			$and: [{ type: { $eq: METADATA_TYPES.PROFILE } }, { showName: { $in: showName } }],
 		};
 		try {
-			const rawResults = await getRecords(collection, where, limit);
+			const rawResults = await getRecords(collection, where);
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 			const { ids, documents, metadatas } = results;
 			const parsedBasicInfos = profileService._parseDocToBasicProfileInfo(documents);
-			return { ids, documents, metadatas, basicProfileInfos: parsedBasicInfos };
+			return {
+				ids,
+				documents,
+				metadatas,
+				basicProfileInfos: parsedBasicInfos,
+				basicProfileInfo: parsedBasicInfos[0],
+			};
 		} catch (error) {
 			handleServiceError(
 				error,

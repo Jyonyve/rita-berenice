@@ -48,22 +48,23 @@ async function checkSeededData() {
 		console.log(`Querying for documents with sessionId: "${TARGET_SESSION_ID}"...`);
 		const whereClause: Where = {
 			$and: [
-				{ sessionId: { $in: ['tarion_spinoff_0RWsIE7zKLQ3ANEN', 'tarion_original_QWE04yIbc8QN7NPw'] } },
+				{ sessionId: { $eq: 'tarion_spinoff_0RWsIE7zKLQ3ANEN' } },
+				// { sessionId: { $in: ['tarion_spinoff_0RWsIE7zKLQ3ANEN', 'tarion_original_QWE04yIbc8QN7NPw'] } },
 				{ type: { $eq: METADATA_TYPES.TURN } },
 			],
 		};
 		const results = await collection.get({
-			ids: [
-				'tarion_original_QWE04yIbc8QN7NPw_76_turn',
-				'tarion_original_QWE04yIbc8QN7NPw_77_turn',
-				'tarion_original_QWE04yIbc8QN7NPw_201_turn',
-				'tarion_spinoff_0RWsIE7zKLQ3ANEN_419_turn',
-				'tarion_spinoff_0RWsIE7zKLQ3ANEN_629_turn',
-				'tarion_spinoff_0RWsIE7zKLQ3ANEN_781_turn',
-				'tarion_spinoff_0RWsIE7zKLQ3ANEN_817_turn',
-				'tarion_spinoff_0RWsIE7zKLQ3ANEN_987_turn',
-				'tarion_spinoff_0RWsIE7zKLQ3ANEN_1041_turn',
-			], // Empty array to get all documents
+			// ids: [
+			// 	'tarion_original_QWE04yIbc8QN7NPw_76_turn',
+			// 	'tarion_original_QWE04yIbc8QN7NPw_77_turn',
+			// 	'tarion_original_QWE04yIbc8QN7NPw_201_turn',
+			// 	'tarion_spinoff_0RWsIE7zKLQ3ANEN_419_turn',
+			// 	'tarion_spinoff_0RWsIE7zKLQ3ANEN_629_turn',
+			// 	'tarion_spinoff_0RWsIE7zKLQ3ANEN_781_turn',
+			// 	'tarion_spinoff_0RWsIE7zKLQ3ANEN_817_turn',
+			// 	'tarion_spinoff_0RWsIE7zKLQ3ANEN_987_turn',
+			// 	'tarion_spinoff_0RWsIE7zKLQ3ANEN_1041_turn',
+			// ], // Empty array to get all documents
 			where: whereClause,
 			include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
 			// limit: 5 // Optional limit
@@ -77,29 +78,29 @@ async function checkSeededData() {
 		} else {
 			console.log(`Found ${results.ids.length} documents for sessionId "${TARGET_SESSION_ID}":`);
 			console.log('---');
-			// results.metadatas.slice(0, 3).forEach((metadata, index) => {
-			// 	console.log(`Metadata for Document ${index + 1}:`);
-			// 	console.log(JSON.stringify(metadata, null, 2));
-			// 	console.log('---');
-			// });
-			// if (results.ids.length > 3) {
-			// 	console.log(`(... and ${results.ids.length - 3} more documents)`);
-			// console.log('---');
-			// }
-			results.ids.forEach((id, index) => {
-				const metadata = results.metadatas[index];
-				const document = results.documents[index];
-				const request = JSON.parse(document!).request as ChatMessage;
-				const response = JSON.parse(document!).response as ChatMessage;
-
-				console.log(`Document ${index + 1}:`);
-				console.log(`ID: ${id}`);
-				console.log(`${JSON.stringify(metadata, null, 2)}`);
-				console.log(`${parseEntriesToText(request.entries)}`);
-				console.log(`${parseEntriesToText(response.entries)}`);
+			results.metadatas.slice(0, 3).forEach((metadata, index) => {
+				console.log(`Metadata for Document ${index + 1}:`);
+				console.log(JSON.stringify(metadata, null, 2));
 				console.log('---');
 			});
-			console.log(`Total documents confirmed for session ${TARGET_SESSION_ID}: ${results.ids.length}`);
+			if (results.ids.length > 3) {
+				console.log(`(... and ${results.ids.length - 3} more documents)`);
+				console.log('---');
+			}
+			// results.ids.forEach((id, index) => {
+			// 	const metadata = results.metadatas[index];
+			// 	const document = results.documents[index];
+			// 	const request = JSON.parse(document!).request as ChatMessage;
+			// 	const response = JSON.parse(document!).response as ChatMessage;
+
+			// 	console.log(`Document ${index + 1}:`);
+			// 	console.log(`ID: ${id}`);
+			// 	console.log(`${JSON.stringify(metadata, null, 2)}`);
+			// 	console.log(`${parseEntriesToText(request.entries)}`);
+			// 	console.log(`${parseEntriesToText(response.entries)}`);
+			// 	console.log('---');
+			// });
+			// console.log(`Total documents confirmed for session ${TARGET_SESSION_ID}: ${results.ids.length}`);
 		}
 	} catch (error) {
 		console.error('Error checking seeded data:', error);

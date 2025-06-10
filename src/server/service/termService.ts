@@ -14,12 +14,15 @@ import {
 } from '../util/index.ts';
 import { ChromaResponse, Term, TermResponse } from '#shared/api/ModuleResponse.ts';
 import { metadataToChatTurn } from '#root/src/shared/util/dbConvertUtils.ts';
+import { llmService } from './index.ts';
+import { isTermInfo } from '#root/src/shared/index.ts';
 
 const { getTermCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.TERM;
 
 export const termService = {
 	_termCollection: null as Collection | null,
+	_sessionTermCache: new Map<string, Map<string, TermInfo>>(),
 
 	_getCollection: async (): Promise<Collection> => {
 		if (termService._termCollection) {
@@ -56,24 +59,48 @@ export const termService = {
 		};
 	},
 
-	storeTerm: async (termInfo: TermInfo): Promise<void> => {
+	_getOrBuildSessionTermMap: async (sessionId: string): Promise<Map<string, TermInfo>> => {
+		// 1. Check the service-level cache first.
+		if (termService._sessionTermCache.has(sessionId)) {
+			console.log(`TermService Cache HIT for session: ${sessionId}`);
+			return termService._sessionTermCache.get(sessionId)!;
+		}
+
+		// 2. If not cached (CACHE MISS), fetch from DB and build the map.
+		console.log(`TermService Cache MISS for session: ${sessionId}. Building from DB.`);
+		const { termInfos } = await termService.getTermsBySessionId(sessionId);
+		const newTermMap = new Map<string, TermInfo>(termInfos.map((info) => [info.koreanTerm, info]));
+
+		// 3. Store the newly built map in the cache for subsequent requests.
+		termService._sessionTermCache.set(sessionId, newTermMap);
+		return newTermMap;
+	},
+
+	storeTerm: async (termInfo: TermCdo | TermInfo): Promise<void> => {
 		const collection = await termService._getCollection();
 		const now = new Date().toISOString();
+		const isTerm = isTermInfo(termInfo);
 
-		const termId = termInfo.termId || buildTermId(termInfo.sessionId); // Generate a new ID if not provided
 		const metadata: TermMetadata = {
 			...termInfo,
-			termId,
+			termId: isTerm ? termInfo.termId : buildTermId(termInfo.sessionId),
 			type: METADATA_TYPES.TERM,
-			initialTerm: termInfo.initialTerm || termInfo.englishTerm,
-			createdAt: termInfo.createdAt || now,
+			initialTerm: termInfo.initialTerm,
+			englishTerm: isTerm ? termInfo.englishTerm : termInfo.initialTerm,
+			createdAt: isTerm ? termInfo.createdAt : now,
 			updatedAt: now,
 		};
 
-		const documentForEmbedding = flatTermToDoc(termInfo);
+		const documentForEmbedding = flatTermToDoc(metadata);
 
 		try {
-			await chromaDbClient.upsertRecord(collection, termId, documentForEmbedding, metadata);
+			await chromaDbClient.upsertRecord(collection, metadata.termId, documentForEmbedding, metadata);
+
+			const sessionCache = await termService._getOrBuildSessionTermMap(metadata.sessionId);
+			sessionCache.set(metadata.koreanTerm, metadata);
+			console.log(
+				`TermService: Updated cache for term "${metadata.koreanTerm}" in session ${metadata.sessionId}.`
+			);
 		} catch (error: any) {
 			handleServiceError(
 				error,
@@ -125,59 +152,53 @@ export const termService = {
 			);
 		}
 	},
+
 	ensureAndGetTermsForPrompt: async (
 		sessionId: string,
 		koreanTermsToEnsure: string[]
-		// llmService is imported directly now
 	): Promise<Map<string, string>> => {
-		// Maps Korean term to its official English term for the prompt
+		const sessionTermMap = await termService._getOrBuildSessionTermMap(sessionId);
 		const termsForPromptMap = new Map<string, string>();
 
-		for (const korTerm of koreanTermsToEnsure) {
-			if (!korTerm || korTerm.trim() === '') continue;
+		for (const koreanTerm of new Set(koreanTermsToEnsure)) {
+			if (!koreanTerm || koreanTerm.trim() === '') continue;
 
-			let termToUse: TermInfo | null = await termService.getTermByKorean(sessionId, korTerm);
-
-			if (!termToUse) {
-				// Term not found, auto-translate and insert
+			if (sessionTermMap.has(koreanTerm)) {
+				const termInfo = sessionTermMap.get(koreanTerm)!;
+				termsForPromptMap.set(koreanTerm, termInfo.englishTerm);
+			} else {
 				console.log(
-					`TermService: Term "${korTerm}" not found for session ${sessionId}. Auto-translating.`
+					`TermService: Term "${koreanTerm}" not found in cache for session ${sessionId}. Auto-translating.`
 				);
-				// Call llmService to translate this specific Korean term
-				const initialEnglishTranslation = await llmService.translateProperNoun(korTerm); // llmService needs this method
+				const initialTerm = await llmService.translateProperNoun(koreanTerm);
 
-				if (initialEnglishTranslation && initialEnglishTranslation.trim() !== '') {
-					const newTermCdo: TermCdo = {
-						sessionId,
-						characterId, // Pass characterId
-						koreanTerm: korTerm,
-						englishTerm: initialEnglishTranslation,
-						initialLlmEnglishTerm: initialEnglishTranslation,
-						// type, createdAt, updatedAt will be handled by storeTerm or TermInfo constructor
-					};
+				if (initialTerm && initialTerm.trim() !== '') {
+					const newTermCdo: TermCdo = { sessionId, koreanTerm, initialTerm, termId: '' };
 					try {
-						termToUse = await termService.storeTerm(newTermCdo);
-						console.log(
-							`TermService: Auto-inserted new term "${korTerm}" -> "${termToUse.englishTerm}" for session ${sessionId}.`
-						);
+						await termService.storeTerm(newTermCdo);
+						termsForPromptMap.set(koreanTerm, initialTerm);
 					} catch (storeError) {
-						console.error(
-							`TermService: Failed to auto-insert term "${korTerm}" for session ${sessionId}:`,
-							storeError
-						);
-						// Decide how to handle: skip this term, use a fallback, or rethrow
-						continue; // Skip this term for prompt guidance if storage fails
+						console.error(`Failed to auto-insert term "${koreanTerm}":`, storeError);
+						continue;
 					}
 				} else {
-					console.warn(`TermService: LLM translation for "${korTerm}" was empty. Skipping for prompt.`);
-					continue;
+					console.warn(`LLM translation for "${koreanTerm}" was empty.`);
 				}
-			}
-			// If termToUse is now populated (either found or newly created)
-			if (termToUse && termToUse.englishTerm) {
-				termsForPromptMap.set(korTerm, termToUse.englishTerm);
 			}
 		}
 		return termsForPromptMap;
+	},
+
+	clearSessionCache: (sessionId: string): void => {
+		termService._sessionTermCache.delete(sessionId);
+		console.log(`TermService: Cleared cache for session ${sessionId}.`);
+	},
+
+	/**
+	 * Clear collection cache
+	 */
+	clearCollectionCache: (): void => {
+		console.log('[termService] Clearing cached recap collection.');
+		termService._termCollection = null;
 	},
 };

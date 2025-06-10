@@ -115,6 +115,7 @@ export const buildChatTurnMetadataPrompt = (
 	charResponse: ChatMessage,
 	existingLoreIds: string[],
 	existingHistoryIds: string[],
+	termGuidanceMap?: Map<string, string>,
 	eng?: boolean
 ): string => {
 	const userRequestContent = parseEntriesToText(userRequest.entries);
@@ -122,7 +123,24 @@ export const buildChatTurnMetadataPrompt = (
 
 	const { showName: userKor, name: userEng, gender: userGender } = userInfo;
 	const { showName: charKor, name: charEng, gender: charGender } = charInfo;
+	// --- Dynamically generate the terminology guidance section ---
+	let termGuidanceInstruction = '';
+	if (termGuidanceMap && termGuidanceMap.size > 0) {
+		const rulesList = Array.from(termGuidanceMap.entries())
+			.map(([korean, english]) => `  - For "${korean}", you MUST use the English term: "${english}"`)
+			.join('\n');
 
+		const korRulesList = Array.from(termGuidanceMap.entries())
+			.map(
+				([korean, english]) => `  - "${korean}"에 대해서는 반드시 영어 용어 "${english}"를 사용한다.`
+			)
+			.join('\n');
+
+		// This will be injected into the main prompt below
+		termGuidanceInstruction = eng
+			? `**Terminology Guidance (CRITICAL):**\n${rulesList}\n`
+			: `**용어 지침 (필수):**\n${korRulesList}\n`;
+	}
 	const prompt = eng
 		? `
 You are an expert AI assistant specializing in analyzing conversational turns to extract rich metadata for a Retrieval Augmented Generation (RAG) system.
@@ -141,12 +159,12 @@ Analyze the following single turn of conversation between ${userKor} (English: $
   "topics": ["string (Broader themes, e.g., 'character_background', 'mystery', 'trust_issues')"],
   "entities": ["string (Format: 'type:name', e.g., 'character:${charEng}', 'character:${userEng}', 'location:DarkForest')"],
   "userEmotion": { 
-    "primary": "string (One of: ${convertArrayToString(Array.from(allEmotionKeywordsList))}, or 'neutral', 'mixed')", 
+    "primary": "string (One of: ${convertArrayToString(Array.from(allEmotionKeywordsList))}, or 'default')", 
     "intensity": "number (0.0 to 1.0)", 
     "nuances": ["string (Specific emotion words, e.g., 'frustration', 'curiosity')"] 
   },
   "characterEmotion": { 
-    "primary": "string (One of: ${convertArrayToString(Array.from(allEmotionKeywordsList))}, or 'neutral', 'mixed')", 
+    "primary": "string (One of: ${convertArrayToString(Array.from(allEmotionKeywordsList))}, or 'default')", 
     "intensity": "number (0.0 to 1.0)", 
     "nuances": ["string (Specific emotion words, e.g., 'defensive', 'sadness')"] 
   },
@@ -160,6 +178,7 @@ Analyze the following single turn of conversation between ${userKor} (English: $
 }
 
 **Analysis Guidelines:**
+${termGuidanceInstruction} 
 - Use English names (${charEng}, ${userEng}) in entities and relationships
 - All metadata fields must be in English
 - Use unique loreId/historyId for references, not englishId
@@ -184,12 +203,12 @@ ${userKor}(영어명: ${userEng}, ${userGender} 사용자)과 ${charKor}(영어�
   "topics": ["string (광범위한 주제, 예: 'character_background', 'mystery', 'trust_issues')"],
   "entities": ["string (형식: 'type:name', 예: 'character:${charEng}', 'character:${userEng}', 'location:DarkForest')"],
   "userEmotion": { 
-    "primary": "string (다음 중 하나: ${convertArrayToString(Array.from(allEmotionKeywordsList))}, 또는 'neutral', 'mixed')", 
+    "primary": "string (다음 중 하나: ${convertArrayToString(Array.from(allEmotionKeywordsList))}, 또는 'default')", 
     "intensity": "number (0.0 to 1.0)", 
     "nuances": ["string (구체적 감정 단어, 예: 'frustration', 'curiosity')"] 
   },
   "characterEmotion": { 
-    "primary": "string (다음 중 하나: ${convertArrayToString(Array.from(allEmotionKeywordsList))}, 또는 'neutral', 'mixed')", 
+    "primary": "string (다음 중 하나: ${convertArrayToString(Array.from(allEmotionKeywordsList))}, 또는 'default')", 
     "intensity": "number (0.0 to 1.0)", 
     "nuances": ["string (구체적 감정 단어, 예: 'defensive', 'sadness')"] 
   },
@@ -203,6 +222,7 @@ ${userKor}(영어명: ${userEng}, ${userGender} 사용자)과 ${charKor}(영어�
 }
 
 **중요 지침:**
+${termGuidanceInstruction}
 - entities와 relationships에서 영어 이름 사용 (${charEng}, ${userEng})
 - 모든 메타데이터 필드는 영어로만 작성
 - 참조에는 고유한 loreId/historyId 사용 (englishId 아님)
@@ -699,3 +719,24 @@ ${existingHistoryEntries.map((h) => `- "${h.originalTitle}" → "${h.generatedTi
 
 JSON 출력:
 `.trim();
+
+export const buildTermTranslationPrompt = (koreanTerm: string): string => {
+	return `Translate the following Korean proper noun into its most common English equivalent. Provide only the English translation, with no additional text or punctuation.
+
+Korean Proper Noun: "${koreanTerm}"
+
+English Translation:`;
+};
+
+export const buildNerPrompt = (textToAnalyze: string): string => {
+	return `Extract all unique proper nouns (names of people, characters, places, organizations, specific items, etc.) from the following Korean text.
+Return your response as a JSON array of strings. For example: ["Proper Noun 1", "Another Noun"].
+If no proper nouns are found, return an empty array [].
+
+Korean Text:
+"""
+${textToAnalyze}
+"""
+
+JSON Array of Proper Nouns:`;
+};

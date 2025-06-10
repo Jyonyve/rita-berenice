@@ -2,13 +2,11 @@ import { supportAiModelInfo } from '../../config/supportAiModelInfo.ts'; //shoul
 
 // 2. Define types based on the new structure
 export type AiPlatform = keyof typeof supportAiModelInfo;
-export type AiProvider<S extends AiPlatform> = keyof (typeof supportAiModelInfo)[S];
+export type AiProvider<P extends AiPlatform> = keyof (typeof supportAiModelInfo)[P];
 export type AiModelName<
-	S extends AiPlatform,
-	P extends AiProvider<S>,
-> = (typeof supportAiModelInfo)[S][P] extends readonly string[]
-	? (typeof supportAiModelInfo)[S][P][number]
-	: never;
+	P extends AiPlatform,
+	Pr extends AiProvider<P>,
+> = (typeof supportAiModelInfo)[P][Pr] extends readonly (infer M)[] ? M : never;
 
 // Utility type to extract all models for a given source
 type ModelsForPlatform<S extends AiPlatform> = {
@@ -19,14 +17,17 @@ type ModelsForPlatform<S extends AiPlatform> = {
 export type AllModelNames = { [S in AiPlatform]: ModelsForPlatform<S> }[AiPlatform];
 
 // 3. Update AiModelInfo structure with proper provider typing
-export interface AiModelInfo {
-	platform: AiPlatform;
-	provider: AiProvider<AiPlatform>; // Fixed: Make provider properly typed
-	model: AllModelNames; // Fixed: Use AllModelNames type
-	temperature?: number; // Optional temperature setting
-	maxTokens?: number; // Optional max tokens setting
-	// apiKey?: string;
-}
+export type AiModelInfo = {
+	[P in AiPlatform]: {
+		[Pr in AiProvider<P>]: {
+			platform: P;
+			provider: Pr;
+			model: AiModelName<P, Pr>;
+			temperature?: number;
+			maxTokens?: number;
+		};
+	}[AiProvider<P>]; // Gets the union of all provider objects for platform P
+}[AiPlatform]; // Gets the union of all platform unions
 
 // Get all sources
 export const SupportAiPlatformList = Object.keys(supportAiModelInfo) as AiPlatform[];
@@ -58,4 +59,10 @@ export const DEFAULT_LOCAL_MODEL: AiModelInfo = {
 	platform: 'local',
 	provider: 'exaone',
 	model: 'exaone-deep-2.4b',
+};
+
+export const METADATA_GENERATION_MODEL: AiModelInfo = {
+	platform: 'googleai',
+	provider: 'google',
+	model: 'gemini-2.0-flash-001',
 };

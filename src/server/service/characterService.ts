@@ -57,17 +57,30 @@ export const characterService = {
 				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
 				where: { type: METADATA_TYPES.CHARACTER },
 			});
+
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 			const { ids, documents, metadatas } = results;
+
 			const parsedInfos = characterService._parseDocToBasicCharacterInfo(results.documents);
+
+			// Sort descending: newer (larger timestamp) comes before older (smaller timestamp)
 			parsedInfos.sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
-			return { ids, documents, metadatas, basicCharacterInfos: parsedInfos.reverse() };
+
+			return {
+				ids,
+				documents,
+				metadatas,
+				basicCharacterInfos: parsedInfos,
+				basicCharacterInfo: parsedInfos[0],
+			};
 		} catch (error) {
 			handleServiceError(
 				error,
-				'An internal error occurred while do [getAllCharacters].',
-				'Failed to get all characters:'
+				'An internal error occurred while executing [getAllCharacters].',
+				'Failed to get all characters.'
 			);
+			// Ensure the function returns a valid-shaped response or throws,
+			// depending on handleServiceError's behavior. Assuming it throws.
 		}
 	},
 
@@ -109,7 +122,13 @@ export const characterService = {
 
 			const { ids, documents, metadatas } = results;
 			const parsedBasicInfos = characterService._parseDocToBasicCharacterInfo(documents);
-			return { ids, documents, metadatas, basicCharacterInfos: parsedBasicInfos };
+			return {
+				ids,
+				documents,
+				metadatas,
+				basicCharacterInfos: parsedBasicInfos,
+				basicCharacterInfo: parsedBasicInfos[0],
+			};
 		} catch (error: any) {
 			handleServiceError(
 				error,
@@ -119,12 +138,12 @@ export const characterService = {
 		}
 	},
 
-	storeCharacter: async (characterInfo: CharacterMetadata): Promise<string> => {
+	storeCharacter: async (characterInfo: CharacterInfo): Promise<string> => {
 		const collection = await characterService._getCollection();
 		const now = new Date().toISOString();
 
 		// Prepare the data to be upserted
-		const character: CharacterMetadata = {
+		const characterMetadata: CharacterMetadata = {
 			...characterInfo, // Start with all fields from input
 			characterId:
 				characterInfo.characterId || buildCharacterId(characterInfo.name, characterInfo.variant),
@@ -133,27 +152,31 @@ export const characterService = {
 			type: METADATA_TYPES.CHARACTER,
 		};
 
-		const documentForEmbedding = flatCharacterToDoc(character);
+		const documentForEmbedding = flatCharacterToDoc({
+			...characterMetadata,
+			description: characterInfo.description,
+			instruction: characterInfo.instruction,
+		});
 
 		try {
 			// chromaDbClient.upsertRecord is Promise<void> and throws generic Error on underlying failure
 			await chromaDbClient.upsertRecord(
 				collection,
-				character.characterId,
+				characterMetadata.characterId,
 				documentForEmbedding,
-				character
+				characterMetadata
 			);
 
 			return JSON.stringify({
 				message: 'Character stored successfully.',
-				characterId: character.characterId,
-				updatedAt: character.updatedAt, // Reflect the timestamp set
+				characterId: characterMetadata.characterId,
+				updatedAt: characterMetadata.updatedAt, // Reflect the timestamp set
 			});
 		} catch (error) {
 			handleServiceError(
 				error,
 				'An internal error occurred while saving the character.',
-				`Failed to store character '${character.characterId}'`
+				`Failed to store character '${characterMetadata.characterId}'`
 			);
 		}
 	},
