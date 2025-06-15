@@ -53,6 +53,7 @@ export const loreToMetadata = (loreInfo: LoreInfo): LoreMetadata => {
 		loreId: loreInfo.loreId,
 		category: loreInfo.category,
 		source: loreInfo.source,
+		summary: loreInfo.summary,
 		title: loreInfo.title,
 		generatedTitle: loreInfo.generatedTitle,
 		englishId: loreInfo.englishId, // kebab-case version of the title summary
@@ -83,6 +84,7 @@ export const metadataToLore = (metadata: LoreMetadata, content: string): LoreInf
 		loreId: metadata.loreId,
 		category: metadata.category,
 		source: metadata.source,
+		summary: metadata.summary,
 		title: metadata.title,
 		generatedTitle: metadata.generatedTitle,
 		englishId: metadata.englishId, // kebab-case version of the title summary
@@ -122,6 +124,7 @@ export const historyToMetadata = (historyInfo: HistoryInfo): HistoryMetadata => 
 		entities: historyInfo.entities,
 
 		// History-specific fields
+		summary: historyInfo.summary,
 		historyId: historyInfo.historyId,
 		title: historyInfo.title,
 		generatedTitle: historyInfo.generatedTitle,
@@ -161,6 +164,7 @@ export const metadataToHistory = (metadata: HistoryMetadata, content: string): H
 		entities: metadata.entities,
 
 		// History-specific fields
+		summary: metadata.summary,
 		historyId: metadata.historyId,
 		title: metadata.title,
 		generatedTitle: metadata.generatedTitle,

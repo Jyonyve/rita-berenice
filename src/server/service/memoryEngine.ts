@@ -14,7 +14,7 @@ import {
 	convertArrayToString,
 	MemoryResponse,
 } from '#shared/index.ts';
-import { parseLlmJsonResponse } from '../util/index.ts';
+import { detectLanguage, parseLlmJsonResponse } from '../util/index.ts';
 import { handleServiceError } from '../util/serviceHelpers.ts';
 import { buildChatTurnMetadataPrompt } from '../util/templateUtils.ts';
 import {
@@ -92,7 +92,7 @@ export const memoryEngine = {
 	async recallRelevantMemories(sessionId: string, userRequestText: string): Promise<MemoryResponse> {
 		const { characterId } = parseSessionId(sessionId);
 		const MEMORY_LIMIT = 3; // Limit for long-term and recap queries
-
+		const langCode = detectLanguage(userRequestText);
 		try {
 			const [
 				shortTermHistoryRes,
@@ -125,6 +125,7 @@ export const memoryEngine = {
 				.join('\n');
 
 			return {
+				langCode,
 				shortTermHistory: shortTermHistoryRes?.chatTurns || [],
 				longTermHistory: longTermHistoryRes?.chatTurns || [],
 				relevantLore: relevantLoreRes?.lores || [],
@@ -187,7 +188,7 @@ export const memoryEngine = {
 			const enrichment = parseLlmJsonResponse<Record<string, any>>(llmResponse);
 
 			// 6. Create the final metadata object using your utilityd
-			return  _extractChatTurnMetadataInfoFromLlm(turn, enrichment);
+			return _extractChatTurnMetadataInfoFromLlm(turn, enrichment);
 		} catch (error) {
 			handleServiceError(
 				error,

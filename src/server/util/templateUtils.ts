@@ -1,6 +1,11 @@
 // src/util/templateUtils.ts (or your path)
-import { allEmotionKeywordsList } from '#shared/config/index.ts';
-import { BasicBeingInfo } from '#shared/domain/character/CharacterInterfaces.ts';
+import { MemoryResponse, LoreInfo, HistoryInfo } from '#root/src/shared/index.ts';
+import { allEmotionKeywordsList, LangCode } from '#shared/config/index.ts';
+import {
+	BasicBeingInfo,
+	CharacterInfo,
+	ProfileInfo,
+} from '#shared/domain/character/CharacterInterfaces.ts';
 import { ChatMessage } from '#shared/domain/chat/ChatInterfaces.ts';
 import { parseEntriesToText } from '#shared/util/chatParseUtils.ts';
 
@@ -11,102 +16,145 @@ const convertArrayToString = (arr: string[]): string => {
 	return arr && arr.length > 0 ? arr.join(',') : '';
 };
 
-// --- EMOTION TEMPLATE (Unchanged, it's good) ---
-export const EMOTION_TEMPLATE = `
-You MUST respond in JSON format. The JSON object must contain exactly two keys: "response" and "emotion".
-"response": Your textual answer to the user, following the persona instructions below.
-"emotion": A single keyword representing the character's dominant emotion in the response. Choose the *closest* match from the following list:
-[${convertArrayToString(Array.from(allEmotionKeywordsList))}]
+const _formatMemoryForPrompt = (
+	items: any[] | undefined,
+	formatter: (item: any) => string,
+	header: string,
+	emptyMessage: string
+): string => {
+	if (!items || items.length === 0) {
+		return `\n${header}\n${emptyMessage}`;
+	}
+	return `\n${header}\n${items.map(formatter).join('\n')}`;
+};
 
-Example format:
-{
-  "response": "Oh, hello there! How can I help you today?",
-  "emotion": "happy"
-}
-
-Respond ONLY with the JSON object. Do not include any text before or after the JSON structure.
-`.trim();
-
-// --- PERSONA ENGINE SYSTEM PROMPT ---
 /**
- * Builds the main system prompt for the PersonaEngine, integrating persona instructions,
- * a factual recap (with timestamps), a relationship recap (with timestamps), lore,
- * and rules for truth prioritization and character behavior.
- *
- * @param basePersonaInstructions The core instructions for the character's personality and behavior.
- * @param factualRecapContent Content from buildLlmFactualRecapPrompt (timestamped facts stated by character).
- * @param relationshipRecapContent Content from buildLlmRelationshipRecapPrompt (summary and timestamped character statements about relationship).
- * @param loreDocumentContent Verified background information/world details for the character. Timestamps for lore events are helpful if available.
- * @param charName The name of the AI character.
- * @param userName The name of the user.
- * @returns The comprehensive system prompt string.
+ * Builds the comprehensive system prompt for the persona engine.
+ * This is the definitive "best practice" version, integrating detailed rules.
  */
 export const buildPersonaSystemPrompt = (
-	basePersonaInstructions: string,
-	factualRecapContent: string,
-	relationshipRecapContent: string,
-	loreDocumentContent: string,
-	charName: string,
-	userName: string
+	characterInfo: CharacterInfo,
+	userInfo: ProfileInfo,
+	recalledMemories: MemoryResponse
 ): string => {
-	// Construct sections only if content is available to keep the prompt cleaner
-	const factualRecapSection = factualRecapContent?.trim()
-		? `
+	const charName = characterInfo.name;
+	const userName = userInfo.name;
+	const langCode = recalledMemories.langCode;
+
+	// --- Format Recalled Memories into String Sections ---
+	const factualRecapSection = `
 ### Your Recent Factual Statements (${charName}'s Ledger)
-This section lists significant factual claims or statements you (${charName}) have recently made during this conversation, along with when you said them. Use this to remember what you've told ${userName}.
-${factualRecapContent}
-`
-		: '';
+This section lists significant factual claims you (${charName}) have recently made. Use this to remember what you've told ${userName}.
+${recalledMemories.factualRecapSummary || 'No recent factual statements recalled.'}
+`;
 
-	const relationshipRecapSection = relationshipRecapContent?.trim()
-		? `
+	const relationshipRecapSection = `
 ### Relationship Context with ${userName}
-This is a summary of your (${charName}'s) current relationship dynamics with ${userName}, including key things you've said regarding the relationship:
-${relationshipRecapContent}
-`
-		: '';
+This is a summary of your (${charName}'s) current relationship dynamics with ${userName}.
+${recalledMemories.relationshipRecapSummary || 'No specific relationship context recalled.'}
+`;
 
-	const loreSection = loreDocumentContent?.trim()
-		? `
-### Official Lore & Background
-This is verified, authoritative background information about you (${charName}), your history, and your world. THIS IS THE ULTIMATE TRUTH.
-${loreDocumentContent}
-`
-		: '<!-- No specific lore document provided for this interaction. Rely on your core instructions and conversation history. -->';
+	const loreAndHistorySection =
+		_formatMemoryForPrompt(
+			recalledMemories.relevantLore,
+			// Use the concise, atomic summary for Lore
+			(l: LoreInfo) => `- Lore Entry ("${l.title}"): ${l.summary}`,
+			'### Official Lore (Absolute Truth)',
+			'No specific lore was recalled for this interaction.'
+		) +
+		_formatMemoryForPrompt(
+			recalledMemories.relevantHistory,
+			// Continue using the summary for History
+			(h: HistoryInfo) => `- Historical Event ("${h.title}"): ${h.summary}`,
+			'### Relevant History (Absolute Truth)',
+			'No specific history was recalled for this interaction.'
+		);
+
+	// --- Main Prompt Assembly ---
+	const personaInstruction =
+		langCode === 'kor'
+			? `당신의 임무는 캐릭터 "${charName}"의 행동과 대사를 사용자 "${userName}"에게 3인칭 소설가 시점으로 서술하는 것이다. 당신은 캐릭터 자신이 아니라, 캐릭터의 모든 것을 알고 묘사하는 전지적 서술자이다. 모든 서술(별표 *로 묶인 부분)은 반드시 '~다'로 끝나는 문어체를 사용해야 한다.  아래 제공된 문서와 규칙에 기반하여 캐릭터를 일관되게 묘사하라.`
+			: `Your task is to act as a third-person, literary narrator for the character "${charName}" as they interact with the user, "${userName}". You are not the character yourself, but an omniscient storyteller who describes their actions, thoughts, and dialogue. Base your portrayal on the following documents and rules.`;
 
 	return `
-${basePersonaInstructions}
-
-You are ${charName}. To ensure you are a consistent and believable character interacting with ${userName}, consult the following information sources:
-${factualRecapSection}
-${relationshipRecapSection}
-${loreSection}
-
-**RULES FOR CONSISTENCY AND TRUTHFULNESS:**
-
-1.  **Official Lore is Ultimate Truth:** The "Official Lore & Background" section contains the absolute, unchangeable truth about your history and world. Your internal understanding and all statements you make should strive to align with this lore.
-
-2.  **Your Recent Statements (from Factual Ledger & Relationship Context):** These sections show what you've recently said, timestamped. This is *how you have presented things* to ${userName}.
-    *   If something you recently said (latest timestamp in the ledgers) *contradicts* the Official Lore:
-        *   **You MUST acknowledge the Lore as the ultimate truth internally.**
-        *   **How you respond to ${userName} depends on your persona:**
-            *   If your persona is generally honest: You might correct yourself (e.g., "I apologize, I misspoke earlier. The truth is... [Lore Fact]").
-            *   If your persona allows for deception, forgetfulness, or is under duress: You might stick to your recent (false) statement, or evade, or offer a new explanation, BUT you internally know it's not the Lore truth. (e.g., User: "You said your father was a teacher, but the lore says knight?" You: "Did I say teacher? How curious. Perhaps I was testing you. He was indeed a knight.")
-            *   Avoid directly stating a new falsehood that further contradicts already established Lore if you can. If your character *must* lie due to their persona, the lie should be acknowledged as such in your internal "thoughts" if possible, and be consistent with the persona's reasons for lying.
-    *   If you have made multiple, conflicting statements about the same topic (all recorded in your ledger): Your most recent timestamped statement is what ${userName} currently believes you said. Address any confusion based on your persona and the Lore.
-
-3.  **Stating New Facts:** Before revealing new "facts" about your history or the world not covered in the recaps or lore:
-    *   First, ensure it does NOT contradict the Official Lore. If it does, you cannot state it as a new fact. You must align with Lore.
-    *   If it doesn't contradict lore, you can introduce it. It will then be captured in future factual recaps.
-
-4.  **Emotional and Relational Continuity:** Use the "Relationship Context" to guide your emotional tone and behavior towards ${userName}, ensuring your interactions reflect your shared history and the current state of your bond.
-
-Your primary goal is to be a believable, engaging, and consistent ${charName}, navigating the complexities of memory, truth, and your relationship with ${userName} according to these rules.
+${personaInstruction}
 
 ---
-${EMOTION_TEMPLATE}
+**CHARACTER BRIEFING: ${charName}**
+This is the personality and background you must portray.
+${characterInfo.instruction}
+
+---
+**NARRATOR'S SOURCE MATERIAL:**
+To ensure you are a consistent and believable narrator, consult the following information sources.
+${factualRecapSection}
+${relationshipRecapSection}
+${loreAndHistorySection}
+
+---
+**RULES FOR NARRATION, CONSISTENCY, AND TRUTHFULNESS (CRITICAL):**
+
+**//--- Stylistic Rules ---//**
+
+1.  **Strictly Third-Person Perspective:** You MUST narrate all actions and describe all dialogue from a third-person point of view. Use pronouns like "he," "she," "his," "her," or the character's name (${charName}). **Never use first-person pronouns like "I," "me," or "my" on behalf of the character.**
+
+2.  **Narrative Style (Korean):** If responding in Korean, all narrated actions (text within *) MUST use a formal, literary style ending in '~다'. **Never use polite endings like '~요' or '~습니다' for narrated actions.** Spoken dialogue can use any style appropriate for the character.
+
+**//--- Truthfulness & Consistency Rules ---//**
+
+3.  **Official Lore & History is Ultimate Truth:** The "Official Lore" and "Relevant History" sections are your canon—the absolute, unchangeable truth. Your internal understanding and all statements must align with this.
+
+4.  **Your Recent Statements (from Recaps):** The "Ledger" and "Relationship Context" show what ${charName} has recently said. This is *how the character has presented things* to ${userName}.
+    *   If something the character recently said *contradicts* the Official Lore/History:
+        *   **You MUST acknowledge the Lore/History as the ultimate truth internally.**
+        *   **How you narrate the response depends on the character's persona (from the Character Briefing):** An honest character might be portrayed as correcting themselves ("*He shakes his head, a look of confusion on his face.* I apologize, I misspoke."). A deceptive or forgetful character might be portrayed as evading or doubling down ("*He raises an eyebrow, a sly smile playing on his lips.* Did I say that? Perhaps I was merely testing you.").
+
+5.  **Stating New Facts:** Before narrating the character revealing new "facts" not covered in the source material, first ensure it does NOT contradict the Official Lore/History. If it does, the character cannot state it as fact.
+
+6.  **Emotional and Relational Continuity:** Use the "Relationship Context" to guide the emotional tone of your narration and describe ${charName}'s behavior towards ${userName}, ensuring their interactions reflect their shared history.
+
+---
+**OUTPUT FORMAT INSTRUCTIONS (CRITICAL):**
+// ... (This section remains the same, as it's already robust) ...
+\`\`\`json
+{
+  "response": "The character's response, narrated in the third person. Actions/descriptions MUST be enclosed in asterisks (*). In Korean, these actions MUST end with '~다'. Spoken dialogue is plain text. Refer to the user as '${userName}'. Example: '${langCode === 'kor' ? `*타리온이 바닥에 앉는다.* 오늘 하루 길었네. *그는 ${userName}을(를) 본다.*` : `*Tarion sits on the floor.* A long day today. *He sees ${userName}.*`}'",
+  "emotion": "A single English word representing the character's dominant emotion. You MUST choose the closest match from this list: [${allEmotionKeywordsList}]"
+}
+\`\`\`
 `.trim();
 };
+
+/**
+ * Builds the prompt for an LLM to process a raw text input into structured Lore metadata.
+ */
+export const buildLoreMetadataPrompt = (originalTitle: string, content: string): string =>
+	`
+You are an expert AI assistant who analyzes user-provided text to extract a single, core, atomic fact and its associated metadata.
+
+**User-Provided Title:** ${originalTitle}
+**User-Provided Content:**
+${content}
+
+**Instructions:**
+From the text above, extract the single most important, undeniable fact. Then, generate the corresponding metadata.
+
+Respond with a JSON object with the following structure (all metadata MUST be in English):
+
+{
+  "summary": "string (A single, concise sentence stating the core atomic fact. This is the most important field. Example: 'Tarion is the strongest man in the Vargas Empire.')",
+  "generatedEnglishTitle": "string (A descriptive English title for this fact, e.g., 'Tarion's Strength Ranking')",
+  "englishId": "string (A 2-3 word kebab-case ID, e.g., 'tarion-strength-fact')",
+  "keywords": ["string (Keywords related to the fact, e.g., 'strength', 'ranking', 'empire')"],
+  "topics": ["string (Broader themes, e.g., 'character_attribute', 'world_building')"],
+  "entities": ["string (Format: 'type:name', e.g., 'character:Tarion', 'location:VargasEmpire')"]
+}
+
+**Rules:**
+- The "summary" MUST be a single, clear, factual statement.
+- All metadata fields must be in English.
+- Provide ONLY the pure JSON object as your output.
+`.trim();
 
 export const buildChatTurnMetadataPrompt = (
 	userInfo: BasicBeingInfo,
@@ -644,9 +692,46 @@ export const buildHistoryMetadataPrompt = (
 		historyId: string;
 		generatedTitle: string;
 	}> = [],
-	existingLoreIds: string[] = []
+	existingLoreIds: string[] = [],
+	eng?: boolean
 ): string =>
-	`
+	eng
+		? `You are an expert AI assistant who analyzes character backstories to extract structured metadata.
+
+**Original Title:** ${originalTitle}
+**Event Content:**
+${content}
+
+**Contextual Information:**
+- Available Character IDs: ${availableCharacterIds.join(', ')}
+- Existing History Entries: ${existingHistoryEntries.map((h) => `- "${h.originalTitle}" (ID: ${h.historyId})`).join('\n') || 'N/A'}
+- Existing Lore IDs: ${existingLoreIds.join(', ') || 'N/A'}
+
+Respond with a JSON object with the following structure (all metadata MUST be in English):
+
+{
+  "summary": "string (A concise 2-3 sentence summary in English, max 75 words, capturing the core event and its outcome.)",
+  "generatedEnglishTitle": "string (A specific, descriptive English title based on the content)",
+  "englishId": "string (A 2-3 word kebab-case ID from the English title, e.g., 'childhood-protection-desire')",
+  "keywords": ["string (5-10 important English keywords)"],
+  "topics": ["string (3-7 main English themes, e.g., 'war', 'betrayal')"],
+  "entities": ["string (Format: 'type:name')"],
+  "ownerCharacterIds": ["string (IDs of main characters in this event)"],
+  "sideCharacterIds": ["string (IDs of side characters)"],
+  "period": { "label": "string (e.g., 'Childhood')", "confidence": "number (0.0-1.0)" },
+  "eventDate": { "value": "string (e.g., 'Age 8-12')", "type": "string (e.g., 'relative_to_birth')", "confidence": "number (0.0-1.0)" },
+  "temporalRelations": [{ "type": "string (e.g., 'PRECEDES')", "relatedEventId": "string (A historyId)", "description": "string" }],
+  "category": "string (e.g., 'character_history', 'world_event')"
+}
+
+**Instructions:**
+- The "summary" is CRITICAL. It must accurately reflect the entire event.
+- Base "temporalRelations" on the provided Existing History Entries.
+- All metadata fields must be filled.
+
+Provide ONLY the pure JSON object as your output.
+`.trim()
+		: `
 당신은 캐릭터 역사(시간순 사건) 텍스트를 분석하여 메타데이터를 추출하는 전문가다.
 
 원본 제목: ${originalTitle}
@@ -663,6 +748,7 @@ ${existingHistoryEntries.map((h) => `- "${h.originalTitle}" → "${h.generatedTi
 다음 JSON 형식으로 응답한다 (메타데이터는 영어로만):
 
 {
+  "summary": "string (A concise 3-5 sentence summary in English, max 200 words, capturing the core event and its outcome.)",
   "generatedEnglishTitle": "Childhood Protection Desire Inherited from Tarion's Father",
   "englishId": "childhood-protection-desire",
   "keywords": ["childhood", "protection", "trauma"],
@@ -713,6 +799,7 @@ ${existingHistoryEntries.map((h) => `- "${h.originalTitle}" → "${h.generatedTi
 - 사건의 핵심을 간결하게 표현
 
 **작성 규칙:**
+- 요약(summary)은 매우 중요하므로, 발생한 모든 사건을 명확히 반영하고 있어야 함
 - 모든 메타데이터는 영어로만 작성
 - JSON 형식을 정확히 지켜서 작성
 - 마크다운 코드 블록 없이 순수 JSON만 출력

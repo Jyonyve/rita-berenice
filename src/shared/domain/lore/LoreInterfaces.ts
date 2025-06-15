@@ -9,6 +9,7 @@ export interface LoreMetadata extends BaseMetadataType {
 	type: typeof METADATA_TYPES.LORE;
 	category: string;
 	source: string; // ✅ Added missing source field
+	summary: string;
 	title: string;
 	generatedTitle: string; // Auto-generated title based on content
 	englishId: string; // kebab-case version of the title summary
@@ -37,6 +38,7 @@ export interface HistoryMetadata extends BaseMetadataType {
 	generatedTitle: string;
 	englishId: string; // kebab-case version of the title summary
 	category: string; // ✅ Added category field for consistency
+	summary: string;
 
 	// Character ownership and involvement (flattened for ChromaDB)
 	ownerCharacterIds: string; // "tarion_original,tarion_spinoff" - whose memory/perspective this is

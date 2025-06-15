@@ -371,6 +371,7 @@ async function initHistoryFromFiles() {
 					title: historyEntry.originalTitle,
 					generatedTitle: enrichedMetadata.generatedEnglishTitle,
 					category: enrichedMetadata.category,
+					summary: enrichedMetadata.summary,
 					periodLabel: enrichedMetadata.period.label,
 					periodConfidence: enrichedMetadata.period.confidence,
 					eventDateValue: enrichedMetadata.eventDate.value,

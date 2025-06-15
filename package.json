@@ -50,6 +50,7 @@
 		"chromadb": "^2.0.1",
 		"compression": "^1.8.0",
 		"express": "^5.1.0",
+		"franc": "^6.2.0",
 		"fuzzball": "^2.2.2",
 		"idb": "^8.0.3",
 		"nanoid": "^5.1.5",

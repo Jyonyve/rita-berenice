@@ -5,7 +5,7 @@ import path from 'node:path';
 import { ChromaClient, Collection } from 'chromadb';
 import { fileURLToPath } from 'node:url';
 import { ChatMessage, ChatTurn, MigChatMessage } from '#shared/domain/chat/ChatInterfaces.ts';
-import { buildChatTurnMetadataPrompt } from '#server/util/templateUtils.ts';
+import { buildChatTurnMetadataPrompt } from '#root/src/server/util/templateUtils.ts';
 import {
 	parseChatTurnToMetadata,
 	parseSessionId,

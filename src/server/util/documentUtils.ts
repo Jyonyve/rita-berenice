@@ -72,8 +72,8 @@ export const inflateProfileDoc = (document: string): { description: string } => 
 };
 
 export const flatLoreOrHistoryToDoc = (lore: LoreInfo | HistoryInfo) => {
-	const { content, title } = lore;
-	const document = { title, content };
+	const { content, title, summary } = lore;
+	const document = { title, content, summary };
 	return JSON.stringify(document).trim();
 };
 

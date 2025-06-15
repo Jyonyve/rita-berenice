@@ -8,6 +8,7 @@ import {
 	TermInfo,
 } from '../domain/index.ts';
 import { HistoryInfo, LoreInfo } from '../domain/lore/LoreInterfaces.ts';
+import { LangCode } from '../config/constants.ts';
 // File: shared/api/ApiInterfaces.ts
 
 export interface ApiErrorResponse {
@@ -86,6 +87,7 @@ export type TermResponse = TermChromaResponse;
 export type Term = Pick<TermInfo, 'koreanTerm' | 'englishTerm' | 'termId'>;
 
 interface MemoryLlmResponse {
+	langCode: LangCode;
 	shortTermHistory: ChatTurn[]; // Last 5-10 turns
 	longTermHistory: ChatTurn[]; // Semantically relevant past turns
 	relevantLore: LoreInfo[];
