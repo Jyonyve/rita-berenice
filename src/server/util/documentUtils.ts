@@ -9,6 +9,7 @@ import {
 	ProfileInfo,
 	parseTextToEntries,
 	TermInfo,
+	RecapInfo,
 } from '#shared/index.ts';
 
 export const buildNaturalChatText = (request: ChatMessage, response: ChatMessage): string => {
@@ -92,4 +93,14 @@ export const inflateTermDoc = (
 ): { koreanTerm: string; englishTerm: string; termId: string } => {
 	const parsed = JSON.parse(document);
 	return { koreanTerm: parsed.koreanTerm, englishTerm: parsed.englishTerm, termId: parsed.termId };
+};
+
+export const flatRecapToDoc = (recap: RecapInfo) => {
+	const document = { content: recap.content };
+	return JSON.stringify(document).trim();
+};
+
+export const inflateRecapDoc = (document: string): { content: string } => {
+	const parsed = JSON.parse(document);
+	return { content: parsed.content };
 };

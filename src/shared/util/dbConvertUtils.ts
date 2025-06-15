@@ -16,6 +16,14 @@ import {
 import { buildChatTurnId } from '../../server/util/buildIdUtils.ts';
 import { Metadata } from 'chromadb';
 import { DEFAULT_EMOTION } from '../config/emotionWordsMapper.ts';
+import {
+	CharacterInfo,
+	CharacterMetadata,
+	ProfileInfo,
+	ProfileMetadata,
+	RecapInfo,
+	RecapMetadata,
+} from '../domain/index.ts';
 
 // --- LORE HELPERS ---
 
@@ -52,7 +60,7 @@ export const loreToMetadata = (loreInfo: LoreInfo): LoreMetadata => {
 		// Stringify character arrays
 		ownerCharacterIds: convertArrayToString(loreInfo.ownerCharacterIdArray),
 		sideCharacterIds: convertArrayToString(loreInfo.sideCharacterIdArray),
-		allAffectedCharacterIds: convertArrayToString(uniqueAllAffected)
+		allAffectedCharacterIds: convertArrayToString(uniqueAllAffected),
 	};
 };
 
@@ -109,8 +117,8 @@ export const historyToMetadata = (historyInfo: HistoryInfo): HistoryMetadata => 
 		sequence: historyInfo.sequence,
 
 		// Stringify arrays from BaseMetadataType
-		keywords:  historyInfo.keywords,
-		topics:historyInfo.topics,
+		keywords: historyInfo.keywords,
+		topics: historyInfo.topics,
 		entities: historyInfo.entities,
 
 		// History-specific fields
@@ -177,6 +185,18 @@ export const metadataToHistory = (metadata: HistoryMetadata, content: string): H
 		// Parse relationships
 		relatedEventsArray: metadata.relatedEvents ? JSON.parse(metadata.relatedEvents) : [],
 	};
+};
+
+export const metadataToCharacter = (
+	metadata: CharacterMetadata,
+	description: string,
+	instruction: string
+): CharacterInfo => {
+	return { ...metadata, description, instruction };
+};
+
+export const metadataToProfile = (metadata: ProfileMetadata, description: string): ProfileInfo => {
+	return { ...metadata, description };
 };
 
 // --- UTILITY HELPERS ---
@@ -371,4 +391,109 @@ export const removeEmotionNuance = (
 	nuanceToRemove: string
 ): { primary: string; intensity: number; nuances: string[] } => {
 	return { ...emotion, nuances: emotion.nuances.filter((nuance) => nuance !== nuanceToRemove) };
+};
+
+/**
+ * Converts a rich RecapInfo object into a flat RecapMetadata object
+ * suitable for storage in ChromaDB. It serializes complex array fields into strings.
+ *
+ * @param recapInfo The rich RecapInfo object used in the application.
+ * @returns A RecapMetadata object with arrays converted to strings.
+ */
+export const recapToMetadata = (recapInfo: RecapInfo): RecapMetadata => {
+	return {
+		// --- Base metadata fields (from BaseMetadataType) ---
+		sessionId: recapInfo.sessionId,
+		characterId: recapInfo.characterId,
+		type: recapInfo.type, // 'recap' or 'relationship'
+		createdAt: recapInfo.createdAt,
+		updatedAt: recapInfo.updatedAt,
+		sequence: recapInfo.sequence,
+
+		// --- Recap-specific fields ---
+		recapId: recapInfo.recapId,
+		turnStart: recapInfo.turnStart,
+		turnEnd: recapInfo.turnEnd,
+		model: recapInfo.model,
+
+		// --- Serialized fields for storage ---
+		// These fields from BaseMetadataType are assumed to be strings already in RecapInfo,
+		// but if they were arrays, you would convert them here.
+		// For now, we'll assume they are passed through as-is based on your example.
+		keywords: recapInfo.keywords,
+		topics: recapInfo.topics,
+		entities: recapInfo.entities,
+
+		// Serialize complex arrays into JSON strings
+		loreReferences: JSON.stringify(recapInfo.loreReferencesArray),
+		historyReferences: JSON.stringify(recapInfo.historyReferencesArray),
+
+		// Convert simple string array to a comma-separated string
+		flags: convertArrayToString(recapInfo.flagsArray),
+	};
+};
+
+/**
+ * Converts a flat RecapMetadata object (from ChromaDB) and its content
+ * back into a rich RecapInfo object for use in the application. It deserializes
+ * string fields back into their corresponding array types.
+ *
+ * @param metadata The RecapMetadata object retrieved from ChromaDB.
+ * @param content The recap content string, typically from the 'document' field in ChromaDB.
+ * @returns A rich RecapInfo object with arrays restored.
+ */
+export const metadataToRecap = (metadata: RecapMetadata, content: string): RecapInfo => {
+	// Safely parse JSON string fields, providing a default empty array on failure
+	let loreReferencesArray: Array<{ id: string; relevance: number }> = [];
+	try {
+		const parsed = JSON.parse(metadata.loreReferences);
+		if (Array.isArray(parsed)) {
+			loreReferencesArray = parsed;
+		}
+	} catch {
+		console.warn(`[metadataToRecap] Failed to parse loreReferences for recapId: ${metadata.recapId}`);
+		// loreReferencesArray is already defaulted to []
+	}
+
+	let historyReferencesArray: Array<{ id: string; relevance: number }> = [];
+	try {
+		const parsed = JSON.parse(metadata.historyReferences);
+		if (Array.isArray(parsed)) {
+			historyReferencesArray = parsed;
+		}
+	} catch {
+		console.warn(
+			`[metadataToRecap] Failed to parse historyReferences for recapId: ${metadata.recapId}`
+		);
+		// historyReferencesArray is already defaulted to []
+	}
+
+	return {
+		// --- Base metadata fields ---
+		sessionId: metadata.sessionId,
+		characterId: metadata.characterId,
+		type: metadata.type,
+
+		// --- Recap-specific fields ---
+		recapId: metadata.recapId,
+		turnStart: metadata.turnStart,
+		turnEnd: metadata.turnEnd,
+		model: metadata.model,
+
+		// --- Content ---
+		content: content,
+
+		// --- Pass-through string fields ---
+		keywords: metadata.keywords,
+		topics: metadata.topics,
+		entities: metadata.entities,
+		createdAt: metadata.createdAt,
+		updatedAt: metadata.updatedAt,
+		sequence: metadata.sequence,
+
+		// --- Deserialized array fields ---
+		loreReferencesArray: loreReferencesArray,
+		historyReferencesArray: historyReferencesArray,
+		flagsArray: convertStringToArray(metadata.flags),
+	};
 };

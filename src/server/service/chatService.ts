@@ -10,6 +10,7 @@ import {
 	ChromaResponse,
 	ChatResponse,
 	parseTextToEntries,
+	TempChatTurnMetadata,
 } from '#shared/index.ts';
 import { Collection, IncludeEnum, Metadata, Where, WhereDocument } from 'chromadb';
 import { chromaDbClient } from '../db/chromaDbClient.ts';
@@ -112,9 +113,6 @@ export const chatService = {
 
 	// store fixed chat turn as json string
 	_storeFullChatTurn: async (chatTurn: ChatTurn): Promise<void> => {
-		const now = new Date().toISOString();
-		const { request, response, ...chatTurnMetadata } = chatTurn;
-		const { sessionId, sequence } = chatTurnMetadata;
 		const collection = await chatService._getChatCollection();
 		const updatedMetadata: ChatTurnMetadata = chatTurnToMetadata(chatTurn);
 		const documentForEmbedding = flatChatTurnToDoc(chatTurn);
@@ -138,13 +136,16 @@ export const chatService = {
 	saveTempChatTurn: async (tempData: TempChatTurn): Promise<void> => {
 		// shoould get the document to get whole temp data
 		const collection = await chatService._getTempCollection();
-		await upsertRecord(collection, tempData.sessionId, JSON.stringify(tempData), {
+		const now = new Date().toISOString();
+		const updatedMetadata: TempChatTurnMetadata = {
 			type: METADATA_TYPES.TEMP,
 			sequence: tempData.sequence,
 			sessionId: tempData.sessionId,
-			timestamp: new Date().toISOString(),
+			createdAt: tempData.createdAt || now,
+			updatedAt: now,
 			setCount: tempData.chatTurnSets?.length || 0,
-		});
+		};
+		await upsertRecord(collection, tempData.sessionId, JSON.stringify(tempData), updatedMetadata);
 		console.log(`Stored temp data for session ${tempData.sessionId}`);
 	},
 
@@ -289,6 +290,7 @@ export const chatService = {
 			return { ids: [], documents: [], metadatas: [], chatTurns: [], chatTurn: {} as ChatTurn };
 		}
 	},
+
 	/** Loads multiple FIXED turns  */
 	getChatTurns: async (sessionId: string, beforeSequence: number): Promise<ChatResponse> => {
 		const collection = await chatService._getChatCollection();

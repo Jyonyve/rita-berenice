@@ -6,7 +6,7 @@ import { ChatTurn, COLLECTIONS, METADATA_TYPES } from '../../shared/domain/index
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev'; // Use env var or default
 // const MONDAY_ORIGINAL_SESSIONID = 'monday_original_moH1Pu9n3BXz3OmY';
 // const TARION_ORIGINAL_SESSIONID = 'tarion_original_QWE04yIbc8QN7NPw';
-const TARION_SPINOFF_SESSIONID = 'tarion_spinoff_0RWsIE7zKLQ3ANEN';
+const TARION_SPINOFF_SESSIONID = 'tarion_spinoff_kEEKct7tfgmxDZQr';
 
 const TARGET_COLLECTION_NAME = COLLECTIONS.CHAT; // The collection where data was inserted
 // const TARGET_SESSION_ID = MONDAY_ORIGINAL_SESSIONID ?? '';

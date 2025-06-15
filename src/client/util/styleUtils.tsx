@@ -15,9 +15,9 @@ import {
 import { ChatRoleType, ChatType, supportAiModelInfo } from '@shared/index.ts';
 import styles from '../component/chat/ChatComp.module.scss';
 
-export const useErrorDialog = (initialOpen: boolean = false, initialMessage?: string) => {
-	const [open, setOpen] = useState(initialOpen);
-	const [message, setMessage] = useState(initialMessage ?? '');
+export const useErrorDialog = (initialMessage?: string) => {
+	const [open, setOpen] = useState(false);
+	const [message, setMessage] = useState(initialMessage ?? '에러가 발생하였습니다.');
 
 	const showError = (msg: string) => {
 		setMessage(msg);

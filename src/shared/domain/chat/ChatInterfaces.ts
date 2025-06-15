@@ -122,6 +122,8 @@ export interface ChatTurn
 	response: ChatMessage;
 }
 
+export type ChatTurnCdo = Pick<ChatTurn, 'sessionId' | 'sequence' | 'request' | 'response'>;
+
 export interface MigChatMessage {
 	uuid: string;
 	role: ChatRoleType;
@@ -135,11 +137,17 @@ export interface MigChatMessage {
 	model?: string;
 }
 
-export interface TempChatTurn {
-	sessionId: string;
-	sequence: number;
-	chatTurnSets: ChatMessageSet[];
+export interface TempChatTurnMetadata {
 	type: typeof METADATA_TYPES.TEMP;
+	sequence: number;
+	sessionId: string;
+	createdAt: string;
+	updatedAt: string;
+	setCount: number;
 }
 
-export type ChatTurnCdo = Pick<ChatTurn, 'sessionId' | 'sequence' | 'request' | 'response'>;
+export interface TempChatTurn extends TempChatTurnMetadata {
+	chatTurnSets: ChatMessageSet[];
+}
+
+export type TempChatTurnCdo = Pick<TempChatTurn, 'sessionId' | 'sequence'> & { userInput: string };

@@ -115,3 +115,32 @@ export const validateChromaResponse = (
 
 	return chromaResponse; // Data is structurally valid and (if 'getOne') not empty.
 };
+
+// In the same file as ApiError, e.g., src/server/util/errorHandlers.ts
+
+/**
+ * A specific error for when an LLM's response cannot be parsed into the expected JSON format.
+ * Extends ApiError to be handled correctly by the global error middleware.
+ */
+// In src/server/util/errorHandlers.ts
+
+export class LlmResponseParseError extends ApiError {
+	public reason: 'NOT_FOUND' | 'MALFORMED_SYNTAX';
+
+	constructor(
+		reason: 'NOT_FOUND' | 'MALFORMED_SYNTAX',
+		callerContext: string,
+		rawResponse: string,
+		clientMessage: string = "The AI's response was not in the expected format. Please try re-generating."
+	) {
+		const devMessage = `[${callerContext}] Failed to parse LLM response. Reason: ${reason}.`;
+		super(
+			502, // 502 Bad Gateway: Invalid response from upstream (LLM)
+			devMessage,
+			clientMessage,
+			{ rawResponse: rawResponse.substring(0, 500) + '...' }
+		);
+		this.name = 'LlmResponseParseError';
+		this.reason = reason;
+	}
+}

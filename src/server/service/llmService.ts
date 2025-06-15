@@ -12,14 +12,18 @@ import {
 	convertMessageContentToString,
 	CredentialDataType,
 	DEFAULT_EMOTION,
-	extractValidOpenAiContent,
-	isDirectOpenAIClient,
 	supportAiModelInfo,
+	DEFAULT_MODEL_GOOGLEAI,
 } from '#root/src/shared/index.ts';
 import { credentialService } from './credentialService.ts';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { BaseMessage, SystemMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
-import { buildNerPrompt, buildTermTranslationPrompt } from '../util/index.ts';
+import {
+	buildNerPrompt,
+	buildTermTranslationPrompt,
+	extractValidOpenAiContent,
+	isDirectOpenAIClient,
+} from '../util/index.ts';
 
 const _normalizeMessageContent = (content: ChatCompletionMessageParam['content']): string => {
 	// A simple check for any "falsy" value (null, undefined, '') will handle all edge cases.
@@ -129,30 +133,29 @@ export const llmService = {
 		}
 	},
 
-	/**
-	 * Invokes an LLM with a single prompt.
-	 */
+	// `invokeLlm` is updated to accept the options object for consistency.
 	invokeLlm: async (
 		role: ChatRoleType,
 		content: string,
-		aiModelInfo: AiModelInfo
+		aiModelInfo: AiModelInfo,
+		options?: { signal?: AbortSignal } // Correctly accepts the AbortSignal
 	): Promise<string> => {
-		const { model, ...llmOptions } = aiModelInfo; // Separate model from other options
+		const { model, ...llmOptions } = aiModelInfo;
 		const llmOrClient = await llmService.createLlmInstance(aiModelInfo);
 		const messages: ChatCompletionMessageParam[] = [{ role, content }];
 
 		try {
 			if (isDirectOpenAIClient(llmOrClient)) {
-				const completion = await llmOrClient.chat.completions.create({
-					model,
-					messages,
-					...llmOptions, // Spread only the relevant options (temp, maxTokens)
-				});
+				const completion = await llmOrClient.chat.completions.create(
+					{ model, messages, ...llmOptions },
+					{ signal: options?.signal } // Pass the signal
+				);
 				return extractValidOpenAiContent(completion);
 			} else {
-				// For LangChain, options are already baked into the instance by createLlmInstance
 				const langchainMessages = convertToLangChainMessages(messages);
-				const responseMessage = await llmOrClient.invoke(langchainMessages);
+				const responseMessage = await llmOrClient.invoke(langchainMessages, {
+					signal: options?.signal, // Pass the signal
+				});
 				return convertMessageContentToString(responseMessage.content);
 			}
 		} catch (error: any) {
@@ -160,68 +163,69 @@ export const llmService = {
 				`[llmService.invokeLlm] Invocation failed for model '${aiModelInfo.model}':`,
 				error
 			);
-			throw new Error(`LLM invocation failed: ${error.message || 'Unknown error'}`);
+			throw error;
 		}
 	},
 
 	/**
-	 * Invokes an LLM with a sequence of messages, expecting a JSON object.
+	 * Invokes an LLM with a sequence of messages and returns the raw string response.
+	 * This method now accepts an AbortSignal. The calling service (`personaEngine`)
+	 * is responsible for parsing the expected JSON from the string.
 	 */
 	invokeLlmFromMessages: async (
 		messages: ChatCompletionMessageParam[],
-		aiModelInfo: AiModelInfo
+		aiModelInfo: AiModelInfo,
+		options?: { signal?: AbortSignal } // Correctly accepts the AbortSignal
 	): Promise<string> => {
-		const { model, ...llmOptions } = aiModelInfo; // Separate model from other options
+		const { model, ...llmOptions } = aiModelInfo;
 		const llmOrClient = await llmService.createLlmInstance(aiModelInfo);
 
 		try {
+			// For OpenAI/OpenRouter, use native JSON mode for higher reliability.
 			if (isDirectOpenAIClient(llmOrClient)) {
-				const completion = await llmOrClient.chat.completions.create({
-					...llmOptions, // Spread options first
-					model,
-					messages,
-					response_format: { type: 'json_object' }, // Specific option last
-				});
+				const completion = await llmOrClient.chat.completions.create(
+					{
+						...llmOptions,
+						model,
+						messages,
+						// This strongly encourages OpenAI models to return valid JSON.
+						response_format: { type: 'json_object' },
+					},
+					{ signal: options?.signal } // Pass the signal
+				);
 				return extractValidOpenAiContent(completion);
 			} else {
+				// For other models (Anthropic, Google), we rely on the prompt's instructions
+				// to return JSON and simply return the raw text content.
 				const langChainMessages = convertToLangChainMessages(messages);
-				const responseMessage = await llmOrClient.invoke(langChainMessages);
-				const content = convertMessageContentToString(responseMessage.content);
+				const responseMessage = await llmOrClient.invoke(langChainMessages, {
+					signal: options?.signal, // Pass the signal
+				});
 
-				if (content && content.trim().startsWith('{')) return content;
-				return JSON.stringify({ response: content, emotion: DEFAULT_EMOTION });
+				// Return the raw string for the personaEngine to parse.
+				return convertMessageContentToString(responseMessage.content);
 			}
 		} catch (error: any) {
 			console.error(
 				`[llmService.invokeLlmFromMessages] Invocation failed for model '${aiModelInfo.model}':`,
 				error
 			);
-			return JSON.stringify({
-				response: `[LLM invocation error: ${error.message}]`,
-				emotion: DEFAULT_EMOTION,
-			});
+			// Return a structured error string that can still be safely parsed by the personaEngine's JSON parser.
+			return `{"response": "[LLM invocation error: ${error.message}]", "emotion": "${DEFAULT_EMOTION}"}`;
 		}
 	},
 
 	// --- Specific Task Methods ---
 
 	translateProperNoun: async (koreanTerm: string): Promise<string> => {
-		const aiModelInfo: AiModelInfo = {
-			platform: 'direct',
-			provider: 'google',
-			model: 'gemini-1.5-flash-latest', // Ensure this model exists in your config
-		};
+		const aiModelInfo = DEFAULT_MODEL_GOOGLEAI;
 		const prompt = buildTermTranslationPrompt(koreanTerm);
 		const translation = await llmService.invokeLlm('user', prompt, aiModelInfo);
 		return translation.replace(/["'.]/g, '').trim(); // Clean the output
 	},
 
 	extractProperNouns: async (textToAnalyze: string): Promise<string[]> => {
-		const aiModelInfo: AiModelInfo = {
-			platform: 'direct',
-			provider: 'google',
-			model: 'gemini-1.5-flash-latest', // Ensure this model exists
-		};
+		const aiModelInfo = DEFAULT_MODEL_GOOGLEAI;
 		const prompt = buildNerPrompt(textToAnalyze);
 		const jsonResponse = await llmService.invokeLlm('user', prompt, aiModelInfo);
 		try {

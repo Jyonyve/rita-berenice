@@ -5,7 +5,6 @@ import {
 	ChatTurn,
 	ProfileInfo,
 	RecapInfo,
-	RecapResult,
 	TermInfo,
 } from '../domain/index.ts';
 import { HistoryInfo, LoreInfo } from '../domain/lore/LoreInterfaces.ts';
@@ -30,15 +29,15 @@ export type AllResponse =
 
 //character
 interface CharacterChromaResponse extends ChromaResponse {
-	basicCharacterInfo: CharacterInfo;
-	basicCharacterInfos: CharacterInfo[];
+	characterInfo: CharacterInfo;
+	characterInfos: CharacterInfo[];
 }
 export type CharacterResponse = CharacterChromaResponse;
 
 // profile
 interface ProfileChromaResponse extends ChromaResponse {
-	basicProfileInfo: ProfileInfo;
-	basicProfileInfos: ProfileInfo[];
+	profileInfo: ProfileInfo;
+	profileInfos: ProfileInfo[];
 }
 
 export type ProfileResponse = ProfileChromaResponse;
@@ -70,6 +69,9 @@ export type HistoryResponse = HistoryChromaResponse;
 // recap
 interface RecapChromaResponse extends ChromaResponse {
 	recapInfo: RecapInfo;
+	recapInfos: RecapInfo[];
+	recapContent: string;
+	recapContents: string[];
 }
 export type RecapResponse = RecapChromaResponse;
 
@@ -82,3 +84,21 @@ interface TermChromaResponse extends ChromaResponse {
 }
 export type TermResponse = TermChromaResponse;
 export type Term = Pick<TermInfo, 'koreanTerm' | 'englishTerm' | 'termId'>;
+
+interface MemoryLlmResponse {
+	shortTermHistory: ChatTurn[]; // Last 5-10 turns
+	longTermHistory: ChatTurn[]; // Semantically relevant past turns
+	relevantLore: LoreInfo[];
+	relevantHistory: HistoryInfo[];
+	factualRecapSummary?: string; // Changed from RecapInfo
+	relationshipRecapSummary?: string; // Changed from RecapInfo
+}
+
+export type MemoryResponse = MemoryLlmResponse;
+
+interface PersonaLlmResponse {
+	response: string;
+	emotion: string;
+}
+
+export type PersonaResponse = PersonaLlmResponse;

@@ -20,10 +20,10 @@ export const useCharacterApi = () => {
 
 	// --- API Response Handlers ---
 	const handleCharacterResponse = (response: CharacterResponse): BasicCharacterInfo[] => {
-		if (!response || !response.basicCharacterInfos?.length) {
+		if (!response || !response.characterInfos?.length) {
 			throw new Error('No characters found in response');
 		}
-		return response.basicCharacterInfos;
+		return response.characterInfos;
 	};
 
 	// --- API Call Functions ---
@@ -51,12 +51,12 @@ export const useCharacterApi = () => {
 			const url = genApiUrl(MODULE_NAME, 'getCharacter', [id]);
 			const response = await apiClient.get<CharacterResponse>(url);
 
-			if (!response.data?.basicCharacterInfo) {
+			if (!response.data?.characterInfo) {
 				throw new Error('Character not found');
 			}
 
-			setCurrentCharacter(response.data.basicCharacterInfo);
-			return response.data.basicCharacterInfo;
+			setCurrentCharacter(response.data.characterInfo);
+			return response.data.characterInfo;
 		} catch (error) {
 			setError(error instanceof Error ? error.message : 'Failed to fetch character');
 			return null;

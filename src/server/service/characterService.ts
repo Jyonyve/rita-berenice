@@ -6,13 +6,15 @@ import {
 } from '#shared/domain/index.ts';
 import { Collection, IncludeEnum, Document, Where } from 'chromadb';
 import { chromaDbClient } from '../db/index.ts';
-import { CharacterResponse } from '#shared/api/index.ts';
+import { CharacterResponse, ChromaResponse } from '#shared/api/index.ts';
 import {
 	buildCharacterId,
 	flatCharacterToDoc,
 	validateChromaResponse,
 	handleServiceError,
+	inflateCharacterDoc,
 } from '../util/index.ts';
+import { metadataToCharacter } from '#root/src/shared/util/index.ts';
 
 const { getCharacterCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.CHARACTER;
@@ -34,18 +36,20 @@ export const characterService = {
 		return collection;
 	},
 
-	_parseDocToBasicCharacterInfo: (documents: (Document | null)[]) => {
-		return documents
-			.map((doc, index) => {
-				if (doc === null) return null;
-				try {
-					return JSON.parse(doc);
-				} catch (e) {
-					console.error(`Error parsing character info: ${index}`, e);
-					return null;
-				}
-			})
-			.filter((char): char is CharacterInfo => char !== null);
+	_constuctCharacter: (results: ChromaResponse): CharacterResponse => {
+		const { ids, documents, metadatas } = results;
+		const characterInfos = ids.map((id, index) => {
+			const metadata = metadatas[index] as unknown as CharacterMetadata;
+			const document = documents[index];
+			const inflatedDoc = inflateCharacterDoc(document!);
+			const characterInfo = metadataToCharacter(
+				metadata!,
+				inflatedDoc.description,
+				inflatedDoc.instruction
+			);
+			return characterInfo;
+		});
+		return { ids, documents, metadatas, characterInfos, characterInfo: characterInfos[0] || null };
 	},
 
 	// Character Operations
@@ -61,17 +65,19 @@ export const characterService = {
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 			const { ids, documents, metadatas } = results;
 
-			const parsedInfos = characterService._parseDocToBasicCharacterInfo(results.documents);
+			const characterResponse = characterService._constuctCharacter(results);
 
 			// Sort descending: newer (larger timestamp) comes before older (smaller timestamp)
-			parsedInfos.sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
+			const parsedInfos = characterResponse.characterInfos.sort(
+				(a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt)
+			);
 
 			return {
 				ids,
 				documents,
 				metadatas,
-				basicCharacterInfos: parsedInfos,
-				basicCharacterInfo: parsedInfos[0],
+				characterInfos: parsedInfos,
+				characterInfo: parsedInfos[0] || null,
 			};
 		} catch (error) {
 			handleServiceError(
@@ -90,15 +96,7 @@ export const characterService = {
 			const rawResult = await getRecordById(collection, characterId);
 			const results = validateChromaResponse(rawResult, 'getOne', collectionType);
 
-			const { ids, documents, metadatas } = results;
-			const parsedInfos = characterService._parseDocToBasicCharacterInfo(results.documents);
-			return {
-				ids,
-				documents,
-				metadatas,
-				basicCharacterInfo: parsedInfos[0],
-				basicCharacterInfos: parsedInfos,
-			};
+			return characterService._constuctCharacter(results);
 		} catch (error) {
 			handleServiceError(
 				error,
@@ -120,15 +118,7 @@ export const characterService = {
 			const rawResults = await getRecords(collection, where, limit);
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 
-			const { ids, documents, metadatas } = results;
-			const parsedBasicInfos = characterService._parseDocToBasicCharacterInfo(documents);
-			return {
-				ids,
-				documents,
-				metadatas,
-				basicCharacterInfos: parsedBasicInfos,
-				basicCharacterInfo: parsedBasicInfos[0],
-			};
+			return characterService._constuctCharacter(results);
 		} catch (error: any) {
 			handleServiceError(
 				error,

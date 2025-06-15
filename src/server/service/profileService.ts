@@ -65,8 +65,8 @@ export const profileService = {
 				ids,
 				documents,
 				metadatas,
-				basicProfileInfos: parsedInfos,
-				basicProfileInfo: parsedInfos[0],
+				profileInfos: parsedInfos,
+				profileInfo: parsedInfos[0],
 			};
 		} catch (error) {
 			handleServiceError(
@@ -88,8 +88,8 @@ export const profileService = {
 				ids,
 				documents,
 				metadatas,
-				basicProfileInfo: parsedInfos[0],
-				basicProfileInfos: parsedInfos,
+				profileInfo: parsedInfos[0],
+				profileInfos: parsedInfos,
 			};
 		} catch (error) {
 			handleServiceError(
@@ -116,8 +116,8 @@ export const profileService = {
 				ids,
 				documents,
 				metadatas,
-				basicProfileInfos: parsedBasicInfos,
-				basicProfileInfo: parsedBasicInfos[0],
+				profileInfos: parsedBasicInfos,
+				profileInfo: parsedBasicInfos[0],
 			};
 		} catch (error) {
 			handleServiceError(
@@ -142,8 +142,8 @@ export const profileService = {
 				ids,
 				documents,
 				metadatas,
-				basicProfileInfos: parsedBasicInfos,
-				basicProfileInfo: parsedBasicInfos[0],
+				profileInfos: parsedBasicInfos,
+				profileInfo: parsedBasicInfos[0],
 			};
 		} catch (error) {
 			handleServiceError(

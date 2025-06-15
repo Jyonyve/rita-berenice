@@ -78,42 +78,6 @@ export const useChatApi = (sessionId: string) => {
 		[_makeApiCall]
 	);
 
-	const storeFactualRecap = useCallback(
-		async (recapTurns: ChatTurn[]): Promise<void> => {
-			const sessionId = recapTurns[recapTurns.length - 1].sessionId; // Get the last turn's sessionId
-			if (!sessionId) throw new Error('Session ID required');
-			// POST /api/recap/store-factual-recap/:sessionId
-			// Body: { recapTurns: ChatTurn[] }
-			await _makeApiCall<void>(
-				MODULE_NAMES.RECAP,
-				'storeFactualRecap',
-				'post',
-				[sessionId],
-				{},
-				{ recapTurns } // Body structure as defined in route [2]
-			);
-		},
-		[_makeApiCall]
-	);
-
-	const storeRelationshipRecap = useCallback(
-		async (recapTurns: ChatTurn[]): Promise<void> => {
-			const sessionId = recapTurns[recapTurns.length - 1].sessionId;
-			if (!sessionId) throw new Error('Session ID required');
-			// POST /api/chat/store-relationship-recap/:sessionId
-			// Body: { recapTurns: ChatTurn[] }
-			await _makeApiCall<void>(
-				MODULE_NAMES.CHAT,
-				'storeRelationshipRecap',
-				'post',
-				[sessionId],
-				{},
-				{ recapTurns } // Body structure as defined in route [2]
-			);
-		},
-		[_makeApiCall]
-	);
-
 	const storeChatTurn = useCallback(
 		async (chatTurn: ChatTurnCdo): Promise<string> => {
 			const sessionId = chatTurn.sessionId;

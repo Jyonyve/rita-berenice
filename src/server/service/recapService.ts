@@ -5,10 +5,14 @@ import {
 	METADATA_TYPES,
 	COLLECTIONS,
 	parseSessionId,
-	RecapResult,
+	RecapInfo,
 	convertArrayToString,
+	ChatTurn,
+	RecapResponse,
+	ChromaResponse,
+	metadataToRecap,
 } from '#shared/index.ts';
-import { Collection } from 'chromadb';
+import { Collection, Metadata, Where, WhereDocument } from 'chromadb';
 import { chromaDbClient } from '../db/index.ts';
 
 import {
@@ -17,10 +21,13 @@ import {
 	buildRelationshipRecapDocId,
 	buildRelationshipRecapId,
 	handleServiceError,
+	inflateRecapDoc,
+	validateChromaResponse,
 } from '../util/index.ts';
+import { chatService } from './chatService.ts';
 
 // Destructure chromaDbClient methods
-const { getRecapCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
+const { getRecapCollection, upsertRecord, getRecordById, queryRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.RECAP;
 
 export const recapService = {
@@ -36,16 +43,36 @@ export const recapService = {
 		return collection;
 	},
 
+	_constuctRecap: (results: ChromaResponse): RecapResponse => {
+		const { ids, documents, metadatas } = results;
+		const recapInfos = ids.map((id, index) => {
+			const metadata = metadatas[index];
+			const document = documents[index];
+			const inflatedDoc = inflateRecapDoc(document!);
+			const recapInfo = metadataToRecap(metadata! as unknown as RecapMetadata, inflatedDoc.content);
+			return recapInfo;
+		});
+		return {
+			ids,
+			documents,
+			metadatas,
+			recapInfos,
+			recapInfo: recapInfos[0] || null,
+			recapContents: recapInfos.map((r) => r.content),
+			recapContent: recapInfos[0].content,
+		};
+	},
+
 	/**
 	 * Store a factual recap with unified metadata structure
 	 */
-	storeFactualRecap: async (recapResult: RecapResult): Promise<void> => {
-		if (!recapResult.content || recapResult.content.trim() === '') {
+	storeFactualRecap: async (recapInfo: RecapInfo): Promise<void> => {
+		if (!recapInfo.content || recapInfo.content.trim() === '') {
 			console.warn(`[RecapService] Received empty recap content. Skipping factual recap.`);
 			return;
 		}
 
-		const { sessionId, turnStart, turnEnd, model } = recapResult;
+		const { sessionId, turnStart, turnEnd, model } = recapInfo;
 		const characterId = parseSessionId(sessionId).characterId;
 
 		console.log(
@@ -61,22 +88,24 @@ export const recapService = {
 				type: METADATA_TYPES.RECAP,
 				createdAt: now,
 				updatedAt: now,
-				keywords: convertArrayToString(recapResult.keywords),
-				topics: convertArrayToString(recapResult.topics),
-				entities: convertArrayToString(recapResult.entities),
-				sequence: recapResult.turnEnd, // Use end as the sequence
-
+				keywords: recapInfo.keywords,
+				topics: recapInfo.topics,
+				entities: recapInfo.entities,
+				sequence: recapInfo.turnEnd, // Use end as the sequence
 				// Recap-specific fields (flattened)
-				recapId: buildRecapId(sessionId, turnStart, turnEnd),
+				recapId: recapInfo.recapId || buildRecapId(sessionId, turnStart, turnEnd),
 				turnStart,
 				turnEnd,
 				model,
+				loreReferences: JSON.stringify(recapInfo.loreReferencesArray),
+				historyReferences: JSON.stringify(recapInfo.historyReferencesArray),
+				flags: convertArrayToString(recapInfo.flagsArray),
 			};
 
 			const collection = await recapService._getCollection();
-			await upsertRecord(collection, recapMetadata.recapId, recapResult.content, recapMetadata);
+			await upsertRecord(collection, recapMetadata.recapId, recapInfo.content, recapMetadata);
 			// whole texts document
-			await upsertRecord(collection, buildRecapDocId(sessionId), recapResult.content, {
+			await upsertRecord(collection, buildRecapDocId(sessionId), recapInfo.content, {
 				sessionId,
 				type: METADATA_TYPES.DOCUMENT,
 				timeStamp: now,
@@ -95,12 +124,12 @@ export const recapService = {
 	/**
 	 * Store a relationship recap (no LLM generation, just storage)
 	 */
-	storeRelationshipRecap: async (recapResult: RecapResult): Promise<void> => {
-		if (!recapResult.content || recapResult.content.trim() === '') {
+	storeRelationshipRecap: async (recapInfo: RecapInfo): Promise<void> => {
+		if (!recapInfo.content || recapInfo.content.trim() === '') {
 			console.warn(`[RecapService] Received empty recap content. Skipping relationship recap.`);
 			return;
 		}
-		const { sessionId, turnStart, turnEnd, model } = recapResult;
+		const { sessionId, turnStart, turnEnd, model } = recapInfo;
 		const characterId = parseSessionId(sessionId).characterId;
 
 		console.log(
@@ -116,21 +145,24 @@ export const recapService = {
 				type: METADATA_TYPES.RECAP,
 				createdAt: now,
 				updatedAt: now,
-				keywords: convertArrayToString(recapResult.keywords),
-				topics: convertArrayToString(recapResult.topics),
-				entities: convertArrayToString(recapResult.entities),
-				sequence: recapResult.turnEnd, // Use end as the sequence
+				keywords: recapInfo.keywords,
+				topics: recapInfo.topics,
+				entities: recapInfo.entities,
+				sequence: recapInfo.turnEnd, // Use end as the sequence
 
 				// Recap-specific fields (flattened)
 				recapId: buildRelationshipRecapId(sessionId, turnStart, turnEnd),
 				turnStart,
 				turnEnd,
 				model,
+				loreReferences: JSON.stringify(recapInfo.loreReferencesArray),
+				historyReferences: JSON.stringify(recapInfo.historyReferencesArray),
+				flags: convertArrayToString(recapInfo.flagsArray),
 			};
 			const collection = await recapService._getCollection();
-			await upsertRecord(collection, recapMetadata.recapId, recapResult.content, recapMetadata);
+			await upsertRecord(collection, recapMetadata.recapId, recapInfo.content, recapMetadata);
 			// whole texts document
-			await upsertRecord(collection, buildRelationshipRecapDocId(sessionId), recapResult.content, {
+			await upsertRecord(collection, buildRelationshipRecapDocId(sessionId), recapInfo.content, {
 				sessionId,
 				type: METADATA_TYPES.DOCUMENT,
 				timeStamp: now,
@@ -166,6 +198,66 @@ export const recapService = {
 		} catch (error) {
 			console.info(`[RecapService] No factual recap found for session ${sessionId}`);
 			return '';
+		}
+	},
+
+	queryRecaps: async (
+		sessionId: string,
+		queryTexts: string[],
+		type: typeof METADATA_TYPES.RECAP | typeof METADATA_TYPES.RELATIONSHIP,
+		where?: Where,
+		whereDocument?: WhereDocument,
+		limit?: number
+	): Promise<RecapResponse> => {
+		try {
+			const collection = await chatService._getChatCollection();
+
+			const whereClause: Where = {
+				$and: [
+					{ sessionId: { $eq: sessionId } },
+					{ type: { $eq: type } },
+					...(Array.isArray(where?.$and) ? where.$and : []),
+				],
+			};
+			const rawResults = await queryRecords(collection, queryTexts, whereClause, whereDocument, limit);
+
+			const results = rawResults.map((raw) => validateChromaResponse(raw, 'getList', collectionType));
+
+			// Collect all results
+			const allRecapInfos: RecapInfo[] = [];
+			const allIds: string[] = [];
+			const allDocuments: (string | null)[] = [];
+			const allMetadatas: (Metadata | null)[] = [];
+
+			results.forEach((result) => {
+				const { ids, documents, metadatas, recapInfos } = recapService._constuctRecap(result);
+				allRecapInfos.push(...recapInfos);
+				allIds.push(...ids);
+				allDocuments.push(...documents);
+				allMetadatas.push(...metadatas);
+			});
+
+			// Return a single ChatResponse with all results merged
+			return {
+				ids: allIds,
+				documents: allDocuments,
+				metadatas: allMetadatas,
+				recapInfos: allRecapInfos,
+				recapInfo: allRecapInfos[0],
+				recapContents: allRecapInfos.flatMap((r) => r.content),
+				recapContent: allRecapInfos[0].content,
+			};
+		} catch (error) {
+			console.error(`Failed to query chat log for session ${sessionId}:`, error);
+			return {
+				ids: [],
+				documents: [],
+				metadatas: [],
+				recapInfos: [],
+				recapInfo: {} as RecapInfo,
+				recapContents: [],
+				recapContent: '',
+			};
 		}
 	},
 

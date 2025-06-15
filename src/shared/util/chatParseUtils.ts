@@ -10,6 +10,7 @@ import {
 } from '@shared/domain/index.ts';
 import { DEFAULT_EMOTION } from '../config/index.ts';
 import { buildCharacterId } from '#root/src/server/index.ts';
+import { useErrorDialog } from '#root/src/client/util/styleUtils.tsx';
 
 export const convertStringToArray = (input: string): string[] => {
 	if (!input || typeof input !== 'string') {
@@ -22,7 +23,13 @@ export const convertArrayToString = (arr: string[]): string => {
 	return arr && arr.length > 0 ? arr.join(',') : '';
 };
 
-export const parseTextToEntries = (text: string): ChatEntry[] => {
+export const parseTextToEntries = (text: string) => {
+	const starCount = (text.match(/\*/g) || []).length;
+	if (starCount % 2 !== 0) {
+		useErrorDialog('Please close * tightly.');
+		throw Error('parsing error: "*" is not closed throughly.');
+	}
+
 	const entries: ChatEntry[] = [];
 	const regex = /\*([^*]+)\*|([^*]+)/g;
 	let match;

@@ -6,3 +6,5 @@ export * from './llmService.ts';
 export * from './recapService.ts';
 export * from './loreService.ts';
 export * from './termService.ts';
+export * from './memoryEngine.ts';
+export * from './personaEngine.ts';

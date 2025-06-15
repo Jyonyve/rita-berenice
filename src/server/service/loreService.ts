@@ -198,6 +198,66 @@ export const loreService = {
 		}
 	},
 
+	queryHistories: async (
+		characterId: string,
+		queryTexts: string[],
+		options?: { limit?: number }
+	): Promise<HistoryResponse> => {
+		validateServiceId(characterId, collectionType);
+		const collection = await loreService._getCollection();
+
+		// Build where clause with unified metadata structure
+		const whereClause: Where = {
+			$and: [{ type: { $eq: METADATA_TYPES.HISTORY } }, { characterId: { $eq: characterId } }],
+		};
+
+		try {
+			const rawResults = await queryRecords(
+				collection,
+				queryTexts,
+				whereClause,
+				undefined,
+				options?.limit
+			);
+
+			// This logic can be simplified if queryRecords returns a single structured response
+			// Assuming it returns an array of results for each queryText
+			const allHistories: HistoryInfo[] = [];
+			const allIds: string[] = [];
+			const allDocuments: (string | null)[] = [];
+			const allMetadatas: (any | null)[] = [];
+
+			for (const rawResult of rawResults) {
+				const results = validateChromaResponse(rawResult, 'getList', collectionType);
+				const histories = loreService._constuctHistory(results).histories;
+				allHistories.push(...histories);
+				allIds.push(...results.ids);
+				allDocuments.push(...results.documents);
+				allMetadatas.push(...results.metadatas);
+			}
+
+			// De-duplicate results if necessary and return a standard HistoryResponse
+			const uniqueHistories = Array.from(new Map(allHistories.map((h) => [h.historyId, h])).values());
+
+			return {
+				// Construct a valid HistoryResponse object
+				ids: allIds,
+				documents: allDocuments,
+				metadatas: allMetadatas,
+				histories: uniqueHistories,
+				history: uniqueHistories[0] || null,
+				historyContents: uniqueHistories.map((h) => h.content),
+				historyContent: uniqueHistories[0]?.content || '',
+			};
+		} catch (error) {
+			handleServiceError(
+				error,
+				`An internal error occurred while doing [queryHistories].`,
+				`Failed to query histories for characterId: ${characterId}`
+			);
+		}
+	},
+
 	/**
 	 * Store a new lore entry with unified metadata structure
 	 */

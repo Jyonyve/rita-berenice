@@ -1,120 +1,176 @@
 // src/server/services/personaEngine.ts
 
 import {
-	CharacterMetadata,
-	AiModelInfo,
-	ChatMessage,
-	DEFAULT_EMOTION,
-	BasicBeingInfo,
-	ChatTurn, // We now work with the enriched turn
-	parseEntriesToText,
 	CharacterInfo,
 	ProfileInfo,
-	DEFAULT_CHAT_MODEL_FREE, // Assuming you have a default chat model defined
+	ChatMessage,
+	parseEntriesToText,
+	LoreInfo,
+	HistoryInfo,
+	MemoryResponse,
+	PersonaResponse,
+	DEFAULT_MODEL_GOOGLEAI,
 } from '#shared/index.ts';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
-import { llmService, recapService, loreService } from './index.ts';
-import { buildPersonaSystemPrompt } from '../util/templateUtils.ts'; // Import the new, correct prompt builder [1]
+import { llmService } from './index.ts';
+import { buildJsonCorrectionPrompt, buildPersonaSystemPrompt } from '../util/templateUtils.ts'; // Correct import from the provided file
+import { handleServiceError, LlmResponseParseError, parseLlmJsonResponse } from '../util/index.ts';
 
-export interface PersonaResponse {
-	response: string;
-	emotion: string;
-}
+/**
+ * Helper function to format various memory types into a single, coherent string
+ * for the "Official Lore & Background" section of the system prompt.
+ * @param lores Array of recalled LoreInfo.
+ * @param histories Array of recalled HistoryInfo.
+ * @returns A formatted string containing lore and history context.
+ */
+const _formatGroundTruthForPrompt = (lores: LoreInfo[], histories: HistoryInfo[]): string => {
+	const loreSection =
+		lores?.length > 0
+			? `Core Lore:\n${lores.map((l) => `- ${l.title}: ${l.content.substring(0, 250)}...`).join('\n')}`
+			: '';
 
-// A helper to robustly parse the LLM's JSON response
-const _parseLlmJsonResponse = (jsonString: string): PersonaResponse => {
-	if (!jsonString) {
-		return { response: '[LLM returned empty response]', emotion: DEFAULT_EMOTION };
-	}
-	try {
-		const parsed = JSON.parse(jsonString);
-		// Basic validation of the parsed object's structure
-		if (typeof parsed.response === 'string' && typeof parsed.emotion === 'string') {
-			return parsed;
-		}
-		// If structure is wrong, return the raw string as response
-		return { response: jsonString, emotion: DEFAULT_EMOTION };
-	} catch (err) {
-		console.error(`[personaEngine] LLM returned invalid JSON, using raw response. Error:`, err);
-		return { response: jsonString, emotion: DEFAULT_EMOTION };
-	}
+	const historySection =
+		histories?.length > 0
+			? `Relevant Historical Events:\n${histories.map((h) => `- ${h.title} (Period: ${h.periodLabel}): ${h.content.substring(0, 250)}...`).join('\n')}`
+			: '';
+
+	return [loreSection, historySection].filter(Boolean).join('\n\n');
 };
-
-// Define the model for this specific task.
-// Using DEFAULT_CHAT_MODEL ensures consistency.
-const PERSONA_RESPONSE_MODEL: AiModelInfo = DEFAULT_CHAT_MODEL_FREE;
 
 export const personaEngine = {
 	/**
-	 * Generates a character's conversational response based on persona, memory, and an enriched context.
-	 * This is a stateless method that receives all necessary information.
-	 * @param enrichedTurn The ChatTurn object, now containing enrichedMetadata from memoryEngine.
+	 * Generates a character's conversational response using a rich, recalled memory context.
+	 * @param recalledMemories The payload of context recalled by memoryEngine.
 	 * @param characterInfo The full metadata for the character persona.
 	 * @param userInfo The basic info for the user.
-	 * @param history The recent chat history as an array of ChatMessage.
+	 * @param currentUserRequest The user's most recent message.
 	 * @param options An object containing the AbortSignal for timeout control.
 	 * @returns A promise that resolves to the character's response and emotion.
 	 */
 	async generateResponse(
-		enrichedTurn: ChatTurn,
+		recalledMemories: MemoryResponse,
 		characterInfo: CharacterInfo,
 		userInfo: ProfileInfo,
-		history: ChatMessage[],
+		currentUserRequest: ChatMessage,
 		options?: { signal?: AbortSignal }
 	): Promise<PersonaResponse> {
-		console.log(`[personaEngine] Generating response for turn ${enrichedTurn.sequence}...`);
-		const { sessionId } = enrichedTurn;
-		const { characterId } = characterInfo;
+		console.log(`[personaEngine] Generating response for user ${userInfo.name}...`);
 
 		try {
-			// --- 1. GATHER ALL CONTEXTUAL DATA IN PARALLEL ---
-			// Your new strategy: fetch multiple, specific memory sources.
-			const [factualRecap, relationshipRecap, lore] = await Promise.all([
-				recapService.getFactualRecap(sessionId), // Gets what the character has stated as fact
-				recapService.getRelationshipRecap(sessionId), // Gets how the character feels about the user
-				loreService.getLore(characterId), // Gets the absolute "ground truth" for the character
-			]);
+			// --- 1. FORMAT RECALLED MEMORIES FOR THE PROMPT ---
+			// Combine semantically relevant lore and history into the 'ground truth' document.
+			const groundTruthDocument = _formatGroundTruthForPrompt(
+				recalledMemories.relevantLore,
+				recalledMemories.relevantHistory
+			);
+
+			// Semantically relevant past chats provide extra context about recurring topics.
+			const longTermHistorySnippets =
+				recalledMemories.longTermHistory?.length > 0
+					? `### Relevant Past Conversation Snippets\nThis is not a full transcript, but snippets of past conversations relevant to the current topic:\n${recalledMemories.longTermHistory.map((t) => `- Turn ${t.sequence}: The conversation was about "${t.summary || 'a past event'}".`).join('\n')}`
+					: '';
 
 			// --- 2. BUILD THE COMPREHENSIVE SYSTEM PROMPT ---
-			// Use the new, powerful prompt builder from your template file.
-			const systemPromptContent = buildPersonaSystemPrompt(
+			// Use the powerful prompt builder from your template file.
+			let systemPromptContent = buildPersonaSystemPrompt(
 				characterInfo.instruction,
-				factualRecap.content,
-				relationshipRecap.content,
-				lore.content,
+				recalledMemories.factualRecapSummary || '', // Factual ledger from recaps
+				recalledMemories.relationshipRecapSummary || '', // Relationship summary from recaps
+				groundTruthDocument, // Combined Lore and History
 				characterInfo.name,
 				userInfo.name
 			);
+
+			// Inject the long-term history snippets right before the **RULES** section for maximum impact.
+			if (longTermHistorySnippets) {
+				const rulesIndex = systemPromptContent.indexOf('**RULES FOR CONSISTENCY');
+				if (rulesIndex !== -1) {
+					systemPromptContent =
+						systemPromptContent.slice(0, rulesIndex) +
+						longTermHistorySnippets +
+						'\n\n' +
+						systemPromptContent.slice(rulesIndex);
+				} else {
+					systemPromptContent += '\n\n' + longTermHistorySnippets;
+				}
+			}
 
 			const messages: ChatCompletionMessageParam[] = [
 				{ role: 'system', content: systemPromptContent },
 			];
 
-			// --- 3. CONSTRUCT THE FULL MESSAGE HISTORY ---
-			// Append the recent chat history to the prompt context.
-			for (const msg of history) {
-				const content = parseEntriesToText(msg.entries);
-				if (content && (msg.role === 'user' || msg.role === 'assistant')) {
-					messages.push({ role: msg.role, content });
-				}
+			// --- 3. CONSTRUCT THE SHORT-TERM CONVERSATIONAL HISTORY ---
+			// Use the most recent turns for immediate conversational back-and-forth.
+			for (const turn of recalledMemories.shortTermHistory) {
+				const reqContent = parseEntriesToText(turn.request.entries);
+				const resContent = parseEntriesToText(turn.response.entries);
+				// Add a 'name' field to help the model distinguish speakers.
+				if (reqContent) messages.push({ role: 'user', content: reqContent, name: userInfo.name });
+				if (resContent)
+					messages.push({ role: 'assistant', content: resContent, name: characterInfo.name });
 			}
+
 			// Finally, add the current user's request.
-			messages.push({ role: 'user', content: parseEntriesToText(enrichedTurn.request.entries) });
+			messages.push({
+				role: 'user',
+				content: parseEntriesToText(currentUserRequest.entries),
+				name: userInfo.name,
+			});
 
 			// --- 4. INVOKE LLM WITH TIMEOUT AND PARSE RESPONSE ---
-			// Pass the timeout signal down to the LLM service.
-			const rawJsonResponse = await llmService.invokeLlmFromMessages(
+			const rawLlmResponse = await llmService.invokeLlmFromMessages(
 				messages,
-				PERSONA_RESPONSE_MODEL,
+				DEFAULT_MODEL_GOOGLEAI,
 				options
 			);
 
-			return _parseLlmJsonResponse(rawJsonResponse);
+			// --- 3. Use the new, type-safe utility ---
+			return parseLlmJsonResponse<PersonaResponse>(
+				rawLlmResponse,
+				'personaEngine.generateResponse (Attempt 1)'
+			);
 		} catch (error) {
-			console.error(`[personaEngine] Failed to generate response for session ${sessionId}:`, error);
-			// Re-throw the error to be caught by the main orchestrator (handleChatRequest).
-			// This will trigger the global failure/timeout handling.
-			throw error;
+			// --- Check if it's a parsable error from our utility ---
+			if (error instanceof LlmResponseParseError) {
+				console.warn(
+					`[personaEngine] Initial LLM response failed parsing. Reason: ${error.reason}. Attempting self-correction...`
+				);
+
+				// --- LLM Call #2: Corrective Attempt ---
+				try {
+					const requiredSchema = '{"response": "string", "emotion": "string"}';
+					const correctionPrompt = buildJsonCorrectionPrompt(
+						error.details.rawResponse, // The failed output from the error object
+						error.message, // The error message from JSON.parse
+						requiredSchema
+					);
+
+					// Use a simple, direct LLM call for the correction
+					const correctedLlmResponse = await llmService.invokeLlm(
+						'user',
+						correctionPrompt,
+						DEFAULT_MODEL_GOOGLEAI,
+						options
+					);
+
+					// Attempt to parse the corrected response. If this fails, it will throw again and be caught by the outer catch block.
+					return parseLlmJsonResponse<PersonaResponse>(
+						correctedLlmResponse,
+						'personaEngine.generateResponse (Attempt 2)'
+					);
+				} catch (correctionError) {
+					// If the second attempt also fails, we give up and let the error propagate.
+					console.error('[personaEngine] Self-correction attempt failed.', correctionError);
+					// We throw the original error because it's more indicative of the root cause
+					handleServiceError(
+						error,
+						`[personaEngine] Failed to generate response after self-correction attempt.`
+					);
+				}
+			}
+
+			// If it wasn't a LlmResponseParseError, handle it normally.
+			handleServiceError(error, `[personaEngine] Failed to generate response for session.`);
 		}
 	},
 };

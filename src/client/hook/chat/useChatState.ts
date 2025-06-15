@@ -14,8 +14,8 @@ export const useChatState = (sessionId: string) => {
 	const [chatTurns, setChatTurns] = useState<ChatTurn[]>([]); // Sorted: oldest at index 0, newest at end
 	const [isLoading, setIsLoading] = useState(false);
 	const [hasMore, setHasMore] = useState(true);
-	const [clientError, setClientError] = useState<string | undefined>();
-	const [tempChatTurn, setTempChatTurn] = useState<TempChatTurn | undefined>();
+	const [clientError, setClientError] = useState<string>();
+	const [tempChatTurn, setTempChatTurn] = useState<TempChatTurn>();
 
 	const _sortTurns = (turns: ChatTurn[]) => turns.sort((a, b) => a.sequence - b.sequence);
 

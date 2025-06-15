@@ -740,3 +740,25 @@ ${textToAnalyze}
 
 JSON Array of Proper Nouns:`;
 };
+
+export const buildJsonCorrectionPrompt = (
+	failedOutput: string,
+	errorMessage: string,
+	originalSchemaDescription: string // e.g., '{"response": "string", "emotion": "string"}'
+): string =>
+	`
+The previous attempt to generate a JSON response failed.
+
+**PREVIOUS FAILED OUTPUT:**
+\`\`\`
+${failedOutput}
+\`\`\`
+
+**PARSING ERROR:**
+${errorMessage}
+
+Please correct the previous output. You MUST provide the response again, strictly adhering to the requested JSON format and schema. Do not add any commentary or introductory text.
+
+**REQUIRED JSON SCHEMA:**
+${originalSchemaDescription}
+`.trim();

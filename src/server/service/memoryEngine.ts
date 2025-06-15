@@ -9,11 +9,23 @@ import {
 	METADATA_TYPES,
 	chatTurnToMetadata,
 	AiModelInfo,
-	METADATA_GENERATION_MODEL,
+	DEFAULT_MODEL_GOOGLEAI,
+	RecapInfo,
+	convertArrayToString,
+	MemoryResponse,
 } from '#shared/index.ts';
+import { parseLlmJsonResponse } from '../util/index.ts';
 import { handleServiceError } from '../util/serviceHelpers.ts';
 import { buildChatTurnMetadataPrompt } from '../util/templateUtils.ts';
-import { characterService, llmService, loreService, profileService, termService } from './index.ts'; // Centralized service imports
+import {
+	characterService,
+	chatService,
+	llmService,
+	loreService,
+	profileService,
+	recapService,
+	termService,
+} from './index.ts'; // Centralized service imports
 
 // --- 2. Corrected and Renamed Metadata Creation Helper ---
 /**
@@ -23,7 +35,7 @@ import { characterService, llmService, loreService, profileService, termService 
  * @param enrichment The parsed JSON object from the LLM.
  * @returns A valid ChatTurnMetadata object.
  */
-function _createMetadataFromEnrichment(
+function _extractChatTurnMetadataInfoFromLlm(
 	turn: ChatTurn,
 	enrichment: Record<string, any>
 ): ChatTurnMetadata {
@@ -63,7 +75,73 @@ function _createMetadataFromEnrichment(
 	return chatTurnToMetadata(tempEnrichedTurn);
 }
 
+function _formatRecapForPrompt(recap: RecapInfo): string {
+	const flags =
+		recap.flagsArray.length > 0 ? ` [FLAGS: ${convertArrayToString(recap.flagsArray)}]` : '';
+	return `[Recap from turns ${recap.turnStart}-${recap.turnEnd}]${flags} Summary: ${recap.content.substring(0, 150)}...`; // Use a snippet of the content as a summary
+}
+
 export const memoryEngine = {
+	/**
+	 * Gathers all relevant context (memories) needed to generate a coherent, in-character response.
+	 * This is the primary "recall" step using a multi-tiered memory approach.
+	 * @param sessionId The current session ID.
+	 * @param userRequestText The text from the user's latest prompt for semantic search.
+	 * @returns A MemoryRecallPayload object containing various forms of context.
+	 */
+	async recallRelevantMemories(sessionId: string, userRequestText: string): Promise<MemoryResponse> {
+		const { characterId } = parseSessionId(sessionId);
+		const MEMORY_LIMIT = 3; // Limit for long-term and recap queries
+
+		try {
+			const [
+				shortTermHistoryRes,
+				longTermHistoryRes,
+				relevantLoreRes,
+				relevantHistoryRes,
+				// --- KEY CHANGE: Query for relevant recaps, not the latest one ---
+				relevantFactualRecapsRes,
+				relevantRelationshipRecapsRes,
+			] = await Promise.all([
+				// Tier 1: Immediate context
+				chatService.getChatTurns(sessionId, 5),
+				// Tier 2: Specific past conversations
+				chatService.queryChatTurns(sessionId, [userRequestText]),
+				// Foundational truths and chronological background
+				loreService.queryLores(characterId, [userRequestText]),
+				loreService.queryHistories(characterId, [userRequestText]),
+				// Tier 3: Narrative milestones
+				recapService.queryRecaps(sessionId, [userRequestText], METADATA_TYPES.RECAP),
+				recapService.queryRecaps(sessionId, [userRequestText], METADATA_TYPES.RELATIONSHIP),
+			]);
+
+			// Construct a concise, token-friendly summary of the recalled recaps
+			const factualRecapSummary = relevantFactualRecapsRes?.recapInfos
+				.map(_formatRecapForPrompt)
+				.join('\n');
+
+			const relationshipRecapSummary = relevantRelationshipRecapsRes?.recapInfos
+				.map(_formatRecapForPrompt)
+				.join('\n');
+
+			return {
+				shortTermHistory: shortTermHistoryRes?.chatTurns || [],
+				longTermHistory: longTermHistoryRes?.chatTurns || [],
+				relevantLore: relevantLoreRes?.lores || [],
+				relevantHistory: relevantHistoryRes?.histories || [],
+				// Pass the concise summaries, not the full objects
+				factualRecapSummary: factualRecapSummary,
+				relationshipRecapSummary: relationshipRecapSummary,
+			};
+		} catch (error) {
+			handleServiceError(
+				error,
+				'An internal error occurred while do [recallRelevantMemories].',
+				`Failed to recall relevant memories ${userRequestText.substring(0, 30)}...`
+			);
+		}
+	},
+
 	/**
 	 * Takes a chat turn, enriches it with LLM-generated metadata, and populates the `enrichedMetadata` field.
 	 * This process includes term standardization using the session glossary.
@@ -95,9 +173,9 @@ export const memoryEngine = {
 
 			// 4. Build the guided prompt for the LLM
 			const prompt = buildChatTurnMetadataPrompt(
-				userInfo.basicProfileInfo,
+				userInfo.profileInfo,
 				turn.request,
-				charInfo.basicCharacterInfo,
+				charInfo.characterInfo,
 				turn.response,
 				loreIds,
 				historyIds,
@@ -105,45 +183,17 @@ export const memoryEngine = {
 			);
 
 			// 5. Call the LLM and robustly parse the JSON response
-			const llmResponse = await llmService.invokeLlm('user', prompt, METADATA_GENERATION_MODEL);
-			const enrichment = memoryEngine.parseLlmJsonResponse(llmResponse);
+			const llmResponse = await llmService.invokeLlm('user', prompt, DEFAULT_MODEL_GOOGLEAI);
+			const enrichment = parseLlmJsonResponse<Record<string, any>>(llmResponse);
 
-			// 6. Create the final metadata object using your utility
-			return _createMetadataFromEnrichment(turn, enrichment);
+			// 6. Create the final metadata object using your utilityd
+			return  _extractChatTurnMetadataInfoFromLlm(turn, enrichment);
 		} catch (error) {
 			handleServiceError(
 				error,
-				'An internal error occurred while do [enrichChatTurnMetadataViaLlm].',
+				'An internal error occurred while do [extractChatTurnMetadataInfoFromLlm].',
 				`Failed to enrich chat turn metadata for chatTurn ${turn.chatTurnId}:`
 			);
-		}
-	},
-
-	/**
-	 * Parses a string that might contain a JSON object, potentially wrapped in markdown.
-	 * @param llmResponse The raw string response from the LLM.
-	 * @returns A parsed object, or an empty object if parsing fails.
-	 */
-	parseLlmJsonResponse: (llmResponse: string): Record<string, any> => {
-		if (!llmResponse) return {};
-		const JSON_REGEX = /``````|({[\s\S]*?})/;
-
-		const match = llmResponse.match(JSON_REGEX);
-		// The desired JSON will be in one of the capturing groups.
-		const extractedJson = match?.[1] || match?.[2];
-
-		if (!extractedJson) {
-			console.error('MemoryEngine: No valid JSON object found in LLM response.', {
-				response: llmResponse,
-			});
-			return {};
-		}
-
-		try {
-			return JSON.parse(extractedJson);
-		} catch (error) {
-			console.error('MemoryEngine: Failed to parse extracted JSON.', { json: extractedJson, error });
-			return {};
 		}
 	},
 };

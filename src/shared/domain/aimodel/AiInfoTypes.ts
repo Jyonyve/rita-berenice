@@ -61,7 +61,7 @@ export const DEFAULT_LOCAL_MODEL: AiModelInfo = {
 	model: 'exaone-deep-2.4b',
 };
 
-export const METADATA_GENERATION_MODEL: AiModelInfo = {
+export const DEFAULT_MODEL_GOOGLEAI: AiModelInfo = {
 	platform: 'googleai',
 	provider: 'google',
 	model: 'gemini-2.0-flash-001',
