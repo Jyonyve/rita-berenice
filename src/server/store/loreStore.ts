@@ -33,16 +33,16 @@ import {
 const { getLoreCollection, upsertRecord, getRecords, getRecordById, queryRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.LORE;
 
-export const loreService = {
+export const loreStore = {
 	// Cache for lore collection
 	_loreCollection: null as Collection | null,
 
 	_getCollection: async (): Promise<Collection> => {
-		if (loreService._loreCollection) {
-			return loreService._loreCollection;
+		if (loreStore._loreCollection) {
+			return loreStore._loreCollection;
 		}
 		const collection = await getLoreCollection();
-		loreService._loreCollection = collection;
+		loreStore._loreCollection = collection;
 		return collection;
 	},
 
@@ -90,7 +90,7 @@ export const loreService = {
 	 */
 	getLores: async (characterId: string): Promise<LoreResponse> => {
 		validateServiceId(characterId, collectionType);
-		const collection = await loreService._getCollection();
+		const collection = await loreStore._getCollection();
 		const where: Where = {
 			$and: [{ type: { $eq: METADATA_TYPES.LORE } }, { characterId: { $eq: characterId } }],
 		};
@@ -99,7 +99,7 @@ export const loreService = {
 			const rawResults = await getRecords(collection, where);
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 			// Build full entities using the unified metadata structure
-			return loreService._constuctLore(results);
+			return loreStore._constuctLore(results);
 		} catch (error) {
 			handleServiceError(
 				error,
@@ -114,12 +114,12 @@ export const loreService = {
 	 */
 	getLore: async (loreId: string): Promise<LoreResponse> => {
 		validateServiceId(loreId, collectionType);
-		const collection = await loreService._getCollection();
+		const collection = await loreStore._getCollection();
 
 		try {
 			const rawResult = await getRecordById(collection, loreId);
 			const results = validateChromaResponse(rawResult, 'getOne', collectionType);
-			return loreService._constuctLore(results);
+			return loreStore._constuctLore(results);
 		} catch (error) {
 			handleServiceError(
 				error,
@@ -138,7 +138,7 @@ export const loreService = {
 		options?: { categories?: string[]; keywords?: string[]; topics?: string[]; limit?: number }
 	): Promise<LoreResponse> => {
 		validateServiceId(characterId, collectionType);
-		const collection = await loreService._getCollection();
+		const collection = await loreStore._getCollection();
 
 		// Build where clause with unified metadata structure
 		const whereConditions: Where[] = [
@@ -172,7 +172,7 @@ export const loreService = {
 
 			for (const rawResult of rawResults) {
 				const results = validateChromaResponse(rawResult, 'getList', collectionType);
-				const lores = loreService._constuctLore(results).lores;
+				const lores = loreStore._constuctLore(results).lores;
 
 				allLores.push(...lores);
 				allIds.push(...results.ids);
@@ -204,7 +204,7 @@ export const loreService = {
 		options?: { limit?: number }
 	): Promise<HistoryResponse> => {
 		validateServiceId(characterId, collectionType);
-		const collection = await loreService._getCollection();
+		const collection = await loreStore._getCollection();
 
 		// Build where clause with unified metadata structure
 		const whereClause: Where = {
@@ -229,7 +229,7 @@ export const loreService = {
 
 			for (const rawResult of rawResults) {
 				const results = validateChromaResponse(rawResult, 'getList', collectionType);
-				const histories = loreService._constuctHistory(results).histories;
+				const histories = loreStore._constuctHistory(results).histories;
 				allHistories.push(...histories);
 				allIds.push(...results.ids);
 				allDocuments.push(...results.documents);
@@ -272,7 +272,7 @@ export const loreService = {
 			updatedAt: now,
 		};
 		try {
-			const collection = await loreService._getCollection();
+			const collection = await loreStore._getCollection();
 			const documentForEmbedding = flatLoreOrHistoryToDoc(loreInfo);
 			await upsertRecord(collection, loreMetadata.loreId, documentForEmbedding, loreMetadata);
 
@@ -295,7 +295,7 @@ export const loreService = {
 	 */
 	getHistories: async (characterId: string): Promise<HistoryResponse> => {
 		validateServiceId(characterId, collectionType);
-		const collection = await loreService._getCollection();
+		const collection = await loreStore._getCollection();
 		const where: Where = {
 			$and: [{ type: { $eq: METADATA_TYPES.HISTORY } }, { characterId: { $eq: characterId } }],
 		};
@@ -303,7 +303,7 @@ export const loreService = {
 		try {
 			const rawResults = await getRecords(collection, where);
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
-			const historyInfos = loreService._constuctHistory(results);
+			const historyInfos = loreStore._constuctHistory(results);
 			// Sort by sequence for chronological order
 			const sorted = historyInfos.histories.sort((a, b) => a.sequence - b.sequence);
 
@@ -335,7 +335,7 @@ export const loreService = {
 			updatedAt: now,
 		};
 		try {
-			const collection = await loreService._getCollection();
+			const collection = await loreStore._getCollection();
 			const documentForEmbedding = flatLoreOrHistoryToDoc(historyInfo);
 			await upsertRecord(collection, historyMetadata.historyId, documentForEmbedding, historyMetadata);
 
@@ -358,6 +358,6 @@ export const loreService = {
 	 */
 	clearCollectionCache: (): void => {
 		console.log('[LoreService] Clearing cached lore collection.');
-		loreService._loreCollection = null;
+		loreStore._loreCollection = null;
 	},
 };

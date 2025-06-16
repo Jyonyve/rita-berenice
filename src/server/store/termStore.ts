@@ -14,22 +14,22 @@ import {
 } from '../util/index.ts';
 import { ChromaResponse, Term, TermResponse } from '#shared/api/ModuleResponse.ts';
 import { metadataToChatTurn } from '#root/src/shared/util/dbConvertUtils.ts';
-import { llmService } from './index.ts';
+import { llmService } from '../service/index.ts';
 import { isTermInfo } from '#root/src/shared/index.ts';
 
 const { getTermCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.TERM;
 
-export const termService = {
+export const termStore = {
 	_termCollection: null as Collection | null,
 	_sessionTermCache: new Map<string, Map<string, TermInfo>>(),
 
 	_getCollection: async (): Promise<Collection> => {
-		if (termService._termCollection) {
-			return termService._termCollection;
+		if (termStore._termCollection) {
+			return termStore._termCollection;
 		}
 		const collection = await getTermCollection();
-		termService._termCollection = collection;
+		termStore._termCollection = collection;
 		return collection;
 	},
 
@@ -61,23 +61,23 @@ export const termService = {
 
 	_getOrBuildSessionTermMap: async (sessionId: string): Promise<Map<string, TermInfo>> => {
 		// 1. Check the service-level cache first.
-		if (termService._sessionTermCache.has(sessionId)) {
+		if (termStore._sessionTermCache.has(sessionId)) {
 			console.log(`TermService Cache HIT for session: ${sessionId}`);
-			return termService._sessionTermCache.get(sessionId)!;
+			return termStore._sessionTermCache.get(sessionId)!;
 		}
 
 		// 2. If not cached (CACHE MISS), fetch from DB and build the map.
 		console.log(`TermService Cache MISS for session: ${sessionId}. Building from DB.`);
-		const { termInfos } = await termService.getTermsBySessionId(sessionId);
+		const { termInfos } = await termStore.getTermsBySessionId(sessionId);
 		const newTermMap = new Map<string, TermInfo>(termInfos.map((info) => [info.koreanTerm, info]));
 
 		// 3. Store the newly built map in the cache for subsequent requests.
-		termService._sessionTermCache.set(sessionId, newTermMap);
+		termStore._sessionTermCache.set(sessionId, newTermMap);
 		return newTermMap;
 	},
 
 	storeTerm: async (termInfo: TermCdo | TermInfo): Promise<void> => {
-		const collection = await termService._getCollection();
+		const collection = await termStore._getCollection();
 		const now = new Date().toISOString();
 		const isTerm = isTermInfo(termInfo);
 
@@ -96,7 +96,7 @@ export const termService = {
 		try {
 			await chromaDbClient.upsertRecord(collection, metadata.termId, documentForEmbedding, metadata);
 
-			const sessionCache = await termService._getOrBuildSessionTermMap(metadata.sessionId);
+			const sessionCache = await termStore._getOrBuildSessionTermMap(metadata.sessionId);
 			sessionCache.set(metadata.koreanTerm, metadata);
 			console.log(
 				`TermService: Updated cache for term "${metadata.koreanTerm}" in session ${metadata.sessionId}.`
@@ -111,7 +111,7 @@ export const termService = {
 	},
 
 	getTermByKorean: async (sessionId: string, koreanTerm: string): Promise<TermResponse> => {
-		const collection = await termService._getCollection();
+		const collection = await termStore._getCollection();
 		const where: Where = {
 			$and: [
 				{ type: { $eq: METADATA_TYPES.TERM } },
@@ -122,7 +122,7 @@ export const termService = {
 		try {
 			const rawResults = await chromaDbClient.getRecords(collection, where, 1); // Expecting one or none
 			const results = validateChromaResponse(rawResults, 'getOne', collectionType); // Adapt validation if needed
-			return termService._constuctTermInfo(results);
+			return termStore._constuctTermInfo(results);
 		} catch (error: any) {
 			handleServiceError(
 				error,
@@ -133,7 +133,7 @@ export const termService = {
 	},
 
 	getTermsBySessionId: async (sessionId: string): Promise<TermResponse> => {
-		const collection = await termService._getCollection();
+		const collection = await termStore._getCollection();
 		const where: Where = {
 			$and: [
 				{ type: { $eq: METADATA_TYPES.TERM } },
@@ -143,7 +143,7 @@ export const termService = {
 		try {
 			const rawResults = await chromaDbClient.getRecords(collection, where); // Expecting one or none
 			const results = validateChromaResponse(rawResults, 'getList', collectionType); // Adapt validation if needed
-			return termService._constuctTermInfo(results);
+			return termStore._constuctTermInfo(results);
 		} catch (error: any) {
 			handleServiceError(
 				error,
@@ -157,7 +157,7 @@ export const termService = {
 		sessionId: string,
 		koreanTermsToEnsure: string[]
 	): Promise<Map<string, string>> => {
-		const sessionTermMap = await termService._getOrBuildSessionTermMap(sessionId);
+		const sessionTermMap = await termStore._getOrBuildSessionTermMap(sessionId);
 		const termsForPromptMap = new Map<string, string>();
 
 		for (const koreanTerm of new Set(koreanTermsToEnsure)) {
@@ -175,7 +175,7 @@ export const termService = {
 				if (initialTerm && initialTerm.trim() !== '') {
 					const newTermCdo: TermCdo = { sessionId, koreanTerm, initialTerm, termId: '' };
 					try {
-						await termService.storeTerm(newTermCdo);
+						await termStore.storeTerm(newTermCdo);
 						termsForPromptMap.set(koreanTerm, initialTerm);
 					} catch (storeError) {
 						console.error(`Failed to auto-insert term "${koreanTerm}":`, storeError);
@@ -190,7 +190,7 @@ export const termService = {
 	},
 
 	clearSessionCache: (sessionId: string): void => {
-		termService._sessionTermCache.delete(sessionId);
+		termStore._sessionTermCache.delete(sessionId);
 		console.log(`TermService: Cleared cache for session ${sessionId}.`);
 	},
 
@@ -199,6 +199,6 @@ export const termService = {
 	 */
 	clearCollectionCache: (): void => {
 		console.log('[termService] Clearing cached recap collection.');
-		termService._termCollection = null;
+		termStore._termCollection = null;
 	},
 };

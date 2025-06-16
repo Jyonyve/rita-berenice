@@ -24,22 +24,22 @@ import {
 	inflateRecapDoc,
 	validateChromaResponse,
 } from '../util/index.ts';
-import { chatService } from './chatService.ts';
+import { chatStore } from './chatStore.ts';
 
 // Destructure chromaDbClient methods
 const { getRecapCollection, upsertRecord, getRecordById, queryRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.RECAP;
 
-export const recapService = {
+export const recapStore = {
 	// Cache for recap collection
 	_recapCollection: null as Collection | null,
 
 	_getCollection: async (): Promise<Collection> => {
-		if (recapService._recapCollection) {
-			return recapService._recapCollection;
+		if (recapStore._recapCollection) {
+			return recapStore._recapCollection;
 		}
 		const collection = await getRecapCollection();
-		recapService._recapCollection = collection;
+		recapStore._recapCollection = collection;
 		return collection;
 	},
 
@@ -102,7 +102,7 @@ export const recapService = {
 				flags: convertArrayToString(recapInfo.flagsArray),
 			};
 
-			const collection = await recapService._getCollection();
+			const collection = await recapStore._getCollection();
 			await upsertRecord(collection, recapMetadata.recapId, recapInfo.content, recapMetadata);
 			// whole texts document
 			await upsertRecord(collection, buildRecapDocId(sessionId), recapInfo.content, {
@@ -159,7 +159,7 @@ export const recapService = {
 				historyReferences: JSON.stringify(recapInfo.historyReferencesArray),
 				flags: convertArrayToString(recapInfo.flagsArray),
 			};
-			const collection = await recapService._getCollection();
+			const collection = await recapStore._getCollection();
 			await upsertRecord(collection, recapMetadata.recapId, recapInfo.content, recapMetadata);
 			// whole texts document
 			await upsertRecord(collection, buildRelationshipRecapDocId(sessionId), recapInfo.content, {
@@ -185,7 +185,7 @@ export const recapService = {
 		sessionId: string,
 		type: typeof METADATA_TYPES.RECAP | typeof METADATA_TYPES.RELATIONSHIP
 	): Promise<string> => {
-		const collection = await recapService._getCollection();
+		const collection = await recapStore._getCollection();
 		const recapDocId =
 			type === METADATA_TYPES.RECAP
 				? buildRecapDocId(sessionId)
@@ -210,7 +210,7 @@ export const recapService = {
 		limit?: number
 	): Promise<RecapResponse> => {
 		try {
-			const collection = await chatService._getChatCollection();
+			const collection = await chatStore._getChatCollection();
 
 			const whereClause: Where = {
 				$and: [
@@ -230,7 +230,7 @@ export const recapService = {
 			const allMetadatas: (Metadata | null)[] = [];
 
 			results.forEach((result) => {
-				const { ids, documents, metadatas, recapInfos } = recapService._constuctRecap(result);
+				const { ids, documents, metadatas, recapInfos } = recapStore._constuctRecap(result);
 				allRecapInfos.push(...recapInfos);
 				allIds.push(...ids);
 				allDocuments.push(...documents);
@@ -266,6 +266,6 @@ export const recapService = {
 	 */
 	clearCollectionCache: (): void => {
 		console.log('[RecapService] Clearing cached recap collection.');
-		recapService._recapCollection = null;
+		recapStore._recapCollection = null;
 	},
 };

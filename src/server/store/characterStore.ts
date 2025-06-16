@@ -19,20 +19,20 @@ import { metadataToCharacter } from '#root/src/shared/util/index.ts';
 const { getCharacterCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.CHARACTER;
 
-export const characterService = {
+export const characterStore = {
 	// Cache for character collection
 	_characterCollection: null as Collection | null,
 
 	// Get collection with caching
 	_getCollection: async (): Promise<Collection> => {
 		// First check if it's in the cache (non-async operation)
-		if (characterService._characterCollection) {
-			return characterService._characterCollection;
+		if (characterStore._characterCollection) {
+			return characterStore._characterCollection;
 		}
 
 		// If not in cache, fetch it (async operation)
 		const collection = await getCharacterCollection();
-		characterService._characterCollection = collection;
+		characterStore._characterCollection = collection;
 		return collection;
 	},
 
@@ -54,7 +54,7 @@ export const characterService = {
 
 	// Character Operations
 	getAllCharacters: async (): Promise<CharacterResponse> => {
-		const collection = await characterService._getCollection();
+		const collection = await characterStore._getCollection();
 
 		try {
 			const rawResults = await collection.get({
@@ -65,7 +65,7 @@ export const characterService = {
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 			const { ids, documents, metadatas } = results;
 
-			const characterResponse = characterService._constuctCharacter(results);
+			const characterResponse = characterStore._constuctCharacter(results);
 
 			// Sort descending: newer (larger timestamp) comes before older (smaller timestamp)
 			const parsedInfos = characterResponse.characterInfos.sort(
@@ -91,12 +91,12 @@ export const characterService = {
 	},
 
 	getCharacter: async (characterId: string): Promise<CharacterResponse> => {
-		const collection = await characterService._getCollection();
+		const collection = await characterStore._getCollection();
 		try {
 			const rawResult = await getRecordById(collection, characterId);
 			const results = validateChromaResponse(rawResult, 'getOne', collectionType);
 
-			return characterService._constuctCharacter(results);
+			return characterStore._constuctCharacter(results);
 		} catch (error) {
 			handleServiceError(
 				error,
@@ -110,7 +110,7 @@ export const characterService = {
 		showName: string,
 		limit: number = -1
 	): Promise<CharacterResponse> => {
-		const collection = await characterService._getCollection();
+		const collection = await characterStore._getCollection();
 		const where: Where = {
 			$and: [{ type: { $eq: METADATA_TYPES.CHARACTER } }, { showName: { $in: showName } }],
 		};
@@ -118,7 +118,7 @@ export const characterService = {
 			const rawResults = await getRecords(collection, where, limit);
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 
-			return characterService._constuctCharacter(results);
+			return characterStore._constuctCharacter(results);
 		} catch (error: any) {
 			handleServiceError(
 				error,
@@ -129,7 +129,7 @@ export const characterService = {
 	},
 
 	storeCharacter: async (characterInfo: CharacterInfo): Promise<string> => {
-		const collection = await characterService._getCollection();
+		const collection = await characterStore._getCollection();
 		const now = new Date().toISOString();
 
 		// Prepare the data to be upserted
@@ -173,6 +173,6 @@ export const characterService = {
 
 	// Method to clear the cache
 	clearCollectionCache: (): void => {
-		characterService._characterCollection = null;
+		characterStore._characterCollection = null;
 	},
 };

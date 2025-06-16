@@ -18,20 +18,20 @@ import {
 const { getProfileCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.PROFILE;
 
-export const profileService = {
+export const profileStore = {
 	// Cache for profile collection
 	_profileCollection: null as Collection | null,
 
 	// Get collection with caching
 	_getCollection: async (): Promise<Collection> => {
 		// First check if it's in the cache (non-async operation)
-		if (profileService._profileCollection) {
-			return profileService._profileCollection;
+		if (profileStore._profileCollection) {
+			return profileStore._profileCollection;
 		}
 
 		// If not in cache, fetch it (async operation)
 		const collection = await getProfileCollection();
-		profileService._profileCollection = collection;
+		profileStore._profileCollection = collection;
 		return collection;
 	},
 
@@ -51,7 +51,7 @@ export const profileService = {
 
 	// Profile Operations
 	getAllProfiles: async (): Promise<ProfileResponse> => {
-		const collection = await profileService._getCollection();
+		const collection = await profileStore._getCollection();
 		try {
 			const rawResults = await collection.get({
 				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
@@ -60,14 +60,8 @@ export const profileService = {
 
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 			const { ids, documents, metadatas } = results;
-			const parsedInfos = profileService._parseDocToBasicProfileInfo(rawResults.documents);
-			return {
-				ids,
-				documents,
-				metadatas,
-				profileInfos: parsedInfos,
-				profileInfo: parsedInfos[0],
-			};
+			const parsedInfos = profileStore._parseDocToBasicProfileInfo(rawResults.documents);
+			return { ids, documents, metadatas, profileInfos: parsedInfos, profileInfo: parsedInfos[0] };
 		} catch (error) {
 			handleServiceError(
 				error,
@@ -78,19 +72,13 @@ export const profileService = {
 	},
 
 	getProfile: async (profileId: string): Promise<ProfileResponse> => {
-		const collection = await profileService._getCollection();
+		const collection = await profileStore._getCollection();
 		try {
 			const rawResult = await getRecordById(collection, profileId);
 			const results = validateChromaResponse(rawResult, 'getOne', collectionType);
 			const { ids, documents, metadatas } = results;
-			const parsedInfos = profileService._parseDocToBasicProfileInfo(results.documents);
-			return {
-				ids,
-				documents,
-				metadatas,
-				profileInfo: parsedInfos[0],
-				profileInfos: parsedInfos,
-			};
+			const parsedInfos = profileStore._parseDocToBasicProfileInfo(results.documents);
+			return { ids, documents, metadatas, profileInfo: parsedInfos[0], profileInfos: parsedInfos };
 		} catch (error) {
 			handleServiceError(
 				error,
@@ -101,7 +89,7 @@ export const profileService = {
 	},
 
 	getProfileBySessionId: async (sessionId: string): Promise<ProfileResponse> => {
-		const collection = await profileService._getCollection();
+		const collection = await profileStore._getCollection();
 
 		try {
 			const rawResults = await collection.get({
@@ -111,7 +99,7 @@ export const profileService = {
 			});
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 			const { ids, documents, metadatas } = results;
-			const parsedBasicInfos = profileService._parseDocToBasicProfileInfo(documents);
+			const parsedBasicInfos = profileStore._parseDocToBasicProfileInfo(documents);
 			return {
 				ids,
 				documents,
@@ -129,7 +117,7 @@ export const profileService = {
 	},
 
 	getProfilesByShowName: async (showName: string): Promise<ProfileResponse> => {
-		const collection = await profileService._getCollection();
+		const collection = await profileStore._getCollection();
 		const where: Where = {
 			$and: [{ type: { $eq: METADATA_TYPES.PROFILE } }, { showName: { $in: showName } }],
 		};
@@ -137,7 +125,7 @@ export const profileService = {
 			const rawResults = await getRecords(collection, where);
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 			const { ids, documents, metadatas } = results;
-			const parsedBasicInfos = profileService._parseDocToBasicProfileInfo(documents);
+			const parsedBasicInfos = profileStore._parseDocToBasicProfileInfo(documents);
 			return {
 				ids,
 				documents,
@@ -156,7 +144,7 @@ export const profileService = {
 
 	// In profileService
 	storeProfile: async (profileInfo: ProfileMetadata): Promise<string> => {
-		const collection = await profileService._getCollection();
+		const collection = await profileStore._getCollection();
 		const now = new Date().toISOString();
 
 		const profile: ProfileMetadata = {
@@ -186,6 +174,6 @@ export const profileService = {
 
 	// Method to clear the cache
 	clearCollectionCache: (): void => {
-		profileService._profileCollection = null;
+		profileStore._profileCollection = null;
 	},
 };
