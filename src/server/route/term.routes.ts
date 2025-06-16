@@ -1,12 +1,12 @@
 // src/server/routes/glossary.routes.ts
 import express, { type Request, type Response } from 'express';
 import { TermInfo, genRoutePattern, COLLECTIONS } from '#shared/index.ts'; // Assuming MODULE_NAMES is not directly used in routes
-import { termService } from '../service/index.ts'; // Correct path
 import {
 	asyncHandler,
 	validateRequestData, // For body validation
 	validateServiceId, // For sessionId path param
 } from '../util/index.ts'; // Assuming these are in your util
+import { termStore } from '../store/termStore.ts';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.TERM; // For validating sessionId if it were used as a serviceId elsewhere
@@ -24,7 +24,7 @@ router.post(
 		];
 		validateRequestData(req.body, 'body', requiredFields);
 
-		const response = await termService.storeTerm(req.body);
+		const response = await termStore.storeTerm(req.body);
 		res.status(201).json(response);
 	})
 );
@@ -36,7 +36,7 @@ router.get(
 		validateRequestData(req.params, 'params', ['sessionId', 'koreanTerm']);
 		const { sessionId, koreanTerm } = req.params;
 
-		const response = await termService.getTermByKorean(sessionId, koreanTerm);
+		const response = await termStore.getTermByKorean(sessionId, koreanTerm);
 		res.status(200).json(response);
 	})
 );
@@ -47,7 +47,7 @@ router.get(
 		validateRequestData(req.params, 'params', ['sessionId']);
 		const { sessionId } = req.params;
 
-		const response = await termService.getTermsBySessionId(sessionId);
+		const response = await termStore.getTermsBySessionId(sessionId);
 		res.status(200).json(response);
 	})
 );

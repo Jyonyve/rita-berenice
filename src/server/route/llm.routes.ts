@@ -1,8 +1,8 @@
 // src/server/routes/ai.routes.ts (or chatGeneration.routes.ts)
 import express, { type Request, type Response } from 'express';
-import { llmService } from '#root/src/server/service/llmService.ts'; // Correct path
 import { genRoutePattern, isValidAiModelInfo } from '#root/src/shared/index.ts';
-import { AiModelInfo, ChatRoleType, ChatTurn } from '#root/src/shared/domain/index.ts';
+import { AiModelInfo, ChatRoleType } from '#root/src/shared/domain/index.ts';
+import { llmService } from '../service/llmService.ts';
 // Import the necessary server-side utils
 
 const router = express.Router();

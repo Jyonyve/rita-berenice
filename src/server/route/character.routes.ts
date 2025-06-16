@@ -1,8 +1,8 @@
 // src/server/routes/character.routes.ts
-import { genRoutePattern, CharacterMetadata, COLLECTIONS } from '#shared/index.ts';
+import { genRoutePattern, COLLECTIONS } from '#shared/index.ts';
 import express, { type Request, type Response } from 'express';
-import { characterService } from '../service/index.ts';
 import { asyncHandler, validateRequestData, validateServiceId } from '../util/index.ts';
+import { characterStore } from '../store/characterStore.ts';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.CHARACTER;
@@ -20,7 +20,7 @@ router.get(
 		console.log(`API HIT: GET ${path}`);
 
 		validateRequestData(req.body, 'body');
-		const response = await characterService.getAllCharacters();
+		const response = await characterStore.getAllCharacters();
 		res.status(200).json(response);
 		return;
 	})
@@ -42,7 +42,7 @@ router.get(
 
 		const path = genRoutePattern('getCharacter', ['characterId']);
 		console.log(`API HIT: GET ${path.replace(':characterId', characterId)}`);
-		const response = await characterService.getCharacter(characterId);
+		const response = await characterStore.getCharacter(characterId);
 
 		res.status(200).json(response);
 		return;
@@ -65,7 +65,7 @@ router.get(
 		const path = genRoutePattern('getCharactersByShowName', ['showName']);
 		console.log(`API HIT: GET ${path.replace(':showName', showName)}`);
 
-		const response = await characterService.getCharactersByShowName(showName);
+		const response = await characterStore.getCharactersByShowName(showName);
 
 		res.status(200).json(response);
 		return;
@@ -91,7 +91,7 @@ router.post(
 		const path = genRoutePattern('storeCharacter');
 		console.log(`API HIT: POST ${path} for ID: ${req.body?.characterId}`);
 
-		const response = await characterService.storeCharacter(req.body);
+		const response = await characterStore.storeCharacter(req.body);
 
 		res.status(200).json(response);
 		return;

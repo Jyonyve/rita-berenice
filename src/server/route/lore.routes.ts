@@ -1,9 +1,9 @@
 // src/server/routes/lore.routes.ts
 
 import express, { type Request, type Response } from 'express';
-import { loreService } from '../service/index.ts';
 import { asyncHandler, validateRequestData, validateServiceId } from '../util/index.ts';
 import { genRoutePattern, COLLECTIONS } from '#shared/index.ts';
+import { loreStore } from '../store/loreStore.ts';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.LORE;
@@ -15,7 +15,7 @@ router.get(
 		validateRequestData(req.params, 'params', ['characterId']);
 		const { characterId } = req.params;
 
-		const response = await loreService.getLores(characterId);
+		const response = await loreStore.getLores(characterId);
 		res.status(200).json(response);
 	})
 );
@@ -28,7 +28,7 @@ router.get(
 		validateRequestData(req.params, 'params', ['loreId']);
 		const { loreId } = req.params;
 
-		const response = await loreService.getLore(loreId);
+		const response = await loreStore.getLore(loreId);
 		res.status(200).json(response);
 	})
 );
@@ -41,7 +41,7 @@ router.post(
 		validateRequestData(req.body, 'body', requiredFields);
 
 		const { characterId, queryTexts, options } = req.body;
-		const response = await loreService.queryLores(characterId, queryTexts, options);
+		const response = await loreStore.queryLores(characterId, queryTexts, options);
 		res.status(200).json(response);
 	})
 );

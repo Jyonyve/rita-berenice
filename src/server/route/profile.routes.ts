@@ -1,14 +1,14 @@
 // src/server/routes/profile.routes.ts
 import express, { type Request, type Response } from 'express';
-import { profileService } from '../service/index.ts';
 import { COLLECTIONS, genRoutePattern, ProfileMetadata } from '#shared/index.ts';
 import { asyncHandler, validateRequestData, validateServiceId } from '../util/index.ts';
+import { profileStore } from '../store/profileStore.ts';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.PROFILE;
 
 // --- GET /api/profile/get-all-profiles ---
-// Corresponds to profileService.getAllProfiles
+// Corresponds to profileStore.getAllProfiles
 router.get(
 	genRoutePattern('getAllProfiles'),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
@@ -17,14 +17,14 @@ router.get(
 		validateRequestData(req.body, 'body');
 
 		validateRequestData(req.body, 'body');
-		const response = await profileService.getAllProfiles();
+		const response = await profileStore.getAllProfiles();
 		res.status(200).json(response);
 		return;
 	})
 );
 
 // --- GET /api/profile/get-profile-by-id/:id ---
-// Corresponds to profileService.getProfileById
+// Corresponds to profileStore.getProfileById
 router.get(
 	genRoutePattern('getProfile', ['profileId']),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
@@ -34,7 +34,7 @@ router.get(
 
 		const path = genRoutePattern('getProfile', ['profileId']);
 		console.log(`API HIT: GET ${path.replace(':profileId', profileId)}`);
-		const response = await profileService.getProfile(profileId);
+		const response = await profileStore.getProfile(profileId);
 
 		res.status(200).json(response);
 		return;
@@ -42,7 +42,7 @@ router.get(
 );
 
 // --- GET /api/profile/get-profiles-by-session-id/:sessionId ---
-// Corresponds to profileService.getProfilesBySessionId
+// Corresponds to profileStore.getProfilesBySessionId
 router.get(
 	genRoutePattern('getProfileBySessionId', ['sessionId']),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
@@ -51,7 +51,7 @@ router.get(
 		const path = genRoutePattern('getProfileBySessionId', ['sessionId']);
 		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
 
-		const response = await profileService.getProfileBySessionId(sessionId);
+		const response = await profileStore.getProfileBySessionId(sessionId);
 
 		res.status(200).json(response);
 		return;
@@ -59,7 +59,7 @@ router.get(
 );
 
 // --- POST /api/profile/store-profile ---
-// Corresponds to profileService.storeProfile (upsert)
+// Corresponds to profileStore.storeProfile (upsert)
 // Expects ProfileInfo in body
 router.post(
 	genRoutePattern('storeProfile'),
@@ -72,7 +72,7 @@ router.post(
 		console.log(`API HIT: POST ${path} for ID: ${req.body?.profileId}`);
 		// api
 
-		const response = await profileService.storeProfile(req.body);
+		const response = await profileStore.storeProfile(req.body);
 
 		res.status(200).json(response);
 		return;

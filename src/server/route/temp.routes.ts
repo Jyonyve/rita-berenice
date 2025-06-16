@@ -1,12 +1,13 @@
 // src/server/routes/tempChat.routes.ts
 import express, { type Request, type Response } from 'express';
 import { TempChatTurn, genRoutePattern, COLLECTIONS } from '#shared/index.ts'; // Assuming MODULE_NAMES is not directly used in routes
-import { chatService } from '../service/index.ts'; // Correct path
 import {
 	asyncHandler,
+	buildTempChatTurnId,
 	validateRequestData, // For body validation
 	validateServiceId, // For sessionId path param
 } from '../util/index.ts'; // Assuming these are in your util
+import { chatStore } from '../store/chatStore.ts';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.TEMP; // For validating sessionId if it were used as a serviceId elsewhere
@@ -26,7 +27,7 @@ router.post(
 		console.log(`API HIT: POST ${path} for sessionId: ${sessionId}`);
 
 		// Service method expects the full TempChatTurn object
-		await chatService.saveTempChatTurn(req.body);
+		await chatStore.saveTempChatTurn(req.body);
 
 		res
 			.status(201)
@@ -34,39 +35,21 @@ router.post(
 	})
 );
 
-// --- GET /api/temp-chat/get-temp-chat-turn/:sessionId ---
+// --- GET /api/temp-chat/get-temp-chat-turn/:sessionId/:sequence ---
 router.get(
-	genRoutePattern('getTempChatTurn', ['sessionId']),
+	genRoutePattern('getTempChatTurn', ['sessionId', 'sequence']),
 	asyncHandler(async (req: Request, res: Response<TempChatTurn>): Promise<void> => {
-		const { sessionId } = req.params;
-
+		const { sessionId, sequence } = req.params;
+		const seq: number = Number(sequence);
 		// Validate sessionId from path
-		validateServiceId(sessionId, collectionType); // Or a more generic ID validation
+		validateServiceId(buildTempChatTurnId(sessionId, seq), collectionType); // Or a more generic ID validation
 
 		const path = genRoutePattern('getTempChatTurn', ['sessionId']);
 		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
 
-		const tempTurn = await chatService.getTempChatTurn(sessionId);
+		const tempTurn = await chatStore.getTempChatTurn(sessionId, seq);
 
 		res.status(200).json(tempTurn);
-	})
-);
-
-// --- DELETE /api/temp-chat/remove-temp-chat-turn/:sessionId ---
-router.delete(
-	genRoutePattern('removeTempChatTurn', ['sessionId']),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { sessionId } = req.params;
-
-		// Validate sessionId from path
-		validateServiceId(sessionId, collectionType); // Or a more generic ID validation
-
-		const path = genRoutePattern('removeTempChatTurn', ['sessionId']);
-		console.log(`API HIT: DELETE ${path.replace(':sessionId', sessionId)}`);
-
-		await chatService.removeTempChatTurn(sessionId); // Service handles errors or confirms deletion
-
-		res.status(204).send(); // 204 No Content for successful DELETE with no body
 	})
 );
 

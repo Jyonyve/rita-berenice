@@ -1,6 +1,5 @@
 // src/server/routes/chat.routes.ts
 import express, { type Request, type Response } from 'express';
-import { chatService } from '../service/index.ts';
 import { genRoutePattern, ChatTurn, COLLECTIONS, ChatResponse } from '#shared/index.ts';
 import {
 	asyncHandler,
@@ -10,6 +9,7 @@ import {
 	validateSequenceRule,
 } from '../util/index.ts';
 import { Where } from 'chromadb';
+import { chatStore } from '../store/chatStore.ts';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.CHAT;
@@ -28,7 +28,7 @@ router.post(
 				`API HIT: POST ${path} for sessionId: ${req.body.sessionId}, sequence: ${req.body.sequence}`
 			);
 
-			const storedTurnString = await chatService.storeChatTurn(req.body);
+			const storedTurnString = await chatStore.storeChatTurn(req.body);
 			res.status(201).json(storedTurnString);
 		}
 	)
@@ -56,7 +56,7 @@ router.get(
 			`API HIT: GET ${path.replace(':sessionId', sessionId)}?beforeSequence=${beforeSequence}`
 		);
 
-		const response = await chatService.getChatTurns(sessionId, beforeSequence);
+		const response = await chatStore.getChatTurns(sessionId, beforeSequence);
 		res.status(200).json(response);
 	})
 );
@@ -76,7 +76,7 @@ router.get(
 			`API HIT: GET ${path.replace(':sessionId', sessionId).replace(':sequence', sequenceParam)}`
 		);
 
-		const chatResponse = await chatService.getChatTurnBySequence(sessionId, sequence);
+		const chatResponse = await chatStore.getChatTurnBySequence(sessionId, sequence);
 		res.status(200).json(chatResponse);
 	})
 );
@@ -120,7 +120,7 @@ router.post(
 					.join(', ')}${queryTexts.length > 3 ? '...' : ''}`
 			);
 
-			const results = await chatService.queryChatTurns(sessionId, queryTexts, where);
+			const results = await chatStore.queryChatTurns(sessionId, queryTexts, where);
 			res.status(200).json(results);
 		}
 	)
