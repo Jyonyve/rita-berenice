@@ -9,6 +9,7 @@ export const SUFFIX = {
 	REQUEST: 'request',
 	RESPONSE: 'response',
 	TURN: 'turn',
+	TEMP: 'temp',
 	STORY: ' story',
 	RELATIONSHIP: 'relationship',
 	RECAP: 'recap',
@@ -54,7 +55,10 @@ export const buildChatTurnId = (sessionId: string, sequence: number): string => 
 	return `${sessionId}_${sequence}_${SUFFIX.TURN}`;
 };
 
-// other collections
+export const buildTempChatTurnId = (sessionId: string, sequence: number): string => {
+	return `${sessionId}_${sequence}_${SUFFIX.TEMP}`;
+};
+
 export const buildRecapId = (sessionId: string, turnStart: number, turnEnd: number): string => {
 	return `${sessionId}_${turnStart}to${turnEnd}_${SUFFIX.RECAP}`;
 };

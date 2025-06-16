@@ -22,6 +22,7 @@ import {
 	handleServiceError,
 	validateChromaResponse,
 	inflateChatTurnDoc,
+	buildTempChatTurnId,
 } from '../util/index.ts';
 import { chatTurnToMetadata, metadataToChatTurn } from '#root/src/shared/util/dbConvertUtils.ts';
 
@@ -143,16 +144,23 @@ export const chatStore = {
 			sessionId: tempData.sessionId,
 			createdAt: tempData.createdAt || now,
 			updatedAt: now,
-			setCount: tempData.chatTurnSets?.length || 0,
+			setCount: tempData.chatTurnSets.length || 0,
+			tempTurnId: tempData.tempTurnId || buildTempChatTurnId(tempData.sessionId, tempData.sequence),
+			fixedSetNo: tempData.fixedSetNo,
 		};
-		await upsertRecord(collection, tempData.sessionId, JSON.stringify(tempData), updatedMetadata);
+
+		const documentObj: TempChatTurn = { ...updatedMetadata, chatTurnSets: tempData.chatTurnSets };
+		await upsertRecord(collection, tempData.sessionId, JSON.stringify(documentObj), updatedMetadata);
 		console.log(`Stored temp data for session ${tempData.sessionId}`);
 	},
 
-	getTempChatTurn: async (sessionId: string): Promise<TempChatTurn> => {
+	getTempChatTurn: async (sessionId: string, sequence: number): Promise<TempChatTurn> => {
 		try {
 			const collection = await chatStore._getTempCollection(); // Assumes _getTempCollection exists
-			const rawResult = await chromaDbClient.getRecordById(collection, sessionId);
+			const rawResult = await chromaDbClient.getRecordById(
+				collection,
+				buildTempChatTurnId(sessionId, sequence)
+			);
 			const result = validateChromaResponse(rawResult, 'getOne', COLLECTIONS.TEMP);
 			return JSON.parse(result.documents?.[0] ?? '') as TempChatTurn;
 		} catch (error) {
@@ -161,16 +169,6 @@ export const chatStore = {
 				'An internal error occurred while do [getTempChatTurn].',
 				`Error fetching or parsing temp turn for session ${sessionId}`
 			);
-		}
-	},
-
-	removeTempChatTurn: async (sessionId: string): Promise<void> => {
-		try {
-			const collection = await chatStore._getTempCollection();
-			await deleteRecordById(collection, sessionId);
-			console.log(`Deleted temp data for session ${sessionId}`);
-		} catch (error) {
-			throw new Error('fail to delete temporary chat turn');
 		}
 	},
 
@@ -188,7 +186,6 @@ export const chatStore = {
 			};
 			// Store the full turn as JSON only when it's fixed
 			await chatStore._storeFullChatTurn(updatedChatTurn);
-			await chatStore.removeTempChatTurn(sessionId);
 			return JSON.stringify(updatedChatTurn);
 		} catch (error) {
 			handleServiceError(

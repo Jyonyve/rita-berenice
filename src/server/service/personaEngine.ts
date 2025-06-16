@@ -6,10 +6,8 @@ import {
 	ChatMessage,
 	PersonaResponse,
 	MemoryResponse,
-	LangCode,
 	DEFAULT_MODEL_GOOGLEAI, // Assuming this is your default chat model
 	parseEntriesToText,
-	DEFAULT_EMOTION,
 } from '#shared/index.ts';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { llmService } from './index.ts';

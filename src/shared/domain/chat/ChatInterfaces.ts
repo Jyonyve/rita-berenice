@@ -6,7 +6,7 @@ export type ChatType = 'dialogue' | 'action';
 export type ChatRoleType = DefaultAiRole;
 export type ChatEntry = { type: ChatType; prompt: string };
 export type ChatMessageType = 'request' | 'response';
-export type ChatMessageSet = { request: ChatMessage; response: ChatMessage };
+export type ChatMessageSet = { request: ChatMessage; response: ChatMessage; setNo: number };
 
 // --- UNIFIED BASE METADATA ---
 interface BaseMetadata {
@@ -141,9 +141,11 @@ export interface TempChatTurnMetadata {
 	type: typeof METADATA_TYPES.TEMP;
 	sequence: number;
 	sessionId: string;
+	tempTurnId: string;
 	createdAt: string;
 	updatedAt: string;
 	setCount: number;
+	fixedSetNo: number; // if none of them fixed, default -1
 }
 
 export interface TempChatTurn extends TempChatTurnMetadata {

@@ -9,6 +9,7 @@ import {
 } from '../domain/index.ts';
 import { HistoryInfo, LoreInfo } from '../domain/lore/LoreInterfaces.ts';
 import { LangCode } from '../config/constants.ts';
+import { EmotionValue } from '../config/emotionWordsMapper.ts';
 // File: shared/api/ApiInterfaces.ts
 
 export interface ApiErrorResponse {
@@ -100,7 +101,7 @@ export type MemoryResponse = MemoryLlmResponse;
 
 interface PersonaLlmResponse {
 	response: string;
-	emotion: string;
+	emotion: EmotionValue;
 }
 
 export type PersonaResponse = PersonaLlmResponse;

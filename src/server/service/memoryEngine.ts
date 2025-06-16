@@ -14,18 +14,18 @@ import {
 	convertArrayToString,
 	MemoryResponse,
 } from '#shared/index.ts';
-import { detectLanguage, parseLlmJsonResponse } from '../util/index.ts';
-import { handleServiceError } from '../util/serviceHelpers.ts';
-import { buildChatTurnMetadataPrompt } from '../util/templateUtils.ts';
 import {
-	characterService,
-	chatService,
-	llmService,
-	loreService,
-	profileService,
-	recapService,
-	termService,
-} from './index.ts'; // Centralized service imports
+	characterStore,
+	chatStore,
+	loreStore,
+	profileStore,
+	recapStore,
+	termStore,
+} from '../store/index.ts';
+
+import { detectLanguage, handleServiceError, parseLlmJsonResponse } from '../util/index.ts';
+import { buildChatTurnMetadataPrompt } from '../util/templateUtils.ts';
+import { llmService } from './index.ts'; // Centralized service imports
 
 // --- 2. Corrected and Renamed Metadata Creation Helper ---
 /**
@@ -104,15 +104,15 @@ export const memoryEngine = {
 				relevantRelationshipRecapsRes,
 			] = await Promise.all([
 				// Tier 1: Immediate context
-				chatService.getChatTurns(sessionId, 5),
+				chatStore.getChatTurns(sessionId, 5),
 				// Tier 2: Specific past conversations
-				chatService.queryChatTurns(sessionId, [userRequestText]),
+				chatStore.queryChatTurns(sessionId, [userRequestText]),
 				// Foundational truths and chronological background
-				loreService.queryLores(characterId, [userRequestText]),
-				loreService.queryHistories(characterId, [userRequestText]),
+				loreStore.queryLores(characterId, [userRequestText]),
+				loreStore.queryHistories(characterId, [userRequestText]),
 				// Tier 3: Narrative milestones
-				recapService.queryRecaps(sessionId, [userRequestText], METADATA_TYPES.RECAP),
-				recapService.queryRecaps(sessionId, [userRequestText], METADATA_TYPES.RELATIONSHIP),
+				recapStore.queryRecaps(sessionId, [userRequestText], METADATA_TYPES.RECAP),
+				recapStore.queryRecaps(sessionId, [userRequestText], METADATA_TYPES.RELATIONSHIP),
 			]);
 
 			// Construct a concise, token-friendly summary of the recalled recaps
@@ -160,14 +160,14 @@ export const memoryEngine = {
 			const extractedKpns = await llmService.extractProperNouns(textForNer);
 
 			// 2. Ensure terms are in the glossary and get the guidance map
-			const termGuidanceMap = await termService.ensureAndGetTermsForPrompt(sessionId, extractedKpns);
+			const termGuidanceMap = await termStore.ensureAndGetTermsForPrompt(sessionId, extractedKpns);
 
 			// 3. Fetch context (lore, history, user/char info)
 			const [userInfo, charInfo, loreRes, historyRes] = await Promise.all([
-				profileService.getProfileBySessionId(sessionId),
-				characterService.getCharacter(characterId),
-				loreService.getLores(characterId),
-				loreService.getHistories(characterId),
+				profileStore.getProfileBySessionId(sessionId),
+				characterStore.getCharacter(characterId),
+				loreStore.getLores(characterId),
+				loreStore.getHistories(characterId),
 			]);
 			const loreIds = loreRes.lores.map((lore) => lore.loreId);
 			const historyIds = historyRes.histories.map((history) => history.historyId);
