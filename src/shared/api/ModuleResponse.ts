@@ -1,4 +1,3 @@
-import { GetResponse } from 'chromadb';
 import {
 	CharacterInfo,
 	ChatMessageType,
@@ -10,6 +9,7 @@ import {
 import { HistoryInfo, LoreInfo } from '../domain/lore/LoreInterfaces.ts';
 import { LangCode } from '../config/constants.ts';
 import { EmotionValue } from '../config/emotionWordsMapper.ts';
+import { GetResponse } from 'chromadb';
 // File: shared/api/ApiInterfaces.ts
 
 export interface ApiErrorResponse {

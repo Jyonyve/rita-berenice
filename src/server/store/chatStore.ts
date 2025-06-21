@@ -33,7 +33,6 @@ const {
 	upsertRecord,
 	getRecordById,
 	getRecords,
-	deleteRecordById,
 	queryRecords,
 } = chromaDbClient;
 const collectionType = COLLECTIONS.CHAT;

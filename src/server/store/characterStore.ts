@@ -128,24 +128,23 @@ export const characterStore = {
 		}
 	},
 
-	storeCharacter: async (characterInfo: CharacterInfo): Promise<string> => {
+	storeCharacter: async (character: CharacterInfo): Promise<string> => {
 		const collection = await characterStore._getCollection();
 		const now = new Date().toISOString();
 
 		// Prepare the data to be upserted
 		const characterMetadata: CharacterMetadata = {
-			...characterInfo, // Start with all fields from input
-			characterId:
-				characterInfo.characterId || buildCharacterId(characterInfo.name, characterInfo.variant),
+			...character, // Start with all fields from input
+			characterId: character.characterId || buildCharacterId(character.name, character.variant),
 			updatedAt: now,
-			createdAt: characterInfo.createdAt || now,
+			createdAt: character.createdAt || now,
 			type: METADATA_TYPES.CHARACTER,
 		};
 
 		const documentForEmbedding = flatCharacterToDoc({
 			...characterMetadata,
-			description: characterInfo.description,
-			instruction: characterInfo.instruction,
+			description: character.description,
+			instruction: character.instruction,
 		});
 
 		try {

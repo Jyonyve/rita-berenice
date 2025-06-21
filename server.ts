@@ -11,9 +11,12 @@ import {
 	chatRoutes,
 	profileRoutes,
 	llmRoutes,
-	tempChatRoutes,
+	tempRoutes,
 	termRoutes,
 	loreRoutes,
+	orchestrationRoutes,
+	personaRoutes,
+	memoryRoutes,
 } from '#server/route/index.ts';
 import sirv from 'sirv';
 import { MODULE_NAMES, ApiErrorResponse } from '#shared/index.ts';
@@ -66,9 +69,12 @@ async function createServer() {
 	app.use(`${BASE_API}${MODULE_NAMES.CHAT}`, chatRoutes);
 	app.use(`${BASE_API}${MODULE_NAMES.LLM}`, llmRoutes);
 	app.use(`${BASE_API}${MODULE_NAMES.PROFILE}`, profileRoutes);
-	app.use(`${BASE_API}${MODULE_NAMES.TEMP}`, tempChatRoutes);
+	app.use(`${BASE_API}${MODULE_NAMES.TEMP}`, tempRoutes);
 	app.use(`${BASE_API}${MODULE_NAMES.LORE}`, loreRoutes);
 	app.use(`${BASE_API}${MODULE_NAMES.TERM}`, termRoutes);
+	app.use(`${BASE_API}${MODULE_NAMES.MEMORY}`, memoryRoutes);
+	app.use(`${BASE_API}${MODULE_NAMES.PERSONA}`, personaRoutes);
+	app.use(`${BASE_API}${MODULE_NAMES.ORCHESTRATION}`, orchestrationRoutes);
 
 	// --- SSR Catch-all Handler ---
 	app.get('/{*splat}', async (req: Request, res: Response, next: NextFunction) => {

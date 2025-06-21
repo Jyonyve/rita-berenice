@@ -17,7 +17,13 @@ export const DEFAULT_QUERY_LIMIT: number = 10 as const;
 export const SECRET_DOC_ID = 'user_api_keys' as const;
 export type LangCode = 'kor' | 'eng';
 
-export const MODULE_NAMES = { ...COLLECTIONS, LLM: 'llm' } as const;
+export const MODULE_NAMES = {
+	...COLLECTIONS,
+	LLM: 'llm',
+	MEMORY: 'memory',
+	PERSONA: 'persona',
+	ORCHESTRATION: 'orchestration',
+} as const;
 export type MODULE_TYPES = (typeof MODULE_NAMES)[keyof typeof MODULE_NAMES];
 
 export const ENV_CONSTANTS = {

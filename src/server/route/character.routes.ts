@@ -1,15 +1,17 @@
 // src/server/routes/character.routes.ts
+
 import { genRoutePattern, COLLECTIONS } from '#shared/index.ts';
 import express, { type Request, type Response } from 'express';
 import { asyncHandler, validateRequestData, validateServiceId } from '../util/index.ts';
-import { characterStore } from '../store/characterStore.ts';
+import { CharacterInfo } from '#shared/domain/index.ts';
+import { characterStore } from '../store/index.ts';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.CHARACTER;
 
 /**
  * GET /api/character/get-all-characters
- * Retrieves all registered characters from the database
+ * Retrieves all registered characters, sorted by most recently updated
  * @returns {CharacterResponse} Array of character objects
  * @throws {500} Internal server error if database fetch fails
  */
@@ -19,20 +21,18 @@ router.get(
 		const path = genRoutePattern('getAllCharacters');
 		console.log(`API HIT: GET ${path}`);
 
-		validateRequestData(req.body, 'body');
 		const response = await characterStore.getAllCharacters();
 		res.status(200).json(response);
-		return;
 	})
 );
 
 /**
  * GET /api/character/get-character/:characterId
- * Retrieves a specific character by unique identifier
- * @param {string} characterId - UUID of the character to retrieve
- * @returns {CharacterResponse} Complete character data
- * @throws {404} Character not found with specified ID
- * @throws {500} Internal server error if database fetch fails
+ * Retrieves a specific character by its unique identifier
+ * @param {string} characterId - The ID of the character to retrieve
+ * @returns {CharacterResponse} The complete character data
+ * @throws {404} Character not found with the specified ID
+ * @throws {500} Internal server error
  */
 router.get(
 	genRoutePattern('getCharacter', ['characterId']),
@@ -42,59 +42,56 @@ router.get(
 
 		const path = genRoutePattern('getCharacter', ['characterId']);
 		console.log(`API HIT: GET ${path.replace(':characterId', characterId)}`);
-		const response = await characterStore.getCharacter(characterId);
 
+		const response = await characterStore.getCharacter(characterId);
 		res.status(200).json(response);
-		return;
 	})
 );
 
 /**
  * GET /api/character/get-characters-by-show-name/:showName
- * Retrieves characters associated with a specific show
- * @param {string} showName - Exact name of the show to filter by
+ * Retrieves all characters associated with a specific show name
+ * @param {string} showName - The exact name of the show to filter by
  * @returns {CharacterResponse} Array of matching character objects
- * @throws {404} No characters found for specified show name
- * @throws {500} Internal server error if database fetch fails
+ * @throws {404} No characters found for the specified show name
+ * @throws {500} Internal server error
  */
 router.get(
 	genRoutePattern('getCharactersByShowName', ['showName']),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		validateRequestData(req.params, 'params', ['showName']);
 		const { showName } = req.params;
+
 		const path = genRoutePattern('getCharactersByShowName', ['showName']);
 		console.log(`API HIT: GET ${path.replace(':showName', showName)}`);
 
 		const response = await characterStore.getCharactersByShowName(showName);
-
 		res.status(200).json(response);
-		return;
 	})
 );
 
 /**
  * POST /api/character/store-character
- * Creates or updates a character record in the database
- * @param {CharacterMetadata} req.body - Complete character data payload
- * @returns {void} Successfully stored character data
+ * Creates a new character or updates an existing one
+ * @param {CharacterInfo} req.body - The character data payload
+ * @returns {StoreCharacterResponse} Confirmation of storage with character ID and timestamp
  * @throws {400} Invalid request body structure
- * @throws {500} Internal server error if database operation fails
+ * @throws {500} Internal server error
  */
 router.post(
 	genRoutePattern('storeCharacter'),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		// req validation
-		const requiredFields = ['characterId', 'description', 'instruction'];
+		const requiredFields = ['name', 'variant', 'description', 'instruction'];
 		validateRequestData(req.body, 'body', requiredFields);
 
-		// api
+		const characterInfo = req.body as CharacterInfo;
 		const path = genRoutePattern('storeCharacter');
-		console.log(`API HIT: POST ${path} for ID: ${req.body?.characterId}`);
+		console.log(`API HIT: POST ${path} for character: ${characterInfo.name}`);
 
-		const response = await characterStore.storeCharacter(req.body);
+		const response = await characterStore.storeCharacter(characterInfo);
 
-		res.status(200).json(response);
-		return;
+		// Use 201 for resource creation/update and handle the object response correctly
+		res.status(201).json(response);
 	})
 );
 

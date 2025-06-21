@@ -3,8 +3,9 @@ import {
 	apiClient,
 	genApiUrl,
 	MODULE_NAMES,
-	BasicCharacterInfo,
 	CharacterResponse,
+	CharacterInfo,
+	CharacterCdo,
 } from '@shared/index.ts';
 import { useCallback, useEffect, useState } from 'react';
 import { CharacterMetadata } from '@shared/index.ts';
@@ -13,18 +14,10 @@ export const useCharacterApi = () => {
 	const MODULE_NAME = MODULE_NAMES.CHARACTER;
 
 	// --- State ---
-	const [characters, setCharacters] = useState<BasicCharacterInfo[]>([]);
+	const [characters, setCharacters] = useState<CharacterInfo[]>([]);
 	const [currentCharacter, setCurrentCharacter] = useState<BasicCharacterInfo>();
 	const [loading, setLoading] = useState<boolean>(false);
 	const [error, setError] = useState<string>('');
-
-	// --- API Response Handlers ---
-	const handleCharacterResponse = (response: CharacterResponse): BasicCharacterInfo[] => {
-		if (!response || !response.characterInfos?.length) {
-			throw new Error('No characters found in response');
-		}
-		return response.characterInfos;
-	};
 
 	// --- API Call Functions ---
 	const getAllCharacters = useCallback(async (): Promise<BasicCharacterInfo[]> => {
@@ -84,12 +77,12 @@ export const useCharacterApi = () => {
 	);
 
 	const storeCharacter = useCallback(
-		async (characterData: CharacterMetadata): Promise<CharacterMetadata> => {
+		async (character: CharacterCdo | CharacterInfo): Promise<void> => {
 			setLoading(true);
 			setError('');
 			try {
 				const url = genApiUrl(MODULE_NAME, 'storeCharacter');
-				const response = await apiClient.post<CharacterMetadata>(url, characterData);
+				const response = await apiClient.post<CharacterMetadata>(url, character);
 
 				// Update local state
 				setCharacters((prev) => {

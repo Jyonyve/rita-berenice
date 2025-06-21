@@ -1,20 +1,37 @@
 // src/server/routes/chat.routes.ts
+
 import express, { type Request, type Response } from 'express';
-import { genRoutePattern, ChatTurn, COLLECTIONS, ChatResponse } from '#shared/index.ts';
+import {
+	genRoutePattern,
+	ChatTurn,
+	COLLECTIONS,
+	ChatResponse,
+	TempChatTurn,
+	ChatMessage,
+	ChatMessageType,
+} from '#shared/index.ts';
 import {
 	asyncHandler,
-	CustomValidationRule,
 	validateRequestData,
 	validateServiceId,
 	validateSequenceRule,
 } from '../util/index.ts';
-import { Where } from 'chromadb';
+import { Where, WhereDocument } from 'chromadb';
 import { chatStore } from '../store/chatStore.ts';
+import { ApiError } from '../util/serviceHelpers.ts';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.CHAT;
 
-// --- POST /api/chat/store-chat-turn ---
+// --- Fixed Chat Turn Operations ---
+
+/**
+ * POST /api/chat/store-chat-turn
+ * Stores a finalized ChatTurn, including its request and response messages, into the permanent CHAT collection.
+ * This is typically called after a user has selected a response from a set of generated options.
+ * @param {ChatTurn} req.body - The complete ChatTurn object to be stored.
+ * @returns {string} A JSON string of the stored ChatTurn.
+ */
 router.post(
 	genRoutePattern('storeChatTurn'),
 	asyncHandler(
@@ -34,10 +51,16 @@ router.post(
 	)
 );
 
-// --- GET /api/chat/get-loading-chat-turns/:sessionId ---
+/**
+ * GET /api/chat/get-chat-turns/:sessionId
+ * Retrieves previous chat turns for a session, used for loading history.
+ * @param {string} sessionId - The session ID to fetch turns for.
+ * @query {number} beforeSequence - Fetches turns with a sequence number less than this value.
+ * @returns {ChatResponse} An object containing the list of chat turns.
+ */
 router.get(
-	genRoutePattern('getLoadingChatTurns', ['sessionId']),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+	genRoutePattern('getChatTurns', ['sessionId']),
+	asyncHandler(async (req: Request, res: Response<ChatResponse>): Promise<void> => {
 		const { sessionId } = req.params;
 		validateServiceId(sessionId, collectionType);
 
@@ -50,8 +73,7 @@ router.get(
 		);
 
 		const beforeSequence = parseInt(req.query[queryRequiredField] as string, 10);
-
-		const path = genRoutePattern('getLoadingChatTurns', ['sessionId']);
+		const path = genRoutePattern('getChatTurns', ['sessionId']);
 		console.log(
 			`API HIT: GET ${path.replace(':sessionId', sessionId)}?beforeSequence=${beforeSequence}`
 		);
@@ -61,14 +83,19 @@ router.get(
 	})
 );
 
-// --- GET /api/chat/get-chat-turn-by-sequence/:sessionId/:sequence ---
+/**
+ * GET /api/chat/get-chat-turn-by-sequence/:sessionId/:sequence
+ * Retrieves a single, specific chat turn by its sequence number.
+ * @param {string} sessionId - The session ID of the turn.
+ * @param {number} sequence - The sequence number of the turn.
+ * @returns {ChatResponse} An object containing the single chat turn.
+ */
 router.get(
 	genRoutePattern('getChatTurnBySequence', ['sessionId', 'sequence']),
 	asyncHandler(async (req: Request, res: Response<ChatResponse>): Promise<void> => {
 		const { sessionId, sequence: sequenceParam } = req.params;
 		validateServiceId(sessionId, collectionType);
 		validateRequestData(req.params, 'params', ['sequence'], [validateSequenceRule('sequence')]);
-
 		const sequence = parseInt(sequenceParam, 10);
 
 		const path = genRoutePattern('getChatTurnBySequence', ['sessionId', 'sequence']);
@@ -81,46 +108,137 @@ router.get(
 	})
 );
 
-// --- POST /api/chat/query-chat-turns ---
+/**
+ * PUT /api/chat/update-request-message
+ * Updates a single request message within a chat turn. Useful for editing user prompts after the fact.
+ * @param {ChatMessage} req.body - The ChatMessage object for the request to update. Must have messageType: 'request'.
+ * @returns {ChatMessage} The updated ChatMessage object.
+ */
+router.put(
+	genRoutePattern('updateRequestMessage'),
+	asyncHandler(
+		async (
+			req: Request<object, ChatMessage, ChatMessage>,
+			res: Response<ChatMessage>
+		): Promise<void> => {
+			const { sessionId, sequence, messageType } = req.body;
+			validateServiceId(sessionId, collectionType);
+			validateRequestData(req.body, 'body', ['sessionId', 'sequence', 'entries', 'messageType']);
+
+			if (messageType !== 'request') {
+				throw new ApiError(400, "Invalid messageType for this endpoint, must be 'request'.");
+			}
+
+			const path = genRoutePattern('updateRequestMessage');
+			console.log(`API HIT: PUT ${path} for session ${sessionId}, sequence ${sequence}`);
+
+			const updatedMessage = await chatStore._storeRequest(req.body);
+			res.status(200).json(updatedMessage);
+		}
+	)
+);
+
+/**
+ * PUT /api/chat/update-response-message
+ * Updates a single response message within a chat turn.
+ * @param {ChatMessage} req.body - The ChatMessage object for the response to update. Must have messageType: 'response'.
+ * @returns {ChatMessage} The updated ChatMessage object.
+ */
+router.put(
+	genRoutePattern('updateResponseMessage'),
+	asyncHandler(
+		async (
+			req: Request<object, ChatMessage, ChatMessage>,
+			res: Response<ChatMessage>
+		): Promise<void> => {
+			const { sessionId, sequence, messageType } = req.body;
+			validateServiceId(sessionId, collectionType);
+			validateRequestData(req.body, 'body', ['sessionId', 'sequence', 'entries', 'messageType']);
+
+			if (messageType !== 'response') {
+				throw new ApiError(400, "Invalid messageType for this endpoint, must be 'response'.");
+			}
+
+			const path = genRoutePattern('updateResponseMessage');
+			console.log(`API HIT: PUT ${path} for session ${sessionId}, sequence ${sequence}`);
+
+			const updatedMessage = await chatStore._storeResponse(req.body);
+			res.status(200).json(updatedMessage);
+		}
+	)
+);
+
+// --- Query Operations ---
+
+/**
+ * POST /api/chat/query-chat-turns
+ * Performs a semantic search over finalized chat turns within a session.
+ * @param {object} req.body - Contains sessionId, queryTexts, and optional filters.
+ * @returns {ChatResponse} Search results containing matching chat turns.
+ */
 router.post(
 	genRoutePattern('queryChatTurns'),
 	asyncHandler(
 		async (
 			req: Request<
 				object,
-				string[],
+				ChatResponse,
 				{ sessionId: string; queryTexts: string[]; where?: Where; limit?: number }
 			>,
 			res: Response<ChatResponse>
 		): Promise<void> => {
 			const { sessionId, queryTexts, where, limit } = req.body;
 			validateServiceId(sessionId, collectionType);
-
-			const requiredFields = ['sessionId', 'queryTexts'];
-			const customValidations: CustomValidationRule[] = [
-				{
-					predicate: (body) => !Array.isArray(body.queryTexts) || body.queryTexts.length === 0,
-					status: 400,
-					errorMessage: "'queryTexts' must be a non-empty string array.",
-					clientMessage: '검색어를 입력하세요.',
-				},
-				{
-					predicate: (body) => body.where !== undefined && typeof body.where !== 'object',
-					status: 400,
-					errorMessage: "'where' must be an object if provided.",
-					clientMessage: '검색 조건이 잘못되었습니다.',
-				},
-			];
-			validateRequestData(req.body, 'body', requiredFields, customValidations);
+			validateRequestData(req.body, 'body', ['sessionId', 'queryTexts']);
 
 			const path = genRoutePattern('queryChatTurns');
-			console.log(
-				`API HIT: POST ${path} for session ${sessionId} with queryTexts: ${queryTexts
-					.slice(0, 3)
-					.join(', ')}${queryTexts.length > 3 ? '...' : ''}`
-			);
+			console.log(`API HIT: POST ${path} for session ${sessionId}`);
 
-			const results = await chatStore.queryChatTurns(sessionId, queryTexts, where);
+			const results = await chatStore.queryChatTurns(sessionId, queryTexts, where, undefined, limit);
+			res.status(200).json(results);
+		}
+	)
+);
+
+/**
+ * POST /api/chat/query-chat-messages
+ * Performs a semantic search over individual messages (request or response) within a session.
+ * @param {object} req.body - Contains sessionId, queryTexts, messageType, and optional filters.
+ * @returns {string[]} An array of JSON strings, each representing a matching ChatMessage.
+ */
+router.post(
+	genRoutePattern('queryChatMessages'),
+	asyncHandler(
+		async (
+			req: Request<
+				object,
+				string[],
+				{
+					sessionId: string;
+					queryTexts: string[];
+					messageType: ChatMessageType;
+					where?: Where;
+					whereDocument?: WhereDocument;
+					limit?: number;
+				}
+			>,
+			res: Response<string[]>
+		): Promise<void> => {
+			const { sessionId, queryTexts, messageType, where, whereDocument, limit } = req.body;
+			validateServiceId(sessionId, collectionType);
+			validateRequestData(req.body, 'body', ['sessionId', 'queryTexts', 'messageType']);
+
+			const path = genRoutePattern('queryChatMessages');
+			console.log(`API HIT: POST ${path} for session ${sessionId}`);
+
+			const results = await chatStore.queryChatMessages(
+				sessionId,
+				queryTexts,
+				messageType,
+				where,
+				whereDocument,
+				limit
+			);
 			res.status(200).json(results);
 		}
 	)
