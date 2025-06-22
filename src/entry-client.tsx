@@ -7,7 +7,7 @@ import { CacheProvider } from '@emotion/react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { createEmotionCache } from '@shared/config/index.ts'; // Use your shared utility
-import { App, theme } from '@client/index.ts'; // Import theme and App
+import { App, theme, ToastProvider } from '@client/index.ts'; // Import theme and App
 
 // 1. Create a single client-side cache instance using the shared utility
 const clientSideEmotionCache = createEmotionCache();
@@ -24,7 +24,9 @@ function ClientApp() {
 					<CssBaseline /> {/* MUI CSS reset */}
 					<BrowserRouter>
 						{/* Router wrapper */}
-						<App />
+						<ToastProvider>
+							<App />
+						</ToastProvider>
 					</BrowserRouter>
 				</ThemeProvider>
 			</CacheProvider>

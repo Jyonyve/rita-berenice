@@ -1,39 +1,43 @@
+// src/client/api/apiClient.ts
+
+import { processApiError } from '@client/util/clientHelpers.ts';
 import axios from 'axios';
 
-// Get the base URL from environment variables (e.g., http://localhost:3000)
+// Get the base URL from environment variables
 const backendApiUrl =
 	typeof import.meta.env?.VITE_API_URL !== 'undefined'
-		? import.meta.env.VITE_API_URL // Use Vite's value if available
+		? import.meta.env.VITE_API_URL
 		: process.env.VITE_API_URL;
 
 // Create a single base instance for all API calls
 export const apiClient = axios.create({
-	// Prepend /api to the base URL automatically
 	baseURL: `${backendApiUrl || 'http://localhost:3000'}/api`,
-	headers: {
-		'Content-Type': 'application/json',
-		// You might add other default headers here later (e.g., Authorization)
-	},
+	headers: { 'Content-Type': 'application/json' },
 });
 
-// Add a response interceptor for centralized error handling/logging
+// --- REVISED RESPONSE INTERCEPTOR ---
 apiClient.interceptors.response.use(
-	(response) => response, // Simply return successful responses
+	// For successful responses (status 2xx), do nothing and let them pass through.
+	(response) => response,
+
+	// For any error response, process it through our standardized helper.
 	(error) => {
-		// Log the error details
-		console.error('API Call Error:', {
-			message: error.message,
-			url: error.config?.url,
-			method: error.config?.method,
-			status: error.response?.status,
-			data: error.response?.data,
-		});
+		// 1. Process the raw error (AxiosError, network error, etc.) into our standard ApiError.
+		const processedError = processApiError(error);
 
-		// You could add more sophisticated error handling here:
-		// - Redirect to login on 401 Unauthorized
-		// - Show a generic error message to the user
+		// 2. (Optional) This is the perfect place for global side-effects.
+		// For example, if you want to show a toast notification for every error:
+		// toast.error(processedError.clientMessage || 'An error occurred.');
 
-		// Reject the promise so downstream .catch() blocks can handle it
-		return Promise.reject(error);
+		// Or handle authentication errors globally:
+		// if (processedError.status === 401) {
+		//   authStore.logout();
+		//   window.location.href = '/login';
+		// }
+
+		// 3. Reject the promise with the STANDARDIZED error object.
+		// This is the crucial step. The .catch() block in your hooks will now
+		// receive this clean, predictable ApiError object.
+		return Promise.reject(processedError);
 	}
 );

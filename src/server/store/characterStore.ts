@@ -156,11 +156,7 @@ export const characterStore = {
 				characterMetadata
 			);
 
-			return JSON.stringify({
-				message: 'Character stored successfully.',
-				characterId: characterMetadata.characterId,
-				updatedAt: characterMetadata.updatedAt, // Reflect the timestamp set
-			});
+			return characterMetadata.characterId;
 		} catch (error) {
 			handleServiceError(
 				error,

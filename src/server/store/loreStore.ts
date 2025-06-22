@@ -1,4 +1,4 @@
-// src/server/services/loreService.ts
+// src/server/services/loreStore.ts
 
 import {
 	LoreInfo,

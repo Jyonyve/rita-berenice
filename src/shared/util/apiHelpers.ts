@@ -1,5 +1,20 @@
 // src/shared/utils/apiUtils.ts
 
+export class ApiError extends Error {
+	public status: number;
+	public clientMessage?: string;
+	public details?: any; // Optional: for more detailed error info like missing fields
+
+	constructor(status: number, message: string, clientMessage?: string, details?: any) {
+		super(message); // Internal/developer message
+		this.name = this.constructor.name;
+		this.status = status;
+		this.clientMessage = clientMessage;
+		this.details = details;
+		Object.setPrototypeOf(this, ApiError.prototype);
+	}
+}
+
 /**
  * Converts a camelCase or PascalCase string to kebab-case.
  * e.g., storeChatTurn -> store-chat-turn

@@ -14,9 +14,9 @@ export function isTermInfo(term: TermCdo | TermInfo): term is TermInfo {
 export function isCharacterInfo(
 	character: CharacterCdo | CharacterInfo
 ): character is CharacterInfo {
-	return (character as CharacterInfo).updatedAt !== undefined;
+	return (character as CharacterInfo).characterId !== undefined;
 }
 
 export function isProfileInfo(profile: ProfileCdo | ProfileInfo): profile is ProfileInfo {
-	return (profile as ProfileInfo).updatedAt !== undefined;
+	return (profile as ProfileInfo).profileId !== undefined;
 }

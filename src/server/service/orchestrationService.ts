@@ -7,9 +7,11 @@ import {
 	buildChatMessage,
 	parseSessionId,
 	METADATA_TYPES,
+	ApiError,
+	ABORT_TIMEOUT,
 } from '#shared/index.ts';
 import { characterStore, chatStore, profileStore } from '../store/index.ts';
-import { ApiError, handleServiceError } from '../util/serviceHelpers.ts';
+import { handleServiceError } from '../util/serviceHelpers.ts';
 import { memoryEngine, personaEngine } from './index.ts';
 import { buildTempChatTurnId } from '../util/index.ts';
 
@@ -26,11 +28,13 @@ export const handleChatRequest = async (
 	tempChatTurnCdo: TempChatTurnCdo
 ): Promise<TempChatTurn> => {
 	const { sequence, sessionId, userInput } = tempChatTurnCdo;
-	const overallTimeoutSignal = AbortSignal.timeout(15000);
+	const overallTimeoutSignal = AbortSignal.timeout(ABORT_TIMEOUT * 1000);
 	const { characterId } = parseSessionId(sessionId);
 
 	overallTimeoutSignal.addEventListener('abort', () => {
-		console.log(`[Orchestrator] Global 15s timeout triggered for session ${sessionId}.`);
+		console.log(
+			`[Orchestrator] Global ${ABORT_TIMEOUT}s timeout triggered for session ${sessionId}.`
+		);
 	});
 
 	console.log(

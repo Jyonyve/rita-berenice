@@ -4,13 +4,7 @@ import React, { useState, useEffect, useCallback, ChangeEvent } from 'react';
 import { CharacterPortrait } from '../character/index.ts';
 import { ChatLog } from './ChatLog.tsx';
 import { UserInput } from './UserInput.tsx';
-import {
-	useChatApi,
-	useChatState,
-	useAiModel,
-	useCredential,
-	useCharacterState,
-} from '../../hook/index.ts';
+import { useAiModel, useCredential } from '../../hook/index.ts';
 
 // MUI Components
 import { Grid, Box, Typography } from '@mui/material'; // Correct imports
@@ -25,6 +19,8 @@ import {
 	ChatTurn,
 	ChatTurnCdo,
 } from '@shared/index.ts';
+import { useCharacterState, useChatState } from '../../hook/state/index.ts';
+import { useChatApi } from '../../hook/api/index.ts';
 
 export const ChatPage = () => {
 	// init
@@ -52,8 +48,7 @@ export const ChatPage = () => {
 		getNextSequence,
 	} = useChatState(sessionId);
 
-	const { getLoadingChatTurns, storeChatTurn, saveTempChatTurn, genResponseFromLlm } =
-		useChatApi(sessionId);
+	const { storeChatTurn, saveTempChatTurn } = useChatApi();
 
 	const { aiModelInfo } = useAiModel();
 	const { credential, isLoadingCredential, credentialError } = useCredential();
