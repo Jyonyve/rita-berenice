@@ -8,6 +8,9 @@ import {
 	ApiError,
 	TempChatTurn,
 	TempChatTurnCdo,
+	CharacterInfo,
+	ProfileInfo,
+	AiModelInfo,
 } from '#shared/index.ts';
 import { useToast } from '../../component/index.ts';
 
@@ -17,26 +20,38 @@ import { useToast } from '../../component/index.ts';
  */
 export const useOrchestrationApi = () => {
 	const MODULE_NAME = MODULE_NAMES.ORCHESTRATION;
+
 	// --- Hooks ---
 	const [loading, setLoading] = useState<boolean>(false);
 	const [error, setError] = useState<ApiError | null>(null);
 	const { addToast } = useToast();
 
 	/**
-	 * Orchestrates the entire backend flow for generating a new character response
-	 * for a given user input.
+	 * Orchestrates the backend flow for generating a new character response.
 	 * @param tempChatTurnCdo - Contains the sessionId, sequence, and new user input.
+	 * @param characterInfo - The full information object for the character who is speaking.
+	 * @param profileInfo - The full information object for the user.
+	 * @param aiModel - (Optional) The specific AI model to use for this generation.
 	 * @returns The updated TempChatTurn object containing the new response, or null on failure.
 	 */
 	const handleChatRequest = useCallback(
-		async (tempChatTurnCdo: TempChatTurnCdo): Promise<TempChatTurn | null> => {
+		async (
+			tempChatTurnCdo: TempChatTurnCdo,
+			characterInfo: CharacterInfo,
+			profileInfo: ProfileInfo,
+			aiModel: AiModelInfo
+		): Promise<TempChatTurn | null> => {
 			setLoading(true);
 			setError(null);
 			try {
 				const url = genApiUrl(MODULE_NAME, 'handleChatRequest');
-				const response = await apiClient.post<TempChatTurn>(url, tempChatTurnCdo);
-				// This is a core function, so a success toast is generally not needed
-				// unless you want to explicitly notify the user that a response has arrived.
+				// Construct the request body to match the new API contract
+				const response = await apiClient.post<TempChatTurn>(url, {
+					tempChatTurnCdo,
+					characterInfo,
+					profileInfo,
+					aiModel,
+				});
 				return response.data;
 			} catch (err) {
 				const apiError = err as ApiError;

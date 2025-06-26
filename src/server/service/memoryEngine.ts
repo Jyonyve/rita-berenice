@@ -163,7 +163,7 @@ export const memoryEngine = {
 			const termGuidanceMap = await termStore.ensureAndGetTermsForPrompt(sessionId, extractedKpns);
 
 			// 3. Fetch context (lore, history, user/char info)
-			const [userInfo, charInfo, loreRes, historyRes] = await Promise.all([
+			const [profileInfo, charInfo, loreRes, historyRes] = await Promise.all([
 				profileStore.getProfileBySessionId(sessionId),
 				characterStore.getCharacter(characterId),
 				loreStore.getLores(characterId),
@@ -174,7 +174,7 @@ export const memoryEngine = {
 
 			// 4. Build the guided prompt for the LLM
 			const prompt = buildChatTurnMetadataPrompt(
-				userInfo.profileInfo,
+				profileInfo.profileInfo,
 				turn.request,
 				charInfo.characterInfo,
 				turn.response,

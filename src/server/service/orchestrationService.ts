@@ -9,6 +9,10 @@ import {
 	METADATA_TYPES,
 	ApiError,
 	ABORT_TIMEOUT,
+	CharacterInfo,
+	ProfileInfo,
+	AiModelInfo,
+	DEFAULT_MODEL_GOOGLEAI,
 } from '#shared/index.ts';
 import { characterStore, chatStore, profileStore } from '../store/index.ts';
 import { handleServiceError } from '../util/serviceHelpers.ts';
@@ -25,11 +29,13 @@ import { buildTempChatTurnId } from '../util/index.ts';
  * @returns A promise resolving to the updated TempChatTurn, including the new response.
  */
 export const handleChatRequest = async (
-	tempChatTurnCdo: TempChatTurnCdo
+	tempChatTurnCdo: TempChatTurnCdo,
+	characterInfo: CharacterInfo,
+	profileInfo: ProfileInfo,
+	aiModel: AiModelInfo
 ): Promise<TempChatTurn> => {
 	const { sequence, sessionId, userInput } = tempChatTurnCdo;
 	const overallTimeoutSignal = AbortSignal.timeout(ABORT_TIMEOUT * 1000);
-	const { characterId } = parseSessionId(sessionId);
 
 	overallTimeoutSignal.addEventListener('abort', () => {
 		console.log(
@@ -75,13 +81,7 @@ export const handleChatRequest = async (
 		const userChatMessage = buildChatMessage('user', sequence, sessionId, 'User', userInput); // Placeholder showName
 
 		// --- 3. GATHER DATA FOR NEW RESPONSE (in parallel) ---
-		const [characterResponse, profileResponse] = await Promise.all([
-			characterStore.getCharacter(characterId),
-			profileStore.getProfileBySessionId(sessionId),
-		]);
-		const characterInfo = characterResponse.characterInfo;
-		const userInfo = profileResponse.profileInfo;
-		userChatMessage.showName = userInfo.showName; // Update with correct name
+		userChatMessage.showName = profileInfo.showName; // Update with correct name
 
 		// --- 4. RECALL MEMORIES ---
 		console.log(`[Orchestrator] Recalling memories for: "${userInput.substring(0, 50)}..."`);
@@ -92,8 +92,9 @@ export const handleChatRequest = async (
 		const personaResponse = await personaEngine.generateResponse(
 			recalledMemories,
 			characterInfo,
-			userInfo,
+			profileInfo,
 			userChatMessage,
+			aiModel,
 			{ signal: overallTimeoutSignal }
 		);
 		const botChatMessage = buildChatMessage(

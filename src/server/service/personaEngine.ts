@@ -8,6 +8,7 @@ import {
 	MemoryResponse,
 	DEFAULT_MODEL_GOOGLEAI, // Assuming this is your default chat model
 	parseEntriesToText,
+	AiModelInfo,
 } from '#shared/index.ts';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { llmService } from './index.ts';
@@ -22,7 +23,7 @@ export const personaEngine = {
 	 *
 	 * @param recalledMemories The payload of context recalled by memoryEngine.
 	 * @param characterInfo The full metadata for the character persona.
-	 * @param userInfo The full user profile info object.
+	 * @param profileInfo The full user profile info object.
 	 * @param currentUserRequest The user's most recent message.
 	 * @param lang The detected language ('kor' or 'eng').
 	 * @param options An object containing the AbortSignal for timeout control.
@@ -31,18 +32,19 @@ export const personaEngine = {
 	async generateResponse(
 		recalledMemories: MemoryResponse,
 		characterInfo: CharacterInfo,
-		userInfo: ProfileInfo,
+		profileInfo: ProfileInfo,
 		currentUserRequest: ChatMessage,
+		aiModel: AiModelInfo,
 		options?: { signal?: AbortSignal }
 	): Promise<PersonaResponse> {
 		console.log(
-			`[personaEngine] Generating response for user ${userInfo.name} in lang: ${recalledMemories.langCode}...`
+			`[personaEngine] Generating response for user ${profileInfo.name} in lang: ${recalledMemories.langCode}...`
 		);
 
 		try {
 			// --- 1. BUILD THE COMPREHENSIVE SYSTEM PROMPT ---
 			// All the complex logic is now neatly encapsulated in this single function call.
-			const systemPromptContent = buildPersonaSystemPrompt(characterInfo, userInfo, recalledMemories);
+			const systemPromptContent = buildPersonaSystemPrompt(characterInfo, profileInfo, recalledMemories);
 
 			const messages: ChatCompletionMessageParam[] = [
 				{ role: 'system', content: systemPromptContent },
@@ -55,7 +57,7 @@ export const personaEngine = {
 				const reqContent = parseEntriesToText(turn.request.entries);
 				const resContent = parseEntriesToText(turn.response.entries);
 				// Add a 'name' field to help the model distinguish speakers.
-				if (reqContent) messages.push({ role: 'user', content: reqContent, name: userInfo.name });
+				if (reqContent) messages.push({ role: 'user', content: reqContent, name: profileInfo.name });
 				if (resContent)
 					messages.push({ role: 'assistant', content: resContent, name: characterInfo.name });
 			}
@@ -64,13 +66,13 @@ export const personaEngine = {
 			messages.push({
 				role: 'user',
 				content: parseEntriesToText(currentUserRequest.entries),
-				name: userInfo.name,
+				name: profileInfo.name,
 			});
 
 			// --- 3. INVOKE LLM AND PARSE RESPONSE (Initial Attempt) ---
 			const rawLlmResponse = await llmService.invokeLlmFromMessages(
 				messages,
-				DEFAULT_MODEL_GOOGLEAI, // Or a user-selected model
+				aiModel, // Or a user-selected model
 				options
 			);
 

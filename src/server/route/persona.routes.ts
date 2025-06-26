@@ -18,7 +18,7 @@ const router = express.Router();
 type GenerateResponseRequestBody = {
 	recalledMemories: MemoryResponse;
 	characterInfo: CharacterInfo;
-	userInfo: ProfileInfo;
+	profileInfo: ProfileInfo;
 	currentUserRequest: ChatMessage;
 };
 
@@ -32,13 +32,13 @@ type GenerateResponseRequestBody = {
 router.post(
 	genRoutePattern('generateResponse'),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { recalledMemories, characterInfo, userInfo, currentUserRequest } = req.body;
+		const { recalledMemories, characterInfo, profileInfo, currentUserRequest } = req.body;
 
 		// Validate the presence of all required top-level objects in the request body
 		const requiredFields: (keyof GenerateResponseRequestBody)[] = [
 			'recalledMemories',
 			'characterInfo',
-			'userInfo',
+			'profileInfo',
 			'currentUserRequest',
 		];
 		validateRequestData(req.body, 'body', requiredFields);
@@ -50,7 +50,7 @@ router.post(
 		const response = await personaEngine.generateResponse(
 			recalledMemories,
 			characterInfo,
-			userInfo,
+			profileInfo,
 			currentUserRequest,
 			{ signal: (req as any).signal } // Pass the signal for cancellation handling
 		);

@@ -34,11 +34,11 @@ const _formatMemoryForPrompt = (
  */
 export const buildPersonaSystemPrompt = (
 	characterInfo: CharacterInfo,
-	userInfo: ProfileInfo,
+	profileInfo: ProfileInfo,
 	recalledMemories: MemoryResponse
 ): string => {
 	const charName = characterInfo.name;
-	const userName = userInfo.name;
+	const userName = profileInfo.name;
 	const langCode = recalledMemories.langCode;
 
 	// --- Format Recalled Memories into String Sections ---
@@ -157,7 +157,7 @@ Respond with a JSON object with the following structure (all metadata MUST be in
 `.trim();
 
 export const buildChatTurnMetadataPrompt = (
-	userInfo: BasicBeingInfo,
+	profileInfo: BasicBeingInfo,
 	userRequest: ChatMessage,
 	charInfo: BasicBeingInfo,
 	charResponse: ChatMessage,
@@ -169,7 +169,7 @@ export const buildChatTurnMetadataPrompt = (
 	const userRequestContent = parseEntriesToText(userRequest.entries);
 	const charResponseContent = parseEntriesToText(charResponse.entries);
 
-	const { showName: userKor, name: userEng, gender: userGender } = userInfo;
+	const { showName: userKor, name: userEng, gender: userGender } = profileInfo;
 	const { showName: charKor, name: charEng, gender: charGender } = charInfo;
 	// --- Dynamically generate the terminology guidance section ---
 	let termGuidanceInstruction = '';

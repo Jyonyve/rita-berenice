@@ -9,7 +9,7 @@ import {
 	PortraitUrlMap,
 	validEmotionKeys,
 } from '@shared/config/index.ts';
-import { convertArrayToString, convertStringToArray } from '#root/src/shared/index.ts';
+import { CharacterInfo, convertArrayToString, ProfileInfo } from '@shared/index.ts';
 
 function escapeRegExp(string: string): string {
 	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
@@ -23,7 +23,7 @@ function escapeRegExp(string: string): string {
  * @returns Object containing the portrait map, loading state, and any error message.
  */
 // Ensure types for state are set correctly
-export const useCharacterState = (characterId?: string) => {
+export const useCharacterState = (characterId: string) => {
 	// --- Hooks called at TOP LEVEL (Correct) ---
 	const [portraitMap, setPortraitMap] = useState<PortraitUrlMap>({}); // Use PortraitMap type
 	const [isLoading, setIsLoading] = useState(false);

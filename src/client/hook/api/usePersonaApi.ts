@@ -20,7 +20,7 @@ import { useToast } from '../../component/index.ts';
 type GenerateResponseRequestBody = {
 	recalledMemories: MemoryResponse;
 	characterInfo: CharacterInfo;
-	userInfo: ProfileInfo;
+	profileInfo: ProfileInfo;
 	currentUserRequest: ChatMessage;
 };
 
@@ -40,7 +40,7 @@ export const usePersonaApi = () => {
 	 * Generates a character's conversational response using recalled memory context.
 	 * @param recalledMemories The payload of context recalled by memoryEngine.
 	 * @param characterInfo The full metadata for the character persona.
-	 * @param userInfo The full user profile info object.
+	 * @param profileInfo The full user profile info object.
 	 * @param currentUserRequest The user's most recent message.
 	 * @returns The character's response and emotion (PersonaResponse), or null on failure.
 	 */
@@ -48,7 +48,7 @@ export const usePersonaApi = () => {
 		async (
 			recalledMemories: MemoryResponse,
 			characterInfo: CharacterInfo,
-			userInfo: ProfileInfo,
+			profileInfo: ProfileInfo,
 			currentUserRequest: ChatMessage
 		): Promise<PersonaResponse | null> => {
 			setLoading(true);
@@ -58,7 +58,7 @@ export const usePersonaApi = () => {
 				const requestBody: GenerateResponseRequestBody = {
 					recalledMemories,
 					characterInfo,
-					userInfo,
+					profileInfo,
 					currentUserRequest,
 				};
 				const response = await apiClient.post<PersonaResponse>(url, requestBody);

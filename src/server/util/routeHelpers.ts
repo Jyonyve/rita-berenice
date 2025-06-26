@@ -2,11 +2,11 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import {
 	AllResponse,
+	ApiError,
 	CollectionType,
 	convertArrayToString,
 	convertStringToArray,
 } from '#shared/index.ts';
-import { ApiError } from './serviceHelpers.ts';
 
 /** Router part */
 export type CustomValidationRule = {

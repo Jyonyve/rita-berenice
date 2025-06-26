@@ -1,39 +1,65 @@
 // src/server/routes/orchestration.routes.ts
 
 import express, { type Request, type Response } from 'express';
-import { genRoutePattern, TempChatTurn, TempChatTurnCdo, COLLECTIONS } from '#shared/index.ts';
-import { asyncHandler, validateRequestData, validateSequenceRule } from '../util/index.ts';
-import { handleChatRequest } from '../service/orchestrationService.ts';
+import {
+	genRoutePattern,
+	TempChatTurn,
+	TempChatTurnCdo,
+	CharacterInfo,
+	ProfileInfo,
+	AiModelInfo,
+	COLLECTIONS,
+} from '#shared/index.ts';
+import {
+	asyncHandler,
+	validateRequestData,
+	validateServiceId,
+	validateSequenceRule,
+} from '../util/index.ts';
+import { handleChatRequest } from '../service/index.ts';
 
 const router = express.Router();
+
+// Define a type for the complex request body for clarity
+interface HandleChatRequestBody {
+	tempChatTurnCdo: TempChatTurnCdo;
+	characterInfo: CharacterInfo;
+	profileInfo: ProfileInfo;
+	aiModel: AiModelInfo;
+}
 
 /**
  * POST /api/orchestration/handle-chat-request
  * The main endpoint for handling a new user chat message. This orchestrates fetching
  * context, generating a new response option, and saving it to the temporary chat turn.
- * @param {TempChatTurnCdo} req.body - Contains sessionId, the current turn sequence, and the user's input text.
- * @returns {TempChatTurn} The updated temporary chat turn object, including the newly generated response set.
  */
 router.post(
 	genRoutePattern('handleChatRequest'),
 	asyncHandler(
 		async (
-			req: Request<object, TempChatTurn, TempChatTurnCdo>,
+			req: Request<object, TempChatTurn, HandleChatRequestBody>,
 			res: Response<TempChatTurn>
 		): Promise<void> => {
-			const { sessionId, sequence } = req.body;
+			const { tempChatTurnCdo, characterInfo, profileInfo, aiModel } = req.body;
 
 			// Validate the incoming request payload
-			const requiredFields: (keyof TempChatTurnCdo)[] = ['sessionId', 'sequence', 'userInput'];
-			validateRequestData(req.body, 'body', requiredFields, [validateSequenceRule('sequence')]);
+			const requiredFields: (keyof HandleChatRequestBody)[] = [
+				'tempChatTurnCdo',
+				'characterInfo',
+				'profileInfo',
+			];
+			validateRequestData(req.body, 'body', requiredFields);
+			validateRequestData(tempChatTurnCdo, 'body', ['sessionId', 'sequence', 'userInput']);
+			validateServiceId(tempChatTurnCdo.sessionId, COLLECTIONS.CHAT);
 
 			const path = genRoutePattern('handleChatRequest');
-			console.log(`API HIT: POST ${path} for session ${sessionId}, turn ${sequence}`);
+			console.log(
+				`API HIT: POST ${path} for session ${tempChatTurnCdo.sessionId}, turn ${tempChatTurnCdo.sequence}`
+			);
 
-			// Call the main orchestration service function with the request body
-			const response = await handleChatRequest(req.body);
+			// Call the main orchestration service function with the unpacked request body
+			const response = await handleChatRequest(tempChatTurnCdo, characterInfo, profileInfo, aiModel);
 
-			// Return the updated temporary turn object, which now includes the new response option
 			res.status(200).json(response);
 		}
 	)

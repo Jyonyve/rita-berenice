@@ -19,8 +19,7 @@ import {
 	memoryRoutes,
 } from '#server/route/index.ts';
 import sirv from 'sirv';
-import { MODULE_NAMES, ApiErrorResponse } from '#shared/index.ts';
-import { ApiError } from '#server/util/index.ts';
+import { MODULE_NAMES, ApiErrorResponse, ApiError } from '#shared/index.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === 'production';
