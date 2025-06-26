@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, ChangeEvent, JSX } from 'react';
 
 // Import the new components
-import { CharacterPortrait } from '../character/index.ts';
+import { CharacterPortrait } from '../../index.ts';
 import { ChatLog } from './ChatLog.tsx';
 import { UserInput } from './UserInput.tsx';
 
@@ -29,32 +29,23 @@ import {
 	useProfileApi,
 } from '../../hook/api/index.ts';
 import { useAiModel, useCredential } from '../../hook/index.ts';
-import { buildProfileId } from '#root/src/server/index.ts';
 
-export const ChatPage = () => {
+export const ChatPage = ({
+	characterInfo,
+	profileInfo,
+	sessionId,
+}: {
+	characterInfo: CharacterInfo;
+	profileInfo: ProfileInfo;
+	sessionId: string;
+}) => {
 	// init
-	const { sessionId } = useParams();
 	const navigate = useNavigate();
-	if (!sessionId) return;
-
-	// const
-	const { characterId } = parseSessionId(sessionId);
-	// api hooks
-	const { getCharacter } = useCharacterApi();
-	const { getProfileBySessionId } = useProfileApi();
 	const { storeChatTurn, saveTempChatTurn } = useChatApi();
 	const { handleChatRequest } = useOrchestrationApi();
 
-	const [character, profile] = await Promise.all([
-		getCharacter(characterId),
-		getProfileBySessionId(sessionId),
-	]);
-
-	const characterInfo = getCharacter(characterId).then((info) => info?.characterInfo);
-	const profileInfo = getProfileBySessionId(sessionId).then((info) => info?.profileInfo);
-
 	// client hooks
-	const { portraitMap, getImageNumberForEmotion } = useCharacterState(characterId);
+	const { portraitMap, getImageNumberForEmotion } = useCharacterState(characterInfo.characterId);
 	const {
 		chatTurns,
 		tempChatTurn,
@@ -106,42 +97,20 @@ export const ChatPage = () => {
 
 			const newTempSequence = getNextSequence();
 
-			//user message
-			const userMsg = buildChatMessage(
-				'user',
-				newTempSequence,
-				profileInfo.showName,
-				userInput.trim(),
-				sessionId
-			);
-			//character
+			// request
 			const tempTurnCdo: TempChatTurnCdo = { sessionId, sequence: newTempSequence, userInput };
-			const { stringifyResponse } = await handleChatRequest(
+			// response
+			const result: TempChatTurn | null = await handleChatRequest(
 				tempTurnCdo,
 				characterInfo,
 				profileInfo,
 				aiModelInfo
 			);
-			const { response, emotion } = JSON.parse(stringifyResponse);
+			const emotion =
+				result?.chatTurnSets[result.chatTurnSets.length - 1].response.emotion || DEFAULT_EMOTION;
 			// image
 			_handleChatacterImage(emotion);
-			// ai
-			const aiMsg = buildChatMessage(
-				'assistant',
-				newTempSequence,
-				charName,
-				response,
-				sessionId,
-				emotion
-			);
-			const newTempChatTurn: TempChatTurn = {
-				sessionId,
-				sequence: newTempSequence,
-				chatTurnSets: [{ request: userMsg, response: aiMsg }],
-				type: METADATA_TYPES.TEMP,
-			};
-			changeTempChatTurn(newTempChatTurn);
-			await saveTempChatTurn(newTempChatTurn);
+
 			setUserInput('');
 		} catch (sendErr: any) {
 			console.error('Send Message Error:', sendErr);
@@ -153,7 +122,6 @@ export const ChatPage = () => {
 		tempChatTurn,
 		getNextSequence,
 		sessionId,
-		genResponseFromLlm,
 		addChatTurnIndexedDB,
 		storeChatTurn,
 		changeTempChatTurn,
@@ -171,30 +139,17 @@ export const ChatPage = () => {
 		setPageError(undefined);
 		try {
 			const sequence = tempChatTurn.sequence; // Use existing sequence
-
-			const lastUserInput = parseEntriesToText(
-				[...tempChatTurn.chatTurnSets].pop()?.request.entries ?? []
-			);
-			setUserEditInput(lastUserInput);
-			//FIXME: make edit modal or textfield
-			const newUserMsg = buildChatMessage('user', sequence, 'the user', userEditInput, sessionId);
-
-			const { stringifyResponse } = await genResponseFromLlm(
-				sessionId,
-				'user',
-				userEditInput,
+			//request
+			const tempTurnCdo: TempChatTurnCdo = { sessionId, sequence, userInput: userEditInput };
+			const result: TempChatTurn | null = await handleChatRequest(
+				tempTurnCdo,
+				characterInfo,
+				profileInfo,
 				aiModelInfo
 			);
-			const { response, emotion } = JSON.parse(stringifyResponse);
-
-			const newAiMsg = buildChatMessage('assistant', sequence, charName, response, sessionId, emotion);
-
-			const updatedTempChatTurn: TempChatTurn = {
-				...tempChatTurn,
-				chatTurnSets: [{ request: newUserMsg, response: newAiMsg }],
-			};
-			changeTempChatTurn(updatedTempChatTurn);
-			await saveTempChatTurn(updatedTempChatTurn);
+			const emotion =
+				result?.chatTurnSets[result.chatTurnSets.length - 1].response.emotion || DEFAULT_EMOTION;
+			_handleChatacterImage(emotion);
 		} catch (err: any) {
 			console.error('Regenerate Error:', err);
 			setPageError(`Failed to regenerate response: ${err.message || 'Unknown error'}`);
@@ -204,7 +159,6 @@ export const ChatPage = () => {
 	}, [
 		tempChatTurn,
 		aiModelInfo,
-		genResponseFromLlm,
 		sessionId,
 		changeTempChatTurn,
 		saveTempChatTurn,
@@ -236,12 +190,11 @@ export const ChatPage = () => {
 			navigate('/not-found-sessionId', { replace: true });
 			return;
 		}
-		_initializeParticipants();
 		// Pass the fetcher to initializeSession
 		initializeSession(getLoadingChatTurns, DEFAULT_LOADING_BATCH_TURN_COUNT);
 
 		return () => {};
-	}, [sessionId, navigate, _initializeParticipants, initializeSession, getLoadingChatTurns]);
+	}, [sessionId, navigate, initializeSession, getLoadingChatTurns]);
 
 	// --- RENDER ---
 	return (

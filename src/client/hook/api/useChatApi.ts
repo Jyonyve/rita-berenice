@@ -11,46 +11,56 @@ import {
 	TempChatTurn,
 } from '#shared/index.ts';
 import { Where } from 'chromadb'; // Assuming these types are available on the client
-import { useToast } from '../../component/index.ts';
+import { useToast } from '../../style/index.ts';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+const queryClient = useQueryClient();
 
 /**
  * A client-side hook for interacting with the CHAT and TEMP_CHAT API endpoints.
  * It encapsulates API logic, loading/error states, and user notifications via a toast system.
  */
 export const useChatApi = () => {
-	// --- Hooks ---
-	const [loading, setLoading] = useState<boolean>(false);
-	const [error, setError] = useState<ApiError | null>(null);
 	const { addToast } = useToast();
-
-	// --- Fixed Chat Turn Operations ---
 
 	/**
 	 * Stores a finalized chat turn.
-	 * @param chatTurn The complete ChatTurn object to store.
-	 * @returns The stored ChatTurn object from the server, or null on failure.
+	 * Query Key: ['storeChatTurn']
 	 */
-	const storeChatTurn = useCallback(
-		async (chatTurn: ChatTurn): Promise<ChatTurn | null> => {
-			setLoading(true);
-			setError(null);
-			try {
-				const url = genApiUrl(MODULE_NAMES.CHAT, 'storeChatTurn');
-				// Your server route was updated to return the object, not a string
-				const response = await apiClient.post<ChatTurn>(url, chatTurn);
-				addToast('Chat turn saved.', 'success');
-				return response.data;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Failed to save chat turn.', 'error');
-				setError(apiError);
-				return null;
-			} finally {
-				setLoading(false);
+	const storeChatTurn = useMutation<ChatTurn, ApiError, ChatTurn>({
+		mutationFn: async (chatTurn: ChatTurn) => {
+			const url = genApiUrl(MODULE_NAMES.CHAT, 'storeChatTurn');
+			const response = await apiClient.post<ChatTurn>(url, chatTurn);
+			return response.data;
+		},
+		onSuccess: (data) => {
+			// addToast('Chat turn saved.', 'success');
+			if (data) {
+				queryClient.invalidateQueries({ queryKey: ['getChatTurns', data.sessionId] });
+				queryClient.setQueryData(['getChatTurnBySequence', data.sessionId, data.sequence], data);
 			}
 		},
-		[addToast]
-	);
+		onError: (error: ApiError) => {
+			addToast(error.clientMessage || 'Failed to save Chat Turn.', 'error');
+		},
+	});
+
+	/**
+	 * Fetches all chat turns for history loading.
+	 * Uses useQuery because the API returns all data at once.
+	 * Query Key: ['getChatTurns']
+	 */
+	const getAllChatTurns = (sessionId: string) =>
+		useQuery<ChatResponse, ApiError>({
+			queryKey: ['getAllChatTurns', sessionId], // The query key now reflects the method name
+			queryFn: async () => {
+				const url = genApiUrl(MODULE_NAMES.CHAT, 'getAllChatTurns', [sessionId]);
+				// No `beforeSequence` param if the API fetches all data at once
+				const response = await apiClient.get<ChatResponse>(url);
+				return response.data;
+			},
+			enabled: !!sessionId, // Only run the query if sessionId is available
+		});
 
 	/**
 	 * Fetches a list of chat turns for history loading.
@@ -58,139 +68,98 @@ export const useChatApi = () => {
 	 * @param beforeSequence Fetches turns with a sequence number less than this value.
 	 * @returns A ChatResponse object, or null on failure.
 	 */
-	const getChatTurns = useCallback(
-		async (sessionId: string, beforeSequence: number): Promise<ChatResponse | null> => {
-			setLoading(true);
-			setError(null);
-			try {
-				const url = genApiUrl(MODULE_NAMES.CHAT, 'getChatTurns', [sessionId]);
-				const response = await apiClient.get<ChatResponse>(url, { params: { beforeSequence } });
-				return response.data;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Failed to load chat history.', 'error');
-				setError(apiError);
-				return null;
-			} finally {
-				setLoading(false);
-			}
-		},
-		[addToast]
-	);
+	// const getChatTurns = useCallback(
+	// 	async (sessionId: string, beforeSequence: number): Promise<ChatResponse> => {
+	// 		setLoading(true);
+	// 		setError(null);
+	// 		try {
+	// 			const url = genApiUrl(MODULE_NAMES.CHAT, 'getChatTurns', [sessionId]);
+	// 			const response = await apiClient.get<ChatResponse>(url, { params: { beforeSequence } });
+	// 			return response.data;
+	// 		} catch (err) {
+	// 			const apiError = err as ApiError;
+	// 			addToast(apiError.clientMessage || 'Failed to load chat history.', 'error');
+	// 			setError(apiError);
+	// 			return null;
+	// 		} finally {
+	// 			setLoading(false);
+	// 		}
+	// 	},
+	// 	[addToast]
+	// );
 
 	/**
 	 * Fetches a single, specific chat turn by its sequence number.
-	 * @returns A ChatResponse containing the single turn, or null on failure.
+	 * Query Key: ['getChatTurnBySequence']
 	 */
-	const getChatTurnBySequence = useCallback(
-		async (sessionId: string, sequence: number): Promise<ChatResponse | null> => {
-			setLoading(true);
-			setError(null);
-			try {
+	const getChatTurnBySequence = (sessionId: string, sequence: number) =>
+		useQuery<ChatResponse, ApiError>({
+			queryKey: ['getChatTurnBySequence', sessionId, sequence], // The query key now reflects the method name
+			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAMES.CHAT, 'getChatTurnBySequence', [sessionId, sequence]);
 				const response = await apiClient.get<ChatResponse>(url);
 				return response.data;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Failed to load chat turn.', 'error');
-				setError(apiError);
-				return null;
-			} finally {
-				setLoading(false);
-			}
-		},
-		[addToast]
-	);
+			},
+			enabled: !!sessionId && typeof sequence === 'number', // Only run if both are available
+		});
 
 	/**
 	 * Performs a semantic search over finalized chat turns.
-	 * @returns A ChatResponse with matching turns, or null on failure.
+	 * Uses useMutation because it's a POST request (search/query) and does not represent
+	 * a continuously available piece of data.
+	 * Query Key: ['queryChatTurns']
 	 */
-	const queryChatTurns = useCallback(
-		async (sessionId: string, queryTexts: string[], where?: Where): Promise<ChatResponse | null> => {
-			setLoading(true);
-			setError(null);
-			try {
-				const url = genApiUrl(MODULE_NAMES.CHAT, 'queryChatTurns');
-				const response = await apiClient.post<ChatResponse>(url, { sessionId, queryTexts, where });
-				return response.data;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Search failed.', 'error');
-				setError(apiError);
-				return null;
-			} finally {
-				setLoading(false);
-			}
+	const queryChatTurns = useMutation<
+		ChatResponse,
+		ApiError,
+		{ sessionId: string; queryTexts: string[]; where?: Where }
+	>({
+		mutationFn: async ({ sessionId, queryTexts, where }) => {
+			const url = genApiUrl(MODULE_NAMES.CHAT, 'queryChatTurns');
+			const response = await apiClient.post<ChatResponse>(url, { sessionId, queryTexts, where });
+			return response.data;
 		},
-		[addToast]
-	);
+	});
 
 	// --- Temporary Chat Turn Operations ---
 
 	/**
 	 * Saves a temporary chat turn object.
-	 * @param tempData The TempChatTurn object to save.
-	 * @returns True on success, false on failure.
+	 * Query Key: ['saveTempChatTurn']
 	 */
-	const saveTempChatTurn = useCallback(
-		async (tempData: TempChatTurn): Promise<boolean> => {
-			setLoading(true);
-			setError(null);
-			try {
-				const url = genApiUrl(MODULE_NAMES.TEMP, 'saveTempChatTurn');
-				await apiClient.post(url, tempData);
-				// No toast on success for this, as it's a frequent background operation.
-				return true;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Failed to save progress.', 'error');
-				setError(apiError);
-				return false;
-			} finally {
-				setLoading(false);
-			}
+	const saveTempChatTurn = useMutation<boolean, ApiError, TempChatTurn>({
+		mutationFn: async (tempData: TempChatTurn) => {
+			const url = genApiUrl(MODULE_NAMES.TEMP, 'saveTempChatTurn');
+			await apiClient.post(url, tempData);
+			return true;
 		},
-		[addToast]
-	);
+		onError: (error: ApiError) => {
+			addToast(error.clientMessage || 'Failed to save Temp Turn.', 'error');
+		},
+	});
 
 	/**
-	 * Fetches a temporary chat turn. A 404 is a common, expected case (meaning it's the first
-	 * generation for a turn), so no toast is shown for it.
-	 * @returns The TempChatTurn object, or null if not found or on error.
+	 * Fetches a temporary chat turn.
+	 * Query Key: ['getTempChatTurn']
 	 */
-	const getTempChatTurn = useCallback(
-		async (sessionId: string, sequence: number): Promise<TempChatTurn | null> => {
-			setLoading(true);
-			setError(null);
-			try {
+	const getTempChatTurn = (sessionId: string, sequence: number) =>
+		useQuery<TempChatTurn, ApiError>({
+			queryKey: ['getTempChatTurn', sessionId, sequence], // The query key now reflects the method name
+			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAMES.TEMP, 'getTempChatTurn', [sessionId, sequence]);
 				const response = await apiClient.get<TempChatTurn>(url);
 				return response.data;
-			} catch (err) {
-				const apiError = err as ApiError;
-				setError(apiError);
-				// Only show a toast if the error is something other than "Not Found".
-				if (apiError.status !== 404) {
-					addToast(apiError.clientMessage || 'Could not retrieve temp chat data.', 'error');
-				}
-				return null;
-			} finally {
-				setLoading(false);
-			}
-		},
-		[addToast]
-	);
+			},
+			enabled: !!sessionId && typeof sequence === 'number', // Only run if both are available
+			retry: (failureCount, error) => (error.status === 404 ? false : failureCount < 3),
+		});
 
 	return {
-		loading,
-		error,
-		// Fixed Turn methods
 		storeChatTurn,
-		getChatTurns,
+		getAllChatTurns,
+		// getChatTurns,
 		getChatTurnBySequence,
 		queryChatTurns,
-		// Temp Turn methods
 		saveTempChatTurn,
 		getTempChatTurn,
 	};

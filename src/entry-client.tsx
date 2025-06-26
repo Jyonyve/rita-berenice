@@ -2,46 +2,51 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom'; // Use BrowserRouter for client
+import { BrowserRouter } from 'react-router-dom';
 import { CacheProvider } from '@emotion/react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { createEmotionCache } from '@shared/config/index.ts'; // Use your shared utility
-import { App, theme, ToastProvider } from '@client/index.ts'; // Import theme and App
 
-// 1. Create a single client-side cache instance using the shared utility
-const clientSideEmotionCache = createEmotionCache();
+import { QueryClientProvider } from '@tanstack/react-query';
+import { createEmotionCache } from '#shared/config/index.ts';
+import { App } from '@client/App.tsx';
+import { ToastProvider, useToast } from '@client/index.ts';
+import { theme } from '@client/theme.ts';
+import { initQueryClient } from '@client/util/clientHelpers.ts';
 
-// Define the client-side app structure with providers (NO HelmetProvider)
 function ClientApp() {
+	const clientSideEmotionCache = createEmotionCache();
+	const { addToast } = useToast();
+	const [queryClient] = React.useState(() => initQueryClient(addToast));
+
 	return (
 		<React.StrictMode>
-			{/* Optional but recommended */}
-			<CacheProvider value={clientSideEmotionCache}>
-				{/* Emotion wrapper */}
-				<ThemeProvider theme={theme}>
-					{/* MUI Theme wrapper */}
-					<CssBaseline /> {/* MUI CSS reset */}
-					<BrowserRouter>
-						{/* Router wrapper */}
-						<ToastProvider>
+			<QueryClientProvider client={queryClient}>
+				<CacheProvider value={clientSideEmotionCache}>
+					<ThemeProvider theme={theme}>
+						<CssBaseline />
+						<BrowserRouter>
 							<App />
-						</ToastProvider>
-					</BrowserRouter>
-				</ThemeProvider>
-			</CacheProvider>
+						</BrowserRouter>
+					</ThemeProvider>
+				</CacheProvider>
+			</QueryClientProvider>
 		</React.StrictMode>
 	);
 }
 
-// 2. Get the root element
 const container = document.getElementById('root');
 
 if (!container) {
 	throw new Error("Root element '#root' not found for hydration.");
 }
 
-// 3. Use hydrateRoot for SSR, wrapping with ClientApp which includes providers
-ReactDOM.hydrateRoot(container, <ClientApp />);
+// This is React's hydration, and it is ESSENTIAL. It makes the server-rendered HTML interactive.
+ReactDOM.hydrateRoot(
+	container,
+	<ToastProvider>
+		<ClientApp />
+	</ToastProvider>
+);
 
 console.log('React app hydrated on client.');

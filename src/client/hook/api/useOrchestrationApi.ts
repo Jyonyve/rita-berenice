@@ -12,7 +12,7 @@ import {
 	ProfileInfo,
 	AiModelInfo,
 } from '#shared/index.ts';
-import { useToast } from '../../component/index.ts';
+import { useToast } from '../../style/ToastProvider.tsx';
 
 /**
  * A client-side hook for interacting with the main ORCHESTRATION API endpoint.

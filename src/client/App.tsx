@@ -1,33 +1,21 @@
 // src/client/App.tsx
 import { Routes, Route } from 'react-router-dom';
-import { CssBaseline } from '@mui/material'; // Only CssBaseline needed here
-
-// Import your page components
-
-// import { NotFoundPage } from '@client/component/page/NotFoundPage.tsx'; // Example 404
-import { CharacterPage, ChatPage, NotFoundPage } from '@client/component/index.ts';
+import { RootLayout } from './layout/index.ts';
+import { CharacterPageLoader, ChatPageLoader, NotFoundPage } from './page/index.ts';
 
 export function App() {
 	return (
-		<>
-			{/* Use Fragment or a root div if needed */}
-			{/* CssBaseline applies resets based on the theme provided by an ancestor ThemeProvider */}
-			<CssBaseline />
-			{/* --- Routing Setup --- */}
-			<Routes>
-				{/* Map paths to your page components */}
-				<Route path="/" element={<CharacterPage />} />
+		<Routes>
+			<Route path="/" element={<RootLayout />}>
+				{/* The index route renders at the parent's path ('/') */}
+				<Route index element={<CharacterPageLoader />} />
 
-				{/* Character Routes */}
-				<Route path="/character" element={<CharacterPage />} />
-				{/* Add routes for /character/new etc. if needed */}
+				{/* Route for a specific chat session */}
+				<Route path="chat/:characterId/:profileId" element={<ChatPageLoader />} />
 
-				{/* Chat Route */}
-				<Route path="/chat/:sessionId" element={<ChatPage />} />
-
-				{/* Catch-all route for 404 Not Found */}
+				{/* Fallback route for any path that doesn't match */}
 				<Route path="*" element={<NotFoundPage />} />
-			</Routes>
-		</>
+			</Route>
+		</Routes>
 	);
 }

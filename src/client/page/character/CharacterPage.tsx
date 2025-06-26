@@ -56,9 +56,9 @@ const CharacterItem: React.FC<{ characterId: string; showName: string }> = ({
 
 export const CharacterPage = () => {
 	// Fetch character list metadata
-	const { characters, loading: loadingList } = useCharacterApi();
+	const { characters, isLoading } = useCharacterApi();
 
-	if (loadingList) {
+	if (isLoading) {
 		// Use a more descriptive loading state, maybe centered
 		return (
 			<Container

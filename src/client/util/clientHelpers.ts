@@ -1,4 +1,5 @@
 import { ApiError } from '#shared/index.ts';
+import { QueryClient, QueryCache } from '@tanstack/react-query';
 import axios from 'axios';
 
 export const processApiError = (err: unknown): ApiError => {
@@ -34,3 +35,45 @@ export const processApiError = (err: unknown): ApiError => {
 	// Fallback for non-Error exceptions
 	return new ApiError(500, 'An unknown error occurred.');
 };
+
+// Define the type for your addToast function
+type AddToastFunction = (message: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
+
+/**
+ * Creates and configures a new QueryClient instance.
+ * @param addToast A function to display toast notifications.
+ * @returns A configured QueryClient instance.
+ */
+export function initQueryClient(addToast: AddToastFunction): QueryClient {
+	return new QueryClient({
+		queryCache: new QueryCache({
+			onError: (error) => {
+				if (error instanceof ApiError) {
+					if (error.status !== 404) {
+						addToast(error.clientMessage || 'An unexpected error occurred.', 'error');
+					}
+				} else if (error instanceof Error) {
+					addToast(error.message, 'error');
+				}
+			},
+		}),
+		defaultOptions: {
+			queries: {
+				staleTime: 60 * 1000, // 1 minute
+				// You could add global retries here too, e.g., retry: 2,
+			},
+			mutations: {
+				onError: (error) => {
+					if (error instanceof ApiError) {
+						// For 404s, we often don't want to show a toast.
+						if (error.status !== 404) {
+							addToast(error.clientMessage || 'Mutation failed.', 'error');
+						}
+					} else if (error instanceof Error) {
+						addToast(error.message, 'error');
+					}
+				},
+			},
+		},
+	});
+}

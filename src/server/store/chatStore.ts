@@ -304,6 +304,23 @@ export const chatStore = {
 		}
 	},
 
+	/** Loads multiple FIXED turns  */
+	getAllChatTurns: async (sessionId: string): Promise<ChatResponse> => {
+		const collection = await chatStore._getChatCollection();
+		const where: Where = { type: METADATA_TYPES.TURN, sessionId };
+		try {
+			const rawResults = await getRecords(collection, where);
+			const results = validateChromaResponse(rawResults, 'getList', collectionType);
+			return chatStore._constuctChatTurn(results);
+		} catch (error) {
+			handleServiceError(
+				error,
+				'An internal error occurred while do [getAllChatTurns].',
+				`Failed to load chat turns for session ${sessionId}:`
+			);
+		}
+	},
+
 	/** Gets a single FIXED turn by sequence */
 	getChatTurnBySequence: async (sessionId: string, sequence: number): Promise<ChatResponse> => {
 		const collection = await chatStore._getChatCollection();

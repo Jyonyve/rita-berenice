@@ -1,6 +1,5 @@
 // src/client/hooks/useProfileApi.ts
 
-import { useState, useCallback } from 'react';
 import {
 	apiClient,
 	genApiUrl,
@@ -9,7 +8,8 @@ import {
 	ProfileResponse,
 	ProfileMetadata,
 } from '#shared/index.ts';
-import { useToast } from '../../component/index.ts';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '../../style/ToastProvider.tsx';
 
 // Define a type for the structured response from the storeProfile endpoint
 interface StoreProfileResponse {
@@ -19,151 +19,103 @@ interface StoreProfileResponse {
 }
 
 /**
- * A client-side hook for interacting with the PROFILE API endpoints.
- * It encapsulates API logic, loading/error states, and user notifications via a toast system.
+ * A client-side hook for interacting with the PROFILE API endpoints, refactored for TanStack Query.
  */
 export const useProfileApi = () => {
 	const MODULE_NAME = MODULE_NAMES.PROFILE;
-
-	// --- Hooks ---
-	const [loading, setLoading] = useState<boolean>(false);
-	const [error, setError] = useState<ApiError | null>(null);
 	const { addToast } = useToast();
+	const queryClient = useQueryClient();
 
 	/**
 	 * Creates or updates a user profile.
-	 * @param profileInfo The profile data to save.
-	 * @returns A confirmation object on success, or null on failure.
 	 */
-	const storeProfile = useCallback(
-		async (profileInfo: ProfileMetadata): Promise<StoreProfileResponse | null> => {
-			setLoading(true);
-			setError(null);
-			try {
-				const url = genApiUrl(MODULE_NAME, 'storeProfile');
-				// The server returns a JSON string, so we expect a string response
-				const response = await apiClient.post<string>(url, profileInfo);
-				addToast('Profile saved successfully.', 'success');
-				// Parse the string into our structured response type
-				return JSON.parse(response.data) as StoreProfileResponse;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Failed to save profile.', 'error');
-				setError(apiError);
-				return null;
-			} finally {
-				setLoading(false);
+	const storeProfile = useMutation<StoreProfileResponse, ApiError, ProfileMetadata>({
+		mutationFn: async (profileInfo: ProfileMetadata) => {
+			const url = genApiUrl(MODULE_NAME, 'storeProfile');
+			const response = await apiClient.post<string>(url, profileInfo);
+			return JSON.parse(response.data) as StoreProfileResponse;
+		},
+		onSuccess: (data, variables) => {
+			addToast('Profile saved successfully.', 'success');
+			// Invalidate queries that are now stale
+			queryClient.invalidateQueries({ queryKey: ['getAllProfiles'] });
+			if (variables.sessionId) {
+				queryClient.invalidateQueries({ queryKey: ['getProfileBySessionId', variables.sessionId] });
 			}
 		},
-		[addToast]
-	);
+		onError: (error: ApiError) => {
+			addToast(error.clientMessage || 'Failed to save profile.', 'error');
+		},
+	});
 
 	/**
 	 * Fetches all user profiles.
-	 * @returns A ProfileResponse object, or null on failure.
+	 * TODO: add user Id to the query key if needed for multi-user support.
 	 */
-	const getAllProfiles = useCallback(async (): Promise<ProfileResponse | null> => {
-		setLoading(true);
-		setError(null);
-		try {
-			const url = genApiUrl(MODULE_NAME, 'getAllProfiles');
-			const response = await apiClient.get<ProfileResponse>(url);
-			return response.data;
-		} catch (err) {
-			const apiError = err as ApiError;
-			addToast(apiError.clientMessage || 'Failed to load profiles.', 'error');
-			setError(apiError);
-			return null;
-		} finally {
-			setLoading(false);
-		}
-	}, [addToast]);
+	const getAllProfiles = (userId?: string) =>
+		useQuery<ProfileResponse, ApiError>({
+			queryKey: ['getAllProfiles'],
+			queryFn: async () => {
+				const url = genApiUrl(MODULE_NAME, 'getAllProfiles');
+				const response = await apiClient.get<ProfileResponse>(url);
+				return response.data;
+			},
+			// This query can run by default if needed on app load
+			enabled: true,
+		});
 
 	/**
 	 * Fetches a single profile by its unique ID.
-	 * @param profileId The ID of the profile.
-	 * @returns A ProfileResponse object, or null on failure.
 	 */
-	const getProfile = useCallback(
-		async (profileId: string): Promise<ProfileResponse | null> => {
-			setLoading(true);
-			setError(null);
-			try {
+	const getProfile = (profileId: string) =>
+		useQuery<ProfileResponse, ApiError>({
+			queryKey: ['getProfile', profileId],
+			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getProfile', [profileId]);
 				const response = await apiClient.get<ProfileResponse>(url);
 				return response.data;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Failed to load profile.', 'error');
-				setError(apiError);
-				return null;
-			} finally {
-				setLoading(false);
-			}
-		},
-		[addToast]
-	);
+			},
+			enabled: !!profileId, // Only run if profileId is provided
+		});
 
 	/**
 	 * Fetches a profile by its associated session ID.
-	 * @param sessionId The ID of the session.
-	 * @returns A ProfileResponse object, or null on failure.
+	 * Handles 404 errors gracefully by not showing a toast.
 	 */
-	const getProfileBySessionId = useCallback(
-		async (sessionId: string): Promise<ProfileResponse | null> => {
-			setLoading(true);
-			setError(null);
-			try {
+	const getProfileBySessionId = (sessionId: string) =>
+		useQuery<ProfileResponse, ApiError>({
+			queryKey: ['getProfileBySessionId', sessionId],
+			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getProfileBySessionId', [sessionId]);
 				const response = await apiClient.get<ProfileResponse>(url);
 				return response.data;
-			} catch (err) {
-				const apiError = err as ApiError;
-				// A 404 is common here (e.g., new session), so we don't show a toast for it.
-				if (apiError.status !== 404) {
-					addToast(apiError.clientMessage || 'Failed to load user profile.', 'error');
+			},
+			enabled: !!sessionId,
+			retry: (failureCount, error) => {
+				// Don't retry if the error is a 404 Not Found
+				if (error.status === 404) {
+					return false;
 				}
-				setError(apiError);
-				return null;
-			} finally {
-				setLoading(false);
-			}
-		},
-		[addToast]
-	);
+				// Otherwise, use default retry logic (e.g., 3 times)
+				return failureCount < 3;
+			},
+		});
 
 	/**
 	 * Fetches all profiles associated with a specific show name.
-	 * @param showName The name of the show.
-	 * @returns A ProfileResponse object, or null on failure.
 	 */
-	const getProfilesByShowName = useCallback(
-		async (showName: string): Promise<ProfileResponse | null> => {
-			setLoading(true);
-			setError(null);
-			try {
+	const getProfilesByShowName = (showName: string) =>
+		useQuery<ProfileResponse, ApiError>({
+			queryKey: ['getProfilesByShowName', showName],
+			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getProfilesByShowName', [showName]);
 				const response = await apiClient.get<ProfileResponse>(url);
 				return response.data;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Failed to load profiles by show.', 'error');
-				setError(apiError);
-				return null;
-			} finally {
-				setLoading(false);
-			}
-		},
-		[addToast]
-	);
+			},
+			enabled: !!showName,
+		});
 
-	return {
-		loading,
-		error,
-		storeProfile,
-		getAllProfiles,
-		getProfile,
-		getProfileBySessionId,
-		getProfilesByShowName,
-	};
+	// The hook returns the React Query hooks directly.
+	// `loading` and `error` states are now part of the individual hook results.
+	return { storeProfile, getAllProfiles, getProfile, getProfileBySessionId, getProfilesByShowName };
 };

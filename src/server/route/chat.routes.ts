@@ -9,6 +9,7 @@ import {
 	TempChatTurn,
 	ChatMessage,
 	ChatMessageType,
+	ApiError,
 } from '#shared/index.ts';
 import {
 	asyncHandler,
@@ -18,7 +19,6 @@ import {
 } from '../util/index.ts';
 import { Where, WhereDocument } from 'chromadb';
 import { chatStore } from '../store/chatStore.ts';
-import { ApiError } from '../util/serviceHelpers.ts';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.CHAT;
@@ -49,6 +49,20 @@ router.post(
 			res.status(201).json(storedTurnString);
 		}
 	)
+);
+
+router.get(
+	genRoutePattern('getAllChatTurns', ['sessionId']),
+	asyncHandler(async (req: Request, res: Response<ChatResponse>): Promise<void> => {
+		const { sessionId } = req.params;
+		validateServiceId(sessionId, collectionType);
+		validateRequestData(req.params, 'params', ['sessionId']);
+		const path = genRoutePattern('getAllChatTurns', ['sessionId']);
+		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
+
+		const response = await chatStore.getAllChatTurns(sessionId);
+		res.status(200).json(response);
+	})
 );
 
 /**
