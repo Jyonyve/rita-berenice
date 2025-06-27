@@ -1,4 +1,4 @@
-// src/server/services/orchestrationService.ts
+// src/server/services/orchestrationService.ts (Updated)
 
 import {
 	TempChatTurn,
@@ -13,10 +13,12 @@ import {
 	ProfileInfo,
 	AiModelInfo,
 	DEFAULT_MODEL_GOOGLEAI,
+	ChatTurn, // Import ChatTurn here
+	ChatTurnCdo, // Import ChatTurnCdo here
 } from '#shared/index.ts';
 import { characterStore, chatStore, profileStore } from '../store/index.ts';
 import { handleServiceError } from '../util/serviceHelpers.ts';
-import { memoryEngine, personaEngine } from './index.ts';
+import { memoryEngine, personaEngine } from './index.ts'; // Centralized service imports
 import { buildTempChatTurnId } from '../util/index.ts';
 
 /**
@@ -48,14 +50,10 @@ export const receiveBotResponse = async (
 	);
 
 	try {
-		// --- 1. GET OR CREATE THE TEMPORARY TURN OBJECT ---
 		let tempTurn: TempChatTurn;
-
 		try {
-			// Attempt to fetch the existing temp turn using its specific ID
 			tempTurn = await chatStore.getTempChatTurn(sessionId, sequence);
 		} catch (error) {
-			// A 404 error here is expected and means this is the first generation for this turn.
 			if (error instanceof ApiError && error.status === 404) {
 				console.log(
 					`[Orchestrator] No existing temp turn found. Creating a new one for turn ${sequence}.`
@@ -73,21 +71,16 @@ export const receiveBotResponse = async (
 					fixedSetNo: -1,
 				};
 			} else {
-				throw error; // Re-throw other unexpected errors
+				throw error;
 			}
 		}
 
-		// --- 2. INITIAL SETUP & LANGUAGE DETECTION ---
-		const userChatMessage = buildChatMessage('user', sequence, sessionId, 'User', userInput); // Placeholder showName
+		const userChatMessage = buildChatMessage('user', sequence, sessionId, 'User', userInput);
+		userChatMessage.showName = profileInfo.showName;
 
-		// --- 3. GATHER DATA FOR NEW RESPONSE (in parallel) ---
-		userChatMessage.showName = profileInfo.showName; // Update with correct name
-
-		// --- 4. RECALL MEMORIES ---
 		console.log(`[Orchestrator] Recalling memories for: "${userInput.substring(0, 50)}..."`);
 		const recalledMemories = await memoryEngine.recallRelevantMemories(sessionId, userInput);
 
-		// --- 5. GENERATE NEW RESPONSE ---
 		console.log(`[Orchestrator] Generating new persona response for ${characterInfo.characterId}...`);
 		const personaResponse = await personaEngine.generateResponse(
 			recalledMemories,
@@ -106,23 +99,17 @@ export const receiveBotResponse = async (
 			personaResponse.emotion
 		);
 
-		// --- 6. UPDATE AND SAVE THE TEMP TURN ---
-		// Create the new request-response pair (a new potential "option" for this turn)
 		const newSet: ChatMessageSet = {
 			request: userChatMessage,
 			response: botChatMessage,
 			setNo: tempTurn.chatTurnSets.length,
 		};
 
-		// Add the new option to the list of available sets for this turn
 		tempTurn.chatTurnSets.push(newSet);
-
-		// Update the metadata before saving
 		tempTurn.setCount = tempTurn.chatTurnSets.length;
 
 		await chatStore.saveTempChatTurn(tempTurn);
 
-		// --- 7. RETURN THE UPDATED TEMP TURN TO THE CLIENT ---
 		console.log(
 			`[Orchestrator] Request for turn ${sequence} completed. Temp turn now has ${tempTurn.setCount} options.`
 		);
@@ -132,6 +119,69 @@ export const receiveBotResponse = async (
 			error,
 			`[Orchestrator] Failed to process chat request for session ${sessionId}, turn ${sequence}.`,
 			'An unexpected error occurred while processing the request.'
+		);
+	}
+};
+
+/**
+ * Finalizes a temporary chat turn by enriching its metadata via LLM and storing it
+ * as a permanent ChatTurn in the main chat history.
+ *
+ * This function completes the flow for a specific, chosen chat turn.
+ *
+ * @param chatTurnCdo - The basic information of the chat turn to be finalized (request, response, sequence, sessionId).
+ * @returns The fully enriched ChatTurn object after being stored.
+ */
+export const finalizeChatTurn = async (chatTurnCdo: ChatTurnCdo): Promise<ChatTurn> => {
+	const { sessionId, sequence } = chatTurnCdo;
+	console.log(`[Orchestrator] Finalizing chat turn for session ${sessionId}, sequence ${sequence}.`);
+
+	try {
+		// 1. Enrich the chat turn metadata using the memoryEngine's existing logic
+		//    The enrichChatTurnMetadataViaLlm expects a full ChatTurn, so we build one from the Cdo.
+		//    Note: You might need to add characterId to ChatTurnCdo if enrichChatTurnMetadataViaLlm uses it.
+		const basicChatTurn: ChatTurn = {
+			characterId: parseSessionId(sessionId).characterId,
+			request: chatTurnCdo.request,
+			response: chatTurnCdo.response,
+			sessionId: chatTurnCdo.sessionId,
+			sequence: chatTurnCdo.sequence,
+			chatTurnId: '', // Assuming chatStore or a shared util has this
+			type: METADATA_TYPES.TURN, // Mark as fixed turn
+			createdAt: '',
+			updatedAt: '',
+			// These will be filled by enrichment or remain empty if not enriched for this field
+			summary: '',
+			keywords: [],
+			topics: [],
+			entities: [],
+			userEmotion: { primary: 'neutral', intensity: 0.5, nuances: [] },
+			characterEmotion: { primary: 'neutral', intensity: 0.5, nuances: [] },
+			dialogueAct: 'N/A',
+			actions: [],
+			relationshipShifts: [],
+			flags: [],
+			memoryChunk: '',
+			loreReferences: [],
+			historyReferences: [],
+			requestMessageId: '',
+			responseMessageId: '',
+		};
+
+		const enrichedChatTurn = await memoryEngine.enrichChatTurnMetadataViaLlm(basicChatTurn);
+
+		// 2. Store the fully enriched chat turn in the permanent chat history
+		await chatStore.storeChatTurn(enrichedChatTurn);
+
+		console.log(
+			`[Orchestrator] Chat turn ${sequence} for session ${sessionId} finalized and stored.`
+		);
+		return enrichedChatTurn;
+	} catch (error: any) {
+		handleServiceError(
+			error,
+			`[Orchestrator] Failed to finalize chat turn for session ${sessionId}, sequence ${sequence}.`,
+			'An unexpected error occurred while finalizing the chat turn.'
 		);
 	}
 };
