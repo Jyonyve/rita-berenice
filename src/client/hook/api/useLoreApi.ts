@@ -1,6 +1,5 @@
 // src/client/hooks/useLoreApi.ts
 
-import { useState, useCallback } from 'react';
 import {
 	apiClient,
 	genApiUrl,
@@ -11,7 +10,8 @@ import {
 	LoreInfo,
 	HistoryInfo,
 } from '#shared/index.ts';
-import { useToast } from '../../component/index.ts';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '../../style/ToastProvider.tsx';
 
 // For clarity in the query function signature
 type QueryOptions = {
@@ -23,211 +23,145 @@ type QueryOptions = {
 
 /**
  * A client-side hook for interacting with the LORE API endpoints, which handle
- * both lore and history entries. It encapsulates API logic, loading/error states,
- * and user notifications via a toast system.
+ * both lore and history entries, refactored for TanStack Query.
  */
 export const useLoreApi = () => {
 	const MODULE_NAME = MODULE_NAMES.LORE;
-
-	// --- Hooks ---
-	const [loading, setLoading] = useState<boolean>(false);
-	const [error, setError] = useState<ApiError | null>(null);
 	const { addToast } = useToast();
+	const queryClient = useQueryClient();
 
 	// --- LORE OPERATIONS ---
 
 	/**
 	 * Stores a new or updated lore entry.
-	 * @param loreInfo The lore data to save.
-	 * @returns A boolean indicating success or failure.
+	 * Mutation key: 'storeLore'
 	 */
-	const storeLore = useCallback(
-		async (loreInfo: LoreInfo): Promise<boolean> => {
-			setLoading(true);
-			setError(null);
-			try {
-				const url = genApiUrl(MODULE_NAME, 'storeLore');
-				await apiClient.post(url, loreInfo);
-				addToast('Lore entry saved successfully.', 'success');
-				return true;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Failed to save lore entry.', 'error');
-				setError(apiError);
-				return false;
-			} finally {
-				setLoading(false);
-			}
+	const storeLore = useMutation<boolean, ApiError, LoreInfo>({
+		mutationFn: async (loreInfo: LoreInfo) => {
+			const url = genApiUrl(MODULE_NAME, 'storeLore');
+			await apiClient.post(url, loreInfo);
+			return true;
 		},
-		[addToast]
-	);
+		onSuccess: () => {
+			addToast('Lore entry saved successfully.', 'success');
+			// Invalidate relevant lore queries
+			queryClient.invalidateQueries({ queryKey: ['getLores'] }); // Invalidate all lores (if getLores returns all)
+		},
+		onError: (error: ApiError) => {
+			addToast(error.clientMessage || 'Failed to save lore entry.', 'error');
+		},
+	});
 
 	/**
 	 * Fetches all lore entries for a specific character.
-	 * @param characterId The ID of the character.
-	 * @returns A LoreResponse object, or null on failure.
+	 * Query key: ['getLores']
 	 */
-	const getLores = useCallback(
-		async (characterId: string): Promise<LoreResponse | null> => {
-			setLoading(true);
-			setError(null);
-			try {
+	const getLores = (characterId: string) =>
+		useQuery<LoreResponse, ApiError>({
+			queryKey: ['getLores', characterId], // Adjusted to include characterId in key
+			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getLores', [characterId]);
 				const response = await apiClient.get<LoreResponse>(url);
 				return response.data;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Failed to load lore.', 'error');
-				setError(apiError);
-				return null;
-			} finally {
-				setLoading(false);
-			}
-		},
-		[addToast]
-	);
+			},
+			enabled: !!characterId,
+		});
 
 	/**
 	 * Fetches a single lore entry by its unique ID.
-	 * @param loreId The ID of the lore entry.
-	 * @returns A LoreResponse object, or null on failure.
+	 * Query key: ['getLore']
 	 */
-	const getLore = useCallback(
-		async (loreId: string): Promise<LoreResponse | null> => {
-			setLoading(true);
-			setError(null);
-			try {
+	const getLore = (loreId: string) =>
+		useQuery<LoreResponse, ApiError>({
+			queryKey: ['getLore', loreId], // Adjusted to include loreId in key
+			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getLore', [loreId]);
 				const response = await apiClient.get<LoreResponse>(url);
 				return response.data;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Failed to load lore entry.', 'error');
-				setError(apiError);
-				return null;
-			} finally {
-				setLoading(false);
-			}
-		},
-		[addToast]
-	);
+			},
+			enabled: !!loreId,
+		});
 
 	/**
 	 * Performs a semantic search for lore entries.
-	 * @returns A LoreResponse with matching entries, or null on failure.
+	 * Mutation key: 'queryLores' (as it's a POST request for search)
 	 */
-	const queryLores = useCallback(
-		async (
-			characterId: string,
-			queryTexts: string[],
-			options?: QueryOptions
-		): Promise<LoreResponse | null> => {
-			setLoading(true);
-			setError(null);
-			try {
-				const url = genApiUrl(MODULE_NAME, 'queryLores');
-				const response = await apiClient.post<LoreResponse>(url, { characterId, queryTexts, options });
-				return response.data;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Lore search failed.', 'error');
-				setError(apiError);
-				return null;
-			} finally {
-				setLoading(false);
-			}
+	const queryLores = useMutation<
+		LoreResponse,
+		ApiError,
+		{ characterId: string; queryTexts: string[]; options?: QueryOptions }
+	>({
+		mutationFn: async ({ characterId, queryTexts, options }) => {
+			const url = genApiUrl(MODULE_NAME, 'queryLores');
+			const response = await apiClient.post<LoreResponse>(url, { characterId, queryTexts, options });
+			return response.data;
 		},
-		[addToast]
-	);
+		onError: (error: ApiError) => {
+			addToast(error.clientMessage || 'Lore search failed.', 'error');
+		},
+	});
 
 	// --- HISTORY OPERATIONS ---
 
 	/**
 	 * Stores a new or updated history entry.
-	 * @param historyInfo The history data to save.
-	 * @returns A boolean indicating success or failure.
+	 * Mutation key: 'storeHistory'
 	 */
-	const storeHistory = useCallback(
-		async (historyInfo: HistoryInfo): Promise<boolean> => {
-			setLoading(true);
-			setError(null);
-			try {
-				const url = genApiUrl(MODULE_NAME, 'storeHistory');
-				await apiClient.post(url, historyInfo);
-				addToast('History entry saved successfully.', 'success');
-				return true;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Failed to save history entry.', 'error');
-				setError(apiError);
-				return false;
-			} finally {
-				setLoading(false);
-			}
+	const storeHistory = useMutation<boolean, ApiError, HistoryInfo>({
+		mutationFn: async (historyInfo: HistoryInfo) => {
+			const url = genApiUrl(MODULE_NAME, 'storeHistory');
+			await apiClient.post(url, historyInfo);
+			return true;
 		},
-		[addToast]
-	);
+		onSuccess: () => {
+			addToast('History entry saved successfully.', 'success');
+			// Invalidate relevant history queries
+			queryClient.invalidateQueries({ queryKey: ['getHistories'] }); // Invalidate all histories (if getHistories returns all)
+		},
+		onError: (error: ApiError) => {
+			addToast(error.clientMessage || 'Failed to save history entry.', 'error');
+		},
+	});
 
 	/**
 	 * Fetches all history entries for a character, sorted by sequence.
-	 * @param characterId The ID of the character.
-	 * @returns A HistoryResponse object, or null on failure.
+	 * Query key: ['getHistories']
 	 */
-	const getHistories = useCallback(
-		async (characterId: string): Promise<HistoryResponse | null> => {
-			setLoading(true);
-			setError(null);
-			try {
+	const getHistories = (characterId: string) =>
+		useQuery<HistoryResponse, ApiError>({
+			queryKey: ['getHistories', characterId], // Adjusted to include characterId in key
+			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getHistories', [characterId]);
 				const response = await apiClient.get<HistoryResponse>(url);
 				return response.data;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Failed to load history.', 'error');
-				setError(apiError);
-				return null;
-			} finally {
-				setLoading(false);
-			}
-		},
-		[addToast]
-	);
+			},
+			enabled: !!characterId,
+		});
 
 	/**
 	 * Performs a semantic search for history entries.
-	 * @returns A HistoryResponse with matching entries, or null on failure.
+	 * Mutation key: 'queryHistories' (as it's a POST request for search)
 	 */
-	const queryHistories = useCallback(
-		async (
-			characterId: string,
-			queryTexts: string[],
-			options?: { limit?: number }
-		): Promise<HistoryResponse | null> => {
-			setLoading(true);
-			setError(null);
-			try {
-				const url = genApiUrl(MODULE_NAME, 'queryHistories');
-				const response = await apiClient.post<HistoryResponse>(url, {
-					characterId,
-					queryTexts,
-					options,
-				});
-				return response.data;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'History search failed.', 'error');
-				setError(apiError);
-				return null;
-			} finally {
-				setLoading(false);
-			}
+	const queryHistories = useMutation<
+		HistoryResponse,
+		ApiError,
+		{ characterId: string; queryTexts: string[]; options?: { limit?: number } }
+	>({
+		mutationFn: async ({ characterId, queryTexts, options }) => {
+			const url = genApiUrl(MODULE_NAME, 'queryHistories');
+			const response = await apiClient.post<HistoryResponse>(url, {
+				characterId,
+				queryTexts,
+				options,
+			});
+			return response.data;
 		},
-		[addToast]
-	);
+		onError: (error: ApiError) => {
+			addToast(error.clientMessage || 'History search failed.', 'error');
+		},
+	});
 
 	return {
-		loading,
-		error,
 		// Lore methods
 		storeLore,
 		getLores,

@@ -14,14 +14,13 @@ import { Where } from 'chromadb'; // Assuming these types are available on the c
 import { useToast } from '../../style/index.ts';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-const queryClient = useQueryClient();
-
 /**
  * A client-side hook for interacting with the CHAT and TEMP_CHAT API endpoints.
  * It encapsulates API logic, loading/error states, and user notifications via a toast system.
  */
 export const useChatApi = () => {
 	const { addToast } = useToast();
+	const queryClient = useQueryClient();
 
 	/**
 	 * Stores a finalized chat turn.

@@ -1,6 +1,5 @@
 // src/client/hooks/useRecapApi.ts
 
-import { useState, useCallback } from 'react';
 import {
 	apiClient,
 	genApiUrl,
@@ -11,149 +10,117 @@ import {
 	METADATA_TYPES,
 } from '#shared/index.ts';
 import { Where, WhereDocument } from 'chromadb';
-import { useToast } from '../../component/index.ts';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '../../style/ToastProvider.tsx';
 
 /**
- * A client-side hook for interacting with the RECAP API endpoints.
- * It encapsulates API logic, loading/error states, and user notifications via a toast system.
+ * A client-side hook for interacting with the RECAP API endpoints, refactored for TanStack Query.
  */
 export const useRecapApi = () => {
 	const MODULE_NAME = MODULE_NAMES.RECAP;
-
-	// --- Hooks ---
-	const [loading, setLoading] = useState<boolean>(false);
-	const [error, setError] = useState<ApiError | null>(null);
 	const { addToast } = useToast();
+	const queryClient = useQueryClient();
 
 	/**
 	 * Stores a new factual recap entry.
-	 * @param recapInfo The recap data to save.
-	 * @returns A boolean indicating success or failure.
+	 * Mutation key: 'storeFactualRecap'
 	 */
-	const storeFactualRecap = useCallback(
-		async (recapInfo: RecapInfo): Promise<boolean> => {
-			setLoading(true);
-			setError(null);
-			try {
-				// Assumes a route exists at /api/recap/store-factual-recap
-				const url = genApiUrl(MODULE_NAME, 'storeFactualRecap');
-				await apiClient.post(url, recapInfo);
-				addToast('Factual recap saved.', 'success');
-				return true;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Failed to save factual recap.', 'error');
-				setError(apiError);
-				return false;
-			} finally {
-				setLoading(false);
-			}
+	const storeFactualRecap = useMutation<boolean, ApiError, RecapInfo>({
+		mutationFn: async (recapInfo: RecapInfo) => {
+			const url = genApiUrl(MODULE_NAME, 'storeFactualRecap');
+			await apiClient.post(url, recapInfo);
+			return true;
 		},
-		[addToast]
-	);
+		onSuccess: (_, variables) => {
+			addToast('Factual recap saved.', 'success');
+			// Invalidate relevant queries for this session's recap docs
+			queryClient.invalidateQueries({
+				queryKey: ['getRecapWholeDoc', variables.sessionId, METADATA_TYPES.RECAP],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ['queryRecaps', variables.sessionId, METADATA_TYPES.RECAP],
+			});
+		},
+		onError: (error: ApiError) => {
+			addToast(error.clientMessage || 'Failed to save factual recap.', 'error');
+		},
+	});
 
 	/**
 	 * Stores a new relationship recap entry.
-	 * @param recapInfo The recap data to save.
-	 * @returns A boolean indicating success or failure.
+	 * Mutation key: 'storeRelationshipRecap'
 	 */
-	const storeRelationshipRecap = useCallback(
-		async (recapInfo: RecapInfo): Promise<boolean> => {
-			setLoading(true);
-			setError(null);
-			try {
-				const url = genApiUrl(MODULE_NAME, 'storeRelationshipRecap');
-				await apiClient.post(url, recapInfo);
-				addToast('Relationship recap saved.', 'success');
-				return true;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Failed to save relationship recap.', 'error');
-				setError(apiError);
-				return false;
-			} finally {
-				setLoading(false);
-			}
+	const storeRelationshipRecap = useMutation<boolean, ApiError, RecapInfo>({
+		mutationFn: async (recapInfo: RecapInfo) => {
+			const url = genApiUrl(MODULE_NAME, 'storeRelationshipRecap');
+			await apiClient.post(url, recapInfo);
+			return true;
 		},
-		[addToast]
-	);
+		onSuccess: (_, variables) => {
+			addToast('Relationship recap saved.', 'success');
+			// Invalidate relevant queries for this session's relationship docs
+			queryClient.invalidateQueries({
+				queryKey: ['getRecapWholeDoc', variables.sessionId, METADATA_TYPES.RELATIONSHIP],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ['queryRecaps', variables.sessionId, METADATA_TYPES.RELATIONSHIP],
+			});
+		},
+		onError: (error: ApiError) => {
+			addToast(error.clientMessage || 'Failed to save relationship recap.', 'error');
+		},
+	});
 
 	/**
 	 * Fetches the entire concatenated recap document for a session.
-	 * @param sessionId The ID of the session.
-	 * @param type The type of recap document to fetch ('recap' or 'relationship').
-	 * @returns The recap content as a string, or null on failure.
+	 * Query key: ['getRecapWholeDoc']
 	 */
-	const getRecapWholeDoc = useCallback(
-		async (
-			sessionId: string,
-			type: typeof METADATA_TYPES.RECAP | typeof METADATA_TYPES.RELATIONSHIP
-		): Promise<string | null> => {
-			setLoading(true);
-			setError(null);
-			try {
+	const getRecapWholeDoc = (
+		sessionId: string,
+		type: typeof METADATA_TYPES.RECAP | typeof METADATA_TYPES.RELATIONSHIP
+	) =>
+		useQuery<string | null, ApiError>({
+			queryKey: ['getRecapWholeDoc', sessionId, type], // Ensure type is part of the query key
+			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getRecapWholeDoc', [sessionId]);
-				// The server endpoint should accept `type` as a query parameter
 				const response = await apiClient.get<string>(url, { params: { type } });
 				return response.data;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Failed to load recap document.', 'error');
-				setError(apiError);
-				return null;
-			} finally {
-				setLoading(false);
-			}
-		},
-		[addToast]
-	);
+			},
+			enabled: !!sessionId,
+		});
 
 	/**
 	 * Performs a semantic search for recap entries.
-	 * @returns A RecapResponse with matching entries, or null on failure.
+	 * Mutation key: 'queryRecaps'
 	 */
-	const queryRecaps = useCallback(
-		async (
-			sessionId: string,
-			queryTexts: string[],
-			type: typeof METADATA_TYPES.RECAP | typeof METADATA_TYPES.RELATIONSHIP,
-			where?: Where,
-			whereDocument?: WhereDocument,
-			limit?: number
-		): Promise<RecapResponse | null> => {
-			setLoading(true);
-			setError(null);
-			try {
-				const url = genApiUrl(MODULE_NAME, 'queryRecaps');
-				const response = await apiClient.post<RecapResponse>(url, {
-					sessionId,
-					queryTexts,
-					type,
-					where,
-					whereDocument,
-					limit,
-				});
-				return response.data;
-			} catch (err) {
-				const apiError = err as ApiError;
-				// Search failures are common and might not always need a toast,
-				// but it's good practice to provide feedback on an actual error.
-				addToast(apiError.clientMessage || 'Recap search failed.', 'error');
-				setError(apiError);
-				return null;
-			} finally {
-				setLoading(false);
-			}
+	const queryRecaps = useMutation<
+		RecapResponse | null,
+		ApiError,
+		{
+			sessionId: string;
+			queryTexts: string[];
+			type: typeof METADATA_TYPES.RECAP | typeof METADATA_TYPES.RELATIONSHIP;
+			where?: Where;
+			whereDocument?: WhereDocument;
+			limit?: number;
+		}
+	>({
+		mutationFn: async ({ sessionId, queryTexts, type, where, whereDocument, limit }) => {
+			const url = genApiUrl(MODULE_NAMES.RECAP, 'queryRecaps');
+			const response = await apiClient.post<RecapResponse>(url, {
+				sessionId,
+				queryTexts,
+				type,
+				where,
+				whereDocument,
+				limit,
+			});
+			return response.data;
 		},
-		[addToast]
-	);
+		onError: (error: ApiError) => {
+			addToast(error.clientMessage || 'Recap search failed.', 'error');
+		},
+	});
 
-	return {
-		loading,
-		error,
-		storeFactualRecap,
-		storeRelationshipRecap,
-		getRecapWholeDoc,
-		queryRecaps,
-	};
+	return { storeFactualRecap, storeRelationshipRecap, getRecapWholeDoc, queryRecaps };
 };

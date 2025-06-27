@@ -10,158 +10,129 @@ import {
 	TermInfo,
 	TermCdo,
 } from '#shared/index.ts';
-import { useToast } from '../../component/index.ts';
+import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
+import { useToast } from '../../style/ToastProvider.tsx';
 
 /**
  * A client-side hook for interacting with the GLOSSARY API endpoints.
  * It encapsulates API logic, loading/error states, and user notifications via a toast system.
  */
-export const useGlossaryApi = () => {
+export const useTermApi = () => {
 	const MODULE_NAME = MODULE_NAMES.TERM;
-
-	// --- Hooks ---
-	const [loading, setLoading] = useState<boolean>(false);
-	const [error, setError] = useState<ApiError | null>(null);
 	const { addToast } = useToast();
+	const queryClient = useQueryClient();
 
 	/**
 	 * Stores a new or updated term in the glossary for a specific session.
-	 * @param termInfo The term data to save.
-	 * @returns A boolean indicating success or failure.
+	 * Mutation key: 'storeTerm'
 	 */
-	const storeTerm = useCallback(
-		async (termInfo: TermCdo | TermInfo): Promise<boolean> => {
-			setLoading(true);
-			setError(null);
-			try {
-				const url = genApiUrl(MODULE_NAME, 'storeTerm');
-				await apiClient.post(url, termInfo);
-				addToast(`Term "${termInfo.koreanTerm}" saved.`, 'success');
-				return true;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Failed to save term.', 'error');
-				setError(apiError);
-				return false;
-			} finally {
-				setLoading(false);
-			}
+	const storeTerm = useMutation<boolean, ApiError, TermCdo | TermInfo>({
+		mutationFn: async (termInfo: TermCdo | TermInfo) => {
+			const url = genApiUrl(MODULE_NAME, 'storeTerm');
+			await apiClient.post(url, termInfo);
+			return true;
 		},
-		[addToast]
-	);
+		onSuccess: (_, variables) => {
+			addToast(
+				`Term "${(variables as TermInfo).koreanTerm || (variables as TermCdo).koreanTerm}" saved.`,
+				'success'
+			);
+			// Invalidate queries that fetch terms for this session
+			queryClient.invalidateQueries({ queryKey: ['getTermsBySessionId', variables.sessionId] });
+			queryClient.invalidateQueries({
+				queryKey: [
+					'getTermByKorean',
+					variables.sessionId,
+					(variables as TermInfo).koreanTerm || (variables as TermCdo).koreanTerm,
+				],
+			});
+		},
+		onError: (error: ApiError) => {
+			addToast(error.clientMessage || 'Failed to save term.', 'error');
+		},
+	});
 
 	/**
 	 * Fetches a specific term by its Korean name for a given session.
-	 * @returns A TermResponse object containing the found term, or null on failure.
+	 * Query key: ['getTermByKorean']
 	 */
-	const getTermByKorean = useCallback(
-		async (sessionId: string, koreanTerm: string): Promise<TermResponse | null> => {
-			setLoading(true);
-			setError(null);
-			try {
+	const getTermByKorean = (sessionId: string, koreanTerm: string) =>
+		useQuery<TermResponse | null, ApiError>({
+			queryKey: ['getTermByKorean', sessionId, koreanTerm],
+			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getTermByKorean', [sessionId, koreanTerm]);
 				const response = await apiClient.get<TermResponse>(url);
 				return response.data;
-			} catch (err) {
-				const apiError = err as ApiError;
-				if (apiError.status !== 404) {
-					// Don't show toast for expected "not found"
-					addToast(apiError.clientMessage || 'Failed to fetch term.', 'error');
-				}
-				setError(apiError);
-				return null;
-			} finally {
-				setLoading(false);
-			}
-		},
-		[addToast]
-	);
+			},
+			enabled: !!sessionId && !!koreanTerm,
+			// Custom retry logic for 404 (not found is expected)
+			retry: (failureCount, error) => (error.status === 404 ? false : failureCount < 3),
+		});
 
 	/**
 	 * Fetches all glossary terms associated with a specific session.
-	 * @param sessionId The ID of the session.
-	 * @returns A TermResponse object containing all terms, or null on failure.
+	 * Query key: ['getTermsBySessionId']
 	 */
-	const getTermsBySessionId = useCallback(
-		async (sessionId: string): Promise<TermResponse | null> => {
-			setLoading(true);
-			setError(null);
-			try {
+	const getTermsBySessionId = (sessionId: string) =>
+		useQuery<TermResponse | null, ApiError>({
+			queryKey: ['getTermsBySessionId', sessionId],
+			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getTermsBySessionId', [sessionId]);
 				const response = await apiClient.get<TermResponse>(url);
 				return response.data;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Failed to load glossary.', 'error');
-				setError(apiError);
-				return null;
-			} finally {
-				setLoading(false);
-			}
-		},
-		[addToast]
-	);
+			},
+			enabled: !!sessionId,
+		});
 
 	/**
 	 * Ensures terms exist for a prompt, auto-translating and storing any that are missing.
-	 * The server returns a Map, which gets converted to a plain object by its route.
-	 * @returns A Record (object) mapping Korean terms to English terms, or null on failure.
+	 * Mutation key: 'ensureAndGetTermsForPrompt'
 	 */
-	const ensureAndGetTermsForPrompt = useCallback(
-		async (
-			sessionId: string,
-			koreanTermsToEnsure: string[]
-		): Promise<Record<string, string> | null> => {
-			setLoading(true);
-			setError(null);
-			try {
-				const url = genApiUrl(MODULE_NAME, 'ensureAndGetTermsForPrompt');
-				const response = await apiClient.post<Record<string, string>>(url, {
-					sessionId,
-					koreanTermsToEnsure,
-				});
-				return response.data;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Failed to process terms for prompt.', 'error');
-				setError(apiError);
-				return null;
-			} finally {
-				setLoading(false);
-			}
+	const ensureAndGetTermsForPrompt = useMutation<
+		Record<string, string> | null,
+		ApiError,
+		{ sessionId: string; koreanTermsToEnsure: string[] }
+	>({
+		mutationFn: async ({ sessionId, koreanTermsToEnsure }) => {
+			const url = genApiUrl(MODULE_NAME, 'ensureAndGetTermsForPrompt');
+			const response = await apiClient.post<Record<string, string>>(url, {
+				sessionId,
+				koreanTermsToEnsure,
+			});
+			return response.data;
 		},
-		[addToast]
-	);
+		onSuccess: (_, variables) => {
+			// Invalidate all terms for this session, as new ones might have been added
+			queryClient.invalidateQueries({ queryKey: ['getTermsBySessionId', variables.sessionId] });
+		},
+		onError: (error: ApiError) => {
+			addToast(error.clientMessage || 'Failed to process terms for prompt.', 'error');
+		},
+	});
 
 	/**
 	 * Clears the server's in-memory cache for a specific session's glossary.
-	 * @param sessionId The ID of the session to clear.
-	 * @returns A boolean indicating success or failure.
+	 * Mutation key: 'clearSessionCache'
 	 */
-	const clearSessionCache = useCallback(
-		async (sessionId: string): Promise<boolean> => {
-			setLoading(true);
-			setError(null);
-			try {
-				const url = genApiUrl(MODULE_NAME, 'clearSessionCache', [sessionId]);
-				await apiClient.delete(url); // Using DELETE for semantic correctness
-				addToast('Glossary cache for this session has been cleared.', 'info');
-				return true;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Failed to clear cache.', 'error');
-				setError(apiError);
-				return false;
-			} finally {
-				setLoading(false);
-			}
+	const clearSessionCache = useMutation<boolean, ApiError, string>({
+		mutationFn: async (sessionId: string) => {
+			const url = genApiUrl(MODULE_NAME, 'clearSessionCache', [sessionId]);
+			await apiClient.delete(url);
+			return true;
 		},
-		[addToast]
-	);
+		onSuccess: (_, sessionId) => {
+			addToast('Glossary cache for this session has been cleared.', 'info');
+			// Invalidate all term queries for this session
+			queryClient.invalidateQueries({ queryKey: ['getTermsBySessionId', sessionId] });
+			queryClient.invalidateQueries({ queryKey: ['getTermByKorean', sessionId] });
+			queryClient.invalidateQueries({ queryKey: ['ensureAndGetTermsForPrompt', sessionId] });
+		},
+		onError: (error: ApiError) => {
+			addToast(error.clientMessage || 'Failed to clear cache.', 'error');
+		},
+	});
 
 	return {
-		loading,
-		error,
 		storeTerm,
 		getTermByKorean,
 		getTermsBySessionId,

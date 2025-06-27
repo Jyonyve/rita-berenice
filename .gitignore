@@ -18,16 +18,9 @@ dist-ssr/
 .env*
 !.env.example
 
-# ✅ Yarn 4 관련
-.pnp.*
-.yarn/cache/           # 캐시는 용량 큼 (필요시 포함 X)
-.yarn/unplugged/
-.yarn/build-state.yml
-.yarn/install-state.gz
-.yarn/patches/
-
-# yarn release 버전은 Git에 포함해야 하므로 제외하지 않음
-# .yarn/releases/** ← 포함해야 하므로 gitignore에서 제외해야 함
+# ✅ pnpm 관련
+.pnpm-debug.log
+.pnpm-store/
 
 # ✅ IDE 설정
 .vscode/*

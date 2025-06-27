@@ -1,5 +1,5 @@
 // src/client/hooks/useAiApi.ts
-
+import { useMutation } from '@tanstack/react-query';
 import { useState, useCallback } from 'react';
 import {
 	apiClient,
@@ -10,7 +10,7 @@ import {
 	ChatRoleType,
 } from '#shared/index.ts';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs'; // This type is needed client-side
-import { useToast } from '../../component/index.ts';
+import { useToast } from '../../style/index.ts';
 
 /**
  * A client-side hook for interacting with the AI (LLM) API endpoints.
@@ -18,121 +18,78 @@ import { useToast } from '../../component/index.ts';
  */
 export const useAiApi = () => {
 	const MODULE_NAME = MODULE_NAMES.LLM; // Assuming LLM is the module name for AI routes
-
-	// --- Hooks ---
-	const [loading, setLoading] = useState<boolean>(false);
-	const [error, setError] = useState<ApiError | null>(null);
 	const { addToast } = useToast();
 
-	/**
-	 * Invokes a language model with a single prompt and returns the raw string response.
-	 * @returns The assistant's response string, or null on failure.
-	 */
-	const invokeLlm = useCallback(
-		async (role: ChatRoleType, prompt: string, aiModelInfo: AiModelInfo): Promise<string | null> => {
-			setLoading(true);
-			setError(null);
-			try {
-				const url = genApiUrl(MODULE_NAME, 'invokeLlm');
-				// Expecting { response: string } from the API
-				const response = await apiClient.post<{ response: string }>(url, { role, prompt, aiModelInfo });
-				return response.data.response;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Failed to get LLM response.', 'error');
-				setError(apiError);
-				return null;
-			} finally {
-				setLoading(false);
-			}
+	const invokeLlm = useMutation<
+		string, // Return type on success
+		ApiError, // Error type
+		{ role: ChatRoleType; prompt: string; aiModelInfo: AiModelInfo } // Variables type
+	>({
+		mutationFn: async ({ role, prompt, aiModelInfo }) => {
+			const url = genApiUrl(MODULE_NAME, 'invokeLlm');
+			const response = await apiClient.post<{ response: string }>(url, { role, prompt, aiModelInfo });
+			return response.data.response;
 		},
-		[addToast]
-	);
-
+		onError: (error: ApiError) => {
+			addToast(error.clientMessage || 'Failed to get LLM response.', 'error');
+		},
+	});
 	/**
 	 * Invokes a language model with a sequence of messages and returns the raw string response.
 	 * @returns The assistant's response string, or null on failure.
 	 */
-	const invokeLlmFromMessages = useCallback(
-		async (
-			messages: ChatCompletionMessageParam[],
-			aiModelInfo: AiModelInfo
-		): Promise<string | null> => {
-			setLoading(true);
-			setError(null);
-			try {
-				const url = genApiUrl(MODULE_NAME, 'invokeLlmFromMessages');
-				// Expecting { response: string } from the API
-				const response = await apiClient.post<{ response: string }>(url, { messages, aiModelInfo });
-				return response.data.response;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Failed to get chat completion.', 'error');
-				setError(apiError);
-				return null;
-			} finally {
-				setLoading(false);
-			}
+	const invokeLlmFromMessages = useMutation<
+		string, // Return type on success
+		ApiError, // Error type
+		{ messages: ChatCompletionMessageParam[]; aiModelInfo: AiModelInfo } // Variables type
+	>({
+		mutationFn: async ({ messages, aiModelInfo }) => {
+			const url = genApiUrl(MODULE_NAME, 'invokeLlmFromMessages');
+			const response = await apiClient.post<{ response: string }>(url, { messages, aiModelInfo });
+			return response.data.response;
 		},
-		[addToast]
-	);
+		onError: (error: ApiError) => {
+			addToast(error.clientMessage || 'Failed to get chat completion.', 'error');
+		},
+	});
 
 	/**
 	 * Translates a single Korean term to English using a language model.
 	 * @returns The translated English term, or null on failure.
 	 */
-	const translateProperNoun = useCallback(
-		async (koreanTerm: string): Promise<string | null> => {
-			setLoading(true);
-			setError(null);
-			try {
-				const url = genApiUrl(MODULE_NAMES.LLM, 'translateProperNoun');
-				// Expecting { translation: string } from the API
-				const response = await apiClient.post<{ translation: string }>(url, { koreanTerm });
-				return response.data.translation;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Translation failed.', 'error');
-				setError(apiError);
-				return null;
-			} finally {
-				setLoading(false);
-			}
+	const translateProperNoun = useMutation<
+		string, // Return type on success
+		ApiError, // Error type
+		string // Variables type (koreanTerm)
+	>({
+		mutationFn: async (koreanTerm) => {
+			const url = genApiUrl(MODULE_NAMES.LLM, 'translateProperNoun');
+			const response = await apiClient.post<{ translation: string }>(url, { koreanTerm });
+			return response.data.translation;
 		},
-		[addToast]
-	);
+		onError: (error: ApiError) => {
+			addToast(error.clientMessage || 'Translation failed.', 'error');
+		},
+	});
 
 	/**
 	 * Extracts an array of proper nouns from a given block of text.
 	 * @returns An array of extracted nouns, or an empty array on failure.
 	 */
-	const extractProperNouns = useCallback(
-		async (textToAnalyze: string): Promise<string[]> => {
-			setLoading(true);
-			setError(null);
-			try {
-				const url = genApiUrl(MODULE_NAMES.LLM, 'extractProperNouns');
-				// Expecting { nouns: string[] } from the API
-				const response = await apiClient.post<{ nouns: string[] }>(url, { textToAnalyze });
-				return response.data.nouns;
-			} catch (err) {
-				const apiError = err as ApiError;
-				addToast(apiError.clientMessage || 'Noun extraction failed.', 'error');
-				setError(apiError);
-				return [];
-			} finally {
-				setLoading(false);
-			}
+	const extractProperNouns = useMutation<
+		string[], // Return type on success
+		ApiError, // Error type
+		string // Variables type (textToAnalyze)
+	>({
+		mutationFn: async (textToAnalyze) => {
+			const url = genApiUrl(MODULE_NAMES.LLM, 'extractProperNouns');
+			const response = await apiClient.post<{ nouns: string[] }>(url, { textToAnalyze });
+			return response.data.nouns;
 		},
-		[addToast]
-	);
+		onError: (error: ApiError) => {
+			addToast(error.clientMessage || 'Noun extraction failed.', 'error');
+		},
+	});
 
-	return {
-		loading,
-		error,
-		invokeLlm,
-		invokeLlmFromMessages,
-		translateProperNoun,
-		extractProperNouns,
-	};
+	return { invokeLlm, invokeLlmFromMessages, translateProperNoun, extractProperNouns };
 };

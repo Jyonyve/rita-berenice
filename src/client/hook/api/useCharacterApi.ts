@@ -13,8 +13,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 export const useCharacterApi = () => {
 	const { addToast } = useToast();
-	const queryClient = useQueryClient();
 	const MODULE_NAME = MODULE_NAMES.CHARACTER;
+	const queryClient = useQueryClient();
 
 	/**
 	 * Fetches all characters.
