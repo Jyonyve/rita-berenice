@@ -35,9 +35,8 @@ const ChatLogRow: FC<ListChildComponentProps<ChatLogRowData>> = ({ index, style,
 		if (rowRef.current) {
 			setSize(index, rowRef.current.getBoundingClientRect().height);
 		}
-	}, [index, setSize]); // Depends only on index and stable setSize
+	}, [index, setSize, data]);
 
-	// Determine if this row is for the temp turn
 	const isTempTurnRow = index === chatTurns.length && tempChatTurn;
 
 	// Apply style and ref for measurement

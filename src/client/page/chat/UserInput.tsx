@@ -30,13 +30,6 @@ export const UserInput: FC<UserInputProps> = ({
 }) => {
 	const theme = useTheme(); // Hook to access theme values
 
-	const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-		if (!e.shiftKey && !isDisabled) {
-			e.preventDefault();
-			onSend();
-		}
-	};
-
 	return (
 		<>
 			{/* Main container Box */}
@@ -52,7 +45,7 @@ export const UserInput: FC<UserInputProps> = ({
 					value={value}
 					onChange={onChange}
 					disabled={isDisabled}
-					onKeyDown={handleKeyDown}
+					// onKeyDown={handleKeyDown}
 					sx={{
 						mb: 1.5, // Add margin-bottom for space before the next row
 					}}

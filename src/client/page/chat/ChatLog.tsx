@@ -82,11 +82,9 @@ export const ChatLog: FC<ChatLogProps> = memo(
 			[
 				chatTurns,
 				tempChatTurn,
-				changeTempSetNo,
 				currentTempSetNo,
+				changeTempSetNo,
 				isProcessing,
-				hasMore,
-				clientError,
 				onEditTurn,
 				onRegenerateResponse,
 				setSize,
@@ -141,14 +139,8 @@ export const ChatLog: FC<ChatLogProps> = memo(
 								itemCount={itemCount}
 								itemSize={getSize}
 								itemData={itemData}
-								onScroll={handleScroll} // <<< USE THE CORRECT SCROLL HANDLER
+								onScroll={handleScroll}
 								overscanCount={5}
-								// For inverse chat (newest at bottom, rendered via CSS flex-direction: column-reverse on parent in ChatPage):
-								// react-window still renders items from index 0 at the "top" of its virtual space.
-								// Scrolling to itemCount - 1 brings the newest item into view at the bottom.
-								// When older items are prepended to chatTurns, react-window re-renders.
-								// The scroll position might jump unless explicitly managed, but for "load older",
-								// some jump is acceptable as new content appears above.
 							>
 								{ChatLogRow}
 							</List>
