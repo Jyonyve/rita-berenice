@@ -10,7 +10,9 @@ import {
 	CharacterInfo,
 	ProfileInfo,
 	AiModelInfo,
-} from '#shared/index.ts';
+	ChatTurn,
+	ChatTurnCdo,
+} from '@shared/index.ts';
 import { useToast } from '../../style/ToastProvider.tsx';
 import { useMutation } from '@tanstack/react-query';
 
@@ -23,27 +25,44 @@ export const useOrchestrationApi = () => {
 	const { addToast } = useToast();
 
 	/**
+	 * Finalizes a turn by enriching it and saving it to the permanent CHAT collection.
+	 * This is separate from generating a new response.
+	 */
+	const finalizeChatTurn = useMutation<ChatTurn, ApiError, ChatTurnCdo>({
+		mutationFn: async (cdo: ChatTurnCdo) => {
+			const url = genApiUrl(MODULE_NAMES.ORCHESTRATION, 'finalizeChatTurn');
+			const response = await apiClient.post<ChatTurn>(url, cdo);
+			return response.data;
+		},
+		// No toast on success for this background task
+		onError: (error: ApiError) => {
+			addToast(error.clientMessage || 'Failed to save previous turn.', 'error');
+			// Error is handled globally and in the calling function's catch block
+		},
+	});
+
+	/**
 	 * Orchestrates the backend flow for generating a new character response.
 	 * This is a mutation as it creates a new chat turn (even temporary).
-	 * Mutation key: 'handleChatRequest'
+	 * Mutation key: 'receiveBotResponse'
 	 */
-	const handleChatRequest = useMutation<
+	const receiveBotResponse = useMutation<
 		TempChatTurn, // Return type on success
 		ApiError, // Error type
 		{
 			tempChatTurnCdo: TempChatTurnCdo;
 			characterInfo: CharacterInfo;
 			profileInfo: ProfileInfo;
-			aiModel: AiModelInfo;
+			aiModelInfo: AiModelInfo;
 		} // Variables type
 	>({
-		mutationFn: async ({ tempChatTurnCdo, characterInfo, profileInfo, aiModel }) => {
-			const url = genApiUrl(MODULE_NAME, 'handleChatRequest');
+		mutationFn: async ({ tempChatTurnCdo, characterInfo, profileInfo, aiModelInfo }) => {
+			const url = genApiUrl(MODULE_NAME, 'receiveBotResponse');
 			const response = await apiClient.post<TempChatTurn>(url, {
 				tempChatTurnCdo,
 				characterInfo,
 				profileInfo,
-				aiModel,
+				aiModelInfo,
 			});
 			return response.data;
 		},
@@ -55,5 +74,5 @@ export const useOrchestrationApi = () => {
 		},
 	});
 
-	return { handleChatRequest };
+	return { receiveBotResponse, finalizeChatTurn };
 };

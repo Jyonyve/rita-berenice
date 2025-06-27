@@ -62,32 +62,6 @@ export const useChatApi = () => {
 		});
 
 	/**
-	 * Fetches a list of chat turns for history loading.
-	 * @param sessionId The session ID.
-	 * @param beforeSequence Fetches turns with a sequence number less than this value.
-	 * @returns A ChatResponse object, or null on failure.
-	 */
-	// const getChatTurns = useCallback(
-	// 	async (sessionId: string, beforeSequence: number): Promise<ChatResponse> => {
-	// 		setLoading(true);
-	// 		setError(null);
-	// 		try {
-	// 			const url = genApiUrl(MODULE_NAMES.CHAT, 'getChatTurns', [sessionId]);
-	// 			const response = await apiClient.get<ChatResponse>(url, { params: { beforeSequence } });
-	// 			return response.data;
-	// 		} catch (err) {
-	// 			const apiError = err as ApiError;
-	// 			addToast(apiError.clientMessage || 'Failed to load chat history.', 'error');
-	// 			setError(apiError);
-	// 			return null;
-	// 		} finally {
-	// 			setLoading(false);
-	// 		}
-	// 	},
-	// 	[addToast]
-	// );
-
-	/**
 	 * Fetches a single, specific chat turn by its sequence number.
 	 * Query Key: ['getChatTurnBySequence']
 	 */

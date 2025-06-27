@@ -1,28 +1,72 @@
 // src/client/page/ChatPageLoader.tsx
-import React from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Typography, CircularProgress, Box } from '@mui/material';
 import { ChatPage } from './chat/ChatPage.tsx';
-import { useCharacterApi, useProfileApi } from '../hook/index.ts';
-import { get } from 'http';
-import { parseSessionId } from '#root/src/shared/index.ts';
+import { useCharacterApi, useChatApi, useProfileApi } from '../hook/index.ts';
+import { parseSessionId } from '@shared/index.ts';
+import { saveMessagesToCache } from '../util/index.ts';
 
 // In a real implementation, you would use `useLoaderData` to get pre-fetched data.
 // For now, we'll just display the IDs from the URL.
 
 export function ChatPageLoader() {
+	const navigate = useNavigate();
 	const { sessionId } = useParams();
-	if (!sessionId) return;
 
-	const { getCharacter } = useCharacterApi();
-	const { getProfileBySessionId } = useProfileApi();
+	// ------------ Redirect if sessionId is not provided ------------
+	useEffect(() => {
+		if (!sessionId) {
+			navigate('/not-found-sessionId', { replace: true });
+		}
+	}, [sessionId, navigate]);
+
+	if (!sessionId) {
+		return null; // Render nothing while redirecting
+	}
+
+	// ------------ Fetching Data ------------
 	const { characterId } = parseSessionId(sessionId);
-	const { data: characterRes, isFetched: isCharacterFetched } = getCharacter(characterId);
-	const { data: profileRes, isFetched: isProfileFetched } = getProfileBySessionId(sessionId);
+	const {
+		data: characterRes,
+		isLoading: isLoadingCharacter,
+		isError: isCharacterError,
+	} = useCharacterApi().getCharacter(characterId);
+	const {
+		data: profileRes,
+		isLoading: isLoadingProfile,
+		isError: isProfileError,
+	} = useProfileApi().getProfileBySessionId(sessionId);
+	const {
+		data: allTurnsRes,
+		isLoading: isLoadingTurns,
+		isError: isTurnsError,
+	} = useChatApi().getAllChatTurns(sessionId);
+	useEffect(() => {
+		if (allTurnsRes?.chatTurns && allTurnsRes.chatTurns.length > 0) {
+			console.log(`Priming IndexedDB with ${allTurnsRes.chatTurns.length} chat turns...`);
+			saveMessagesToCache(allTurnsRes.chatTurns);
+		}
+	}, [allTurnsRes]); // This effect runs only when allTurnsRes changes
 
-	if (!characterRes || !profileRes) {
+	// DEBUG: Handle error states
+	// Handle combined error states
+	if (isCharacterError || isProfileError || isTurnsError) {
 		return (
-			<Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+			<Typography color="error">Failed to load essential chat data. Please try again.</Typography>
+		);
+	}
+
+	// Show a loading spinner while either query is in flight
+	if (
+		isLoadingCharacter ||
+		isLoadingProfile ||
+		isLoadingTurns ||
+		!characterRes?.characterInfo ||
+		!profileRes?.profileInfo
+	) {
+		return (
+			<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
 				<CircularProgress />
 			</Box>
 		);
@@ -31,19 +75,5 @@ export function ChatPageLoader() {
 	const characterInfo = characterRes.characterInfo;
 	const profileInfo = profileRes.profileInfo;
 
-	return (
-		<div>
-			<Typography variant="h4" gutterBottom>
-				Chat with {characterInfo.showName}
-			</Typography>
-			<Typography variant="subtitle1" color="text.secondary">
-				Using profile: {profileInfo.showName}
-			</Typography>
-			<Box mt={2}>
-				{/* ChatLog, UserInput, and other chat components will go here */}
-				<Typography variant="body1">Chat interface will be rendered here.</Typography>
-				<ChatPage characterInfo={characterInfo} profileInfo={profileInfo} sessionId={sessionId} />
-			</Box>
-		</div>
-	);
+	return <ChatPage characterInfo={characterInfo} profileInfo={profileInfo} sessionId={sessionId} />;
 }

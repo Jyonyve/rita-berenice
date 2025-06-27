@@ -1,3 +1,5 @@
+// src/client/component/page/ChatPage.tsx
+
 import React, { useState, useEffect, useCallback, ChangeEvent, JSX } from 'react';
 
 // Import the new components
@@ -6,13 +8,10 @@ import { ChatLog } from './ChatLog.tsx';
 import { UserInput } from './UserInput.tsx';
 
 // MUI Components
-import { Grid, Box, Typography } from '@mui/material'; // Correct imports
-import { useNavigate, useParams } from 'react-router-dom';
+import { Grid, Box, Typography } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import {
 	DEFAULT_LOADING_BATCH_TURN_COUNT,
-	buildChatMessage,
-	parseEntriesToText,
-	parseSessionId,
 	METADATA_TYPES,
 	TempChatTurn,
 	ChatTurn,
@@ -20,15 +19,11 @@ import {
 	ProfileInfo,
 	DEFAULT_EMOTION,
 	TempChatTurnCdo,
+	ChatTurnCdo,
 } from '@shared/index.ts';
 import { useCharacterState, useChatState } from '../../hook/state/index.ts';
-import {
-	useCharacterApi,
-	useChatApi,
-	useOrchestrationApi,
-	useProfileApi,
-} from '../../hook/api/index.ts';
-import { useAiModel, useCredential } from '../../hook/index.ts';
+import { useChatApi, useOrchestrationApi } from '../../hook/api/index.ts';
+import { useAiModel } from '../../hook/index.ts';
 
 export const ChatPage = ({
 	characterInfo,
@@ -39,32 +34,23 @@ export const ChatPage = ({
 	profileInfo: ProfileInfo;
 	sessionId: string;
 }) => {
-	// init
-	const navigate = useNavigate();
-	const { storeChatTurn, saveTempChatTurn } = useChatApi();
-	const { handleChatRequest } = useOrchestrationApi();
-
-	// client hooks
+	const { receiveBotResponse, finalizeChatTurn } = useOrchestrationApi();
 	const { portraitMap, getImageNumberForEmotion } = useCharacterState(characterInfo.characterId);
 	const {
 		chatTurns,
 		tempChatTurn,
-		isLoadingChat,
+		isLoadingHistory,
+		hasMoreHistory,
 		clientError,
-		hasMore,
-		initializeSession,
 		loadOlderMessages,
-		addChatTurnIndexedDB,
+		addChatTurn,
 		changeTempChatTurn,
-		getCurrentSequence,
 		getNextSequence,
 	} = useChatState(sessionId);
 
 	const { aiModelInfo } = useAiModel();
-	const { credential, isLoadingCredential, credentialError } = useCredential();
 
 	// --- STATE ---
-
 	const [currentTempSetNo, setCurrentTempSetNo] = useState(0);
 	const [userInput, setUserInput] = useState('');
 	const [userEditInput, setUserEditInput] = useState('');
@@ -73,7 +59,7 @@ export const ChatPage = ({
 	const [pageError, setPageError] = useState<string>();
 
 	// Load Character Image
-	const _handleChatacterImage = (emotion: string) => {
+	const handleChatacterImage = (emotion: string) => {
 		const imageNumber = getImageNumberForEmotion(emotion);
 		const newImageUrl = portraitMap[imageNumber];
 		newImageUrl && setImageUrl(newImageUrl);
@@ -81,55 +67,79 @@ export const ChatPage = ({
 
 	// Scroll Handler
 	const handleTriggerLoadOlder = useCallback(() => {
-		if (sessionId && hasMore && !isLoadingChat) {
-			// loadOlderMessages from useChatState expects the fetcher
-			loadOlderMessages(getLoadingChatTurns, 10); // Pass batch size
+		if (sessionId && hasMoreHistory && !isLoadingHistory) {
+			loadOlderMessages(DEFAULT_LOADING_BATCH_TURN_COUNT);
 		}
-	}, [sessionId, loadOlderMessages, getLoadingChatTurns, hasMore, isLoadingChat]);
+	}, [sessionId, loadOlderMessages, hasMoreHistory, isLoadingHistory]);
 
-	// Send Message (includes auto-fix)
 	const handleSendMessage = useCallback(async () => {
 		setPageError(undefined);
 		setIsProcessing(true);
-		try {
-			if (!tempChatTurn) return;
-			if (!characterInfo || !profileInfo) return;
+
+		const finalizePromise = (async () => {
+			if (!tempChatTurn || tempChatTurn.chatTurnSets.length === 0) return null;
+			const pickedTurnSet = tempChatTurn.chatTurnSets[currentTempSetNo];
+			if (!pickedTurnSet) return null;
+
+			const finalizedTurnCdo: ChatTurnCdo = {
+				sessionId: tempChatTurn.sessionId,
+				sequence: tempChatTurn.sequence,
+				request: pickedTurnSet.request,
+				response: pickedTurnSet.response,
+			};
+			return finalizeChatTurn.mutateAsync(finalizedTurnCdo);
+		})();
+
+		const generatePromise = (async () => {
+			if (!userInput.trim()) return null;
 
 			const newTempSequence = getNextSequence();
+			const tempChatTurnCdo: TempChatTurnCdo = { sessionId, sequence: newTempSequence, userInput };
 
-			// request
-			const tempTurnCdo: TempChatTurnCdo = { sessionId, sequence: newTempSequence, userInput };
-			// response
-			const result: TempChatTurn | null = await handleChatRequest(
-				tempTurnCdo,
+			return receiveBotResponse.mutateAsync({
+				tempChatTurnCdo,
 				characterInfo,
 				profileInfo,
-				aiModelInfo
-			);
-			const emotion =
-				result?.chatTurnSets[result.chatTurnSets.length - 1].response.emotion || DEFAULT_EMOTION;
-			// image
-			_handleChatacterImage(emotion);
+				aiModelInfo,
+			});
+		})();
 
-			setUserInput('');
-		} catch (sendErr: any) {
-			console.error('Send Message Error:', sendErr);
-			setPageError(`Failed to send message: ${sendErr.message || 'Unknown error'}`);
+		try {
+			const newTempTurnResult = await generatePromise;
+
+			if (newTempTurnResult) {
+				changeTempChatTurn(newTempTurnResult);
+				const emotion = newTempTurnResult.chatTurnSets[0]?.response?.emotion || DEFAULT_EMOTION;
+				handleChatacterImage(emotion);
+				setUserInput('');
+			}
+
+			const savedTurn = await finalizePromise;
+			if (savedTurn) {
+				addChatTurn(savedTurn);
+			}
+		} catch (err: any) {
+			console.error('Send Message Error:', err);
+			setPageError(`An error occurred: ${err.clientMessage || err.message || 'Unknown error'}`);
 		} finally {
 			setIsProcessing(false);
 		}
 	}, [
-		tempChatTurn,
-		getNextSequence,
+		userInput,
 		sessionId,
-		addChatTurnIndexedDB,
-		storeChatTurn,
+		characterInfo,
+		profileInfo,
+		aiModelInfo,
+		tempChatTurn,
+		currentTempSetNo,
+		finalizeChatTurn,
+		receiveBotResponse,
+		addChatTurn,
 		changeTempChatTurn,
-		saveTempChatTurn,
-		buildChatMessage,
+		getNextSequence,
+		handleChatacterImage,
 	]);
 
-	// Regenerate Response
 	const handleRegenerateResponse = useCallback(async () => {
 		if (!tempChatTurn || !tempChatTurn.chatTurnSets[0]?.request || !aiModelInfo) {
 			setPageError('Cannot regenerate: Missing data or AI model info.');
@@ -138,18 +148,21 @@ export const ChatPage = ({
 		setIsProcessing(true);
 		setPageError(undefined);
 		try {
-			const sequence = tempChatTurn.sequence; // Use existing sequence
-			//request
-			const tempTurnCdo: TempChatTurnCdo = { sessionId, sequence, userInput: userEditInput };
-			const result: TempChatTurn | null = await handleChatRequest(
-				tempTurnCdo,
+			const sequence = tempChatTurn.sequence;
+			const tempChatTurnCdo: TempChatTurnCdo = { sessionId, sequence, userInput: userEditInput };
+			const result: TempChatTurn = await receiveBotResponse.mutateAsync({
+				tempChatTurnCdo,
 				characterInfo,
 				profileInfo,
-				aiModelInfo
-			);
-			const emotion =
-				result?.chatTurnSets[result.chatTurnSets.length - 1].response.emotion || DEFAULT_EMOTION;
-			_handleChatacterImage(emotion);
+				aiModelInfo,
+			});
+
+			if (result) {
+				const emotion =
+					result.chatTurnSets[result.chatTurnSets.length - 1].response.emotion || DEFAULT_EMOTION;
+				handleChatacterImage(emotion);
+				changeTempChatTurn(result);
+			}
 		} catch (err: any) {
 			console.error('Regenerate Error:', err);
 			setPageError(`Failed to regenerate response: ${err.message || 'Unknown error'}`);
@@ -157,44 +170,32 @@ export const ChatPage = ({
 			setIsProcessing(false);
 		}
 	}, [
+		// [FIX] Corrected and completed the dependency array
 		tempChatTurn,
+		userEditInput,
 		aiModelInfo,
 		sessionId,
+		receiveBotResponse,
 		changeTempChatTurn,
-		saveTempChatTurn,
-		buildChatMessage,
-		parseEntriesToText,
+		characterInfo,
+		profileInfo,
+		handleChatacterImage,
 	]);
 
-	// Edit Turn (Placeholder)
 	const handleEditTurn = useCallback(
-		async (turn: ChatTurn) => {
-			console.log('Edit turn requested:', turn.sequence, parseEntriesToText(turn.request.entries));
+		(turn: ChatTurn) => {
+			console.log('Edit turn requested:', turn.sequence);
 			alert(`Edit functionality for turn ${turn.sequence} not yet implemented.`);
 		},
-		[sessionId, parseEntriesToText]
+		[] // No external dependencies needed for this version
 	);
 
-	// User Input Change Handler
 	const handleUserInput = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
 		setUserInput(e.target.value);
 	};
 
-	// Determine if input should be disabled
 	const isInputDisabled =
 		isProcessing || (!!tempChatTurn && !tempChatTurn.chatTurnSets[0]?.response);
-
-	// --- Initial Data Load ---
-	useEffect(() => {
-		if (!sessionId) {
-			navigate('/not-found-sessionId', { replace: true });
-			return;
-		}
-		// Pass the fetcher to initializeSession
-		initializeSession(getLoadingChatTurns, DEFAULT_LOADING_BATCH_TURN_COUNT);
-
-		return () => {};
-	}, [sessionId, navigate, initializeSession, getLoadingChatTurns]);
 
 	// --- RENDER ---
 	return (
@@ -208,28 +209,27 @@ export const ChatPage = ({
 			<Grid size={{ xs: 12, md: 9 }} sx={{ height: '100%' }}>
 				<Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
 					<Box
-						id="chat-log-container" // Give it an ID if needed for styling/targeting
+						id="chat-log-container"
 						sx={{
 							flexGrow: 1,
-							overflowY: 'auto', // Makes this Box scrollable
+							overflowY: 'auto',
 							display: 'flex',
-							flexDirection: 'column-reverse', // Newest items at bottom
-							height: 'calc(100% - 60px)', // Adjust based on UserInput height
+							flexDirection: 'column-reverse',
+							height: 'calc(100% - 60px)',
 						}}
 					>
-						{/* Chat Log */}
 						<ChatLog
 							chatTurns={chatTurns}
 							tempChatTurn={tempChatTurn}
-							hasMore={hasMore}
-							isLoadingChat={isLoadingChat}
-							isProcessing={isProcessing} // Pass down for TempTurnDisplay
+							hasMore={hasMoreHistory}
+							isLoadingChat={isLoadingHistory}
+							isProcessing={isProcessing}
 							clientError={clientError}
 							onEditTurn={handleEditTurn}
 							onRegenerateResponse={handleRegenerateResponse}
 							loadOlderMessages={handleTriggerLoadOlder}
 							currentTempSetNo={currentTempSetNo}
-							changeTempSetNo={(index: number) => setCurrentTempSetNo(index)}
+							changeTempSetNo={setCurrentTempSetNo}
 						/>
 					</Box>
 					{pageError && (
@@ -237,13 +237,12 @@ export const ChatPage = ({
 							{pageError}
 						</Typography>
 					)}
-					{/* User Input */}
 					<UserInput
 						sessionId={sessionId}
 						value={userInput}
 						isProcessing={isProcessing}
 						isDisabled={isInputDisabled}
-						isLoadingCredentials={isLoadingCredential}
+						isLoadingCredentials={false} // Assuming this is handled elsewhere
 						onChange={handleUserInput}
 						onSend={handleSendMessage}
 					/>

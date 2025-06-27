@@ -28,7 +28,7 @@ import { buildTempChatTurnId } from '../util/index.ts';
  * @param tempChatTurnCdo - Contains the sessionId, sequence, and new user input.
  * @returns A promise resolving to the updated TempChatTurn, including the new response.
  */
-export const handleChatRequest = async (
+export const receiveBotResponse = async (
 	tempChatTurnCdo: TempChatTurnCdo,
 	characterInfo: CharacterInfo,
 	profileInfo: ProfileInfo,

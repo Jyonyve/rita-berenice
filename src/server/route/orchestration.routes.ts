@@ -16,7 +16,7 @@ import {
 	validateServiceId,
 	validateSequenceRule,
 } from '../util/index.ts';
-import { handleChatRequest } from '../service/index.ts';
+import { receiveBotResponse } from '../service/index.ts';
 
 const router = express.Router();
 
@@ -34,7 +34,7 @@ interface HandleChatRequestBody {
  * context, generating a new response option, and saving it to the temporary chat turn.
  */
 router.post(
-	genRoutePattern('handleChatRequest'),
+	genRoutePattern('receiveBotResponse'),
 	asyncHandler(
 		async (
 			req: Request<object, TempChatTurn, HandleChatRequestBody>,
@@ -52,13 +52,13 @@ router.post(
 			validateRequestData(tempChatTurnCdo, 'body', ['sessionId', 'sequence', 'userInput']);
 			validateServiceId(tempChatTurnCdo.sessionId, COLLECTIONS.CHAT);
 
-			const path = genRoutePattern('handleChatRequest');
+			const path = genRoutePattern('receiveBotResponse');
 			console.log(
 				`API HIT: POST ${path} for session ${tempChatTurnCdo.sessionId}, turn ${tempChatTurnCdo.sequence}`
 			);
 
 			// Call the main orchestration service function with the unpacked request body
-			const response = await handleChatRequest(tempChatTurnCdo, characterInfo, profileInfo, aiModel);
+			const response = await receiveBotResponse(tempChatTurnCdo, characterInfo, profileInfo, aiModel);
 
 			res.status(200).json(response);
 		}
