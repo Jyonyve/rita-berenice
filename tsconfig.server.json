@@ -2,7 +2,7 @@
 	"extends": "./tsconfig.json",
 	"compilerOptions": {
 		"rootDir": "src",
-		"outDir": "dist/server",
+		"outDir": "dist",
 		"noEmit": false,
 		"module": "NodeNext",
 		"target": "ES2020",
@@ -13,7 +13,6 @@
 		"allowImportingTsExtensions": false
 	},
 	"include": [
-		"server.ts",
 		"src/server/**/*.ts",
 		"src/server/**/*.tsx",
 		"src/shared/**/*.ts",

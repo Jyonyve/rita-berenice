@@ -1,4 +1,4 @@
-// src/server/entry-server.tsx
+// src/entry-server.tsx
 
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';

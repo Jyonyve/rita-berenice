@@ -1,4 +1,4 @@
-// server.ts (at the project root)
+// src/server/server.ts (at the project root)
 
 import path from 'node:path';
 import fs from 'node:fs/promises'; // Use promises for async file reading
@@ -17,13 +17,14 @@ import {
 	orchestrationRoutes,
 	personaRoutes,
 	memoryRoutes,
-} from '#server/route/index.js';
+} from './route/index.js';
 import sirv from 'sirv';
+
+import { ApiError } from './util/index.js';
 import { MODULE_NAMES } from '#shared/config/index.js';
 import { ApiErrorResponse } from '#shared/api/index.js';
-import { ApiError } from './server/util/serviceHelpers.ts';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = path.dirname(fileURLToPath(import.meta.url)); // src/server
 const isProduction = process.env.NODE_ENV === 'production';
 const PORT = process.env.PORT || 3000;
 const BASE = process.env.BASE || '/'; // Base path for the app
@@ -33,9 +34,8 @@ const BASE_API = `${BASE}api/`;
 const resolve = (p: string) => path.resolve(__dirname, p);
 
 // --- Template HTML paths ---
-const templateHtmlFile = resolve('index.html'); // Root index.html (used for both dev and as base for prod)
-const templateHtmlProdBuilt = resolve('dist/client/index.html'); // Built index.html (might be used if structure differs)
-
+const templateDevHtmlFile = path.resolve(__dirname, '../../index.html');
+const templateProdHtmlBuilt = path.resolve(__dirname, '../client/index.html');
 // --- SSR Manifest path (Production ONLY) ---
 // Optional: for production preload hints, less critical for basic SSR
 // const ssrManifestProd = resolve('dist/client/ssr-manifest.json');
@@ -54,7 +54,7 @@ async function createServer() {
 			server: { middlewareMode: true },
 			appType: 'custom',
 			base: BASE,
-			root: __dirname,
+			root: path.resolve(__dirname, '../..'), // root .
 		});
 		app.use(vite.middlewares);
 		console.log('Vite development server middleware attached.');
@@ -116,7 +116,7 @@ async function createServer() {
 
 			if (!isProduction && vite) {
 				// == DEVELOPMENT ==
-				template = await fs.readFile(templateHtmlFile, 'utf-8');
+				template = await fs.readFile(templateDevHtmlFile, 'utf-8');
 				// Apply Vite HTML transforms (injects HMR client, plugins, etc.)
 				template = await vite.transformIndexHtml(url, template);
 				// Load server entry via Vite for HMR
@@ -125,7 +125,7 @@ async function createServer() {
 			} else {
 				// == PRODUCTION ==
 				// In production, read the built index.html as it might contain link/script tags added by the build
-				template = await fs.readFile(templateHtmlProdBuilt, 'utf-8');
+				template = await fs.readFile(templateProdHtmlBuilt, 'utf-8');
 				const serverEntryPath = resolve('dist/server/entry-server.js');
 				const serverEntry = await import(serverEntryPath);
 				render = serverEntry.render;

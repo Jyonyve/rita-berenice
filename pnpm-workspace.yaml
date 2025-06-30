@@ -1,8 +1,0 @@
-onlyBuiltDependencies:
-  - '@parcel/watcher'
-  - '@swc/core'
-  - esbuild
-  - onnxruntime-node
-  - protobufjs
-  - puppeteer
-  - sharp

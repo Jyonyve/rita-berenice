@@ -20,6 +20,7 @@ const nodeBuiltinModules = builtinModules.map((m) => `node:${m}`);
 const allBuiltinModules = [...new Set([...builtinModules, ...nodeBuiltinModules])];
 
 export default defineConfig({
+	root: '.',
 	cacheDir: '.vite_cache',
 	define: { 'process.env.APP_ENV': JSON.stringify(process.env.APP_ENV) },
 	// SSR specific options
