@@ -10,7 +10,6 @@ import {
 } from '#shared/domain/index.js';
 import { DEFAULT_EMOTION } from '../config/index.js';
 import { buildCharacterId } from '#server/util/index.js';
-import { useErrorDialog } from '#client/util/styleUtils.jsx';
 
 export const convertStringToArray = (input: string): string[] => {
 	if (!input || typeof input !== 'string') {
@@ -26,7 +25,6 @@ export const convertArrayToString = (arr: string[]): string => {
 export const parseTextToEntries = (text: string) => {
 	const starCount = (text.match(/\*/g) || []).length;
 	if (starCount % 2 !== 0) {
-		useErrorDialog('Please close * tightly.');
 		throw Error('parsing error: "*" is not closed throughly.');
 	}
 
