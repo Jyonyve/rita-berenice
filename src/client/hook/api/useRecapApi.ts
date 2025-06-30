@@ -4,7 +4,6 @@ import {
 	apiClient,
 	genApiUrl,
 	MODULE_NAMES,
-	ApiError,
 	RecapResponse,
 	RecapInfo,
 	METADATA_TYPES,
@@ -12,6 +11,7 @@ import {
 import { Where, WhereDocument } from 'chromadb';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../../style/ToastProvider.tsx';
+import { ApiError } from '#server/util/serviceHelpers.ts';
 
 /**
  * A client-side hook for interacting with the RECAP API endpoints, refactored for TanStack Query.

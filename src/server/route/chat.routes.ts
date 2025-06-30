@@ -9,7 +9,6 @@ import {
 	TempChatTurn,
 	ChatMessage,
 	ChatMessageType,
-	ApiError,
 } from '#shared/index.ts';
 import {
 	asyncHandler,
@@ -18,6 +17,7 @@ import {
 	validateSequenceRule,
 } from '../util/index.ts';
 import { Where, WhereDocument } from 'chromadb';
+import { ApiError } from '#server/util/serviceHelpers.ts';
 import { chatStore } from '../store/chatStore.ts';
 
 const router = express.Router();

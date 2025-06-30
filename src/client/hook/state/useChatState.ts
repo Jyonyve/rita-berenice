@@ -87,7 +87,7 @@ export const useChatState = (sessionId: string) => {
 		setIsLoadingHistory(false);
 		setClientError(undefined);
 		setHasMoreHistory(true);
-	}, []);
+	}, [sessionId]);
 
 	const getCurrentSequence = useCallback((): number => {
 		if (chatTurns.length === 0) return -1;

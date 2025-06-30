@@ -1,4 +1,5 @@
-import { ApiError } from '#shared/index.ts';
+import { ApiError } from '#server/util/serviceHelpers.ts';
+
 import { QueryClient, QueryCache } from '@tanstack/react-query';
 import axios from 'axios';
 

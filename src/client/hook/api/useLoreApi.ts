@@ -4,13 +4,13 @@ import {
 	apiClient,
 	genApiUrl,
 	MODULE_NAMES,
-	ApiError,
 	LoreResponse,
 	HistoryResponse,
 	LoreInfo,
 	HistoryInfo,
 } from '#shared/index.ts';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ApiError } from '#server/util/serviceHelpers.ts';
 import { useToast } from '../../style/ToastProvider.tsx';
 
 // For clarity in the query function signature

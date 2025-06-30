@@ -6,10 +6,10 @@ import {
 	CharacterResponse,
 	CharacterInfo,
 	CharacterCdo,
-	ApiError,
 } from '@shared/index.ts';
 import { useToast } from '../../style/ToastProvider.tsx';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ApiError } from '#server/util/serviceHelpers.ts';
 
 export const useCharacterApi = () => {
 	const { addToast } = useToast();

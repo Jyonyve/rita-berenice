@@ -4,12 +4,12 @@ import {
 	apiClient,
 	genApiUrl,
 	MODULE_NAMES,
-	ApiError,
 	ProfileResponse,
 	ProfileMetadata,
 } from '#shared/index.ts';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../../style/ToastProvider.tsx';
+import { ApiError } from '#server/util/serviceHelpers.ts';
 
 // Define a type for the structured response from the storeProfile endpoint
 interface StoreProfileResponse {

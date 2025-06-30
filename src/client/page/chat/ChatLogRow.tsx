@@ -7,12 +7,15 @@ import { FixedTurnDisplay, TempTurnDisplay } from './index.ts';
 // Updated data interface: includes optional tempTurn and props for it
 export interface ChatLogRowData {
 	chatTurns: ChatTurn[];
-	tempChatTurn?: TempChatTurn; // Make tempTurn available
-	currentTempSetNo?: number; // For FixedTurnDisplay
+	tempChatTurn?: TempChatTurn;
+	currentTempSetNo: number; // Changed from optional to required
 	changeTempSetNo: (index: number) => void;
-	isProcessing: boolean; // Needed for TempTurnDisplay
-	onEditTurn: (turn: ChatTurn) => void;
-	onRegenerateResponse: () => void; // Needed for TempTurnDisplay
+	isProcessing: boolean;
+	userEditInput: string; // Add this
+	botEditInput: string; // Add this
+	onEditTempTurnText: (value: string, req: boolean) => void; // Add this
+	onSaveTempTurnText: () => void; // Changed from taking turn object
+	onRegenerateResponse: () => void;
 	setSize: (index: number, size: number) => void;
 }
 
@@ -24,9 +27,13 @@ const ChatLogRow: FC<ListChildComponentProps<ChatLogRowData>> = ({ index, style,
 		currentTempSetNo,
 		changeTempSetNo,
 		isProcessing,
-		onEditTurn,
+		onSaveTempTurnText: onEditTurn,
 		onRegenerateResponse,
 		setSize,
+		userEditInput,
+		botEditInput,
+		onEditTempTurnText,
+		onSaveTempTurnText,
 	} = data;
 	const rowRef = useRef<HTMLDivElement>(null);
 
@@ -50,6 +57,10 @@ const ChatLogRow: FC<ListChildComponentProps<ChatLogRowData>> = ({ index, style,
 					tempTurn={tempChatTurn}
 					currentTempSetNo={currentTempSetNo ?? 0}
 					changeTempSetNo={changeTempSetNo}
+					userEditInput={userEditInput}
+					botEditInput={botEditInput}
+					onEditTempTurnText={onEditTempTurnText}
+					onSaveTempTurnText={onSaveTempTurnText}
 				/>
 			) : (
 				// Otherwise, render FixedTurnDisplay for regular turns

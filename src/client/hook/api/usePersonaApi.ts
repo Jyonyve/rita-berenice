@@ -4,7 +4,6 @@ import {
 	apiClient,
 	genApiUrl,
 	MODULE_NAMES,
-	ApiError,
 	PersonaResponse,
 	MemoryResponse,
 	CharacterInfo,
@@ -14,6 +13,7 @@ import {
 
 import { useMutation } from '@tanstack/react-query';
 import { useToast } from '../../style/index.ts';
+import { ApiError } from '#server/util/serviceHelpers.ts';
 
 /**
  * Type for the request body of the generateResponse API call.

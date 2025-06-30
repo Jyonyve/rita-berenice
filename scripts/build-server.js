@@ -15,14 +15,37 @@ const projectRoot = path.resolve(__dirname, '..'); // Assumes scripts folder is 
 // - Dev/build tools if imported in server.ts (less common for prod build): vite, sirv (if only used for dev static serving)
 // - Add any other packages that cause .node errors or are better left external
 const externalPackages = [
+	// Node.js 내장 모듈 (필수)
+	'util',
+	'path',
+	'fs',
+	'http',
+	'stream',
+	'crypto',
+	'events',
+	'url',
+
+	// 네이티브 애드온 포함 패키지
+	'sharp',
+	'onnxruntime-node',
+
+	// 서버 미들웨어/라이브러리
 	'express',
 	'compression',
-	'sirv', // Keep external if it's dynamically required or expected at runtime
-	'vite', // Keep external if your server code somehow imports Vite itself (unlikely for production bundle)
-	'onnxruntime-node',
-	'sharp',
+	'sirv',
+
+	// 빌드/개발 관련 (서버 번들 시 외부 처리)
+	'vite',
+
+	// 동적 require 문제 패키지 (에러 나면 추가)
+	'combined-stream',
+	'form-data',
+
+	// DB 관련
 	'chromadb',
-	// Add other native dependencies or large packages here if needed
+
+	// Puppeteer (무거운 패키지는 외부 처리 권장)
+	'puppeteer',
 ];
 
 console.log('🚀 Starting esbuild server build...');
@@ -34,9 +57,13 @@ try {
 		bundle: true,
 		platform: 'node',
 		format: 'esm', // Matches your project's "type": "module"
+		target: 'node18',
 		external: externalPackages,
 		logLevel: 'info', // Show warnings and errors
 		sourcemap: true, // Generate sourcemaps for easier debugging
+		loader: {
+			'.scss': 'empty', // 💡 .scss 파일을 빈 모듈로 대체
+		},
 		// You might add 'minify: true' for production builds later
 		// minify: process.env.NODE_ENV === 'production',
 	});

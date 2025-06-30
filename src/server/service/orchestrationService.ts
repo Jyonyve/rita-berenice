@@ -7,7 +7,6 @@ import {
 	buildChatMessage,
 	parseSessionId,
 	METADATA_TYPES,
-	ApiError,
 	ABORT_TIMEOUT,
 	CharacterInfo,
 	ProfileInfo,
@@ -17,7 +16,7 @@ import {
 	ChatTurnCdo, // Import ChatTurnCdo here
 } from '#shared/index.ts';
 import { characterStore, chatStore, profileStore } from '../store/index.ts';
-import { handleServiceError } from '../util/serviceHelpers.ts';
+import { handleServiceError, ApiError } from '../util/serviceHelpers.ts';
 import { memoryEngine, personaEngine } from './index.ts'; // Centralized service imports
 import { buildTempChatTurnId } from '../util/index.ts';
 
@@ -168,7 +167,7 @@ export const finalizeChatTurn = async (chatTurnCdo: ChatTurnCdo): Promise<ChatTu
 			responseMessageId: '',
 		};
 
-		const enrichedChatTurn = await memoryEngine.enrichChatTurnMetadataViaLlm(basicChatTurn);
+		const enrichedChatTurn = await memoryEngine.enrichChatTurnViaLlm(basicChatTurn);
 
 		// 2. Store the fully enriched chat turn in the permanent chat history
 		await chatStore.storeChatTurn(enrichedChatTurn);

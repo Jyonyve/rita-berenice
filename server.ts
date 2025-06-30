@@ -19,7 +19,9 @@ import {
 	memoryRoutes,
 } from '#server/route/index.ts';
 import sirv from 'sirv';
-import { MODULE_NAMES, ApiErrorResponse, ApiError } from '#shared/index.ts';
+import { MODULE_NAMES } from '#shared/config/index.ts';
+import { ApiErrorResponse } from '#shared/api/index.ts';
+import { ApiError } from './src/server/util/serviceHelpers.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === 'production';

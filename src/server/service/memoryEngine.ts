@@ -38,7 +38,7 @@ import { llmService } from './index.ts'; // Centralized service imports
 function _extractChatTurnMetadataInfoFromLlm(
 	turn: ChatTurn,
 	enrichment: Record<string, any>
-): ChatTurnMetadata {
+): ChatTurn {
 	// Create a temporary ChatTurn object with rich types (arrays, objects)
 	const tempEnrichedTurn: ChatTurn = {
 		...turn,
@@ -72,7 +72,7 @@ function _extractChatTurnMetadataInfoFromLlm(
 	};
 
 	// Use your existing, trusted utility to serialize the rich object into DB-compatible metadata
-	return chatTurnToMetadata(tempEnrichedTurn);
+	return tempEnrichedTurn;
 }
 
 function _formatRecapForPrompt(recap: RecapInfo): string {
@@ -147,7 +147,7 @@ export const memoryEngine = {
 	 * Takes a chat turn, enriches it with LLM-generated metadata, and populates the `enrichedMetadata` field.
 	 * This process includes term standardization using the session glossary.
 	 */
-	async enrichChatTurnMetadataViaLlm(turn: ChatTurn): Promise<ChatTurnMetadata> {
+	async enrichChatTurnViaLlm(turn: ChatTurn): Promise<ChatTurn> {
 		const { sessionId } = turn;
 		const { characterId } = parseSessionId(sessionId);
 

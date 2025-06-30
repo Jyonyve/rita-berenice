@@ -20,6 +20,9 @@ import {
 	DEFAULT_EMOTION,
 	TempChatTurnCdo,
 	ChatTurnCdo,
+	parseEntriesToText,
+	parseTextToEntries,
+	ChatMessageSet,
 } from '@shared/index.ts';
 import { useCharacterState, useChatState } from '../../hook/state/index.ts';
 import { useChatApi, useOrchestrationApi } from '../../hook/api/index.ts';
@@ -35,6 +38,7 @@ export const ChatPage = ({
 	sessionId: string;
 }) => {
 	const { receiveBotResponse, finalizeChatTurn } = useOrchestrationApi();
+	const { saveTempChatTurn } = useChatApi();
 	const { portraitMap, getImageNumberForEmotion } = useCharacterState(characterInfo.characterId);
 	const {
 		chatTurns,
@@ -53,10 +57,11 @@ export const ChatPage = ({
 	// --- STATE ---
 	const [currentTempSetNo, setCurrentTempSetNo] = useState(0);
 	const [userInput, setUserInput] = useState('');
-	const [userEditInput, setUserEditInput] = useState('');
 	const [imageUrl, setImageUrl] = useState('');
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [pageError, setPageError] = useState<string>();
+	const [userEditInput, setUserEditInput] = useState('');
+	const [botEditInput, setBotEditInput] = useState('');
 
 	// Load Character Image
 	const handleChatacterImage = (emotion: string) => {
@@ -149,7 +154,10 @@ export const ChatPage = ({
 		setPageError(undefined);
 		try {
 			const sequence = tempChatTurn.sequence;
-			const tempChatTurnCdo: TempChatTurnCdo = { sessionId, sequence, userInput: userEditInput };
+			const userInput = parseEntriesToText(
+				tempChatTurn.chatTurnSets[currentTempSetNo].request.entries
+			);
+			const tempChatTurnCdo: TempChatTurnCdo = { sessionId, sequence, userInput };
 			const result: TempChatTurn = await receiveBotResponse.mutateAsync({
 				tempChatTurnCdo,
 				characterInfo,
@@ -170,9 +178,7 @@ export const ChatPage = ({
 			setIsProcessing(false);
 		}
 	}, [
-		// [FIX] Corrected and completed the dependency array
 		tempChatTurn,
-		userEditInput,
 		aiModelInfo,
 		sessionId,
 		receiveBotResponse,
@@ -182,13 +188,33 @@ export const ChatPage = ({
 		handleChatacterImage,
 	]);
 
-	const handleEditTurn = useCallback(
-		(turn: ChatTurn) => {
-			console.log('Edit turn requested:', turn.sequence);
-			alert(`Edit functionality for turn ${turn.sequence} not yet implemented.`);
-		},
-		[] // No external dependencies needed for this version
-	);
+	const handleEditTempTurnText = (value: string, req: boolean) => {
+		req ? setUserEditInput(value) : setBotEditInput(value);
+	};
+
+	const handleSaveTempTurnText = async () => {
+		if (!tempChatTurn) return;
+
+		const currentTurnSet = tempChatTurn.chatTurnSets[currentTempSetNo];
+		const updatedTurnSet = {
+			...currentTurnSet,
+			request: { ...currentTurnSet.request, entries: parseTextToEntries(userEditInput) },
+			response: { ...currentTurnSet.response, entries: parseTextToEntries(botEditInput) },
+		};
+
+		const newChatTurnSets = tempChatTurn.chatTurnSets.map((set, index) => {
+			if (index === currentTempSetNo) {
+				return updatedTurnSet;
+			}
+			return set;
+		});
+		const updateTempTurn = { ...tempChatTurn, chatTurnSets: newChatTurnSets };
+
+		await saveTempChatTurn.mutateAsync(updateTempTurn);
+		changeTempChatTurn(updateTempTurn);
+		setUserEditInput('');
+		setBotEditInput('');
+	};
 
 	const handleUserInput = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
 		setUserInput(e.target.value);
@@ -225,7 +251,10 @@ export const ChatPage = ({
 							isLoadingChat={isLoadingHistory}
 							isProcessing={isProcessing}
 							clientError={clientError}
-							onEditTurn={handleEditTurn}
+							userEditInput={userEditInput}
+							botEditInput={botEditInput}
+							onEditTempTurnText={handleEditTempTurnText}
+							onSaveTempTurnText={handleSaveTempTurnText}
 							onRegenerateResponse={handleRegenerateResponse}
 							loadOlderMessages={handleTriggerLoadOlder}
 							currentTempSetNo={currentTempSetNo}

@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 // import { initializeAwsCredentials } from '@util/awsCredentialUtils';
 import { ChatRoleType, ChatType, supportAiModelInfo } from '@shared/index.ts';
-import styles from '../component/chat/ChatComp.module.scss';
+import styles from '@client/asset/style/ChatComp.module.scss';
 
 export const useErrorDialog = (initialMessage?: string) => {
 	const [open, setOpen] = useState(false);

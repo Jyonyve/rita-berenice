@@ -5,7 +5,6 @@ import {
 	apiClient,
 	genApiUrl,
 	MODULE_NAMES,
-	ApiError,
 	ChatResponse,
 	ChatTurn,
 	TempChatTurn,
@@ -13,6 +12,7 @@ import {
 import { Where } from 'chromadb'; // Assuming these types are available on the client
 import { useToast } from '../../style/index.ts';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ApiError } from '#server/util/serviceHelpers.ts';
 
 /**
  * A client-side hook for interacting with the CHAT and TEMP_CHAT API endpoints.

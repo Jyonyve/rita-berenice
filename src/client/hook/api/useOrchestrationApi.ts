@@ -4,7 +4,6 @@ import {
 	apiClient,
 	genApiUrl,
 	MODULE_NAMES,
-	ApiError,
 	TempChatTurn,
 	TempChatTurnCdo,
 	CharacterInfo,
@@ -15,6 +14,7 @@ import {
 } from '@shared/index.ts';
 import { useToast } from '../../style/ToastProvider.tsx';
 import { useMutation } from '@tanstack/react-query';
+import { ApiError } from '#server/util/serviceHelpers.ts';
 
 /**
  * A client-side hook for interacting with the main ORCHESTRATION API endpoint,

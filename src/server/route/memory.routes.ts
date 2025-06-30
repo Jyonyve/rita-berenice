@@ -69,7 +69,7 @@ router.post(
 				`API HIT: POST ${path} for session ${chatTurn.sessionId}, turn ${chatTurn.sequence}`
 			);
 
-			const response = await memoryEngine.enrichChatTurnMetadataViaLlm(chatTurn);
+			const response = await memoryEngine.enrichChatTurnViaLlm(chatTurn);
 			res.status(200).json(response);
 		}
 	)

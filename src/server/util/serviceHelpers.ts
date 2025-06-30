@@ -1,4 +1,4 @@
-import { CollectionType, ChromaResponse, ApiError } from '#shared/index.ts';
+import { CollectionType, ChromaResponse } from '#shared/index.ts';
 
 /**
  * Handles errors caught in service methods.
@@ -93,6 +93,21 @@ export const validateChromaResponse = (
 };
 
 // In the same file as ApiError, e.g., src/server/util/errorHandlers.ts
+
+export class ApiError extends Error {
+	public status: number;
+	public clientMessage?: string;
+	public details?: any; // Optional: for more detailed error info like missing fields
+
+	constructor(status: number, message: string, clientMessage?: string, details?: any) {
+		super(message); // Internal/developer message
+		this.name = this.constructor.name;
+		this.status = status;
+		this.clientMessage = clientMessage;
+		this.details = details;
+		Object.setPrototypeOf(this, ApiError.prototype);
+	}
+}
 
 /**
  * A specific error for when an LLM's response cannot be parsed into the expected JSON format.

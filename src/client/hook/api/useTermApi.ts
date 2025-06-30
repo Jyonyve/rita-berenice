@@ -5,13 +5,13 @@ import {
 	apiClient,
 	genApiUrl,
 	MODULE_NAMES,
-	ApiError,
 	TermResponse,
 	TermInfo,
 	TermCdo,
 } from '#shared/index.ts';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { useToast } from '../../style/ToastProvider.tsx';
+import { ApiError } from '#server/util/serviceHelpers.ts';
 
 /**
  * A client-side hook for interacting with the GLOSSARY API endpoints.

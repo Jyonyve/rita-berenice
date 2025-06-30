@@ -46,7 +46,10 @@ interface ChatLogProps {
 	hasMore: boolean; // From useChatState
 	isProcessing: boolean; // From ChatPage, for temp turn processing indicator
 	clientError?: string; // From useChatState
-	onEditTurn: (turn: ChatTurn) => void;
+	userEditInput: string;
+	botEditInput: string;
+	onEditTempTurnText: (value: string, req: boolean) => void;
+	onSaveTempTurnText: () => void;
 	onRegenerateResponse: () => void;
 	loadOlderMessages: () => void; // Callback from ChatPage to trigger loading older
 }
@@ -61,7 +64,10 @@ export const ChatLog: FC<ChatLogProps> = memo(
 		hasMore,
 		isProcessing,
 		clientError,
-		onEditTurn,
+		userEditInput,
+		botEditInput,
+		onEditTempTurnText,
+		onSaveTempTurnText,
 		onRegenerateResponse,
 		loadOlderMessages,
 	}) => {
@@ -75,7 +81,10 @@ export const ChatLog: FC<ChatLogProps> = memo(
 				currentTempSetNo,
 				changeTempSetNo,
 				isProcessing,
-				onEditTurn,
+				userEditInput,
+				botEditInput,
+				onEditTempTurnText,
+				onSaveTempTurnText,
 				onRegenerateResponse,
 				setSize,
 			}),
@@ -85,7 +94,10 @@ export const ChatLog: FC<ChatLogProps> = memo(
 				currentTempSetNo,
 				changeTempSetNo,
 				isProcessing,
-				onEditTurn,
+				userEditInput,
+				botEditInput,
+				onEditTempTurnText,
+				onSaveTempTurnText,
 				onRegenerateResponse,
 				setSize,
 			]
