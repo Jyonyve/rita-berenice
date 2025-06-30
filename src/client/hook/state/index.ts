@@ -1,2 +1,2 @@
-export * from './useCharacterState.ts';
-export * from './useChatState.ts';
+export * from './useCharacterState.js';
+export * from './useChatState.js';

@@ -8,11 +8,11 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 
 import { QueryClientProvider } from '@tanstack/react-query';
-import { createEmotionCache } from '#shared/config/index.ts';
+import { createEmotionCache } from '#shared/config/index.js';
 import { App } from '@client/App.tsx';
-import { ToastProvider, useToast } from '@client/index.ts';
-import { theme } from '@client/theme.ts';
-import { initQueryClient } from '@client/util/clientHelpers.ts';
+import { ToastProvider, useToast } from '@client/index.js';
+import { theme } from '@client/theme.js';
+import { initQueryClient } from '@client/util/clientHelpers.js';
 
 function ClientApp() {
 	const clientSideEmotionCache = createEmotionCache();

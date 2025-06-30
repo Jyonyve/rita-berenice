@@ -8,8 +8,8 @@ import {
 	numberToEmotionWordsMap,
 	PortraitUrlMap,
 	validEmotionKeys,
-} from '@shared/config/index.ts';
-import { CharacterInfo, convertArrayToString, ProfileInfo } from '@shared/index.ts';
+} from '@shared/config/index.js';
+import { CharacterInfo, convertArrayToString, ProfileInfo } from '@shared/index.js';
 
 function escapeRegExp(string: string): string {
 	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string

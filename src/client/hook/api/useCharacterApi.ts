@@ -1,18 +1,16 @@
 // src/client/hooks/useCharacter.ts
 import {
-	apiClient,
 	genApiUrl,
 	MODULE_NAMES,
 	CharacterResponse,
 	CharacterInfo,
 	CharacterCdo,
-} from '@shared/index.ts';
-import { useToast } from '../../style/ToastProvider.tsx';
+} from '@shared/index.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ApiError } from '#server/util/serviceHelpers.ts';
+import { ApiError } from '#server/util/serviceHelpers.js';
+import { apiClient } from '../../util/axiosUtils.js';
 
 export const useCharacterApi = () => {
-	const { addToast } = useToast();
 	const MODULE_NAME = MODULE_NAMES.CHARACTER;
 	const queryClient = useQueryClient();
 
@@ -71,11 +69,7 @@ export const useCharacterApi = () => {
 			return JSON.parse(response.data);
 		},
 		onSuccess: () => {
-			addToast('Character saved successfully.', 'success');
 			queryClient.invalidateQueries({ queryKey: ['getAllCharacters'] });
-		},
-		onError: (error: ApiError) => {
-			addToast(error.clientMessage || 'Failed to save character.', 'error');
 		},
 	});
 

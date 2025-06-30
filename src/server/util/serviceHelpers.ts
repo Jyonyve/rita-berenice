@@ -1,4 +1,4 @@
-import { CollectionType, ChromaResponse } from '#shared/index.ts';
+import { CollectionType, ChromaResponse } from '#shared/index.js';
 
 /**
  * Handles errors caught in service methods.

@@ -1,7 +1,7 @@
 // src/client/App.tsx
 import { Routes, Route } from 'react-router-dom';
-import { RootLayout } from './layout/index.ts';
-import { CharacterPageLoader, ChatPageLoader, NotFoundPage } from './page/index.ts';
+import { RootLayout } from './layout/index.js';
+import { CharacterPageLoader, ChatPageLoader, NotFoundPage } from './page/index.js';
 
 export function App() {
 	return (

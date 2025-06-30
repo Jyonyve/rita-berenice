@@ -5,7 +5,7 @@ import {
 	ProfileInfo,
 	TermCdo,
 	TermInfo,
-} from '../domain/index.ts';
+} from '../domain/index.js';
 
 export function isTermInfo(term: TermCdo | TermInfo): term is TermInfo {
 	return (term as TermInfo).englishTerm !== undefined;

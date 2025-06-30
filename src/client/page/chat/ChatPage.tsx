@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, ChangeEvent, JSX } from 'react';
 
 // Import the new components
-import { CharacterPortrait } from '../../index.ts';
+import { CharacterPortrait } from '../../index.js';
 import { ChatLog } from './ChatLog.tsx';
 import { UserInput } from './UserInput.tsx';
 
@@ -23,10 +23,10 @@ import {
 	parseEntriesToText,
 	parseTextToEntries,
 	ChatMessageSet,
-} from '@shared/index.ts';
-import { useCharacterState, useChatState } from '../../hook/state/index.ts';
-import { useChatApi, useOrchestrationApi } from '../../hook/api/index.ts';
-import { useAiModel } from '../../hook/index.ts';
+} from '@shared/index.js';
+import { useCharacterState, useChatState } from '../../hook/state/index.js';
+import { useChatApi, useOrchestrationApi } from '../../hook/api/index.js';
+import { useAiModel } from '../../hook/index.js';
 
 export const ChatPage = ({
 	characterInfo,

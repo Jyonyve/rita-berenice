@@ -1,1 +1,1 @@
-export * from './AiInfoTypes.ts';
+export * from './AiInfoTypes.js';

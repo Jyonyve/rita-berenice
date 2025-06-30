@@ -1,10 +1,10 @@
 // src/client/component/page/CharacterPage.tsx
 
 import { Typography, Box, Container, Stack, CircularProgress } from '@mui/material'; // Import CircularProgress
-import { DEFAULT_IMAGE_NUMBER } from '@shared/index.ts'; // Import default image number constant
-import { CharacterPortrait } from './index.ts';
-import { useCharacterApi } from '../../hook/api/useCharacterApi.ts';
-import { useCharacterState } from '../../hook/state/useCharacterState.ts';
+import { DEFAULT_IMAGE_NUMBER } from '@shared/index.js'; // Import default image number constant
+import { CharacterPortrait } from './index.js';
+import { useCharacterApi } from '../../hook/api/useCharacterApi.js';
+import { useCharacterState } from '../../hook/state/useCharacterState.js';
 
 // Helper Component to manage state for a single character's portrait
 const CharacterItem: React.FC<{ characterId: string; showName: string }> = ({

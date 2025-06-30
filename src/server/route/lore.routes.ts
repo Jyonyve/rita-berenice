@@ -1,7 +1,7 @@
 // src/server/routes/lore.routes.ts
 
 import express, { type Request, type Response } from 'express';
-import { asyncHandler, validateRequestData, validateServiceId } from '../util/index.ts';
+import { asyncHandler, validateRequestData, validateServiceId } from '../util/index.js';
 import {
 	genRoutePattern,
 	COLLECTIONS,
@@ -9,8 +9,8 @@ import {
 	HistoryResponse,
 	LoreInfo,
 	HistoryInfo,
-} from '#shared/index.ts';
-import { loreStore } from '../store/loreStore.ts'; // Assuming store is at this path
+} from '#shared/index.js';
+import { loreStore } from '../store/loreStore.js'; // Assuming store is at this path
 import { Where } from 'chromadb';
 
 const router = express.Router();

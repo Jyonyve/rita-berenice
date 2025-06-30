@@ -13,7 +13,7 @@ import {
 	RecapInfo,
 	convertArrayToString,
 	MemoryResponse,
-} from '#shared/index.ts';
+} from '#shared/index.js';
 import {
 	characterStore,
 	chatStore,
@@ -21,11 +21,11 @@ import {
 	profileStore,
 	recapStore,
 	termStore,
-} from '../store/index.ts';
+} from '../store/index.js';
 
-import { detectLanguage, handleServiceError, parseLlmJsonResponse } from '../util/index.ts';
-import { buildChatTurnMetadataPrompt } from '../util/templateUtils.ts';
-import { llmService } from './index.ts'; // Centralized service imports
+import { detectLanguage, handleServiceError, parseLlmJsonResponse } from '../util/index.js';
+import { buildChatTurnMetadataPrompt } from '../util/templateUtils.js';
+import { llmService } from './index.js'; // Centralized service imports
 
 // --- 2. Corrected and Renamed Metadata Creation Helper ---
 /**

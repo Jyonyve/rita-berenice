@@ -1,1 +1,1 @@
-export * from './LoreInterfaces.ts';
+export * from './LoreInterfaces.js';

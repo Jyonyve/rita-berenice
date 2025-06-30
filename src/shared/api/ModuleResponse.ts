@@ -5,10 +5,10 @@ import {
 	ProfileInfo,
 	RecapInfo,
 	TermInfo,
-} from '../domain/index.ts';
-import { HistoryInfo, LoreInfo } from '../domain/lore/LoreInterfaces.ts';
-import { LangCode } from '../config/constants.ts';
-import { EmotionValue } from '../config/emotionWordsMapper.ts';
+} from '../domain/index.js';
+import { HistoryInfo, LoreInfo } from '../domain/lore/LoreInterfaces.js';
+import { LangCode } from '../config/constants.js';
+import { EmotionValue } from '../config/emotionWordsMapper.js';
 import { GetResponse } from 'chromadb';
 // File: shared/api/ApiInterfaces.ts
 

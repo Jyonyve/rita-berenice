@@ -5,8 +5,8 @@ import {
 	TempChatTurn,
 	DEFAULT_LOADING_BATCH_TURN_COUNT,
 	ChatResponse,
-} from '@shared/index.ts';
-import { getCachedMessages, saveMessagesToCache, loadAllCachedMessages } from '../../util/index.ts';
+} from '@shared/index.js';
+import { getCachedMessages, saveMessagesToCache, loadAllCachedMessages } from '../../util/index.js';
 
 export const useChatState = (sessionId: string) => {
 	const [chatTurns, setChatTurns] = useState<ChatTurn[]>([]); // Sorted: oldest at index 0, newest at end

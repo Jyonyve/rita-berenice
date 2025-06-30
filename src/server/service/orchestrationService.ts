@@ -14,11 +14,11 @@ import {
 	DEFAULT_MODEL_GOOGLEAI,
 	ChatTurn, // Import ChatTurn here
 	ChatTurnCdo, // Import ChatTurnCdo here
-} from '#shared/index.ts';
-import { characterStore, chatStore, profileStore } from '../store/index.ts';
-import { handleServiceError, ApiError } from '../util/serviceHelpers.ts';
-import { memoryEngine, personaEngine } from './index.ts'; // Centralized service imports
-import { buildTempChatTurnId } from '../util/index.ts';
+} from '#shared/index.js';
+import { characterStore, chatStore, profileStore } from '../store/index.js';
+import { handleServiceError, ApiError } from '../util/serviceHelpers.js';
+import { memoryEngine, personaEngine } from './index.js'; // Centralized service imports
+import { buildTempChatTurnId } from '../util/index.js';
 
 /**
  * Orchestrates the backend flow for generating a new character response.

@@ -1,1 +1,1 @@
-export * from './ChatInterfaces.ts';
+export * from './ChatInterfaces.js';

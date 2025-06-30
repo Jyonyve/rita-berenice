@@ -10,7 +10,7 @@ import {
 	parseTextToEntries,
 	TermInfo,
 	RecapInfo,
-} from '#shared/index.ts';
+} from '#shared/index.js';
 
 export const buildNaturalChatText = (request: ChatMessage, response: ChatMessage): string => {
 	const userPrompt = parseEntriesToText(request.entries);

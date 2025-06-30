@@ -1,17 +1,10 @@
 // src/client/hooks/useGlossaryApi.ts
 
 import { useState, useCallback } from 'react';
-import {
-	apiClient,
-	genApiUrl,
-	MODULE_NAMES,
-	TermResponse,
-	TermInfo,
-	TermCdo,
-} from '#shared/index.ts';
+import { genApiUrl, MODULE_NAMES, TermResponse, TermInfo, TermCdo } from '#shared/index.js';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
-import { useToast } from '../../style/ToastProvider.tsx';
-import { ApiError } from '#server/util/serviceHelpers.ts';
+import { ApiError } from '#server/util/serviceHelpers.js';
+import { apiClient } from '../../util/index.js';
 
 /**
  * A client-side hook for interacting with the GLOSSARY API endpoints.
@@ -19,7 +12,6 @@ import { ApiError } from '#server/util/serviceHelpers.ts';
  */
 export const useTermApi = () => {
 	const MODULE_NAME = MODULE_NAMES.TERM;
-	const { addToast } = useToast();
 	const queryClient = useQueryClient();
 
 	/**
@@ -33,10 +25,10 @@ export const useTermApi = () => {
 			return true;
 		},
 		onSuccess: (_, variables) => {
-			addToast(
-				`Term "${(variables as TermInfo).koreanTerm || (variables as TermCdo).koreanTerm}" saved.`,
-				'success'
-			);
+			// addToast(
+			// 	`Term "${(variables as TermInfo).koreanTerm || (variables as TermCdo).koreanTerm}" saved.`,
+			// 	'success'
+			// );
 			// Invalidate queries that fetch terms for this session
 			queryClient.invalidateQueries({ queryKey: ['getTermsBySessionId', variables.sessionId] });
 			queryClient.invalidateQueries({
@@ -46,9 +38,6 @@ export const useTermApi = () => {
 					(variables as TermInfo).koreanTerm || (variables as TermCdo).koreanTerm,
 				],
 			});
-		},
-		onError: (error: ApiError) => {
-			addToast(error.clientMessage || 'Failed to save term.', 'error');
 		},
 	});
 
@@ -105,9 +94,6 @@ export const useTermApi = () => {
 			// Invalidate all terms for this session, as new ones might have been added
 			queryClient.invalidateQueries({ queryKey: ['getTermsBySessionId', variables.sessionId] });
 		},
-		onError: (error: ApiError) => {
-			addToast(error.clientMessage || 'Failed to process terms for prompt.', 'error');
-		},
 	});
 
 	/**
@@ -121,14 +107,10 @@ export const useTermApi = () => {
 			return true;
 		},
 		onSuccess: (_, sessionId) => {
-			addToast('Glossary cache for this session has been cleared.', 'info');
 			// Invalidate all term queries for this session
 			queryClient.invalidateQueries({ queryKey: ['getTermsBySessionId', sessionId] });
 			queryClient.invalidateQueries({ queryKey: ['getTermByKorean', sessionId] });
 			queryClient.invalidateQueries({ queryKey: ['ensureAndGetTermsForPrompt', sessionId] });
-		},
-		onError: (error: ApiError) => {
-			addToast(error.clientMessage || 'Failed to clear cache.', 'error');
 		},
 	});
 

@@ -14,8 +14,8 @@ import {
 	DEFAULT_EMOTION,
 	supportAiModelInfo,
 	DEFAULT_MODEL_GOOGLEAI,
-} from '#root/src/shared/index.ts';
-import { credentialService } from './credentialService.ts';
+} from '#root/src/shared/index.js';
+import { credentialService } from './credentialService.js';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { BaseMessage, SystemMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
 import {
@@ -23,7 +23,7 @@ import {
 	buildTermTranslationPrompt,
 	extractValidOpenAiContent,
 	isDirectOpenAIClient,
-} from '../util/index.ts';
+} from '../util/index.js';
 
 const _normalizeMessageContent = (content: ChatCompletionMessageParam['content']): string => {
 	// A simple check for any "falsy" value (null, undefined, '') will handle all edge cases.

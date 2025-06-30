@@ -1,13 +1,13 @@
 // src/util/templateUtils.ts (or your path)
-import { MemoryResponse, LoreInfo, HistoryInfo } from '#root/src/shared/index.ts';
-import { allEmotionKeywordsList, LangCode } from '#shared/config/index.ts';
+import { MemoryResponse, LoreInfo, HistoryInfo } from '#root/src/shared/index.js';
+import { allEmotionKeywordsList, LangCode } from '#shared/config/index.js';
 import {
 	BasicBeingInfo,
 	CharacterInfo,
 	ProfileInfo,
-} from '#shared/domain/character/CharacterInterfaces.ts';
-import { ChatMessage } from '#shared/domain/chat/ChatInterfaces.ts';
-import { parseEntriesToText } from '#shared/util/chatParseUtils.ts';
+} from '#shared/domain/character/CharacterInterfaces.js';
+import { ChatMessage } from '#shared/domain/chat/ChatInterfaces.js';
+import { parseEntriesToText } from '#shared/util/chatParseUtils.js';
 
 const REALATIONSHIP_CHARACTERS_LIMIT: number = 3000 as const;
 const FACTUAL_CHARACTERS_LIMIT: number = 1500 as const;

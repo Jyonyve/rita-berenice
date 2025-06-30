@@ -1,4 +1,4 @@
-import { COLLECTIONS } from '../domain/index.ts';
+import { COLLECTIONS } from '../domain/index.js';
 
 export const ALPHANUMERIC_ALPHABET =
 	'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' as const;

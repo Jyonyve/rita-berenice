@@ -17,11 +17,11 @@ import {
 	orchestrationRoutes,
 	personaRoutes,
 	memoryRoutes,
-} from '#server/route/index.ts';
+} from '#server/route/index.js';
 import sirv from 'sirv';
-import { MODULE_NAMES } from '#shared/config/index.ts';
-import { ApiErrorResponse } from '#shared/api/index.ts';
-import { ApiError } from './src/server/util/serviceHelpers.ts';
+import { MODULE_NAMES } from '#shared/config/index.js';
+import { ApiErrorResponse } from '#shared/api/index.js';
+import { ApiError } from './src/server/util/serviceHelpers.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === 'production';

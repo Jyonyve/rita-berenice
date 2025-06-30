@@ -1,19 +1,16 @@
 // src/client/api/apiClient.ts
 
-import { processApiError } from '@client/util/clientHelpers.ts';
+import { processApiError } from '@client/util/clientHelpers.js';
 import axios from 'axios';
-
-// Get the base URL from environment variables
-const backendApiUrl =
-	typeof import.meta.env?.VITE_API_URL !== 'undefined'
-		? import.meta.env.VITE_API_URL
-		: process.env.VITE_API_URL;
+import { useToast } from '../style/index.js';
 
 // Create a single base instance for all API calls
 export const apiClient = axios.create({
-	baseURL: `${backendApiUrl || 'http://localhost:3000'}/api`,
+	baseURL: '/api',
 	headers: { 'Content-Type': 'application/json' },
 });
+
+const { addToast } = useToast();
 
 // --- REVISED RESPONSE INTERCEPTOR ---
 apiClient.interceptors.response.use(
@@ -27,7 +24,7 @@ apiClient.interceptors.response.use(
 
 		// 2. (Optional) This is the perfect place for global side-effects.
 		// For example, if you want to show a toast notification for every error:
-		// toast.error(processedError.clientMessage || 'An error occurred.');
+		addToast(error.clientMessage || 'Failed to save character.', 'error');
 
 		// Or handle authentication errors globally:
 		// if (processedError.status === 401) {

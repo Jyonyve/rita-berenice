@@ -1,8 +1,8 @@
 import React, { FC } from 'react';
 import { Box, IconButton } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
-import { ChatTurn } from '@shared/domain/index.ts';
-import { styleEntryFont, commonStyle } from '../../util/index.ts';
+import { ChatTurn } from '@shared/domain/index.js';
+import { styleEntryFont, commonStyle } from '../../util/index.js';
 
 interface FixedTurnDisplayProps {
 	turn: ChatTurn;

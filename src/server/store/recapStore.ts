@@ -11,9 +11,9 @@ import {
 	RecapResponse,
 	ChromaResponse,
 	metadataToRecap,
-} from '#shared/index.ts';
+} from '#shared/index.js';
 import { Collection, Metadata, Where, WhereDocument } from 'chromadb';
-import { chromaDbClient } from '../db/index.ts';
+import { chromaDbClient } from '../db/index.js';
 
 import {
 	buildRecapDocId,
@@ -23,8 +23,8 @@ import {
 	handleServiceError,
 	inflateRecapDoc,
 	validateChromaResponse,
-} from '../util/index.ts';
-import { chatStore } from './chatStore.ts';
+} from '../util/index.js';
+import { chatStore } from './chatStore.js';
 
 // Destructure chromaDbClient methods
 const { getRecapCollection, upsertRecord, getRecordById, queryRecords } = chromaDbClient;

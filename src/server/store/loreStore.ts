@@ -10,9 +10,9 @@ import {
 	COLLECTIONS,
 	METADATA_TYPES,
 	ChromaResponse,
-} from '#shared/index.ts';
+} from '#shared/index.js';
 import { Collection, Where } from 'chromadb';
-import { chromaDbClient } from '../db/index.ts';
+import { chromaDbClient } from '../db/index.js';
 import {
 	buildHistoryId,
 	flatLoreOrHistoryToDoc,
@@ -21,13 +21,13 @@ import {
 	validateChromaResponse,
 	validateServiceId,
 	inflateLoreOrHistoryDoc,
-} from '../util/index.ts';
+} from '../util/index.js';
 import {
 	metadataToHistory,
 	metadataToLore,
 	historyToMetadata,
 	loreToMetadata,
-} from '#shared/util/dbConvertUtils.ts';
+} from '#shared/util/dbConvertUtils.js';
 
 // Destructure chromaDbClient methods
 const { getLoreCollection, upsertRecord, getRecords, getRecordById, queryRecords } = chromaDbClient;

@@ -1,7 +1,6 @@
 // src/client/hooks/useOrchestrationApi.ts
 
 import {
-	apiClient,
 	genApiUrl,
 	MODULE_NAMES,
 	TempChatTurn,
@@ -11,10 +10,11 @@ import {
 	AiModelInfo,
 	ChatTurn,
 	ChatTurnCdo,
-} from '@shared/index.ts';
-import { useToast } from '../../style/ToastProvider.tsx';
+} from '@shared/index.js';
+import { useToast } from '../../style/ToastProvider.jsx';
 import { useMutation } from '@tanstack/react-query';
-import { ApiError } from '#server/util/serviceHelpers.ts';
+import { ApiError } from '#server/util/serviceHelpers.js';
+import { apiClient } from '../../util/index.js';
 
 /**
  * A client-side hook for interacting with the main ORCHESTRATION API endpoint,
@@ -22,7 +22,6 @@ import { ApiError } from '#server/util/serviceHelpers.ts';
  */
 export const useOrchestrationApi = () => {
 	const MODULE_NAME = MODULE_NAMES.ORCHESTRATION;
-	const { addToast } = useToast();
 
 	/**
 	 * Finalizes a turn by enriching it and saving it to the permanent CHAT collection.
@@ -33,11 +32,6 @@ export const useOrchestrationApi = () => {
 			const url = genApiUrl(MODULE_NAMES.ORCHESTRATION, 'finalizeChatTurn');
 			const response = await apiClient.post<ChatTurn>(url, cdo);
 			return response.data;
-		},
-		// No toast on success for this background task
-		onError: (error: ApiError) => {
-			addToast(error.clientMessage || 'Failed to save previous turn.', 'error');
-			// Error is handled globally and in the calling function's catch block
 		},
 	});
 
@@ -65,12 +59,6 @@ export const useOrchestrationApi = () => {
 				aiModelInfo,
 			});
 			return response.data;
-		},
-		onError: (error: ApiError) => {
-			addToast(
-				error.clientMessage || 'An unexpected error occurred while getting a response.',
-				'error'
-			);
 		},
 	});
 

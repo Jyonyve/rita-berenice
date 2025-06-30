@@ -1,1 +1,1 @@
-export * from './TermInterfaces.ts';
+export * from './TermInterfaces.js';

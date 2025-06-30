@@ -9,14 +9,9 @@ import {
 	ProfileInfo,
 	AiModelInfo,
 	COLLECTIONS,
-} from '#shared/index.ts';
-import {
-	asyncHandler,
-	validateRequestData,
-	validateServiceId,
-	validateSequenceRule,
-} from '../util/index.ts';
-import { receiveBotResponse } from '../service/index.ts';
+} from '#shared/index.js';
+import { asyncHandler, validateRequestData, validateServiceId } from '../util/index.js';
+import { receiveBotResponse } from '../service/index.js';
 
 const router = express.Router();
 

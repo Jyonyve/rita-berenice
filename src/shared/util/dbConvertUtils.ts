@@ -5,17 +5,17 @@ import {
 	LoreInfo,
 	HistoryMetadata,
 	HistoryInfo,
-} from '../domain/lore/LoreInterfaces.ts';
-import { convertArrayToString, convertStringToArray } from './chatParseUtils.ts';
+} from '../domain/lore/LoreInterfaces.js';
+import { convertArrayToString, convertStringToArray } from './chatParseUtils.js';
 import {
 	ChatTurnMetadata,
 	ChatTurn,
 	ChatMessage,
 	ChatEntry,
-} from '../domain/chat/ChatInterfaces.ts';
-import { buildChatTurnId } from '../../server/util/buildIdUtils.ts';
+} from '../domain/chat/ChatInterfaces.js';
+import { buildChatTurnId } from '../../server/util/buildIdUtils.js';
 import { Metadata } from 'chromadb';
-import { DEFAULT_EMOTION } from '../config/emotionWordsMapper.ts';
+import { DEFAULT_EMOTION } from '../config/emotionWordsMapper.js';
 import {
 	CharacterInfo,
 	CharacterMetadata,
@@ -23,7 +23,7 @@ import {
 	ProfileMetadata,
 	RecapInfo,
 	RecapMetadata,
-} from '../domain/index.ts';
+} from '../domain/index.js';
 
 // --- LORE HELPERS ---
 

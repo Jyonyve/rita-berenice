@@ -3,17 +3,17 @@ import {
 	METADATA_TYPES,
 	ProfileInfo,
 	ProfileMetadata,
-} from '#root/src/shared/index.ts';
+} from '#root/src/shared/index.js';
 import { Collection, IncludeEnum, Document, Where } from 'chromadb';
-import { chromaDbClient } from '../db/chromaDbClient.ts';
-import { ProfileResponse } from '#shared/api/index.ts';
+import { chromaDbClient } from '../db/chromaDbClient.js';
+import { ProfileResponse } from '#shared/api/index.js';
 
 import {
 	validateChromaResponse,
 	buildProfileId,
 	flatProfileToDoc,
 	handleServiceError,
-} from '../util/index.ts';
+} from '../util/index.js';
 
 const { getProfileCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.PROFILE;

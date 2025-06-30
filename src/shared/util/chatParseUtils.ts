@@ -7,10 +7,10 @@ import {
 	ChatRoleType,
 	ChatMessageType,
 	METADATA_TYPES,
-} from '@shared/domain/index.ts';
-import { DEFAULT_EMOTION } from '../config/index.ts';
-import { buildCharacterId } from '#root/src/server/index.ts';
-import { useErrorDialog } from '#root/src/client/util/styleUtils.tsx';
+} from '@shared/domain/index.js';
+import { DEFAULT_EMOTION } from '../config/index.js';
+import { buildCharacterId } from '#root/src/server/index.js';
+import { useErrorDialog } from '#root/src/client/util/styleUtils.jsx';
 
 export const convertStringToArray = (input: string): string[] => {
 	if (!input || typeof input !== 'string') {

@@ -1,1 +1,1 @@
-export * from './CharacterInterfaces.ts';
+export * from './CharacterInterfaces.js';

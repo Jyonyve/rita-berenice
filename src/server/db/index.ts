@@ -1,1 +1,1 @@
-export * from './chromaDbClient.ts';
+export * from './chromaDbClient.js';

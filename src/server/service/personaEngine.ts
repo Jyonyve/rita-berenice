@@ -9,12 +9,12 @@ import {
 	DEFAULT_MODEL_GOOGLEAI, // Assuming this is your default chat model
 	parseEntriesToText,
 	AiModelInfo,
-} from '#shared/index.ts';
+} from '#shared/index.js';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
-import { llmService } from './index.ts';
-import { buildPersonaSystemPrompt, buildJsonCorrectionPrompt } from '../util/templateUtils.ts';
-import { handleServiceError, LlmResponseParseError } from '../util/serviceHelpers.ts';
-import { parseLlmJsonResponse } from '../util/llmUtils.ts';
+import { llmService } from './index.js';
+import { buildPersonaSystemPrompt, buildJsonCorrectionPrompt } from '../util/templateUtils.js';
+import { handleServiceError, LlmResponseParseError } from '../util/serviceHelpers.js';
+import { parseLlmJsonResponse } from '../util/llmUtils.js';
 
 export const personaEngine = {
 	/**
@@ -34,7 +34,7 @@ export const personaEngine = {
 		characterInfo: CharacterInfo,
 		profileInfo: ProfileInfo,
 		currentUserRequest: ChatMessage,
-		aiModel: AiModelInfo,
+		aiModelInfo: AiModelInfo,
 		options?: { signal?: AbortSignal }
 	): Promise<PersonaResponse> {
 		console.log(
@@ -44,7 +44,11 @@ export const personaEngine = {
 		try {
 			// --- 1. BUILD THE COMPREHENSIVE SYSTEM PROMPT ---
 			// All the complex logic is now neatly encapsulated in this single function call.
-			const systemPromptContent = buildPersonaSystemPrompt(characterInfo, profileInfo, recalledMemories);
+			const systemPromptContent = buildPersonaSystemPrompt(
+				characterInfo,
+				profileInfo,
+				recalledMemories
+			);
 
 			const messages: ChatCompletionMessageParam[] = [
 				{ role: 'system', content: systemPromptContent },
@@ -72,7 +76,7 @@ export const personaEngine = {
 			// --- 3. INVOKE LLM AND PARSE RESPONSE (Initial Attempt) ---
 			const rawLlmResponse = await llmService.invokeLlmFromMessages(
 				messages,
-				aiModel, // Or a user-selected model
+				aiModelInfo, // Or a user-selected model
 				options
 			);
 

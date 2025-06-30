@@ -1,10 +1,10 @@
 // src/migration/recap/exportSingleRecap.ts
 
-import { chromaDbClient, handleServiceError } from '#root/src/server/index.ts';
-import { METADATA_TYPES } from '#root/src/shared/index.ts';
+import { chromaDbClient, handleServiceError } from '#root/src/server/index.js';
+import { METADATA_TYPES } from '#root/src/shared/index.js';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
-import { buildRecapId, buildRelationshipRecapId } from '../../server/util/index.ts';
+import { buildRecapId, buildRelationshipRecapId } from '../../server/util/index.js';
 
 // --- Configuration ---
 const OUTPUT_DIR = './src/migration/recap/exported';

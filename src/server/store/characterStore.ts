@@ -3,18 +3,18 @@ import {
 	CharacterMetadata,
 	COLLECTIONS,
 	METADATA_TYPES,
-} from '#shared/domain/index.ts';
+} from '#shared/domain/index.js';
 import { Collection, IncludeEnum, Document, Where } from 'chromadb';
-import { chromaDbClient } from '../db/index.ts';
-import { CharacterResponse, ChromaResponse } from '#shared/api/index.ts';
+import { chromaDbClient } from '../db/index.js';
+import { CharacterResponse, ChromaResponse } from '#shared/api/index.js';
 import {
 	buildCharacterId,
 	flatCharacterToDoc,
 	validateChromaResponse,
 	handleServiceError,
 	inflateCharacterDoc,
-} from '../util/index.ts';
-import { metadataToCharacter } from '#root/src/shared/util/index.ts';
+} from '../util/index.js';
+import { metadataToCharacter } from '#root/src/shared/util/index.js';
 
 const { getCharacterCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.CHARACTER;

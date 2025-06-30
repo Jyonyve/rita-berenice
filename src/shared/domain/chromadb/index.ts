@@ -1,1 +1,1 @@
-export * from './ChromaInterfaces.ts';
+export * from './ChromaInterfaces.js';

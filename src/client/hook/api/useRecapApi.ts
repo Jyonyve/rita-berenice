@@ -1,24 +1,22 @@
 // src/client/hooks/useRecapApi.ts
 
 import {
-	apiClient,
 	genApiUrl,
 	MODULE_NAMES,
 	RecapResponse,
 	RecapInfo,
 	METADATA_TYPES,
-} from '#shared/index.ts';
+} from '#shared/index.js';
 import { Where, WhereDocument } from 'chromadb';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useToast } from '../../style/ToastProvider.tsx';
-import { ApiError } from '#server/util/serviceHelpers.ts';
+import { ApiError } from '#server/util/serviceHelpers.js';
+import { apiClient } from '../../util/index.js';
 
 /**
  * A client-side hook for interacting with the RECAP API endpoints, refactored for TanStack Query.
  */
 export const useRecapApi = () => {
 	const MODULE_NAME = MODULE_NAMES.RECAP;
-	const { addToast } = useToast();
 	const queryClient = useQueryClient();
 
 	/**
@@ -32,17 +30,12 @@ export const useRecapApi = () => {
 			return true;
 		},
 		onSuccess: (_, variables) => {
-			addToast('Factual recap saved.', 'success');
-			// Invalidate relevant queries for this session's recap docs
 			queryClient.invalidateQueries({
 				queryKey: ['getRecapWholeDoc', variables.sessionId, METADATA_TYPES.RECAP],
 			});
 			queryClient.invalidateQueries({
 				queryKey: ['queryRecaps', variables.sessionId, METADATA_TYPES.RECAP],
 			});
-		},
-		onError: (error: ApiError) => {
-			addToast(error.clientMessage || 'Failed to save factual recap.', 'error');
 		},
 	});
 
@@ -57,7 +50,6 @@ export const useRecapApi = () => {
 			return true;
 		},
 		onSuccess: (_, variables) => {
-			addToast('Relationship recap saved.', 'success');
 			// Invalidate relevant queries for this session's relationship docs
 			queryClient.invalidateQueries({
 				queryKey: ['getRecapWholeDoc', variables.sessionId, METADATA_TYPES.RELATIONSHIP],
@@ -65,9 +57,6 @@ export const useRecapApi = () => {
 			queryClient.invalidateQueries({
 				queryKey: ['queryRecaps', variables.sessionId, METADATA_TYPES.RELATIONSHIP],
 			});
-		},
-		onError: (error: ApiError) => {
-			addToast(error.clientMessage || 'Failed to save relationship recap.', 'error');
 		},
 	});
 
@@ -116,9 +105,6 @@ export const useRecapApi = () => {
 				limit,
 			});
 			return response.data;
-		},
-		onError: (error: ApiError) => {
-			addToast(error.clientMessage || 'Recap search failed.', 'error');
 		},
 	});
 

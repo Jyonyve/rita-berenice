@@ -5,12 +5,12 @@ import path from 'node:path';
 import { ChromaClient, Collection, IncludeEnum, Where } from 'chromadb';
 import { fileURLToPath } from 'node:url';
 
-import { HistoryInfo } from '../../shared/domain/lore/LoreInterfaces.ts';
-import { COLLECTIONS, METADATA_TYPES } from '../../shared/domain/chromadb/ChromaInterfaces.ts';
-import { historyToMetadata } from '../../shared/util/dbConvertUtils.ts';
-import { buildHistoryId } from '../../server/util/buildIdUtils.ts';
-import { flatLoreOrHistoryToDoc } from '../../server/util/documentUtils.ts';
-import { buildHistoryMetadataPrompt } from '../../server/util/templateUtils.ts';
+import { HistoryInfo } from '../../shared/domain/lore/LoreInterfaces.js';
+import { COLLECTIONS, METADATA_TYPES } from '../../shared/domain/chromadb/ChromaInterfaces.js';
+import { historyToMetadata } from '../../shared/util/dbConvertUtils.js';
+import { buildHistoryId } from '../../server/util/buildIdUtils.js';
+import { flatLoreOrHistoryToDoc } from '../../server/util/documentUtils.js';
+import { buildHistoryMetadataPrompt } from '../../server/util/templateUtils.js';
 import e from 'express';
 
 const __filename = fileURLToPath(import.meta.url);

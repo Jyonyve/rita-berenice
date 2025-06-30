@@ -6,13 +6,13 @@ import {
 	METADATA_TYPES,
 	DEFAULT_RECAP_INTERVAL,
 	DEFAULT_RELATIONSHIP_RECAP_INTERVAL,
-} from '../../shared/index.ts';
+} from '../../shared/index.js';
 import {
 	buildFactualRecapPrompt,
 	buildLlmRelationshipRecapPrompt,
 	buildLlmStoryDocumentPrompt,
-} from '../../server/util/templateUtils.ts';
-import { chromaDbClient } from '../../server/db/index.ts';
+} from '../../server/util/templateUtils.js';
+import { chromaDbClient } from '../../server/db/index.js';
 import { Where } from 'chromadb';
 import {
 	buildNaturalChatText,
@@ -21,7 +21,7 @@ import {
 	buildStoryId,
 	handleServiceError,
 	validateChromaResponse,
-} from '../../server/util/index.ts';
+} from '../../server/util/index.js';
 
 // --- Configuration ---
 

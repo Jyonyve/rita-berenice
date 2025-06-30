@@ -1,6 +1,7 @@
 // src/hooks/useCredential.ts
 import { useState, useCallback, useEffect } from 'react';
-import { apiClient, genApiUrl, MODULE_NAMES, CredentialData } from '@shared/index.ts'; // Adjust import path
+import { genApiUrl, MODULE_NAMES, CredentialData } from '@shared/index.js'; // Adjust import path
+import { apiClient } from '../util/index.js';
 
 /**
  * Custom hook to manage user credentials (API keys, etc.).

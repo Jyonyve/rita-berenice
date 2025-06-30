@@ -1,17 +1,17 @@
 // src/client/hooks/useLoreApi.ts
 
 import {
-	apiClient,
 	genApiUrl,
 	MODULE_NAMES,
 	LoreResponse,
 	HistoryResponse,
 	LoreInfo,
 	HistoryInfo,
-} from '#shared/index.ts';
+} from '#shared/index.js';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ApiError } from '#server/util/serviceHelpers.ts';
+import { ApiError } from '#server/util/serviceHelpers.js';
 import { useToast } from '../../style/ToastProvider.tsx';
+import { apiClient } from '../../util/index.js';
 
 // For clarity in the query function signature
 type QueryOptions = {

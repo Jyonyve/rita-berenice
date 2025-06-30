@@ -1,25 +1,18 @@
 // src/client/hooks/useChatApi.ts
 
 import { useState, useCallback } from 'react';
-import {
-	apiClient,
-	genApiUrl,
-	MODULE_NAMES,
-	ChatResponse,
-	ChatTurn,
-	TempChatTurn,
-} from '#shared/index.ts';
+import { genApiUrl, MODULE_NAMES, ChatResponse, ChatTurn, TempChatTurn } from '#shared/index.js';
 import { Where } from 'chromadb'; // Assuming these types are available on the client
-import { useToast } from '../../style/index.ts';
+import { useToast } from '../../style/index.js';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ApiError } from '#server/util/serviceHelpers.ts';
+import { ApiError } from '#server/util/serviceHelpers.js';
+import { apiClient } from '../../util/index.js';
 
 /**
  * A client-side hook for interacting with the CHAT and TEMP_CHAT API endpoints.
  * It encapsulates API logic, loading/error states, and user notifications via a toast system.
  */
 export const useChatApi = () => {
-	const { addToast } = useToast();
 	const queryClient = useQueryClient();
 
 	/**
@@ -38,9 +31,6 @@ export const useChatApi = () => {
 				queryClient.invalidateQueries({ queryKey: ['getChatTurns', data.sessionId] });
 				queryClient.setQueryData(['getChatTurnBySequence', data.sessionId, data.sequence], data);
 			}
-		},
-		onError: (error: ApiError) => {
-			addToast(error.clientMessage || 'Failed to save Chat Turn.', 'error');
 		},
 	});
 
@@ -105,9 +95,6 @@ export const useChatApi = () => {
 			const url = genApiUrl(MODULE_NAMES.TEMP, 'saveTempChatTurn');
 			await apiClient.post(url, tempData);
 			return true;
-		},
-		onError: (error: ApiError) => {
-			addToast(error.clientMessage || 'Failed to save Temp Turn.', 'error');
 		},
 	});
 

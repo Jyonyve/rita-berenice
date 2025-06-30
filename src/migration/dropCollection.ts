@@ -1,6 +1,6 @@
 // Save this file as scripts/dropChatCollection.ts
 import { ChromaClient } from 'chromadb';
-import { COLLECTIONS } from '../shared/domain/index.ts';
+import { COLLECTIONS } from '../shared/domain/index.js';
 // Use #root alias or adjust relative path
 
 // --- Configuration ---

@@ -1,7 +1,6 @@
 // src/client/hooks/usePersonaApi.ts
 
 import {
-	apiClient,
 	genApiUrl,
 	MODULE_NAMES,
 	PersonaResponse,
@@ -9,11 +8,11 @@ import {
 	CharacterInfo,
 	ProfileInfo,
 	ChatMessage,
-} from '#shared/index.ts';
-
+} from '#shared/index.js';
+import { apiClient } from '../../util/index.js';
 import { useMutation } from '@tanstack/react-query';
-import { useToast } from '../../style/index.ts';
-import { ApiError } from '#server/util/serviceHelpers.ts';
+import { useToast } from '../../style/index.js';
+import { ApiError } from '#server/util/serviceHelpers.js';
 
 /**
  * Type for the request body of the generateResponse API call.
@@ -30,7 +29,6 @@ type GenerateResponseRequestBody = {
  */
 export const usePersonaApi = () => {
 	const MODULE_NAME = MODULE_NAMES.PERSONA;
-	const { addToast } = useToast();
 
 	/**
 	 * Generates a character's conversational response using recalled memory context.
@@ -46,10 +44,6 @@ export const usePersonaApi = () => {
 			const response = await apiClient.post<PersonaResponse>(url, requestBody);
 			return response.data;
 		},
-		onError: (error: ApiError) => {
-			addToast(error.clientMessage || 'Failed to generate character response.', 'error');
-		},
-		// No success toast as per original design
 	});
 
 	return { generateResponse };

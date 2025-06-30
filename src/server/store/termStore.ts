@@ -1,21 +1,21 @@
 // src/server/services/glossaryService.ts
 
 import { Collection, Where } from 'chromadb'; // Or your specific Collection type
-import { COLLECTIONS, METADATA_TYPES } from '#shared/domain/chromadb/index.ts';
-import { chromaDbClient } from '../db/chromaDbClient.ts';
-import { TermCdo, TermInfo, TermMetadata } from '#shared/domain/term/TermInterfaces.ts';
-import { buildTermId } from '../util/buildIdUtils.ts';
+import { COLLECTIONS, METADATA_TYPES } from '#shared/domain/chromadb/index.js';
+import { chromaDbClient } from '../db/chromaDbClient.js';
+import { TermCdo, TermInfo, TermMetadata } from '#shared/domain/term/TermInterfaces.js';
+import { buildTermId } from '../util/buildIdUtils.js';
 import {
 	flatTermToDoc,
 	handleServiceError,
 	inflateChatTurnDoc,
 	inflateTermDoc,
 	validateChromaResponse,
-} from '../util/index.ts';
-import { ChromaResponse, Term, TermResponse } from '#shared/api/ModuleResponse.ts';
-import { metadataToChatTurn } from '#root/src/shared/util/dbConvertUtils.ts';
-import { llmService } from '../service/index.ts';
-import { isTermInfo } from '#root/src/shared/index.ts';
+} from '../util/index.js';
+import { ChromaResponse, Term, TermResponse } from '#shared/api/ModuleResponse.js';
+import { metadataToChatTurn } from '#root/src/shared/util/dbConvertUtils.js';
+import { llmService } from '../service/index.js';
+import { isTermInfo } from '#root/src/shared/index.js';
 
 const { getTermCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.TERM;

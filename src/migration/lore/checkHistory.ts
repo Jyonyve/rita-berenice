@@ -1,7 +1,7 @@
 // scripts/checkHistory.ts
 import { ChromaClient, Collection, IncludeEnum, Where } from 'chromadb';
-import { COLLECTIONS, METADATA_TYPES } from '../../shared/domain/chromadb/ChromaInterfaces.ts';
-import { HistoryMetadata } from '../../shared/domain/lore/LoreInterfaces.ts';
+import { COLLECTIONS, METADATA_TYPES } from '../../shared/domain/chromadb/ChromaInterfaces.js';
+import { HistoryMetadata } from '../../shared/domain/lore/LoreInterfaces.js';
 
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev';
 const TARGET_COLLECTION_NAME = COLLECTIONS.LORE;

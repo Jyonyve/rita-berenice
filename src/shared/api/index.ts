@@ -1,2 +1,2 @@
-export * from './AiRequest.ts';
-export * from './ModuleResponse.ts';
+export * from './AiRequest.js';
+export * from './ModuleResponse.js';

@@ -1,10 +1,11 @@
 // src/client/hooks/useAiApi.ts
 import { useMutation } from '@tanstack/react-query';
 import { useState, useCallback } from 'react';
-import { apiClient, genApiUrl, MODULE_NAMES, AiModelInfo, ChatRoleType } from '#shared/index.ts';
+import { genApiUrl, MODULE_NAMES, AiModelInfo, ChatRoleType } from '#shared/index.js';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs'; // This type is needed client-side
-import { useToast } from '../../style/index.ts';
-import { ApiError } from '#server/util/serviceHelpers.ts';
+import { useToast } from '../../style/index.js';
+import { ApiError } from '#server/util/serviceHelpers.js';
+import { apiClient } from '../../util/index.js';
 
 /**
  * A client-side hook for interacting with the AI (LLM) API endpoints.

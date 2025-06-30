@@ -9,16 +9,16 @@ import {
 	TempChatTurn,
 	ChatMessage,
 	ChatMessageType,
-} from '#shared/index.ts';
+} from '#shared/index.js';
 import {
 	asyncHandler,
 	validateRequestData,
 	validateServiceId,
 	validateSequenceRule,
-} from '../util/index.ts';
+} from '../util/index.js';
 import { Where, WhereDocument } from 'chromadb';
-import { ApiError } from '#server/util/serviceHelpers.ts';
-import { chatStore } from '../store/chatStore.ts';
+import { ApiError } from '#server/util/serviceHelpers.js';
+import { chatStore } from '../store/chatStore.js';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.CHAT;

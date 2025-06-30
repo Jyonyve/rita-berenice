@@ -1,16 +1,16 @@
 // src/client/hooks/useMemoryApi.ts
 
 import {
-	apiClient,
 	genApiUrl,
 	MODULE_NAMES,
 	MemoryResponse,
 	ChatTurn,
 	ChatTurnMetadata,
-} from '#shared/index.ts';
+} from '#shared/index.js';
 import { useMutation } from '@tanstack/react-query';
-import { useToast } from '../../style/ToastProvider.tsx';
-import { ApiError } from '#server/util/serviceHelpers.ts';
+import { useToast } from '../../style/ToastProvider.jsx';
+import { ApiError } from '#server/util/serviceHelpers.js';
+import { apiClient } from '../../util/index.js';
 
 /**
  * A client-side hook for interacting with the MEMORY API endpoints, refactored for TanStack Query.
@@ -18,7 +18,6 @@ import { ApiError } from '#server/util/serviceHelpers.ts';
  */
 export const useMemoryApi = () => {
 	const MODULE_NAME = MODULE_NAMES.MEMORY;
-	const { addToast } = useToast();
 
 	/**
 	 * Gathers all relevant context (memories) for generating a coherent response.
@@ -34,9 +33,6 @@ export const useMemoryApi = () => {
 			const response = await apiClient.post<MemoryResponse>(url, { sessionId, userRequestText });
 			return response.data;
 		},
-		onError: (error: ApiError) => {
-			addToast(error.clientMessage || 'Failed to recall memories.', 'error');
-		},
 	});
 
 	/**
@@ -48,12 +44,6 @@ export const useMemoryApi = () => {
 			const url = genApiUrl(MODULE_NAME, 'enrichChatTurnMetadataViaLlm');
 			const response = await apiClient.post<ChatTurnMetadata>(url, turn);
 			return response.data;
-		},
-		onSuccess: () => {
-			addToast('Chat turn metadata enriched.', 'success');
-		},
-		onError: (error: ApiError) => {
-			addToast(error.clientMessage || 'Failed to enrich chat turn metadata.', 'error');
 		},
 	});
 

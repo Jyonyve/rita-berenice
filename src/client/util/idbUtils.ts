@@ -1,6 +1,6 @@
 // idbUtils.ts
 import { openDB } from 'idb';
-import { ChatTurn } from '@shared/domain/index.ts';
+import { ChatTurn } from '@shared/domain/index.js';
 
 const DB_NAME = 'ChatTurnDB';
 const STORE_NAME = 'messages';

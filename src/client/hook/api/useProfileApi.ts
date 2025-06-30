@@ -1,15 +1,9 @@
 // src/client/hooks/useProfileApi.ts
 
-import {
-	apiClient,
-	genApiUrl,
-	MODULE_NAMES,
-	ProfileResponse,
-	ProfileMetadata,
-} from '#shared/index.ts';
+import { genApiUrl, MODULE_NAMES, ProfileResponse, ProfileMetadata } from '#shared/index.js';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useToast } from '../../style/ToastProvider.tsx';
-import { ApiError } from '#server/util/serviceHelpers.ts';
+import { ApiError } from '#server/util/serviceHelpers.js';
+import { apiClient } from '../../util/index.js';
 
 // Define a type for the structured response from the storeProfile endpoint
 interface StoreProfileResponse {
@@ -23,7 +17,6 @@ interface StoreProfileResponse {
  */
 export const useProfileApi = () => {
 	const MODULE_NAME = MODULE_NAMES.PROFILE;
-	const { addToast } = useToast();
 	const queryClient = useQueryClient();
 
 	/**
@@ -36,15 +29,11 @@ export const useProfileApi = () => {
 			return JSON.parse(response.data) as StoreProfileResponse;
 		},
 		onSuccess: (data, variables) => {
-			addToast('Profile saved successfully.', 'success');
 			// Invalidate queries that are now stale
 			queryClient.invalidateQueries({ queryKey: ['getAllProfiles'] });
 			if (variables.sessionId) {
 				queryClient.invalidateQueries({ queryKey: ['getProfileBySessionId', variables.sessionId] });
 			}
-		},
-		onError: (error: ApiError) => {
-			addToast(error.clientMessage || 'Failed to save profile.', 'error');
 		},
 	});
 

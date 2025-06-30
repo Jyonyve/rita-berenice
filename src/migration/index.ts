@@ -1,1 +1,1 @@
-export * from './dropCollection.ts';
+export * from './dropCollection.js';

@@ -1,16 +1,12 @@
 // src/server/routes/persona.routes.ts
 
 import express, { type Request, type Response } from 'express';
-import {
-	genRoutePattern,
-	PersonaResponse,
-	MemoryResponse,
-	CharacterInfo,
-	ProfileInfo,
-	ChatMessage,
-} from '#shared/index.ts';
-import { asyncHandler, validateRequestData } from '../util/index.ts';
-import { personaEngine } from '../service/personaEngine.ts';
+
+import { asyncHandler, validateRequestData } from '../util/index.js';
+import { personaEngine } from '../service/personaEngine.js';
+import { AiModelInfo, CharacterInfo, ChatMessage, ProfileInfo } from '#shared/domain/index.js';
+import { MemoryResponse } from '#shared/api/index.js';
+import { genRoutePattern } from '#shared/util/index.js';
 
 const router = express.Router();
 
@@ -20,6 +16,7 @@ type GenerateResponseRequestBody = {
 	characterInfo: CharacterInfo;
 	profileInfo: ProfileInfo;
 	currentUserRequest: ChatMessage;
+	aiModelInfo: AiModelInfo;
 };
 
 /**
@@ -32,7 +29,8 @@ type GenerateResponseRequestBody = {
 router.post(
 	genRoutePattern('generateResponse'),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { recalledMemories, characterInfo, profileInfo, currentUserRequest } = req.body;
+		const { recalledMemories, characterInfo, profileInfo, currentUserRequest, aiModelInfo } =
+			req.body;
 
 		// Validate the presence of all required top-level objects in the request body
 		const requiredFields: (keyof GenerateResponseRequestBody)[] = [
@@ -40,6 +38,7 @@ router.post(
 			'characterInfo',
 			'profileInfo',
 			'currentUserRequest',
+			'aiModelInfo',
 		];
 		validateRequestData(req.body, 'body', requiredFields);
 
@@ -52,6 +51,7 @@ router.post(
 			characterInfo,
 			profileInfo,
 			currentUserRequest,
+			aiModelInfo,
 			{ signal: (req as any).signal } // Pass the signal for cancellation handling
 		);
 

@@ -2,7 +2,7 @@ import * as puppeteer from 'puppeteer';
 import fs from 'fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { MigChatMessage } from '../../shared/domain/index.ts';
+import { MigChatMessage } from '../../shared/domain/index.js';
 
 function localTimezoneHelper(timestamp: string): string {
 	const date = new Date(timestamp);

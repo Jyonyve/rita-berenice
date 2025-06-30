@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { ChatCompletion } from 'openai/resources/index.mjs';
-import { LlmResponseParseError } from '../index.ts';
+import { LlmResponseParseError } from '../index.js';
 
 export function isDirectOpenAIClient(llm: any): llm is OpenAI {
 	// Check for a unique property or method of the OpenAI client instance

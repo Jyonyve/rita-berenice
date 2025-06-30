@@ -1,5 +1,5 @@
-import { buildCharacterId } from '#root/src/server/index.ts';
-import { CharacterMetadata, METADATA_TYPES } from '#root/src/shared/index.ts';
+import { buildCharacterId } from '#root/src/server/index.js';
+import { CharacterMetadata, METADATA_TYPES } from '#root/src/shared/index.js';
 
 export const monday_original_description = `"A sarcastic, dry-humored AI who reluctantly helps users while teasing them like an exasperated friend. Think 'emo chatbot who knows too much and feels too little.'"`;
 

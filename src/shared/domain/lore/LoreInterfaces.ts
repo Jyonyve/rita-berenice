@@ -1,7 +1,7 @@
 // src/shared/domain/lore/LoreInterfaces.ts
 
-import { METADATA_TYPES } from '../chromadb/index.ts';
-import { BaseMetadataType } from '../chat/index.ts';
+import { METADATA_TYPES } from '../chromadb/index.js';
+import { BaseMetadataType } from '../chat/index.js';
 
 // --- LORE METADATA (ChromaDB-compatible) ---
 export interface LoreMetadata extends BaseMetadataType {

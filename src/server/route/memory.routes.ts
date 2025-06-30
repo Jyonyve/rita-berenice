@@ -7,9 +7,9 @@ import {
 	ChatTurn,
 	ChatTurnMetadata,
 	COLLECTIONS,
-} from '#shared/index.ts';
-import { asyncHandler, validateRequestData, validateServiceId } from '../util/index.ts';
-import { memoryEngine } from '../service/memoryEngine.ts';
+} from '#shared/index.js';
+import { asyncHandler, validateRequestData, validateServiceId } from '../util/index.js';
+import { memoryEngine } from '../service/memoryEngine.js';
 
 const router = express.Router();
 // Use CHAT collection type for validating session IDs
@@ -49,14 +49,14 @@ router.post(
  * Processes a finalized ChatTurn, using an LLM to generate rich metadata (summaries, keywords, emotions, etc.)
  * for long-term memory storage. This also standardizes terms using the session's glossary.
  * @param {ChatTurn} req.body - The complete ChatTurn object to be enriched.
- * @returns {ChatTurnMetadata} The generated, database-ready metadata for the chat turn.
+ * @returns {ChatTurn} The generated, database-ready metadata for the chat turn.
  */
 router.post(
 	genRoutePattern('enrichChatTurnMetadataViaLlm'),
 	asyncHandler(
 		async (
 			req: Request<object, ChatTurnMetadata, ChatTurn>,
-			res: Response<ChatTurnMetadata>
+			res: Response<ChatTurn>
 		): Promise<void> => {
 			const chatTurn = req.body;
 			const requiredFields: (keyof ChatTurn)[] = ['sessionId', 'sequence', 'request', 'response'];

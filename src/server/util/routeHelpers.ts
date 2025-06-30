@@ -1,7 +1,7 @@
 // File: server/util/routeHelpers.ts
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import { CollectionType, convertArrayToString } from '#shared/index.ts';
-import { ApiError } from './serviceHelpers.ts';
+import { CollectionType, convertArrayToString } from '#shared/index.js';
+import { ApiError } from './serviceHelpers.js';
 
 /** Router part */
 export type CustomValidationRule = {

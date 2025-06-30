@@ -1,10 +1,10 @@
 // src/server/routes/character.routes.ts
 
-import { genRoutePattern, COLLECTIONS } from '#shared/index.ts';
+import { genRoutePattern, COLLECTIONS } from '#shared/index.js';
 import express, { type Request, type Response } from 'express';
-import { asyncHandler, validateRequestData, validateServiceId } from '../util/index.ts';
-import { CharacterInfo } from '#shared/domain/index.ts';
-import { characterStore } from '../store/index.ts';
+import { asyncHandler, validateRequestData, validateServiceId } from '../util/index.js';
+import { CharacterInfo } from '#shared/domain/index.js';
+import { characterStore } from '../store/index.js';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.CHARACTER;

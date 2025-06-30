@@ -1,2 +1,2 @@
-export * from './exportSingleRecap.ts';
-export * from './recapChat.ts';
+export * from './exportSingleRecap.js';
+export * from './recapChat.js';

@@ -4,22 +4,22 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { ChromaClient, Collection } from 'chromadb';
 import { fileURLToPath } from 'node:url';
-import { ChatMessage, ChatTurn, MigChatMessage } from '#shared/domain/chat/ChatInterfaces.ts';
-import { buildChatTurnMetadataPrompt } from '#root/src/server/util/templateUtils.ts';
+import { ChatMessage, ChatTurn, MigChatMessage } from '#shared/domain/chat/ChatInterfaces.js';
+import { buildChatTurnMetadataPrompt } from '#root/src/server/util/templateUtils.js';
 import {
 	parseChatTurnToMetadata,
 	parseSessionId,
 	parseTextToEntries,
-} from '#root/src/shared/util/chatParseUtils.ts';
-import { flatChatTurnToDoc } from '#server/util/documentUtils.ts';
-import { COLLECTIONS, METADATA_TYPES } from '#shared/domain/chromadb/ChromaInterfaces.ts';
+} from '#root/src/shared/util/chatParseUtils.js';
+import { flatChatTurnToDoc } from '#server/util/documentUtils.js';
+import { COLLECTIONS, METADATA_TYPES } from '#shared/domain/chromadb/ChromaInterfaces.js';
 import {
 	buildCharacterId,
 	buildChatTurnId,
 	buildMessageId,
 	buildSessionId,
-} from '#server/util/buildIdUtils.ts';
-import { validEmotions } from '#shared/config/emotionWordsMapper.ts';
+} from '#server/util/buildIdUtils.js';
+import { validEmotions } from '#shared/config/emotionWordsMapper.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

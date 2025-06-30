@@ -3,9 +3,9 @@ import { Box, IconButton, Typography, CircularProgress, TextField } from '@mui/m
 import ReplayIcon from '@mui/icons-material/Replay';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import { ChatMessageSet, TempChatTurn } from '@shared/domain/index.ts';
-import { styleEntryFont, commonStyle } from '../../util/index.ts';
-import { parseEntriesToText } from '#root/src/shared/index.ts';
+import { ChatMessageSet, TempChatTurn } from '@shared/domain/index.js';
+import { styleEntryFont, commonStyle } from '../../util/index.js';
+import { parseEntriesToText } from '#root/src/shared/index.js';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
