@@ -1,7 +1,7 @@
 // ChatLog.tsx
 import React, { FC, useRef, useCallback, useEffect, memo } from 'react';
 import { Box, Typography, CircularProgress, Button } from '@mui/material'; // Added Button for retry
-import { ChatTurn, TempChatTurn } from '@shared/domain/index.js';
+import { ChatTurn, TempChatTurn } from '#shared/domain/index.js';
 import styles from './ChatComp.module.scss';
 import { VariableSizeList as List, ListOnScrollProps } from 'react-window'; // Import ListOnScrollProps
 import AutoSizer from 'react-virtualized-auto-sizer';

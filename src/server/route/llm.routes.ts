@@ -1,10 +1,10 @@
 // src/server/routes/ai.routes.ts (or chatGeneration.routes.ts)
 import express, { type Request, type Response } from 'express';
-import { genRoutePattern, isValidAiModelInfo } from '#root/src/shared/index.js';
-import { AiModelInfo, ChatRoleType } from '#root/src/shared/domain/index.js';
+
 import { llmService } from '../service/llmService.js';
 import { asyncHandler, CustomValidationRule, validateRequestData } from '../util/index.js';
-import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
+import { genRoutePattern, isValidAiModelInfo } from '#shared/util/index.js';
+
 // Import the necessary server-side utils
 
 const router = express.Router();

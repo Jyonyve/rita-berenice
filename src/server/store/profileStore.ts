@@ -1,9 +1,4 @@
-import {
-	COLLECTIONS,
-	METADATA_TYPES,
-	ProfileInfo,
-	ProfileMetadata,
-} from '#root/src/shared/index.js';
+import { COLLECTIONS, METADATA_TYPES, ProfileInfo, ProfileMetadata } from '#shared/domain/index.js';
 import { Collection, IncludeEnum, Document, Where } from 'chromadb';
 import { chromaDbClient } from '../db/chromaDbClient.js';
 import { ProfileResponse } from '#shared/api/index.js';

@@ -10,7 +10,7 @@ import {
 	AiModelInfo,
 	ChatTurn,
 	ChatTurnCdo,
-} from '@shared/index.js';
+} from '#shared/index.js';
 import { useToast } from '../../style/ToastProvider.jsx';
 import { useMutation } from '@tanstack/react-query';
 import { ApiError } from '#server/util/serviceHelpers.js';

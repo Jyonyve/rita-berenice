@@ -1,7 +1,7 @@
 import { chromaDbClient } from '../db/index.js';
-import { SECRET_DOC_ID } from '#root/src/shared/index.js';
 import type { Collection } from 'chromadb'; // Use Collection type
 import { decrypt, encrypt } from '../util/index.js';
+import { SECRET_DOC_ID } from '#shared/config/index.js';
 
 const { getCredentialCollection, upsertRecord, getRecordById } = chromaDbClient;
 

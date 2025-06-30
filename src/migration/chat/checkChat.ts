@@ -1,7 +1,6 @@
 // Save this file as scripts/checkMondayChat.ts
 import { ChromaClient, Collection, IncludeEnum, Where } from 'chromadb';
-import { ChatMessage, ChatTurn, COLLECTIONS, METADATA_TYPES } from '#shared/domain/index.js';
-import { parseEntriesToText } from '#root/src/shared/index.js';
+import { COLLECTIONS, METADATA_TYPES } from '#shared/domain/index.js';
 
 // --- Configuration ---
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev'; // Use env var or default

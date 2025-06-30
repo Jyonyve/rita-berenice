@@ -11,7 +11,7 @@ import {
 	convertStringToArray,
 	HistoryMetadata,
 	METADATA_TYPES,
-} from '#root/src/shared/index.js';
+} from '#shared/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

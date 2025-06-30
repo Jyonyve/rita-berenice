@@ -13,9 +13,8 @@ import {
 	validateChromaResponse,
 } from '../util/index.js';
 import { ChromaResponse, Term, TermResponse } from '#shared/api/ModuleResponse.js';
-import { metadataToChatTurn } from '#root/src/shared/util/dbConvertUtils.js';
-import { llmService } from '../service/index.js';
-import { isTermInfo } from '#root/src/shared/index.js';
+import { isTermInfo } from '#shared/util/index.js';
+import { llmService } from '#server/service/index.js';
 
 const { getTermCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.TERM;

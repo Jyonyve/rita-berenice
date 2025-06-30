@@ -21,7 +21,7 @@ import {
 import sirv from 'sirv';
 import { MODULE_NAMES } from '#shared/config/index.js';
 import { ApiErrorResponse } from '#shared/api/index.js';
-import { ApiError } from './src/server/util/serviceHelpers.js';
+import { ApiError } from './server/util/serviceHelpers.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === 'production';

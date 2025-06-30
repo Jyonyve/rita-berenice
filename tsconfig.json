@@ -1,74 +1,26 @@
 {
 	"compilerOptions": {
-		// --- Core Settings ---
-		"target": "ES2020", // Modern JS target, compatible with Node.js LTS and modern browsers
-		"lib": ["DOM", "DOM.Iterable", "ESNext"], // Standard libraries for web + modern JS features
-		"module": "NodeNext", // Use Node.js's modern ES module resolution rules
-		"moduleResolution": "NodeNext", // Crucial for correctly resolving imports in an ESM project
-		"jsx": "react-jsx", // Use React 17+ JSX transform
-
-		// --- Strictness & Type Safety ---
-		"strict": true, // Enable all strict type-checking options
-		// "noImplicitAny": false,
-		// Consider enabling these for cleaner code:
-		// "noUnusedLocals": true,
-		// "noUnusedParameters": true,
-		// "noFallthroughCasesInSwitch": true,
-
-		// --- Module Interoperability & Features ---
-		"esModuleInterop": true, // Allows default imports from commonjs modules
-		"allowSyntheticDefaultImports": true, // Required by esModuleInterop, enhances compatibility
-		"resolveJsonModule": true, // Allows importing JSON files as modules
-		"isolatedModules": true, // Ensures files can be safely transpiled individually (required by Vite/esbuild)
-		"allowImportingTsExtensions": true, // Needed for NodeNext when importing .ts/.tsx files
-
-		// --- Emit Control (Important for Vite) ---
-		"noEmit": true, // Tell TypeScript *not* to output JS files; Vite/esbuild handles compilation/bundling.
-		// `tsc` will only be used for type checking (`tsc --noEmit`).
-		"skipLibCheck": true, // Speeds up type checking by skipping .d.ts files in node_modules
-
-		// --- Class Fields ---
-		"useDefineForClassFields": true, // Use standard class field definition behavior (default in recent TS)
-
-		// --- Path Aliases ---
-		"baseUrl": ".", // Base directory for path resolution
+		"target": "ES2020",
+		"lib": ["DOM", "DOM.Iterable", "ESNext"],
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"jsx": "react-jsx",
+		"strict": true,
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"resolveJsonModule": true,
+		"isolatedModules": true,
+		"allowImportingTsExtensions": true,
+		"noEmit": true,
+		"skipLibCheck": true,
+		"useDefineForClassFields": true,
+		"baseUrl": ".",
 		"paths": {
-			"#root/*": ["./*"], // Alias for project root
-
-			"#migration/*": ["./src/migration/*"],
-			"#migration/chat/*": ["./src/migration/chat/*"],
-			"#migration/character/*": [".src/migration/character/*"],
-			"#migration/source/*": ["./src/migration/source/*"],
-
-			"#server/*": ["./src/server/*"], // Alias for src/server
-			"#server/db/*": ["./src/server/db/*"], // Alias for src/server
-			"#server/route/*": ["./src/server/route/*"], // Alias for src/server
-			"#server/service/*": ["./src/server/service/*"], // Alias for src/server
-			"#server/util/*": ["./src/server/util/*"], // Alias for src/server
-
-			"@client/*": ["./src/client/*"], // General alias for src (consider if this should be more specific, e.g., "./src/client/*")
-			"@client/domain/*": ["./src/client/domain/*"],
-			"@client/component/*": ["./src/client/component/*"],
-			"@client/hook/*": ["./src/client/hook/*"],
-			"@client/asset/*": ["./src/client/asset/*"],
-
-			"@shared/*": ["./src/shared/*"],
-			"#shared/*": ["./src/shared/*"]
+			"#client/*": ["src/client/*"],
+			"#shared/*": ["src/shared/*"],
+			"#server/*": ["src/server/*"]
 		}
 	},
-	// Define which files TypeScript should include for type checking
-	"include": [
-		"src/**/*.ts",
-		"src/**/*.tsx",
-		"src/**/*.d.ts",
-		"vite.config.ts",
-		"*.ts" // Include any other top-level .ts files if necessary
-	],
-	// Exclude build artifacts, node_modules, etc.
-	"exclude": [
-		"node_modules",
-		"dist",
-		".vite_cache", // Vite's cache directory
-		"node_modules/.tmp" // Temporary files often used for build info
-	]
+	"include": ["src/**/*", "vite.config.ts", "src/server.ts", "src/**/*.d.ts", "src/types.d.ts"],
+	"exclude": ["node_modules", "dist", ".vite_cache"]
 }

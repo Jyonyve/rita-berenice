@@ -12,8 +12,8 @@ import {
 	InputLabel,
 } from '@mui/material';
 // import { initializeAwsCredentials } from '@util/awsCredentialUtils';
-import { ChatRoleType, ChatType, supportAiModelInfo } from '@shared/index.js';
-import styles from '@client/asset/style/ChatComp.module.scss';
+import { ChatRoleType, ChatType, supportAiModelInfo } from '#shared/index.js';
+import styles from '#client/asset/style/ChatComp.module.scss';
 
 export const useErrorDialog = (initialMessage?: string) => {
 	const [open, setOpen] = useState(false);

@@ -7,8 +7,8 @@ import { CacheProvider } from '@emotion/react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import createEmotionServer from '@emotion/server/create-instance';
-import { createEmotionCache } from '@shared/config/index.js'; // Use your shared utility
-import { theme, App } from '@client/index.js'; // Import theme and App
+import { createEmotionCache } from '#shared/config/index.js'; // Use your shared utility
+import { theme, App } from '#client/index.js'; // Import theme and App
 
 interface RenderResult {
 	html: string;

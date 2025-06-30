@@ -1,10 +1,9 @@
 // src/migration/recap/exportSingleRecap.ts
 
-import { chromaDbClient, handleServiceError } from '#root/src/server/index.js';
-import { METADATA_TYPES } from '#root/src/shared/index.js';
+import { chromaDbClient, handleServiceError, buildRecapId } from '#server/index.js';
+import { METADATA_TYPES } from '#shared/index.js';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
-import { buildRecapId, buildRelationshipRecapId } from '../../server/util/index.js';
 
 // --- Configuration ---
 const OUTPUT_DIR = './src/migration/recap/exported';
@@ -16,7 +15,7 @@ const TARION_SPINOFF_SESSIONID = 'tarion_spinoff_U2Hc22mzJufwQvSX';
 // 사용할 때 변경하세요
 // const TARGET_RECAP_ID = buildRecapId(MONDAY_ORIGINAL_SESSIONID);
 // const TARGET_RECAP_ID = buildRecapId(TARION_ORIGINAL_SESSIONID);
-const TARGET_RECAP_ID = buildRecapId(TARION_SPINOFF_SESSIONID);
+// const TARGET_RECAP_ID = buildRecapId(TARION_SPINOFF_SESSIONID);
 // const TARGET_RECAP_ID = buildRelationshipRecapId(MONDAY_ORIGINAL_SESSIONID);
 // const TARGET_RECAP_ID = buildRelationshipRecapId(TARION_ORIGINAL_SESSIONID);
 // const TARGET_RECAP_ID = buildRelationshipRecapId(TARION_SPINOFF_SESSIONID);
@@ -121,4 +120,4 @@ ${document}
 };
 
 // 스크립트 실행
-exportSingleRecapById(TARGET_RECAP_ID, TARGET_METADATA_TYPE);
+// exportSingleRecapById(TARGET_RECAP_ID, TARGET_METADATA_TYPE);

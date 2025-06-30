@@ -5,20 +5,19 @@ import path from 'node:path';
 import { ChromaClient, Collection } from 'chromadb';
 import { fileURLToPath } from 'node:url';
 import { ChatMessage, ChatTurn, MigChatMessage } from '#shared/domain/chat/ChatInterfaces.js';
-import { buildChatTurnMetadataPrompt } from '#root/src/server/util/templateUtils.js';
+import {
+	buildChatTurnMetadataPrompt,
+	buildCharacterId,
+	buildChatTurnId,
+	buildMessageId,
+	flatChatTurnToDoc,
+} from '#server/util/index.js';
 import {
 	parseChatTurnToMetadata,
 	parseSessionId,
 	parseTextToEntries,
-} from '#root/src/shared/util/chatParseUtils.js';
-import { flatChatTurnToDoc } from '#server/util/documentUtils.js';
+} from '#shared/util/chatParseUtils.js';
 import { COLLECTIONS, METADATA_TYPES } from '#shared/domain/chromadb/ChromaInterfaces.js';
-import {
-	buildCharacterId,
-	buildChatTurnId,
-	buildMessageId,
-	buildSessionId,
-} from '#server/util/buildIdUtils.js';
 import { validEmotions } from '#shared/config/emotionWordsMapper.js';
 
 const __filename = fileURLToPath(import.meta.url);

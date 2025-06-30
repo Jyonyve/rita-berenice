@@ -1,6 +1,6 @@
 // src/server/db/chromaDbClient.ts
-import { COLLECTIONS, MetadataType } from '#root/src/shared/domain/index.js';
-import { ChromaResponse } from '#root/src/shared/index.js';
+import { ChromaResponse } from '#shared/api/index.js';
+import { COLLECTIONS, MetadataType } from '#shared/domain/index.js';
 import { ChromaClient, Collection, IncludeEnum, GetResponse, Where, WhereDocument } from 'chromadb';
 
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev';

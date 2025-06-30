@@ -23,7 +23,7 @@ import {
 	parseEntriesToText,
 	parseTextToEntries,
 	ChatMessageSet,
-} from '@shared/index.js';
+} from '#shared/index.js';
 import { useCharacterState, useChatState } from '../../hook/state/index.js';
 import { useChatApi, useOrchestrationApi } from '../../hook/api/index.js';
 import { useAiModel } from '../../hook/index.js';

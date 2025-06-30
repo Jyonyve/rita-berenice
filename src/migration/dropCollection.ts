@@ -1,7 +1,6 @@
 // Save this file as scripts/dropChatCollection.ts
 import { ChromaClient } from 'chromadb';
-import { COLLECTIONS } from '../shared/domain/index.js';
-// Use #root alias or adjust relative path
+import { COLLECTIONS } from '#shared/domain/index.js';
 
 // --- Configuration ---
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev';

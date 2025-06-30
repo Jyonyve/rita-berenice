@@ -14,7 +14,7 @@ import {
 	handleServiceError,
 	inflateCharacterDoc,
 } from '../util/index.js';
-import { metadataToCharacter } from '#root/src/shared/util/index.js';
+import { metadataToCharacter } from '#shared/util/index.js';
 
 const { getCharacterCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.CHARACTER;

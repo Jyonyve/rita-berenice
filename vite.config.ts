@@ -37,36 +37,6 @@ export default defineConfig({
 		],
 		target: 'node',
 	},
-	resolve: {
-		alias: {
-			// Client-side aliases
-			'@client': path.resolve(__dirname, './src/client'),
-			'@client/domain': path.resolve(__dirname, './src/client/domain'), // Consider moving shared domain to @shared
-			'@client/component': path.resolve(__dirname, './src/client/component'),
-			'@client/hook': path.resolve(__dirname, './src/client/hook'),
-			'@client/asset': path.resolve(__dirname, './src/client/asset'), // Or assets
-
-			// Shared alias
-			'@shared': path.resolve(__dirname, './src/shared'),
-			'#shared': path.resolve(__dirname, './src/shared'),
-
-			// Server-side aliases (Using # prefix is fine, ensure consistency)
-			// Adjusted to plural folder names
-			'#server': path.resolve(__dirname, './src/server'),
-			'#server/db': path.resolve(__dirname, './src/server/db'),
-			'#server/routes': path.resolve(__dirname, './src/server/routes'),
-			'#server/services': path.resolve(__dirname, './src/server/services'),
-
-			// Root alias
-			'#root': path.resolve(__dirname, '.'),
-
-			// migration alias
-			'#migration': path.resolve(__dirname, './src/migration'),
-			'#migration/chat': path.resolve(__dirname, './src/migration/chat/*'),
-			'#migration/character': path.resolve(__dirname, './src/migration/character/*'),
-			'#migration/source': path.resolve(__dirname, './src/migration/source/*'),
-		},
-	},
 	plugins: [
 		react({ jsxImportSource: '@emotion/react', babel: { plugins: ['@emotion/babel-plugin'] } }),
 		// Configure nodePolyfills to exclude 'crypto'

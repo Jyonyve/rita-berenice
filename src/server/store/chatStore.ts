@@ -1,17 +1,3 @@
-import {
-	ChatTurn,
-	ChatMessageType,
-	TempChatTurn,
-	ChatMessage,
-	ChatMessageMetadata,
-	ChatTurnMetadata,
-	METADATA_TYPES,
-	COLLECTIONS,
-	ChromaResponse,
-	ChatResponse,
-	parseTextToEntries,
-	TempChatTurnMetadata,
-} from '#shared/index.js';
 import { Collection, IncludeEnum, Metadata, Where, WhereDocument } from 'chromadb';
 import { chromaDbClient } from '../db/chromaDbClient.js';
 import {
@@ -24,7 +10,19 @@ import {
 	inflateChatTurnDoc,
 	buildTempChatTurnId,
 } from '../util/index.js';
-import { chatTurnToMetadata, metadataToChatTurn } from '#root/src/shared/util/dbConvertUtils.js';
+import {
+	ChatMessage,
+	ChatMessageMetadata,
+	ChatMessageType,
+	ChatTurn,
+	ChatTurnMetadata,
+	COLLECTIONS,
+	METADATA_TYPES,
+	TempChatTurn,
+	TempChatTurnMetadata,
+} from '#shared/domain/index.js';
+import { chatTurnToMetadata, metadataToChatTurn, parseTextToEntries } from '#shared/util/index.js';
+import { ChatResponse, ChromaResponse } from '#shared/api/index.js';
 
 // Destructure outside the object
 const {

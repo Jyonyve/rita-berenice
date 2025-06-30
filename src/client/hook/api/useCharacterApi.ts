@@ -5,7 +5,7 @@ import {
 	CharacterResponse,
 	CharacterInfo,
 	CharacterCdo,
-} from '@shared/index.js';
+} from '#shared/index.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError } from '#server/util/serviceHelpers.js';
 import { apiClient } from '../../util/axiosUtils.js';

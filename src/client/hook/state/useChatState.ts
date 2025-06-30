@@ -5,7 +5,7 @@ import {
 	TempChatTurn,
 	DEFAULT_LOADING_BATCH_TURN_COUNT,
 	ChatResponse,
-} from '@shared/index.js';
+} from '#shared/index.js';
 import { getCachedMessages, saveMessagesToCache, loadAllCachedMessages } from '../../util/index.js';
 
 export const useChatState = (sessionId: string) => {

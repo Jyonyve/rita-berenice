@@ -1,6 +1,6 @@
 // src/hooks/useCredential.ts
 import { useState, useCallback, useEffect } from 'react';
-import { genApiUrl, MODULE_NAMES, CredentialData } from '@shared/index.js'; // Adjust import path
+import { genApiUrl, MODULE_NAMES, CredentialData } from '#shared/index.js'; // Adjust import path
 import { apiClient } from '../util/index.js';
 
 /**

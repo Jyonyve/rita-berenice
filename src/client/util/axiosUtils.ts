@@ -1,6 +1,6 @@
 // src/client/api/apiClient.ts
 
-import { processApiError } from '@client/util/clientHelpers.js';
+import { processApiError } from '#client/util/clientHelpers.js';
 import axios from 'axios';
 import { useToast } from '../style/index.js';
 

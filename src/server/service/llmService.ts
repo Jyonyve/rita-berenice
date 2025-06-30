@@ -14,7 +14,7 @@ import {
 	DEFAULT_EMOTION,
 	supportAiModelInfo,
 	DEFAULT_MODEL_GOOGLEAI,
-} from '#root/src/shared/index.js';
+} from '#shared/index.js';
 import { credentialService } from './credentialService.js';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { BaseMessage, SystemMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
