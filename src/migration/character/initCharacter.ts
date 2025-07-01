@@ -1,53 +1,54 @@
 // Save this file as scripts/initCharacter.ts
 
 import { ChromaClient } from 'chromadb';
+// REMOVED: No longer import DefaultEmbeddingFunction to avoid onnxruntime-node errors.
+// import { DefaultEmbeddingFunction } from '@chroma-core/default-embed';
+
 // Assuming these imports are correct for your project structure
 import { mondayOriginal, tarionOriginal, tarionSpinoff } from './migrationTemplates.js';
 import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
 
 // --- Configuration ---
-const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev'; // Use env var or default
+const CHROMA_HOST = 'chromadb-flyio.fly.dev';
+const CHROMA_PORT = 443;
+const CHROMA_SSL = true;
 
-// --- Main Seeding Logic (Simplified) ---
+// --- Main Seeding Logic ---
 async function initCharacter() {
-	console.log(`Connecting to ChromaDB at: ${CHROMA_URL}`);
-	const chroma = new ChromaClient({ path: CHROMA_URL });
-
-	// let initData = mondayOriginal;
-	// let initData = tarionOriginal;
-	let initData = tarionSpinoff;
-
-	const { characterId } = initData;
+	console.log(`Connecting to ChromaDB at: ${CHROMA_HOST}:${CHROMA_PORT}`);
+	const chroma = new ChromaClient({ host: CHROMA_HOST, port: CHROMA_PORT, ssl: CHROMA_SSL });
 
 	try {
-		// 1. Get or Create the CHARACTER Collection
-		console.log(`Ensuring character collection "${COLLECTIONS.CHARACTER}" exists...`);
-		const collection = await chroma.getOrCreateCollection({
-			name: COLLECTIONS.CHARACTER,
-			metadata: {
-				description: 'Stores character definitions and metadata.',
-				created_by_script: 'initCharacter.ts',
-				type: COLLECTIONS.CHARACTER,
-			},
-			// embeddingFunction: yourEmbeddingFunction // Optional
-		});
-		console.log(`Collection "${COLLECTIONS.CHARACTER}" ready.`);
+		// Step 1: GET the collection. Do NOT create it. This is the core of the new logic.
+		console.log(`Getting collection "${COLLECTIONS.CHARACTER}"...`);
+		const collection = await chroma.getCollection({ name: COLLECTIONS.CHARACTER });
+		console.log(`Collection "${COLLECTIONS.CHARACTER}" found and ready.`);
 
-		// 2. Upsert Character Data Directly (Metadata DOES NOT include image paths)
-		console.log(`Upserting character "${characterId}"...`);
-
+		// Step 2: It is now safe to upsert text data. The server will do the embedding.
+		console.log(`Upserting characters...`);
 		await collection.upsert({
-			ids: [characterId],
-			documents: [JSON.stringify(initData)],
-			metadatas: [initData as Record<string, any>],
+			ids: [mondayOriginal.characterId, tarionOriginal.characterId, tarionSpinoff.characterId],
+			documents: [
+				JSON.stringify(mondayOriginal),
+				JSON.stringify(tarionOriginal),
+				JSON.stringify(tarionSpinoff),
+			],
+			metadatas: [
+				mondayOriginal as Record<string, any>,
+				tarionOriginal as Record<string, any>,
+				tarionSpinoff as Record<string, any>,
+			],
 		});
 
-		console.log(
-			`Successfully seeded character "${characterId}" into collection "${COLLECTIONS.CHARACTER}".`
+		console.log(`✅ Successfully seeded characters.`);
+		process.exit(0);
+	} catch (error: any) {
+		// Step 3: If getting the collection fails, exit with a helpful error.
+		console.error('❌ Error seeding initial character data:', error.message);
+		console.error(
+			'This likely means the collection does not exist. Please run the admin creation script via SSH first.'
 		);
-	} catch (error) {
-		console.error('Error seeding initial character data:', error);
-		process.exit(1); // Exit with error code
+		process.exit(1);
 	}
 }
 

@@ -2,18 +2,20 @@
 import { ChromaClient } from 'chromadb';
 import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
 // --- Configuration ---
-const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev';
+const CHROMA_HOST = process.env.CHROMA_HOST || 'chromadb-flyio.fly.dev';
+const CHROMA_PORT = Number(process.env.CHROMA_PORT) || 443;
+const CHROMA_SSL = true; // Your URL starts with https://
 const COLLECTION_TO_DROP = COLLECTIONS.CHARACTER;
 
 // --- Main Deletion Logic ---
 async function dropCollection() {
-	console.log(`Connecting to ChromaDB at: ${CHROMA_URL}`);
-	const chroma = new ChromaClient({ path: CHROMA_URL });
-
+	const chromaClient = new ChromaClient({ host: CHROMA_HOST, port: CHROMA_PORT, ssl: CHROMA_SSL });
+	const list = await chromaClient.listCollections();
+	console.log(list);
 	try {
 		console.log(`Attempting to delete collection "${COLLECTION_TO_DROP}"...`);
 
-		await chroma.deleteCollection({ name: COLLECTION_TO_DROP });
+		await chromaClient.deleteCollection({ name: COLLECTION_TO_DROP });
 
 		console.log(`Successfully deleted collection "${COLLECTION_TO_DROP}".`);
 		console.log(
@@ -29,7 +31,7 @@ async function dropCollection() {
 				`Collection "${COLLECTION_TO_DROP}" does not exist or was already deleted. Nothing to do.`
 			);
 			// Consider exiting gracefully if it's expected it might not exist
-			// process.exit(0);
+			process.exit(0);
 		} else {
 			// Log other unexpected errors
 			console.error(`Error deleting collection "${COLLECTION_TO_DROP}":`, error);
@@ -40,7 +42,7 @@ async function dropCollection() {
 
 // --- Run the script ---
 console.warn(
-	`🚨 WARNING: About to delete the ENTIRE "${COLLECTION_TO_DROP}" collection from ${CHROMA_URL}. This is irreversible.`
+	`🚨 WARNING: About to delete the ENTIRE "${COLLECTION_TO_DROP}" collection from ${CHROMA_HOST}. This is irreversible.`
 );
 console.warn('Press Ctrl+C within 5 seconds to cancel, or wait to proceed...');
 
