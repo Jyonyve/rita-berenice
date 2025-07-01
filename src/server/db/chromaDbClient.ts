@@ -4,8 +4,10 @@ import { COLLECTIONS } from './ChromaInterfaces.js';
 import { MetadataType } from '#shared/config/constants.js';
 import { ChromaResponse } from '#shared/api/ModuleResponse.js';
 
-const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev';
-const chromaClient = new ChromaClient({ path: CHROMA_URL });
+const CHROMA_HOST = process.env.CHROMA_HOST || 'chromadb-flyio.fly.dev';
+const CHROMA_PORT = Number(process.env.CHROMA_PORT) || 443;
+const CHROMA_SSL = true; // Your URL starts with https://
+const chromaClient = new ChromaClient({ host: CHROMA_HOST, port: CHROMA_PORT, ssl: CHROMA_SSL });
 
 /**
  * A centralized Map to cache all singleton Collection objects.

@@ -27,6 +27,7 @@
 		"drop": "tsx ./src/migration/dropCollection.ts"
 	},
 	"dependencies": {
+		"@chroma-core/default-embed": "^0.1.8",
 		"@emotion/babel-plugin": "^11.13.5",
 		"@emotion/cache": "^11.14.0",
 		"@emotion/react": "^11.14.0",
