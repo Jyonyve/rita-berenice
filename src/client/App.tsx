@@ -1,5 +1,5 @@
 // src/client/App.tsx
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router';
 import { RootLayout } from './layout/index.js';
 import { CharacterPageLoader, ChatPageLoader, NotFoundPage } from './page/index.js';
 

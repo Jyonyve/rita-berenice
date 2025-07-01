@@ -1,6 +1,6 @@
 // src/client/page/ChatPageLoader.tsx
 import React, { useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { Typography, CircularProgress, Box } from '@mui/material';
 import { ChatPage } from './chat/ChatPage.tsx';
 import { useCharacterApi, useChatApi, useProfileApi } from '../hook/index.js';

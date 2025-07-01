@@ -1,6 +1,6 @@
 // src/client/layout/RootLayout.tsx
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router';
 import { AppBar, Box, Container, Toolbar, Typography, CssBaseline } from '@mui/material';
 
 /**

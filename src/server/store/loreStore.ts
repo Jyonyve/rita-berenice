@@ -1,16 +1,4 @@
 // src/server/services/loreStore.ts
-
-import {
-	LoreInfo,
-	HistoryInfo,
-	LoreMetadata,
-	HistoryMetadata,
-	LoreResponse,
-	HistoryResponse,
-	COLLECTIONS,
-	METADATA_TYPES,
-	ChromaResponse,
-} from '#shared/index.js';
 import { Collection, Where } from 'chromadb';
 import { chromaDbClient } from '../db/index.js';
 import {
@@ -27,7 +15,16 @@ import {
 	metadataToLore,
 	historyToMetadata,
 	loreToMetadata,
-} from '#shared/util/dbConvertUtils.js';
+} from '#shared/util/index.js';
+import {
+	COLLECTIONS,
+	HistoryInfo,
+	HistoryMetadata,
+	LoreInfo,
+	LoreMetadata,
+	METADATA_TYPES,
+} from '#shared/domain/index.js';
+import { ChromaResponse, HistoryResponse, LoreResponse } from '#shared/api/index.js';
 
 // Destructure chromaDbClient methods
 const { getLoreCollection, upsertRecord, getRecords, getRecordById, queryRecords } = chromaDbClient;

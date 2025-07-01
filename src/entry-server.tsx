@@ -2,7 +2,7 @@
 
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
-import { StaticRouter } from 'react-router-dom'; // Use StaticRouter for server
+import { StaticRouter } from 'react-router'; // Use StaticRouter for server
 import { CacheProvider } from '@emotion/react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';

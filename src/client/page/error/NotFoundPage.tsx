@@ -1,6 +1,6 @@
 // src/client/component/page/NotFoundPage.tsx
 import { Box, Typography, Button } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 export function NotFoundPage() {
 	const navigate = useNavigate();

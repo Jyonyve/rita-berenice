@@ -12,6 +12,11 @@
 		"sourceMap": true,
 		"allowImportingTsExtensions": false
 	},
+	"paths": {
+		"#client/*": ["src/client/*"],
+		"#shared/*": ["src/shared/*"],
+		"#server/*": ["src/server/*"]
+	},
 	"include": [
 		"src/server/**/*.ts",
 		"src/server/**/*.tsx",

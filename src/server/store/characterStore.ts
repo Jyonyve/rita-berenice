@@ -1,9 +1,4 @@
-import {
-	CharacterInfo,
-	CharacterMetadata,
-	COLLECTIONS,
-	METADATA_TYPES,
-} from '#shared/domain/index.js';
+import { CharacterInfo, CharacterMetadata } from '#shared/domain/index.js';
 import { Collection, IncludeEnum, Document, Where } from 'chromadb';
 import { chromaDbClient } from '../db/index.js';
 import { CharacterResponse, ChromaResponse } from '#shared/api/index.js';
@@ -14,6 +9,7 @@ import {
 	handleServiceError,
 	inflateCharacterDoc,
 } from '../util/index.js';
+import { COLLECTIONS, METADATA_TYPES } from '#shared/domain/chromadb/index.js';
 import { metadataToCharacter } from '#shared/util/index.js';
 
 const { getCharacterCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;

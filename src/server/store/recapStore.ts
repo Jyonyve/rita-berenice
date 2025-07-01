@@ -1,17 +1,5 @@
 // src/server/services/recapStore.ts
 
-import {
-	RecapMetadata,
-	METADATA_TYPES,
-	COLLECTIONS,
-	parseSessionId,
-	RecapInfo,
-	convertArrayToString,
-	ChatTurn,
-	RecapResponse,
-	ChromaResponse,
-	metadataToRecap,
-} from '#shared/index.js';
 import { Collection, Metadata, Where, WhereDocument } from 'chromadb';
 import { chromaDbClient } from '../db/index.js';
 
@@ -25,6 +13,9 @@ import {
 	validateChromaResponse,
 } from '../util/index.js';
 import { chatStore } from './chatStore.js';
+import { COLLECTIONS, METADATA_TYPES, RecapInfo, RecapMetadata } from '#shared/domain/index.js';
+import { ChromaResponse, RecapResponse } from '#shared/api/index.js';
+import { convertArrayToString, metadataToRecap, parseSessionId } from '#shared/util/index.js';
 
 // Destructure chromaDbClient methods
 const { getRecapCollection, upsertRecord, getRecordById, queryRecords } = chromaDbClient;

@@ -9,7 +9,7 @@ import { UserInput } from './UserInput.tsx';
 
 // MUI Components
 import { Grid, Box, Typography } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import {
 	DEFAULT_LOADING_BATCH_TURN_COUNT,
 	METADATA_TYPES,
