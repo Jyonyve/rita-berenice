@@ -22,6 +22,7 @@ import { handleServiceError, validateChromaResponse } from '../util/serviceHelpe
 import { chatTurnToMetadata, metadataToChatTurn } from '#shared/util/dbConvertUtils.js';
 import { ChatResponse, ChromaResponse } from '#shared/api/ModuleResponse.js';
 import { parseTextToEntries } from '#shared/util/chatParseUtils.js';
+import { isAndWhere } from '../util/queryUtils.js';
 
 // Destructure outside the object
 const {
@@ -204,15 +205,14 @@ export const chatStore = {
 		try {
 			const collection = await chatStore._getChatCollection();
 
-			// Create a where clause that includes the specified message types
-			const whereClause: Where = {
-				$and: [
-					{ sessionId: { $eq: sessionId } },
-					{ type: { $eq: METADATA_TYPES.MESSAGE } },
-					{ messageType: { $eq: messageType } },
-					...(Array.isArray(where?.$and) ? where.$and : []),
-				],
-			};
+			const conditions: Where[] = [
+				{ sessionId: { $eq: sessionId } },
+				{ type: { $eq: METADATA_TYPES.MESSAGE } },
+			];
+			if (where && isAndWhere(where)) {
+				conditions.push(...where.$and);
+			}
+			const whereClause: Where = { $and: conditions };
 
 			const rawResults = await queryRecords(
 				collection,
@@ -244,14 +244,15 @@ export const chatStore = {
 	): Promise<ChatResponse> => {
 		try {
 			const collection = await chatStore._getChatCollection();
+			const conditions: Where[] = [
+				{ sessionId: { $eq: sessionId } },
+				{ type: { $eq: METADATA_TYPES.TURN } },
+			];
+			if (where && isAndWhere(where)) {
+				conditions.push(...where.$and);
+			}
+			const whereClause: Where = { $and: conditions };
 
-			const whereClause: Where = {
-				$and: [
-					{ sessionId: { $eq: sessionId } },
-					{ type: { $eq: METADATA_TYPES.TURN } },
-					...(Array.isArray(where?.$and) ? where.$and : []),
-				],
-			};
 			const rawResults = await queryRecords(collection, queryTexts, whereClause, whereDocument, limit);
 
 			const results = rawResults.map((raw) => validateChromaResponse(raw, 'getList', collectionType));

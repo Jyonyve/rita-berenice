@@ -327,7 +327,7 @@ async function linkChatToHistory() {
 		const historyWhere: Where = { type: { $eq: METADATA_TYPES.HISTORY } };
 		const historyResults = await loreCollection.get({
 			where: historyWhere,
-			include: [IncludeEnum.Metadatas],
+			include: [IncludeEnum.metadatas],
 		});
 
 		if (!historyResults.metadatas || historyResults.metadatas.length === 0) {
@@ -352,7 +352,7 @@ async function linkChatToHistory() {
 		}; // Ensure we only process turns with a character ID]};
 		const chatResults = await chatCollection.get({
 			where: chatWhere,
-			include: [IncludeEnum.Metadatas, IncludeEnum.Documents],
+			include: [IncludeEnum.metadatas, IncludeEnum.documents],
 		});
 
 		if (!chatResults.metadatas || chatResults.metadatas.length === 0) {

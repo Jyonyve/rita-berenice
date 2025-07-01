@@ -41,7 +41,7 @@ async function checkCharacterData() {
 		console.log(`Querying for document with ID: "${TARGET_CHARACTER_ID}"...`);
 		const results = await collection.get({
 			ids: [TARGET_CHARACTER_ID],
-			include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
+			include: [IncludeEnum.documents, IncludeEnum.metadatas],
 		});
 
 		// 3. Display Results and Check Data

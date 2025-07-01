@@ -15,7 +15,7 @@ export interface ApiErrorResponse {
 	// You could add other fields like 'errors: Record<string, string>[]' for validation errors
 }
 
-export type Metadata = Record<string, string | number | boolean>;
+export type Metadata = Record<string, string | number | boolean | null>;
 
 export type ChromaResponse = {
 	ids: string[];

@@ -18,6 +18,7 @@ import {
 	buildRelationshipRecapId,
 } from '../util/buildIdUtils.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
+import { isAndWhere } from '../util/queryUtils.js';
 
 // Destructure chromaDbClient methods
 const { getRecapCollection, upsertRecord, getRecordById, queryRecords } = chromaDbClient;
@@ -205,13 +206,12 @@ export const recapStore = {
 		try {
 			const collection = await chatStore._getChatCollection();
 
-			const whereClause: Where = {
-				$and: [
-					{ sessionId: { $eq: sessionId } },
-					{ type: { $eq: type } },
-					...(Array.isArray(where?.$and) ? where.$and : []),
-				],
-			};
+			const conditions: Where[] = [{ sessionId: { $eq: sessionId } }, { type: { $eq: type } }];
+			if (where && isAndWhere(where)) {
+				conditions.push(...where.$and);
+			}
+			const whereClause: Where = { $and: conditions };
+
 			const rawResults = await queryRecords(collection, queryTexts, whereClause, whereDocument, limit);
 
 			const results = rawResults.map((raw) => validateChromaResponse(raw, 'getList', collectionType));

@@ -1,4 +1,4 @@
-import { Collection, IncludeEnum, Document, Where } from 'chromadb';
+import { Collection, IncludeEnum, Where } from 'chromadb';
 import { chromaDbClient } from '../db/chromaDbClient.js';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
@@ -28,7 +28,7 @@ export const profileStore = {
 		return collection;
 	},
 
-	_parseDocToBasicProfileInfo: (documents: (Document | null)[]) => {
+	_parseDocToBasicProfileInfo: (documents: (string | null)[]) => {
 		return documents
 			.map((doc, index) => {
 				if (doc === null) return null;
@@ -47,7 +47,7 @@ export const profileStore = {
 		const collection = await profileStore._getCollection();
 		try {
 			const rawResults = await collection.get({
-				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
+				include: [IncludeEnum.documents, IncludeEnum.metadatas],
 				where: { type: METADATA_TYPES.PROFILE },
 			});
 
@@ -87,7 +87,7 @@ export const profileStore = {
 		try {
 			const rawResults = await collection.get({
 				where: { sessionId },
-				include: [IncludeEnum.Metadatas],
+				include: [IncludeEnum.metadatas],
 				limit: 1,
 			});
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
@@ -112,7 +112,10 @@ export const profileStore = {
 	getProfilesByShowName: async (showName: string): Promise<ProfileResponse> => {
 		const collection = await profileStore._getCollection();
 		const where: Where = {
-			$and: [{ type: { $eq: METADATA_TYPES.PROFILE } }, { showName: { $in: showName } }],
+			$and: [
+				{ type: { $eq: METADATA_TYPES.PROFILE } },
+				{ showName: { $like: `%${showName}%` } as any }, //NOTE: TS issue
+			],
 		};
 		try {
 			const rawResults = await getRecords(collection, where);

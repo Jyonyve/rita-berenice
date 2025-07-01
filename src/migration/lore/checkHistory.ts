@@ -23,7 +23,7 @@ async function checkAllHistories() {
 
 		const results = await collection.get({
 			where: whereClause,
-			include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
+			include: [IncludeEnum.documents, IncludeEnum.metadatas],
 		});
 
 		if (!results || results.ids.length === 0) {

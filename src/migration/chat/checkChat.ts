@@ -66,7 +66,7 @@ async function checkSeededData() {
 			// 	'tarion_spinoff_0RWsIE7zKLQ3ANEN_1041_turn',
 			// ], // Empty array to get all documents
 			where: whereClause,
-			include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
+			include: [IncludeEnum.documents, IncludeEnum.metadatas],
 			// limit: 5 // Optional limit
 		});
 

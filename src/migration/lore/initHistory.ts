@@ -74,7 +74,7 @@ const queryExistingHistories = async (
 		const where: Where = {
 			$and: [{ type: { $eq: METADATA_TYPES.HISTORY } }, { characterId: { $in: characterIds } }],
 		};
-		const results = await collection.get({ where, include: [IncludeEnum.Metadatas] });
+		const results = await collection.get({ where, include: [IncludeEnum.metadatas] });
 
 		if (!results || !results.metadatas || results.metadatas.length === 0) {
 			console.log(`    📝 No existing histories found for characters: ${characterIds.join(', ')}`);
@@ -112,7 +112,7 @@ const queryExistingLore = async (
 			$and: [{ type: { $eq: METADATA_TYPES.LORE } }, { characterId: { $in: characterIds } }],
 		};
 
-		const results = await collection.get({ where, include: [IncludeEnum.Metadatas] });
+		const results = await collection.get({ where, include: [IncludeEnum.metadatas] });
 
 		if (!results || !results.metadatas || results.metadatas.length === 0) {
 			return [];

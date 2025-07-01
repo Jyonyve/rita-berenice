@@ -1,5 +1,5 @@
 // src/server/db/chromaDbClient.ts
-import { ChromaClient, Collection, IncludeEnum, GetResponse, Where, WhereDocument } from 'chromadb';
+import { ChromaClient, Collection, IncludeEnum, Where, WhereDocument } from 'chromadb';
 import { COLLECTIONS } from './ChromaInterfaces.js';
 import { MetadataType } from '#shared/config/constants.js';
 import { ChromaResponse } from '#shared/api/ModuleResponse.js';
@@ -26,13 +26,22 @@ const _getOrCreateSingletonCollection = async (collectionName: string): Promise<
 		return _collectionCache.get(collectionName)!;
 	}
 
-	// 2. If not in cache (cache miss), fetch it from ChromaDB
-	console.log(`[ChromaClient] Cache MISS for singleton collection: ${collectionName}. Creating...`);
-	const collection = await chromaClient.getOrCreateCollection({ name: collectionName });
-
-	// 3. Store the new collection object in the cache for future requests
-	_collectionCache.set(collectionName, collection);
-	return collection;
+	// 2. If not in cache, try to get it from ChromaDB
+	try {
+		console.log(`[ChromaClient] Attempting to GET collection: ${collectionName}`);
+		const collection = await chromaClient.getCollection({ name: collectionName });
+		_collectionCache.set(collectionName, collection);
+		console.log(`[ChromaClient] Cache HIT for existing collection: ${collectionName}`);
+		return collection;
+	} catch (error) {
+		// Error means the collection does not exist, so we create it.
+		// This is the new "get-or-create" pattern.
+		console.log(`[ChromaClient] Collection ${collectionName} not found. Creating...`);
+		const collection = await chromaClient.createCollection({ name: collectionName });
+		_collectionCache.set(collectionName, collection);
+		console.log(`[ChromaClient] Collection ${collectionName} created and cached.`);
+		return collection;
+	}
 };
 
 const _returnResponse = (results: ChromaResponse): ChromaResponse => {
@@ -113,7 +122,7 @@ export const chromaDbClient = {
 		try {
 			const result = await collection.get({
 				ids: [id],
-				include: [IncludeEnum.Metadatas, IncludeEnum.Documents],
+				include: [IncludeEnum.metadatas, IncludeEnum.documents],
 			});
 			return _returnResponse(result);
 		} catch (error) {
@@ -138,7 +147,7 @@ export const chromaDbClient = {
 
 			const results = await collection.get({
 				where: whereFilter,
-				include: [IncludeEnum.Documents, IncludeEnum.Metadatas], // Include IDs (implicit), documents, and metadatas
+				include: [IncludeEnum.documents, IncludeEnum.metadatas], // Include IDs (implicit), documents, and metadatas
 				offset: options.offset,
 				limit: options.limit ?? MAX,
 			});
@@ -164,7 +173,7 @@ export const chromaDbClient = {
 			);
 			const MAX = await collection.count(); // Ensure the collection is initialized
 			const results = await collection.get({
-				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
+				include: [IncludeEnum.documents, IncludeEnum.metadatas],
 				where: whereClause,
 				limit: limit ?? MAX,
 			});
@@ -192,7 +201,7 @@ export const chromaDbClient = {
 			const results = await collection.query({
 				queryTexts, // queryTexts expects an array of strings
 				nResults: limit ?? MAX,
-				include: [IncludeEnum.Documents, IncludeEnum.Metadatas, IncludeEnum.Distances], // Also include distances
+				include: [IncludeEnum.documents, IncludeEnum.metadatas, IncludeEnum.distances], // Also include distances
 				where, // Pass the metadata filter
 				whereDocument,
 			});

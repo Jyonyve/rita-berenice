@@ -52,7 +52,7 @@ export const characterStore = {
 
 		try {
 			const rawResults = await collection.get({
-				include: [IncludeEnum.Documents, IncludeEnum.Metadatas],
+				include: [IncludeEnum.documents, IncludeEnum.metadatas],
 				where: { type: METADATA_TYPES.CHARACTER },
 			});
 
@@ -106,7 +106,10 @@ export const characterStore = {
 	): Promise<CharacterResponse> => {
 		const collection = await characterStore._getCollection();
 		const where: Where = {
-			$and: [{ type: { $eq: METADATA_TYPES.CHARACTER } }, { showName: { $in: showName } }],
+			$and: [
+				{ type: { $eq: METADATA_TYPES.CHARACTER } },
+				{ showName: { $like: `%${showName}%` } as any }, //NOTE: TS issue
+			],
 		};
 		try {
 			const rawResults = await getRecords(collection, where, limit);
