@@ -1,9 +1,11 @@
 // src/server/routes/profile.routes.ts
 
 import express, { type Request, type Response } from 'express';
-import { COLLECTIONS, genRoutePattern, ProfileMetadata, ProfileResponse } from '#shared/index.js';
 import { asyncHandler, validateRequestData, validateServiceId } from '../util/index.js';
 import { profileStore } from '../store/profileStore.js';
+import { genRoutePattern } from '#shared/util/apiHelpers.js';
+import { ProfileResponse } from '#shared/api/index.js';
+import { COLLECTIONS, ProfileMetadata } from '#shared/domain/index.js';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.PROFILE;

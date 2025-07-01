@@ -3,7 +3,8 @@ import express, { type Request, type Response } from 'express';
 
 import { llmService } from '../service/llmService.js';
 import { asyncHandler, CustomValidationRule, validateRequestData } from '../util/index.js';
-import { genRoutePattern, isValidAiModelInfo } from '#shared/util/index.js';
+import { genRoutePattern } from '#shared/util/apiHelpers.js';
+import { isValidAiModelInfo } from '#shared/util/index.js';
 
 // Import the necessary server-side utils
 

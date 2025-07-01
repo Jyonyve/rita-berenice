@@ -3,6 +3,26 @@ import { ApiError } from '#server/util/serviceHelpers.js';
 import { QueryClient, QueryCache } from '@tanstack/react-query';
 import axios from 'axios';
 
+// API 클라이언트 인스턴스 생성
+export const apiClient = axios.create({
+	baseURL: '/api',
+	headers: { 'Content-Type': 'application/json' },
+});
+
+// Hook-safe 방식으로 toast handler 주입
+export function setupApiClient(
+	addToast: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void
+) {
+	apiClient.interceptors.response.use(
+		(response) => response,
+		(error) => {
+			const processedError = processApiError(error);
+			addToast(processedError.clientMessage || 'Failed to save character.', 'error');
+			return Promise.reject(processedError);
+		}
+	);
+}
+
 export const processApiError = (err: unknown): ApiError => {
 	// Log the raw error for developer debugging. This is the only place you need to console.error.
 	console.error('API Error Intercepted:', err);

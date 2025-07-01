@@ -6,16 +6,15 @@ import { Snackbar, Alert, Box } from '@mui/material';
 import { keyframes } from '@emotion/react';
 
 // --- Types & Context Definition ---
-type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 interface Toast {
 	id: string;
 	message: string;
-	type: ToastType;
+	type: 'success' | 'error' | 'info' | 'warning';
 }
 
 interface ToastContextType {
-	addToast: (message: string, type?: ToastType) => void;
+	addToast: (message: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -52,10 +51,13 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
 	 * @param message The message to display.
 	 * @param type The type of toast (defaults to 'info').
 	 */
-	const addToast = useCallback((message: string, type: ToastType = 'info') => {
-		const id = nanoid();
-		setToasts((prevToasts) => [...prevToasts, { id, message, type }]);
-	}, []);
+	const addToast = useCallback(
+		(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
+			const id = nanoid();
+			setToasts((prevToasts) => [...prevToasts, { id, message, type }]);
+		},
+		[]
+	);
 
 	const handleClose = (event?: React.SyntheticEvent | Event, reason?: string) => {
 		// Prevent closing on click away, only on timer completion

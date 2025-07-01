@@ -1,15 +1,12 @@
 // src/server/routes/memory.routes.ts
 
 import express, { type Request, type Response } from 'express';
-import {
-	genRoutePattern,
-	MemoryResponse,
-	ChatTurn,
-	ChatTurnMetadata,
-	COLLECTIONS,
-} from '#shared/index.js';
+
 import { asyncHandler, validateRequestData, validateServiceId } from '../util/index.js';
 import { memoryEngine } from '../service/memoryEngine.js';
+import { ChatTurn, ChatTurnMetadata, COLLECTIONS } from '#shared/domain/index.js';
+import { genRoutePattern } from '#shared/util/apiHelpers.js';
+import { MemoryResponse } from '#shared/api/index.js';
 
 const router = express.Router();
 // Use CHAT collection type for validating session IDs

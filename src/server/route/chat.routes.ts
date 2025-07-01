@@ -1,15 +1,7 @@
 // src/server/routes/chat.routes.ts
 
 import express, { type Request, type Response } from 'express';
-import {
-	genRoutePattern,
-	ChatTurn,
-	COLLECTIONS,
-	ChatResponse,
-	TempChatTurn,
-	ChatMessage,
-	ChatMessageType,
-} from '#shared/index.js';
+
 import {
 	asyncHandler,
 	validateRequestData,
@@ -19,6 +11,9 @@ import {
 import { Where, WhereDocument } from 'chromadb';
 import { ApiError } from '#server/util/serviceHelpers.js';
 import { chatStore } from '../store/chatStore.js';
+import { ChatMessage, ChatMessageType, ChatTurn, COLLECTIONS } from '#shared/domain/index.js';
+import { genRoutePattern } from '#shared/util/apiHelpers.js';
+import { ChatResponse } from '#shared/api/index.js';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.CHAT;

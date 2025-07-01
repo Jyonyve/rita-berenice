@@ -6,7 +6,7 @@ import { asyncHandler, validateRequestData } from '../util/index.js';
 import { personaEngine } from '../service/personaEngine.js';
 import { AiModelInfo, CharacterInfo, ChatMessage, ProfileInfo } from '#shared/domain/index.js';
 import { MemoryResponse } from '#shared/api/index.js';
-import { genRoutePattern } from '#shared/util/index.js';
+import { genRoutePattern } from '#shared/util/apiHelpers.js';
 
 const router = express.Router();
 

@@ -8,7 +8,7 @@ import {
 } from '#shared/index.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApiError } from '#server/util/serviceHelpers.js';
-import { apiClient } from '../../util/axiosUtils.js';
+import { apiClient } from '../../util/AppInitializer.ts';
 
 export const useCharacterApi = () => {
 	const MODULE_NAME = MODULE_NAMES.CHARACTER;

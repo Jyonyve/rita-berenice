@@ -8,7 +8,9 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import createEmotionServer from '@emotion/server/create-instance';
 import { createEmotionCache } from '#shared/config/index.js'; // Use your shared utility
-import { theme, App } from '#client/index.js'; // Import theme and App
+import { theme } from '#client/theme.js';
+import { ToastProvider } from '#client/style/ToastProvider.jsx';
+import { App } from '#client/App.jsx';
 
 interface RenderResult {
 	html: string;
@@ -30,7 +32,9 @@ export function render(url: string): RenderResult {
 				<CssBaseline /> {/* MUI CSS reset */}
 				<StaticRouter location={url}>
 					{/* Router wrapper */}
-					<App />
+					<ToastProvider>
+						<App />
+					</ToastProvider>
 				</StaticRouter>
 			</ThemeProvider>
 		</CacheProvider>

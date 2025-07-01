@@ -1,12 +1,14 @@
 // src/server/routes/glossary.routes.ts
 import express, { type Request, type Response } from 'express';
-import { TermInfo, genRoutePattern, COLLECTIONS, TermResponse, TermCdo } from '#shared/index.js'; // Assuming MODULE_NAMES is not directly used in routes
 import {
 	asyncHandler,
 	validateRequestData, // For body validation
 	validateServiceId, // For sessionId path param
 } from '../util/index.js'; // Assuming these are in your util
 import { termStore } from '../store/termStore.js';
+import { COLLECTIONS, TermCdo, TermInfo } from '#shared/domain/index.js';
+import { genRoutePattern } from '#shared/util/apiHelpers.js';
+import { TermResponse } from '#shared/api/index.js';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.TERM; // For validating sessionId if it were used as a serviceId elsewhere

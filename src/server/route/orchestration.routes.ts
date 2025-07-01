@@ -1,17 +1,18 @@
 // src/server/routes/orchestration.routes.ts
 
 import express, { type Request, type Response } from 'express';
-import {
-	genRoutePattern,
-	TempChatTurn,
-	TempChatTurnCdo,
-	CharacterInfo,
-	ProfileInfo,
-	AiModelInfo,
-	COLLECTIONS,
-} from '#shared/index.js';
+
 import { asyncHandler, validateRequestData, validateServiceId } from '../util/index.js';
 import { receiveBotResponse } from '../service/index.js';
+import { genRoutePattern } from '#shared/util/apiHelpers.js';
+import {
+	AiModelInfo,
+	CharacterInfo,
+	COLLECTIONS,
+	ProfileInfo,
+	TempChatTurn,
+	TempChatTurnCdo,
+} from '#shared/domain/index.js';
 
 const router = express.Router();
 
