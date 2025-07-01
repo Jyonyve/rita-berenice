@@ -1,4 +1,5 @@
-import { CollectionType, ChromaResponse } from '#shared/index.js';
+import { CollectionType } from '../db/ChromaInterfaces.js';
+import { ChromaResponse } from '#shared/api/ModuleResponse.js';
 
 /**
  * Handles errors caught in service methods.

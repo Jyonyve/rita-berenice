@@ -2,17 +2,14 @@
 
 import express, { type Request, type Response } from 'express';
 
-import { asyncHandler, validateRequestData, validateServiceId } from '../util/index.js';
-import { receiveBotResponse } from '../service/index.js';
 import { genRoutePattern } from '#shared/util/apiHelpers.js';
-import {
-	AiModelInfo,
-	CharacterInfo,
-	COLLECTIONS,
-	ProfileInfo,
-	TempChatTurn,
-	TempChatTurnCdo,
-} from '#shared/domain/index.js';
+
+import { COLLECTIONS } from '../db/ChromaInterfaces.js';
+import { asyncHandler, validateRequestData, validateServiceId } from '../util/routeHelpers.js';
+import { TempChatTurn, TempChatTurnCdo } from '#shared/domain/chat/ChatInterfaces.js';
+import { receiveBotResponse } from '../service/orchestrationService.js';
+import { CharacterInfo, ProfileInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';
 
 const router = express.Router();
 

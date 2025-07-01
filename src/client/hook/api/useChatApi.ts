@@ -1,12 +1,12 @@
 // src/client/hooks/useChatApi.ts
 
-import { useState, useCallback } from 'react';
-import { genApiUrl, MODULE_NAMES, ChatResponse, ChatTurn, TempChatTurn } from '#shared/index.js';
-import { Where } from 'chromadb'; // Assuming these types are available on the client
-import { useToast } from '../../style/index.js';
+import type { Where } from 'chromadb';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ApiError } from '#server/util/serviceHelpers.js';
-import { apiClient } from '../../util/index.js';
+import { apiClient } from '../../util/clientHelpers.js';
+import { ChatTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { MODULE_NAMES } from '#shared/config/constants.js';
+import { genApiUrl } from '#shared/util/apiHelpers.js';
+import { ChatResponse } from '#shared/api/ModuleResponse.js';
 
 /**
  * A client-side hook for interacting with the CHAT and TEMP_CHAT API endpoints.
@@ -19,7 +19,7 @@ export const useChatApi = () => {
 	 * Stores a finalized chat turn.
 	 * Query Key: ['storeChatTurn']
 	 */
-	const storeChatTurn = useMutation<ChatTurn, ApiError, ChatTurn>({
+	const storeChatTurn = useMutation<ChatTurn, Error, ChatTurn>({
 		mutationFn: async (chatTurn: ChatTurn) => {
 			const url = genApiUrl(MODULE_NAMES.CHAT, 'storeChatTurn');
 			const response = await apiClient.post<ChatTurn>(url, chatTurn);
@@ -40,7 +40,7 @@ export const useChatApi = () => {
 	 * Query Key: ['getChatTurns']
 	 */
 	const getAllChatTurns = (sessionId: string) =>
-		useQuery<ChatResponse, ApiError>({
+		useQuery<ChatResponse, Error>({
 			queryKey: ['getAllChatTurns', sessionId], // The query key now reflects the method name
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAMES.CHAT, 'getAllChatTurns', [sessionId]);
@@ -56,7 +56,7 @@ export const useChatApi = () => {
 	 * Query Key: ['getChatTurnBySequence']
 	 */
 	const getChatTurnBySequence = (sessionId: string, sequence: number) =>
-		useQuery<ChatResponse, ApiError>({
+		useQuery<ChatResponse, Error>({
 			queryKey: ['getChatTurnBySequence', sessionId, sequence], // The query key now reflects the method name
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAMES.CHAT, 'getChatTurnBySequence', [sessionId, sequence]);
@@ -74,7 +74,7 @@ export const useChatApi = () => {
 	 */
 	const queryChatTurns = useMutation<
 		ChatResponse,
-		ApiError,
+		Error,
 		{ sessionId: string; queryTexts: string[]; where?: Where }
 	>({
 		mutationFn: async ({ sessionId, queryTexts, where }) => {
@@ -90,7 +90,7 @@ export const useChatApi = () => {
 	 * Saves a temporary chat turn object.
 	 * Query Key: ['saveTempChatTurn']
 	 */
-	const saveTempChatTurn = useMutation<boolean, ApiError, TempChatTurn>({
+	const saveTempChatTurn = useMutation<boolean, Error, TempChatTurn>({
 		mutationFn: async (tempData: TempChatTurn) => {
 			const url = genApiUrl(MODULE_NAMES.TEMP, 'saveTempChatTurn');
 			await apiClient.post(url, tempData);
@@ -103,7 +103,7 @@ export const useChatApi = () => {
 	 * Query Key: ['getTempChatTurn']
 	 */
 	const getTempChatTurn = (sessionId: string, sequence: number) =>
-		useQuery<TempChatTurn, ApiError>({
+		useQuery<TempChatTurn, Error>({
 			queryKey: ['getTempChatTurn', sessionId, sequence], // The query key now reflects the method name
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAMES.TEMP, 'getTempChatTurn', [sessionId, sequence]);
@@ -111,7 +111,7 @@ export const useChatApi = () => {
 				return response.data;
 			},
 			enabled: !!sessionId && typeof sequence === 'number', // Only run if both are available
-			retry: (failureCount, error) => (error.status === 404 ? false : failureCount < 3),
+			retry: (failureCount, error) => (error.name === '404' ? false : failureCount < 3),
 		});
 
 	return {

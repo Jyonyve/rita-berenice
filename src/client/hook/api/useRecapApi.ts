@@ -1,17 +1,14 @@
 // src/client/hooks/useRecapApi.ts
 
-import {
-	genApiUrl,
-	MODULE_NAMES,
-	RecapResponse,
-	RecapInfo,
-	METADATA_TYPES,
-} from '#shared/index.js';
-import { Where, WhereDocument } from 'chromadb';
+import type { Where, WhereDocument } from 'chromadb';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ApiError } from '#server/util/serviceHelpers.js';
-import { apiClient } from '../../util/index.js';
+import { apiClient } from '../../util/clientHelpers.js';
+import { MODULE_NAMES } from '#shared/config/constants.js';
+import { genApiUrl } from '#shared/util/apiHelpers.js';
+import { RecapInfo } from '#shared/domain/recap/RecapInterfaces.js';
+import { RecapResponse } from '#shared/api/ModuleResponse.js';
 
+const RecapType = { RECAP: 'recap', RELATIONSHIP: 'relationship' } as const;
 /**
  * A client-side hook for interacting with the RECAP API endpoints, refactored for TanStack Query.
  */
@@ -23,7 +20,7 @@ export const useRecapApi = () => {
 	 * Stores a new factual recap entry.
 	 * Mutation key: 'storeFactualRecap'
 	 */
-	const storeFactualRecap = useMutation<boolean, ApiError, RecapInfo>({
+	const storeFactualRecap = useMutation<boolean, Error, RecapInfo>({
 		mutationFn: async (recapInfo: RecapInfo) => {
 			const url = genApiUrl(MODULE_NAME, 'storeFactualRecap');
 			await apiClient.post(url, recapInfo);
@@ -31,10 +28,10 @@ export const useRecapApi = () => {
 		},
 		onSuccess: (_, variables) => {
 			queryClient.invalidateQueries({
-				queryKey: ['getRecapWholeDoc', variables.sessionId, METADATA_TYPES.RECAP],
+				queryKey: ['getRecapWholeDoc', variables.sessionId, RecapType.RECAP],
 			});
 			queryClient.invalidateQueries({
-				queryKey: ['queryRecaps', variables.sessionId, METADATA_TYPES.RECAP],
+				queryKey: ['queryRecaps', variables.sessionId, RecapType.RECAP],
 			});
 		},
 	});
@@ -43,7 +40,7 @@ export const useRecapApi = () => {
 	 * Stores a new relationship recap entry.
 	 * Mutation key: 'storeRelationshipRecap'
 	 */
-	const storeRelationshipRecap = useMutation<boolean, ApiError, RecapInfo>({
+	const storeRelationshipRecap = useMutation<boolean, Error, RecapInfo>({
 		mutationFn: async (recapInfo: RecapInfo) => {
 			const url = genApiUrl(MODULE_NAME, 'storeRelationshipRecap');
 			await apiClient.post(url, recapInfo);
@@ -52,10 +49,10 @@ export const useRecapApi = () => {
 		onSuccess: (_, variables) => {
 			// Invalidate relevant queries for this session's relationship docs
 			queryClient.invalidateQueries({
-				queryKey: ['getRecapWholeDoc', variables.sessionId, METADATA_TYPES.RELATIONSHIP],
+				queryKey: ['getRecapWholeDoc', variables.sessionId, RecapType.RELATIONSHIP],
 			});
 			queryClient.invalidateQueries({
-				queryKey: ['queryRecaps', variables.sessionId, METADATA_TYPES.RELATIONSHIP],
+				queryKey: ['queryRecaps', variables.sessionId, RecapType.RELATIONSHIP],
 			});
 		},
 	});
@@ -66,9 +63,9 @@ export const useRecapApi = () => {
 	 */
 	const getRecapWholeDoc = (
 		sessionId: string,
-		type: typeof METADATA_TYPES.RECAP | typeof METADATA_TYPES.RELATIONSHIP
+		type: typeof RecapType.RECAP | typeof RecapType.RELATIONSHIP
 	) =>
-		useQuery<string | null, ApiError>({
+		useQuery<string | null, Error>({
 			queryKey: ['getRecapWholeDoc', sessionId, type], // Ensure type is part of the query key
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getRecapWholeDoc', [sessionId]);
@@ -83,12 +80,12 @@ export const useRecapApi = () => {
 	 * Mutation key: 'queryRecaps'
 	 */
 	const queryRecaps = useMutation<
-		RecapResponse | null,
-		ApiError,
+		RecapResponse,
+		Error,
 		{
 			sessionId: string;
 			queryTexts: string[];
-			type: typeof METADATA_TYPES.RECAP | typeof METADATA_TYPES.RELATIONSHIP;
+			type: typeof RecapType.RECAP | typeof RecapType.RELATIONSHIP;
 			where?: Where;
 			whereDocument?: WhereDocument;
 			limit?: number;

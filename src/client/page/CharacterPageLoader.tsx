@@ -1,14 +1,22 @@
 // src/client/page/CharacterPage.tsx
-import React from 'react';
-import { Typography } from '@mui/material';
+import { CircularProgress, Container, Typography } from '@mui/material';
+import { CharacterPage } from './character/CharacterPage.jsx';
+import { useCharacterApi } from '../hook/api/useCharacterApi.js';
 
 export function CharacterPageLoader() {
-	return (
-		<div>
-			<Typography variant="h4" gutterBottom>
-				Select a Character
-			</Typography>
-			<Typography variant="body1">Character selection UI will be implemented here.</Typography>
-		</div>
-	);
+	const { data: characterRes, isLoading, isError } = useCharacterApi().getAllCharacters();
+
+	if (isLoading) {
+		// Use a more descriptive loading state, maybe centered
+		return (
+			<Container
+				sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}
+			>
+				<CircularProgress />
+				<Typography sx={{ ml: 2 }}>Loading characters...</Typography>
+			</Container>
+		);
+	}
+
+	return <CharacterPage characterInfos={characterRes?.characterInfos || []} />;
 }

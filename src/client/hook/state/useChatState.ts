@@ -1,12 +1,8 @@
 // src/hook/useChatState.ts
 import { useState, useCallback, useEffect } from 'react';
-import {
-	ChatTurn,
-	TempChatTurn,
-	DEFAULT_LOADING_BATCH_TURN_COUNT,
-	ChatResponse,
-} from '#shared/index.js';
-import { getCachedMessages, saveMessagesToCache, loadAllCachedMessages } from '../../util/index.js';
+import { ChatTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { DEFAULT_LOADING_BATCH_TURN_COUNT } from '#shared/config/constants.js';
+import { getCachedMessages, saveMessagesToCache } from '../../util/idbUtils.js';
 
 export const useChatState = (sessionId: string) => {
 	const [chatTurns, setChatTurns] = useState<ChatTurn[]>([]); // Sorted: oldest at index 0, newest at end

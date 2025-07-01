@@ -1,24 +1,22 @@
 // src/server/services/orchestrationService.ts (Updated)
 
+import { ABORT_TIMEOUT, METADATA_TYPES } from '#shared/config/constants.js';
 import {
+	ChatMessageSet,
+	ChatTurn,
+	ChatTurnCdo,
 	TempChatTurn,
 	TempChatTurnCdo,
-	ChatMessageSet,
-	buildChatMessage,
-	parseSessionId,
-	METADATA_TYPES,
-	ABORT_TIMEOUT,
-	CharacterInfo,
-	ProfileInfo,
-	AiModelInfo,
-	DEFAULT_MODEL_GOOGLEAI,
-	ChatTurn, // Import ChatTurn here
-	ChatTurnCdo, // Import ChatTurnCdo here
-} from '#shared/index.js';
-import { characterStore, chatStore, profileStore } from '../store/index.js';
-import { handleServiceError, ApiError } from '../util/serviceHelpers.js';
-import { memoryEngine, personaEngine } from './index.js'; // Centralized service imports
-import { buildTempChatTurnId } from '../util/index.js';
+} from '#shared/domain/chat/ChatInterfaces.js';
+import { CharacterInfo, ProfileInfo } from '#shared/domain/character/CharacterInterfaces.js';
+
+import { chatStore } from '../store/chatStore.js';
+import { buildTempChatTurnId } from '../util/buildIdUtils.js';
+import { ApiError, handleServiceError } from '../util/serviceHelpers.js';
+import { memoryEngine } from './memoryEngine.js';
+import { personaEngine } from './personaEngine.js';
+import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';
+import { buildChatMessage, parseSessionId } from '#shared/util/chatParseUtils.js';
 
 /**
  * Orchestrates the backend flow for generating a new character response.

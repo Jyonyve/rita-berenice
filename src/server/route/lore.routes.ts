@@ -1,13 +1,13 @@
 // src/server/routes/lore.routes.ts
 
 import express, { type Request, type Response } from 'express';
-import { asyncHandler, validateRequestData, validateServiceId } from '../util/index.js';
 
 import { loreStore } from '../store/loreStore.js'; // Assuming store is at this path
-import { Where } from 'chromadb';
-import { COLLECTIONS, HistoryInfo, LoreInfo } from '#shared/domain/index.js';
 import { genRoutePattern } from '#shared/util/apiHelpers.js';
-import { HistoryResponse, LoreResponse } from '#shared/api/index.js';
+import { COLLECTIONS } from '../db/ChromaInterfaces.js';
+import { asyncHandler, validateRequestData, validateServiceId } from '../util/routeHelpers.js';
+import { HistoryResponse, LoreResponse } from '#shared/api/ModuleResponse.js';
+import { HistoryInfo, LoreInfo } from '#shared/domain/lore/LoreInterfaces.js';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.LORE;

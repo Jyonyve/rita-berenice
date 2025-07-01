@@ -7,7 +7,7 @@ import {
 	Typography,
 	useTheme, // Import useTheme for spacing
 } from '@mui/material';
-import { AiModelComp } from '../../etc/AiModelComp.tsx'; // Ensure correct path
+import { AiModelComp } from '../../etc/AiModelComp.jsx'; // Ensure correct path
 
 interface UserInputProps {
 	sessionId: string;

@@ -7,11 +7,11 @@ import { fileURLToPath } from 'node:url';
 
 import {
 	ChatTurnMetadata,
-	COLLECTIONS,
 	convertStringToArray,
 	HistoryMetadata,
 	METADATA_TYPES,
 } from '#shared/index.js';
+import { COLLECTIONS } from '#server/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

@@ -1,15 +1,15 @@
 // src/client/hooks/useCharacterState.ts
 
-import { useState, useEffect, useRef } from 'react';
 import {
-	validEmotions,
 	DEFAULT_IMAGE_NUMBER,
 	EmotionKey,
 	numberToEmotionWordsMap,
 	PortraitUrlMap,
 	validEmotionKeys,
-} from '#shared/config/index.js';
-import { CharacterInfo, convertArrayToString, ProfileInfo } from '#shared/index.js';
+	validEmotions,
+} from '#shared/config/emotionWordsMapper.js';
+import { useState, useEffect, useRef } from 'react';
+import { convertArrayToString } from '#shared/util/chatParseUtils.js';
 
 function escapeRegExp(string: string): string {
 	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string

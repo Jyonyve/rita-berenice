@@ -7,10 +7,12 @@ import { CacheProvider } from '@emotion/react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import createEmotionServer from '@emotion/server/create-instance';
-import { createEmotionCache } from '#shared/config/index.js'; // Use your shared utility
 import { theme } from '#client/theme.js';
 import { ToastProvider } from '#client/style/ToastProvider.jsx';
 import { App } from '#client/App.jsx';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { createEmotionCache } from './shared/config/createEmotionCache.js';
+import { initQueryClient } from './shared/api/queryClient.js';
 
 interface RenderResult {
 	html: string;
@@ -22,22 +24,22 @@ export function render(url: string): RenderResult {
 	// 1. Create a new cache instance *for each request*
 	const cache = createEmotionCache();
 	const { extractCriticalToChunks, constructStyleTagsFromChunks } = createEmotionServer(cache);
+	const queryClient = initQueryClient();
 
 	// 2. Render the app wrapped in necessary providers (NO HelmetProvider)
 	const appHtml = ReactDOMServer.renderToString(
-		<CacheProvider value={cache}>
-			{/* Emotion wrapper */}
-			<ThemeProvider theme={theme}>
-				{/* MUI Theme wrapper */}
-				<CssBaseline /> {/* MUI CSS reset */}
-				<StaticRouter location={url}>
-					{/* Router wrapper */}
-					<ToastProvider>
-						<App />
-					</ToastProvider>
-				</StaticRouter>
-			</ThemeProvider>
-		</CacheProvider>
+		<QueryClientProvider client={queryClient}>
+			<ToastProvider>
+				<CacheProvider value={cache}>
+					<ThemeProvider theme={theme}>
+						<CssBaseline />
+						<StaticRouter location={url}>
+							<App />
+						</StaticRouter>
+					</ThemeProvider>
+				</CacheProvider>
+			</ToastProvider>
+		</QueryClientProvider>
 	);
 
 	// 3. Extract the critical Emotion styles

@@ -55,7 +55,7 @@ export default defineConfig({
 	build: {
 		chunkSizeWarningLimit: 1000,
 		rollupOptions: {
-			external: [CHROMADB, ...allBuiltinModules, 'fsevents', /^node:.*/],
+			external: [CHROMADB, 'ollama', ...allBuiltinModules, 'fsevents', /^node:.*/],
 			output: {
 				manualChunks(id) {
 					if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/'))
@@ -72,7 +72,9 @@ export default defineConfig({
 	optimizeDeps: {
 		include: ['@emotion/react', '@emotion/styled', '@emotion/cache'],
 		exclude: [
-			CHROMADB, // Keep native deps excluded
+			CHROMADB,
+			'ollama',
+			'whatwg-fetch', // Keep native deps excluded
 			// Ensure sirv is NOT excluded if used in server.ts
 		],
 	},

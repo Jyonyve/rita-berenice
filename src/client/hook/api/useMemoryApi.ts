@@ -1,16 +1,12 @@
 // src/client/hooks/useMemoryApi.ts
 
-import {
-	genApiUrl,
-	MODULE_NAMES,
-	MemoryResponse,
-	ChatTurn,
-	ChatTurnMetadata,
-} from '#shared/index.js';
 import { useMutation } from '@tanstack/react-query';
-import { useToast } from '../../style/ToastProvider.jsx';
-import { ApiError } from '#server/util/serviceHelpers.js';
-import { apiClient } from '../../util/index.js';
+import { genApiUrl } from '#shared/util/apiHelpers.js';
+
+import { apiClient } from '../../util/clientHelpers.js';
+import { MODULE_NAMES } from '#shared/config/constants.js';
+import { MemoryResponse } from '#shared/api/ModuleResponse.js';
+import { ChatTurn, ChatTurnMetadata } from '#shared/domain/chat/ChatInterfaces.js';
 
 /**
  * A client-side hook for interacting with the MEMORY API endpoints, refactored for TanStack Query.
@@ -25,7 +21,7 @@ export const useMemoryApi = () => {
 	 */
 	const recallRelevantMemories = useMutation<
 		MemoryResponse | null,
-		ApiError,
+		Error,
 		{ sessionId: string; userRequestText: string }
 	>({
 		mutationFn: async ({ sessionId, userRequestText }) => {
@@ -39,7 +35,7 @@ export const useMemoryApi = () => {
 	 * Enriches a chat turn with LLM-generated metadata.
 	 * Mutation key: 'enrichChatTurnMetadataViaLlm'
 	 */
-	const enrichChatTurnMetadataViaLlm = useMutation<ChatTurnMetadata | null, ApiError, ChatTurn>({
+	const enrichChatTurnMetadataViaLlm = useMutation<ChatTurnMetadata | null, Error, ChatTurn>({
 		mutationFn: async (turn) => {
 			const url = genApiUrl(MODULE_NAME, 'enrichChatTurnMetadataViaLlm');
 			const response = await apiClient.post<ChatTurnMetadata>(url, turn);

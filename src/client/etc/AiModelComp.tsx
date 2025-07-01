@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
-import { useErrorDialog } from '#client/util/styleUtils.tsx';
-import { useAiModel } from '#client/hook/index.js';
+import { useErrorDialog } from '#client/util/styleUtils.jsx';
+import { useAiModel } from '#client/hook/useAiModel.js';
 import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from '@mui/material';
-import { DEFAULT_CHAT_MODEL_FREE, supportAiModelInfo } from '#shared/index.js';
+import { DEFAULT_CHAT_MODEL_FREE } from '#shared/domain/aimodel/AiInfoTypes.js';
+import { supportAiModelInfo } from '#shared/config/supportAiModelInfo.js';
 
 interface AiModelCompProps {
 	sessionId: string;

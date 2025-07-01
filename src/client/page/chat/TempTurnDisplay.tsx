@@ -3,12 +3,12 @@ import { Box, IconButton, Typography, CircularProgress, TextField } from '@mui/m
 import ReplayIcon from '@mui/icons-material/Replay';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import { ChatMessageSet, TempChatTurn } from '#shared/domain/index.js';
-import { styleEntryFont, commonStyle } from '../../util/index.js';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
-import { parseEntriesToText } from '#shared/util/index.js';
+import { ChatMessageSet, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { parseEntriesToText } from '#shared/util/chatParseUtils.js';
+import { commonStyle, styleEntryFont } from '../../util/styleUtils.jsx';
 
 interface TempTurnDisplayProps {
 	tempTurn: TempChatTurn;

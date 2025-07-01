@@ -1,15 +1,16 @@
 // src/server/routes/tempChat.routes.ts
 import express, { type Request, type Response } from 'express';
+
+import { chatStore } from '../store/chatStore.js';
+import { genRoutePattern } from '#shared/util/apiHelpers.js';
+import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import {
 	asyncHandler,
-	buildTempChatTurnId,
 	validateRequestData,
-	validateSequenceRule, // For body validation
-	validateServiceId, // For sessionId path param
-} from '../util/index.js'; // Assuming these are in your util
-import { chatStore } from '../store/chatStore.js';
-import { COLLECTIONS, TempChatTurn } from '#shared/domain/index.js';
-import { genRoutePattern } from '#shared/util/apiHelpers.js';
+	validateSequenceRule,
+	validateServiceId,
+} from '../util/routeHelpers.js';
+import { TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.TEMP; // For validating sessionId if it were used as a serviceId elsewhere

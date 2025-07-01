@@ -1,28 +1,27 @@
-import { Collection, IncludeEnum, Metadata, Where, WhereDocument } from 'chromadb';
+import { Collection, Metadata, Where, WhereDocument } from 'chromadb';
 import { chromaDbClient } from '../db/chromaDbClient.js';
-import {
-	flatChatMessageToDoc,
-	flatChatTurnToDoc,
-	buildMessageId,
-	buildChatTurnId,
-	handleServiceError,
-	validateChromaResponse,
-	inflateChatTurnDoc,
-	buildTempChatTurnId,
-} from '../util/index.js';
+
+import { COLLECTIONS } from '../db/ChromaInterfaces.js';
+import { METADATA_TYPES } from '#shared/config/constants.js';
 import {
 	ChatMessage,
 	ChatMessageMetadata,
 	ChatMessageType,
 	ChatTurn,
 	ChatTurnMetadata,
-	COLLECTIONS,
-	METADATA_TYPES,
 	TempChatTurn,
 	TempChatTurnMetadata,
-} from '#shared/domain/index.js';
-import { chatTurnToMetadata, metadataToChatTurn, parseTextToEntries } from '#shared/util/index.js';
-import { ChatResponse, ChromaResponse } from '#shared/api/index.js';
+} from '#shared/domain/chat/ChatInterfaces.js';
+import { buildChatTurnId, buildMessageId, buildTempChatTurnId } from '../util/buildIdUtils.js';
+import {
+	flatChatMessageToDoc,
+	flatChatTurnToDoc,
+	inflateChatTurnDoc,
+} from '../util/documentUtils.js';
+import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
+import { chatTurnToMetadata, metadataToChatTurn } from '#shared/util/dbConvertUtils.js';
+import { ChatResponse, ChromaResponse } from '#shared/api/ModuleResponse.js';
+import { parseTextToEntries } from '#shared/util/chatParseUtils.js';
 
 // Destructure outside the object
 const {

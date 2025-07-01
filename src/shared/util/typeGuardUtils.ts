@@ -3,9 +3,8 @@ import {
 	CharacterInfo,
 	ProfileCdo,
 	ProfileInfo,
-	TermCdo,
-	TermInfo,
-} from '../domain/index.js';
+} from '../domain/character/CharacterInterfaces.js';
+import { TermCdo, TermInfo } from '../domain/term/TermInterfaces.js';
 
 export function isTermInfo(term: TermCdo | TermInfo): term is TermInfo {
 	return (term as TermInfo).englishTerm !== undefined;

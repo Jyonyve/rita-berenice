@@ -1,9 +1,11 @@
 // src/client/hooks/useProfileApi.ts
 
-import { genApiUrl, MODULE_NAMES, ProfileResponse, ProfileMetadata } from '#shared/index.js';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ApiError } from '#server/util/serviceHelpers.js';
-import { apiClient } from '../../util/index.js';
+import { apiClient } from '../../util/clientHelpers.js';
+import { MODULE_NAMES } from '#shared/config/constants.js';
+import { ProfileMetadata } from '#shared/domain/character/CharacterInterfaces.js';
+import { genApiUrl } from '#shared/util/apiHelpers.js';
+import { ProfileResponse } from '#shared/api/ModuleResponse.js';
 
 // Define a type for the structured response from the storeProfile endpoint
 interface StoreProfileResponse {
@@ -22,7 +24,7 @@ export const useProfileApi = () => {
 	/**
 	 * Creates or updates a user profile.
 	 */
-	const storeProfile = useMutation<StoreProfileResponse, ApiError, ProfileMetadata>({
+	const storeProfile = useMutation<StoreProfileResponse, Error, ProfileMetadata>({
 		mutationFn: async (profileInfo: ProfileMetadata) => {
 			const url = genApiUrl(MODULE_NAME, 'storeProfile');
 			const response = await apiClient.post<string>(url, profileInfo);
@@ -42,7 +44,7 @@ export const useProfileApi = () => {
 	 * TODO: add user Id to the query key if needed for multi-user support.
 	 */
 	const getAllProfiles = (userId?: string) =>
-		useQuery<ProfileResponse, ApiError>({
+		useQuery<ProfileResponse, Error>({
 			queryKey: ['getAllProfiles'],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getAllProfiles');
@@ -57,7 +59,7 @@ export const useProfileApi = () => {
 	 * Fetches a single profile by its unique ID.
 	 */
 	const getProfile = (profileId: string) =>
-		useQuery<ProfileResponse, ApiError>({
+		useQuery<ProfileResponse, Error>({
 			queryKey: ['getProfile', profileId],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getProfile', [profileId]);
@@ -72,7 +74,7 @@ export const useProfileApi = () => {
 	 * Handles 404 errors gracefully by not showing a toast.
 	 */
 	const getProfileBySessionId = (sessionId: string) =>
-		useQuery<ProfileResponse, ApiError>({
+		useQuery<ProfileResponse, Error>({
 			queryKey: ['getProfileBySessionId', sessionId],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getProfileBySessionId', [sessionId]);
@@ -82,7 +84,7 @@ export const useProfileApi = () => {
 			enabled: !!sessionId,
 			retry: (failureCount, error) => {
 				// Don't retry if the error is a 404 Not Found
-				if (error.status === 404) {
+				if (error.name === '404') {
 					return false;
 				}
 				// Otherwise, use default retry logic (e.g., 3 times)
@@ -94,7 +96,7 @@ export const useProfileApi = () => {
 	 * Fetches all profiles associated with a specific show name.
 	 */
 	const getProfilesByShowName = (showName: string) =>
-		useQuery<ProfileResponse, ApiError>({
+		useQuery<ProfileResponse, Error>({
 			queryKey: ['getProfilesByShowName', showName],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getProfilesByShowName', [showName]);

@@ -1,8 +1,9 @@
 // ChatLogRow.tsx
-import React, { FC, useRef, useEffect } from 'react';
+import { FC, useRef, useEffect } from 'react';
 import { ListChildComponentProps } from 'react-window';
-import { ChatTurn, TempChatTurn } from '#shared/domain/index.js';
-import { FixedTurnDisplay, TempTurnDisplay } from './index.js';
+import { ChatTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { FixedTurnDisplay } from './FixedTurnDisplay.jsx';
+import { TempTurnDisplay } from './TempTurnDisplay.jsx';
 
 // Updated data interface: includes optional tempTurn and props for it
 export interface ChatLogRowData {

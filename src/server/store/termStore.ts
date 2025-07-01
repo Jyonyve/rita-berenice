@@ -1,22 +1,20 @@
 // src/server/services/glossaryService.ts
 
 import { Collection, Where } from 'chromadb'; // Or your specific Collection type
-import { COLLECTIONS, METADATA_TYPES } from '#shared/domain/chromadb/index.js';
 import { chromaDbClient } from '../db/chromaDbClient.js';
 import { TermCdo, TermInfo, TermMetadata } from '#shared/domain/term/TermInterfaces.js';
 import { buildTermId } from '../util/buildIdUtils.js';
-import {
-	flatTermToDoc,
-	handleServiceError,
-	inflateChatTurnDoc,
-	inflateTermDoc,
-	validateChromaResponse,
-} from '../util/index.js';
-import { ChromaResponse, Term, TermResponse } from '#shared/api/ModuleResponse.js';
-import { isTermInfo } from '#shared/util/index.js';
-import { llmService } from '#server/service/index.js';
 
-const { getTermCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
+import { ChromaResponse, Term, TermResponse } from '#shared/api/ModuleResponse.js';
+
+import { COLLECTIONS } from '../db/ChromaInterfaces.js';
+import { METADATA_TYPES } from '#shared/config/constants.js';
+import { flatTermToDoc, inflateTermDoc } from '../util/documentUtils.js';
+import { isTermInfo } from '#shared/util/typeGuardUtils.js';
+import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
+import { llmService } from '../service/llmService.js';
+
+const { getTermCollection } = chromaDbClient;
 const collectionType = COLLECTIONS.TERM;
 
 export const termStore = {

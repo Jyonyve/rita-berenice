@@ -2,18 +2,19 @@
 
 import express, { type Request, type Response } from 'express';
 
-import {
-	asyncHandler,
-	validateRequestData,
-	validateServiceId,
-	validateSequenceRule,
-} from '../util/index.js';
 import { Where, WhereDocument } from 'chromadb';
 import { ApiError } from '#server/util/serviceHelpers.js';
 import { chatStore } from '../store/chatStore.js';
-import { ChatMessage, ChatMessageType, ChatTurn, COLLECTIONS } from '#shared/domain/index.js';
 import { genRoutePattern } from '#shared/util/apiHelpers.js';
-import { ChatResponse } from '#shared/api/index.js';
+import { COLLECTIONS } from '../db/ChromaInterfaces.js';
+import { ChatMessage, ChatMessageType, ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import {
+	asyncHandler,
+	validateRequestData,
+	validateSequenceRule,
+	validateServiceId,
+} from '../util/routeHelpers.js';
+import { ChatResponse } from '#shared/api/ModuleResponse.js';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.CHAT;

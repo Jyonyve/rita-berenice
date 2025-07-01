@@ -1,16 +1,14 @@
 import { Collection, IncludeEnum, Where } from 'chromadb';
-import { chromaDbClient } from '../db/index.js';
-import { COLLECTIONS, METADATA_TYPES } from '#shared/domain/index.js';
-import { CharacterResponse, ChromaResponse } from '#shared/api/index.js';
-import {
-	buildCharacterId,
-	flatCharacterToDoc,
-	validateChromaResponse,
-	handleServiceError,
-	inflateCharacterDoc,
-} from '../util/index.js';
-import { CharacterInfo, CharacterMetadata } from '#shared/domain/index.js';
-import { metadataToCharacter } from '#shared/util/index.js';
+
+import { COLLECTIONS } from '../db/ChromaInterfaces.js';
+import { METADATA_TYPES } from '#shared/config/constants.js';
+import { chromaDbClient } from '../db/chromaDbClient.js';
+import { CharacterResponse, ChromaResponse } from '#shared/api/ModuleResponse.js';
+import { flatCharacterToDoc, inflateCharacterDoc } from '../util/documentUtils.js';
+import { buildCharacterId } from '../util/buildIdUtils.js';
+import { validateChromaResponse, handleServiceError } from '../util/serviceHelpers.js';
+import { metadataToCharacter } from '#shared/util/dbConvertUtils.js';
+import { CharacterInfo, CharacterMetadata } from '#shared/domain/character/CharacterInterfaces.js';
 
 const { getCharacterCollection, getRecordById, getRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.CHARACTER;

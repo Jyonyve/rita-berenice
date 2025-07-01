@@ -1,11 +1,12 @@
 // src/client/hooks/useAiApi.ts
 import { useMutation } from '@tanstack/react-query';
-import { useState, useCallback } from 'react';
-import { genApiUrl, MODULE_NAMES, AiModelInfo, ChatRoleType } from '#shared/index.js';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs'; // This type is needed client-side
-import { useToast } from '../../style/index.js';
-import { ApiError } from '#server/util/serviceHelpers.js';
-import { apiClient } from '../../util/index.js';
+
+import { apiClient } from '../../util/clientHelpers.js';
+import { MODULE_NAMES } from '#shared/config/constants.js';
+import { ChatRoleType } from '#shared/domain/chat/ChatInterfaces.js';
+import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';
+import { genApiUrl } from '#shared/util/apiHelpers.js';
 
 /**
  * A client-side hook for interacting with the AI (LLM) API endpoints.
@@ -13,20 +14,16 @@ import { apiClient } from '../../util/index.js';
  */
 export const useAiApi = () => {
 	const MODULE_NAME = MODULE_NAMES.LLM; // Assuming LLM is the module name for AI routes
-	const { addToast } = useToast();
 
 	const invokeLlm = useMutation<
 		string, // Return type on success
-		ApiError, // Error type
+		Error, // Error type
 		{ role: ChatRoleType; prompt: string; aiModelInfo: AiModelInfo } // Variables type
 	>({
 		mutationFn: async ({ role, prompt, aiModelInfo }) => {
 			const url = genApiUrl(MODULE_NAME, 'invokeLlm');
 			const response = await apiClient.post<{ response: string }>(url, { role, prompt, aiModelInfo });
 			return response.data.response;
-		},
-		onError: (error: ApiError) => {
-			addToast(error.clientMessage || 'Failed to get LLM response.', 'error');
 		},
 	});
 	/**
@@ -35,16 +32,13 @@ export const useAiApi = () => {
 	 */
 	const invokeLlmFromMessages = useMutation<
 		string, // Return type on success
-		ApiError, // Error type
+		Error, // Error type
 		{ messages: ChatCompletionMessageParam[]; aiModelInfo: AiModelInfo } // Variables type
 	>({
 		mutationFn: async ({ messages, aiModelInfo }) => {
 			const url = genApiUrl(MODULE_NAME, 'invokeLlmFromMessages');
 			const response = await apiClient.post<{ response: string }>(url, { messages, aiModelInfo });
 			return response.data.response;
-		},
-		onError: (error: ApiError) => {
-			addToast(error.clientMessage || 'Failed to get chat completion.', 'error');
 		},
 	});
 
@@ -54,16 +48,13 @@ export const useAiApi = () => {
 	 */
 	const translateProperNoun = useMutation<
 		string, // Return type on success
-		ApiError, // Error type
+		Error, // Error type
 		string // Variables type (koreanTerm)
 	>({
 		mutationFn: async (koreanTerm) => {
 			const url = genApiUrl(MODULE_NAMES.LLM, 'translateProperNoun');
 			const response = await apiClient.post<{ translation: string }>(url, { koreanTerm });
 			return response.data.translation;
-		},
-		onError: (error: ApiError) => {
-			addToast(error.clientMessage || 'Translation failed.', 'error');
 		},
 	});
 
@@ -73,16 +64,13 @@ export const useAiApi = () => {
 	 */
 	const extractProperNouns = useMutation<
 		string[], // Return type on success
-		ApiError, // Error type
+		Error, // Error type
 		string // Variables type (textToAnalyze)
 	>({
 		mutationFn: async (textToAnalyze) => {
 			const url = genApiUrl(MODULE_NAMES.LLM, 'extractProperNouns');
 			const response = await apiClient.post<{ nouns: string[] }>(url, { textToAnalyze });
 			return response.data.nouns;
-		},
-		onError: (error: ApiError) => {
-			addToast(error.clientMessage || 'Noun extraction failed.', 'error');
 		},
 	});
 

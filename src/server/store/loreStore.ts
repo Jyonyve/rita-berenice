@@ -1,30 +1,26 @@
 // src/server/services/loreStore.ts
 import { Collection, Where } from 'chromadb';
-import { chromaDbClient } from '../db/index.js';
+
+import { METADATA_TYPES } from '#shared/config/constants.js';
+import { COLLECTIONS } from '../db/ChromaInterfaces.js';
+import { chromaDbClient } from '../db/chromaDbClient.js';
+import { ChromaResponse, HistoryResponse, LoreResponse } from '#shared/api/ModuleResponse.js';
+import { flatLoreOrHistoryToDoc, inflateLoreOrHistoryDoc } from '../util/documentUtils.js';
 import {
-	buildHistoryId,
-	flatLoreOrHistoryToDoc,
-	buildLoreId,
-	handleServiceError,
-	validateChromaResponse,
-	validateServiceId,
-	inflateLoreOrHistoryDoc,
-} from '../util/index.js';
-import {
-	metadataToHistory,
-	metadataToLore,
-	historyToMetadata,
-	loreToMetadata,
-} from '#shared/util/index.js';
-import {
-	COLLECTIONS,
 	HistoryInfo,
 	HistoryMetadata,
 	LoreInfo,
 	LoreMetadata,
-	METADATA_TYPES,
-} from '#shared/domain/index.js';
-import { ChromaResponse, HistoryResponse, LoreResponse } from '#shared/api/index.js';
+} from '#shared/domain/lore/LoreInterfaces.js';
+import {
+	historyToMetadata,
+	loreToMetadata,
+	metadataToHistory,
+	metadataToLore,
+} from '#shared/util/dbConvertUtils.js';
+import { buildLoreId, buildHistoryId } from '../util/buildIdUtils.js';
+import { validateServiceId } from '../util/routeHelpers.js';
+import { validateChromaResponse, handleServiceError } from '../util/serviceHelpers.js';
 
 // Destructure chromaDbClient methods
 const { getLoreCollection, upsertRecord, getRecords, getRecordById, queryRecords } = chromaDbClient;

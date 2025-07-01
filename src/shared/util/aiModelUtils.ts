@@ -1,9 +1,12 @@
 import { supportAiModelInfo } from '../config/supportAiModelInfo.js';
 import {
+	AiModelInfo,
+	AiPlatform,
+	AiProvider,
+	AllModelNames,
 	DEFAULT_CHAT_MODEL_FREE,
 	DEFAULT_RECAP_MODEL_FREE,
 } from '../domain/aimodel/AiInfoTypes.js';
-import type { AiModelInfo, AiPlatform, AiProvider, AllModelNames } from '#shared/index.js';
 
 // src/shared/util/aiModelUtils.ts (CLIENT-SIDE REFACTORED)
 

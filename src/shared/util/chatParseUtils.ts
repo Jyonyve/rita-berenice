@@ -1,15 +1,13 @@
 import { MessageContent, MessageContentText } from '@langchain/core/messages';
-
 import {
-	ChatMessage,
 	ChatEntry,
-	ChatTurn,
-	ChatRoleType,
+	ChatMessage,
 	ChatMessageType,
-	METADATA_TYPES,
-} from '#shared/domain/index.js';
-import { DEFAULT_EMOTION } from '../config/index.js';
-import { buildCharacterId } from '#server/util/index.js';
+	ChatRoleType,
+	ChatTurn,
+} from '../domain/chat/ChatInterfaces.js';
+import { DEFAULT_EMOTION } from '../config/emotionWordsMapper.js';
+import { buildCharacterId } from '#server/util/buildIdUtils.js';
 
 export const convertStringToArray = (input: string): string[] => {
 	if (!input || typeof input !== 'string') {
@@ -119,7 +117,7 @@ export const buildChatMessage = (
 		emotion,
 		createdAt: '',
 		updatedAt: '',
-		type: METADATA_TYPES.MESSAGE,
+		type: 'message',
 	};
 };
 

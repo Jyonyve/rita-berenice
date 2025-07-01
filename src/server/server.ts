@@ -6,23 +6,21 @@ import { fileURLToPath } from 'node:url';
 import express, { type Request, type Response, type NextFunction } from 'express';
 import compression from 'compression'; // Add compression middleware
 import { createServer as createViteServer, type ViteDevServer } from 'vite';
-import {
-	characterRoutes,
-	chatRoutes,
-	profileRoutes,
-	llmRoutes,
-	tempRoutes,
-	termRoutes,
-	loreRoutes,
-	orchestrationRoutes,
-	personaRoutes,
-	memoryRoutes,
-} from './route/index.js';
-import sirv from 'sirv';
 
-import { ApiError } from './util/index.js';
-import { MODULE_NAMES } from '#shared/config/index.js';
-import { ApiErrorResponse } from '#shared/api/index.js';
+import sirv from 'sirv';
+import { MODULE_NAMES } from '#shared/config/constants.js';
+import characterRoutes from './route/character.routes.js';
+import chatRoutes from './route/chat.routes.js';
+import llmRoutes from './route/llm.routes.js';
+import profileRoutes from './route/profile.routes.js';
+import tempRoutes from './route/temp.routes.js';
+import loreRoutes from './route/lore.routes.js';
+import termRoutes from './route/term.routes.js';
+import memoryRoutes from './route/memory.routes.js';
+import personaRoutes from './route/persona.routes.js';
+import orchestrationRoutes from './route/orchestration.routes.js';
+import { ApiErrorResponse } from '#shared/api/ModuleResponse.js';
+import { ApiError } from './util/serviceHelpers.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url)); // src/server
 const isProduction = process.env.NODE_ENV === 'production';

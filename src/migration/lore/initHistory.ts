@@ -6,7 +6,7 @@ import { ChromaClient, Collection, IncludeEnum, Where } from 'chromadb';
 import { fileURLToPath } from 'node:url';
 
 import { HistoryInfo } from '../../shared/domain/lore/LoreInterfaces.js';
-import { COLLECTIONS, METADATA_TYPES } from '../../shared/domain/chromadb/ChromaInterfaces.js';
+import { COLLECTIONS, METADATA_TYPES } from '../../server/db/ChromaInterfaces.js';
 import { historyToMetadata } from '../../shared/util/dbConvertUtils.js';
 import { buildHistoryId } from '../../server/util/buildIdUtils.js';
 import { flatLoreOrHistoryToDoc } from '../../server/util/documentUtils.js';

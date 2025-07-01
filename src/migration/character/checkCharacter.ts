@@ -1,7 +1,9 @@
 // Save this file as scripts/checkCharacterData.ts
 
-import { CharacterMetadata, COLLECTIONS, METADATA_TYPES } from '#shared/domain/index.js';
+import { COLLECTIONS } from '#server/index.js';
+import { CharacterMetadata } from '#shared/domain/index.js';
 import { ChromaClient, Collection, IncludeEnum } from 'chromadb';
+import { METADATA_TYPES } from '#shared/config/constants.js';
 // Adjust path based on your project structure
 
 // --- Configuration ---

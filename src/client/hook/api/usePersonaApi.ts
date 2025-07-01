@@ -1,18 +1,13 @@
 // src/client/hooks/usePersonaApi.ts
 
-import {
-	genApiUrl,
-	MODULE_NAMES,
-	PersonaResponse,
-	MemoryResponse,
-	CharacterInfo,
-	ProfileInfo,
-	ChatMessage,
-} from '#shared/index.js';
-import { apiClient } from '../../util/index.js';
+import { apiClient } from '../../util/clientHelpers.js';
 import { useMutation } from '@tanstack/react-query';
-import { useToast } from '../../style/index.js';
-import { ApiError } from '#server/util/serviceHelpers.js';
+import { MemoryResponse, PersonaResponse } from '#shared/api/ModuleResponse.js';
+import { CharacterInfo, ProfileInfo } from '#shared/domain/character/CharacterInterfaces.js';
+
+import { ChatMessage } from '@langchain/core/messages';
+import { MODULE_NAMES } from '#shared/config/constants.js';
+import { genApiUrl } from '#shared/util/apiHelpers.js';
 
 /**
  * Type for the request body of the generateResponse API call.
@@ -34,11 +29,7 @@ export const usePersonaApi = () => {
 	 * Generates a character's conversational response using recalled memory context.
 	 * Mutation key: 'generateResponse'
 	 */
-	const generateResponse = useMutation<
-		PersonaResponse | null,
-		ApiError,
-		GenerateResponseRequestBody
-	>({
+	const generateResponse = useMutation<PersonaResponse | null, Error, GenerateResponseRequestBody>({
 		mutationFn: async (requestBody) => {
 			const url = genApiUrl(MODULE_NAME, 'generateResponse');
 			const response = await apiClient.post<PersonaResponse>(url, requestBody);

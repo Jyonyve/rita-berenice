@@ -1,16 +1,10 @@
-import {
-	CharacterInfo,
-	ChatMessageType,
-	ChatTurn,
-	ProfileInfo,
-	RecapInfo,
-	TermInfo,
-} from '../domain/index.js';
 import { HistoryInfo, LoreInfo } from '../domain/lore/LoreInterfaces.js';
 import { LangCode } from '../config/constants.js';
 import { EmotionValue } from '../config/emotionWordsMapper.js';
-import { GetResponse } from 'chromadb';
-// File: shared/api/ApiInterfaces.ts
+import { CharacterInfo, ProfileInfo } from '../domain/character/CharacterInterfaces.js';
+import { ChatTurn } from '../domain/chat/ChatInterfaces.js';
+import { RecapInfo } from '../domain/recap/RecapInterfaces.js';
+import { TermInfo } from '../domain/term/TermInterfaces.js';
 
 export interface ApiErrorResponse {
 	status: 'error'; // Literal string to indicate an error response
@@ -21,13 +15,13 @@ export interface ApiErrorResponse {
 	// You could add other fields like 'errors: Record<string, string>[]' for validation errors
 }
 
-export type ChromaResponse = Pick<GetResponse, 'ids' | 'metadatas' | 'documents'>;
-export type AllResponse =
-	| CharacterResponse
-	| ProfileResponse
-	| ChatResponse
-	| LoreResponse
-	| HistoryResponse;
+export type Metadata = Record<string, string | number | boolean>;
+
+export type ChromaResponse = {
+	ids: string[];
+	metadatas: (Metadata | null)[];
+	documents: (string | null)[];
+};
 
 //character
 interface CharacterChromaResponse extends ChromaResponse {

@@ -1,10 +1,11 @@
 // src/client/hooks/useGlossaryApi.ts
 
-import { useState, useCallback } from 'react';
-import { genApiUrl, MODULE_NAMES, TermResponse, TermInfo, TermCdo } from '#shared/index.js';
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
-import { ApiError } from '#server/util/serviceHelpers.js';
-import { apiClient } from '../../util/index.js';
+import { apiClient } from '../../util/clientHelpers.js';
+import { MODULE_NAMES } from '#shared/config/constants.js';
+import { TermCdo, TermInfo } from '#shared/domain/term/TermInterfaces.js';
+import { genApiUrl } from '#shared/util/apiHelpers.js';
+import { TermResponse } from '#shared/api/ModuleResponse.js';
 
 /**
  * A client-side hook for interacting with the GLOSSARY API endpoints.
@@ -18,7 +19,7 @@ export const useTermApi = () => {
 	 * Stores a new or updated term in the glossary for a specific session.
 	 * Mutation key: 'storeTerm'
 	 */
-	const storeTerm = useMutation<boolean, ApiError, TermCdo | TermInfo>({
+	const storeTerm = useMutation<boolean, Error, TermCdo | TermInfo>({
 		mutationFn: async (termInfo: TermCdo | TermInfo) => {
 			const url = genApiUrl(MODULE_NAME, 'storeTerm');
 			await apiClient.post(url, termInfo);
@@ -46,7 +47,7 @@ export const useTermApi = () => {
 	 * Query key: ['getTermByKorean']
 	 */
 	const getTermByKorean = (sessionId: string, koreanTerm: string) =>
-		useQuery<TermResponse | null, ApiError>({
+		useQuery<TermResponse | null, Error>({
 			queryKey: ['getTermByKorean', sessionId, koreanTerm],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getTermByKorean', [sessionId, koreanTerm]);
@@ -55,7 +56,7 @@ export const useTermApi = () => {
 			},
 			enabled: !!sessionId && !!koreanTerm,
 			// Custom retry logic for 404 (not found is expected)
-			retry: (failureCount, error) => (error.status === 404 ? false : failureCount < 3),
+			retry: (failureCount, error) => (error.name === '404' ? false : failureCount < 3),
 		});
 
 	/**
@@ -63,7 +64,7 @@ export const useTermApi = () => {
 	 * Query key: ['getTermsBySessionId']
 	 */
 	const getTermsBySessionId = (sessionId: string) =>
-		useQuery<TermResponse | null, ApiError>({
+		useQuery<TermResponse | null, Error>({
 			queryKey: ['getTermsBySessionId', sessionId],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getTermsBySessionId', [sessionId]);
@@ -79,7 +80,7 @@ export const useTermApi = () => {
 	 */
 	const ensureAndGetTermsForPrompt = useMutation<
 		Record<string, string> | null,
-		ApiError,
+		Error,
 		{ sessionId: string; koreanTermsToEnsure: string[] }
 	>({
 		mutationFn: async ({ sessionId, koreanTermsToEnsure }) => {
@@ -100,7 +101,7 @@ export const useTermApi = () => {
 	 * Clears the server's in-memory cache for a specific session's glossary.
 	 * Mutation key: 'clearSessionCache'
 	 */
-	const clearSessionCache = useMutation<boolean, ApiError, string>({
+	const clearSessionCache = useMutation<boolean, Error, string>({
 		mutationFn: async (sessionId: string) => {
 			const url = genApiUrl(MODULE_NAME, 'clearSessionCache', [sessionId]);
 			await apiClient.delete(url);

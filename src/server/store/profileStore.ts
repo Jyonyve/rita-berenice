@@ -1,14 +1,12 @@
-import { COLLECTIONS, METADATA_TYPES, ProfileInfo, ProfileMetadata } from '#shared/domain/index.js';
 import { Collection, IncludeEnum, Document, Where } from 'chromadb';
 import { chromaDbClient } from '../db/chromaDbClient.js';
-import { ProfileResponse } from '#shared/api/index.js';
-
-import {
-	validateChromaResponse,
-	buildProfileId,
-	flatProfileToDoc,
-	handleServiceError,
-} from '../util/index.js';
+import { COLLECTIONS } from '../db/ChromaInterfaces.js';
+import { METADATA_TYPES } from '#shared/config/constants.js';
+import { ProfileInfo, ProfileMetadata } from '#shared/domain/character/CharacterInterfaces.js';
+import { ProfileResponse } from '#shared/api/ModuleResponse.js';
+import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
+import { buildProfileId } from '../util/buildIdUtils.js';
+import { flatProfileToDoc } from '../util/documentUtils.js';
 
 const { getProfileCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.PROFILE;

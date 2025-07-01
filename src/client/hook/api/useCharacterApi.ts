@@ -1,14 +1,12 @@
 // src/client/hooks/useCharacter.ts
-import {
-	genApiUrl,
-	MODULE_NAMES,
-	CharacterResponse,
-	CharacterInfo,
-	CharacterCdo,
-} from '#shared/index.js';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ApiError } from '#server/util/serviceHelpers.js';
-import { apiClient } from '../../util/AppInitializer.ts';
+
+import { apiClient } from '../../util/clientHelpers.js';
+import { MODULE_NAMES } from '#shared/config/constants.js';
+import { CharacterResponse } from '#shared/api/ModuleResponse.js';
+import { genApiUrl } from '#shared/util/apiHelpers.js';
+import { CharacterCdo, CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 
 export const useCharacterApi = () => {
 	const MODULE_NAME = MODULE_NAMES.CHARACTER;
@@ -18,22 +16,23 @@ export const useCharacterApi = () => {
 	 * Fetches all characters.
 	 * Query key: ['getAllCharacters']
 	 */
-	const getAllCharacters = useQuery<CharacterResponse, ApiError>({
-		queryKey: ['getAllCharacters'],
-		queryFn: async () => {
-			const url = genApiUrl(MODULE_NAME, 'getAllCharacters');
-			const response = await apiClient.get<CharacterResponse>(url);
-			return response.data;
-		},
-		enabled: true,
-	});
+	const getAllCharacters = () =>
+		useQuery<CharacterResponse, Error>({
+			queryKey: ['getAllCharacters'],
+			queryFn: async () => {
+				const url = genApiUrl(MODULE_NAME, 'getAllCharacters');
+				const response = await apiClient.get<CharacterResponse>(url);
+				return response.data;
+			},
+			enabled: true,
+		});
 
 	/**
 	 * Fetches a single character by ID.
 	 * Query key: ['getCharacter', characterId]
 	 */
 	const getCharacter = (characterId: string) =>
-		useQuery<CharacterResponse, ApiError>({
+		useQuery<CharacterResponse, Error>({
 			queryKey: ['getCharacter', characterId],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getCharacter', [characterId]);
@@ -48,7 +47,7 @@ export const useCharacterApi = () => {
 	 * Query key: ['getCharactersByShowName', showName]
 	 */
 	const getCharactersByShowName = (showName: string) =>
-		useQuery<CharacterResponse, ApiError>({
+		useQuery<CharacterResponse, Error>({
 			queryKey: ['getCharactersByShowName', showName],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getCharactersByShowName', [showName]);
@@ -62,7 +61,7 @@ export const useCharacterApi = () => {
 	 * Creates or updates a character.
 	 * Mutation key: 'storeCharacter'
 	 */
-	const storeCharacter = useMutation<string, ApiError, CharacterCdo | CharacterInfo>({
+	const storeCharacter = useMutation<string, Error, CharacterCdo | CharacterInfo>({
 		mutationFn: async (character) => {
 			const url = genApiUrl(MODULE_NAME, 'storeCharacter');
 			const response = await apiClient.post<string>(url, character);

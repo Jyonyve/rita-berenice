@@ -1,5 +1,3 @@
-import { COLLECTIONS } from '../domain/index.js';
-
 export const ALPHANUMERIC_ALPHABET =
 	'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' as const;
 export const BASE_IMAGE_DIR = '/src/client/asset/character';
@@ -13,19 +11,41 @@ export const MAX_LLM_RETRIES = 5;
 
 // Default limit for querying chat logs
 export const DEFAULT_QUERY_LIMIT: number = 10 as const;
-
-/* user secret storing key */
-export const SECRET_DOC_ID = 'user_api_keys' as const;
 export type LangCode = 'kor' | 'eng';
 
 export const MODULE_NAMES = {
-	...COLLECTIONS,
+	CHARACTER: 'character',
+	PROFILE: 'profile',
+	CHAT: 'chat',
+	TEMP: 'temp',
+	RECAP: 'recap',
+	LORE: 'lore',
+	TERM: 'term',
+	CREDENTIAL: 'credential',
 	LLM: 'llm',
 	MEMORY: 'memory',
 	PERSONA: 'persona',
 	ORCHESTRATION: 'orchestration',
 } as const;
 export type MODULE_TYPES = (typeof MODULE_NAMES)[keyof typeof MODULE_NAMES];
+
+export const METADATA_TYPES = {
+	CREDENTIAL: 'credential',
+	CHARACTER: 'character',
+	PROFILE: 'profile',
+	MESSAGE: 'message',
+	TURN: 'turn',
+	STORY: 'story',
+	RECAP: 'recap',
+	RELATIONSHIP: 'relationship',
+	LORE: 'lore',
+	HISTORY: 'history',
+	TEMP: 'temp',
+	DOCUMENT: 'document',
+	TERM: 'term',
+} as const;
+
+export type MetadataType = (typeof METADATA_TYPES)[keyof typeof METADATA_TYPES];
 
 export const ENV_CONSTANTS = {
 	VITE_API_URL: 'http://localhost:3000',

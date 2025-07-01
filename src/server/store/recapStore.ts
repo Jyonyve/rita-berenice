@@ -1,21 +1,23 @@
 // src/server/services/recapStore.ts
 
 import { Collection, Metadata, Where, WhereDocument } from 'chromadb';
-import { chromaDbClient } from '../db/index.js';
 
+import { chatStore } from './chatStore.js';
+import { COLLECTIONS } from '../db/ChromaInterfaces.js';
+import { METADATA_TYPES } from '#shared/config/constants.js';
+import { chromaDbClient } from '../db/chromaDbClient.js';
+import { ChromaResponse, RecapResponse } from '#shared/api/ModuleResponse.js';
+import { inflateRecapDoc } from '../util/documentUtils.js';
+import { metadataToRecap } from '#shared/util/dbConvertUtils.js';
+import { RecapMetadata, RecapInfo } from '#shared/domain/recap/RecapInterfaces.js';
+import { convertArrayToString, parseSessionId } from '#shared/util/chatParseUtils.js';
 import {
 	buildRecapDocId,
 	buildRecapId,
 	buildRelationshipRecapDocId,
 	buildRelationshipRecapId,
-	handleServiceError,
-	inflateRecapDoc,
-	validateChromaResponse,
-} from '../util/index.js';
-import { chatStore } from './chatStore.js';
-import { COLLECTIONS, METADATA_TYPES, RecapInfo, RecapMetadata } from '#shared/domain/index.js';
-import { ChromaResponse, RecapResponse } from '#shared/api/index.js';
-import { convertArrayToString, metadataToRecap, parseSessionId } from '#shared/util/index.js';
+} from '../util/buildIdUtils.js';
+import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 
 // Destructure chromaDbClient methods
 const { getRecapCollection, upsertRecord, getRecordById, queryRecords } = chromaDbClient;

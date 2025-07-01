@@ -1,5 +1,5 @@
-import { BaseMetadataType } from '../chat/index.js';
-import { METADATA_TYPES } from '../chromadb/index.js';
+import { METADATA_TYPES } from '#shared/config/constants.js';
+import { BaseMetadataType } from '../chat/ChatInterfaces.js';
 
 // --- RECAP METADATA ---
 export interface RecapMetadata extends BaseMetadataType {

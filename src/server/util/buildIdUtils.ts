@@ -1,4 +1,5 @@
-import { ChatMessageType, ALPHANUMERIC_ALPHABET } from '../../shared/index.js';
+import { ALPHANUMERIC_ALPHABET } from '#shared/config/constants.js';
+import { ChatMessageType } from '#shared/domain/chat/ChatInterfaces.js';
 import { customAlphabet } from 'nanoid';
 
 /* gen uuid (shortened)*/

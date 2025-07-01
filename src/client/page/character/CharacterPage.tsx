@@ -1,10 +1,11 @@
 // src/client/component/page/CharacterPage.tsx
 
 import { Typography, Box, Container, Stack, CircularProgress } from '@mui/material'; // Import CircularProgress
-import { DEFAULT_IMAGE_NUMBER } from '#shared/index.js'; // Import default image number constant
-import { CharacterPortrait } from './index.js';
-import { useCharacterApi } from '../../hook/api/useCharacterApi.js';
+
 import { useCharacterState } from '../../hook/state/useCharacterState.js';
+import { DEFAULT_IMAGE_NUMBER } from '#shared/config/emotionWordsMapper.js';
+import { CharacterPortrait } from './CharacterPortrait.jsx';
+import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 
 // Helper Component to manage state for a single character's portrait
 const CharacterItem: React.FC<{ characterId: string; showName: string }> = ({
@@ -54,27 +55,8 @@ const CharacterItem: React.FC<{ characterId: string; showName: string }> = ({
 	);
 };
 
-export const CharacterPage = () => {
-	// Fetch character list metadata
-	const { characters, isLoading } = useCharacterApi();
-
-	if (isLoading) {
-		// Use a more descriptive loading state, maybe centered
-		return (
-			<Container
-				sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}
-			>
-				<CircularProgress />
-				<Typography sx={{ ml: 2 }}>Loading characters...</Typography>
-			</Container>
-		);
-	}
-
-	// if (listError) {
-	//      return <Typography color="portraitError">Error loading character list: {listError.message}</Typography>
-	// }
-
-	if (characters.length === 0) {
+export const CharacterPage = ({ characterInfos }: { characterInfos: CharacterInfo[] }) => {
+	if (characterInfos.length === 0) {
 		return <Typography>No characters found.</Typography>; // Handle empty state
 	}
 
@@ -85,7 +67,7 @@ export const CharacterPage = () => {
 			</Typography>
 			<Stack spacing={2}>
 				{/* Map over characters and render CharacterItem for each */}
-				{characters.map(({ characterId, showName }) => (
+				{characterInfos.map(({ characterId, showName }) => (
 					<CharacterItem
 						key={characterId}
 						characterId={characterId} // Pass the full ID (e.g., "monday-original")

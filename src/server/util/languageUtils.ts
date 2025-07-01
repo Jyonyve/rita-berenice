@@ -1,6 +1,6 @@
 // Create a new file: src/server/util/languageUtils.ts
 
-import { LangCode } from '#shared/config/index.js';
+import { LangCode } from '#shared/config/constants.js';
 import { franc } from 'franc';
 
 /**

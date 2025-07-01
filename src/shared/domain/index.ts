@@ -1,5 +1,4 @@
 export * from './chat/index.js';
-export * from './chromadb/index.js';
 export * from './aimodel/index.js';
 export * from './character/index.js';
 export * from './lore/index.js';

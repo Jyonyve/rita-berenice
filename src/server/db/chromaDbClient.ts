@@ -1,7 +1,8 @@
 // src/server/db/chromaDbClient.ts
-import { ChromaResponse } from '#shared/api/index.js';
-import { COLLECTIONS, MetadataType } from '#shared/domain/index.js';
 import { ChromaClient, Collection, IncludeEnum, GetResponse, Where, WhereDocument } from 'chromadb';
+import { COLLECTIONS } from './ChromaInterfaces.js';
+import { MetadataType } from '#shared/config/constants.js';
+import { ChromaResponse } from '#shared/api/ModuleResponse.js';
 
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev';
 const chromaClient = new ChromaClient({ path: CHROMA_URL });
@@ -38,7 +39,7 @@ const _getOrCreateSingletonCollection = async (collectionName: string): Promise<
 	return collection;
 };
 
-const _returnResponse = (results: GetResponse | ChromaResponse): ChromaResponse => {
+const _returnResponse = (results: ChromaResponse): ChromaResponse => {
 	const { ids, metadatas, documents } = results;
 	if (!ids || ids.length === 0) {
 		console.log(`[ChromaClient._returnResponse] No documents found for the query.`);

@@ -17,8 +17,9 @@ import {
 	parseSessionId,
 	parseTextToEntries,
 } from '#shared/util/chatParseUtils.js';
-import { COLLECTIONS, METADATA_TYPES } from '#shared/domain/chromadb/ChromaInterfaces.js';
+import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
 import { validEmotions } from '#shared/config/emotionWordsMapper.js';
+import { METADATA_TYPES } from '#shared/config/constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

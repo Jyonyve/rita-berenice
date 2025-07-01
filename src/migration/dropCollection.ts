@@ -1,7 +1,6 @@
 // Save this file as scripts/dropChatCollection.ts
 import { ChromaClient } from 'chromadb';
-import { COLLECTIONS } from '#shared/domain/index.js';
-
+import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
 // --- Configuration ---
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev';
 const COLLECTION_TO_DROP = COLLECTIONS.LORE;

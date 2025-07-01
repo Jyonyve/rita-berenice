@@ -2,11 +2,12 @@
 
 import express, { type Request, type Response } from 'express';
 
-import { asyncHandler, validateRequestData, validateServiceId } from '../util/index.js';
 import { memoryEngine } from '../service/memoryEngine.js';
-import { ChatTurn, ChatTurnMetadata, COLLECTIONS } from '#shared/domain/index.js';
 import { genRoutePattern } from '#shared/util/apiHelpers.js';
-import { MemoryResponse } from '#shared/api/index.js';
+import { COLLECTIONS } from '../db/ChromaInterfaces.js';
+import { asyncHandler, validateRequestData, validateServiceId } from '../util/routeHelpers.js';
+import { MemoryResponse } from '#shared/api/ModuleResponse.js';
+import { ChatTurn, ChatTurnMetadata } from '#shared/domain/chat/ChatInterfaces.js';
 
 const router = express.Router();
 // Use CHAT collection type for validating session IDs

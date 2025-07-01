@@ -3,7 +3,7 @@
 import { ChromaClient } from 'chromadb';
 // Assuming these imports are correct for your project structure
 import { mondayOriginal, tarionOriginal, tarionSpinoff } from './migrationTemplates.js';
-import { COLLECTIONS } from '#shared/domain/index.js';
+import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
 
 // --- Configuration ---
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev'; // Use env var or default
@@ -39,7 +39,7 @@ async function initCharacter() {
 		await collection.upsert({
 			ids: [characterId],
 			documents: [JSON.stringify(initData)],
-			metadatas: [initData],
+			metadatas: [initData as Record<string, any>],
 		});
 
 		console.log(

@@ -1,8 +1,9 @@
-import { chromaDbClient } from '../db/index.js';
-import type { Collection } from 'chromadb'; // Use Collection type
-import { decrypt, encrypt } from '../util/index.js';
-import { SECRET_DOC_ID } from '#shared/config/index.js';
+import type { Collection } from 'chromadb';
+import { decrypt, encrypt } from './cryptoUtils.js';
+import { chromaDbClient } from '../db/chromaDbClient.js';
 
+/* user secret storing key */
+export const SECRET_DOC_ID = 'user_api_keys' as const;
 const { getCredentialCollection, upsertRecord, getRecordById } = chromaDbClient;
 
 export const credentialService = {

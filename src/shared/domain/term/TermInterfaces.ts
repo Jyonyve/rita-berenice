@@ -1,7 +1,7 @@
 // src/shared/domain/glossaryInterfaces.ts
 
+import { METADATA_TYPES } from '../../config/constants.js';
 import { BaseMetadataType } from '../chat/ChatInterfaces.js';
-import { METADATA_TYPES } from '../chromadb/ChromaInterfaces.js';
 
 export interface TermMetadata
 	extends Pick<BaseMetadataType, 'sessionId' | 'createdAt' | 'updatedAt'> {

@@ -1,11 +1,10 @@
 // ChatLog.tsx
 import React, { FC, useRef, useCallback, useEffect, memo } from 'react';
 import { Box, Typography, CircularProgress, Button } from '@mui/material'; // Added Button for retry
-import { ChatTurn, TempChatTurn } from '#shared/domain/index.js';
-import styles from './ChatComp.module.scss';
 import { VariableSizeList as List, ListOnScrollProps } from 'react-window'; // Import ListOnScrollProps
 import AutoSizer from 'react-virtualized-auto-sizer';
-import ChatLogRow, { ChatLogRowData } from './ChatLogRow.tsx';
+import ChatLogRow, { ChatLogRowData } from './ChatLogRow.jsx';
+import { ChatTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 
 // --- Helper Hook for Dynamic Sizes (largely okay, minor tweak for initial scroll) ---
 const useDynamicListSizes = (itemCountForScroll: number) => {

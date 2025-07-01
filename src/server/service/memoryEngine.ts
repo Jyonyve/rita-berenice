@@ -1,31 +1,27 @@
 // src/server/services/memoryEngine.ts
 
-import {
-	ChatTurn,
-	parseSessionId,
-	BasicBeingInfo,
-	parseEntriesToText,
-	ChatTurnMetadata,
-	METADATA_TYPES,
-	chatTurnToMetadata,
-	AiModelInfo,
-	DEFAULT_MODEL_GOOGLEAI,
-	RecapInfo,
-	convertArrayToString,
-	MemoryResponse,
-} from '#shared/index.js';
-import {
-	characterStore,
-	chatStore,
-	loreStore,
-	profileStore,
-	recapStore,
-	termStore,
-} from '../store/index.js';
+import { METADATA_TYPES } from '#shared/config/constants.js';
 
-import { detectLanguage, handleServiceError, parseLlmJsonResponse } from '../util/index.js';
 import { buildChatTurnMetadataPrompt } from '../util/templateUtils.js';
-import { llmService } from './index.js'; // Centralized service imports
+import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { RecapInfo } from '#shared/domain/recap/RecapInterfaces.js';
+import {
+	convertArrayToString,
+	parseEntriesToText,
+	parseSessionId,
+} from '#shared/util/chatParseUtils.js';
+import { MemoryResponse } from '#shared/api/ModuleResponse.js';
+import { recapStore } from '../store/recapStore.js';
+import { characterStore } from '../store/characterStore.js';
+import { chatStore } from '../store/chatStore.js';
+import { loreStore } from '../store/loreStore.js';
+import { profileStore } from '../store/profileStore.js';
+import { termStore } from '../store/termStore.js';
+import { detectLanguage } from '../util/languageUtils.js';
+import { handleServiceError } from '../util/serviceHelpers.js';
+import { parseLlmJsonResponse } from '../util/llmUtils.js';
+import { llmService } from './llmService.js';
+import { DEFAULT_MODEL_GOOGLEAI } from '#shared/domain/aimodel/AiInfoTypes.js';
 
 // --- 2. Corrected and Renamed Metadata Creation Helper ---
 /**

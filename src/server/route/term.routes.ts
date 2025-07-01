@@ -1,14 +1,12 @@
 // src/server/routes/glossary.routes.ts
 import express, { type Request, type Response } from 'express';
-import {
-	asyncHandler,
-	validateRequestData, // For body validation
-	validateServiceId, // For sessionId path param
-} from '../util/index.js'; // Assuming these are in your util
+
 import { termStore } from '../store/termStore.js';
-import { COLLECTIONS, TermCdo, TermInfo } from '#shared/domain/index.js';
 import { genRoutePattern } from '#shared/util/apiHelpers.js';
-import { TermResponse } from '#shared/api/index.js';
+import { COLLECTIONS } from '../db/ChromaInterfaces.js';
+import { asyncHandler, validateRequestData, validateServiceId } from '../util/routeHelpers.js';
+import { TermCdo, TermInfo } from '#shared/domain/term/TermInterfaces.js';
+import { TermResponse } from '#shared/api/ModuleResponse.js';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.TERM; // For validating sessionId if it were used as a serviceId elsewhere

@@ -2,7 +2,6 @@
 import { writeFile, readFile, access, mkdir } from 'fs/promises';
 import {
 	ChatTurn,
-	COLLECTIONS,
 	METADATA_TYPES,
 	DEFAULT_RECAP_INTERVAL,
 	DEFAULT_RELATIONSHIP_RECAP_INTERVAL,
@@ -14,8 +13,8 @@ import {
 } from '../../server/util/templateUtils.js';
 import { chromaDbClient } from '../../server/db/index.js';
 import { Where } from 'chromadb';
+import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
 import {
-	buildNaturalChatText,
 	buildRecapId,
 	buildRelationshipRecapId,
 	buildStoryId,
@@ -339,7 +338,7 @@ const displayProgress = (progressState: ProgressState): void => {
 // --- Data Retrieval Functions ---
 const getSessionChatTurns = async (sessionId: string): Promise<ChatTurn[]> => {
 	try {
-		const collection = await chromaDbClient.getSessionCollection(sessionId);
+		const collection = await chromaDbClient.getChatCollection();
 		const count = await collection.count();
 		const where: Where = {
 			$and: [{ sessionId: { $eq: sessionId } }, { type: { $eq: METADATA_TYPES.TURN } }],
@@ -391,7 +390,8 @@ const updateFactualRecap = async (
 	sequence: number
 ): Promise<void> => {
 	try {
-		const recapId = buildRecapId(sessionId);
+		//FIXME
+		const recapId = buildRecapId(sessionId, 99, 99);
 		const collection = await chromaDbClient.getRecapCollection();
 
 		const combinedContent = accumulatedContent
@@ -421,7 +421,8 @@ const updateRelationshipRecap = async (
 	sequence: number
 ): Promise<void> => {
 	try {
-		const recapId = buildRelationshipRecapId(sessionId);
+		//FIXME
+		const recapId = buildRelationshipRecapId(sessionId, 99, 99);
 		const collection = await chromaDbClient.getRecapCollection();
 
 		const combinedContent = accumulatedContent
@@ -603,12 +604,16 @@ const processFactualRecap = async (
 			const stringifiedTurns = batch
 				.map((turn) => JSON.stringify({ user: turn.request, character: turn.response }))
 				.join('\n\n');
+			// FIXME
 			const prompt = buildFactualRecapPrompt(
 				USER_NAME,
 				sessionId.startsWith('monday') ? '먼데이' : '타리온',
 				'female',
 				'male',
-				stringifiedTurns
+				stringifiedTurns,
+				[],
+				[],
+				[]
 			);
 			const recapContent = await generateRecap(prompt);
 
@@ -685,12 +690,16 @@ const processRelationshipRecap = async (
 			const naturalLanguageTurns = batch
 				.map((turn) => JSON.stringify({ user: turn.request, character: turn.response }))
 				.join('\n\n');
+			//FIXME
 			const prompt = buildLlmRelationshipRecapPrompt(
 				userName,
 				charName,
 				'female',
 				'male',
-				naturalLanguageTurns
+				naturalLanguageTurns,
+				[],
+				[],
+				[]
 			);
 			const recapContent = await generateRecap(prompt);
 

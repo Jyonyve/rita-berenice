@@ -2,28 +2,21 @@
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { ChatOpenAI } from '@langchain/openai';
 import { ChatAnthropic } from '@langchain/anthropic';
-import { ChatOllama } from '@langchain/ollama';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import OpenAI from 'openai'; // For OpenRouter
 
-import {
-	AiModelInfo,
-	ChatRoleType,
-	convertMessageContentToString,
-	CredentialDataType,
-	DEFAULT_EMOTION,
-	supportAiModelInfo,
-	DEFAULT_MODEL_GOOGLEAI,
-} from '#shared/index.js';
-import { credentialService } from './credentialService.js';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { BaseMessage, SystemMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
-import {
-	buildNerPrompt,
-	buildTermTranslationPrompt,
-	extractValidOpenAiContent,
-	isDirectOpenAIClient,
-} from '../util/index.js';
+
+import { credentialService } from '../credential/credentialService.js';
+import { CredentialDataType } from '../db/ChromaInterfaces.js';
+import { AiModelInfo, DEFAULT_MODEL_GOOGLEAI } from '#shared/domain/aimodel/AiInfoTypes.js';
+import { supportAiModelInfo } from '#shared/config/supportAiModelInfo.js';
+import { ChatRoleType } from '#shared/domain/chat/ChatInterfaces.js';
+import { extractValidOpenAiContent, isDirectOpenAIClient } from '../util/llmUtils.js';
+import { convertMessageContentToString } from '#shared/util/chatParseUtils.js';
+import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
+import { buildNerPrompt, buildTermTranslationPrompt } from '../util/templateUtils.js';
 
 const _normalizeMessageContent = (content: ChatCompletionMessageParam['content']): string => {
 	// A simple check for any "falsy" value (null, undefined, '') will handle all edge cases.
@@ -118,10 +111,10 @@ export const llmService = {
 						},
 					});
 				}
-				case 'local': {
-					const localUrl = process.env.LOCAL_AI_URL;
-					return new ChatOllama({ ...(localUrl && { baseUrl: localUrl }), ...llmOptions });
-				}
+				// case 'local': {
+				// 	const localUrl = process.env.LOCAL_AI_URL;
+				// 	return new ChatOllama({ ...(localUrl && { baseUrl: localUrl }), ...llmOptions });
+				// }
 			}
 			throw new Error(`Unsupported platform configuration: ${platform}`);
 		} catch (error) {

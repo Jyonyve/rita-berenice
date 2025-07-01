@@ -1,20 +1,17 @@
 // src/client/hooks/useOrchestrationApi.ts
 
+import { useMutation } from '@tanstack/react-query';
+import { apiClient } from '../../util/clientHelpers.js';
+import { MODULE_NAMES } from '#shared/config/constants.js';
 import {
-	genApiUrl,
-	MODULE_NAMES,
-	TempChatTurn,
-	TempChatTurnCdo,
-	CharacterInfo,
-	ProfileInfo,
-	AiModelInfo,
 	ChatTurn,
 	ChatTurnCdo,
-} from '#shared/index.js';
-import { useToast } from '../../style/ToastProvider.jsx';
-import { useMutation } from '@tanstack/react-query';
-import { ApiError } from '#server/util/serviceHelpers.js';
-import { apiClient } from '../../util/index.js';
+	TempChatTurn,
+	TempChatTurnCdo,
+} from '#shared/domain/chat/ChatInterfaces.js';
+import { genApiUrl } from '#shared/util/apiHelpers.js';
+import { CharacterInfo, ProfileInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';
 
 /**
  * A client-side hook for interacting with the main ORCHESTRATION API endpoint,
@@ -27,7 +24,7 @@ export const useOrchestrationApi = () => {
 	 * Finalizes a turn by enriching it and saving it to the permanent CHAT collection.
 	 * This is separate from generating a new response.
 	 */
-	const finalizeChatTurn = useMutation<ChatTurn, ApiError, ChatTurnCdo>({
+	const finalizeChatTurn = useMutation<ChatTurn, Error, ChatTurnCdo>({
 		mutationFn: async (cdo: ChatTurnCdo) => {
 			const url = genApiUrl(MODULE_NAMES.ORCHESTRATION, 'finalizeChatTurn');
 			const response = await apiClient.post<ChatTurn>(url, cdo);
@@ -42,7 +39,7 @@ export const useOrchestrationApi = () => {
 	 */
 	const receiveBotResponse = useMutation<
 		TempChatTurn, // Return type on success
-		ApiError, // Error type
+		Error, // Error type
 		{
 			tempChatTurnCdo: TempChatTurnCdo;
 			characterInfo: CharacterInfo;

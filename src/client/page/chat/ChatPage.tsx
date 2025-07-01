@@ -3,30 +3,22 @@
 import React, { useState, useEffect, useCallback, ChangeEvent, JSX } from 'react';
 
 // Import the new components
-import { CharacterPortrait } from '../../index.js';
-import { ChatLog } from './ChatLog.tsx';
-import { UserInput } from './UserInput.tsx';
 
+import { ChatLog } from './ChatLog.jsx';
+import { UserInput } from './UserInput.jsx';
 // MUI Components
 import { Grid, Box, Typography } from '@mui/material';
-import { useNavigate } from 'react-router';
-import {
-	DEFAULT_LOADING_BATCH_TURN_COUNT,
-	METADATA_TYPES,
-	TempChatTurn,
-	ChatTurn,
-	CharacterInfo,
-	ProfileInfo,
-	DEFAULT_EMOTION,
-	TempChatTurnCdo,
-	ChatTurnCdo,
-	parseEntriesToText,
-	parseTextToEntries,
-	ChatMessageSet,
-} from '#shared/index.js';
-import { useCharacterState, useChatState } from '../../hook/state/index.js';
-import { useChatApi, useOrchestrationApi } from '../../hook/api/index.js';
-import { useAiModel } from '../../hook/index.js';
+import { CharacterInfo, ProfileInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import { useOrchestrationApi } from '../../hook/api/useOrchestrationApi.js';
+import { useCharacterState } from '../../hook/state/useCharacterState.js';
+import { useChatApi } from '../../hook/api/useChatApi.js';
+import { useChatState } from '../../hook/state/useChatState.js';
+import { useAiModel } from '../../hook/useAiModel.js';
+import { DEFAULT_LOADING_BATCH_TURN_COUNT } from '#shared/config/constants.js';
+import { ChatTurnCdo, TempChatTurn, TempChatTurnCdo } from '#shared/domain/chat/ChatInterfaces.js';
+import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
+import { parseEntriesToText, parseTextToEntries } from '#shared/util/chatParseUtils.js';
+import { CharacterPortrait } from '../character/CharacterPortrait.jsx';
 
 export const ChatPage = ({
 	characterInfo,

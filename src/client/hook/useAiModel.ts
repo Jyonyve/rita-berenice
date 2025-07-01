@@ -1,15 +1,13 @@
 // src/client/hooks/useAiModel.ts
 import { useState, useCallback } from 'react';
-import { useErrorDialog } from '../util/styleUtils.tsx';
+import { useErrorDialog } from '../util/styleUtils.jsx';
 import {
 	AiModelInfo,
-	AllModelNames, // Keep this type
-	// Import the keyless defaults and client-side utils
-	DEFAULT_CHAT_MODEL_FREE, // Make sure this is defined without apiKey in shared types [6]
-	DEFAULT_RECAP_MODEL_FREE, // Make sure this is defined without apiKey in shared types [6]
-	getAiModelInfo, // Use the refactored client-side util [Phase 3]
-	isValidAiModelInfo, // Use the refactored client-side util [Phase 3]
-} from '#shared/index.js'; // Adjust path as needed
+	AllModelNames,
+	DEFAULT_CHAT_MODEL_FREE,
+	DEFAULT_RECAP_MODEL_FREE,
+} from '#shared/domain/aimodel/AiInfoTypes.js';
+import { getAiModelInfo, isValidAiModelInfo } from '#shared/util/aiModelUtils.js';
 
 // Determine initial states using the refactored utils (which don't include apiKey)
 const initialDefaultAiInfo: AiModelInfo = DEFAULT_CHAT_MODEL_FREE; // Or use determineInitialDefaultAiInfo if preferred

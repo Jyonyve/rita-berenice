@@ -1,17 +1,12 @@
 // src/client/hooks/useLoreApi.ts
 
-import {
-	genApiUrl,
-	MODULE_NAMES,
-	LoreResponse,
-	HistoryResponse,
-	LoreInfo,
-	HistoryInfo,
-} from '#shared/index.js';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ApiError } from '#server/util/serviceHelpers.js';
-import { useToast } from '../../style/ToastProvider.tsx';
-import { apiClient } from '../../util/index.js';
+import { useToast } from '../../style/ToastProvider.jsx';
+import { apiClient } from '../../util/clientHelpers.js';
+import { MODULE_NAMES } from '#shared/config/constants.js';
+import { HistoryInfo, LoreInfo } from '#shared/domain/lore/LoreInterfaces.js';
+import { genApiUrl } from '#shared/util/apiHelpers.js';
+import { HistoryResponse, LoreResponse } from '#shared/api/ModuleResponse.js';
 
 // For clarity in the query function signature
 type QueryOptions = {
@@ -36,7 +31,7 @@ export const useLoreApi = () => {
 	 * Stores a new or updated lore entry.
 	 * Mutation key: 'storeLore'
 	 */
-	const storeLore = useMutation<boolean, ApiError, LoreInfo>({
+	const storeLore = useMutation<boolean, Error, LoreInfo>({
 		mutationFn: async (loreInfo: LoreInfo) => {
 			const url = genApiUrl(MODULE_NAME, 'storeLore');
 			await apiClient.post(url, loreInfo);
@@ -47,9 +42,6 @@ export const useLoreApi = () => {
 			// Invalidate relevant lore queries
 			queryClient.invalidateQueries({ queryKey: ['getLores'] }); // Invalidate all lores (if getLores returns all)
 		},
-		onError: (error: ApiError) => {
-			addToast(error.clientMessage || 'Failed to save lore entry.', 'error');
-		},
 	});
 
 	/**
@@ -57,7 +49,7 @@ export const useLoreApi = () => {
 	 * Query key: ['getLores']
 	 */
 	const getLores = (characterId: string) =>
-		useQuery<LoreResponse, ApiError>({
+		useQuery<LoreResponse, Error>({
 			queryKey: ['getLores', characterId], // Adjusted to include characterId in key
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getLores', [characterId]);
@@ -72,7 +64,7 @@ export const useLoreApi = () => {
 	 * Query key: ['getLore']
 	 */
 	const getLore = (loreId: string) =>
-		useQuery<LoreResponse, ApiError>({
+		useQuery<LoreResponse, Error>({
 			queryKey: ['getLore', loreId], // Adjusted to include loreId in key
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getLore', [loreId]);
@@ -88,16 +80,13 @@ export const useLoreApi = () => {
 	 */
 	const queryLores = useMutation<
 		LoreResponse,
-		ApiError,
+		Error,
 		{ characterId: string; queryTexts: string[]; options?: QueryOptions }
 	>({
 		mutationFn: async ({ characterId, queryTexts, options }) => {
 			const url = genApiUrl(MODULE_NAME, 'queryLores');
 			const response = await apiClient.post<LoreResponse>(url, { characterId, queryTexts, options });
 			return response.data;
-		},
-		onError: (error: ApiError) => {
-			addToast(error.clientMessage || 'Lore search failed.', 'error');
 		},
 	});
 
@@ -107,7 +96,7 @@ export const useLoreApi = () => {
 	 * Stores a new or updated history entry.
 	 * Mutation key: 'storeHistory'
 	 */
-	const storeHistory = useMutation<boolean, ApiError, HistoryInfo>({
+	const storeHistory = useMutation<boolean, Error, HistoryInfo>({
 		mutationFn: async (historyInfo: HistoryInfo) => {
 			const url = genApiUrl(MODULE_NAME, 'storeHistory');
 			await apiClient.post(url, historyInfo);
@@ -118,9 +107,6 @@ export const useLoreApi = () => {
 			// Invalidate relevant history queries
 			queryClient.invalidateQueries({ queryKey: ['getHistories'] }); // Invalidate all histories (if getHistories returns all)
 		},
-		onError: (error: ApiError) => {
-			addToast(error.clientMessage || 'Failed to save history entry.', 'error');
-		},
 	});
 
 	/**
@@ -128,7 +114,7 @@ export const useLoreApi = () => {
 	 * Query key: ['getHistories']
 	 */
 	const getHistories = (characterId: string) =>
-		useQuery<HistoryResponse, ApiError>({
+		useQuery<HistoryResponse, Error>({
 			queryKey: ['getHistories', characterId], // Adjusted to include characterId in key
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getHistories', [characterId]);
@@ -144,7 +130,7 @@ export const useLoreApi = () => {
 	 */
 	const queryHistories = useMutation<
 		HistoryResponse,
-		ApiError,
+		Error,
 		{ characterId: string; queryTexts: string[]; options?: { limit?: number } }
 	>({
 		mutationFn: async ({ characterId, queryTexts, options }) => {
@@ -155,9 +141,6 @@ export const useLoreApi = () => {
 				options,
 			});
 			return response.data;
-		},
-		onError: (error: ApiError) => {
-			addToast(error.clientMessage || 'History search failed.', 'error');
 		},
 	});
 

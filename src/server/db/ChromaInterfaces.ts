@@ -1,4 +1,4 @@
-import { Metadata } from 'chromadb';
+import type { Metadata } from 'chromadb';
 
 export interface ChromaDocument {
 	id: string;
@@ -39,24 +39,6 @@ export const COLLECTIONS = {
 } as const;
 
 export type CollectionType = (typeof COLLECTIONS)[keyof typeof COLLECTIONS];
-
-export const METADATA_TYPES = {
-	CREDENTIAL: 'credential',
-	CHARACTER: 'character',
-	PROFILE: 'profile',
-	MESSAGE: 'message',
-	TURN: 'turn',
-	STORY: 'story',
-	RECAP: 'recap',
-	RELATIONSHIP: 'relationship',
-	LORE: 'lore',
-	HISTORY: 'history',
-	TEMP: 'temp',
-	DOCUMENT: 'document',
-	TERM: 'term',
-} as const;
-
-export type MetadataType = (typeof METADATA_TYPES)[keyof typeof METADATA_TYPES];
 
 // src/shared/types/credentials.ts (Example path)
 export interface CredentialData {

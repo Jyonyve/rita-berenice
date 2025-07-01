@@ -1,20 +1,16 @@
 // src/server/services/personaEngine.ts
 
-import {
-	CharacterInfo,
-	ProfileInfo,
-	ChatMessage,
-	PersonaResponse,
-	MemoryResponse,
-	DEFAULT_MODEL_GOOGLEAI, // Assuming this is your default chat model
-	parseEntriesToText,
-	AiModelInfo,
-} from '#shared/index.js';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
-import { llmService } from './index.js';
+
 import { buildPersonaSystemPrompt, buildJsonCorrectionPrompt } from '../util/templateUtils.js';
 import { handleServiceError, LlmResponseParseError } from '../util/serviceHelpers.js';
 import { parseLlmJsonResponse } from '../util/llmUtils.js';
+import { MemoryResponse, PersonaResponse } from '#shared/api/ModuleResponse.js';
+import { CharacterInfo, ProfileInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import { ChatMessage } from '#shared/domain/chat/ChatInterfaces.js';
+import { llmService } from './llmService.js';
+import { AiModelInfo, DEFAULT_MODEL_GOOGLEAI } from '#shared/domain/aimodel/AiInfoTypes.js';
+import { parseEntriesToText } from '#shared/util/chatParseUtils.js';
 
 export const personaEngine = {
 	/**

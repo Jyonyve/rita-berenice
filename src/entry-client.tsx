@@ -1,6 +1,6 @@
 // src/client/entry-client.tsx
 
-import React from 'react';
+import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
 import { CacheProvider } from '@emotion/react';
@@ -8,28 +8,29 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 
 import { QueryClientProvider } from '@tanstack/react-query';
-import { createEmotionCache } from '#shared/config/index.js';
-import { App } from '#client/App.tsx';
-import { ToastProvider, useToast } from '#client/index.js';
-import { theme } from '#client/theme.js';
-import { initQueryClient } from '#client/util/clientHelpers.js';
+import { createEmotionCache } from './shared/config/createEmotionCache.js';
+import { initQueryClient } from './shared/api/queryClient.js';
+import { ToastProvider } from './client/style/ToastProvider.jsx';
+import { theme } from './client/theme.js';
+import { App } from './client/App.jsx';
 
 function ClientApp() {
 	const clientSideEmotionCache = createEmotionCache();
-	const { addToast } = useToast();
-	const [queryClient] = React.useState(() => initQueryClient(addToast));
+	const [queryClient] = useState(initQueryClient);
 
 	return (
 		<React.StrictMode>
 			<QueryClientProvider client={queryClient}>
-				<CacheProvider value={clientSideEmotionCache}>
-					<ThemeProvider theme={theme}>
-						<CssBaseline />
-						<BrowserRouter>
-							<App />
-						</BrowserRouter>
-					</ThemeProvider>
-				</CacheProvider>
+				<ToastProvider>
+					<CacheProvider value={clientSideEmotionCache}>
+						<ThemeProvider theme={theme}>
+							<CssBaseline />
+							<BrowserRouter>
+								<App />
+							</BrowserRouter>
+						</ThemeProvider>
+					</CacheProvider>
+				</ToastProvider>
 			</QueryClientProvider>
 		</React.StrictMode>
 	);

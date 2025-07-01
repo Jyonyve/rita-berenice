@@ -1,8 +1,7 @@
 // src/shared/domain/character/CharacterInterfaces.ts
 // if type is stored as metadata, it should be premitive type.
-import { Metadata } from 'chromadb';
+import { METADATA_TYPES } from '../../config/constants.js';
 import { EmotionKey } from '../../config/emotionWordsMapper.js';
-import { METADATA_TYPES } from '../chromadb/ChromaInterfaces.js';
 
 interface BeingMetadata {
 	name: string;
