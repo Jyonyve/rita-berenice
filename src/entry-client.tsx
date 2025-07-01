@@ -43,11 +43,6 @@ if (!container) {
 }
 
 // This is React's hydration, and it is ESSENTIAL. It makes the server-rendered HTML interactive.
-ReactDOM.hydrateRoot(
-	container,
-	<ToastProvider>
-		<ClientApp />
-	</ToastProvider>
-);
+ReactDOM.hydrateRoot(container, <ClientApp />);
 
 console.log('React app hydrated on client.');

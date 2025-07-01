@@ -27,7 +27,7 @@ async function checkCharacterData() {
 		try {
 			collection = await chroma.getOrCreateCollection({
 				name: TARGET_COLLECTION_NAME,
-				metadata: { accessed_by_script: 'checkCharacterData.ts' }, // Minimal metadata
+				// metadata: { accessed_by_script: 'checkCharacterData.ts' }, // Minimal metadata
 				// embeddingFunction: new DefaultEmbeddingFunction(), // Optional: If needed and collection doesn't exist
 			});
 			console.log(`Collection "${TARGET_COLLECTION_NAME}" accessed.`);

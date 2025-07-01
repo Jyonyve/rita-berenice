@@ -28,11 +28,7 @@ const _getOrCreateSingletonCollection = async (collectionName: string): Promise<
 
 	// 2. If not in cache (cache miss), fetch it from ChromaDB
 	console.log(`[ChromaClient] Cache MISS for singleton collection: ${collectionName}. Creating...`);
-	const collection = await chromaClient.getOrCreateCollection({
-		name: collectionName,
-		// The collection's metadata 'type' is set to its own name for consistency.
-		metadata: { type: collectionName },
-	});
+	const collection = await chromaClient.getOrCreateCollection({ name: collectionName });
 
 	// 3. Store the new collection object in the cache for future requests
 	_collectionCache.set(collectionName, collection);
