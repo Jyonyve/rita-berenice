@@ -7,7 +7,7 @@ import { ChromaClient } from 'chromadb';
 // Assuming these imports are correct for your project structure
 import { mondayOriginal, tarionOriginal, tarionSpinoff } from './migrationTemplates.js';
 import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
-
+import { DefaultEmbeddingFunction } from '@chroma-core/default-embed';
 // --- Configuration ---
 const CHROMA_HOST = 'chromadb-flyio.fly.dev';
 const CHROMA_PORT = 443;
@@ -17,11 +17,11 @@ const CHROMA_SSL = true;
 async function initCharacter() {
 	console.log(`Connecting to ChromaDB at: ${CHROMA_HOST}:${CHROMA_PORT}`);
 	const chroma = new ChromaClient({ host: CHROMA_HOST, port: CHROMA_PORT, ssl: CHROMA_SSL });
-
+ const embedder = new DefaultEmbeddingFunction();
 	try {
 		// Step 1: GET the collection. Do NOT create it. This is the core of the new logic.
 		console.log(`Getting collection "${COLLECTIONS.CHARACTER}"...`);
-		const collection = await chroma.getCollection({ name: COLLECTIONS.CHARACTER });
+		const collection = await chroma.getCollection({ name: COLLECTIONS.CHARACTER , embeddingFunction: embedder, });
 		console.log(`Collection "${COLLECTIONS.CHARACTER}" found and ready.`);
 
 		// Step 2: It is now safe to upsert text data. The server will do the embedding.

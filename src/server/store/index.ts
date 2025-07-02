@@ -4,3 +4,4 @@ export * from './loreStore.js';
 export * from './profileStore.js';
 export * from './recapStore.js';
 export * from './termStore.js';
+export * from './userStore.js';

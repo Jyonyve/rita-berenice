@@ -1,6 +1,7 @@
 onlyBuiltDependencies:
   - '@parcel/watcher'
   - '@swc/core'
+  - browser-tabs-lock
   - esbuild
   - onnxruntime-node
   - protobufjs

@@ -1,80 +1,152 @@
-// src/client/component/page/CharacterPage.tsx
-
-import { Typography, Box, Container, Stack, CircularProgress } from '@mui/material'; // Import CircularProgress
-
-import { useCharacterState } from '../../hook/state/useCharacterState.js';
-import { DEFAULT_IMAGE_NUMBER } from '#shared/config/emotionWordsMapper.js';
-import { CharacterPortrait } from './CharacterPortrait.jsx';
+import React from 'react';
+import {
+	Box,
+	Typography,
+	Button,
+	Card,
+	CardContent,
+	Avatar,
+	List,
+	ListItem,
+	ListItemText,
+	CircularProgress,
+} from '@mui/material';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import { useCharacterState } from '../../hook/state/useCharacterState.ts';
 
-// Helper Component to manage state for a single character's portrait
-const CharacterItem: React.FC<{ characterId: string; showName: string }> = ({
-	characterId,
-	showName,
+// Props: characterId (string), onStartSession (function), onLoadProfile (function)
+interface CharacterIntroPageProps {
+	characterInfo: CharacterInfo;
+	onStartSession: (characterId: string) => void;
+	onLoadProfile: (profileId: string) => void;
+}
+
+const CharacterIntroPage: React.FC<CharacterIntroPageProps> = ({
+	characterInfo,
+	onStartSession,
+	onLoadProfile,
 }) => {
-	// Use the hook *per character* to load its specific assets
+	const characterId = characterInfo.characterId;
+	// Character state: portraits, loading, error
 	const { portraitMap, isLoadingPortraits, portraitError } = useCharacterState(characterId);
-	console.log(characterId);
-	// Get the URL for the default portrait from the map
-	console.log(portraitMap);
-	const defaultImageUrl = portraitMap[DEFAULT_IMAGE_NUMBER];
-	console.log(defaultImageUrl);
+
+	// Handlers
+	const handleStartSession = () => onStartSession(characterId);
+	const handleLoadProfile = () => profile && onLoadProfile(profile.profileId);
+
+	// Portrait: pick default or first available
+	const portraitUrl =
+		!isPortraitLoading && portraitMap && Object.values(portraitMap)[0]
+			? Object.values(portraitMap)[0]
+			: '';
 
 	return (
-		<Box key={characterId} sx={{ border: '1px solid grey', p: 2, mb: 2 }}>
-			{/* Conditionally render portrait based on loading/portraitError/success */}
-			{isLoadingPortraits ? (
-				<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 100 }}>
-					<CircularProgress size={24} /> {/* Show loading spinner */}
+		<Box display="flex" flexDirection="row" width="100%" minHeight="80vh" p={4} gap={4}>
+			{/* Left: Portrait */}
+			<Box flex="0 0 240px" display="flex" alignItems="flex-start" justifyContent="center">
+				{isPortraitLoading ? (
+					<CircularProgress />
+				) : portraitUrl ? (
+					<Avatar
+						src={portraitUrl}
+						alt={characterInfo?.name ?? 'Character'}
+						sx={{ width: 200, height: 200, borderRadius: 3, boxShadow: 3 }}
+						variant="rounded"
+					/>
+				) : (
+					<Box width={200} height={200} bgcolor="#eee" borderRadius={3} />
+				)}
+			</Box>
+
+			{/* Right: Info and actions */}
+			<Box flex="1 1 0" display="flex" flexDirection="column" gap={3}>
+				{/* Title and Description */}
+				<Card variant="outlined">
+					<CardContent>
+						<Typography variant="h4" fontWeight="bold">
+							{isCharLoading ? 'Loading...' : characterInfo?.name}
+						</Typography>
+						<Typography variant="subtitle1" color="text.secondary" mt={1}>
+							{characterInfo?.showName}
+						</Typography>
+						<Typography variant="body1" mt={2}>
+							{characterInfo?.description}
+						</Typography>
+					</CardContent>
+				</Card>
+
+				{/* Session List */}
+				<Card variant="outlined">
+					<CardContent>
+						<Typography variant="h6" mb={1}>
+							Sessions with this character
+						</Typography>
+						{isSessionsLoading ? (
+							<CircularProgress size={24} />
+						) : (
+							<List dense>
+								{sessions && sessions.length > 0 ? (
+									sessions.map((session) => (
+										<ListItem key={session.sessionId} button>
+											<ListItemText
+												primary={session.title || `Session ${session.sessionId.slice(-6)}`}
+												secondary={session.updatedAt ? new Date(session.updatedAt).toLocaleString() : ''}
+											/>
+										</ListItem>
+									))
+								) : (
+									<Typography variant="body2" color="text.secondary">
+										No sessions found.
+									</Typography>
+								)}
+							</List>
+						)}
+					</CardContent>
+				</Card>
+
+				{/* User Character Info */}
+				<Card variant="outlined">
+					<CardContent>
+						<Typography variant="h6" mb={1}>
+							Your Character Profile
+						</Typography>
+						{isProfileLoading ? (
+							<CircularProgress size={24} />
+						) : profile ? (
+							<>
+								<Typography variant="subtitle1" fontWeight="bold">
+									{profile.name}
+								</Typography>
+								<Typography variant="body2" color="text.secondary" mb={1}>
+									{profile.description}
+								</Typography>
+								<Button variant="outlined" size="small" onClick={handleLoadProfile}>
+									Load this profile
+								</Button>
+							</>
+						) : (
+							<Typography variant="body2" color="text.secondary">
+								No profile loaded.
+							</Typography>
+						)}
+					</CardContent>
+				</Card>
+
+				{/* Start New Session */}
+				<Box display="flex" justifyContent="flex-end" mt={2}>
+					<Button
+						variant="contained"
+						color="primary"
+						size="large"
+						onClick={handleStartSession}
+						disabled={isCharLoading || isPortraitLoading}
+					>
+						Start New Session
+					</Button>
 				</Box>
-			) : portraitError ? (
-				<Typography color="portraitError" variant="caption">
-					Image Error
-				</Typography> // Show portraitError
-			) : defaultImageUrl ? (
-				<CharacterPortrait imageUrl={defaultImageUrl} charName={showName} /> // Show portrait
-			) : (
-				<Box
-					sx={{
-						height: 100,
-						display: 'flex',
-						alignItems: 'center',
-						justifyContent: 'center',
-						bgcolor: 'grey.200',
-					}}
-				>
-					<Typography variant="caption" color="textSecondary">
-						No Image
-					</Typography>
-					{/* Placeholder if no default image found */}
-				</Box>
-			)}
-			<Typography variant="h6">{showName}</Typography>
-			{/* Add navigation buttons or links here */}
+			</Box>
 		</Box>
 	);
 };
 
-export const CharacterPage = ({ characterInfos }: { characterInfos: CharacterInfo[] }) => {
-	if (characterInfos.length === 0) {
-		return <Typography>No characters found.</Typography>; // Handle empty state
-	}
-
-	return (
-		<Container maxWidth="sm">
-			<Typography variant="h4" gutterBottom>
-				Select Character
-			</Typography>
-			<Stack spacing={2}>
-				{/* Map over characters and render CharacterItem for each */}
-				{characterInfos.map(({ characterId, showName }) => (
-					<CharacterItem
-						key={characterId}
-						characterId={characterId} // Pass the full ID (e.g., "monday-original")
-						showName={showName}
-					/>
-				))}
-			</Stack>
-		</Container>
-	);
-};
+export default CharacterIntroPage;

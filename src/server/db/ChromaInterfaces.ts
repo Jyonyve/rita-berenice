@@ -36,6 +36,7 @@ export const COLLECTIONS = {
 	LORE: 'lore',
 	TERM: 'term',
 	CREDENTIAL: 'credential',
+	USER: 'user',
 } as const;
 
 export type CollectionType = (typeof COLLECTIONS)[keyof typeof COLLECTIONS];

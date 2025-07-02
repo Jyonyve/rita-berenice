@@ -8,7 +8,7 @@ import {
 	TempChatTurn,
 	TempChatTurnCdo,
 } from '#shared/domain/chat/ChatInterfaces.js';
-import { CharacterInfo, ProfileInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 
 import { chatStore } from '../store/chatStore.js';
 import { buildTempChatTurnId } from '../util/buildIdUtils.js';
@@ -17,6 +17,7 @@ import { memoryEngine } from './memoryEngine.js';
 import { personaEngine } from './personaEngine.js';
 import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { buildChatMessage, parseSessionId } from '#shared/util/chatParseUtils.js';
+import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 
 /**
  * Orchestrates the backend flow for generating a new character response.
@@ -139,6 +140,7 @@ export const finalizeChatTurn = async (chatTurnCdo: ChatTurnCdo): Promise<ChatTu
 		//    Note: You might need to add characterId to ChatTurnCdo if enrichChatTurnMetadataViaLlm uses it.
 		const basicChatTurn: ChatTurn = {
 			characterId: parseSessionId(sessionId).characterId,
+			userId: chatTurnCdo.userId,
 			request: chatTurnCdo.request,
 			response: chatTurnCdo.response,
 			sessionId: chatTurnCdo.sessionId,

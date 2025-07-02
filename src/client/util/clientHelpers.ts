@@ -1,6 +1,5 @@
 import { ApiError } from '#server/util/serviceHelpers.js';
-
-import { QueryClient, QueryCache } from '@tanstack/react-query';
+import Session from 'supertokens-web-js/recipe/session/index.js';
 import axios from 'axios';
 
 // API 클라이언트 인스턴스 생성
@@ -14,15 +13,33 @@ export function setupApiClient(
 	addToast: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void
 ) {
 	// 요청 인터셉터: 요청 로그 출력
-	apiClient.interceptors.request.use((config) => {
+	apiClient.interceptors.request.use(async (config) => {
+		const token = await Session.getAccessToken();
 		console.log('API 요청:', config.method, config.url);
+		config.headers = config.headers || {};
+		config.headers.Authorization = `Bearer ${token}`;
 		return config;
 	});
 
 	// 응답 인터셉터: 에러 처리
 	apiClient.interceptors.response.use(
 		(response) => response,
-		(error) => {
+		async (error) => {
+			const originalRequest = error.config as any;
+			if (error?.response?.status === 401 && !originalRequest._retry) {
+				originalRequest._retry = true; // Mark as retried
+				const refreshResult = await Session.attemptRefreshingSession();
+				if (refreshResult) {
+					return apiClient(originalRequest); // Retry ONCE
+				} else {
+					addToast('Your session has expired. Please log in again.', 'error');
+					// Optionally, redirect to login page here
+					window.location.href = '/auth';
+				}
+				return Promise.reject(error);
+			}
+
+			// For all other errors, show a toast
 			const processedError = processApiError(error);
 			addToast(processedError.clientMessage || 'apiClient error.', 'error');
 			return Promise.reject(processedError);

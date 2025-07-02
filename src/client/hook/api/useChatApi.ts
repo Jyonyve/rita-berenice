@@ -67,6 +67,21 @@ export const useChatApi = () => {
 		});
 
 	/**
+	 * Fetches list of sessionIds by character Id
+	 * Query Key: ['getLastChatTurnsByCharacterId']
+	 */
+	const getLastChatTurnsByCharacterId = (characterId: string) =>
+		useQuery<ChatResponse, Error>({
+			queryKey: ['getLastChatTurnsByCharacterId', characterId], // The query key now reflects the method name
+			queryFn: async () => {
+				const url = genApiUrl(MODULE_NAMES.CHAT, 'getLastChatTurnsByCharacterId', [characterId]);
+				const response = await apiClient.get<ChatResponse>(url);
+				return response.data;
+			},
+			enabled: !!characterId,
+		});
+
+	/**
 	 * Performs a semantic search over finalized chat turns.
 	 * Uses useMutation because it's a POST request (search/query) and does not represent
 	 * a continuously available piece of data.
@@ -117,7 +132,7 @@ export const useChatApi = () => {
 	return {
 		storeChatTurn,
 		getAllChatTurns,
-		// getChatTurns,
+		getSessionIdsByCharacterId: getLastChatTurnsByCharacterId,
 		getChatTurnBySequence,
 		queryChatTurns,
 		saveTempChatTurn,

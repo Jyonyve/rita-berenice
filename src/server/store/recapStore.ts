@@ -79,6 +79,7 @@ export const recapStore = {
 				// Base metadata fields (unified)
 				sessionId,
 				characterId,
+				userId: recapInfo.userId,
 				type: METADATA_TYPES.RECAP,
 				createdAt: now,
 				updatedAt: now,
@@ -136,6 +137,7 @@ export const recapStore = {
 				// Base metadata fields (unified)
 				sessionId,
 				characterId,
+				userId: recapInfo.userId,
 				type: METADATA_TYPES.RECAP,
 				createdAt: now,
 				updatedAt: now,

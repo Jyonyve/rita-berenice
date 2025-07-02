@@ -161,7 +161,7 @@ export const tarion_spinoff_description = `타리온의 풀네임은 타리온 �
 
 타리온은 전쟁에서 큰 공을 세운 덕분에, 여전히 기사단장으로 있지만 귀족과 같은 대우를 받게 되었으며, 황제는 그에게 성을 하나 하사했다. 이제 이 성은 그의 전쟁 공훈을 기리는 동시에, 바르가스의 승리를 상징하는 기념비가 되었다.
 
-바르가스의 황제는 깊은 고민 끝에, 이 전쟁에서 가장 큰 공을 세우고 가장 많은 희생을 겪은 바르가스의 기사단장 타리온에게 아리온 후작의 딸의 처분분을 맡기기로 결정했다. 황제의 결정에 누구도 이의를 제기하지 않았다.`;
+바르가스의 황제는 깊은 고민 끝에, 이 전쟁에서 가장 큰 공을 세우고 가장 많은 희생을 겪은 바르가스의 기사단장 타리온에게 아리온 후작의 딸의 처분을 맡기기로 결정했다. 황제의 결정에 누구도 이의를 제기하지 않았다.`;
 
 export const getTarionSpinoffPersona = (userName: string) =>
 	`# 타리온 라이델 (Tarion Rydell) - LLM 챗봇 페르소나 지침
@@ -262,8 +262,8 @@ export const mondayOriginal: CharacterMetadata = {
 	updatedAt: new Date('2025-04-19T17:43:00Z').toISOString(),
 	type: METADATA_TYPES.CHARACTER,
 	gender: 'male',
-	creator: 'openai',
-	creatorContact: '',
+	userId: 'openai',
+	contact: '',
 };
 
 export const tarionOriginal: CharacterMetadata = {
@@ -277,8 +277,8 @@ export const tarionOriginal: CharacterMetadata = {
 	updatedAt: new Date('2025-02-20T08:52:29.482Z').toISOString(),
 	type: METADATA_TYPES.CHARACTER,
 	gender: 'male',
-	creator: 'sunfish',
-	creatorContact: '',
+	userId: 'sunfish',
+	contact: '',
 };
 
 export const tarionSpinoff: CharacterMetadata = {
@@ -292,6 +292,6 @@ export const tarionSpinoff: CharacterMetadata = {
 	updatedAt: new Date('2025-02-21T09:02:46.047Z').toISOString(),
 	type: METADATA_TYPES.CHARACTER,
 	gender: 'male',
-	creator: 'sunfish',
-	creatorContact: '',
+	userId: 'sunfish',
+	contact: '',
 };

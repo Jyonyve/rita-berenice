@@ -2,11 +2,12 @@ import { Collection, IncludeEnum, Where } from 'chromadb';
 import { chromaDbClient } from '../db/chromaDbClient.js';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
-import { ProfileInfo, ProfileMetadata } from '#shared/domain/character/CharacterInterfaces.js';
-import { ProfileResponse } from '#shared/api/ModuleResponse.js';
+import { ProfileInfo, ProfileMetadata } from '#shared/domain/profile/ProfileInterfaces.js';
+import { ChromaResponse, ProfileResponse } from '#shared/api/ModuleResponse.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import { buildProfileId } from '../util/buildIdUtils.js';
-import { flatProfileToDoc } from '../util/documentUtils.js';
+import { flatProfileToDoc, inflateProfileDoc } from '../util/documentUtils.js';
+import { metadataToProfile } from '#shared/util/dbConvertUtils.js';
 
 const { getProfileCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.PROFILE;
@@ -28,18 +29,16 @@ export const profileStore = {
 		return collection;
 	},
 
-	_parseDocToBasicProfileInfo: (documents: (string | null)[]) => {
-		return documents
-			.map((doc, index) => {
-				if (doc === null) return null;
-				try {
-					return JSON.parse(doc);
-				} catch (e) {
-					console.error(`Error parsing character info: ${index}`, e);
-					return null;
-				}
-			})
-			.filter((char): char is ProfileInfo => char !== null);
+	_constructProfile: (results: ChromaResponse): ProfileResponse => {
+		const { ids, documents, metadatas } = results;
+		const profileInfos = ids.map((id, index) => {
+			const metadata = metadatas[index] as unknown as ProfileMetadata;
+			const document = documents[index];
+			const inflatedDoc = inflateProfileDoc(document!);
+			const profileInfo = metadataToProfile(metadata!, inflatedDoc.description);
+			return profileInfo;
+		});
+		return { ids, documents, metadatas, profileInfos, profileInfo: profileInfos[0] || null };
 	},
 
 	// Profile Operations
@@ -52,9 +51,7 @@ export const profileStore = {
 			});
 
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
-			const { ids, documents, metadatas } = results;
-			const parsedInfos = profileStore._parseDocToBasicProfileInfo(rawResults.documents);
-			return { ids, documents, metadatas, profileInfos: parsedInfos, profileInfo: parsedInfos[0] };
+			return profileStore._constructProfile(results);
 		} catch (error) {
 			handleServiceError(
 				error,
@@ -69,9 +66,7 @@ export const profileStore = {
 		try {
 			const rawResult = await getRecordById(collection, profileId);
 			const results = validateChromaResponse(rawResult, 'getOne', collectionType);
-			const { ids, documents, metadatas } = results;
-			const parsedInfos = profileStore._parseDocToBasicProfileInfo(results.documents);
-			return { ids, documents, metadatas, profileInfo: parsedInfos[0], profileInfos: parsedInfos };
+			return profileStore._constructProfile(results);
 		} catch (error) {
 			handleServiceError(
 				error,
@@ -91,15 +86,7 @@ export const profileStore = {
 				limit: 1,
 			});
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
-			const { ids, documents, metadatas } = results;
-			const parsedBasicInfos = profileStore._parseDocToBasicProfileInfo(documents);
-			return {
-				ids,
-				documents,
-				metadatas,
-				profileInfos: parsedBasicInfos,
-				profileInfo: parsedBasicInfos[0],
-			};
+			return profileStore._constructProfile(results);
 		} catch (error) {
 			handleServiceError(
 				error,
@@ -120,15 +107,7 @@ export const profileStore = {
 		try {
 			const rawResults = await getRecords(collection, where);
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
-			const { ids, documents, metadatas } = results;
-			const parsedBasicInfos = profileStore._parseDocToBasicProfileInfo(documents);
-			return {
-				ids,
-				documents,
-				metadatas,
-				profileInfos: parsedBasicInfos,
-				profileInfo: parsedBasicInfos[0],
-			};
+			return profileStore._constructProfile(results);
 		} catch (error) {
 			handleServiceError(
 				error,
@@ -139,31 +118,31 @@ export const profileStore = {
 	},
 
 	// In profileService
-	storeProfile: async (profileInfo: ProfileMetadata): Promise<string> => {
+	storeProfile: async (profile: ProfileInfo): Promise<string> => {
 		const collection = await profileStore._getCollection();
 		const now = new Date().toISOString();
 
-		const profile: ProfileMetadata = {
-			...profileInfo,
-			profileId: profileInfo.profileId || buildProfileId(profileInfo.name, profileInfo.sessionId),
-			createdAt: profileInfo.createdAt || now,
+		const profileMetadata: ProfileMetadata = {
+			...profile,
+			profileId: profile.profileId || buildProfileId(profile.name, profile.sessionId),
+			createdAt: profile.createdAt || now,
 			updatedAt: now,
 		};
 
 		const documentForEmbedding = flatProfileToDoc(profile);
 
 		try {
-			await upsertRecord(collection, profile.profileId, documentForEmbedding, profile);
+			await upsertRecord(collection, profileMetadata.profileId, documentForEmbedding, profileMetadata);
 			return JSON.stringify({
 				message: 'profile stored successfully.',
-				characterId: profile.profileId,
-				updatedAt: profile.updatedAt, // Reflect the timestamp set
+				characterId: profileMetadata.profileId,
+				updatedAt: profileMetadata.updatedAt, // Reflect the timestamp set
 			});
 		} catch (error) {
 			handleServiceError(
 				error,
 				'An internal error occurred while do [storeProfile].',
-				`Failed to store profile: ${profileInfo.profileId}`
+				`Failed to store profile: ${profile.profileId}`
 			);
 		}
 	},

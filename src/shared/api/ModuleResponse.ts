@@ -1,10 +1,12 @@
 import { HistoryInfo, LoreInfo } from '../domain/lore/LoreInterfaces.js';
 import { LangCode } from '../config/constants.js';
 import { EmotionValue } from '../config/emotionWordsMapper.js';
-import { CharacterInfo, ProfileInfo } from '../domain/character/CharacterInterfaces.js';
+import { CharacterInfo } from '../domain/character/CharacterInterfaces.js';
 import { ChatTurn } from '../domain/chat/ChatInterfaces.js';
 import { RecapInfo } from '../domain/recap/RecapInterfaces.js';
 import { TermInfo } from '../domain/term/TermInterfaces.js';
+import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { UserInfo } from '../domain/user/UserInterfaces.ts';
 
 export interface ApiErrorResponse {
 	status: 'error'; // Literal string to indicate an error response
@@ -99,3 +101,11 @@ interface PersonaLlmResponse {
 }
 
 export type PersonaResponse = PersonaLlmResponse;
+
+// profile
+interface UserChromaResponse extends ChromaResponse {
+	userInfo: UserInfo;
+	userInfos: UserInfo[];
+}
+
+export type UserResponse = UserChromaResponse;

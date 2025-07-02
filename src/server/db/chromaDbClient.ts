@@ -3,11 +3,13 @@ import { ChromaClient, Collection, IncludeEnum, Where, WhereDocument } from 'chr
 import { COLLECTIONS } from './ChromaInterfaces.js';
 import { MetadataType } from '#shared/config/constants.js';
 import { ChromaResponse } from '#shared/api/ModuleResponse.js';
+import { DefaultEmbeddingFunction } from '@chroma-core/default-embed';
 
 const CHROMA_HOST = process.env.CHROMA_HOST || 'chromadb-flyio.fly.dev';
 const CHROMA_PORT = Number(process.env.CHROMA_PORT) || 443;
 const CHROMA_SSL = true; // Your URL starts with https://
 const chromaClient = new ChromaClient({ host: CHROMA_HOST, port: CHROMA_PORT, ssl: CHROMA_SSL });
+const embedder = new DefaultEmbeddingFunction();
 
 /**
  * A centralized Map to cache all singleton Collection objects.
@@ -39,7 +41,10 @@ const _getOrCreateSingletonCollection = async (collectionName: string): Promise<
 		// Error means the collection does not exist, so we create it.
 		// This is the new "get-or-create" pattern.
 		console.log(`[ChromaClient] Collection ${collectionName} not found. Creating...`);
-		const collection = await chromaClient.createCollection({ name: collectionName });
+		const collection = await chromaClient.createCollection({
+			name: collectionName,
+			embeddingFunction: embedder,
+		});
 		_collectionCache.set(collectionName, collection);
 		console.log(`[ChromaClient] Collection ${collectionName} created and cached.`);
 		return collection;
@@ -70,6 +75,7 @@ export const chromaDbClient = {
 	getLoreCollection: (): Promise<Collection> => _getOrCreateSingletonCollection(COLLECTIONS.LORE),
 	getTermCollection: (): Promise<Collection> => _getOrCreateSingletonCollection(COLLECTIONS.TERM),
 	getChatCollection: (): Promise<Collection> => _getOrCreateSingletonCollection(COLLECTIONS.CHAT),
+	getUserCollection: (): Promise<Collection> => _getOrCreateSingletonCollection(COLLECTIONS.USER),
 
 	/**
 	 * 컬렉션의 전체 문서 수를 반환합니다.

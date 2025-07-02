@@ -23,9 +23,7 @@ export function ChatPageLoader() {
 		}
 	}, [sessionId, navigate]);
 
-	if (!sessionId) {
-		return null; // Render nothing while redirecting
-	}
+	if (!sessionId) return;
 
 	// ------------ Fetching Data ------------
 	const { characterId } = parseSessionId(sessionId);

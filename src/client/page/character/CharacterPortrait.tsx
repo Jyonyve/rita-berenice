@@ -1,14 +1,18 @@
 import React, { FC } from 'react';
 import { Box } from '@mui/material';
+import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 
 interface CharacterPortraitProps {
 	imageUrl: string;
-	charName?: string;
+	characterInfo: CharacterInfo;
+	handleClick: () => void;
 }
 
-export const CharacterPortrait: FC<CharacterPortraitProps> = ({ imageUrl, charName }) => {
-	console.log(imageUrl);
-	const altText = charName ? `${charName}_portrait` : 'portrait';
+export const CharacterPortrait: FC<CharacterPortraitProps> = ({
+	imageUrl,
+	characterInfo,
+	handleClick,
+}) => {
 	return (
 		<Box
 			sx={{
@@ -20,8 +24,9 @@ export const CharacterPortrait: FC<CharacterPortraitProps> = ({ imageUrl, charNa
 			}}
 		>
 			<img
+				onClick={handleClick}
 				src={imageUrl}
-				alt={altText}
+				alt={characterInfo.showName}
 				style={{
 					width: '100%',
 					height: 'auto',

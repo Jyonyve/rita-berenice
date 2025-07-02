@@ -26,6 +26,7 @@ export const MODULE_NAMES = {
 	MEMORY: 'memory',
 	PERSONA: 'persona',
 	ORCHESTRATION: 'orchestration',
+	USER: 'user',
 } as const;
 export type MODULE_TYPES = (typeof MODULE_NAMES)[keyof typeof MODULE_NAMES];
 
@@ -43,6 +44,7 @@ export const METADATA_TYPES = {
 	TEMP: 'temp',
 	DOCUMENT: 'document',
 	TERM: 'term',
+	USER: 'user',
 } as const;
 
 export type MetadataType = (typeof METADATA_TYPES)[keyof typeof METADATA_TYPES];

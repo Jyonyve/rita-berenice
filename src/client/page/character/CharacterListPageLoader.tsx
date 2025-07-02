@@ -1,9 +1,9 @@
 // src/client/page/CharacterPage.tsx
 import { CircularProgress, Container, Typography } from '@mui/material';
-import { CharacterPage } from './character/CharacterPage.jsx';
-import { useCharacterApi } from '../hook/api/useCharacterApi.js';
+import { CharacterListPage } from './CharacterListPage.tsx';
+import { useCharacterApi } from '../../hook/api/useCharacterApi.ts';
 
-export function CharacterPageLoader() {
+export function CharacterListPageLoader() {
 	const { data: characterRes, isLoading, isError } = useCharacterApi().getAllCharacters();
 
 	if (isLoading) {
@@ -18,5 +18,5 @@ export function CharacterPageLoader() {
 		);
 	}
 
-	return <CharacterPage characterInfos={characterRes?.characterInfos || []} />;
+	return <CharacterListPage characterInfos={characterRes?.characterInfos || []} />;
 }

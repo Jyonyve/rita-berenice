@@ -67,7 +67,7 @@ importers:
         version: 4.6.0(vite@6.3.5(@types/node@22.15.33)(sass@1.89.2)(tsx@4.20.3)(yaml@2.8.0))
       axios:
         specifier: ^1.10.0
-        version: 1.10.0
+        version: 1.10.0(debug@4.4.1)
       cheerio:
         specifier: ^1.1.0
         version: 1.1.0
@@ -134,6 +134,15 @@ importers:
       sirv:
         specifier: ^3.0.1
         version: 3.0.1
+      supertokens-auth-react:
+        specifier: ^0.49.1
+        version: 0.49.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(supertokens-web-js@0.15.0)
+      supertokens-node:
+        specifier: ^22.1.1
+        version: 22.1.1
+      supertokens-web-js:
+        specifier: ^0.15.0
+        version: 0.15.0
     devDependencies:
       '@eslint/js':
         specifier: ^9.29.0
@@ -1155,6 +1164,12 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@simplewebauthn/browser@13.1.0':
+    resolution: {integrity: sha512-WuHZ/PYvyPJ9nxSzgHtOEjogBhwJfC8xzYkPC+rR/+8chl/ft4ngjiK8kSU5HtRJfczupyOh33b25TjYbvwAcg==}
+
+  '@simplewebauthn/types@12.0.0':
+    resolution: {integrity: sha512-q6y8MkoV8V8jB4zzp18Uyj2I7oFp2/ONL8c3j8uT06AOWu3cIChc1au71QYHrP2b+xDapkGTiv+9lX7xkTlAsA==}
+
   '@svgr/babel-plugin-add-jsx-attribute@8.0.0':
     resolution: {integrity: sha512-b9MIk7yhdS1pMCZM8VeNfUlSKVRhsHZNMl5O9SfaX0l0t5wjdgu4IDzGB8bpnGBBOjGST3rRFVsaaEtI4W6f7g==}
     engines: {node: '>=14'}
@@ -1499,6 +1514,10 @@ packages:
     resolution: {integrity: sha512-TGw5yVi4saajsSEgz25grObGHEUaDrniwvA2qwSC060KfqGPdglhvPMA2lPIoxs3PQIItj2iag35fONcQqgUaQ==}
     engines: {node: '>=12.0'}
 
+  agent-base@6.0.2:
+    resolution: {integrity: sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==}
+    engines: {node: '>= 6.0.0'}
+
   agent-base@7.1.3:
     resolution: {integrity: sha512-jRR5wdylq8CkOe6hei19GGZnxM6rBGwFl3Bg0YItGDimvjGtAvdZk4Pu6Cl4u4Igsws4a1fd1Vq3ezrhn4KmFw==}
     engines: {node: '>= 14'}
@@ -1679,6 +1698,9 @@ packages:
 
   browser-resolve@2.0.0:
     resolution: {integrity: sha512-7sWsQlYL2rGLy2IWm8WL8DCTJvYLc/qlOnsakDac87SOoCd16WLsaAMdCiAqsTNHIe+SXfaqyxyo6THoWqs8WQ==}
+
+  browser-tabs-lock@1.3.0:
+    resolution: {integrity: sha512-g6nHaobTiT0eMZ7jh16YpD2kcjAp+PInbiVq3M1x6KKaEIVhT4v9oURNIpZLOZ3LQbQ3XYfNhMAb/9hzNLIWrw==}
 
   browserify-aes@1.2.0:
     resolution: {integrity: sha512-+7CHXqGuspUn/Sl5aO7Ea0xWGAtETPXNSAjHo48JfLdPWcMng33Xe4znFvQweqc/uzk5zSOI3H52CYnjCfb5hA==}
@@ -1944,6 +1966,9 @@ packages:
     engines: {node: '>=10.14', npm: '>=6', yarn: '>=1'}
     hasBin: true
 
+  cross-fetch@3.2.0:
+    resolution: {integrity: sha512-Q+xVJLoGOeIMXZmbUK4HYk+69cQH6LudR0Vu/pRm2YlU/hDV9CiS0gKUMaWY5f2NeUH9C1nV3bsTlCo0FsTV1Q==}
+
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
@@ -1951,6 +1976,9 @@ packages:
   crypto-browserify@3.12.1:
     resolution: {integrity: sha512-r4ESw/IlusD17lgQi1O20Fa3qNnsckR126TdUuBgAu7GBYSIPvdNyONd3Zrxh0xCwA4+6w/TDArBPsMvhur+KQ==}
     engines: {node: '>= 0.10'}
+
+  crypto-js@4.2.0:
+    resolution: {integrity: sha512-KALDyEYgpY+Rlob/iriUtjV6d5Eq+Y191A5g4UqLAi8CyGP9N1+FdVbkc1SxKc2r4YAYqG8JzO2KGL+AizD70Q==}
 
   css-select@5.1.0:
     resolution: {integrity: sha512-nwoRF1rvRRnnCqqY7updORDsuqKzqYJ28+oSMaJMMgOauh3fvwHqMS7EZpIPqK8GL+g9mKxF1vP/ZjSeNjEVHg==}
@@ -1977,6 +2005,9 @@ packages:
   data-view-byte-offset@1.0.1:
     resolution: {integrity: sha512-BS8PfmtDGnrgYdOonGZQdLZslWIeCGFP9tpan0hi1Co2Zr2NKADsvGYA8XxuG/4UWgJ6Cjtv+YJnB6MM69QGlQ==}
     engines: {node: '>= 0.4'}
+
+  dayjs@1.11.13:
+    resolution: {integrity: sha512-oaMBel6gjolK862uaPQOVTA7q3TZhuSvuMQAAglQDOWYO9A91IrAOUJEyKVlqJlHE0vq5p5UXxzdPfMH/x6xNg==}
 
   debug@2.6.9:
     resolution: {integrity: sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==}
@@ -2560,6 +2591,10 @@ packages:
   https-browserify@1.0.0:
     resolution: {integrity: sha512-J+FkSdyD+0mA0N+81tMotaRMfSL9SGi+xpD3T6YApKsc3bGSXJlfXri3VyFOeYkfLRQisDk1W+jIFFKBeUBbBg==}
 
+  https-proxy-agent@5.0.1:
+    resolution: {integrity: sha512-dFcAjpTQFgoLMzC2VwU+C/CbS7uRL0lWmxDITmqm7C+7F0Odmj6s9l6alZc6AELXhrnggM2CeWSXHGOdX2YtwA==}
+    engines: {node: '>= 6'}
+
   https-proxy-agent@7.0.6:
     resolution: {integrity: sha512-vK9P5/iUfdl95AI+JVyUuIcVtd4ofvtrOr3HNtM2yxC9bnMbEdp3x01OhQNnjb8IJYi38VlTE3mBXwcfvywuSw==}
     engines: {node: '>= 14'}
@@ -2606,6 +2641,9 @@ packages:
   internal-slot@1.1.0:
     resolution: {integrity: sha512-4gd7VpWNQNB4UKKCFFVcp1AVv+FMOgs9NKzjHKusc8jTMhd5eL1NqQqOpE0KzMds804/yHlglp3uxgluOqAPLw==}
     engines: {node: '>= 0.4'}
+
+  intl-tel-input@17.0.21:
+    resolution: {integrity: sha512-TfyPxLe41QZPOf6RqBxRE2dpQ0FThB/PBD/gRbxVhGW7IuYg30QD90x/vjmEo4vkZw7j8etxpVcjIZVRcG+Otw==}
 
   ip-address@9.0.5:
     resolution: {integrity: sha512-zHtQzGojZXTwZTHQqra+ETKd4Sn3vgi7uBmlPoXVWZqYvuKmtI0l/VZTjqGmJY9x88GGOaZ9+G9ES8hC4T4X8g==}
@@ -2767,6 +2805,9 @@ packages:
     resolution: {integrity: sha512-zptv57P3GpL+O0I7VdMJNBZCu+BPHVQUk55Ft8/QCJjTVxrnJHuVuX/0Bl2A6/+2oyR/ZMEuFKwmzqqZ/U5nPQ==}
     engines: {node: 20 || >=22}
 
+  jose@4.15.9:
+    resolution: {integrity: sha512-1vUQX+IdDMVPj4k8kOxgUqlcK518yluMuGZwqlr44FS1ppZB/5GWh4rZG89erpOBOJjU/OBsnCVFfapsRz6nEA==}
+
   js-tiktoken@1.0.20:
     resolution: {integrity: sha512-Xlaqhhs8VfCd6Sh7a1cFkZHQbYTLCwVJJWiHVxBYzLPxW0XsoxBy1hitmjkdIjD3Aon5BXLHFwU5O8WUx6HH+A==}
 
@@ -2836,6 +2877,9 @@ packages:
   levn@0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
+
+  libphonenumber-js@1.12.9:
+    resolution: {integrity: sha512-VWwAdNeJgN7jFOD+wN4qx83DTPMVPPAUyx9/TUkBXKLiNkuWWk6anV0439tgdtwaJDrEdqkvdN22iA6J4bUCZg==}
 
   lines-and-columns@1.2.4:
     resolution: {integrity: sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==}
@@ -3057,6 +3101,10 @@ packages:
     resolution: {integrity: sha512-X75ZN8DCLftGM5iKwoYLA3rjnrAEs97MkzvSd4q2746Tgpg8b8XWiBGiBG4ZpgcAqBgtgPHTiAc8ZMCvZuikDw==}
     engines: {node: '>=10'}
 
+  nodemailer@6.10.1:
+    resolution: {integrity: sha512-Z+iLaBGVaSjbIzQ4pX6XV41HrooLsQ10ZWPUehGmuantvzWoDVBnmsdUcOIDM1t+yPor5pDhVlDESgOMEGxhHA==}
+    engines: {node: '>=6.0.0'}
+
   normalize-path@3.0.0:
     resolution: {integrity: sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==}
     engines: {node: '>=0.10.0'}
@@ -3191,6 +3239,9 @@ packages:
   pako@1.0.11:
     resolution: {integrity: sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==}
 
+  pako@2.1.0:
+    resolution: {integrity: sha512-w+eufiZ1WuJYgPXbV/PO3NCMEc3xqylkKHzp8bxp1uW4qaSNQUkwmLLEc3kKsfz8lpV1F8Ht3U1Cm+9Srog2ug==}
+
   parent-module@1.0.1:
     resolution: {integrity: sha512-GQ2EWRpQV8/o+Aw8YqtfZZPfNRWZYkbidE9k5rpl/hC3vtHHBfGm2Ifi6qWV+coDGkrUKZAxE3Lot5kcsRlh+g==}
     engines: {node: '>=6'}
@@ -3263,6 +3314,9 @@ packages:
   picomatch@4.0.2:
     resolution: {integrity: sha512-M7BAV6Rlcy5u+m6oPhAPFgJTzAioX/6B0DxyvDlo9l8+T3nLKbrczg2WLUyzd45L8RqfUMyGPzekbMvX2Ldkwg==}
     engines: {node: '>=12'}
+
+  pkce-challenge@3.1.0:
+    resolution: {integrity: sha512-bQ/0XPZZ7eX+cdAkd61uYWpfMhakH3NeteUF1R8GNa+LMqX8QFAkbCLqq+AYAns1/ueACBu/BMWhrlKGrdvGZg==}
 
   pkg-dir@5.0.0:
     resolution: {integrity: sha512-NPE8TDbzl/3YQYY7CSS228s3g2ollTFnc+Qi3tqmqJp9Vg2ovUpixcJEo2HJScN2Ez+kEaal6y70c0ehqJBJeA==}
@@ -3361,6 +3415,9 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
+  qr.js@0.0.0:
+    resolution: {integrity: sha512-c4iYnWb+k2E+vYpRimHqSu575b1/wKl4XFeJGpFmrJQz5I88v9aY2czh7s0w36srfCM1sXgC/xpoJz5dJfq+OQ==}
+
   qs@6.14.0:
     resolution: {integrity: sha512-YWWTjgABSKcvs/nWBi9PycY/JiPJqOD4JA6o9Sej2AtvSGarXxKC3OQSk4pAarbdQlKAh5D4FCQkJNkW+GAn3w==}
     engines: {node: '>=0.6'}
@@ -3408,6 +3465,11 @@ packages:
 
   react-is@19.1.0:
     resolution: {integrity: sha512-Oe56aUPnkHyyDxxkvqtd7KkdQP5uIUfHxd5XTb3wE9d/kRnZLmKbDB0GWk919tdQ+mxxPtG6EAs6RMT6i1qtHg==}
+
+  react-qr-code@2.0.16:
+    resolution: {integrity: sha512-8f54aTOo7DxYr1LB47pMeclV5SL/zSbJxkXHIS2a+QnAIa4XDVIdmzYRC+CBCJeDLSCeFHn8gHtltwvwZGJD/w==}
+    peerDependencies:
+      react: '*'
 
   react-refresh@0.17.0:
     resolution: {integrity: sha512-z6F7K9bV85EfseRCp2bzrpyQ0Gkw1uLoCel9XBVWPg/TjRj94SkJzUTGfOa4bs7iJvBWtQG0Wq7wnI0syw3EBQ==}
@@ -3576,6 +3638,9 @@ packages:
 
   scheduler@0.26.0:
     resolution: {integrity: sha512-NlHwttCI/l5gCPR3D1nNXtWABUmBwvZpEQiD4IXSbIDq8BzLIK/7Ir5gTFSGZDUu37K5cMNp0hFtzO38sC7gWA==}
+
+  scmp@2.1.0:
+    resolution: {integrity: sha512-o/mRQGk9Rcer/jEEw/yw4mwo3EU/NvYvp577/Btqrym9Qy5/MdWGBqipbALgd2lrdWTJ5/gqDusxfnQBxOxT2Q==}
 
   semver-compare@1.0.0:
     resolution: {integrity: sha512-YM3/ITh2MJ5MtzaM429anh+x2jiLVjqILF4m4oyQB18W7Ggea7BfqdH/wGMK7dDiMghv/6WG7znWMwUDzJiXow==}
@@ -3781,6 +3846,26 @@ packages:
   stylis@4.2.0:
     resolution: {integrity: sha512-Orov6g6BB1sDfYgzWfTHDOxamtX1bE/zo104Dh9e6fqJ3PooipYyfJ0pUmrZO2wAvO8YbEyeFrkV91XTsGMSrw==}
 
+  supertokens-auth-react@0.49.1:
+    resolution: {integrity: sha512-jjZHSBMW1Gg6rs8W4WY4HQ8fS75/+wBqfAiTaThkXiF+HujcCOc2ujm0y0kny5scwUziArMb0cHevPghaw1bSw==}
+    engines: {node: '>=16.0.0', npm: '>=8'}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+      supertokens-web-js: ^0.15
+
+  supertokens-js-override@0.0.4:
+    resolution: {integrity: sha512-r0JFBjkMIdep3Lbk3JA+MpnpuOtw4RSyrlRAbrzMcxwiYco3GFWl/daimQZ5b1forOiUODpOlXbSOljP/oyurg==}
+
+  supertokens-node@22.1.1:
+    resolution: {integrity: sha512-oCS7KmfPvn+XnvKL+j1jLzarK5jo5JMbgG9Mm9ytMUh+6i9rW2RplI7XU9tleUJWEsRa9kE6ehhzWb8AAmXhmg==}
+
+  supertokens-web-js@0.15.0:
+    resolution: {integrity: sha512-IJB1Z+SI5gsWwunvrLyhbpyVaetQt23QlMoD6Gy7+OcmJ8EaPO+knhZnqzQAppe4HiNhROAiGZb7gUTJgXonzg==}
+
+  supertokens-website@20.1.6:
+    resolution: {integrity: sha512-WSehco2PsrFp4WY7h6tDutYyi2nPgJS8lahUadcL/cpBqgEuZ3pjnvN1NDASSNSTfXeO1smm3HrvvLZG5C7qHA==}
+
   supports-color@7.2.0:
     resolution: {integrity: sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==}
     engines: {node: '>=8'}
@@ -3822,6 +3907,13 @@ packages:
   tinyglobby@0.2.14:
     resolution: {integrity: sha512-tX5e7OM1HnYr2+a2C/4V0htOcSQcoSTH9KgJnVvNm5zm/cyEWKJ7j7YutsH9CxMdtOkkLFy2AHrMci9IM8IPZQ==}
     engines: {node: '>=12.0.0'}
+
+  tldts-core@6.1.86:
+    resolution: {integrity: sha512-Je6p7pkk+KMzMv2XXKmAE3McmolOQFdxkKw0R8EYNr7sELW46JqnNeTX8ybPiQgvg1ymCoF8LXs5fzFaZvJPTA==}
+
+  tldts@6.1.86:
+    resolution: {integrity: sha512-WMi/OQ2axVTf/ykqCQgXiIct+mSQDFdH2fkwhPwgEwvJ1kSzZRiinb0zF2Xb8u4+OqPChmyI6MEu4EezNJz+FQ==}
+    hasBin: true
 
   to-buffer@1.2.1:
     resolution: {integrity: sha512-tB82LpAIWjhLYbqjx3X4zEeHN6M8CiuOEy2JY8SEQVdYRe3CCHOFaqrBW1doLDrfpWhplcW7BL+bO3/6S3pcDQ==}
@@ -3884,6 +3976,10 @@ packages:
 
   tty-browserify@0.0.1:
     resolution: {integrity: sha512-C3TaO7K81YvjCgQH9Q1S3R3P3BtN3RIM8n+OvX4il1K1zgE8ZhI0op7kClgkxtutIE8hQrcrHBXvIheqKUUCxw==}
+
+  twilio@4.23.0:
+    resolution: {integrity: sha512-LdNBQfOe0dY2oJH2sAsrxazpgfFQo5yXGxe96QA8UWB5uu+433PrUbkv8gQ5RmrRCqUTPQ0aOrIyAdBr1aB03Q==}
+    engines: {node: '>=14.0'}
 
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
@@ -4108,6 +4204,10 @@ packages:
         optional: true
       utf-8-validate:
         optional: true
+
+  xmlbuilder@13.0.2:
+    resolution: {integrity: sha512-Eux0i2QdDYKbdbA6AM6xE4m6ZTZr4G4xF9kahI2ukSEMCzwce2eX9WlTI5J3s+NU7hpasFsr8hWIONae7LluAQ==}
+    engines: {node: '>=6.0'}
 
   xtend@2.1.2:
     resolution: {integrity: sha512-vMNKzr2rHP9Dp/e1NQFnLQlwlhp9L/LfvnsVdHxN1f+uggyVI3i08uD14GPvCToPkdsRfyPqIyYGmIk58V98ZQ==}
@@ -5030,6 +5130,10 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.44.1':
     optional: true
 
+  '@simplewebauthn/browser@13.1.0': {}
+
+  '@simplewebauthn/types@12.0.0': {}
+
   '@svgr/babel-plugin-add-jsx-attribute@8.0.0(@babel/core@7.27.7)':
     dependencies:
       '@babel/core': 7.27.7
@@ -5405,6 +5509,12 @@ snapshots:
 
   adm-zip@0.5.16: {}
 
+  agent-base@6.0.2:
+    dependencies:
+      debug: 4.4.1
+    transitivePeerDependencies:
+      - supports-color
+
   agent-base@7.1.3: {}
 
   agentkeepalive@4.6.0:
@@ -5529,14 +5639,6 @@ snapshots:
     dependencies:
       possible-typed-array-names: 1.1.0
 
-  axios@1.10.0:
-    dependencies:
-      follow-redirects: 1.15.9
-      form-data: 4.0.3
-      proxy-from-env: 1.1.0
-    transitivePeerDependencies:
-      - debug
-
   axios@1.10.0(debug@4.4.1):
     dependencies:
       follow-redirects: 1.15.9(debug@4.4.1)
@@ -5626,6 +5728,10 @@ snapshots:
   browser-resolve@2.0.0:
     dependencies:
       resolve: 1.22.10
+
+  browser-tabs-lock@1.3.0:
+    dependencies:
+      lodash: 4.17.21
 
   browserify-aes@1.2.0:
     dependencies:
@@ -5943,6 +6049,12 @@ snapshots:
     dependencies:
       cross-spawn: 7.0.6
 
+  cross-fetch@3.2.0:
+    dependencies:
+      node-fetch: 2.7.0
+    transitivePeerDependencies:
+      - encoding
+
   cross-spawn@7.0.6:
     dependencies:
       path-key: 3.1.1
@@ -5963,6 +6075,8 @@ snapshots:
       public-encrypt: 4.0.3
       randombytes: 2.1.0
       randomfill: 1.0.4
+
+  crypto-js@4.2.0: {}
 
   css-select@5.1.0:
     dependencies:
@@ -5995,6 +6109,8 @@ snapshots:
       call-bound: 1.0.4
       es-errors: 1.3.0
       is-data-view: 1.0.2
+
+  dayjs@1.11.13: {}
 
   debug@2.6.9:
     dependencies:
@@ -6521,8 +6637,6 @@ snapshots:
 
   flatted@3.3.3: {}
 
-  follow-redirects@1.15.9: {}
-
   follow-redirects@1.15.9(debug@4.4.1):
     optionalDependencies:
       debug: 4.4.1
@@ -6766,6 +6880,13 @@ snapshots:
 
   https-browserify@1.0.0: {}
 
+  https-proxy-agent@5.0.1:
+    dependencies:
+      agent-base: 6.0.2
+      debug: 4.4.1
+    transitivePeerDependencies:
+      - supports-color
+
   https-proxy-agent@7.0.6:
     dependencies:
       agent-base: 7.1.3
@@ -6825,6 +6946,8 @@ snapshots:
       es-errors: 1.3.0
       hasown: 2.0.2
       side-channel: 1.1.0
+
+  intl-tel-input@17.0.21: {}
 
   ip-address@9.0.5:
     dependencies:
@@ -6987,6 +7110,8 @@ snapshots:
     dependencies:
       '@isaacs/cliui': 8.0.2
 
+  jose@4.15.9: {}
+
   js-tiktoken@1.0.20:
     dependencies:
       base64-js: 1.5.1
@@ -7066,6 +7191,8 @@ snapshots:
     dependencies:
       prelude-ls: 1.2.1
       type-check: 0.4.0
+
+  libphonenumber-js@1.12.9: {}
 
   lines-and-columns@1.2.4: {}
 
@@ -7258,6 +7385,8 @@ snapshots:
       util: 0.12.5
       vm-browserify: 1.1.2
 
+  nodemailer@6.10.1: {}
+
   normalize-path@3.0.0: {}
 
   nth-check@2.1.1:
@@ -7412,6 +7541,8 @@ snapshots:
 
   pako@1.0.11: {}
 
+  pako@2.1.0: {}
+
   parent-module@1.0.1:
     dependencies:
       callsites: 3.1.0
@@ -7482,6 +7613,10 @@ snapshots:
   picomatch@2.3.1: {}
 
   picomatch@4.0.2: {}
+
+  pkce-challenge@3.1.0:
+    dependencies:
+      crypto-js: 4.2.0
 
   pkg-dir@5.0.0:
     dependencies:
@@ -7613,6 +7748,8 @@ snapshots:
       - typescript
       - utf-8-validate
 
+  qr.js@0.0.0: {}
+
   qs@6.14.0:
     dependencies:
       side-channel: 1.1.0
@@ -7656,6 +7793,12 @@ snapshots:
   react-is@16.13.1: {}
 
   react-is@19.1.0: {}
+
+  react-qr-code@2.0.16(react@19.1.0):
+    dependencies:
+      prop-types: 15.8.1
+      qr.js: 0.0.0
+      react: 19.1.0
 
   react-refresh@0.17.0: {}
 
@@ -7879,6 +8022,8 @@ snapshots:
       '@parcel/watcher': 2.5.1
 
   scheduler@0.26.0: {}
+
+  scmp@2.1.0: {}
 
   semver-compare@1.0.0: {}
 
@@ -8168,6 +8313,51 @@ snapshots:
 
   stylis@4.2.0: {}
 
+  supertokens-auth-react@0.49.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(supertokens-web-js@0.15.0):
+    dependencies:
+      '@simplewebauthn/types': 12.0.0
+      intl-tel-input: 17.0.21
+      prop-types: 15.8.1
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
+      react-qr-code: 2.0.16(react@19.1.0)
+      supertokens-js-override: 0.0.4
+      supertokens-web-js: 0.15.0
+
+  supertokens-js-override@0.0.4: {}
+
+  supertokens-node@22.1.1:
+    dependencies:
+      buffer: 6.0.3
+      content-type: 1.0.5
+      cookie: 0.7.2
+      cross-fetch: 3.2.0
+      debug: 4.4.1
+      jose: 4.15.9
+      libphonenumber-js: 1.12.9
+      nodemailer: 6.10.1
+      pako: 2.1.0
+      pkce-challenge: 3.1.0
+      process: 0.11.10
+      set-cookie-parser: 2.7.1
+      supertokens-js-override: 0.0.4
+      tldts: 6.1.86
+      twilio: 4.23.0(debug@4.4.1)
+    transitivePeerDependencies:
+      - encoding
+      - supports-color
+
+  supertokens-web-js@0.15.0:
+    dependencies:
+      '@simplewebauthn/browser': 13.1.0
+      supertokens-js-override: 0.0.4
+      supertokens-website: 20.1.6
+
+  supertokens-website@20.1.6:
+    dependencies:
+      browser-tabs-lock: 1.3.0
+      supertokens-js-override: 0.0.4
+
   supports-color@7.2.0:
     dependencies:
       has-flag: 4.0.0
@@ -8222,6 +8412,12 @@ snapshots:
     dependencies:
       fdir: 6.4.6(picomatch@4.0.2)
       picomatch: 4.0.2
+
+  tldts-core@6.1.86: {}
+
+  tldts@6.1.86:
+    dependencies:
+      tldts-core: 6.1.86
 
   to-buffer@1.2.1:
     dependencies:
@@ -8284,6 +8480,20 @@ snapshots:
       fsevents: 2.3.3
 
   tty-browserify@0.0.1: {}
+
+  twilio@4.23.0(debug@4.4.1):
+    dependencies:
+      axios: 1.10.0(debug@4.4.1)
+      dayjs: 1.11.13
+      https-proxy-agent: 5.0.1
+      jsonwebtoken: 9.0.2
+      qs: 6.14.0
+      scmp: 2.1.0
+      url-parse: 1.5.10
+      xmlbuilder: 13.0.2
+    transitivePeerDependencies:
+      - debug
+      - supports-color
 
   type-check@0.4.0:
     dependencies:
@@ -8521,6 +8731,8 @@ snapshots:
   wrappy@1.0.2: {}
 
   ws@8.18.2: {}
+
+  xmlbuilder@13.0.2: {}
 
   xtend@2.1.2:
     dependencies:

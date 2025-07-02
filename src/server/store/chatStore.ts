@@ -208,6 +208,7 @@ export const chatStore = {
 			const conditions: Where[] = [
 				{ sessionId: { $eq: sessionId } },
 				{ type: { $eq: METADATA_TYPES.MESSAGE } },
+				{ messageType: { $eq: messageType } },
 			];
 			if (where && isAndWhere(where)) {
 				conditions.push(...where.$and);
@@ -315,6 +316,46 @@ export const chatStore = {
 				error,
 				'An internal error occurred while do [getAllChatTurns].',
 				`Failed to load chat turns for session ${sessionId}:`
+			);
+		}
+	},
+
+	getOneChatTurnBySessionIds: async (sessionIds: string[]): Promise<ChatResponse> => {
+		const collection = await chatStore._getChatCollection();
+
+		try {
+			const turnPromises = sessionIds.map(async (sessionId) => {
+				const where: Where = {
+					$and: [{ type: { $eq: METADATA_TYPES.TURN } }, { sessionId: { $eq: sessionId } }],
+				};
+				const rawResults = await getRecords(collection, where, 1);
+				if (rawResults.ids && rawResults.ids.length > 0) {
+					const results = validateChromaResponse(rawResults, 'getList', COLLECTIONS.CHAT);
+					return chatStore._constuctChatTurn(results);
+				}
+				return null;
+			});
+
+			const chatResponses = (await Promise.all(turnPromises)).filter(Boolean);
+
+			// Merge results as needed
+			const allChatTurns = chatResponses.flatMap((r) => r?.chatTurns || []);
+			const allIds = chatResponses.flatMap((r) => r?.ids || []);
+			const allDocuments = chatResponses.flatMap((r) => r?.documents || []);
+			const allMetadatas = chatResponses.flatMap((r) => r?.metadatas || []);
+
+			return {
+				ids: allIds,
+				documents: allDocuments,
+				metadatas: allMetadatas,
+				chatTurns: allChatTurns,
+				chatTurn: allChatTurns[0] ?? null,
+			};
+		} catch (error) {
+			handleServiceError(
+				error,
+				'An internal error occurred while loading one chat turn by sessionIds.',
+				`Failed to load chat turns for sessionIds: ${sessionIds.join(', ')}`
 			);
 		}
 	},

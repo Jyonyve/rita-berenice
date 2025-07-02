@@ -7,7 +7,7 @@ import { genRoutePattern } from '#shared/util/apiHelpers.js';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { ProfileResponse } from '#shared/api/ModuleResponse.js';
 import { asyncHandler, validateRequestData, validateServiceId } from '../util/routeHelpers.js';
-import { ProfileMetadata } from '#shared/domain/character/CharacterInterfaces.js';
+import { ProfileInfo, ProfileMetadata } from '#shared/domain/profile/ProfileInterfaces.js';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.PROFILE;
@@ -106,13 +106,8 @@ router.get(
 router.post(
 	genRoutePattern('storeProfile'),
 	asyncHandler(
-		async (req: Request<object, string, ProfileMetadata>, res: Response<string>): Promise<void> => {
-			const requiredFields: (keyof ProfileMetadata)[] = [
-				'name',
-				'sessionId',
-				'description',
-				'creator',
-			];
+		async (req: Request<object, string, ProfileInfo>, res: Response<string>): Promise<void> => {
+			const requiredFields: (keyof ProfileMetadata)[] = ['name', 'sessionId', 'userId'];
 			validateRequestData(req.body, 'body', requiredFields);
 
 			const path = genRoutePattern('storeProfile');

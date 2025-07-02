@@ -12,13 +12,10 @@ import { buildChatTurnId } from '../../server/util/buildIdUtils.js';
 import { DEFAULT_EMOTION } from '../config/emotionWordsMapper.js';
 
 import { Metadata } from '../api/ModuleResponse.js';
-import {
-	CharacterInfo,
-	CharacterMetadata,
-	ProfileInfo,
-	ProfileMetadata,
-} from '../domain/character/CharacterInterfaces.js';
+import { CharacterInfo, CharacterMetadata } from '../domain/character/CharacterInterfaces.js';
 import { RecapInfo, RecapMetadata } from '../domain/recap/RecapInterfaces.js';
+import { ProfileInfo, ProfileMetadata } from '../domain/profile/ProfileInterfaces.js';
+import { UserInfo, UserMetadata } from '../domain/user/UserInterfaces.ts';
 
 // --- LORE HELPERS ---
 
@@ -34,6 +31,7 @@ export const loreToMetadata = (loreInfo: LoreInfo): LoreMetadata => {
 		// Base metadata fields (from BaseMetadataType)
 		sessionId: loreInfo.sessionId,
 		characterId: loreInfo.characterId,
+		userId: loreInfo.userId,
 		type: loreInfo.type,
 		createdAt: loreInfo.createdAt,
 		updatedAt: loreInfo.updatedAt,
@@ -65,6 +63,7 @@ export const metadataToLore = (metadata: LoreMetadata, content: string): LoreInf
 		// Base metadata fields (from BaseMetadataType)
 		sessionId: metadata.sessionId,
 		characterId: metadata.characterId,
+		userId: metadata.userId,
 		type: metadata.type,
 		createdAt: metadata.createdAt,
 		updatedAt: metadata.updatedAt,
@@ -108,6 +107,7 @@ export const historyToMetadata = (historyInfo: HistoryInfo): HistoryMetadata => 
 		// Base metadata fields (from BaseMetadataType)
 		sessionId: historyInfo.sessionId,
 		characterId: historyInfo.characterId,
+		userId: historyInfo.userId,
 		type: historyInfo.type,
 		createdAt: historyInfo.createdAt,
 		updatedAt: historyInfo.updatedAt,
@@ -148,6 +148,7 @@ export const metadataToHistory = (metadata: HistoryMetadata, content: string): H
 		// Base metadata fields (from BaseMetadataType)
 		sessionId: metadata.sessionId,
 		characterId: metadata.characterId,
+		userId: metadata.userId,
 		type: metadata.type,
 		createdAt: metadata.createdAt,
 		updatedAt: metadata.updatedAt,
@@ -198,6 +199,10 @@ export const metadataToProfile = (metadata: ProfileMetadata, description: string
 	return { ...metadata, description };
 };
 
+export const metadataToUser = (metadata: UserMetadata, sessionIds: string[]): UserInfo => {
+	return { ...metadata, sessionIds };
+};
+
 // --- UTILITY HELPERS ---
 
 export const addCharacterId = (existingIds: string, newCharacterId: string): string => {
@@ -223,6 +228,7 @@ export const chatTurnToMetadata = (chatTurn: ChatTurn): ChatTurnMetadata => {
 		// Base metadata fields (from BaseMetadata)
 		sessionId: chatTurn.sessionId,
 		characterId: chatTurn.characterId,
+		userId: chatTurn.userId,
 		type: chatTurn.type,
 		createdAt: chatTurn.createdAt,
 		updatedAt: chatTurn.updatedAt,
@@ -271,6 +277,7 @@ export const metadataToChatTurn = (
 		// Base metadata fields (from BaseMetadata)
 		sessionId: metadata.sessionId as string,
 		characterId: metadata.characterId as string,
+		userId: metadata.userId as string,
 		type: 'turn',
 		createdAt: metadata.createdAt as string,
 		updatedAt: metadata.updatedAt as string,
@@ -404,6 +411,7 @@ export const recapToMetadata = (recapInfo: RecapInfo): RecapMetadata => {
 		// --- Base metadata fields (from BaseMetadataType) ---
 		sessionId: recapInfo.sessionId,
 		characterId: recapInfo.characterId,
+		userId: recapInfo.userId,
 		type: recapInfo.type, // 'recap' or 'relationship'
 		createdAt: recapInfo.createdAt,
 		updatedAt: recapInfo.updatedAt,
@@ -471,6 +479,7 @@ export const metadataToRecap = (metadata: RecapMetadata, content: string): Recap
 		// --- Base metadata fields ---
 		sessionId: metadata.sessionId,
 		characterId: metadata.characterId,
+		userId: metadata.userId,
 		type: metadata.type,
 
 		// --- Recap-specific fields ---

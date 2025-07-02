@@ -1,9 +1,11 @@
 import { ChatEntry, ChatMessage, ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { parseEntriesToText, parseTextToEntries } from '#shared/util/chatParseUtils.js';
-import { CharacterInfo, ProfileInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { HistoryInfo, LoreInfo } from '#shared/domain/lore/LoreInterfaces.js';
 import { RecapInfo } from '#shared/domain/recap/RecapInterfaces.js';
 import { TermInfo } from '#shared/domain/term/TermInterfaces.js';
+import { UserInfo } from '#shared/domain/user/UserInterfaces.js';
+import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 
 export const buildNaturalChatText = (request: ChatMessage, response: ChatMessage): string => {
 	const userPrompt = parseEntriesToText(request.entries);
@@ -96,4 +98,15 @@ export const flatRecapToDoc = (recap: RecapInfo) => {
 export const inflateRecapDoc = (document: string): { content: string } => {
 	const parsed = JSON.parse(document);
 	return { content: parsed.content };
+};
+
+export const flatUserToDoc = (user: UserInfo) => {
+	const { sessionIds } = user;
+	const document = { sessionIds };
+	return JSON.stringify(document).trim();
+};
+
+export const inflateUserDoc = (document: string): { sessionIds: string[] } => {
+	const parsed = JSON.parse(document);
+	return { sessionIds: parsed.sessionIds };
 };

@@ -20,6 +20,10 @@ export const SUFFIX = {
 } as const;
 export type SuffixType = (typeof SUFFIX)[keyof typeof SUFFIX];
 
+export const buildUserId = (email: string) => {
+	return `${email}_${_genNanoId(8)}`;
+};
+
 /* character id */
 export const buildCharacterId = (characterName: string, variant?: string): string => {
 	return `${characterName}_${variant || _genNanoId(8)}`;

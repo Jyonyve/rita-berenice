@@ -30,7 +30,7 @@ export const characterStore = {
 		return collection;
 	},
 
-	_constuctCharacter: (results: ChromaResponse): CharacterResponse => {
+	_constructCharacter: (results: ChromaResponse): CharacterResponse => {
 		const { ids, documents, metadatas } = results;
 		const characterInfos = ids.map((id, index) => {
 			const metadata = metadatas[index] as unknown as CharacterMetadata;
@@ -59,7 +59,7 @@ export const characterStore = {
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 			const { ids, documents, metadatas } = results;
 
-			const characterResponse = characterStore._constuctCharacter(results);
+			const characterResponse = characterStore._constructCharacter(results);
 
 			// Sort descending: newer (larger timestamp) comes before older (smaller timestamp)
 			const parsedInfos = characterResponse.characterInfos.sort(
@@ -90,7 +90,7 @@ export const characterStore = {
 			const rawResult = await getRecordById(collection, characterId);
 			const results = validateChromaResponse(rawResult, 'getOne', collectionType);
 
-			return characterStore._constuctCharacter(results);
+			return characterStore._constructCharacter(results);
 		} catch (error) {
 			handleServiceError(
 				error,
@@ -115,7 +115,7 @@ export const characterStore = {
 			const rawResults = await getRecords(collection, where, limit);
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 
-			return characterStore._constuctCharacter(results);
+			return characterStore._constructCharacter(results);
 		} catch (error: any) {
 			handleServiceError(
 				error,
@@ -128,10 +128,10 @@ export const characterStore = {
 	storeCharacter: async (character: CharacterInfo): Promise<string> => {
 		const collection = await characterStore._getCollection();
 		const now = new Date().toISOString();
-
+		const { description, instruction, ...characterMetadata } = character;
 		// Prepare the data to be upserted
-		const characterMetadata: CharacterMetadata = {
-			...character, // Start with all fields from input
+		const updatedMetadata: CharacterMetadata = {
+			...characterMetadata, // Start with all fields from input
 			characterId: character.characterId || buildCharacterId(character.name, character.variant),
 			updatedAt: now,
 			createdAt: character.createdAt || now,
@@ -148,17 +148,17 @@ export const characterStore = {
 			// chromaDbClient.upsertRecord is Promise<void> and throws generic Error on underlying failure
 			await chromaDbClient.upsertRecord(
 				collection,
-				characterMetadata.characterId,
+				updatedMetadata.characterId,
 				documentForEmbedding,
-				characterMetadata
+				updatedMetadata
 			);
 
-			return characterMetadata.characterId;
+			return updatedMetadata.characterId;
 		} catch (error) {
 			handleServiceError(
 				error,
 				'An internal error occurred while saving the character.',
-				`Failed to store character '${characterMetadata.characterId}'`
+				`Failed to store character '${updatedMetadata.characterId}'`
 			);
 		}
 	},

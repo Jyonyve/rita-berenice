@@ -13,6 +13,7 @@ interface BaseMetadata {
 	// Core identification (consistent across all types)
 	sessionId: string;
 	characterId: string; // Added to all for consistency
+	userId: string;
 	type: MetadataType;
 
 	// Timestamps (consistent format)
@@ -122,7 +123,10 @@ export interface ChatTurn
 	response: ChatMessage;
 }
 
-export type ChatTurnCdo = Pick<ChatTurn, 'sessionId' | 'sequence' | 'request' | 'response'>;
+export type ChatTurnCdo = Pick<
+	ChatTurn,
+	'userId' | 'sessionId' | 'sequence' | 'request' | 'response'
+>;
 
 export interface MigChatMessage {
 	uuid: string;
