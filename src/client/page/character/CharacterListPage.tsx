@@ -7,7 +7,7 @@ import { DEFAULT_IMAGE_NUMBER } from '#shared/config/emotionWordsMapper.js';
 import { CharacterPortrait } from './CharacterPortrait.jsx';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { useNavigate } from 'react-router';
-import { routeConstants } from '../../routeConstants.ts';
+import { routeConstants } from '../../routeConstants.js';
 
 // Helper Component to manage state for a single character's portrait
 const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterInfo }) => {

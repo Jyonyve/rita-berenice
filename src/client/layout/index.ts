@@ -1,1 +1,1 @@
-export * from './RootLayout.tsx';
+export * from './RootLayout.jsx';

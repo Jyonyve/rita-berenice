@@ -1,1 +1,1 @@
-export * from './AiModelComp.tsx';
+export * from './AiModelComp.jsx';

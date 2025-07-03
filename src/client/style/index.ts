@@ -1,1 +1,1 @@
-export * from './ToastProvider.tsx';
+export * from './ToastProvider.jsx';

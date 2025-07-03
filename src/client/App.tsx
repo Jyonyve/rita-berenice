@@ -6,7 +6,7 @@ import { ChatPageLoader } from './page/ChatPageLoader.jsx';
 import { NotFoundPage } from './page/error/NotFoundPage.jsx';
 import { RootLayout } from './layout/RootLayout.jsx';
 import { CharacterPageLoader } from './page/character/CharacterPageLoader.jsx';
-import { routeConstants } from './routeConstants.ts';
+import { routeConstants } from './routeConstants.js';
 import { SuperTokensWrapper } from 'supertokens-auth-react';
 import { SessionAuth } from 'supertokens-auth-react/recipe/session/index.js';
 

@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../util/clientHelpers.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
-import { ProfileMetadata } from '#shared/domain/profile/ProfileInterfaces.ts';
+import { ProfileMetadata } from '#shared/domain/profile/ProfileInterfaces.js';
 import { genApiUrl } from '#shared/util/apiHelpers.js';
 import { ProfileResponse } from '#shared/api/ModuleResponse.js';
 

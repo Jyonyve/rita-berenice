@@ -12,7 +12,7 @@ import {
 	CircularProgress,
 } from '@mui/material';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
-import { useCharacterState } from '../../hook/state/useCharacterState.ts';
+import { useCharacterState } from '../../hook/state/useCharacterState.js';
 
 // Props: characterId (string), onStartSession (function), onLoadProfile (function)
 interface CharacterIntroPageProps {

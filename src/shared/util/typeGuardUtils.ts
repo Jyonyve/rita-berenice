@@ -1,9 +1,5 @@
-import {
-	CharacterCdo,
-	CharacterInfo,
-	ProfileCdo,
-	ProfileInfo,
-} from '../domain/character/CharacterInterfaces.js';
+import { CharacterCdo, CharacterInfo } from '../domain/character/CharacterInterfaces.js';
+import { ProfileCdo, ProfileInfo } from '../domain/profile/ProfileInterfaces.js';
 import { TermCdo, TermInfo } from '../domain/term/TermInterfaces.js';
 
 export function isTermInfo(term: TermCdo | TermInfo): term is TermInfo {

@@ -119,26 +119,6 @@ router.get(
 );
 
 /**
- * GET /api/chat/get-chat-turn-by-sequence/:sessionId/:sequence
- * Retrieves a single, specific chat turn by its sequence number.
- * @param {string} sessionId - The session ID of the turn.
- * @returns {string[]} An object containing the single chat turn.
- */
-router.get(
-	genRoutePattern('getLastChatTurnsByCharacterIdAndUserId', ['characterId', 'userId']),
-	asyncHandler(async (req: Request, res: Response<ChatResponse>): Promise<void> => {
-		const { characterId, userId } = req.params;
-		const path = genRoutePattern('getLastChatTurnsByCharacterIdAndUserId', ['characterId', 'userId']);
-		console.log(
-			`API HIT: GET ${path.replace(':characterId', characterId).replace(':userId', userId)}`
-		);
-
-		const chatResponse = await chatStore.getLastChatTurnsByCharacterIdAndUserId(characterId, userId);
-		res.status(200).json(chatResponse);
-	})
-);
-
-/**
  * PUT /api/chat/update-request-message
  * Updates a single request message within a chat turn. Useful for editing user prompts after the fact.
  * @param {ChatMessage} req.body - The ChatMessage object for the request to update. Must have messageType: 'request'.

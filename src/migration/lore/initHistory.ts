@@ -6,12 +6,13 @@ import { ChromaClient, Collection, IncludeEnum, Where } from 'chromadb';
 import { fileURLToPath } from 'node:url';
 
 import { HistoryInfo } from '../../shared/domain/lore/LoreInterfaces.js';
-import { COLLECTIONS, METADATA_TYPES } from '../../server/db/ChromaInterfaces.js';
+import { COLLECTIONS } from '../../server/db/ChromaInterfaces.js';
 import { historyToMetadata } from '../../shared/util/dbConvertUtils.js';
 import { buildHistoryId } from '../../server/util/buildIdUtils.js';
 import { flatLoreOrHistoryToDoc } from '../../server/util/documentUtils.js';
 import { buildHistoryMetadataPrompt } from '../../server/util/templateUtils.js';
 import e from 'express';
+import { METADATA_TYPES } from '#shared/config/constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -358,6 +359,8 @@ async function initHistoryFromFiles() {
 				// ✅ Create HistoryInfo with LLM-generated historyId
 				const historyInfo: HistoryInfo = {
 					sessionId: '',
+					//TODO
+					userId: '',
 					characterId: CHARACTER_IDS[0],
 					type: METADATA_TYPES.HISTORY,
 					createdAt: now,

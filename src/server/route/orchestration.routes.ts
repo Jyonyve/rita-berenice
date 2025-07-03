@@ -8,13 +8,14 @@ import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { asyncHandler, validateRequestData, validateServiceId } from '../util/routeHelpers.js';
 import { TempChatTurn, TempChatTurnCdo } from '#shared/domain/chat/ChatInterfaces.js';
 import { receiveBotResponse } from '../service/orchestrationService.js';
-import { CharacterInfo, ProfileInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';
+import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 
 const router = express.Router();
 
 // Define a type for the complex request body for clarity
-interface HandleChatRequestBody {
+interface ReceiveBotResponseBody {
 	tempChatTurnCdo: TempChatTurnCdo;
 	characterInfo: CharacterInfo;
 	profileInfo: ProfileInfo;
@@ -30,13 +31,13 @@ router.post(
 	genRoutePattern('receiveBotResponse'),
 	asyncHandler(
 		async (
-			req: Request<object, TempChatTurn, HandleChatRequestBody>,
+			req: Request<object, TempChatTurn, ReceiveBotResponseBody>,
 			res: Response<TempChatTurn>
 		): Promise<void> => {
 			const { tempChatTurnCdo, characterInfo, profileInfo, aiModel } = req.body;
 
 			// Validate the incoming request payload
-			const requiredFields: (keyof HandleChatRequestBody)[] = [
+			const requiredFields: (keyof ReceiveBotResponseBody)[] = [
 				'tempChatTurnCdo',
 				'characterInfo',
 				'profileInfo',

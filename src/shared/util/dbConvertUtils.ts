@@ -15,7 +15,7 @@ import { Metadata } from '../api/ModuleResponse.js';
 import { CharacterInfo, CharacterMetadata } from '../domain/character/CharacterInterfaces.js';
 import { RecapInfo, RecapMetadata } from '../domain/recap/RecapInterfaces.js';
 import { ProfileInfo, ProfileMetadata } from '../domain/profile/ProfileInterfaces.js';
-import { UserInfo, UserMetadata } from '../domain/user/UserInterfaces.ts';
+import { UserInfo, UserMetadata } from '../domain/user/UserInterfaces.js';
 
 // --- LORE HELPERS ---
 

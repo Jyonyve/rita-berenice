@@ -1,4 +1,4 @@
-export * from './App.tsx';
+export * from './App.jsx';
 export * from './theme.js';
 export * from './style/index.js';
 export * from './page/index.js';

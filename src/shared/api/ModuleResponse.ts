@@ -6,7 +6,7 @@ import { ChatTurn } from '../domain/chat/ChatInterfaces.js';
 import { RecapInfo } from '../domain/recap/RecapInterfaces.js';
 import { TermInfo } from '../domain/term/TermInterfaces.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
-import { UserInfo } from '../domain/user/UserInterfaces.ts';
+import { UserInfo } from '../domain/user/UserInterfaces.js';
 
 export interface ApiErrorResponse {
 	status: 'error'; // Literal string to indicate an error response

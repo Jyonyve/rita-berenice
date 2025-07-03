@@ -13,7 +13,7 @@ import { initQueryClient } from './shared/api/queryClient.js';
 import { ToastProvider } from './client/style/ToastProvider.jsx';
 import { theme } from './client/theme.js';
 import { App } from './client/App.jsx';
-import { frontendConfig } from './client/config/frontendConfig.ts';
+import { frontendConfig } from './client/config/frontendConfig.js';
 import SuperTokens from 'supertokens-auth-react';
 
 SuperTokens.init(frontendConfig());
