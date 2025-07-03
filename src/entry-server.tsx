@@ -7,12 +7,12 @@ import { CacheProvider } from '@emotion/react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import createEmotionServer from '@emotion/server/create-instance';
-import { theme } from '#client/theme.js';
 import { ToastProvider } from '#client/style/ToastProvider.jsx';
 import { App } from '#client/App.jsx';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createEmotionCache } from './shared/config/createEmotionCache.js';
 import { initQueryClient } from './shared/api/queryClient.js';
+import { getTheme } from './client/index.ts';
 
 interface RenderResult {
 	html: string;
@@ -31,7 +31,7 @@ export function render(url: string): RenderResult {
 		<QueryClientProvider client={queryClient}>
 			<ToastProvider>
 				<CacheProvider value={cache}>
-					<ThemeProvider theme={theme}>
+					<ThemeProvider theme={getTheme('dark')}>
 						<CssBaseline />
 						<StaticRouter location={url}>
 							<App />

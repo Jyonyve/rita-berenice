@@ -1,14 +1,62 @@
 // src/client/layout/RootLayout.tsx
-import React from 'react';
+import React, { FC, useState } from 'react';
 import { Outlet } from 'react-router';
-import { AppBar, Box, Container, Toolbar, Typography, CssBaseline } from '@mui/material';
+import {
+	AppBar,
+	Box,
+	Container,
+	Toolbar,
+	Typography,
+	CssBaseline,
+	Switch,
+	IconButton,
+	Modal,
+	Paper,
+} from '@mui/material';
+import { useColorMode } from '../style/ColorModeContext.jsx';
+import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpassword/prebuiltui.js';
+import LoginIcon from '@mui/icons-material/Login';
+import { AuthPage } from 'supertokens-auth-react/ui/index.js';
 
+interface LoginModalProps {
+	loginOpen: boolean;
+	handleCloseLogin: (loginOpen: boolean) => void;
+}
+
+const LoginModal: FC<LoginModalProps> = ({ loginOpen, handleCloseLogin }) => {
+	return (
+		<Modal open={loginOpen} onClose={handleCloseLogin} aria-labelledby="login-modal-title">
+			<Box
+				sx={{
+					position: 'absolute',
+					top: '50%',
+					left: '50%',
+					transform: 'translate(-50%, -50%)',
+					minWidth: 320,
+					bgcolor: 'background.paper',
+					boxShadow: 24,
+					borderRadius: 2,
+					p: 2,
+				}}
+			>
+				<Paper sx={{ p: 2 }}>
+					<AuthPage preBuiltUIList={[EmailPasswordPreBuiltUI]} />
+				</Paper>
+			</Box>
+		</Modal>
+	);
+};
 /**
  * The root layout for the application.
  * It includes a persistent header and a main content area where
  * child routes will be rendered via the <Outlet /> component.
  */
 export function RootLayout() {
+	const { mode, toggleMode } = useColorMode();
+	const [loginOpen, setLoginOpen] = useState(false);
+
+	const handleLoginModal = () => setLoginOpen(!loginOpen);
+
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
 			<CssBaseline />
@@ -18,6 +66,15 @@ export function RootLayout() {
 					<Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
 						Rita-Berenice
 					</Typography>
+					<Switch
+						checked={mode === 'dark'}
+						onChange={toggleMode}
+						color="default"
+						aria-label="toggle theme"
+					/>
+					<IconButton color="inherit" onClick={handleLoginModal} aria-label="login">
+						<LoginIcon />
+					</IconButton>
 				</Toolbar>
 			</AppBar>
 

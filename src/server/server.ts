@@ -36,7 +36,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url)); // src/server
 const isProduction = process.env.NODE_ENV === 'production';
 const PORT = process.env.PORT || 3000;
 const BASE = process.env.BASE || '/'; // Base path for the app
-const BASE_API = `${BASE}api/`;
+const API_PATH = `api`;
+const BASE_API = `${BASE}${API_PATH}`;
 const AUTH_PATH = 'auth';
 
 // --- Helper Function to Resolve Project Root ---
@@ -70,7 +71,7 @@ async function createServer() {
 			appName: 'Rita-Berenice',
 			websiteDomain: process.env.VITE_APP_DOMAIN || 'http://localhost:3000',
 			apiDomain: process.env.VITE_API_DOMAIN || 'http://localhost:3000',
-			apiBasePath: `${BASE_API}${AUTH_PATH}`,
+			apiBasePath: `${API_PATH}${AUTH_PATH}`,
 			websiteBasePath: `/${AUTH_PATH}`,
 		},
 		recipeList: [EmailPassword.init(), Session.init()],
@@ -117,22 +118,22 @@ async function createServer() {
 	// 		// Add more patterns as needed
 	// 	)
 	// );
-	app.use(`${BASE_API}${MODULE_NAMES.CHARACTER}`, characterRoutes);
-	app.use(`${BASE_API}${MODULE_NAMES.CHAT}`, chatRoutes);
-	app.use(`${BASE_API}${MODULE_NAMES.LLM}`, llmRoutes);
-	app.use(`${BASE_API}${MODULE_NAMES.PROFILE}`, profileRoutes);
-	app.use(`${BASE_API}${MODULE_NAMES.TEMP}`, tempRoutes);
-	app.use(`${BASE_API}${MODULE_NAMES.LORE}`, loreRoutes);
-	app.use(`${BASE_API}${MODULE_NAMES.TERM}`, termRoutes);
-	app.use(`${BASE_API}${MODULE_NAMES.MEMORY}`, memoryRoutes);
-	app.use(`${BASE_API}${MODULE_NAMES.PERSONA}`, personaRoutes);
-	app.use(`${BASE_API}${MODULE_NAMES.ORCHESTRATION}`, orchestrationRoutes);
+	app.use(`${BASE_API}/${MODULE_NAMES.CHARACTER}`, characterRoutes);
+	app.use(`${BASE_API}/${MODULE_NAMES.CHAT}`, chatRoutes);
+	app.use(`${BASE_API}/${MODULE_NAMES.LLM}`, llmRoutes);
+	app.use(`${BASE_API}/${MODULE_NAMES.PROFILE}`, profileRoutes);
+	app.use(`${BASE_API}/${MODULE_NAMES.TEMP}`, tempRoutes);
+	app.use(`${BASE_API}/${MODULE_NAMES.LORE}`, loreRoutes);
+	app.use(`${BASE_API}/${MODULE_NAMES.TERM}`, termRoutes);
+	app.use(`${BASE_API}/${MODULE_NAMES.MEMORY}`, memoryRoutes);
+	app.use(`${BASE_API}/${MODULE_NAMES.PERSONA}`, personaRoutes);
+	app.use(`${BASE_API}/${MODULE_NAMES.ORCHESTRATION}`, orchestrationRoutes);
 	app.use(errorHandler());
 
 	// --- SSR Catch-all Handler ---
 	app.get('/{*splat}', async (req: Request, res: Response, next: NextFunction) => {
 		// Skip SSR for API routes
-		if (req.originalUrl.startsWith(BASE_API)) {
+		if (req.originalUrl.startsWith(API_PATH)) {
 			return next();
 		}
 		// Optional: Skip potential static files (basic check)

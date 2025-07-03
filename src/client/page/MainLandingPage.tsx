@@ -2,13 +2,19 @@
 
 import React from 'react';
 import { Box, Container, Typography, Paper } from '@mui/material';
+import { useNavigate } from 'react-router';
+import { routeConstants } from '../routeConstants.ts';
 
 export default function MainLandingPage() {
+	const navigate = useNavigate();
+	const goCharacterPage = () => {
+		navigate(routeConstants.CHARACTER);
+	};
 	return (
 		<Box
 			sx={{
 				minHeight: '100vh',
-				background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+				// background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
 				display: 'flex',
 				flexDirection: 'column',
 				justifyContent: 'center',
@@ -17,12 +23,19 @@ export default function MainLandingPage() {
 			}}
 		>
 			<Container maxWidth="md">
-				<Paper elevation={4} sx={{ p: { xs: 3, md: 5 }, mb: 4, background: '#fffbe6' }}>
-					<Typography variant="h3" component="h1" gutterBottom align="center" fontWeight="bold">
-						Welcome to Rita-Berenice
+				<Paper elevation={4} sx={{ p: { xs: 3, md: 5 }, mb: 4 }}>
+					<Typography
+						variant="h3"
+						component="h1"
+						gutterBottom
+						align="center"
+						fontWeight="bold"
+						onClick={goCharacterPage}
+					>
+						Rita-Berenice
 					</Typography>
 				</Paper>
-				<Paper elevation={2} sx={{ p: { xs: 2, md: 4 }, background: '#f9fafb' }}>
+				<Paper elevation={2} sx={{ p: { xs: 2, md: 4 } }}>
 					<Typography variant="h5" component="h2" gutterBottom fontWeight="bold">
 						1 Corinthians 15:29-31
 					</Typography>

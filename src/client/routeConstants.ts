@@ -3,4 +3,5 @@ export const routeConstants = {
 	CHAT: 'chat',
 	ERROR: 'error',
 	AUTH: 'auth',
+	API: 'api',
 } as const;
