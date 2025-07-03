@@ -14,10 +14,15 @@ async function dropCollection() {
 	console.log(list);
 	try {
 		console.log(`Attempting to delete collection "${COLLECTION_TO_DROP}"...`);
+		const collection = await chromaClient.getCollection({ name: COLLECTION_TO_DROP });
+		const allIds = (await collection.get()).ids;
+		if (allIds && allIds.length > 0) {
+			await collection.delete({ ids: allIds });
+		}
 
-		await chromaClient.deleteCollection({ name: COLLECTION_TO_DROP });
+		// await chromaClient.deleteCollection({ name: COLLECTION_TO_DROP });
 
-		console.log(`Successfully deleted collection "${COLLECTION_TO_DROP}".`);
+		console.log(`Successfully deleted collection Data "${COLLECTION_TO_DROP}".`);
 		console.log(
 			'The collection will be recreated automatically by your application or the seeding script when next needed.'
 		);
