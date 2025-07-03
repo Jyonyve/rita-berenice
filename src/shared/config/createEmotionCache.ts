@@ -1,22 +1,17 @@
-// src/shared/util/createEmotionCache.ts
+import createCache from '@emotion/cache';
 
-import createCache, { EmotionCache } from '@emotion/cache';
-
-const isBrowser = typeof document !== 'undefined';
-
-// Creates an Emotion cache instance.
-// On the client, it tries to use an insertion point for MUI compatibility.
-export const createEmotionCache = (): EmotionCache => {
+export const createEmotionCache = () => {
 	let insertionPoint: HTMLElement | undefined;
 
-	if (isBrowser) {
-		// Client-side: Find the meta tag for precise injection
-		const emotionInsertionPoint = document.querySelector<HTMLMetaElement>(
-			'meta[name="emotion-insertion-point"]'
-		);
-		insertionPoint = emotionInsertionPoint ?? undefined;
+	if (typeof document !== 'undefined') {
+		// Only assign if the element is actually an HTMLElement
+		const emotionInsertionPoint = document.querySelector('meta[name="emotion-insertion-point"]');
+		if (emotionInsertionPoint && emotionInsertionPoint instanceof HTMLElement) {
+			insertionPoint = emotionInsertionPoint;
+		}
+		// If not found or not HTMLElement, insertionPoint remains undefined
 	}
 
-	// The 'key' helps Emotion identify styles. 'insertionPoint' used client-side.
-	return createCache({ key: 'mui-style', insertionPoint }); // Use consistent key 'mui-style'
+	// Use key: 'mui' for MUI SSR compatibility!
+	return createCache({ key: 'mui', insertionPoint }); // console error는  dev에서만 나는것
 };

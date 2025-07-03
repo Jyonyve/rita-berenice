@@ -1,4 +1,7 @@
 // src/client/entry-client.tsx
+import SuperTokens, { SuperTokensWrapper } from 'supertokens-auth-react';
+import EmailPassword from 'supertokens-auth-react/recipe/emailpassword/index.js';
+import Session from 'supertokens-auth-react/recipe/session/index.js';
 
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
@@ -13,10 +16,18 @@ import { initQueryClient } from './shared/api/queryClient.js';
 import { ToastProvider } from './client/style/ToastProvider.jsx';
 import { theme } from './client/theme.js';
 import { App } from './client/App.jsx';
-import { frontendConfig } from './client/config/frontendConfig.js';
-import SuperTokens from 'supertokens-auth-react';
 
-SuperTokens.init(frontendConfig());
+// 1. Initialize SuperTokens BEFORE rendering anything
+SuperTokens.init({
+	appInfo: {
+		appName: 'Rita-Berenice',
+		websiteDomain: import.meta.env.VITE_APP_DOMAIN,
+		apiDomain: import.meta.env.VITE_API_DOMAIN,
+		apiBasePath: '/api/auth',
+		websiteBasePath: '/auth',
+	},
+	recipeList: [EmailPassword.init(), Session.init()],
+});
 
 function ClientApp() {
 	const clientSideEmotionCache = createEmotionCache();
@@ -30,7 +41,9 @@ function ClientApp() {
 						<ThemeProvider theme={theme}>
 							<CssBaseline />
 							<BrowserRouter>
-								<App />
+								<SuperTokensWrapper>
+									<App />
+								</SuperTokensWrapper>
 							</BrowserRouter>
 						</ThemeProvider>
 					</CacheProvider>

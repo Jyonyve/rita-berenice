@@ -257,7 +257,7 @@ async function initHistoryFromFiles() {
 			name: COLLECTIONS.LORE,
 			metadata: {
 				description: 'Stores character history and lore with LLM-generated metadata.',
-				created_by_script: 'initHistory.ts',
+				created_by_script: 'initHistory.js',
 				type: COLLECTIONS.LORE,
 				enrichment_model: ENRICHMENT_MODEL,
 			},

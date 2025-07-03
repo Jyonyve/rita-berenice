@@ -2,12 +2,12 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Typography, CircularProgress, Box } from '@mui/material';
-import { ChatPage } from './chat/ChatPage.jsx';
 import { parseSessionId } from '#shared/util/chatParseUtils.js';
-import { useCharacterApi } from '../hook/api/useCharacterApi.js';
-import { useProfileApi } from '../hook/api/useProfileApi.js';
-import { useChatApi } from '../hook/api/useChatApi.js';
-import { saveMessagesToCache } from '../util/idbUtils.js';
+import { useCharacterApi } from '../../hook/api/useCharacterApi.js';
+import { useProfileApi } from '../../hook/api/useProfileApi.js';
+import { useChatApi } from '../../hook/api/useChatApi.js';
+import { saveMessagesToCache } from '../../util/idbUtils.js';
+import { ChatPage } from './ChatPage.jsx';
 
 // In a real implementation, you would use `useLoaderData` to get pre-fetched data.
 // For now, we'll just display the IDs from the URL.

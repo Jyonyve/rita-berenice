@@ -336,7 +336,7 @@ async function initChatFromLogFiles() {
 			name: COLLECTIONS.CHAT,
 			metadata: {
 				description: 'Stores enriched chat session turns with LLM-generated metadata.',
-				created_by_script: 'initChat.ts',
+				created_by_script: 'initChat.js',
 				type: COLLECTIONS.CHAT,
 				enrichment_model: ENRICHMENT_MODEL,
 			},

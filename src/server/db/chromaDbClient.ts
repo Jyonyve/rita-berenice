@@ -44,6 +44,7 @@ const _getOrCreateSingletonCollection = async (collectionName: string): Promise<
 		const collection = await chromaClient.createCollection({
 			name: collectionName,
 			embeddingFunction: embedder,
+			configuration: { _type: 'duckdb+parquet' } as any,
 		});
 		_collectionCache.set(collectionName, collection);
 		console.log(`[ChromaClient] Collection ${collectionName} created and cached.`);

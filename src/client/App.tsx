@@ -1,27 +1,42 @@
 // src/client/App.tsx
 import { Routes, Route } from 'react-router';
-import { AppInitializer } from './util/AppInitializer.js';
+import { AppInitializer } from './util/Initializers.js';
 import { CharacterListPageLoader } from './page/character/CharacterListPageLoader.jsx';
-import { ChatPageLoader } from './page/ChatPageLoader.jsx';
 import { NotFoundPage } from './page/error/NotFoundPage.jsx';
 import { RootLayout } from './layout/RootLayout.jsx';
 import { CharacterPageLoader } from './page/character/CharacterPageLoader.jsx';
 import { routeConstants } from './routeConstants.js';
 import { SuperTokensWrapper } from 'supertokens-auth-react';
-import { SessionAuth } from 'supertokens-auth-react/recipe/session/index.js';
+import { ChatPageLoader } from './page/chat/ChatPageLoader.jsx';
+import MainLandingPage from './page/MainLandingPage.jsx';
+import { getSuperTokensRoutesForReactRouterDom } from 'supertokens-auth-react/ui/index.js';
+import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpassword/prebuiltui.js';
+import * as reactRouter from 'react-router';
+import SuperTokens from 'supertokens-auth-react';
+import EmailPassword from 'supertokens-auth-react/recipe/emailpassword/index.js';
+import Session from 'supertokens-auth-react/recipe/session/index.js';
+import { useEffect, useState } from 'react';
 
 export function App() {
 	const { CHARACTER, CHAT, ERROR, AUTH } = routeConstants;
+	const [routes, setRoutes] = useState<React.ReactNode>(null);
+
+	function clientOnlySuperTokensRoutes() {
+		setRoutes(getSuperTokensRoutesForReactRouterDom(reactRouter, [EmailPasswordPreBuiltUI]));
+	}
+
+	useEffect(() => {
+		clientOnlySuperTokensRoutes();
+	}, []);
+
 	return (
-		<SuperTokensWrapper>
+		<>
 			<AppInitializer />
 			<Routes>
 				<Route path="/" element={<RootLayout />}>
-					{/* The index route renders at the parent's path ('/') */}
-					<Route index element={<CharacterListPageLoader />} />
-					<Route path={`${AUTH}`} />
+					<Route index element={<MainLandingPage />} />
+					{routes ? routes : null}
 					<Route path={`${CHARACTER}`} element={<CharacterListPageLoader />} />
-
 					<Route path={`${CHARACTER}/:characterId`} element={<CharacterPageLoader />} />
 					<Route
 						path={`${CHAT}/:sessionId`}
@@ -36,6 +51,6 @@ export function App() {
 					<Route path="*" element={<NotFoundPage />} />
 				</Route>
 			</Routes>
-		</SuperTokensWrapper>
+		</>
 	);
 }

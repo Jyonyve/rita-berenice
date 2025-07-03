@@ -34,7 +34,7 @@ export function setupApiClient(
 				} else {
 					addToast('Your session has expired. Please log in again.', 'error');
 					// Optionally, redirect to login page here
-					window.location.href = '/auth';
+					// window.location.href = '/auth';
 				}
 				return Promise.reject(error);
 			}

@@ -1,12 +1,22 @@
-// src/server/server.ts (at the project root)
+// src/server/server.ts
 
 import path from 'node:path';
 import fs from 'node:fs/promises'; // Use promises for async file reading
 import { fileURLToPath } from 'node:url';
-import express, { type Request, type Response, type NextFunction } from 'express';
+import express, {
+	type Request,
+	type Response,
+	type NextFunction,
+	type RequestHandler,
+} from 'express';
 import compression from 'compression'; // Add compression middleware
 import { createServer as createViteServer, type ViteDevServer } from 'vite';
-
+import supertokens from 'supertokens-node';
+import Session from 'supertokens-node/recipe/session';
+import EmailPassword from 'supertokens-node/recipe/emailpassword';
+import { middleware, errorHandler } from 'supertokens-node/framework/express';
+import { verifySession } from 'supertokens-node/recipe/session/framework/express';
+import cors from 'cors';
 import sirv from 'sirv';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import characterRoutes from './route/character.routes.js';
@@ -27,9 +37,18 @@ const isProduction = process.env.NODE_ENV === 'production';
 const PORT = process.env.PORT || 3000;
 const BASE = process.env.BASE || '/'; // Base path for the app
 const BASE_API = `${BASE}api/`;
+const AUTH_PATH = 'auth';
 
 // --- Helper Function to Resolve Project Root ---
 const resolve = (p: string) => path.resolve(__dirname, p);
+function unless(middleware: RequestHandler, ...excludedPaths: RegExp[]): RequestHandler {
+	return function (req, res, next) {
+		if (excludedPaths.some((regex) => regex.test(req.path))) {
+			return next();
+		}
+		return middleware(req, res, next);
+	};
+}
 
 // --- Template HTML paths ---
 const templateDevHtmlFile = path.resolve(__dirname, '../../index.html');
@@ -41,7 +60,31 @@ const templateProdHtmlBuilt = path.resolve(__dirname, '../client/index.html');
 async function createServer() {
 	const app = express();
 
+	supertokens.init({
+		framework: 'express',
+		supertokens: {
+			connectionURI: process.env.VITE_SUPERTOKEN_DOMAIN || 'https://try.supertokens.com', // or your own core
+			// apiKey: "<YOUR_API_KEY>", // if using your own core
+		},
+		appInfo: {
+			appName: 'Rita-Berenice',
+			websiteDomain: process.env.VITE_APP_DOMAIN || 'http://localhost:3000',
+			apiDomain: process.env.VITE_API_DOMAIN || 'http://localhost:3000',
+			apiBasePath: `${BASE_API}${AUTH_PATH}`,
+			websiteBasePath: `/${AUTH_PATH}`,
+		},
+		recipeList: [EmailPassword.init(), Session.init()],
+	});
+
+	app.use(
+		cors({
+			origin: process.env.VITE_APP_DOMAIN || 'http://localhost:3000',
+			allowedHeaders: ['content-type', ...supertokens.getAllCORSHeaders()],
+			credentials: true,
+		})
+	);
 	// --- Core Middleware ---
+	app.use(middleware());
 	app.use(compression()); // Apply gzip compression
 	app.use(express.json()); // Parse JSON request bodies
 
@@ -64,6 +107,16 @@ async function createServer() {
 
 	// --- API Routes ---
 	console.log('Mounting API routes...');
+	// Protect all /api/* routes except /api/character
+	// app.use(
+	// 	'/api',
+	// 	unless(
+	// 		verifySession(),
+	// 		/^\/character/, // Exclude all /api/character routes
+	// 		/^\/auth/ // Exclude /api/auth if you want public login/signup endpoints
+	// 		// Add more patterns as needed
+	// 	)
+	// );
 	app.use(`${BASE_API}${MODULE_NAMES.CHARACTER}`, characterRoutes);
 	app.use(`${BASE_API}${MODULE_NAMES.CHAT}`, chatRoutes);
 	app.use(`${BASE_API}${MODULE_NAMES.LLM}`, llmRoutes);
@@ -74,6 +127,7 @@ async function createServer() {
 	app.use(`${BASE_API}${MODULE_NAMES.MEMORY}`, memoryRoutes);
 	app.use(`${BASE_API}${MODULE_NAMES.PERSONA}`, personaRoutes);
 	app.use(`${BASE_API}${MODULE_NAMES.ORCHESTRATION}`, orchestrationRoutes);
+	app.use(errorHandler());
 
 	// --- SSR Catch-all Handler ---
 	app.get('/{*splat}', async (req: Request, res: Response, next: NextFunction) => {
@@ -118,7 +172,7 @@ async function createServer() {
 				// Apply Vite HTML transforms (injects HMR client, plugins, etc.)
 				template = await vite.transformIndexHtml(url, template);
 				// Load server entry via Vite for HMR
-				const serverEntry = await vite.ssrLoadModule('/src/entry-server.tsx');
+				const serverEntry = await vite.ssrLoadModule('/src/entry-server.jsx');
 				render = serverEntry.render;
 			} else {
 				// == PRODUCTION ==

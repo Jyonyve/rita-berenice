@@ -1,6 +1,8 @@
-import { useEffect } from 'react';
+// src/client/util/Initializers.ts
+
+import { useEffect, useState } from 'react';
 import { useToast } from '../style/ToastProvider.jsx';
-import { apiClient, setupApiClient } from './clientHelpers.js';
+import { setupApiClient } from './clientHelpers.js';
 
 export const AppInitializer = () => {
 	const { addToast } = useToast();

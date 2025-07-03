@@ -42,7 +42,7 @@ async function dropCollection() {
 
 // --- Run the script ---
 console.warn(
-	`🚨 WARNING: About to delete the ENTIRE "${COLLECTION_TO_DROP}" collection from ${CHROMA_HOST}. This is irreversible.`
+	`🚨 WARNING: About to delete the ENTIRE "${COLLECTION_TO_DROP}" collection . This is irreversible.`
 );
 console.warn('Press Ctrl+C within 5 seconds to cancel, or wait to proceed...');
 
