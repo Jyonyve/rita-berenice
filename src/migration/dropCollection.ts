@@ -5,7 +5,7 @@ import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
 const CHROMA_HOST = process.env.CHROMA_HOST || 'chromadb-flyio.fly.dev';
 const CHROMA_PORT = Number(process.env.CHROMA_PORT) || 443;
 const CHROMA_SSL = true; // Your URL starts with https://
-const COLLECTION_TO_DROP = COLLECTIONS.CHARACTER;
+const COLLECTION_TO_DROP = COLLECTIONS.LORE;
 
 // --- Main Deletion Logic ---
 async function dropCollection() {
@@ -55,4 +55,4 @@ console.warn('Press Ctrl+C within 5 seconds to cancel, or wait to proceed...');
 setTimeout(() => {
 	console.log('Proceeding with deletion...');
 	dropCollection();
-}, 5000); // 5-second delay
+}, 3000); // 5-second delay

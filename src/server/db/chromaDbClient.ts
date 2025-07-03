@@ -4,12 +4,17 @@ import { COLLECTIONS } from './ChromaInterfaces.js';
 import { MetadataType } from '#shared/config/constants.js';
 import { ChromaResponse } from '#shared/api/ModuleResponse.js';
 import { DefaultEmbeddingFunction } from '@chroma-core/default-embed';
+import { OpenAIEmbeddingFunction } from '@chroma-core/openai';
 
 const CHROMA_HOST = process.env.CHROMA_HOST || 'chromadb-flyio.fly.dev';
 const CHROMA_PORT = Number(process.env.CHROMA_PORT) || 443;
 const CHROMA_SSL = true; // Your URL starts with https://
 const chromaClient = new ChromaClient({ host: CHROMA_HOST, port: CHROMA_PORT, ssl: CHROMA_SSL });
-const embedder = new DefaultEmbeddingFunction();
+const embedFnDefault = new DefaultEmbeddingFunction();
+const embedFnOpenAi = new OpenAIEmbeddingFunction({
+	apiKey: process.env.OPENAI_API_KEY,
+	modelName: 'text-embedding-3-small',
+});
 
 /**
  * A centralized Map to cache all singleton Collection objects.
@@ -43,7 +48,8 @@ const _getOrCreateSingletonCollection = async (collectionName: string): Promise<
 		console.log(`[ChromaClient] Collection ${collectionName} not found. Creating...`);
 		const collection = await chromaClient.createCollection({
 			name: collectionName,
-			embeddingFunction: embedder,
+			embeddingFunction: embedFnOpenAi,
+			metadata: { name: collectionName, created: new Date().toString() },
 		});
 		_collectionCache.set(collectionName, collection);
 		console.log(`[ChromaClient] Collection ${collectionName} created and cached.`);
