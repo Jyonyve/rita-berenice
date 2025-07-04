@@ -1,7 +1,7 @@
 {
 	"name": "rita-berenice",
 	"private": true,
-	"version": "1.1.0",
+	"version": "1.2.0",
 	"type": "module",
 	"scripts": {
 		"clean": "rimraf dist && rimraf node_modules",
@@ -28,6 +28,7 @@
 	},
 	"dependencies": {
 		"@chroma-core/default-embed": "^0.1.8",
+		"@chroma-core/openai": "^0.1.7",
 		"@emotion/babel-plugin": "^11.13.5",
 		"@emotion/cache": "^11.14.0",
 		"@emotion/react": "^11.14.0",
