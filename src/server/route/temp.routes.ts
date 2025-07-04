@@ -1,7 +1,7 @@
 // src/server/routes/tempChat.routes.ts
 import express, { type Request, type Response } from 'express';
 
-import { chatStore } from '../store/chatStore.js';
+import { tempStore } from '../store/tempStore.js';
 import { genRoutePattern } from '#shared/util/apiHelpers.js';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import {
@@ -11,6 +11,8 @@ import {
 	validateServiceId,
 } from '../util/routeHelpers.js';
 import { TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { TempChatResponse } from '#shared/api/ModuleResponse.js';
+import { ApiError } from '../util/serviceHelpers.js';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.TEMP; // For validating sessionId if it were used as a serviceId elsewhere
@@ -36,7 +38,7 @@ router.post(
 			const path = genRoutePattern('saveTempChatTurn');
 			console.log(`API HIT: POST ${path} for session ${sessionId}, sequence ${sequence}`);
 
-			await chatStore.saveTempChatTurn(req.body);
+			await tempStore.saveTempChatTurn(req.body);
 			res.status(200).json({ message: 'Temporary chat turn saved successfully.' });
 		}
 	)
@@ -51,7 +53,7 @@ router.post(
  */
 router.get(
 	genRoutePattern('getTempChatTurn', ['sessionId', 'sequence']),
-	asyncHandler(async (req: Request, res: Response<TempChatTurn>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<TempChatResponse>): Promise<void> => {
 		const { sessionId, sequence: sequenceParam } = req.params;
 		validateServiceId(sessionId, collectionType);
 		validateRequestData(req.params, 'params', ['sequence'], [validateSequenceRule('sequence')]);
@@ -62,8 +64,40 @@ router.get(
 			`API HIT: GET ${path.replace(':sessionId', sessionId).replace(':sequence', sequenceParam)}`
 		);
 
-		const response = await chatStore.getTempChatTurn(sessionId, sequence);
+		const response = await tempStore.getTempChatTurn(sessionId, sequence);
 		res.status(200).json(response);
+	})
+);
+
+/**
+ * ✅ NEW ROUTE
+ * GET /api/temp/get-last-temp-turns-for-sessions
+ * Fetches the single most recent temp turn for a list of session IDs.
+ * @param {string} req.query.sessionIds - A comma-separated string of session IDs.
+ * @returns {TempChatResponse} An object containing the list of latest temp chat turns.
+ * @throws {400} If sessionIds parameter is missing or empty.
+ */
+router.get(
+	// The path will be something like: /api/temp/get-last-temp-turns-for-sessions
+	genRoutePattern('getLastTempTurnsForSessions'),
+	asyncHandler(async (req: Request, res: Response<TempChatResponse>): Promise<void> => {
+		// Validate that the sessionIds query parameter exists.
+		validateRequestData(req.query, 'query', ['sessionIds']);
+		const { sessionIds: sessionIdsQueryParam } = req.query;
+
+		if (typeof sessionIdsQueryParam !== 'string') {
+			// 2. If it's not a string (e.g., it's an array or object from a malformed URL),
+			//    throw a clear bad request error.
+			throw new ApiError(400, "The 'sessionIds' parameter must be a single, comma-separated string.");
+		}
+		const sessionIds = sessionIdsQueryParam.split(',');
+
+		const path = genRoutePattern('getLastTempTurnsForSessions');
+		console.log(`API HIT: GET ${path} for ${sessionIds.length} sessions`);
+
+		// Call the new store function we created.
+		const results = await tempStore.getLastTempTurnsForSessions(sessionIds);
+		res.status(200).json(results);
 	})
 );
 

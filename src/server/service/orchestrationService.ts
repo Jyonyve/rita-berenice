@@ -18,6 +18,7 @@ import { personaEngine } from './personaEngine.js';
 import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { buildChatMessage, parseSessionId } from '#shared/util/chatParseUtils.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { tempStore } from '../store/tempStore.js';
 
 /**
  * Orchestrates the backend flow for generating a new character response.
@@ -32,7 +33,8 @@ export const receiveBotResponse = async (
 	tempChatTurnCdo: TempChatTurnCdo,
 	characterInfo: CharacterInfo,
 	profileInfo: ProfileInfo,
-	aiModel: AiModelInfo
+	aiModel: AiModelInfo,
+	recentChatTurnString: string
 ): Promise<TempChatTurn> => {
 	const { sequence, sessionId, userInput } = tempChatTurnCdo;
 	const overallTimeoutSignal = AbortSignal.timeout(ABORT_TIMEOUT * 1000);
@@ -49,8 +51,9 @@ export const receiveBotResponse = async (
 
 	try {
 		let tempTurn: TempChatTurn;
+		const recentChatTurn: ChatTurn[] = JSON.parse(recentChatTurnString);
 		try {
-			tempTurn = await chatStore.getTempChatTurn(sessionId, sequence);
+			tempTurn = (await tempStore.getTempChatTurn(sessionId, sequence)).tempChatTurn;
 		} catch (error) {
 			if (error instanceof ApiError && error.status === 404) {
 				console.log(
@@ -77,7 +80,11 @@ export const receiveBotResponse = async (
 		userChatMessage.showName = profileInfo.showName;
 
 		console.log(`[Orchestrator] Recalling memories for: "${userInput.substring(0, 50)}..."`);
-		const recalledMemories = await memoryEngine.recallRelevantMemories(sessionId, userInput);
+		const recalledMemories = await memoryEngine.recallRelevantMemories(
+			sessionId,
+			userInput,
+			recentChatTurn
+		);
 
 		console.log(`[Orchestrator] Generating new persona response for ${characterInfo.characterId}...`);
 		const personaResponse = await personaEngine.generateResponse(
@@ -106,7 +113,7 @@ export const receiveBotResponse = async (
 		tempTurn.chatTurnSets.push(newSet);
 		tempTurn.setCount = tempTurn.chatTurnSets.length;
 
-		await chatStore.saveTempChatTurn(tempTurn);
+		await tempStore.saveTempChatTurn(tempTurn);
 
 		console.log(
 			`[Orchestrator] Request for turn ${sequence} completed. Temp turn now has ${tempTurn.setCount} options.`

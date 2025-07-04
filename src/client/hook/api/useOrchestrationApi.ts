@@ -10,8 +10,9 @@ import {
 	TempChatTurnCdo,
 } from '#shared/domain/chat/ChatInterfaces.js';
 import { genApiUrl } from '#shared/util/apiHelpers.js';
-import { CharacterInfo, ProfileInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';
+import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 
 /**
  * A client-side hook for interacting with the main ORCHESTRATION API endpoint,
@@ -45,15 +46,23 @@ export const useOrchestrationApi = () => {
 			characterInfo: CharacterInfo;
 			profileInfo: ProfileInfo;
 			aiModelInfo: AiModelInfo;
+			recentChatTurnString: string;
 		} // Variables type
 	>({
-		mutationFn: async ({ tempChatTurnCdo, characterInfo, profileInfo, aiModelInfo }) => {
+		mutationFn: async ({
+			tempChatTurnCdo,
+			characterInfo,
+			profileInfo,
+			aiModelInfo,
+			recentChatTurnString,
+		}) => {
 			const url = genApiUrl(MODULE_NAME, 'receiveBotResponse');
 			const response = await apiClient.post<TempChatTurn>(url, {
 				tempChatTurnCdo,
 				characterInfo,
 				profileInfo,
 				aiModelInfo,
+				recentChatTurnString,
 			});
 			return response.data;
 		},

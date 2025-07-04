@@ -1,0 +1,92 @@
+{
+  "sessionId": "tarion_spinoff_Oin8t5Lxbc8glaU7",
+  "totalTurnsInLogFile": 1319,
+  "lastProcessedSequence": 491,
+  "successfullyEnrichedTurnsCount": 476,
+  "fallbackSavedTurnsCount": 16,
+  "startedAt": "2025-07-04T05:55:01.550Z",
+  "lastUpdatedAt": "2025-07-04T08:01:52.455Z",
+  "status": "in_progress",
+  "errors": [
+    {
+      "sequence": 267,
+      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+      "timestamp": "2025-07-04T06:28:01.876Z"
+    },
+    {
+      "sequence": 268,
+      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+      "timestamp": "2025-07-04T06:32:13.636Z"
+    },
+    {
+      "sequence": 276,
+      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+      "timestamp": "2025-07-04T06:42:08.932Z"
+    },
+    {
+      "sequence": 277,
+      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+      "timestamp": "2025-07-04T06:46:14.649Z"
+    },
+    {
+      "sequence": 278,
+      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+      "timestamp": "2025-07-04T06:50:24.855Z"
+    },
+    {
+      "sequence": 279,
+      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+      "timestamp": "2025-07-04T06:54:32.077Z"
+    },
+    {
+      "sequence": 280,
+      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+      "timestamp": "2025-07-04T06:58:40.605Z"
+    },
+    {
+      "sequence": 482,
+      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+      "timestamp": "2025-07-04T07:24:29.548Z"
+    },
+    {
+      "sequence": 483,
+      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+      "timestamp": "2025-07-04T07:28:39.107Z"
+    },
+    {
+      "sequence": 484,
+      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+      "timestamp": "2025-07-04T07:32:46.176Z"
+    },
+    {
+      "sequence": 485,
+      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+      "timestamp": "2025-07-04T07:36:55.567Z"
+    },
+    {
+      "sequence": 486,
+      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+      "timestamp": "2025-07-04T07:41:03.097Z"
+    },
+    {
+      "sequence": 488,
+      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+      "timestamp": "2025-07-04T07:49:21.963Z"
+    },
+    {
+      "sequence": 489,
+      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+      "timestamp": "2025-07-04T07:53:34.215Z"
+    },
+    {
+      "sequence": 490,
+      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+      "timestamp": "2025-07-04T07:57:40.454Z"
+    },
+    {
+      "sequence": 491,
+      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+      "timestamp": "2025-07-04T08:01:50.647Z"
+    }
+  ]
+}

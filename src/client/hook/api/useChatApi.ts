@@ -6,7 +6,7 @@ import { apiClient } from '../../util/clientHelpers.js';
 import { ChatTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { genApiUrl } from '#shared/util/apiHelpers.js';
-import { ChatResponse } from '#shared/api/ModuleResponse.js';
+import { ChatResponse, TempChatResponse } from '#shared/api/ModuleResponse.js';
 
 /**
  * A client-side hook for interacting with the CHAT and TEMP_CHAT API endpoints.
@@ -67,21 +67,6 @@ export const useChatApi = () => {
 		});
 
 	/**
-	 * Fetches list of sessionIds by character Id
-	 * Query Key: ['getLastChatTurnsByCharacterId']
-	 */
-	const getLastChatTurnsByCharacterId = (characterId: string) =>
-		useQuery<ChatResponse, Error>({
-			queryKey: ['getLastChatTurnsByCharacterId', characterId], // The query key now reflects the method name
-			queryFn: async () => {
-				const url = genApiUrl(MODULE_NAMES.CHAT, 'getLastChatTurnsByCharacterId', [characterId]);
-				const response = await apiClient.get<ChatResponse>(url);
-				return response.data;
-			},
-			enabled: !!characterId,
-		});
-
-	/**
 	 * Performs a semantic search over finalized chat turns.
 	 * Uses useMutation because it's a POST request (search/query) and does not represent
 	 * a continuously available piece of data.
@@ -118,24 +103,44 @@ export const useChatApi = () => {
 	 * Query Key: ['getTempChatTurn']
 	 */
 	const getTempChatTurn = (sessionId: string, sequence: number) =>
-		useQuery<TempChatTurn, Error>({
+		useQuery<TempChatResponse, Error>({
 			queryKey: ['getTempChatTurn', sessionId, sequence], // The query key now reflects the method name
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAMES.TEMP, 'getTempChatTurn', [sessionId, sequence]);
-				const response = await apiClient.get<TempChatTurn>(url);
+				const response = await apiClient.get<TempChatResponse>(url);
 				return response.data;
 			},
 			enabled: !!sessionId && typeof sequence === 'number', // Only run if both are available
 			retry: (failureCount, error) => (error.name === '404' ? false : failureCount < 3),
 		});
 
+	const getLastTempTurnsForSessions = (sessionIds: string[]) =>
+		useQuery<TempChatResponse, Error>({
+			queryKey: ['getLastTempTurnsForSessions', sessionIds],
+			queryFn: async () => {
+				// Prevent making an API call with no session IDs.
+				// Construct the URL. The sessionIds array is joined into a comma-separated string
+				// to be passed as a single query parameter.
+				const url = `${genApiUrl(
+					MODULE_NAMES.TEMP,
+					'getLastTempTurnsForSessions'
+				)}?sessionIds=${sessionIds.join(',')}`;
+
+				const response = await apiClient.get<TempChatResponse>(url);
+				return response.data;
+			},
+			enabled: !!sessionIds && sessionIds.length > 0,
+			// Optional: Refetch data periodically for a "live" session list.
+			// refetchInterval: 30000, // e.g., every 30 seconds
+		});
+
 	return {
 		storeChatTurn,
 		getAllChatTurns,
-		getSessionIdsByCharacterId: getLastChatTurnsByCharacterId,
 		getChatTurnBySequence,
 		queryChatTurns,
 		saveTempChatTurn,
 		getTempChatTurn,
+		getLastTempTurnsForSessions,
 	};
 };

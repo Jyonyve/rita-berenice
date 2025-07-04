@@ -2,7 +2,7 @@ import { HistoryInfo, LoreInfo } from '../domain/lore/LoreInterfaces.js';
 import { LangCode } from '../config/constants.js';
 import { EmotionValue } from '../config/emotionWordsMapper.js';
 import { CharacterInfo } from '../domain/character/CharacterInterfaces.js';
-import { ChatTurn } from '../domain/chat/ChatInterfaces.js';
+import { ChatTurn, TempChatTurn } from '../domain/chat/ChatInterfaces.js';
 import { RecapInfo } from '../domain/recap/RecapInterfaces.js';
 import { TermInfo } from '../domain/term/TermInterfaces.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
@@ -23,6 +23,7 @@ export type ChromaResponse = {
 	ids: string[];
 	metadatas: (Metadata | null)[];
 	documents: (string | null)[];
+	distances?: (number[] | null)[] | null | undefined;
 };
 
 //character
@@ -46,6 +47,13 @@ interface ChatChromaResponse extends ChromaResponse {
 	chatTurn: ChatTurn;
 }
 export type ChatResponse = ChatChromaResponse;
+
+// Temp Chat
+interface TempChatChromaResponse extends ChromaResponse {
+	tempChatTurns: TempChatTurn[];
+	tempChatTurn: TempChatTurn;
+}
+export type TempChatResponse = TempChatChromaResponse;
 
 // Lore
 interface LoreChromaResponse extends ChromaResponse {

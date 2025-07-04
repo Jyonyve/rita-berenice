@@ -4,15 +4,13 @@ import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 
 interface CharacterPortraitProps {
 	imageUrl: string;
-	characterInfo: CharacterInfo;
 }
 
-export const CharacterPortrait: FC<CharacterPortraitProps> = ({ imageUrl, characterInfo }) => {
+export const CharacterPortrait: FC<CharacterPortraitProps> = ({ imageUrl }) => {
 	return (
 		<Box
 			component="img"
 			src={imageUrl}
-			alt={characterInfo.showName}
 			sx={{
 				// Styles from your original outer Box
 				width: '100%',

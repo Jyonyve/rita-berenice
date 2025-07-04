@@ -69,13 +69,13 @@ const _getOrCreateSingletonCollection = async (collectionName: string): Promise<
 };
 
 const _returnResponse = (results: ChromaResponse): ChromaResponse => {
-	const { ids, metadatas, documents } = results;
+	const { ids, metadatas, documents, distances } = results;
 	if (!ids || ids.length === 0) {
 		console.log(`[ChromaClient._returnResponse] No documents found for the query.`);
-		return { ids: [], metadatas: [], documents: [] };
+		return { ids: [], metadatas: [], documents: [], distances: [] };
 	}
 	console.log(`[ChromaClient._returnResponse] Found ${ids.length} entries.`);
-	return { ids, metadatas, documents };
+	return { ids, metadatas, documents, distances };
 };
 
 export const chromaDbClient = {
@@ -234,7 +234,9 @@ export const chromaDbClient = {
 					const ids = results.ids[i];
 					const documents = results.documents[i];
 					const metadatas = results.metadatas[i];
-					return _returnResponse({ ids, documents, metadatas });
+					const distances: (number[] | null)[] | null | undefined =
+						typeof results.distances[i] === 'number' ? [results.distances[i]] : null;
+					return _returnResponse({ ids, documents, metadatas, distances });
 				})
 				.filter((r): r is ChromaResponse => r !== null);
 		} catch (error) {

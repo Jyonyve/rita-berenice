@@ -19,7 +19,7 @@ import { profileStore } from '../store/profileStore.js';
 import { termStore } from '../store/termStore.js';
 import { detectLanguage } from '../util/languageUtils.js';
 import { handleServiceError } from '../util/serviceHelpers.js';
-import { parseLlmJsonResponse } from '../util/llmUtils.js';
+import { parseLlmJsonResponse, reRankByRecency } from '../util/llmUtils.js';
 import { llmService } from './llmService.js';
 import { DEFAULT_MODEL_GOOGLEAI } from '#shared/domain/aimodel/AiInfoTypes.js';
 
@@ -85,14 +85,19 @@ export const memoryEngine = {
 	 * @param userRequestText The text from the user's latest prompt for semantic search.
 	 * @returns A MemoryRecallPayload object containing various forms of context.
 	 */
-	async recallRelevantMemories(sessionId: string, userRequestText: string): Promise<MemoryResponse> {
+	async recallRelevantMemories(
+		sessionId: string,
+		userRequestText: string,
+		recentChatTurns: ChatTurn[]
+	): Promise<MemoryResponse> {
 		const { characterId } = parseSessionId(sessionId);
-		const MEMORY_LIMIT = 3; // Limit for long-term and recap queries
+		const INITIAL_QUERY_LIMIT = 15;
+		const FINAL_MEMORY_LIMIT = 5;
 		const langCode = detectLanguage(userRequestText);
+
 		try {
 			const [
-				shortTermHistoryRes,
-				longTermHistoryRes,
+				longTermChatRes,
 				relevantLoreRes,
 				relevantHistoryRes,
 				// --- KEY CHANGE: Query for relevant recaps, not the latest one ---
@@ -100,9 +105,14 @@ export const memoryEngine = {
 				relevantRelationshipRecapsRes,
 			] = await Promise.all([
 				// Tier 1: Immediate context
-				chatStore.getChatTurns(sessionId, 5),
 				// Tier 2: Specific past conversations
-				chatStore.queryChatTurns(sessionId, [userRequestText]),
+				chatStore.queryChatTurns(
+					sessionId,
+					[userRequestText],
+					undefined,
+					undefined,
+					INITIAL_QUERY_LIMIT
+				),
 				// Foundational truths and chronological background
 				loreStore.queryLores(characterId, [userRequestText]),
 				loreStore.queryHistories(characterId, [userRequestText]),
@@ -111,6 +121,7 @@ export const memoryEngine = {
 				recapStore.queryRecaps(sessionId, [userRequestText], METADATA_TYPES.RELATIONSHIP),
 			]);
 
+			const rerankedLongTerm = reRankByRecency<ChatTurn>(longTermChatRes);
 			// Construct a concise, token-friendly summary of the recalled recaps
 			const factualRecapSummary = relevantFactualRecapsRes?.recapInfos
 				.map(_formatRecapForPrompt)
@@ -122,8 +133,8 @@ export const memoryEngine = {
 
 			return {
 				langCode,
-				shortTermHistory: shortTermHistoryRes?.chatTurns || [],
-				longTermHistory: longTermHistoryRes?.chatTurns || [],
+				shortTermHistory: recentChatTurns || [],
+				longTermHistory: rerankedLongTerm.contents?.slice(0, FINAL_MEMORY_LIMIT) || [],
 				relevantLore: relevantLoreRes?.lores || [],
 				relevantHistory: relevantHistoryRes?.histories || [],
 				// Pass the concise summaries, not the full objects

@@ -1,6 +1,6 @@
 // src/client/component/page/ChatPage.tsx
 
-import React, { useState, useEffect, useCallback, ChangeEvent, JSX } from 'react';
+import React, { useState, useEffect, useCallback, ChangeEvent, JSX, FC } from 'react';
 
 // Import the new components
 
@@ -8,7 +8,7 @@ import { ChatLog } from './ChatLog.jsx';
 import { UserInput } from './UserInput.jsx';
 // MUI Components
 import { Grid, Box, Typography } from '@mui/material';
-import { CharacterInfo, ProfileInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { useOrchestrationApi } from '../../hook/api/useOrchestrationApi.js';
 import { useCharacterState } from '../../hook/state/useCharacterState.js';
 import { useChatApi } from '../../hook/api/useChatApi.js';
@@ -19,16 +19,14 @@ import { ChatTurnCdo, TempChatTurn, TempChatTurnCdo } from '#shared/domain/chat/
 import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
 import { parseEntriesToText, parseTextToEntries } from '#shared/util/chatParseUtils.js';
 import { CharacterPortrait } from '../character/CharacterPortrait.jsx';
+import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 
-export const ChatPage = ({
-	characterInfo,
-	profileInfo,
-	sessionId,
-}: {
+export const ChatPage: FC<{
 	characterInfo: CharacterInfo;
 	profileInfo: ProfileInfo;
 	sessionId: string;
-}) => {
+	userId: string;
+}> = ({ characterInfo, profileInfo, sessionId, userId }) => {
 	const { receiveBotResponse, finalizeChatTurn } = useOrchestrationApi();
 	const { saveTempChatTurn } = useChatApi();
 	const { portraitMap, getImageNumberForEmotion } = useCharacterState(characterInfo.characterId);
@@ -42,6 +40,7 @@ export const ChatPage = ({
 		addChatTurn,
 		changeTempChatTurn,
 		getNextSequence,
+		getRecentTurnsForMemory,
 	} = useChatState(sessionId);
 
 	const { aiModelInfo } = useAiModel();
@@ -79,6 +78,7 @@ export const ChatPage = ({
 			if (!pickedTurnSet) return null;
 
 			const finalizedTurnCdo: ChatTurnCdo = {
+				userId,
 				sessionId: tempChatTurn.sessionId,
 				sequence: tempChatTurn.sequence,
 				request: pickedTurnSet.request,
@@ -89,7 +89,7 @@ export const ChatPage = ({
 
 		const generatePromise = (async () => {
 			if (!userInput.trim()) return null;
-
+			const recentChatTurnString = JSON.stringify(getRecentTurnsForMemory());
 			const newTempSequence = getNextSequence();
 			const tempChatTurnCdo: TempChatTurnCdo = { sessionId, sequence: newTempSequence, userInput };
 
@@ -98,6 +98,7 @@ export const ChatPage = ({
 				characterInfo,
 				profileInfo,
 				aiModelInfo,
+				recentChatTurnString,
 			});
 		})();
 
@@ -149,12 +150,14 @@ export const ChatPage = ({
 			const userInput = parseEntriesToText(
 				tempChatTurn.chatTurnSets[currentTempSetNo].request.entries
 			);
+			const recentChatTurnString = JSON.stringify(getRecentTurnsForMemory());
 			const tempChatTurnCdo: TempChatTurnCdo = { sessionId, sequence, userInput };
 			const result: TempChatTurn = await receiveBotResponse.mutateAsync({
 				tempChatTurnCdo,
 				characterInfo,
 				profileInfo,
 				aiModelInfo,
+				recentChatTurnString,
 			});
 
 			if (result) {

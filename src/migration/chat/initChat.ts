@@ -34,8 +34,8 @@ const MAX_LLM_RETRIES = 5;
 const USER_ID = process.env.USER_ID || '6b335673-c837-43f9-a1c7-0b92c90edefb';
 
 // LLM Configuration
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDcw_sDLQSjD0fJARHJNaRoIZv_Se6YGj8';
-// const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyAfhl_AyupNyz9CpxscySkvGmxRsJKcXxk';
+// const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDcw_sDLQSjD0fJARHJNaRoIZv_Se6YGj8';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyAfhl_AyupNyz9CpxscySkvGmxRsJKcXxk';
 const ENRICHMENT_MODEL = 'gemini-2.0-flash-001'; // Fast model for metadata extraction
 
 // --- ADJUST THESE FOR DEBUGGING ---
@@ -370,8 +370,8 @@ async function initChatFromLogFiles() {
 		const characterVariantFromFile = fileNameParts[1];
 
 		const characterId = buildCharacterId(characterNameFromFile, characterVariantFromFile);
-		const TARGET_SESSION_ID = buildSessionId(characterId);
-		// const TARGET_SESSION_ID = 'tarion_spinoff_SREDt3inUBm5wMBu';
+		// const TARGET_SESSION_ID = buildSessionId(characterId);
+		const TARGET_SESSION_ID = 'tarion_spinoff_Oin8t5Lxbc8glaU7';
 
 		console.log(`\n📝 Processing log file: "${logFile}" for session ID: "${TARGET_SESSION_ID}"...`);
 

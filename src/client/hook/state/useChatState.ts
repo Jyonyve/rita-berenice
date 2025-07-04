@@ -95,6 +95,11 @@ export const useChatState = (sessionId: string) => {
 		return seq === -1 ? 0 : seq + 1;
 	}, [getCurrentSequence]);
 
+	const getRecentTurnsForMemory = useCallback((): ChatTurn[] => {
+		// The `chatTurns` state is already sorted, so we can just take the last 5.
+		return chatTurns.slice(-5);
+	}, [chatTurns]);
+
 	// Initial load strategy from IDB or server
 	useEffect(() => {
 		const loadInitialView = async () => {
@@ -125,5 +130,6 @@ export const useChatState = (sessionId: string) => {
 		clearChatState,
 		getCurrentSequence,
 		getNextSequence,
+		getRecentTurnsForMemory,
 	};
 };

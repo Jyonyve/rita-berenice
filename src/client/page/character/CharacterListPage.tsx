@@ -57,7 +57,7 @@ const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterIn
 				) : defaultImageUrl ? (
 					// The CharacterPortrait component should handle the <img> tag
 					// Make sure its internal <img> has the `object-fit` style
-					<CharacterPortrait imageUrl={defaultImageUrl} characterInfo={characterInfo} />
+					<CharacterPortrait imageUrl={defaultImageUrl} />
 				) : (
 					<Typography variant="caption" color="textSecondary">
 						No Image

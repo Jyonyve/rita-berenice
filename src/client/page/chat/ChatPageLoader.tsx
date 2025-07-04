@@ -8,6 +8,7 @@ import { useProfileApi } from '../../hook/api/useProfileApi.js';
 import { useChatApi } from '../../hook/api/useChatApi.js';
 import { saveMessagesToCache } from '../../util/idbUtils.js';
 import { ChatPage } from './ChatPage.jsx';
+import { useSessionContext } from 'supertokens-auth-react/recipe/session/index.js';
 
 // In a real implementation, you would use `useLoaderData` to get pre-fetched data.
 // For now, we'll just display the IDs from the URL.
@@ -15,13 +16,14 @@ import { ChatPage } from './ChatPage.jsx';
 export function ChatPageLoader() {
 	const navigate = useNavigate();
 	const { sessionId } = useParams();
+	const session = useSessionContext();
 
 	// ------------ Redirect if sessionId is not provided ------------
 	useEffect(() => {
 		if (!sessionId) {
 			navigate('/not-found-sessionId', { replace: true });
 		}
-	}, [sessionId, navigate]);
+	}, [sessionId, navigate, session]);
 
 	if (!sessionId) return;
 
@@ -59,6 +61,7 @@ export function ChatPageLoader() {
 
 	// Show a loading spinner while either query is in flight
 	if (
+		session.loading ||
 		isLoadingCharacter ||
 		isLoadingProfile ||
 		isLoadingTurns ||
@@ -75,5 +78,12 @@ export function ChatPageLoader() {
 	const characterInfo = characterRes.characterInfo;
 	const profileInfo = profileRes.profileInfo;
 
-	return <ChatPage characterInfo={characterInfo} profileInfo={profileInfo} sessionId={sessionId} />;
+	return (
+		<ChatPage
+			characterInfo={characterInfo}
+			profileInfo={profileInfo}
+			sessionId={sessionId}
+			userId={session.userId}
+		/>
+	);
 }

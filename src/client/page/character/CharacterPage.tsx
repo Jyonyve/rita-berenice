@@ -13,30 +13,26 @@ import {
 } from '@mui/material';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { useCharacterState } from '../../hook/state/useCharacterState.js';
+import { UserInfo } from '#shared/domain/user/UserInterfaces.js';
 
 // Props: characterId (string), onStartSession (function), onLoadProfile (function)
 interface CharacterIntroPageProps {
 	characterInfo: CharacterInfo;
-	onStartSession: (characterId: string) => void;
-	onLoadProfile: (profileId: string) => void;
+	userInfo: UserInfo;
 }
 
-const CharacterIntroPage: React.FC<CharacterIntroPageProps> = ({
-	characterInfo,
-	onStartSession,
-	onLoadProfile,
-}) => {
+const CharacterIntroPage: React.FC<CharacterIntroPageProps> = ({ characterInfo, userInfo }) => {
 	const characterId = characterInfo.characterId;
 	// Character state: portraits, loading, error
 	const { portraitMap, isLoadingPortraits, portraitError } = useCharacterState(characterId);
-
+	const sessionIds = userInfo.sessionIds;
 	// Handlers
-	const handleStartSession = () => onStartSession(characterId);
-	const handleLoadProfile = () => profile && onLoadProfile(profile.profileId);
+	// const handleStartSession = () => onStartSession(characterId);
+	// const handleLoadProfile = () => profile && onLoadProfile(profile.profileId);
 
 	// Portrait: pick default or first available
 	const portraitUrl =
-		!isPortraitLoading && portraitMap && Object.values(portraitMap)[0]
+		!isLoadingPortraits && portraitMap && Object.values(portraitMap)[0]
 			? Object.values(portraitMap)[0]
 			: '';
 
@@ -44,7 +40,7 @@ const CharacterIntroPage: React.FC<CharacterIntroPageProps> = ({
 		<Box display="flex" flexDirection="row" width="100%" minHeight="80vh" p={4} gap={4}>
 			{/* Left: Portrait */}
 			<Box flex="0 0 240px" display="flex" alignItems="flex-start" justifyContent="center">
-				{isPortraitLoading ? (
+				{isLoadingPortraits ? (
 					<CircularProgress />
 				) : portraitUrl ? (
 					<Avatar
@@ -63,14 +59,11 @@ const CharacterIntroPage: React.FC<CharacterIntroPageProps> = ({
 				{/* Title and Description */}
 				<Card variant="outlined">
 					<CardContent>
-						<Typography variant="h4" fontWeight="bold">
-							{isCharLoading ? 'Loading...' : characterInfo?.name}
-						</Typography>
 						<Typography variant="subtitle1" color="text.secondary" mt={1}>
-							{characterInfo?.showName}
+							{characterInfo.showName}
 						</Typography>
 						<Typography variant="body1" mt={2}>
-							{characterInfo?.description}
+							{characterInfo.description}
 						</Typography>
 					</CardContent>
 				</Card>
@@ -81,26 +74,23 @@ const CharacterIntroPage: React.FC<CharacterIntroPageProps> = ({
 						<Typography variant="h6" mb={1}>
 							Sessions with this character
 						</Typography>
-						{isSessionsLoading ? (
-							<CircularProgress size={24} />
-						) : (
-							<List dense>
-								{sessions && sessions.length > 0 ? (
-									sessions.map((session) => (
-										<ListItem key={session.sessionId} button>
-											<ListItemText
-												primary={session.title || `Session ${session.sessionId.slice(-6)}`}
-												secondary={session.updatedAt ? new Date(session.updatedAt).toLocaleString() : ''}
-											/>
-										</ListItem>
-									))
-								) : (
-									<Typography variant="body2" color="text.secondary">
-										No sessions found.
-									</Typography>
-								)}
-							</List>
-						)}
+
+						<List dense>
+							{sessionIds && sessionIds.length > 0 ? (
+								sessionIds.map((sessionId) => (
+									<ListItem key={sessionId} button>
+										<ListItemText
+											primary={session.title || `Session ${session.sessionId.slice(-6)}`}
+											secondary={session.updatedAt ? new Date(session.updatedAt).toLocaleString() : ''}
+										/>
+									</ListItem>
+								))
+							) : (
+								<Typography variant="body2" color="text.secondary">
+									No sessions found.
+								</Typography>
+							)}
+						</List>
 					</CardContent>
 				</Card>
 

@@ -66,7 +66,7 @@ export function RootLayout() {
 		await signOut();
 		window.location.href = '/';
 	};
-	console.log(mode);
+
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
 			<CssBaseline />

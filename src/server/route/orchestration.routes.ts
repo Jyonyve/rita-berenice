@@ -20,6 +20,7 @@ interface ReceiveBotResponseBody {
 	characterInfo: CharacterInfo;
 	profileInfo: ProfileInfo;
 	aiModel: AiModelInfo;
+	recentChatTurnString: string;
 }
 
 /**
@@ -34,7 +35,7 @@ router.post(
 			req: Request<object, TempChatTurn, ReceiveBotResponseBody>,
 			res: Response<TempChatTurn>
 		): Promise<void> => {
-			const { tempChatTurnCdo, characterInfo, profileInfo, aiModel } = req.body;
+			const { tempChatTurnCdo, characterInfo, profileInfo, aiModel, recentChatTurnString } = req.body;
 
 			// Validate the incoming request payload
 			const requiredFields: (keyof ReceiveBotResponseBody)[] = [
@@ -52,7 +53,13 @@ router.post(
 			);
 
 			// Call the main orchestration service function with the unpacked request body
-			const response = await receiveBotResponse(tempChatTurnCdo, characterInfo, profileInfo, aiModel);
+			const response = await receiveBotResponse(
+				tempChatTurnCdo,
+				characterInfo,
+				profileInfo,
+				aiModel,
+				recentChatTurnString
+			);
 
 			res.status(200).json(response);
 		}

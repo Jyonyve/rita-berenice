@@ -5,3 +5,4 @@ export * from './profileStore.js';
 export * from './recapStore.js';
 export * from './termStore.js';
 export * from './userStore.js';
+export * from './tempStore.js';

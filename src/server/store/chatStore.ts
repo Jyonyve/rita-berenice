@@ -20,7 +20,7 @@ import {
 } from '../util/documentUtils.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import { chatTurnToMetadata, metadataToChatTurn } from '#shared/util/dbConvertUtils.js';
-import { ChatResponse, ChromaResponse } from '#shared/api/ModuleResponse.js';
+import { ChatResponse, ChromaResponse, TempChatResponse } from '#shared/api/ModuleResponse.js';
 import { parseTextToEntries } from '#shared/util/chatParseUtils.js';
 import { isAndWhere } from '../util/queryUtils.js';
 
@@ -38,20 +38,12 @@ const collectionType = COLLECTIONS.CHAT;
 export const chatStore = {
 	// Cache for session collections
 	_chatCollection: null as Collection | null,
-	_tempChatCollection: null as Collection | null,
 
 	// Get collection methods with caching
 	_getChatCollection: async (): Promise<Collection> => {
 		if (chatStore._chatCollection) return chatStore._chatCollection;
 		const collection = await getChatCollection();
 		chatStore._chatCollection = collection;
-		return collection;
-	},
-
-	_getTempCollection: async (): Promise<Collection> => {
-		if (chatStore._tempChatCollection) return chatStore._tempChatCollection;
-		const collection = await getTempChatCollection();
-		chatStore._tempChatCollection = collection;
 		return collection;
 	},
 
@@ -130,43 +122,25 @@ export const chatStore = {
 		return { ids, documents, metadatas, chatTurns, chatTurn: chatTurns[0] || null };
 	},
 
-	// --- Temporary Turn Operations ---
-	saveTempChatTurn: async (tempData: TempChatTurn): Promise<void> => {
-		// shoould get the document to get whole temp data
-		const collection = await chatStore._getTempCollection();
-		const now = new Date().toISOString();
-		const updatedMetadata: TempChatTurnMetadata = {
-			type: METADATA_TYPES.TEMP,
-			sequence: tempData.sequence,
-			sessionId: tempData.sessionId,
-			createdAt: tempData.createdAt || now,
-			updatedAt: now,
-			setCount: tempData.chatTurnSets.length || 0,
-			tempTurnId: tempData.tempTurnId || buildTempChatTurnId(tempData.sessionId, tempData.sequence),
-			fixedSetNo: tempData.fixedSetNo,
-		};
+	_constructTempChatTurn: (results: ChromaResponse): TempChatResponse => {
+		const { ids, documents, metadatas } = results;
 
-		const documentObj: TempChatTurn = { ...updatedMetadata, chatTurnSets: tempData.chatTurnSets };
-		await upsertRecord(collection, tempData.sessionId, JSON.stringify(documentObj), updatedMetadata);
-		console.log(`Stored temp data for session ${tempData.sessionId}`);
-	},
+		const tempChatTurns = documents
+			.map((doc, index) => {
+				if (typeof doc === 'string') {
+					try {
+						// The entire TempChatTurn is stored as a JSON string in the document.
+						return JSON.parse(doc) as TempChatTurn;
+					} catch (e) {
+						console.error(`Failed to parse TempChatTurn document for ID ${ids[index]}:`, e);
+						return null;
+					}
+				}
+				return null;
+			})
+			.filter((turn): turn is TempChatTurn => turn !== null);
 
-	getTempChatTurn: async (sessionId: string, sequence: number): Promise<TempChatTurn> => {
-		try {
-			const collection = await chatStore._getTempCollection(); // Assumes _getTempCollection exists
-			const rawResult = await chromaDbClient.getRecordById(
-				collection,
-				buildTempChatTurnId(sessionId, sequence)
-			);
-			const result = validateChromaResponse(rawResult, 'getOne', COLLECTIONS.TEMP);
-			return JSON.parse(result.documents?.[0] ?? '') as TempChatTurn;
-		} catch (error) {
-			handleServiceError(
-				error,
-				'An internal error occurred while do [getTempChatTurn].',
-				`Error fetching or parsing temp turn for session ${sessionId}`
-			);
-		}
+		return { ids, documents, metadatas, tempChatTurns, tempChatTurn: tempChatTurns[0] ?? null };
 	},
 
 	// Chat Turn Operations
@@ -328,46 +302,6 @@ export const chatStore = {
 		}
 	},
 
-	getOneChatTurnBySessionIds: async (sessionIds: string[]): Promise<ChatResponse> => {
-		const collection = await chatStore._getChatCollection();
-
-		try {
-			const turnPromises = sessionIds.map(async (sessionId) => {
-				const where: Where = {
-					$and: [{ type: { $eq: METADATA_TYPES.TURN } }, { sessionId: { $eq: sessionId } }],
-				};
-				const rawResults = await getRecords(collection, where, 1);
-				if (rawResults.ids && rawResults.ids.length > 0) {
-					const results = validateChromaResponse(rawResults, 'getList', COLLECTIONS.CHAT);
-					return chatStore._constuctChatTurn(results);
-				}
-				return null;
-			});
-
-			const chatResponses = (await Promise.all(turnPromises)).filter(Boolean);
-
-			// Merge results as needed
-			const allChatTurns = chatResponses.flatMap((r) => r?.chatTurns || []);
-			const allIds = chatResponses.flatMap((r) => r?.ids || []);
-			const allDocuments = chatResponses.flatMap((r) => r?.documents || []);
-			const allMetadatas = chatResponses.flatMap((r) => r?.metadatas || []);
-
-			return {
-				ids: allIds,
-				documents: allDocuments,
-				metadatas: allMetadatas,
-				chatTurns: allChatTurns,
-				chatTurn: allChatTurns[0] ?? null,
-			};
-		} catch (error) {
-			handleServiceError(
-				error,
-				'An internal error occurred while loading one chat turn by sessionIds.',
-				`Failed to load chat turns for sessionIds: ${sessionIds.join(', ')}`
-			);
-		}
-	},
-
 	/** Gets a single FIXED turn by sequence */
 	getChatTurnBySequence: async (sessionId: string, sequence: number): Promise<ChatResponse> => {
 		const collection = await chatStore._getChatCollection();
@@ -388,8 +322,5 @@ export const chatStore = {
 	// Method to clear the cache if needed (e.g., for testing or memory management)
 	clearChatCollectionCache: (): void => {
 		chatStore._chatCollection = null;
-	},
-	clearTempChatCollectionCache: (): void => {
-		chatStore._tempChatCollection = null;
 	},
 };
