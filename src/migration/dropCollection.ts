@@ -5,7 +5,7 @@ import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
 const CHROMA_HOST = process.env.CHROMA_HOST || 'chromadb-flyio.fly.dev';
 const CHROMA_PORT = Number(process.env.CHROMA_PORT) || 443;
 const CHROMA_SSL = true; // Your URL starts with https://
-const COLLECTION_TO_DROP = COLLECTIONS.CHARACTER;
+const COLLECTION_TO_DROP = COLLECTIONS.CHAT;
 
 // --- Main Deletion Logic ---
 async function dropCollection() {
@@ -14,14 +14,14 @@ async function dropCollection() {
 	console.log(list);
 	try {
 		console.log(`Attempting to delete collection "${COLLECTION_TO_DROP}"...`);
-		// const collection = await chromaClient.getCollection({ name: COLLECTION_TO_DROP });
-		// console.log(collection);
-		// const allIds = (await collection.get()).ids;
-		// if (allIds && allIds.length > 0) {
-		// 	await collection.delete({ ids: allIds });
-		// }
+		const collection = await chromaClient.getCollection({ name: COLLECTION_TO_DROP });
+		console.log(collection);
+		const allIds = (await collection.get()).ids;
+		if (allIds && allIds.length > 0) {
+			await collection.delete({ ids: allIds });
+		}
 
-		await chromaClient.deleteCollection({ name: COLLECTION_TO_DROP });
+		// await chromaClient.deleteCollection({ name: COLLECTION_TO_DROP });
 
 		console.log(`Successfully deleted collection Data "${COLLECTION_TO_DROP}".`);
 		console.log(

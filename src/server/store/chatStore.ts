@@ -289,7 +289,13 @@ export const chatStore = {
 	/** Loads multiple FIXED turns  */
 	getChatTurns: async (sessionId: string, beforeSequence: number): Promise<ChatResponse> => {
 		const collection = await chatStore._getChatCollection();
-		const where: Where = { type: METADATA_TYPES.TURN, sessionId, sequence: { $lt: beforeSequence } };
+		const where: Where = {
+			$and: [
+				{ type: { $eq: METADATA_TYPES.TURN } },
+				{ sessionId: { $eq: sessionId } },
+				{ sequence: { $lt: beforeSequence } },
+			],
+		};
 		try {
 			const rawResults = await getRecords(collection, where);
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
@@ -306,7 +312,9 @@ export const chatStore = {
 	/** Loads multiple FIXED turns  */
 	getAllChatTurns: async (sessionId: string): Promise<ChatResponse> => {
 		const collection = await chatStore._getChatCollection();
-		const where: Where = { type: METADATA_TYPES.TURN, sessionId };
+		const where: Where = {
+			$and: [{ type: { $eq: METADATA_TYPES.TURN } }, { sessionId: { $eq: sessionId } }],
+		};
 		try {
 			const rawResults = await getRecords(collection, where);
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);

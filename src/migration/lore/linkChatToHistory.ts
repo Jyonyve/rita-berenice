@@ -11,7 +11,7 @@ import {
 	HistoryMetadata,
 	METADATA_TYPES,
 } from '#shared/index.js';
-import { COLLECTIONS } from '#server/index.js';
+import { chatStore, COLLECTIONS, loreStore } from '#server/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -310,8 +310,8 @@ async function linkChatToHistory() {
 	let loreCollection: Collection;
 
 	try {
-		chatCollection = await chroma.getOrCreateCollection({ name: COLLECTIONS.CHAT });
-		loreCollection = await chroma.getOrCreateCollection({ name: COLLECTIONS.LORE });
+		chatCollection = await chatStore._getChatCollection();
+		loreCollection = await loreStore._getCollection();
 		console.log('✅ Connected to both chat and lore collections');
 	} catch (error) {
 		console.error('🚨 Failed to connect to collections:', error);
@@ -329,7 +329,6 @@ async function linkChatToHistory() {
 			where: historyWhere,
 			include: [IncludeEnum.metadatas],
 		});
-
 		if (!historyResults.metadatas || historyResults.metadatas.length === 0) {
 			console.log('📝 No history events found. Nothing to link.');
 			return;
@@ -465,7 +464,7 @@ async function linkChatToHistory() {
 						};
 						await chatCollection.upsert({
 							ids: [chatTurnMetadata.chatTurnId],
-							documents: [chatResults.documents![originalDocumentIndex]!],
+							documents: [chatResults.documents![originalDocumentIndex]!], // Assuming originalDocumentIndex is calculated
 							metadatas: [updatedChatTurn as any],
 						});
 						progress.updatedChatTurns++;

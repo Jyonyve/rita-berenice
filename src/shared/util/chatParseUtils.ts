@@ -23,6 +23,11 @@ export const convertArrayToString = (arr: string[]): string => {
 export const parseTextToEntries = (text: string) => {
 	const starCount = (text.match(/\*/g) || []).length;
 	if (starCount % 2 !== 0) {
+		// --- ADD THESE LINES FOR DEBUGGING ---
+		console.error('\n🔴 PARSING FAILED! Found text with an odd number of asterisks:');
+		console.error('=================================================================');
+		console.error(text);
+		console.error('=================================================================\n');
 		throw Error('parsing error: "*" is not closed throughly.');
 	}
 

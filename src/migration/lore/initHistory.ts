@@ -13,12 +13,14 @@ import { flatLoreOrHistoryToDoc } from '../../server/util/documentUtils.js';
 import { buildHistoryMetadataPrompt } from '../../server/util/templateUtils.js';
 import e from 'express';
 import { METADATA_TYPES } from '#shared/config/constants.js';
+import { loreStore } from '#server/store/loreStore.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Configuration
-const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev';
+const USER_ID = process.env.USER_ID || '6b335673-c837-43f9-a1c7-0b92c90edefb';
+
 const HISTORY_RESULT_DIR = path.join(__dirname, 'result');
 const CHARACTER_IDS = ['tarion_original', 'tarion_spinoff'];
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyAfhl_AyupNyz9CpxscySkvGmxRsJKcXxk';
@@ -66,66 +68,55 @@ const extractJsonFromMarkdown = (response: string): any => {
 
 // ✅ NEW: Function to query existing histories for relationship building
 const queryExistingHistories = async (
-	collection: Collection,
 	characterIds: string[]
 ): Promise<Array<{ originalTitle: string; historyId: string; generatedTitle: string }>> => {
-	try {
-		console.log(`    🔍 Querying existing histories for characters: ${characterIds.join(', ')}`);
+	console.log(`    🔍 Querying existing histories for characters: ${characterIds.join(', ')}`);
+	const allExistingHistories: Array<{
+		originalTitle: string;
+		historyId: string;
+		generatedTitle: string;
+	}> = [];
 
-		const where: Where = {
-			$and: [{ type: { $eq: METADATA_TYPES.HISTORY } }, { characterId: { $in: characterIds } }],
-		};
-		const results = await collection.get({ where, include: [IncludeEnum.metadatas] });
-
-		if (!results || !results.metadatas || results.metadatas.length === 0) {
-			console.log(`    📝 No existing histories found for characters: ${characterIds.join(', ')}`);
-			return [];
+	for (const characterId of characterIds) {
+		try {
+			const { histories } = await loreStore.getHistories(characterId);
+			if (histories.length > 0) {
+				const mapped = histories.map((h) => ({
+					originalTitle: h.title,
+					historyId: h.historyId,
+					generatedTitle: h.generatedTitle,
+				}));
+				allExistingHistories.push(...mapped);
+			}
+		} catch (error) {
+			console.warn(`    ⚠️ Could not fetch histories for ${characterId}:`, error);
 		}
-
-		const existingHistories = results.metadatas.map((metadata) => {
-			const typed = metadata;
-			return {
-				originalTitle: (typed?.title ?? '') as string,
-				historyId: (typed?.historyId ?? '') as string,
-				generatedTitle: (typed?.generatedTitle ?? typed?.title ?? 'Untitled History') as string,
-			};
-		});
-
-		console.log(
-			`    📚 Found ${existingHistories.length} existing histories for relationship building`
-		);
-		return existingHistories;
-	} catch (error) {
-		console.warn(`    ⚠️ Error querying existing histories:`, error);
-		return [];
 	}
+
+	console.log(
+		`    📚 Found ${allExistingHistories.length} existing histories for relationship building`
+	);
+	return allExistingHistories;
 };
 
 // ✅ NEW: Function to query existing lore for context
-const queryExistingLore = async (
-	collection: Collection,
-	characterIds: string[]
-): Promise<string[]> => {
-	try {
-		console.log(`    🔍 Querying existing lore for characters: ${characterIds.join(', ')}`);
+const queryExistingLore = async (characterIds: string[]): Promise<string[]> => {
+	console.log(`    🔍 Querying existing lore for characters: ${characterIds.join(', ')}`);
+	const allLoreIds: string[] = [];
 
-		const where: Where = {
-			$and: [{ type: { $eq: METADATA_TYPES.LORE } }, { characterId: { $in: characterIds } }],
-		};
-
-		const results = await collection.get({ where, include: [IncludeEnum.metadatas] });
-
-		if (!results || !results.metadatas || results.metadatas.length === 0) {
-			return [];
+	for (const characterId of characterIds) {
+		try {
+			const { lores } = await loreStore.getLores(characterId);
+			if (lores.length > 0) {
+				allLoreIds.push(...lores.map((l) => l.loreId));
+			}
+		} catch (error) {
+			console.warn(`    ⚠️ Could not fetch lore for ${characterId}:`, error);
 		}
-
-		const loreIds = results.metadatas.map((metadata) => (metadata as any).loreId);
-		console.log(`    📖 Found ${loreIds.length} existing lore entries`);
-		return loreIds;
-	} catch (error) {
-		console.warn(`    ⚠️ Error querying existing lore:`, error);
-		return [];
 	}
+
+	console.log(`    📖 Found ${allLoreIds.length} existing lore entries`);
+	return allLoreIds;
 };
 
 const generateHistoryMetadataLLM = async (prompt: string, attempt = 1): Promise<string> => {
@@ -238,38 +229,29 @@ const enrichHistoryWithMetadata = async (
 		};
 	}
 };
-
 async function initHistoryFromFiles() {
 	console.log('🚀 Starting history initialization with LLM metadata extraction...');
 	if (!GEMINI_API_KEY) {
 		console.error('🚨 GEMINI_API_KEY is not set. Aborting.');
 		process.exit(1);
 	}
-	console.log(`Connecting to ChromaDB at: ${CHROMA_URL}`);
 	console.log(`Reading history files from: ${HISTORY_RESULT_DIR}`);
 
-	const chroma = new ChromaClient({ path: CHROMA_URL });
-	let collection: Collection;
-
+	// --- REFACTOR START: Centralized DB connection ---
+	console.log(`Ensuring connection to ChromaDB via centralized loreStore...`);
 	try {
-		console.log(`Ensuring history collection "${COLLECTIONS.LORE}" exists...`);
-		collection = await chroma.getOrCreateCollection({
-			name: COLLECTIONS.LORE,
-			metadata: {
-				description: 'Stores character history and lore with LLM-generated metadata.',
-				created_by_script: 'initHistory.js',
-				type: COLLECTIONS.LORE,
-				enrichment_model: ENRICHMENT_MODEL,
-			},
-		});
-		console.log(`Collection "${COLLECTIONS.LORE}" ready.`);
+		// "Warm up" the connection by calling the store's getter.
+		// This will initialize the client and ensure the collection exists.
+		await loreStore._getCollection();
+		console.log(`Collection "${COLLECTIONS.LORE}" is ready via loreStore.`);
 	} catch (error) {
 		console.error(
-			`🚨 Failed to get or create ChromaDB collection "${COLLECTIONS.LORE}". Aborting.`,
+			`🚨 Failed to connect to or create ChromaDB collection "${COLLECTIONS.LORE}" via loreStore. Aborting.`,
 			error
 		);
 		process.exit(1);
 	}
+	// --- REFACTOR END ---
 
 	try {
 		const allFiles = await fs.readdir(HISTORY_RESULT_DIR);
@@ -282,10 +264,10 @@ async function initHistoryFromFiles() {
 
 		console.log(`Found ${jsonFiles.length} history files: ${jsonFiles.join(', ')}`);
 
-		// ✅ Query existing data BEFORE processing new files
+		// ✅ This part now uses the refactored functions above
 		console.log('\n🔍 Querying existing data for relationship building...');
-		const existingHistories = await queryExistingHistories(collection, CHARACTER_IDS);
-		const existingLoreIds = await queryExistingLore(collection, CHARACTER_IDS);
+		const existingHistories = await queryExistingHistories(CHARACTER_IDS);
+		const existingLoreIds = await queryExistingLore(CHARACTER_IDS);
 
 		// First pass: collect all titles and create unique historyIds
 		const historyEntries: Array<{
@@ -359,9 +341,8 @@ async function initHistoryFromFiles() {
 				// ✅ Create HistoryInfo with LLM-generated historyId
 				const historyInfo: HistoryInfo = {
 					sessionId: '',
-					//TODO
-					userId: '',
-					characterId: CHARACTER_IDS[0],
+					userId: 'sunfish',
+					characterId: CHARACTER_IDS[1],
 					type: METADATA_TYPES.HISTORY,
 					createdAt: now,
 					updatedAt: now,
@@ -390,14 +371,7 @@ async function initHistoryFromFiles() {
 					relatedEventsArray: enrichedMetadata.temporalRelations,
 				};
 
-				const chromaMetadata = historyToMetadata(historyInfo);
-				const documentForEmbedding = flatLoreOrHistoryToDoc(historyInfo);
-
-				await collection.upsert({
-					ids: [historyEntry.historyId], // ✅ Use LLM-generated historyId
-					documents: [documentForEmbedding],
-					metadatas: [chromaMetadata as any],
-				});
+				await loreStore.storeHistory(historyInfo);
 
 				console.log(
 					`  ✅ Successfully stored history "${historyInfo.title}" with ID: ${historyInfo.historyId}`

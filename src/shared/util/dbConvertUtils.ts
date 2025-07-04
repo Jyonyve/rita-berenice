@@ -114,9 +114,15 @@ export const historyToMetadata = (historyInfo: HistoryInfo): HistoryMetadata => 
 		sequence: historyInfo.sequence,
 
 		// Stringify arrays from BaseMetadataType
-		keywords: historyInfo.keywords,
-		topics: historyInfo.topics,
-		entities: historyInfo.entities,
+		keywords: Array.isArray(historyInfo.keywords)
+			? convertArrayToString(historyInfo.keywords)
+			: historyInfo.keywords,
+		topics: Array.isArray(historyInfo.topics)
+			? convertArrayToString(historyInfo.topics)
+			: historyInfo.topics,
+		entities: Array.isArray(historyInfo.entities)
+			? convertArrayToString(historyInfo.entities)
+			: historyInfo.entities,
 
 		// History-specific fields
 		summary: historyInfo.summary,

@@ -21,6 +21,7 @@ import {
 import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
 import { validEmotions } from '#shared/config/emotionWordsMapper.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
+import { chatStore } from '#server/store/chatStore.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -260,13 +261,10 @@ const enrichChatTurnWithMetadata = async (
 		updatedAt: new Date().toISOString(),
 	};
 };
-async function processAndUpsertTurn(
-	collection: Collection,
-	turnToProcess: ChatTurn,
-	progress: InitChatProgress
-) {
+async function processAndUpsertTurn(turnToProcess: ChatTurn, progress: InitChatProgress) {
 	let enrichedTurnResult: ChatTurn;
 	let wasEnrichedSuccessfully = false;
+
 	try {
 		console.log(
 			`    🧠 Enriching turn ${turnToProcess.sequence} (${progress.lastProcessedSequence + 2}/${progress.totalTurnsInLogFile})...`
@@ -293,17 +291,15 @@ async function processAndUpsertTurn(
 		console.warn(`    ↪️ Using default (rich) metadata for turn ${turnToProcess.sequence}.`);
 		progress.fallbackSavedTurnsCount++;
 	}
-	const chromaCompatibleMetadata = parseChatTurnToMetadata(enrichedTurnResult);
-	const documentForEmbedding = flatChatTurnToDoc(enrichedTurnResult);
+
 	try {
-		await collection.upsert({
-			ids: [enrichedTurnResult.chatTurnId],
-			documents: [documentForEmbedding],
-			metadatas: [chromaCompatibleMetadata],
-		});
+		// Use the high-level store function. It handles the upsert internally.
+		// It already contains all the necessary logic from your application.
+		await chatStore._storeFullChatTurn(enrichedTurnResult);
+
 		progress.lastProcessedSequence = enrichedTurnResult.sequence;
 		console.log(
-			`    ✅ Turn ${enrichedTurnResult.sequence} ${wasEnrichedSuccessfully ? 'enriched' : 'fallback'} and saved. Progress: ${progress.lastProcessedSequence + 1}/${progress.totalTurnsInLogFile}`
+			`    ✅ Turn ${enrichedTurnResult.sequence} ${wasEnrichedSuccessfully ? 'enriched' : 'fallback'} and saved via chatStore. Progress: ${progress.lastProcessedSequence + 1}/${progress.totalTurnsInLogFile}`
 		);
 	} catch (dbError) {
 		const dbErrorMessage = dbError instanceof Error ? dbError.message : String(dbError);
@@ -328,25 +324,21 @@ async function initChatFromLogFiles() {
 		console.error('🚨 GEMINI_API_KEY is not set. Aborting.');
 		process.exit(1);
 	}
-	console.log(`Connecting to ChromaDB at: ${CHROMA_URL}`);
 	console.log(`Using enrichment model: ${ENRICHMENT_MODEL}`);
 
-	const chroma = new ChromaClient({ path: CHROMA_URL });
-	let collection: Collection;
+	// --- REFACTOR START ---
+	// We no longer need to initialize the client or get the collection here.
+	// The `chatStore` will handle this automatically via its cached `getChatCollection` method.
+	console.log(`Ensuring connection to ChromaDB via centralized client...`);
 	try {
-		collection = await chroma.getOrCreateCollection({
-			name: COLLECTIONS.CHAT,
-			metadata: {
-				description: 'Stores enriched chat session turns with LLM-generated metadata.',
-				created_by_script: 'initChat.js',
-				type: COLLECTIONS.CHAT,
-				enrichment_model: ENRICHMENT_MODEL,
-			},
-		});
-		console.log(`Collection "${COLLECTIONS.CHAT}" ready.`);
+		// We can "warm up" the connection by calling the store's getter.
+		// This will ensure the collection exists before the loop starts.
+		await chatStore._getChatCollection();
+		console.log(`Collection "${COLLECTIONS.CHAT}" is ready via chatStore.`);
 	} catch (e) {
+		const errorMessage = e instanceof Error ? e.message : String(e);
 		console.error(
-			`🚨 Failed to get or create ChromaDB collection "${COLLECTIONS.CHAT}". Aborting. Error: ${e instanceof Error ? e.message : String(e)}`
+			`🚨 Failed to connect to or create ChromaDB collection "${COLLECTIONS.CHAT}" via chatStore. Aborting. Error: ${errorMessage}`
 		);
 		process.exit(1);
 	}
@@ -532,7 +524,7 @@ async function initChatFromLogFiles() {
 		for (let i = 0; i < turnsToProcessThisRun.length; i++) {
 			const turn = turnsToProcessThisRun[i];
 			try {
-				await processAndUpsertTurn(collection, turn, progress);
+				await processAndUpsertTurn(turn, progress);
 				await saveInitProgress(progress);
 			} catch (turnProcessingError) {
 				console.error(
