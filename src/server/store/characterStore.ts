@@ -49,12 +49,10 @@ export const characterStore = {
 	// Character Operations
 	getAllCharacters: async (): Promise<CharacterResponse> => {
 		const collection = await characterStore._getCollection();
+		const where: Where = { type: { $eq: METADATA_TYPES.CHARACTER } };
 
 		try {
-			const rawResults = await collection.get({
-				include: [IncludeEnum.documents, IncludeEnum.metadatas],
-				where: { type: METADATA_TYPES.CHARACTER },
-			});
+			const rawResults = await getRecords(collection, where);
 
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 			const { ids, documents, metadatas } = results;

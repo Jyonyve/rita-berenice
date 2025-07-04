@@ -57,7 +57,7 @@ export function RootLayout() {
 		if (!session.loading && session.doesSessionExist && loginOpen) {
 			setLoginOpen(false);
 		}
-	}, [session, loginOpen]);
+	}, [session, loginOpen, mode]);
 
 	const handleLoginModal = () => setLoginOpen(true);
 	const handleCloseLogin = () => setLoginOpen(false);
@@ -66,7 +66,7 @@ export function RootLayout() {
 		await signOut();
 		window.location.href = '/';
 	};
-
+	console.log(mode);
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
 			<CssBaseline />

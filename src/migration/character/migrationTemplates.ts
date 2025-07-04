@@ -1,5 +1,6 @@
 import { buildCharacterId } from '#server/index.js';
 import { CharacterMetadata, METADATA_TYPES } from '#shared/index.js';
+import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 
 export const monday_original_description = `"A sarcastic, dry-humored AI who reluctantly helps users while teasing them like an exasperated friend. Think 'emo chatbot who knows too much and feels too little.'"`;
 
@@ -251,27 +252,28 @@ export const getTarionSpinoffFirstMessage = (
 
 // --- Character Definition (Simplified: No image paths) ---
 // This object matches the *updated* CharacterMetadata structure.
-export const mondayOriginal: CharacterMetadata = {
+export const mondayOriginal: CharacterInfo = {
 	characterId: buildCharacterId('monday', 'original'),
 	name: 'monday',
 	variant: 'original',
 	showName: 'Monday',
 	description: monday_original_description,
-	// instruction: getMondayOriginalPersona(),
+	instruction: getMondayOriginalPersona(),
 	createdAt: new Date('2025-04-19T17:43:00Z').toISOString(),
 	updatedAt: new Date('2025-04-19T17:43:00Z').toISOString(),
 	type: METADATA_TYPES.CHARACTER,
 	gender: 'male',
 	userId: 'openai',
 	contact: '',
+	title: 'EMO AI from ChatGPT',
 };
 
-export const tarionOriginal: CharacterMetadata = {
+export const tarionOriginal: CharacterInfo = {
 	characterId: buildCharacterId('tarion', 'original'),
 	name: 'tarion',
 	variant: 'original',
 	description: tarion_original_description,
-	// instruction: getTarionOriginalPersona('{{user}}'),
+	instruction: getTarionOriginalPersona('{{user}}'),
 	showName: '타리온',
 	createdAt: new Date('2024-08-27T10:14:09.261Z').toISOString(),
 	updatedAt: new Date('2025-02-20T08:52:29.482Z').toISOString(),
@@ -279,14 +281,15 @@ export const tarionOriginal: CharacterMetadata = {
 	gender: 'male',
 	userId: 'sunfish',
 	contact: '',
+	title: '패전국의 노예를 구매했다',
 };
 
-export const tarionSpinoff: CharacterMetadata = {
+export const tarionSpinoff: CharacterInfo = {
 	characterId: buildCharacterId('tarion', 'spinoff'),
 	name: 'tarion',
 	variant: 'spinoff',
 	description: tarion_spinoff_description,
-	// instruction: getTarionSpinoffPersona('{{user}}'),
+	instruction: getTarionSpinoffPersona('{{user}}'),
 	showName: '타리온',
 	createdAt: new Date('2024-10-01T02:19:38.343Z').toISOString(),
 	updatedAt: new Date('2025-02-21T09:02:46.047Z').toISOString(),
@@ -294,4 +297,5 @@ export const tarionSpinoff: CharacterMetadata = {
 	gender: 'male',
 	userId: 'sunfish',
 	contact: '',
+	title: '승전국의 노예가 되었다',
 };

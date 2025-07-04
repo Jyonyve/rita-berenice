@@ -5,7 +5,7 @@ import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
 const CHROMA_HOST = process.env.CHROMA_HOST || 'chromadb-flyio.fly.dev';
 const CHROMA_PORT = Number(process.env.CHROMA_PORT) || 443;
 const CHROMA_SSL = true; // Your URL starts with https://
-const COLLECTION_TO_DROP = COLLECTIONS.LORE;
+const COLLECTION_TO_DROP = COLLECTIONS.CHARACTER;
 
 // --- Main Deletion Logic ---
 async function dropCollection() {
@@ -15,12 +15,13 @@ async function dropCollection() {
 	try {
 		console.log(`Attempting to delete collection "${COLLECTION_TO_DROP}"...`);
 		// const collection = await chromaClient.getCollection({ name: COLLECTION_TO_DROP });
+		// console.log(collection);
 		// const allIds = (await collection.get()).ids;
 		// if (allIds && allIds.length > 0) {
 		// 	await collection.delete({ ids: allIds });
 		// }
 
-		// await chromaClient.deleteCollection({ name: COLLECTION_TO_DROP });
+		await chromaClient.deleteCollection({ name: COLLECTION_TO_DROP });
 
 		console.log(`Successfully deleted collection Data "${COLLECTION_TO_DROP}".`);
 		console.log(
@@ -30,7 +31,7 @@ async function dropCollection() {
 		// Handle cases where the collection might already not exist
 		if (
 			error instanceof Error &&
-			(error.message.includes('does not exist') || error.message.includes('not found'))
+			(error.message.includes('does not exist') || error.message.toLowerCase().includes('not found'))
 		) {
 			console.log(
 				`Collection "${COLLECTION_TO_DROP}" does not exist or was already deleted. Nothing to do.`
@@ -49,7 +50,7 @@ async function dropCollection() {
 console.warn(
 	`🚨 WARNING: About to delete the ENTIRE "${COLLECTION_TO_DROP}" collection . This is irreversible.`
 );
-console.warn('Press Ctrl+C within 5 seconds to cancel, or wait to proceed...');
+console.warn('Press Ctrl+C within 3 seconds to cancel, or wait to proceed...');
 
 // Simple delay to allow cancellation
 setTimeout(() => {

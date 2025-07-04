@@ -5,26 +5,17 @@ import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 interface CharacterPortraitProps {
 	imageUrl: string;
 	characterInfo: CharacterInfo;
-	handleClick: () => void;
 }
 
-export const CharacterPortrait: FC<CharacterPortraitProps> = ({
-	imageUrl,
-	characterInfo,
-	handleClick,
-}) => {
+export const CharacterPortrait: FC<CharacterPortraitProps> = ({ imageUrl, characterInfo }) => {
 	return (
 		<Box
-			sx={{
-				display: 'flex',
-				justifyContent: 'center',
-				alignItems: 'flex-start',
-				maxWidth: 300,
-				width: '100%',
-			}}
+			component="img"
+			src={imageUrl}
+			alt={characterInfo.showName}
+			sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
 		>
 			<img
-				onClick={handleClick}
 				src={imageUrl}
 				alt={characterInfo.showName}
 				style={{

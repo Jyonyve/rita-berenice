@@ -41,7 +41,7 @@ export const useCharacterState = (characterId: string) => {
 		const imageMap: PortraitUrlMap = {};
 
 		// Vite's import.meta.glob for dynamic bulk import of image URLs
-		const imageModules = import.meta.glob<{ default: string }>(
+		const imageModules = import.meta.glob<string>(
 			[
 				'/src/client/asset/character/*/*.webp', // .webp files
 				'/src/client/asset/character/*/*.avif', // .avif files
@@ -50,7 +50,7 @@ export const useCharacterState = (characterId: string) => {
 				eager: true,
 				import: 'default', // must be a literal string, not a variable
 			}
-		) as Record<string, { default: string }>;
+		) as Record<string, string>;
 
 		const characterAssetPathPrefix = `/src/client/asset/character/${characterId}/`;
 		const characterFilenamePrefix = `${characterId}_`;
@@ -68,7 +68,7 @@ export const useCharacterState = (characterId: string) => {
 					const imageNumber = parseInt(match[1], 10);
 
 					if (validEmotionKeys.has(imageNumber as EmotionKey)) {
-						imageMap[imageNumber as EmotionKey] = imageModules[originalPath].default;
+						imageMap[imageNumber as EmotionKey] = imageModules[originalPath];
 					} else {
 						console.warn(
 							`[loadNumberedPortraits] Parsed image number ${imageNumber} from "${originalPath}" is not a valid EmotionKey. Skipping.`

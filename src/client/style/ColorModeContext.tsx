@@ -6,6 +6,6 @@ export const ColorModeContext = createContext<{
 	mode: ColorMode;
 	setMode: (mode: ColorMode) => void;
 	toggleMode: () => void;
-}>({ mode: 'light', setMode: () => {}, toggleMode: () => {} });
+}>({ mode: 'dark', setMode: () => {}, toggleMode: () => {} });
 
 export const useColorMode = () => useContext(ColorModeContext);

@@ -3,18 +3,21 @@ import { ChromaClient, Collection, IncludeEnum, Where, WhereDocument } from 'chr
 import { COLLECTIONS } from './ChromaInterfaces.js';
 import { MetadataType } from '#shared/config/constants.js';
 import { ChromaResponse } from '#shared/api/ModuleResponse.js';
-import { DefaultEmbeddingFunction } from '@chroma-core/default-embed';
 import { OpenAIEmbeddingFunction } from '@chroma-core/openai';
+
+const apiKey = process.env.OPENAI_API_KEY;
+if (!apiKey) {
+	// This check is important. It will cause the server to crash on startup
+	// if the secret is not set, which is good practice (fail fast).
+	throw new Error('FATAL: OPENAI_API_KEY secret is not set in the environment.');
+}
+
+const embedFnOpenAi = new OpenAIEmbeddingFunction({ apiKey, modelName: 'text-embedding-3-small' });
 
 const CHROMA_HOST = process.env.CHROMA_HOST || 'chromadb-flyio.fly.dev';
 const CHROMA_PORT = Number(process.env.CHROMA_PORT) || 443;
 const CHROMA_SSL = true; // Your URL starts with https://
 const chromaClient = new ChromaClient({ host: CHROMA_HOST, port: CHROMA_PORT, ssl: CHROMA_SSL });
-const embedFnDefault = new DefaultEmbeddingFunction();
-const embedFnOpenAi = new OpenAIEmbeddingFunction({
-	apiKey: process.env.OPENAI_API_KEY,
-	modelName: 'text-embedding-3-small',
-});
 
 /**
  * A centralized Map to cache all singleton Collection objects.
@@ -24,21 +27,29 @@ const embedFnOpenAi = new OpenAIEmbeddingFunction({
 const _collectionCache: Map<string, Collection> = new Map();
 
 /**
- * A generic, caching helper for retrieving singleton collections.
- * It checks the cache first and only calls the DB if the collection object is not yet cached.
+ * A generic, caching helper for retrieving singleton collections using ChromaDB's
+ * `getOrCreateCollection` method. This is more efficient than the previous
+ * get-then-create-on-error pattern. It checks a local cache first to minimize DB calls.
+ *
  * @param collectionName The name of the collection from the COLLECTIONS enum.
  * @returns A Promise that resolves to the ChromaDB Collection object.
  */
 const _getOrCreateSingletonCollection = async (collectionName: string): Promise<Collection> => {
-	// 1. Check the central cache first
+	// 1. Return from cache if the collection object is already available.
 	if (_collectionCache.has(collectionName)) {
+		// This log is now for a true cache hit, making it accurate.
+		console.log(`[ChromaClient] Cache HIT for collection: ${collectionName}`);
 		return _collectionCache.get(collectionName)!;
 	}
 
-	// 2. If not in cache, try to get it from ChromaDB
+	// 2. On a cache miss, get or create the collection from ChromaDB.
+	console.log(`[ChromaClient] Cache MISS for ${collectionName}. Fetching or creating from DB...`);
 	try {
 		console.log(`[ChromaClient] Attempting to GET collection: ${collectionName}`);
-		const collection = await chromaClient.getCollection({ name: collectionName });
+		const collection = await chromaClient.getCollection({
+			name: collectionName,
+			embeddingFunction: embedFnOpenAi,
+		});
 		_collectionCache.set(collectionName, collection);
 		console.log(`[ChromaClient] Cache HIT for existing collection: ${collectionName}`);
 		return collection;
@@ -108,11 +119,9 @@ export const chromaDbClient = {
 		embedding?: number[] // Optional embedding
 	): Promise<void> => {
 		const params: any = { ids: [id], documents: [document], metadatas: [metadata] };
-
 		if (embedding) {
 			params.embeddings = [embedding];
 		}
-
 		await collection.add(params);
 	},
 

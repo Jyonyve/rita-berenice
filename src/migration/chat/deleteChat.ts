@@ -28,7 +28,6 @@ async function deleteSeededData() {
 				name: TARGET_COLLECTION_NAME,
 				// Metadata here is less critical for checking, can be minimal or match seeding script
 				metadata: { check_script_access: new Date().toISOString() },
-				// embeddingFunction: new DefaultEmbeddingFunction(), // getOrCreate might not require this if collection exists, but good practice
 			});
 			console.log(`Collection "${TARGET_COLLECTION_NAME}" accessed.`);
 		} catch (error) {
