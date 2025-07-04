@@ -12,30 +12,26 @@ import MainLandingPage from './page/MainLandingPage.jsx';
 import { getSuperTokensRoutesForReactRouterDom } from 'supertokens-auth-react/ui/index.js';
 import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpassword/prebuiltui.js';
 import * as reactRouter from 'react-router';
-import SuperTokens from 'supertokens-auth-react';
-import EmailPassword from 'supertokens-auth-react/recipe/emailpassword/index.js';
-import Session from 'supertokens-auth-react/recipe/session/index.js';
 import { useEffect, useState } from 'react';
+import { useToast } from './style/ToastProvider.jsx';
+import { setupApiClient } from './util/clientHelpers.js';
 
 export function App() {
 	const { CHARACTER, CHAT, ERROR, AUTH } = routeConstants;
-	const [routes, setRoutes] = useState<React.ReactNode>(null);
-
-	function clientOnlySuperTokensRoutes() {
-		setRoutes(getSuperTokensRoutesForReactRouterDom(reactRouter, [EmailPasswordPreBuiltUI]));
-	}
+	const { addToast } = useToast();
+	const [hasMounted, setHasMounted] = useState(false);
 
 	useEffect(() => {
-		clientOnlySuperTokensRoutes();
-	}, []);
+		setHasMounted(true);
+		setupApiClient(addToast); // 안전하게 주입
+	}, [addToast]);
 
 	return (
 		<>
-			<AppInitializer />
 			<Routes>
 				<Route path="/" element={<RootLayout />}>
 					<Route index element={<MainLandingPage />} />
-					{routes ? routes : null}
+					{hasMounted && getSuperTokensRoutesForReactRouterDom(reactRouter, [EmailPasswordPreBuiltUI])}
 					<Route path={`${CHARACTER}`} element={<CharacterListPageLoader />} />
 					<Route path={`${CHARACTER}/:characterId`} element={<CharacterPageLoader />} />
 					<Route
@@ -46,7 +42,6 @@ export function App() {
 							// </SessionAuth>
 						}
 					/>
-
 					{/* Fallback route for any path that doesn't match */}
 					<Route path="*" element={<NotFoundPage />} />
 				</Route>

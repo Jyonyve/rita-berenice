@@ -14,13 +14,18 @@ export function setupApiClient(
 ) {
 	// 요청 인터셉터: 요청 로그 출력
 	apiClient.interceptors.request.use(async (config) => {
-		const token = await Session.getAccessToken();
-		console.log('API 요청:', config.method, config.url);
-		config.headers = config.headers || {};
-		config.headers.Authorization = `Bearer ${token}`;
+		console.log('API 요청:', config.method?.toUpperCase(), config.url);
+
+		// First, check if a session exists. This is a cheap, non-network call.
+		if (await Session.doesSessionExist()) {
+			// Only if a session exists, get the token and attach it.
+			const token = await Session.getAccessToken();
+			config.headers = config.headers || {};
+			config.headers.Authorization = `Bearer ${token}`;
+		}
+
 		return config;
 	});
-
 	// 응답 인터셉터: 에러 처리
 	apiClient.interceptors.response.use(
 		(response) => response,

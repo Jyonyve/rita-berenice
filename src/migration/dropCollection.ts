@@ -14,11 +14,11 @@ async function dropCollection() {
 	console.log(list);
 	try {
 		console.log(`Attempting to delete collection "${COLLECTION_TO_DROP}"...`);
-		const collection = await chromaClient.getCollection({ name: COLLECTION_TO_DROP });
-		const allIds = (await collection.get()).ids;
-		if (allIds && allIds.length > 0) {
-			await collection.delete({ ids: allIds });
-		}
+		// const collection = await chromaClient.getCollection({ name: COLLECTION_TO_DROP });
+		// const allIds = (await collection.get()).ids;
+		// if (allIds && allIds.length > 0) {
+		// 	await collection.delete({ ids: allIds });
+		// }
 
 		// await chromaClient.deleteCollection({ name: COLLECTION_TO_DROP });
 
@@ -55,4 +55,4 @@ console.warn('Press Ctrl+C within 5 seconds to cancel, or wait to proceed...');
 setTimeout(() => {
 	console.log('Proceeding with deletion...');
 	dropCollection();
-}, 5000); // 5-second delay
+}, 3000); // 5-second delay

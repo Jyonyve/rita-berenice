@@ -36,9 +36,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url)); // src/server
 const isProduction = process.env.NODE_ENV === 'production';
 const PORT = process.env.PORT || 3000;
 const BASE = process.env.BASE || '/'; // Base path for the app
-const API_PATH = `api`;
-const BASE_API = `${BASE}${API_PATH}`;
+const API_PATH = 'api';
 const AUTH_PATH = 'auth';
+const BASE_API = `/${API_PATH}`;
 
 // --- Helper Function to Resolve Project Root ---
 const resolve = (p: string) => path.resolve(__dirname, p);
@@ -64,14 +64,14 @@ async function createServer() {
 	supertokens.init({
 		framework: 'express',
 		supertokens: {
-			connectionURI: process.env.VITE_SUPERTOKEN_DOMAIN || 'https://try.supertokens.com', // or your own core
-			// apiKey: "<YOUR_API_KEY>", // if using your own core
+			connectionURI: process.env.VITE_SUPERTOKENS_DOMAIN || 'https://try.supertokens.com',
+			apiKey: process.env.SUPERTOKENS_API_KEY,
 		},
 		appInfo: {
 			appName: 'Rita-Berenice',
 			websiteDomain: process.env.VITE_APP_DOMAIN || 'http://localhost:3000',
 			apiDomain: process.env.VITE_API_DOMAIN || 'http://localhost:3000',
-			apiBasePath: `${API_PATH}${AUTH_PATH}`,
+			apiBasePath: `/${API_PATH}/${AUTH_PATH}`,
 			websiteBasePath: `/${AUTH_PATH}`,
 		},
 		recipeList: [EmailPassword.init(), Session.init()],

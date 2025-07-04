@@ -13,6 +13,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { createEmotionCache } from './shared/config/createEmotionCache.js';
 import { initQueryClient } from './shared/api/queryClient.js';
 import { getTheme } from './client/index.ts';
+import { SuperTokensWrapper } from 'supertokens-auth-react';
 
 interface RenderResult {
 	html: string;
@@ -34,7 +35,9 @@ export function render(url: string): RenderResult {
 					<ThemeProvider theme={getTheme('dark')}>
 						<CssBaseline />
 						<StaticRouter location={url}>
-							<App />
+							<SuperTokensWrapper>
+								<App />
+							</SuperTokensWrapper>
 						</StaticRouter>
 					</ThemeProvider>
 				</CacheProvider>
