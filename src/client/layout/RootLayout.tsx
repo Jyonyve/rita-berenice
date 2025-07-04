@@ -75,11 +75,6 @@ export function RootLayout() {
 					<Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
 						Rita-Berenice
 					</Typography>
-					{!session.loading && session.doesSessionExist && (
-						<Typography variant="body2" sx={{ mx: 2 }}>
-							User: {session.userId}
-						</Typography>
-					)}
 					<Switch
 						checked={mode === 'dark'}
 						onChange={toggleMode}

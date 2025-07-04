@@ -11,6 +11,7 @@ import {
 	buildChatTurnId,
 	buildMessageId,
 	flatChatTurnToDoc,
+	buildSessionId,
 } from '#server/util/index.js';
 import {
 	parseChatTurnToMetadata,
@@ -29,6 +30,7 @@ const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev
 const CRAWLER_RESULT_DIR = path.join(__dirname, 'result');
 const EMOTION_DEFAULT = 'default';
 const MAX_LLM_RETRIES = 5;
+const USER_ID = process.env.USER_ID || '6b335673-c837-43f9-a1c7-0b92c90edefb';
 
 // LLM Configuration
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDcw_sDLQSjD0fJARHJNaRoIZv_Se6YGj8';
@@ -376,8 +378,8 @@ async function initChatFromLogFiles() {
 		const characterVariantFromFile = fileNameParts[1];
 
 		const characterId = buildCharacterId(characterNameFromFile, characterVariantFromFile);
-		// const TARGET_SESSION_ID = buildSessionId(characterId);
-		const TARGET_SESSION_ID = 'tarion_spinoff_SREDt3inUBm5wMBu';
+		const TARGET_SESSION_ID = buildSessionId(characterId);
+		// const TARGET_SESSION_ID = 'tarion_spinoff_SREDt3inUBm5wMBu';
 
 		console.log(`\n📝 Processing log file: "${logFile}" for session ID: "${TARGET_SESSION_ID}"...`);
 
@@ -455,6 +457,7 @@ async function initChatFromLogFiles() {
 				};
 				const basicTurn: ChatTurn = {
 					sessionId: TARGET_SESSION_ID,
+					userId: USER_ID,
 					sequence: currentSequence,
 					request: requestMessage,
 					response: responseMessage,
