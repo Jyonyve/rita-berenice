@@ -1,28 +1,13 @@
 import { Collection, Metadata, Where, WhereDocument } from 'chromadb';
-import { chromaDbClient } from '../db/chromaDbClient.ts';
+import { chromaDbClient } from '../db/chromaDbClient.js';
 
-import { COLLECTIONS } from '../db/ChromaInterfaces.ts';
+import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
-import {
-	ChatMessage,
-	ChatMessageMetadata,
-	ChatMessageType,
-	ChatTurn,
-	ChatTurnMetadata,
-	TempChatTurn,
-	TempChatTurnMetadata,
-} from '#shared/domain/chat/ChatInterfaces.js';
-import { buildChatTurnId, buildMessageId, buildTempChatTurnId } from '../util/buildIdUtils.ts';
-import {
-	flatChatMessageToDoc,
-	flatChatTurnToDoc,
-	inflateChatTurnDoc,
-} from '../util/documentUtils.ts';
-import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.ts';
-import { chatTurnToMetadata, metadataToChatTurn } from '#shared/util/dbConvertUtils.js';
+import { TempChatTurn, TempChatTurnMetadata } from '#shared/domain/chat/ChatInterfaces.js';
+import { buildTempChatTurnId } from '../util/buildIdUtils.js';
+
+import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import { ChatResponse, ChromaResponse, TempChatResponse } from '#shared/api/ModuleResponse.js';
-import { parseTextToEntries } from '#shared/util/chatParseUtils.js';
-import { isAndWhere } from '../util/queryUtils.ts';
 
 // Destructure outside the object
 const { getTempChatCollection, upsertRecord, getRecords } = chromaDbClient;

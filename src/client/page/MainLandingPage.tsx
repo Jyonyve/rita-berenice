@@ -3,7 +3,8 @@
 import React from 'react';
 import { Box, Container, Typography, Paper } from '@mui/material';
 import { useNavigate } from 'react-router';
-import { routeConstants } from '../routeConstants.ts';
+import { routeConstants } from '../routeConstants.js';
+import { APPNAME } from '#shared/config/constants.js';
 
 export default function MainLandingPage() {
 	const navigate = useNavigate();
@@ -32,7 +33,7 @@ export default function MainLandingPage() {
 						fontWeight="bold"
 						onClick={goCharacterPage}
 					>
-						Rita-Berenice
+						{APPNAME}
 					</Typography>
 				</Paper>
 				<Paper elevation={2} sx={{ p: { xs: 2, md: 4 } }}>

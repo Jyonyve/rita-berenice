@@ -145,7 +145,7 @@ const generateStoryWithOpenRouter = async (prompt: string): Promise<string> => {
 				Authorization: `Bearer ${OPENROUTER_API_KEY}`,
 				'Content-Type': 'application/json',
 				'HTTP-Referer': 'https://github.com/Jyonyve/rita-berenice',
-				'X-Title': 'Rita Berenice Story Generator',
+				'X-Title': 'Story Generator',
 			},
 			body: JSON.stringify({
 				model: model, // OpenRouter 모델 지정

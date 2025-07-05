@@ -88,7 +88,7 @@ export const memoryEngine = {
 	async recallRelevantMemories(
 		sessionId: string,
 		userRequestText: string,
-		recentChatTurns: ChatTurn[]
+		recentChatTurns: string
 	): Promise<MemoryResponse> {
 		const { characterId } = parseSessionId(sessionId);
 		const INITIAL_QUERY_LIMIT = 15;
@@ -121,6 +121,7 @@ export const memoryEngine = {
 				recapStore.queryRecaps(sessionId, [userRequestText], METADATA_TYPES.RELATIONSHIP),
 			]);
 
+			const shortTermHistory: ChatTurn[] = JSON.parse(recentChatTurns) ?? [];
 			const rerankedLongTerm = reRankByRecency<ChatTurn>(longTermChatRes);
 			// Construct a concise, token-friendly summary of the recalled recaps
 			const factualRecapSummary = relevantFactualRecapsRes?.recapInfos
@@ -133,7 +134,7 @@ export const memoryEngine = {
 
 			return {
 				langCode,
-				shortTermHistory: recentChatTurns || [],
+				shortTermHistory,
 				longTermHistory: rerankedLongTerm.contents?.slice(0, FINAL_MEMORY_LIMIT) || [],
 				relevantLore: relevantLoreRes?.lores || [],
 				relevantHistory: relevantHistoryRes?.histories || [],

@@ -12,7 +12,7 @@ import { App } from '#client/App.jsx';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createEmotionCache } from './shared/config/createEmotionCache.js';
 import { initQueryClient } from './shared/api/queryClient.js';
-import { getTheme } from './client/index.ts';
+import { getTheme } from './client/index.js';
 import { SuperTokensWrapper } from 'supertokens-auth-react';
 
 interface RenderResult {

@@ -51,7 +51,6 @@ export const receiveBotResponse = async (
 
 	try {
 		let tempTurn: TempChatTurn;
-		const recentChatTurn: ChatTurn[] = JSON.parse(recentChatTurnString);
 		try {
 			tempTurn = (await tempStore.getTempChatTurn(sessionId, sequence)).tempChatTurn;
 		} catch (error) {
@@ -83,7 +82,7 @@ export const receiveBotResponse = async (
 		const recalledMemories = await memoryEngine.recallRelevantMemories(
 			sessionId,
 			userInput,
-			recentChatTurn
+			recentChatTurnString
 		);
 
 		console.log(`[Orchestrator] Generating new persona response for ${characterInfo.characterId}...`);

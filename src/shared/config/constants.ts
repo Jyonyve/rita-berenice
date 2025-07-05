@@ -8,6 +8,8 @@ export const DEFAULT_RECENT_TURN_COUNT: number = 10 as const;
 export const DEFAULT_LOADING_TURN_COUNT: number = 5 as const;
 export const DEFAULT_LOADING_BATCH_TURN_COUNT: number = 20 as const;
 export const MAX_LLM_RETRIES = 5;
+export const APPNAME = 'Rita-Berenice' as const;
+export const APPNAME_LOWERCASE = APPNAME.toLowerCase();
 
 // Default limit for querying chat logs
 export const DEFAULT_QUERY_LIMIT: number = 10 as const;

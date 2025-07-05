@@ -24,11 +24,15 @@ router.post(
 	genRoutePattern('recallRelevantMemories'),
 	asyncHandler(
 		async (
-			req: Request<object, MemoryResponse, { sessionId: string; userRequestText: string }>,
+			req: Request<
+				object,
+				MemoryResponse,
+				{ sessionId: string; userRequestText: string; recentChatTurns: string }
+			>,
 			res: Response<MemoryResponse>
 		): Promise<void> => {
-			const { sessionId, userRequestText } = req.body;
-			const requiredFields = ['sessionId', 'userRequestText'];
+			const { sessionId, userRequestText, recentChatTurns } = req.body;
+			const requiredFields = ['sessionId', 'userRequestText', 'recentChatTurns'];
 
 			validateRequestData(req.body, 'body', requiredFields);
 			validateServiceId(sessionId, collectionType);
@@ -36,7 +40,11 @@ router.post(
 			const path = genRoutePattern('recallRelevantMemories');
 			console.log(`API HIT: POST ${path} for session ${sessionId}`);
 
-			const response = await memoryEngine.recallRelevantMemories(sessionId, userRequestText);
+			const response = await memoryEngine.recallRelevantMemories(
+				sessionId,
+				userRequestText,
+				recentChatTurns
+			);
 			res.status(200).json(response);
 		}
 	)

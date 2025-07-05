@@ -42,12 +42,16 @@ export const profileStore = {
 	},
 
 	// Profile Operations
-	getAllProfiles: async (): Promise<ProfileResponse> => {
+	getAllProfilesByUserId: async (userId: string): Promise<ProfileResponse> => {
 		const collection = await profileStore._getCollection();
 		try {
+			const where: Where = {
+				$and: [{ type: { $eq: METADATA_TYPES.PROFILE } }, { userId: { $eq: userId } }],
+			};
+
 			const rawResults = await collection.get({
 				include: [IncludeEnum.documents, IncludeEnum.metadatas],
-				where: { type: METADATA_TYPES.PROFILE },
+				where,
 			});
 
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
@@ -55,7 +59,7 @@ export const profileStore = {
 		} catch (error) {
 			handleServiceError(
 				error,
-				'An internal error occurred while do [getAllProfiles].',
+				'An internal error occurred while do [getAllProfilesByUserId].',
 				'Failed to get all profiles:'
 			);
 		}

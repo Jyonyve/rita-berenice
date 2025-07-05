@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
 	Box,
 	Typography,
@@ -14,21 +14,38 @@ import {
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { useCharacterState } from '../../hook/state/useCharacterState.js';
 import { UserInfo } from '#shared/domain/user/UserInterfaces.js';
+import { SessionPreviewList } from './SessionPreviewList.jsx';
+import { ProfilePreviewList } from './ProfilePreviewList.jsx';
+import { useNavigate } from 'react-router';
+import { routeConstants } from '../../routeConstants.ts';
+import { CharacterPortrait } from './CharacterPortrait.tsx';
 
 // Props: characterId (string), onStartSession (function), onLoadProfile (function)
 interface CharacterIntroPageProps {
 	characterInfo: CharacterInfo;
-	userInfo: UserInfo;
+	userInfo?: UserInfo;
 }
 
-const CharacterIntroPage: React.FC<CharacterIntroPageProps> = ({ characterInfo, userInfo }) => {
+const CharacterPage: React.FC<CharacterIntroPageProps> = ({ characterInfo, userInfo }) => {
+	const navigate = useNavigate();
 	const characterId = characterInfo.characterId;
+	const [profileId, setProfileId] = useState('');
+
 	// Character state: portraits, loading, error
 	const { portraitMap, isLoadingPortraits, portraitError } = useCharacterState(characterId);
-	const sessionIds = userInfo.sessionIds;
+
 	// Handlers
-	// const handleStartSession = () => onStartSession(characterId);
-	// const handleLoadProfile = () => profile && onLoadProfile(profile.profileId);
+	const handleStartNewSession = () => {
+		navigate(`/${routeConstants.CHAT}`);
+	};
+
+	const handleStartSession = (sessionId: string) => {
+		navigate(`/${routeConstants.CHAT}/${sessionId}`);
+	};
+
+	const handleClickProfile = (profileId: string) => {
+		setProfileId(profileId);
+	};
 
 	// Portrait: pick default or first available
 	const portraitUrl =
@@ -43,12 +60,7 @@ const CharacterIntroPage: React.FC<CharacterIntroPageProps> = ({ characterInfo, 
 				{isLoadingPortraits ? (
 					<CircularProgress />
 				) : portraitUrl ? (
-					<Avatar
-						src={portraitUrl}
-						alt={characterInfo?.name ?? 'Character'}
-						sx={{ width: 200, height: 200, borderRadius: 3, boxShadow: 3 }}
-						variant="rounded"
-					/>
+					<CharacterPortrait imageUrl={portraitUrl} />
 				) : (
 					<Box width={200} height={200} bgcolor="#eee" borderRadius={3} />
 				)}
@@ -74,23 +86,11 @@ const CharacterIntroPage: React.FC<CharacterIntroPageProps> = ({ characterInfo, 
 						<Typography variant="h6" mb={1}>
 							Sessions with this character
 						</Typography>
-
-						<List dense>
-							{sessionIds && sessionIds.length > 0 ? (
-								sessionIds.map((sessionId) => (
-									<ListItem key={sessionId} button>
-										<ListItemText
-											primary={session.title || `Session ${session.sessionId.slice(-6)}`}
-											secondary={session.updatedAt ? new Date(session.updatedAt).toLocaleString() : ''}
-										/>
-									</ListItem>
-								))
-							) : (
-								<Typography variant="body2" color="text.secondary">
-									No sessions found.
-								</Typography>
-							)}
-						</List>
+						{userInfo && (
+							<List dense>
+								<SessionPreviewList userInfo={userInfo} handleSessionStart={handleStartSession} />
+							</List>
+						)}
 					</CardContent>
 				</Card>
 
@@ -100,37 +100,19 @@ const CharacterIntroPage: React.FC<CharacterIntroPageProps> = ({ characterInfo, 
 						<Typography variant="h6" mb={1}>
 							Your Character Profile
 						</Typography>
-						{isProfileLoading ? (
-							<CircularProgress size={24} />
-						) : profile ? (
-							<>
-								<Typography variant="subtitle1" fontWeight="bold">
-									{profile.name}
-								</Typography>
-								<Typography variant="body2" color="text.secondary" mb={1}>
-									{profile.description}
-								</Typography>
-								<Button variant="outlined" size="small" onClick={handleLoadProfile}>
-									Load this profile
-								</Button>
-							</>
-						) : (
-							<Typography variant="body2" color="text.secondary">
-								No profile loaded.
-							</Typography>
+						{userInfo && (
+							<ProfilePreviewList
+								userId={userInfo.userId}
+								profileId={profileId}
+								handleClickProfile={handleClickProfile}
+							/>
 						)}
 					</CardContent>
 				</Card>
 
 				{/* Start New Session */}
 				<Box display="flex" justifyContent="flex-end" mt={2}>
-					<Button
-						variant="contained"
-						color="primary"
-						size="large"
-						onClick={handleStartSession}
-						disabled={isCharLoading || isPortraitLoading}
-					>
+					<Button variant="contained" color="primary" size="large" onClick={handleStartNewSession}>
 						Start New Session
 					</Button>
 				</Box>
@@ -139,4 +121,4 @@ const CharacterIntroPage: React.FC<CharacterIntroPageProps> = ({ characterInfo, 
 	);
 };
 
-export default CharacterIntroPage;
+export default CharacterPage;

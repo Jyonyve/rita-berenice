@@ -30,12 +30,13 @@ const __dirname = path.dirname(__filename);
 const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev';
 const CRAWLER_RESULT_DIR = path.join(__dirname, 'result');
 const EMOTION_DEFAULT = 'default';
-const MAX_LLM_RETRIES = 5;
+const MAX_LLM_RETRIES = 3;
 const USER_ID = process.env.USER_ID || '6b335673-c837-43f9-a1c7-0b92c90edefb';
 
 // LLM Configuration
-// const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDcw_sDLQSjD0fJARHJNaRoIZv_Se6YGj8';
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyAfhl_AyupNyz9CpxscySkvGmxRsJKcXxk';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+
 const ENRICHMENT_MODEL = 'gemini-2.0-flash-001'; // Fast model for metadata extraction
 
 // --- ADJUST THESE FOR DEBUGGING ---
@@ -133,9 +134,19 @@ const extractJsonFromMarkdown = (response: string): any => {
 		return {};
 	}
 };
+let fallbackUsed = false; // Track if Groq fallback was used
 const generateEnrichedMetadataLLM = async (prompt: string, attempt = 1): Promise<string> => {
-	if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY environment variable is required.');
+	if (!GEMINI_API_KEY && !GROQ_API_KEY)
+		throw new Error('GEMINI_API_KEY or GROQ_API_KEY is required.');
+
+	// 이미 Groq 사용했다면 Gemini 재시도 금지
+	if (fallbackUsed) {
+		console.warn(`    ✅ Already fell back to Groq. Skipping Gemini.`);
+		return callGroqFallback(prompt); // 최종 결과
+	}
+
 	console.log(`    📞 Calling Gemini API (Attempt ${attempt}/${MAX_LLM_RETRIES})...`);
+
 	try {
 		const response = await fetch(
 			`https://generativelanguage.googleapis.com/v1beta/models/${ENRICHMENT_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
@@ -148,32 +159,34 @@ const generateEnrichedMetadataLLM = async (prompt: string, attempt = 1): Promise
 				}),
 			}
 		);
+
 		if (!response.ok) {
 			const errorBody = await response.text();
 			console.warn(
 				`    ⚠️ Gemini API non-OK response (Status ${response.status}): ${response.statusText}. Body: ${errorBody.substring(0, 200)}`
 			);
-			if (response.status === 429 && attempt < MAX_LLM_RETRIES) {
-				const retryAfterHeader = response.headers.get('retry-after');
-				const waitTimeSeconds = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 60;
-				const waitTimeMs = Math.max(waitTimeSeconds * 1000, 5000);
-				console.warn(`    ⏳ Gemini rate limited. Waiting ${waitTimeMs / 1000}s`);
-				await new Promise((resolve) => setTimeout(resolve, waitTimeMs));
-				return generateEnrichedMetadataLLM(prompt, attempt + 1);
+
+			if (response.status === 429) {
+				console.warn(`    🚫 Gemini rate limited (429). Switching to Groq...`);
+				return callGroqFallback(prompt);
 			}
+
 			if (attempt < MAX_LLM_RETRIES) {
 				const backoffTime = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
-				console.warn(`    ↪️ Retrying LLM in ${backoffTime / 1000}s...`);
+				console.warn(`    ↪️ Retrying Gemini in ${backoffTime / 1000}s...`);
 				await new Promise((resolve) => setTimeout(resolve, backoffTime));
 				return generateEnrichedMetadataLLM(prompt, attempt + 1);
 			}
+
 			throw new Error(
 				`Gemini API Error: ${response.status} ${response.statusText} after ${attempt} attempts.`
 			);
 		}
+
 		const data = await response.json();
 		const candidate = data.candidates?.[0];
 		const content = candidate?.content?.parts?.[0]?.text || '';
+
 		if (
 			candidate?.finishReason &&
 			candidate.finishReason !== 'STOP' &&
@@ -183,26 +196,83 @@ const generateEnrichedMetadataLLM = async (prompt: string, attempt = 1): Promise
 			if (candidate.finishReason === 'SAFETY')
 				throw new Error('Gemini API: Content blocked due to safety settings.');
 		}
+
 		if (!content) {
 			console.warn('    ⚠️ Empty content from Gemini API:', JSON.stringify(data).substring(0, 500));
 			throw new Error('Empty response content from Gemini API');
 		}
+
 		console.log(`    🗣️ Gemini API response received (length: ${content.length}).`);
 		return content;
 	} catch (error) {
 		console.error(
-			`    💥 LLM Error (Attempt ${attempt}/${MAX_LLM_RETRIES}):`,
+			`    💥 Gemini LLM Error (Attempt ${attempt}/${MAX_LLM_RETRIES}):`,
 			error instanceof Error ? error.message : String(error)
 		);
-		if (attempt < MAX_LLM_RETRIES) {
-			const backoffTime = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
-			console.warn(`    ↪️ Retrying LLM in ${backoffTime / 1000}s...`);
-			await new Promise((resolve) => setTimeout(resolve, backoffTime));
-			return generateEnrichedMetadataLLM(prompt, attempt + 1);
+
+		if (attempt >= MAX_LLM_RETRIES) {
+			console.warn(`    🚨 Gemini failed after ${MAX_LLM_RETRIES} attempts. Switching to Groq...`);
+			return generateEnrichedMetadataLLM(prompt, 1); // fallbackUsed = true
 		}
-		throw error;
+
+		const backoffTime = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+		console.warn(`    ↪️ Retrying Gemini in ${backoffTime / 1000}s...`);
+		await new Promise((resolve) => setTimeout(resolve, backoffTime));
+		return generateEnrichedMetadataLLM(prompt, attempt + 1);
 	}
 };
+
+const callGroqFallback = async (prompt: string, attempt = 1): Promise<string> => {
+	if (!GROQ_API_KEY) throw new Error('GROQ_API_KEY environment variable is required.');
+	console.log(`    🔁 Fallback: Calling Groq (LLaMA3 70B), attempt ${attempt}`);
+	if (!fallbackUsed) {
+		fallbackUsed = true; // Set flag to prevent further Gemini calls
+	}
+
+	const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_API_KEY}` },
+		body: JSON.stringify({
+			model: 'llama3-70b-8192',
+			messages: [
+				{ role: 'system', content: 'You are a helpful assistant.' },
+				{ role: 'user', content: prompt },
+			],
+			temperature: 0.3,
+			max_tokens: 1536,
+		}),
+	});
+
+	if (res.status === 429) {
+		const errorJson = await res.json();
+		const match = errorJson?.error?.message?.match(/try again in ([\d.]+)s/i);
+		const waitMs = match ? parseFloat(match[1]) * 1000 : 25000;
+
+		console.warn(`    ⏳ Groq rate limited. Waiting ${waitMs / 1000}s before retrying...`);
+
+		if (attempt >= 2) throw new Error(`Groq API rate limit (429) after retry.`);
+
+		await new Promise((resolve) => setTimeout(resolve, waitMs));
+		return callGroqFallback(prompt, attempt + 1); // retry once
+	}
+
+	if (!res.ok) {
+		const errorText = await res.text();
+		throw new Error(`Groq API Error ${res.status}: ${errorText}`);
+	}
+
+	const json = await res.json();
+	const content = json.choices?.[0]?.message?.content;
+
+	if (!content) {
+		console.warn('    ⚠️ Empty content from Groq API:', JSON.stringify(json).substring(0, 500));
+		throw new Error('Empty response content from Groq API');
+	}
+
+	console.log(`    🗣️ Groq API response received (length: ${content.length}).`);
+	return content;
+};
+
 const getDefaultEnrichedMetadata = () => ({
 	summary: 'N/A',
 	keywords: [],

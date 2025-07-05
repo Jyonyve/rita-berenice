@@ -17,12 +17,13 @@ import { ToastProvider } from './client/style/ToastProvider.jsx';
 import { getTheme } from './client/style/theme.js';
 import { App } from './client/App.jsx';
 import { ColorMode, ColorModeContext } from './client/style/ColorModeContext.jsx';
-import { routeConstants } from './client/routeConstants.ts';
+import { routeConstants } from './client/routeConstants.js';
+import { APPNAME } from '#shared/config/constants.js';
 
 // 1. Initialize SuperTokens BEFORE rendering anything
 SuperTokens.init({
 	appInfo: {
-		appName: 'Rita-Berenice',
+		appName: APPNAME,
 		websiteDomain: import.meta.env.VITE_APP_DOMAIN,
 		apiDomain: import.meta.env.VITE_API_DOMAIN,
 		apiBasePath: `/${routeConstants.API}/${routeConstants.AUTH}`,

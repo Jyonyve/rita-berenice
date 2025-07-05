@@ -18,7 +18,7 @@ import { middleware, errorHandler } from 'supertokens-node/framework/express';
 import { verifySession } from 'supertokens-node/recipe/session/framework/express';
 import cors from 'cors';
 import sirv from 'sirv';
-import { MODULE_NAMES } from '#shared/config/constants.js';
+import { MODULE_NAMES, APPNAME } from '#shared/config/constants.js';
 import characterRoutes from './route/character.routes.js';
 import chatRoutes from './route/chat.routes.js';
 import llmRoutes from './route/llm.routes.js';
@@ -68,7 +68,7 @@ async function createServer() {
 			apiKey: process.env.SUPERTOKENS_API_KEY,
 		},
 		appInfo: {
-			appName: 'Rita-Berenice',
+			appName: APPNAME,
 			websiteDomain: process.env.VITE_APP_DOMAIN || 'http://localhost:3000',
 			apiDomain: process.env.VITE_API_DOMAIN || 'http://localhost:3000',
 			apiBasePath: `/${API_PATH}/${AUTH_PATH}`,

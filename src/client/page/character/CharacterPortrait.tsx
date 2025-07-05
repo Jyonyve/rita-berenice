@@ -1,26 +1,29 @@
 import React, { FC } from 'react';
-import { Box } from '@mui/material';
-import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import Avatar from '@mui/material/Avatar';
 
 interface CharacterPortraitProps {
 	imageUrl: string;
+	alt?: string;
 }
 
-export const CharacterPortrait: FC<CharacterPortraitProps> = ({ imageUrl }) => {
-	return (
-		<Box
-			component="img"
-			src={imageUrl}
-			sx={{
-				// Styles from your original outer Box
+export const CharacterPortrait: FC<CharacterPortraitProps> = ({ imageUrl, alt = 'Character' }) => (
+	<Avatar
+		src={imageUrl}
+		alt={alt}
+		variant="rounded"
+		sx={{
+			width: '100%',
+			height: 'auto',
+			borderRadius: 3,
+			boxShadow: 3,
+			'& img': {
 				width: '100%',
-				height: '100%',
-				objectFit: 'cover',
-
-				// Styles merged from your original inner <img>
-				borderRadius: '8px',
-				boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-			}}
-		/>
-	);
-};
+				height: 'auto',
+				objectFit: 'cover', // or 'contain' if you want to avoid cropping
+				borderRadius: 'inherit',
+			},
+			// backgroundColor: '#f5f5f5', // fallback bg
+			display: 'block',
+		}}
+	/>
+);

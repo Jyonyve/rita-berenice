@@ -18,7 +18,7 @@ import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { AuthPage } from 'supertokens-auth-react/ui/index.js';
 import { signOut, useSessionContext } from 'supertokens-auth-react/recipe/session/index.js';
-import Session from 'supertokens-auth-react/lib/build/recipe/session/recipe.js';
+import { APPNAME } from '#shared/config/constants.js';
 
 interface LoginModalProps {
 	loginOpen: boolean;
@@ -73,7 +73,7 @@ export function RootLayout() {
 			<AppBar position="static">
 				<Toolbar>
 					<Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-						Rita-Berenice
+						{APPNAME}
 					</Typography>
 					<Switch
 						checked={mode === 'dark'}
@@ -120,7 +120,7 @@ export function RootLayout() {
 			>
 				<Container maxWidth="sm">
 					<Typography variant="body2" color="text.secondary" align="center">
-						{'Copyright © Rita-Berenice '}
+						{`Copyright © ${APPNAME} `}
 						{new Date().getFullYear()}
 						{'.'}
 					</Typography>

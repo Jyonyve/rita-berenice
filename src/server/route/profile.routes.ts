@@ -19,12 +19,13 @@ const collectionType = COLLECTIONS.PROFILE;
  * @throws {500} Internal server error if the database fetch fails.
  */
 router.get(
-	genRoutePattern('getAllProfiles'),
+	genRoutePattern('getAllProfilesByUserId', ['userId']),
 	asyncHandler(async (req: Request, res: Response<ProfileResponse>): Promise<void> => {
-		const path = genRoutePattern('getAllProfiles');
+		const { userId } = req.params;
+		const path = genRoutePattern('getAllProfilesByUserId', ['userId']);
 		console.log(`API HIT: GET ${path}`);
 
-		const response = await profileStore.getAllProfiles();
+		const response = await profileStore.getAllProfilesByUserId(userId);
 		res.status(200).json(response);
 	})
 );

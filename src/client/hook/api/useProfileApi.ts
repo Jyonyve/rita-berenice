@@ -32,7 +32,7 @@ export const useProfileApi = () => {
 		},
 		onSuccess: (data, variables) => {
 			// Invalidate queries that are now stale
-			queryClient.invalidateQueries({ queryKey: ['getAllProfiles'] });
+			queryClient.invalidateQueries({ queryKey: ['getAllProfilesByUserId'] });
 			if (variables.sessionId) {
 				queryClient.invalidateQueries({ queryKey: ['getProfileBySessionId', variables.sessionId] });
 			}
@@ -43,16 +43,16 @@ export const useProfileApi = () => {
 	 * Fetches all user profiles.
 	 * TODO: add user Id to the query key if needed for multi-user support.
 	 */
-	const getAllProfiles = (userId?: string) =>
+	const getAllProfilesByUserId = (userId: string) =>
 		useQuery<ProfileResponse, Error>({
-			queryKey: ['getAllProfiles'],
+			queryKey: ['getAllProfilesByUserId', userId],
 			queryFn: async () => {
-				const url = genApiUrl(MODULE_NAME, 'getAllProfiles');
+				const url = genApiUrl(MODULE_NAME, 'getAllProfilesByUserId', [userId]);
 				const response = await apiClient.get<ProfileResponse>(url);
 				return response.data;
 			},
 			// This query can run by default if needed on app load
-			enabled: true,
+			enabled: !!userId, // Only run if userId is provided
 		});
 
 	/**
@@ -108,5 +108,11 @@ export const useProfileApi = () => {
 
 	// The hook returns the React Query hooks directly.
 	// `loading` and `error` states are now part of the individual hook results.
-	return { storeProfile, getAllProfiles, getProfile, getProfileBySessionId, getProfilesByShowName };
+	return {
+		storeProfile,
+		getAllProfilesByUserId,
+		getProfile,
+		getProfileBySessionId,
+		getProfilesByShowName,
+	};
 };

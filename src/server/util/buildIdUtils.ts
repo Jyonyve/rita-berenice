@@ -29,8 +29,8 @@ export const buildCharacterId = (characterName: string, variant?: string): strin
 	return `${characterName}_${variant || _genNanoId(8)}`;
 };
 
-export const buildProfileId = (profileName: string, sessionId: string) => {
-	return `${profileName}_${sessionId}`;
+export const buildProfileId = (userId: string, sessionId: string) => {
+	return `${userId}_${sessionId}`;
 };
 
 export const buildLoreId = (englishId: string) => {

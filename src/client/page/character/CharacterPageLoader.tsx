@@ -3,7 +3,7 @@ import { useCharacterApi, useChatApi } from '../../hook/index.js';
 import CharacterPage from './CharacterPage.jsx';
 import { useNavigate, useParams } from 'react-router';
 import { useEffect } from 'react';
-import { useUserApi } from '../../hook/api/useUserApi.ts';
+import { useUserApi } from '../../hook/api/useUserApi.js';
 import { useSessionContext } from 'supertokens-auth-react/recipe/session/index.js';
 
 export function CharacterPageLoader() {
@@ -22,7 +22,7 @@ export function CharacterPageLoader() {
 	const { data: characterRes, isLoading, isError } = useCharacterApi().getCharacter(characterId);
 	const { data: userRes } = useUserApi().getUser(session.loading ? '' : session.userId);
 
-	if (isLoading || !characterRes || !userRes) {
+	if (isLoading || !characterRes) {
 		// Use a more descriptive loading state, maybe centered
 		return (
 			<Container
@@ -34,5 +34,5 @@ export function CharacterPageLoader() {
 		);
 	}
 
-	return <CharacterPage characterInfo={characterRes?.characterInfo} userInfo={userRes.userInfo} />;
+	return <CharacterPage characterInfo={characterRes?.characterInfo} userInfo={userRes?.userInfo} />;
 }

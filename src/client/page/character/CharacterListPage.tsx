@@ -18,7 +18,7 @@ const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterIn
 	const navigate = useNavigate();
 
 	const handleCharacterPage = () => {
-		navigate(`${routeConstants.CHARACTER}/${characterInfo.characterId}`);
+		navigate(`${characterInfo.characterId}`);
 	};
 
 	return (
