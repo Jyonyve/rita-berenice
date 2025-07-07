@@ -23,6 +23,7 @@ export interface CharacterMetadata extends BeingMetadata {
 export interface CharacterInfo extends CharacterMetadata {
 	description: string;
 	instruction: string;
+	firstMessage: string; // optional
 }
 
 export type CharacterImages = Record<string, string[]>;
@@ -38,5 +39,13 @@ export interface CharacterAssets {
 
 export type CharacterCdo = Pick<
 	CharacterInfo,
-	'contact' | 'description' | 'instruction' | 'gender' | 'name' | 'showName' | 'userId'
+	| 'title'
+	| 'contact'
+	| 'description'
+	| 'instruction'
+	| 'gender'
+	| 'name'
+	| 'showName'
+	| 'userId'
+	| 'firstMessage'
 >;

@@ -4,7 +4,7 @@ import { chromaDbClient } from '../db/chromaDbClient.js';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
 import { TempChatTurn, TempChatTurnMetadata } from '#shared/domain/chat/ChatInterfaces.js';
-import { buildTempChatTurnId } from '../util/buildIdUtils.js';
+import { buildTempChatTurnId } from '../../shared/util/buildIdUtils.js';
 
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import { ChatResponse, ChromaResponse, TempChatResponse } from '#shared/api/ModuleResponse.js';
@@ -52,6 +52,7 @@ export const tempStore = {
 		const now = new Date().toISOString();
 		const updatedMetadata: TempChatTurnMetadata = {
 			type: METADATA_TYPES.TEMP,
+			userId: tempData.userId,
 			sequence: tempData.sequence,
 			sessionId: tempData.sessionId,
 			createdAt: tempData.createdAt || now,

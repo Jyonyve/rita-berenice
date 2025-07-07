@@ -16,7 +16,7 @@ import {
 	buildRecapId,
 	buildRelationshipRecapDocId,
 	buildRelationshipRecapId,
-} from '../util/buildIdUtils.js';
+} from '../../shared/util/buildIdUtils.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import { isAndWhere } from '../util/queryUtils.js';
 

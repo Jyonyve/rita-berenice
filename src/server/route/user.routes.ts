@@ -121,34 +121,4 @@ router.post(
 	)
 );
 
-/**
- * POST /api/user/update-user-session-ids
- * Adds a sessionId to the user's sessionIds array (no duplicates).
- * @param {string} userId - The user's unique ID (in body).
- * @param {string} sessionId - The session ID to add (in body).
- * @returns {string} Success message.
- * @throws {400} If required fields are missing.
- * @throws {404} If the user does not exist.
- * @throws {500} On internal error.
- */
-router.post(
-	genRoutePattern('updateUserSessionIds'),
-	asyncHandler(
-		async (
-			req: Request<object, string, { userId: string; sessionId: string }>,
-			res: Response<string>
-		): Promise<void> => {
-			const requiredFields: (keyof { userId: string; sessionId: string })[] = ['userId', 'sessionId'];
-			validateRequestData(req.body, 'body', requiredFields);
-
-			const { userId, sessionId } = req.body;
-			const path = genRoutePattern('updateUserSessionIds');
-			console.log(`API HIT: POST ${path} for user: ${userId}, session: ${sessionId}`);
-
-			await userStore.updateUserSessionIds(userId, sessionId);
-			res.status(201).json(JSON.stringify({ message: 'SessionId added to user.', userId, sessionId }));
-		}
-	)
-);
-
 export default router;

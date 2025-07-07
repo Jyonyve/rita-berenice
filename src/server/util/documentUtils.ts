@@ -6,6 +6,7 @@ import { RecapInfo } from '#shared/domain/recap/RecapInterfaces.js';
 import { TermInfo } from '#shared/domain/term/TermInterfaces.js';
 import { UserInfo } from '#shared/domain/user/UserInterfaces.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { SessionInfo } from '#shared/domain/session/SessionInterfaces.js';
 
 export const buildNaturalChatText = (request: ChatMessage, response: ChatMessage): string => {
 	const userPrompt = parseEntriesToText(request.entries);
@@ -51,9 +52,13 @@ export const flatCharacterToDoc = (character: CharacterInfo) => {
 
 export const inflateCharacterDoc = (
 	document: string
-): { description: string; instruction: string } => {
+): { description: string; instruction: string; firstMessage: string } => {
 	const parsed = JSON.parse(document);
-	return { description: parsed.description, instruction: parsed.instruction };
+	return {
+		description: parsed.description,
+		instruction: parsed.instruction,
+		firstMessage: parsed.firstMessage,
+	};
 };
 
 export const flatProfileToDoc = (profile: ProfileInfo) => {
@@ -101,12 +106,20 @@ export const inflateRecapDoc = (document: string): { content: string } => {
 };
 
 export const flatUserToDoc = (user: UserInfo) => {
-	const { sessionIds } = user;
-	const document = { sessionIds };
+	return JSON.stringify(user).trim();
+};
+
+export const inflateUserDoc = (document: string): { userInfo: UserInfo } => {
+	const parsed = JSON.parse(document);
+	return { userInfo: parsed.userInfo };
+};
+
+export const flatSessionToDoc = (session: SessionInfo) => {
+	const document = { lastCharMessage: session.lastCharMessage };
 	return JSON.stringify(document).trim();
 };
 
-export const inflateUserDoc = (document: string): { sessionIds: string[] } => {
+export const inflateSessionDoc = (document: string): { lastCharMessage: string } => {
 	const parsed = JSON.parse(document);
-	return { sessionIds: parsed.sessionIds };
+	return { lastCharMessage: parsed.lastCharMessage };
 };

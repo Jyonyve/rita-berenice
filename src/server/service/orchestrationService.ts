@@ -11,7 +11,7 @@ import {
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 
 import { chatStore } from '../store/chatStore.js';
-import { buildTempChatTurnId } from '../util/buildIdUtils.js';
+import { buildTempChatTurnId } from '../../shared/util/buildIdUtils.js';
 import { ApiError, handleServiceError } from '../util/serviceHelpers.js';
 import { memoryEngine } from './memoryEngine.js';
 import { personaEngine } from './personaEngine.js';
@@ -60,6 +60,7 @@ export const receiveBotResponse = async (
 				);
 				const now = new Date().toISOString();
 				tempTurn = {
+					userId: tempChatTurnCdo.userId,
 					tempTurnId: buildTempChatTurnId(sessionId, sequence),
 					sessionId,
 					sequence,

@@ -6,3 +6,4 @@ export * from './recapStore.js';
 export * from './termStore.js';
 export * from './userStore.js';
 export * from './tempStore.js';
+export * from './sessionStore.js';

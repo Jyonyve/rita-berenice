@@ -31,6 +31,7 @@ import personaRoutes from './route/persona.routes.js';
 import orchestrationRoutes from './route/orchestration.routes.js';
 import { ApiErrorResponse } from '#shared/api/ModuleResponse.js';
 import { ApiError } from './util/serviceHelpers.js';
+import sessionRoutes from './route/session.routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url)); // src/server
 const isProduction = process.env.NODE_ENV === 'production';
@@ -125,6 +126,7 @@ async function createServer() {
 	app.use(`${BASE_API}/${MODULE_NAMES.TEMP}`, tempRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.LORE}`, loreRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.TERM}`, termRoutes);
+	app.use(`${BASE_API}/${MODULE_NAMES.SESSION}`, sessionRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.MEMORY}`, memoryRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.PERSONA}`, personaRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.ORCHESTRATION}`, orchestrationRoutes);

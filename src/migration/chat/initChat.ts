@@ -27,15 +27,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // --- Configuration ---
-const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev';
 const CRAWLER_RESULT_DIR = path.join(__dirname, 'result');
 const EMOTION_DEFAULT = 'default';
 const MAX_LLM_RETRIES = 3;
 const USER_ID = process.env.USER_ID || '6b335673-c837-43f9-a1c7-0b92c90edefb';
-
-// LLM Configuration
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 const ENRICHMENT_MODEL = 'gemini-2.0-flash-001'; // Fast model for metadata extraction
 
@@ -134,13 +129,12 @@ const extractJsonFromMarkdown = (response: string): any => {
 		return {};
 	}
 };
-let fallbackUsed = false; // Track if Groq fallback was used
+let firstGeminiDone = false;
+let secondGeminiDone = false; // Track if Groq fallback was used
+const GEMINI_API_KEY = '';
 const generateEnrichedMetadataLLM = async (prompt: string, attempt = 1): Promise<string> => {
-	if (!GEMINI_API_KEY && !GROQ_API_KEY)
-		throw new Error('GEMINI_API_KEY or GROQ_API_KEY is required.');
-
 	// 이미 Groq 사용했다면 Gemini 재시도 금지
-	if (fallbackUsed) {
+	if (secondGeminiDone) {
 		console.warn(`    ✅ Already fell back to Groq. Skipping Gemini.`);
 		return callGroqFallback(prompt); // 최종 결과
 	}
@@ -167,6 +161,11 @@ const generateEnrichedMetadataLLM = async (prompt: string, attempt = 1): Promise
 			);
 
 			if (response.status === 429) {
+				if (!firstGeminiDone) {
+					console.warn(`    🚫 Gemini rate limited (429). Switching to second...`);
+					firstGeminiDone = true;
+					return generateEnrichedMetadataLLM(prompt, attempt + 1);
+				}
 				console.warn(`    🚫 Gemini rate limited (429). Switching to Groq...`);
 				return callGroqFallback(prompt);
 			}
@@ -221,12 +220,12 @@ const generateEnrichedMetadataLLM = async (prompt: string, attempt = 1): Promise
 		return generateEnrichedMetadataLLM(prompt, attempt + 1);
 	}
 };
-
+const GROQ_API_KEY = '';
 const callGroqFallback = async (prompt: string, attempt = 1): Promise<string> => {
 	if (!GROQ_API_KEY) throw new Error('GROQ_API_KEY environment variable is required.');
 	console.log(`    🔁 Fallback: Calling Groq (LLaMA3 70B), attempt ${attempt}`);
-	if (!fallbackUsed) {
-		fallbackUsed = true; // Set flag to prevent further Gemini calls
+	if (!secondGeminiDone) {
+		secondGeminiDone = true; // Set flag to prevent further Gemini calls
 	}
 
 	const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -440,8 +439,8 @@ async function initChatFromLogFiles() {
 		const characterVariantFromFile = fileNameParts[1];
 
 		const characterId = buildCharacterId(characterNameFromFile, characterVariantFromFile);
-		// const TARGET_SESSION_ID = buildSessionId(characterId);
-		const TARGET_SESSION_ID = 'tarion_spinoff_Oin8t5Lxbc8glaU7';
+		const TARGET_SESSION_ID = buildSessionId(characterId);
+		// const TARGET_SESSION_ID = 'tarion_spinoff_Oin8t5Lxbc8glaU7';
 
 		console.log(`\n📝 Processing log file: "${logFile}" for session ID: "${TARGET_SESSION_ID}"...`);
 
@@ -636,9 +635,3 @@ initChatFromLogFiles().catch((err) => {
 	console.error('🚨🚨🚨 FATAL Unhandled error in initChatFromLogFiles outer scope:', err);
 	process.exit(1);
 });
-
-// The cleanupAndBackupCompletedProgress function is no longer called, but you can keep it for manual archival if needed.
-// It is recommended NOT to run it automatically.
-const cleanupAndBackupCompletedProgress = async (): Promise<void> => {
-	/* ... */
-};

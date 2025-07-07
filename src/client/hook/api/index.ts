@@ -8,3 +8,5 @@ export * from './useProfileApi.js';
 export * from './usePersonaApi.js';
 export * from './useMemoryApi.js';
 export * from './useOrchestrationApi.js';
+export * from './useSessionApi.js';
+export * from './useTempChatApi.js';

@@ -7,8 +7,6 @@ export interface UserMetadata {
 	updatedAt: string;
 	contact: string;
 }
-export interface UserInfo extends UserMetadata {
-	sessionIds: string[];
-}
+export type UserInfo = UserMetadata;
 
 export type UserCdo = Pick<UserInfo, 'userId' | 'showName'>;

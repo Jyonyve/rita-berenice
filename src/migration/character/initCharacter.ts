@@ -1,7 +1,7 @@
 // Save this file as scripts/initCharacter.ts
 
 import { ChromaClient } from 'chromadb';
-import { mondayOriginal, tarionOriginal, tarionSpinoff } from './migrationTemplates.js';
+import { mondayOriginal, getTarionOriginal, getTarionSpinoff } from './migrationTemplates.js';
 import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
 import { characterStore } from '#server/index.js';
 
@@ -14,8 +14,8 @@ async function initCharacter() {
 		// Step 2: It is now safe to upsert text data. The server will do the embedding.
 		console.log(`Upserting characters...`);
 		console.log(await characterStore.storeCharacter(mondayOriginal));
-		console.log(await characterStore.storeCharacter(tarionOriginal));
-		console.log(await characterStore.storeCharacter(tarionSpinoff));
+		console.log(await characterStore.storeCharacter(getTarionOriginal('요니브')));
+		console.log(await characterStore.storeCharacter(getTarionSpinoff('요니브')));
 
 		console.log(`✅ Successfully seeded characters.`);
 		process.exit(0);

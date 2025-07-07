@@ -5,10 +5,14 @@ import { METADATA_TYPES } from '#shared/config/constants.js';
 import { chromaDbClient } from '../db/chromaDbClient.js';
 import { CharacterResponse, ChromaResponse } from '#shared/api/ModuleResponse.js';
 import { flatCharacterToDoc, inflateCharacterDoc } from '../util/documentUtils.js';
-import { buildCharacterId } from '../util/buildIdUtils.js';
 import { validateChromaResponse, handleServiceError } from '../util/serviceHelpers.js';
 import { metadataToCharacter } from '#shared/util/dbConvertUtils.js';
-import { CharacterInfo, CharacterMetadata } from '#shared/domain/character/CharacterInterfaces.js';
+import {
+	CharacterCdo,
+	CharacterInfo,
+	CharacterMetadata,
+} from '#shared/domain/character/CharacterInterfaces.js';
+import { createBasicCharacterInfo, isCharacterInfo } from '#shared/util/typeGuardUtils.js';
 
 const { getCharacterCollection, getRecordById, getRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.CHARACTER;
@@ -39,7 +43,8 @@ export const characterStore = {
 			const characterInfo = metadataToCharacter(
 				metadata!,
 				inflatedDoc.description,
-				inflatedDoc.instruction
+				inflatedDoc.instruction,
+				inflatedDoc.firstMessage
 			);
 			return characterInfo;
 		});
@@ -123,23 +128,27 @@ export const characterStore = {
 		}
 	},
 
-	storeCharacter: async (character: CharacterInfo): Promise<string> => {
+	storeCharacter: async (character: CharacterCdo | CharacterInfo): Promise<string> => {
 		const collection = await characterStore._getCollection();
 		const now = new Date().toISOString();
-		const { description, instruction, ...characterMetadata } = character;
-		// Prepare the data to be upserted
+		const updatedCharacter: CharacterInfo = isCharacterInfo(character)
+			? character
+			: createBasicCharacterInfo(character);
+		const { description, instruction, firstMessage, ...characterMetadata } = updatedCharacter;
+
 		const updatedMetadata: CharacterMetadata = {
 			...characterMetadata, // Start with all fields from input
-			characterId: character.characterId || buildCharacterId(character.name, character.variant),
+			characterId: updatedCharacter.characterId,
 			updatedAt: now,
-			createdAt: character.createdAt || now,
+			createdAt: updatedCharacter.createdAt || now,
 			type: METADATA_TYPES.CHARACTER,
 		};
 
 		const documentForEmbedding = flatCharacterToDoc({
 			...characterMetadata,
-			description: character.description,
-			instruction: character.instruction,
+			description,
+			instruction,
+			firstMessage,
 		});
 
 		try {
@@ -151,7 +160,7 @@ export const characterStore = {
 				updatedMetadata
 			);
 
-			return updatedMetadata.characterId;
+			return JSON.stringify({ characterId: updatedMetadata.characterId });
 		} catch (error) {
 			handleServiceError(
 				error,

@@ -10,6 +10,7 @@ import {
 } from '#shared/config/emotionWordsMapper.js';
 import { useState, useEffect, useRef } from 'react';
 import { convertArrayToString } from '#shared/util/chatParseUtils.js';
+import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 
 function escapeRegExp(string: string): string {
 	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
@@ -23,8 +24,9 @@ function escapeRegExp(string: string): string {
  * @returns Object containing the portrait map, loading state, and any error message.
  */
 // Ensure types for state are set correctly
-export const useCharacterState = (characterId: string) => {
+export const useCharacterState = (characterId: string, info?: CharacterInfo) => {
 	// --- Hooks called at TOP LEVEL (Correct) ---
+	const [characterInfo, setCharacterInfo] = useState<CharacterInfo>();
 	const [portraitMap, setPortraitMap] = useState<PortraitUrlMap>({}); // Use PortraitMap type
 	const [isLoading, setIsLoading] = useState(false);
 	const [portraitError, setPortraitError] = useState<string>();
@@ -167,6 +169,14 @@ export const useCharacterState = (characterId: string) => {
 		loadPortraits();
 	}, [characterId]); // Dependency array is correct
 
+	useEffect(() => {
+		if (characterId && characterInfo && characterId === characterInfo.characterId) {
+			setCharacterInfo(info);
+		} else {
+			setCharacterInfo(undefined);
+		}
+	}, [characterId, characterInfo]);
+
 	function getImageNumberForEmotion(emotion: string): EmotionKey {
 		const lowerEmotion = emotion.toLowerCase();
 
@@ -190,5 +200,11 @@ export const useCharacterState = (characterId: string) => {
 		return false;
 	}
 	// --- Return statement (Correct) ---
-	return { portraitMap, isLoadingPortraits: isLoading, portraitError, getImageNumberForEmotion };
+	return {
+		portraitMap,
+		isLoadingPortraits: isLoading,
+		portraitError,
+		getImageNumberForEmotion,
+		characterInfo,
+	};
 };

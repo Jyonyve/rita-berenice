@@ -3,7 +3,7 @@
 import { Collection, Where } from 'chromadb'; // Or your specific Collection type
 import { chromaDbClient } from '../db/chromaDbClient.js';
 import { TermCdo, TermInfo, TermMetadata } from '#shared/domain/term/TermInterfaces.js';
-import { buildTermId } from '../util/buildIdUtils.js';
+import { buildTermId } from '../../shared/util/buildIdUtils.js';
 
 import { ChromaResponse, Term, TermResponse } from '#shared/api/ModuleResponse.js';
 

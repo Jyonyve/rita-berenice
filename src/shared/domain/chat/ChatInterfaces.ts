@@ -2,9 +2,8 @@ import { METADATA_TYPES, MetadataType } from '#shared/config/constants.js';
 import { allEmotionKeywordsList } from '../../config/emotionWordsMapper.js';
 import { DefaultAiRole } from '../aimodel/AiInfoTypes.js';
 
-export type ChatType = 'dialogue' | 'action';
 export type ChatRoleType = DefaultAiRole;
-export type ChatEntry = { type: ChatType; prompt: string };
+export type ChatEntry = { type: 'dialogue' | 'action'; prompt: string };
 export type ChatMessageType = 'request' | 'response';
 export type ChatMessageSet = { request: ChatMessage; response: ChatMessage; setNo: number };
 
@@ -43,6 +42,7 @@ export interface ChatMessageMetadata {
 	emotion: (typeof allEmotionKeywordsList)[number];
 	type: typeof METADATA_TYPES.MESSAGE;
 }
+
 export interface ChatMessage extends ChatMessageMetadata {
 	entries: ChatEntry[];
 	model?: string;
@@ -145,6 +145,7 @@ export interface TempChatTurnMetadata {
 	type: typeof METADATA_TYPES.TEMP;
 	sequence: number;
 	sessionId: string;
+	userId: string;
 	tempTurnId: string;
 	createdAt: string;
 	updatedAt: string;
@@ -156,4 +157,6 @@ export interface TempChatTurn extends TempChatTurnMetadata {
 	chatTurnSets: ChatMessageSet[];
 }
 
-export type TempChatTurnCdo = Pick<TempChatTurn, 'sessionId' | 'sequence'> & { userInput: string };
+export type TempChatTurnCdo = Pick<TempChatTurn, 'sessionId' | 'sequence' | 'userId'> & {
+	userInput: string;
+};

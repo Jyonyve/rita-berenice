@@ -3,7 +3,7 @@ import { METADATA_TYPES } from '#shared/config/constants.js';
 import { BaseMetadataType } from '../chat/ChatInterfaces.js';
 
 // --- LORE METADATA (ChromaDB-compatible) ---
-export interface LoreMetadata extends BaseMetadataType {
+export interface LoreMetadata extends Omit<BaseMetadataType, 'sessionId'> {
 	loreId: string;
 	type: typeof METADATA_TYPES.LORE;
 	category: string;
@@ -30,7 +30,7 @@ export interface LoreInfo
 }
 
 // --- HISTORY METADATA (ChromaDB-compatible - all primitives) ---
-export interface HistoryMetadata extends BaseMetadataType {
+export interface HistoryMetadata extends Omit<BaseMetadataType, 'sessionId'> {
 	historyId: string;
 	type: typeof METADATA_TYPES.HISTORY;
 	title: string;
@@ -76,5 +76,5 @@ export interface HistoryInfo
 }
 
 // --- CDO TYPES ---
-export type HistoryCdo = Pick<HistoryInfo, 'content' | 'title'>;
-export type LoreCdo = Pick<LoreInfo, 'content'>;
+export type HistoryCdo = Pick<HistoryInfo, 'content' | 'title' | 'userId' | 'characterId'>;
+export type LoreCdo = Pick<LoreInfo, 'content' | 'userId' | 'characterId'>;

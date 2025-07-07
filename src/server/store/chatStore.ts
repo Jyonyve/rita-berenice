@@ -12,7 +12,7 @@ import {
 	TempChatTurn,
 	TempChatTurnMetadata,
 } from '#shared/domain/chat/ChatInterfaces.js';
-import { buildChatTurnId, buildMessageId, buildTempChatTurnId } from '../util/buildIdUtils.js';
+import { buildChatTurnId, buildMessageId, buildTempChatTurnId } from '../../shared/util/buildIdUtils.js';
 import {
 	flatChatMessageToDoc,
 	flatChatTurnToDoc,
@@ -25,14 +25,7 @@ import { parseTextToEntries } from '#shared/util/chatParseUtils.js';
 import { isAndWhere } from '../util/queryUtils.js';
 
 // Destructure outside the object
-const {
-	getChatCollection,
-	getTempChatCollection,
-	upsertRecord,
-	getRecordById,
-	getRecords,
-	queryRecords,
-} = chromaDbClient;
+const { getChatCollection, upsertRecord, getRecordById, getRecords, queryRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.CHAT;
 
 export const chatStore = {

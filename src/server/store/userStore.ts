@@ -28,10 +28,11 @@ export const userStore = {
 	_constructUser: (results: ChromaResponse): UserResponse => {
 		const { ids, documents, metadatas } = results;
 		const userInfos = ids.map((id, index) => {
-			const metadata = metadatas[index] as unknown as UserMetadata;
+			// const metadata = metadatas[index] as unknown as UserMetadata;
 			const document = documents[index];
 			const inflatedDoc = inflateUserDoc(document!);
-			const userInfo = metadataToUser(metadata!, inflatedDoc.sessionIds);
+			// const userInfo = metadataToUser(metadata!, inflatedDoc.sessionIds);
+			const userInfo = inflatedDoc.userInfo;
 			return userInfo;
 		});
 		return { ids, documents, metadatas, userInfos, userInfo: userInfos[0] || null };
@@ -111,10 +112,9 @@ export const userStore = {
 	storeUser: async (user: UserInfo): Promise<void> => {
 		const collection = await userStore._getCollection();
 		const now = new Date().toISOString();
-		const { sessionIds, ...userMetadata } = user;
 
 		const updatedMetadata: UserMetadata = {
-			...userMetadata,
+			...user,
 			createdAt: user.createdAt || now,
 			updatedAt: now,
 		};
@@ -126,27 +126,6 @@ export const userStore = {
 				error,
 				'An internal error occurred while do [storeUser].',
 				`Failed to store user: ${updatedMetadata.userId}`
-			);
-		}
-	},
-
-	updateUserSessionIds: async (userId: string, sessionId: string): Promise<void> => {
-		const collection = await userStore._getCollection();
-		const now = new Date().toISOString();
-		const userInfo = (await userStore.getUser(userId)).userInfo;
-		const { sessionIds, ...userMetadata } = userInfo;
-		const updatedSessionIds: string[] = [...userInfo.sessionIds, sessionId];
-		const updatedMetadata: UserMetadata = { ...userMetadata, updatedAt: now };
-		const updatedUser = { ...updatedMetadata, sessionIds: updatedSessionIds };
-
-		const documentForEmbedding = flatUserToDoc(updatedUser);
-		try {
-			await upsertRecord(collection, updatedUser.userId, documentForEmbedding, userMetadata);
-		} catch (error) {
-			handleServiceError(
-				error,
-				'An internal error occurred while do [storeUser].',
-				`Failed to store user: ${userMetadata.userId}`
 			);
 		}
 	},

@@ -8,3 +8,4 @@ export { default as memoryRoutes } from './memory.routes.js';
 export { default as loreRoutes } from './lore.routes.js';
 export { default as personaRoutes } from './persona.routes.js';
 export { default as orchestrationRoutes } from './orchestration.routes.js';
+export { default as sessionRoutes } from './session.routes.js';

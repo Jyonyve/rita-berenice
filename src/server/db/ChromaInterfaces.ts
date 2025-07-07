@@ -31,6 +31,7 @@ export const COLLECTIONS = {
 	CHARACTER: 'character',
 	PROFILE: 'profile',
 	CHAT: 'chat',
+	SESSION: 'session',
 	TEMP: 'temp',
 	RECAP: 'recap',
 	LORE: 'lore',

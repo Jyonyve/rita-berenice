@@ -19,8 +19,7 @@ export function CharacterPageLoader() {
 
 	if (!characterId) return;
 
-	const { data: characterRes, isLoading, isError } = useCharacterApi().getCharacter(characterId);
-	const { data: userRes } = useUserApi().getUser(session.loading ? '' : session.userId);
+	const { data: characterRes, isLoading } = useCharacterApi().getCharacter(characterId);
 
 	if (isLoading || !characterRes) {
 		// Use a more descriptive loading state, maybe centered
@@ -34,5 +33,10 @@ export function CharacterPageLoader() {
 		);
 	}
 
-	return <CharacterPage characterInfo={characterRes?.characterInfo} userInfo={userRes?.userInfo} />;
+	return (
+		<CharacterPage
+			characterInfo={characterRes?.characterInfo}
+			userId={session && !session.loading ? session.userId : ''}
+		/>
+	);
 }

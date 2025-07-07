@@ -2,7 +2,7 @@ import { METADATA_TYPES } from '../../config/constants.js';
 import { BeingMetadata } from '../character/CharacterInterfaces.js';
 
 export interface ProfileMetadata extends BeingMetadata {
-	profileId: string; //${name}_${sessionId}
+	profileId: string; //${userId}_${sessionId}
 	sessionId: string;
 	type: typeof METADATA_TYPES.PROFILE;
 }
@@ -12,5 +12,5 @@ export interface ProfileInfo extends ProfileMetadata {
 
 export type ProfileCdo = Pick<
 	ProfileInfo,
-	'description' | 'gender' | 'name' | 'showName' | 'title' | 'userId'
+	'description' | 'gender' | 'name' | 'showName' | 'title' | 'userId' | 'sessionId'
 >;

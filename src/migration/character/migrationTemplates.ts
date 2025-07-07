@@ -266,36 +266,43 @@ export const mondayOriginal: CharacterInfo = {
 	userId: 'openai',
 	contact: '',
 	title: 'EMO AI from ChatGPT',
+	firstMessage: '',
 };
 
-export const tarionOriginal: CharacterInfo = {
-	characterId: buildCharacterId('tarion', 'original'),
-	name: 'tarion',
-	variant: 'original',
-	description: tarion_original_description,
-	instruction: getTarionOriginalPersona('{{user}}'),
-	showName: '타리온',
-	createdAt: new Date('2024-08-27T10:14:09.261Z').toISOString(),
-	updatedAt: new Date('2025-02-20T08:52:29.482Z').toISOString(),
-	type: METADATA_TYPES.CHARACTER,
-	gender: 'male',
-	userId: 'sunfish',
-	contact: '',
-	title: '패전국의 노예를 구매했다',
+export const getTarionOriginal = (profileName: string): CharacterInfo => {
+	return {
+		characterId: buildCharacterId('tarion', 'original'),
+		name: 'tarion',
+		variant: 'original',
+		description: tarion_original_description,
+		instruction: getTarionOriginalPersona(profileName),
+		showName: '타리온',
+		createdAt: new Date('2024-08-27T10:14:09.261Z').toISOString(),
+		updatedAt: new Date('2025-02-20T08:52:29.482Z').toISOString(),
+		type: METADATA_TYPES.CHARACTER,
+		gender: 'male',
+		userId: 'sunfish',
+		contact: '',
+		title: '패전국의 노예를 구매했다',
+		firstMessage: getTarionOriginalFirstMessage(profileName),
+	};
 };
 
-export const tarionSpinoff: CharacterInfo = {
-	characterId: buildCharacterId('tarion', 'spinoff'),
-	name: 'tarion',
-	variant: 'spinoff',
-	description: tarion_spinoff_description,
-	instruction: getTarionSpinoffPersona('{{user}}'),
-	showName: '타리온',
-	createdAt: new Date('2024-10-01T02:19:38.343Z').toISOString(),
-	updatedAt: new Date('2025-02-21T09:02:46.047Z').toISOString(),
-	type: METADATA_TYPES.CHARACTER,
-	gender: 'male',
-	userId: 'sunfish',
-	contact: '',
-	title: '승전국의 노예가 되었다',
+export const getTarionSpinoff = (profileName: string): CharacterInfo => {
+	return {
+		characterId: buildCharacterId('tarion', 'spinoff'),
+		name: 'tarion',
+		variant: 'spinoff',
+		description: tarion_spinoff_description,
+		instruction: getTarionSpinoffPersona(profileName),
+		showName: '타리온',
+		createdAt: new Date('2024-10-01T02:19:38.343Z').toISOString(),
+		updatedAt: new Date('2025-02-21T09:02:46.047Z').toISOString(),
+		type: METADATA_TYPES.CHARACTER,
+		gender: 'male',
+		userId: 'sunfish',
+		contact: '',
+		title: '승전국의 노예가 되었다',
+		firstMessage: getTarionSpinoffFirstMessage(profileName),
+	};
 };

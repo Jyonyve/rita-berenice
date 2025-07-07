@@ -3,16 +3,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../util/clientHelpers.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
-import { ProfileMetadata } from '#shared/domain/profile/ProfileInterfaces.js';
+import { ProfileCdo, ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { genApiUrl } from '#shared/util/apiHelpers.js';
 import { ProfileResponse } from '#shared/api/ModuleResponse.js';
-
-// Define a type for the structured response from the storeProfile endpoint
-interface StoreProfileResponse {
-	message: string;
-	characterId: string; // The key is characterId in the store response
-	updatedAt: string;
-}
 
 /**
  * A client-side hook for interacting with the PROFILE API endpoints, refactored for TanStack Query.
@@ -24,11 +17,11 @@ export const useProfileApi = () => {
 	/**
 	 * Creates or updates a user profile.
 	 */
-	const storeProfile = useMutation<StoreProfileResponse, Error, ProfileMetadata>({
-		mutationFn: async (profileInfo: ProfileMetadata) => {
+	const storeProfile = useMutation<string, Error, ProfileInfo | ProfileCdo>({
+		mutationFn: async (profileInfo: ProfileInfo | ProfileCdo) => {
 			const url = genApiUrl(MODULE_NAME, 'storeProfile');
 			const response = await apiClient.post<string>(url, profileInfo);
-			return JSON.parse(response.data) as StoreProfileResponse;
+			return JSON.parse(response.data);
 		},
 		onSuccess: (data, variables) => {
 			// Invalidate queries that are now stale
@@ -109,7 +102,7 @@ export const useProfileApi = () => {
 	// The hook returns the React Query hooks directly.
 	// `loading` and `error` states are now part of the individual hook results.
 	return {
-		storeProfile,
+		storeProfile: storeProfile.mutateAsync,
 		getAllProfilesByUserId,
 		getProfile,
 		getProfileBySessionId,

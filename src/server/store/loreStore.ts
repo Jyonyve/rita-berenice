@@ -18,7 +18,7 @@ import {
 	metadataToHistory,
 	metadataToLore,
 } from '#shared/util/dbConvertUtils.js';
-import { buildLoreId, buildHistoryId } from '../util/buildIdUtils.js';
+import { buildLoreId, buildHistoryId } from '../../shared/util/buildIdUtils.js';
 import { validateServiceId } from '../util/routeHelpers.js';
 import { validateChromaResponse, handleServiceError } from '../util/serviceHelpers.js';
 

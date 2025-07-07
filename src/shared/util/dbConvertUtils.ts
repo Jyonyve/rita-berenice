@@ -8,7 +8,7 @@ import {
 } from '../domain/lore/LoreInterfaces.js';
 import { convertArrayToString, convertStringToArray } from './chatParseUtils.js';
 import { ChatTurnMetadata, ChatTurn, ChatMessage } from '../domain/chat/ChatInterfaces.js';
-import { buildChatTurnId } from '../../server/util/buildIdUtils.js';
+import { buildChatTurnId } from './buildIdUtils.js';
 import { DEFAULT_EMOTION } from '../config/emotionWordsMapper.js';
 
 import { Metadata } from '../api/ModuleResponse.js';
@@ -16,6 +16,8 @@ import { CharacterInfo, CharacterMetadata } from '../domain/character/CharacterI
 import { RecapInfo, RecapMetadata } from '../domain/recap/RecapInterfaces.js';
 import { ProfileInfo, ProfileMetadata } from '../domain/profile/ProfileInterfaces.js';
 import { UserInfo, UserMetadata } from '../domain/user/UserInterfaces.js';
+import { SessionMetadata } from '../domain/session/SessionInterfaces.js';
+import { SessionInfo } from '#shared/domain/session/SessionInterfaces.js';
 
 // --- LORE HELPERS ---
 
@@ -29,7 +31,6 @@ export const loreToMetadata = (loreInfo: LoreInfo): LoreMetadata => {
 
 	return {
 		// Base metadata fields (from BaseMetadataType)
-		sessionId: loreInfo.sessionId,
 		characterId: loreInfo.characterId,
 		userId: loreInfo.userId,
 		type: loreInfo.type,
@@ -61,7 +62,6 @@ export const loreToMetadata = (loreInfo: LoreInfo): LoreMetadata => {
 export const metadataToLore = (metadata: LoreMetadata, content: string): LoreInfo => {
 	return {
 		// Base metadata fields (from BaseMetadataType)
-		sessionId: metadata.sessionId,
 		characterId: metadata.characterId,
 		userId: metadata.userId,
 		type: metadata.type,
@@ -105,7 +105,6 @@ export const historyToMetadata = (historyInfo: HistoryInfo): HistoryMetadata => 
 
 	return {
 		// Base metadata fields (from BaseMetadataType)
-		sessionId: historyInfo.sessionId,
 		characterId: historyInfo.characterId,
 		userId: historyInfo.userId,
 		type: historyInfo.type,
@@ -152,7 +151,6 @@ export const historyToMetadata = (historyInfo: HistoryInfo): HistoryMetadata => 
 export const metadataToHistory = (metadata: HistoryMetadata, content: string): HistoryInfo => {
 	return {
 		// Base metadata fields (from BaseMetadataType)
-		sessionId: metadata.sessionId,
 		characterId: metadata.characterId,
 		userId: metadata.userId,
 		type: metadata.type,
@@ -196,17 +194,25 @@ export const metadataToHistory = (metadata: HistoryMetadata, content: string): H
 export const metadataToCharacter = (
 	metadata: CharacterMetadata,
 	description: string,
-	instruction: string
+	instruction: string,
+	firstMessage: string
 ): CharacterInfo => {
-	return { ...metadata, description, instruction };
+	return { ...metadata, description, instruction, firstMessage };
 };
 
 export const metadataToProfile = (metadata: ProfileMetadata, description: string): ProfileInfo => {
 	return { ...metadata, description };
 };
 
-export const metadataToUser = (metadata: UserMetadata, sessionIds: string[]): UserInfo => {
-	return { ...metadata, sessionIds };
+export const metadataToUser = (metadata: UserMetadata): UserInfo => {
+	return { ...metadata };
+};
+
+export const metadataToSession = (
+	metadata: SessionMetadata,
+	lastCharMessage: string
+): SessionInfo => {
+	return { ...metadata, lastCharMessage };
 };
 
 // --- UTILITY HELPERS ---

@@ -72,5 +72,10 @@ export const useCharacterApi = () => {
 		},
 	});
 
-	return { getAllCharacters, getCharacter, getCharactersByShowName, storeCharacter };
+	return {
+		getAllCharacters,
+		getCharacter,
+		getCharactersByShowName,
+		storeCharacter: storeCharacter.mutateAsync,
+	};
 };

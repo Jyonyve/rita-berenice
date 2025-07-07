@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { FC, useState } from 'react';
 import {
 	Box,
 	Typography,
@@ -15,35 +15,42 @@ import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { useCharacterState } from '../../hook/state/useCharacterState.js';
 import { UserInfo } from '#shared/domain/user/UserInterfaces.js';
 import { SessionPreviewList } from './SessionPreviewList.jsx';
-import { ProfilePreviewList } from './ProfilePreviewList.jsx';
 import { useNavigate } from 'react-router';
-import { routeConstants } from '../../routeConstants.ts';
-import { CharacterPortrait } from './CharacterPortrait.tsx';
+import { routeConstants } from '../../routeConstants.js';
+import { CharacterPortrait } from './CharacterPortrait.jsx';
+import { useProfileState } from '../../hook/index.js';
+import { ProfileCdo, ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { ProfileCard } from './ProfileCard.jsx';
+import { useProfileApi } from '../../hook/api/useProfileApi.js';
 
-// Props: characterId (string), onStartSession (function), onLoadProfile (function)
-interface CharacterIntroPageProps {
-	characterInfo: CharacterInfo;
-	userInfo?: UserInfo;
-}
-
-const CharacterPage: React.FC<CharacterIntroPageProps> = ({ characterInfo, userInfo }) => {
+const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
+	characterInfo,
+	userId,
+}) => {
 	const navigate = useNavigate();
 	const characterId = characterInfo.characterId;
 	const [profileId, setProfileId] = useState('');
 
 	// Character state: portraits, loading, error
-	const { portraitMap, isLoadingPortraits, portraitError } = useCharacterState(characterId);
+	const { portraitMap, isLoadingPortraits, portraitError } = useCharacterState(
+		characterId,
+		characterInfo
+	);
+	// profile state
+	const { storeProfile } = useProfileApi();
 
 	// Handlers
 	const handleStartNewSession = () => {
-		navigate(`/${routeConstants.CHAT}`);
+		if (!profileId) return;
+		navigate(`/${routeConstants.CHAT}`, { state: { characterId, profileId } });
 	};
 
 	const handleStartSession = (sessionId: string) => {
 		navigate(`/${routeConstants.CHAT}/${sessionId}`);
 	};
 
-	const handleClickProfile = (profileId: string) => {
+	const handleSubmitProfile = async (profileCdo: ProfileCdo) => {
+		const profileId: string = JSON.parse(await storeProfile(profileCdo)).profileId;
 		setProfileId(profileId);
 	};
 
@@ -86,29 +93,16 @@ const CharacterPage: React.FC<CharacterIntroPageProps> = ({ characterInfo, userI
 						<Typography variant="h6" mb={1}>
 							Sessions with this character
 						</Typography>
-						{userInfo && (
+						{userId && (
 							<List dense>
-								<SessionPreviewList userInfo={userInfo} handleSessionStart={handleStartSession} />
+								<SessionPreviewList userId={userId} handleSessionStart={handleStartSession} />
 							</List>
 						)}
 					</CardContent>
 				</Card>
 
 				{/* User Character Info */}
-				<Card variant="outlined">
-					<CardContent>
-						<Typography variant="h6" mb={1}>
-							Your Character Profile
-						</Typography>
-						{userInfo && (
-							<ProfilePreviewList
-								userId={userInfo.userId}
-								profileId={profileId}
-								handleClickProfile={handleClickProfile}
-							/>
-						)}
-					</CardContent>
-				</Card>
+				{userId && <ProfileCard userId={userId} onSubmit={handleSubmitProfile} />}
 
 				{/* Start New Session */}
 				<Box display="flex" justifyContent="flex-end" mt={2}>

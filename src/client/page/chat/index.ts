@@ -4,3 +4,4 @@ export * from './FixedTurnDisplay.jsx';
 export * from './TempTurnDisplay.jsx';
 export * from './UserInput.jsx';
 export * from './ChatPageLoader.jsx';
+export * from './NewChatPageLoader.jsx';

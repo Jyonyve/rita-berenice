@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { HistoryInfo } from '../../shared/domain/lore/LoreInterfaces.js';
 import { COLLECTIONS } from '../../server/db/ChromaInterfaces.js';
 import { historyToMetadata } from '../../shared/util/dbConvertUtils.js';
-import { buildHistoryId } from '../../server/util/buildIdUtils.js';
+import { buildHistoryId } from '../../shared/util/buildIdUtils.js';
 import { flatLoreOrHistoryToDoc } from '../../server/util/documentUtils.js';
 import { buildHistoryMetadataPrompt } from '../../server/util/templateUtils.js';
 import e from 'express';
@@ -206,7 +206,7 @@ const enrichHistoryWithMetadata = async (
 			period: parsedMetadata.period || { label: 'Unknown', confidence: 0.5 },
 			eventDate: parsedMetadata.eventDate || {
 				value: 'Unknown',
-				type: 'era_specific',
+				type: 'relative_to_event',
 				confidence: 0.5,
 			},
 			temporalRelations: parsedMetadata.temporalRelations || [],
@@ -340,7 +340,6 @@ async function initHistoryFromFiles() {
 
 				// ✅ Create HistoryInfo with LLM-generated historyId
 				const historyInfo: HistoryInfo = {
-					sessionId: '',
 					userId: 'sunfish',
 					characterId: CHARACTER_IDS[1],
 					type: METADATA_TYPES.HISTORY,

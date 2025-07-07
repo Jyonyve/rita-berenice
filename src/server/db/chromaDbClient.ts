@@ -5,7 +5,7 @@ import { MetadataType } from '#shared/config/constants.js';
 import { ChromaResponse } from '#shared/api/ModuleResponse.js';
 import { OpenAIEmbeddingFunction } from '@chroma-core/openai';
 
-const apiKey = process.env.OPENAI_API_KEY;
+const apiKey = '';
 if (!apiKey) {
 	// This check is important. It will cause the server to crash on startup
 	// if the secret is not set, which is good practice (fail fast).
@@ -93,6 +93,8 @@ export const chromaDbClient = {
 	getTermCollection: (): Promise<Collection> => _getOrCreateSingletonCollection(COLLECTIONS.TERM),
 	getChatCollection: (): Promise<Collection> => _getOrCreateSingletonCollection(COLLECTIONS.CHAT),
 	getUserCollection: (): Promise<Collection> => _getOrCreateSingletonCollection(COLLECTIONS.USER),
+	getSessionCollection: (): Promise<Collection> =>
+		_getOrCreateSingletonCollection(COLLECTIONS.SESSION),
 
 	/**
 	 * 컬렉션의 전체 문서 수를 반환합니다.
@@ -123,6 +125,20 @@ export const chromaDbClient = {
 			params.embeddings = [embedding];
 		}
 		await collection.add(params);
+	},
+
+	updateRecord: async (
+		collection: Collection,
+		id: string,
+		document: string,
+		metadata: Record<string, any>,
+		embedding?: number[] // Optional embedding
+	): Promise<void> => {
+		const params: any = { ids: [id], documents: [document], metadatas: [metadata] };
+		if (embedding) {
+			params.embeddings = [embedding];
+		}
+		await collection.update(params);
 	},
 
 	upsertRecord: async (

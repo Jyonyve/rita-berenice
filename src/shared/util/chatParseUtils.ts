@@ -7,7 +7,7 @@ import {
 	ChatTurn,
 } from '../domain/chat/ChatInterfaces.js';
 import { DEFAULT_EMOTION } from '../config/emotionWordsMapper.js';
-import { buildCharacterId } from '#server/util/buildIdUtils.js';
+import { buildCharacterId } from '#shared/util/buildIdUtils.js';
 
 export const convertStringToArray = (input: string): string[] => {
 	if (!input || typeof input !== 'string') {

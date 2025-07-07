@@ -1,4 +1,6 @@
-import { FC } from 'react';
+// src/client/components/profile/ProfilePreviewList.tsx
+
+import { FC, Fragment } from 'react';
 import {
 	ListItem,
 	ListItemButton,
@@ -7,13 +9,16 @@ import {
 	CircularProgress,
 	Divider,
 } from '@mui/material';
-import { useProfileApi } from '../../hook/api/useProfileApi.js'; // Adjust import as needed
+import { useProfileApi } from '../../hook/api/useProfileApi.js';
+import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 
+// The props are updated to handle two separate click events
 export const ProfilePreviewList: FC<{
 	userId: string;
-	profileId: string;
-	handleClickProfile: (profileId: string) => void;
-}> = ({ userId, handleClickProfile, profileId }) => {
+	selectedProfileId: string; // The ID of the currently highlighted profile
+	onClickProfile: (profileId: string) => void; // Handler for single-click (highlighting)
+	onDoubleClickProfile: (profileInfo: ProfileInfo) => void; // Handler for double-click (copying)
+}> = ({ userId, selectedProfileId, onClickProfile, onDoubleClickProfile }) => {
 	const { data: profileRes, isLoading, error } = useProfileApi().getAllProfilesByUserId(userId);
 
 	if (isLoading) {
@@ -53,20 +58,21 @@ export const ProfilePreviewList: FC<{
 	return (
 		<>
 			{profileRes.profileInfos.map((profile) => (
-				<div key={profile.profileId}>
+				<Fragment key={profile.profileId}>
 					<ListItem disablePadding>
 						<ListItemButton
-							selected={profile.profileId === profileId}
-							onClick={() => handleClickProfile(profile.profileId)}
+							selected={profile.profileId === selectedProfileId}
+							onClick={() => onClickProfile(profile.profileId)} // Set highlight on single click
+							onDoubleClick={() => onDoubleClickProfile(profile)} // Copy data on double click
 						>
 							<ListItemText
 								primary={
 									<Typography variant="subtitle1" fontWeight="bold">
-										{profile.name}
+										{profile.showName}
 									</Typography>
 								}
 								secondary={
-									<Typography variant="body2" color="text.secondary" mb={1}>
+									<Typography variant="body2" color="text.secondary" noWrap>
 										{profile.description}
 									</Typography>
 								}
@@ -74,7 +80,7 @@ export const ProfilePreviewList: FC<{
 						</ListItemButton>
 					</ListItem>
 					<Divider component="li" />
-				</div>
+				</Fragment>
 			))}
 		</>
 	);

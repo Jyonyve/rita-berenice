@@ -2,7 +2,7 @@
 
 import { loreStore } from '#server/index.js';
 import { HistoryInfo } from '#shared/domain/lore/LoreInterfaces.js';
-import { buildHistoryId } from '#server/util/buildIdUtils.js';
+import { buildHistoryId } from '#shared/src/shared/util/buildIdUtils.js';
 
 // --- Configuration ---
 const TARGET_HISTORY_IDS = [

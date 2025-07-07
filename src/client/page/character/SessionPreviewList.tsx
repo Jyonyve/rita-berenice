@@ -4,16 +4,13 @@ import { useChatApi } from '../../hook/api/useChatApi.js';
 import { parseEntriesToText } from '#shared/util/chatParseUtils.js';
 import { ListItemButton } from '@mui/material';
 import { UserInfo } from '#shared/domain/user/UserInterfaces.js';
+import { useSessionApi } from '../../hook/api/useSessionApi.js';
 
 export const SessionPreviewList: FC<{
-	userInfo: UserInfo;
+	userId: string;
 	handleSessionStart: (sessionId: string) => void;
-}> = ({ userInfo, handleSessionStart }) => {
-	const {
-		data: tempTurnsResponse,
-		isLoading,
-		error,
-	} = useChatApi().getLastTempTurnsForSessions(userInfo.sessionIds || []);
+}> = ({ userId, handleSessionStart }) => {
+	const { data: sessionRes, isLoading, error } = useSessionApi().getSessionsByUserId(userId);
 
 	if (isLoading) {
 		return (
@@ -42,7 +39,7 @@ export const SessionPreviewList: FC<{
 		);
 	}
 
-	if (!tempTurnsResponse?.tempChatTurns?.length) {
+	if (!sessionRes?.sessionInfos?.length) {
 		return (
 			<ListItem>
 				<ListItemText
@@ -58,35 +55,39 @@ export const SessionPreviewList: FC<{
 
 	return (
 		<>
-			{tempTurnsResponse.tempChatTurns.map((turn) => {
-				const turnSet =
-					turn.fixedSetNo < 0 ? turn.chatTurnSets.at(-1) : turn.chatTurnSets[turn.fixedSetNo];
-				const title =
-					turnSet?.request.showName && turnSet?.response.showName
-						? `${turnSet.request.showName} X ${turnSet.response.showName}`
-						: `Session ${turn.sessionId.slice(-6)}`;
-				const updatedAt = turn.updatedAt ? new Date(turn.updatedAt).toLocaleString() : '';
-				const preview = parseEntriesToText(turnSet?.response.entries || []).slice(0, 140);
-
-				return (
-					<ListItem disablePadding key={turn.sessionId}>
-						<ListItemButton onClick={() => handleSessionStart(turn.sessionId)}>
-							<ListItemText
-								primary={
-									<>
-										<Typography variant="subtitle1">{title}</Typography>
-										<Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-											{preview}
-										</Typography>
-									</>
-								}
-								secondary={updatedAt}
-							/>
-						</ListItemButton>
-						<Divider component="li" />
-					</ListItem>
-				);
-			})}
+			{sessionRes.sessionInfos
+				.filter((info) => info.status === 'active')
+				.map((info) => {
+					return (
+						<ListItem disablePadding key={info.sessionId}>
+							<ListItemButton onClick={() => handleSessionStart(info.sessionId)}>
+								<ListItemText
+									primary={
+										<>
+											<Typography variant="subtitle1">{info.title}</Typography>
+											<Typography
+												variant="body2"
+												color="text.secondary"
+												sx={{
+													mt: 0.5,
+													display: '-webkit-box',
+													overflow: 'hidden',
+													textOverflow: 'ellipsis',
+													WebkitBoxOrient: 'vertical',
+													WebkitLineClamp: 2, // The number of lines to show
+												}}
+											>
+												{info.lastCharMessage}
+											</Typography>
+										</>
+									}
+									secondary={info.updatedAt}
+								/>
+							</ListItemButton>
+							<Divider component="li" />
+						</ListItem>
+					);
+				})}
 		</>
 	);
 };
