@@ -89,12 +89,12 @@ export const profileStore = {
 		const collection = await profileStore._getCollection();
 
 		try {
-			const rawResults = await collection.get({
-				where: { sessionId },
-				include: [IncludeEnum.metadatas],
-				limit: 1,
-			});
-			const results = validateChromaResponse(rawResults, 'getList', collectionType);
+			const where: Where = {
+				$and: [{ type: { $eq: METADATA_TYPES.PROFILE } }, { sessionId: { $eq: sessionId } }],
+			};
+
+			const rawResults = await getRecords(collection, where, 1);
+			const results = validateChromaResponse(rawResults, 'getOne', collectionType);
 			return profileStore._constructProfile(results);
 		} catch (error) {
 			handleServiceError(
