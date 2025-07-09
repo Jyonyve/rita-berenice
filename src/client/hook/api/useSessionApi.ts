@@ -53,6 +53,21 @@ export const useSessionApi = () => {
 		});
 
 	/**
+	 * Fetches all sessions for a given user.
+	 * This is a useQuery hook as it fetches data.
+	 */
+	const getSessionsByUserIdAndCharacterId = (userId: string, characterId: string) =>
+		useQuery<SessionResponse, Error>({
+			queryKey: ['getSessionsByUserIdAndCharacterId', userId, characterId],
+			queryFn: async () => {
+				const url = genApiUrl(MODULE_NAME, 'getSessionsByUserIdAndCharacterId', [userId, characterId]);
+				const response = await apiClient.get<SessionResponse>(url);
+				return response.data;
+			},
+			enabled: !!userId && !!characterId,
+		});
+
+	/**
 	 * Fetches a single session by its ID.
 	 * This is a useQuery hook.
 	 */
@@ -88,5 +103,11 @@ export const useSessionApi = () => {
 		},
 	});
 
-	return { createSession, getSessionsByUserId, getSession, updateSessionOnNewMessage };
+	return {
+		createSession,
+		getSessionsByUserId,
+		getSession,
+		updateSessionOnNewMessage,
+		getSessionsByUserIdAndCharacterId,
+	};
 };

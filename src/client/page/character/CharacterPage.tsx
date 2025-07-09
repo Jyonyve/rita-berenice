@@ -13,7 +13,6 @@ import {
 } from '@mui/material';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { useCharacterState } from '../../hook/state/useCharacterState.js';
-import { UserInfo } from '#shared/domain/user/UserInterfaces.js';
 import { SessionPreviewList } from './SessionPreviewList.jsx';
 import { useNavigate } from 'react-router';
 import { routeConstants } from '../../routeConstants.js';
@@ -106,7 +105,11 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 						</Typography>
 						{userId && (
 							<List dense>
-								<SessionPreviewList userId={userId} handleSessionStart={handleStartSession} />
+								<SessionPreviewList
+									userId={userId}
+									characterId={characterId}
+									handleSessionStart={handleStartSession}
+								/>
 							</List>
 						)}
 					</CardContent>

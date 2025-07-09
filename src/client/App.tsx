@@ -15,6 +15,7 @@ import { useToast } from './provider/ToastProvider.tsx';
 import { setupApiClient } from './util/clientHelpers.js';
 import { NewChatPageLoader } from './page/chat/NewChatPageLoader.jsx';
 import { AppProviders } from './AppProviders.jsx';
+import { SessionAuth } from 'supertokens-auth-react/recipe/session/index.js';
 
 export function App() {
 	const { CHARACTER, CHAT, ERROR, AUTH } = routeConstants;
@@ -36,17 +37,17 @@ export function App() {
 				<Route
 					path={`${CHAT}`}
 					element={
-						// <SessionAuth>
-						<NewChatPageLoader />
-						// </SessionAuth>
+						<SessionAuth>
+							<NewChatPageLoader />
+						</SessionAuth>
 					}
 				/>
 				<Route
 					path={`${CHAT}/:sessionId`}
 					element={
-						// <SessionAuth>
-						<ChatPageLoader />
-						// </SessionAuth>
+						<SessionAuth>
+							<ChatPageLoader />
+						</SessionAuth>
 					}
 				/>
 				{/* Fallback route for any path that doesn't match */}

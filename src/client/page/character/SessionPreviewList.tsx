@@ -1,16 +1,21 @@
 import { FC } from 'react';
 import { ListItem, ListItemText, Typography, Divider } from '@mui/material';
 import { useChatApi } from '../../hook/api/useChatApi.js';
-import { parseEntriesToText } from '#shared/util/chatParseUtils.js';
+import { parseEntriesToText, parseSessionId } from '#shared/util/chatParseUtils.js';
 import { ListItemButton } from '@mui/material';
 import { UserInfo } from '#shared/domain/user/UserInterfaces.js';
 import { useSessionApi } from '../../hook/api/useSessionApi.js';
 
 export const SessionPreviewList: FC<{
 	userId: string;
+	characterId: string;
 	handleSessionStart: (sessionId: string) => void;
-}> = ({ userId, handleSessionStart }) => {
-	const { data: sessionRes, isLoading, error } = useSessionApi().getSessionsByUserId(userId);
+}> = ({ userId, characterId, handleSessionStart }) => {
+	const {
+		data: sessionRes,
+		isLoading,
+		error,
+	} = useSessionApi().getSessionsByUserIdAndCharacterId(userId, characterId);
 
 	if (isLoading) {
 		return (
