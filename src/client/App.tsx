@@ -11,9 +11,10 @@ import { getSuperTokensRoutesForReactRouterDom } from 'supertokens-auth-react/ui
 import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpassword/prebuiltui.js';
 import * as reactRouter from 'react-router';
 import { useEffect, useState } from 'react';
-import { useToast } from './style/ToastProvider.jsx';
+import { useToast } from './provider/ToastProvider.tsx';
 import { setupApiClient } from './util/clientHelpers.js';
 import { NewChatPageLoader } from './page/chat/NewChatPageLoader.jsx';
+import { AppProviders } from './AppProviders.jsx';
 
 export function App() {
 	const { CHARACTER, CHAT, ERROR, AUTH } = routeConstants;
@@ -26,33 +27,31 @@ export function App() {
 	}, [addToast]);
 
 	return (
-		<>
-			<Routes>
-				<Route path="/" element={<RootLayout />}>
-					<Route index element={<MainLandingPage />} />
-					{hasMounted && getSuperTokensRoutesForReactRouterDom(reactRouter, [EmailPasswordPreBuiltUI])}
-					<Route path={`${CHARACTER}`} element={<CharacterListPageLoader />} />
-					<Route path={`${CHARACTER}/:characterId`} element={<CharacterPageLoader />} />
-					<Route
-						path={`${CHAT}`}
-						element={
-							// <SessionAuth>
-							<NewChatPageLoader />
-							// </SessionAuth>
-						}
-					/>
-					<Route
-						path={`${CHAT}/:sessionId`}
-						element={
-							// <SessionAuth>
-							<ChatPageLoader />
-							// </SessionAuth>
-						}
-					/>
-					{/* Fallback route for any path that doesn't match */}
-					<Route path="*" element={<NotFoundPage />} />
-				</Route>
-			</Routes>
-		</>
+		<Routes>
+			<Route path="/" element={<RootLayout />}>
+				<Route index element={<MainLandingPage />} />
+				{hasMounted && getSuperTokensRoutesForReactRouterDom(reactRouter, [EmailPasswordPreBuiltUI])}
+				<Route path={`${CHARACTER}`} element={<CharacterListPageLoader />} />
+				<Route path={`${CHARACTER}/:characterId`} element={<CharacterPageLoader />} />
+				<Route
+					path={`${CHAT}`}
+					element={
+						// <SessionAuth>
+						<NewChatPageLoader />
+						// </SessionAuth>
+					}
+				/>
+				<Route
+					path={`${CHAT}/:sessionId`}
+					element={
+						// <SessionAuth>
+						<ChatPageLoader />
+						// </SessionAuth>
+					}
+				/>
+				{/* Fallback route for any path that doesn't match */}
+				<Route path="*" element={<NotFoundPage />} />
+			</Route>
+		</Routes>
 	);
 }

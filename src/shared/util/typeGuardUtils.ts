@@ -45,19 +45,21 @@ export const createBasicCharacterInfo = (cdo: CharacterCdo): CharacterInfo => {
 
 export const createBasicProfileInfo = (cdo: ProfileCdo): ProfileInfo => {
 	const now = new Date().toISOString();
-	const profileId = buildProfileId(cdo.userId, cdo.sessionId);
+	const profileId = buildProfileId(cdo.sessionId, cdo.userId);
 	return { ...cdo, profileId, type: 'profile', createdAt: now, updatedAt: now };
 };
 
 export const createBasicChatTurn = (cdo: ChatTurnCdo): ChatTurn => {
 	const now = new Date().toISOString();
 	const chatTurnId = buildChatTurnId(cdo.sessionId, cdo.sequence);
+	const profileId = buildProfileId(cdo.sessionId, cdo.userId);
 	const { characterId } = parseSessionId(cdo.sessionId);
 	return {
 		...cdo,
 		createdAt: now,
 		updatedAt: now,
 		chatTurnId,
+		profileId,
 		requestMessageId: '',
 		responseMessageId: '',
 		type: 'turn',

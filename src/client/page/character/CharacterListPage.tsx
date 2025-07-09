@@ -9,7 +9,9 @@ import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { useNavigate } from 'react-router';
 // Helper Component to manage state for a single character's portrait
 const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterInfo }) => {
-	const { portraitMap, isLoadingPortraits, portraitError } = useCharacterState(characterInfo);
+	const { portraitMap, isLoadingPortraits, portraitError } = useCharacterState(
+		characterInfo.characterId
+	);
 	const defaultImageUrl = portraitMap[DEFAULT_IMAGE_NUMBER];
 	const navigate = useNavigate();
 
@@ -79,9 +81,9 @@ export const CharacterListPage = ({ characterInfos }: { characterInfos: Characte
 	return (
 		// 3. Use a wider container to fit more items
 		<Container maxWidth="lg">
-			<Typography variant="h4" gutterBottom>
+			{/* <Typography variant="h4" gutterBottom>
 				Select Character
-			</Typography>
+			</Typography> */}
 			{/* 4. Replace Stack with a responsive Grid */}
 			<Grid container spacing={2}>
 				{characterInfos.map((characterInfo) => (

@@ -11,7 +11,7 @@ import {
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 
 import { chatStore } from '../store/chatStore.js';
-import { buildTempChatTurnId } from '../../shared/util/buildIdUtils.js';
+import { buildProfileId, buildTempChatTurnId } from '../../shared/util/buildIdUtils.js';
 import { ApiError, handleServiceError } from '../util/serviceHelpers.js';
 import { memoryEngine } from './memoryEngine.js';
 import { personaEngine } from './personaEngine.js';
@@ -148,6 +148,7 @@ export const finalizeChatTurn = async (chatTurnCdo: ChatTurnCdo): Promise<ChatTu
 		const basicChatTurn: ChatTurn = {
 			characterId: parseSessionId(sessionId).characterId,
 			userId: chatTurnCdo.userId,
+			profileId: buildProfileId(chatTurnCdo.sessionId, chatTurnCdo.userId),
 			request: chatTurnCdo.request,
 			response: chatTurnCdo.response,
 			sessionId: chatTurnCdo.sessionId,

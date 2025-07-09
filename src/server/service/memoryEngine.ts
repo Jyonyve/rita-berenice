@@ -17,7 +17,7 @@ import { chatStore } from '../store/chatStore.js';
 import { loreStore } from '../store/loreStore.js';
 import { profileStore } from '../store/profileStore.js';
 import { termStore } from '../store/termStore.js';
-import { detectLanguage } from '../util/languageUtils.js';
+import { detectLanguage } from '../../shared/util/languageUtils.js';
 import { handleServiceError } from '../util/serviceHelpers.js';
 import { parseLlmJsonResponse, reRankByRecency } from '../util/llmUtils.js';
 import { llmService } from './llmService.js';

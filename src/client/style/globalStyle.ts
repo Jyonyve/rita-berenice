@@ -18,3 +18,9 @@ export const getTheme = (mode: 'light' | 'dark') =>
 		},
 		// Add typography, components, etc. here as needed
 	});
+
+export const globalStyle = {
+	// Apply a pointer cursor to any element with role="button"
+	"[role='button']": { cursor: 'pointer' },
+	// You can add other global styles here as needed
+};

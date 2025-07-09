@@ -1,9 +1,9 @@
 // src/shared/domain/lore/LoreInterfaces.ts
 import { METADATA_TYPES } from '#shared/config/constants.js';
-import { BaseMetadataType } from '../chat/ChatInterfaces.js';
+import { ChatBaseMetadataType } from '../chat/ChatInterfaces.js';
 
 // --- LORE METADATA (ChromaDB-compatible) ---
-export interface LoreMetadata extends Omit<BaseMetadataType, 'sessionId'> {
+export interface LoreMetadata extends Omit<ChatBaseMetadataType, 'sessionId' | 'profileId'> {
 	loreId: string;
 	type: typeof METADATA_TYPES.LORE;
 	category: string;
@@ -30,7 +30,7 @@ export interface LoreInfo
 }
 
 // --- HISTORY METADATA (ChromaDB-compatible - all primitives) ---
-export interface HistoryMetadata extends Omit<BaseMetadataType, 'sessionId'> {
+export interface HistoryMetadata extends Omit<ChatBaseMetadataType, 'sessionId' | 'profileId'> {
 	historyId: string;
 	type: typeof METADATA_TYPES.HISTORY;
 	title: string;

@@ -12,6 +12,7 @@ import {
 	buildMessageId,
 	flatChatTurnToDoc,
 	buildSessionId,
+	buildProfileId,
 } from '#server/util/index.js';
 import {
 	parseChatTurnToMetadata,
@@ -519,6 +520,7 @@ async function initChatFromLogFiles() {
 				const basicTurn: ChatTurn = {
 					sessionId: TARGET_SESSION_ID,
 					userId: USER_ID,
+					profileId: buildProfileId(TARGET_SESSION_ID, USER_ID),
 					sequence: currentSequence,
 					request: requestMessage,
 					response: responseMessage,

@@ -12,6 +12,7 @@ import { metadataToRecap } from '#shared/util/dbConvertUtils.js';
 import { RecapMetadata, RecapInfo } from '#shared/domain/recap/RecapInterfaces.js';
 import { convertArrayToString, parseSessionId } from '#shared/util/chatParseUtils.js';
 import {
+	buildProfileId,
 	buildRecapDocId,
 	buildRecapId,
 	buildRelationshipRecapDocId,
@@ -80,6 +81,7 @@ export const recapStore = {
 				sessionId,
 				characterId,
 				userId: recapInfo.userId,
+				profileId: buildProfileId(sessionId, recapInfo.userId),
 				type: METADATA_TYPES.RECAP,
 				createdAt: now,
 				updatedAt: now,
@@ -87,6 +89,7 @@ export const recapStore = {
 				topics: recapInfo.topics,
 				entities: recapInfo.entities,
 				sequence: recapInfo.turnEnd, // Use end as the sequence
+
 				// Recap-specific fields (flattened)
 				recapId: recapInfo.recapId || buildRecapId(sessionId, turnStart, turnEnd),
 				turnStart,
@@ -138,6 +141,7 @@ export const recapStore = {
 				sessionId,
 				characterId,
 				userId: recapInfo.userId,
+				profileId: buildProfileId(sessionId, recapInfo.userId),
 				type: METADATA_TYPES.RECAP,
 				createdAt: now,
 				updatedAt: now,

@@ -8,11 +8,12 @@ export type ChatMessageType = 'request' | 'response';
 export type ChatMessageSet = { request: ChatMessage; response: ChatMessage; setNo: number };
 
 // --- UNIFIED BASE METADATA ---
-interface BaseMetadata {
+interface ChatBaseMetadata {
 	// Core identification (consistent across all types)
 	sessionId: string;
 	characterId: string; // Added to all for consistency
 	userId: string;
+	profileId: string;
 	type: MetadataType;
 
 	// Timestamps (consistent format)
@@ -28,7 +29,7 @@ interface BaseMetadata {
 	sequence: number;
 }
 
-export type BaseMetadataType = BaseMetadata;
+export type ChatBaseMetadataType = ChatBaseMetadata;
 
 export interface ChatMessageMetadata {
 	sessionId: string;
@@ -51,7 +52,7 @@ export interface ChatMessage extends ChatMessageMetadata {
 // src/shared/domain/ChatInterfaces.ts
 
 // This is what gets stored in ChromaDB (all primitives)
-export interface ChatTurnMetadata extends BaseMetadata {
+export interface ChatTurnMetadata extends ChatBaseMetadata {
 	chatTurnId: string;
 	requestMessageId: string;
 	responseMessageId: string;

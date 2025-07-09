@@ -18,10 +18,12 @@ import { SessionPreviewList } from './SessionPreviewList.jsx';
 import { useNavigate } from 'react-router';
 import { routeConstants } from '../../routeConstants.js';
 import { CharacterPortrait } from './CharacterPortrait.jsx';
-import { useProfileState } from '../../hook/index.js';
 import { ProfileCdo, ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { ProfileCard } from './ProfileCard.jsx';
 import { useProfileApi } from '../../hook/api/useProfileApi.js';
+import { useAuthModal } from '../../provider/AuthModalProvider.tsx';
+import { alertConstants, LANG_KEYS } from '#shared/config/langConstants.js';
+import { getLangAlertText, getLangText } from '#shared/util/languageUtils.js';
 
 const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 	characterInfo,
@@ -30,6 +32,7 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 	const navigate = useNavigate();
 	const characterId = characterInfo.characterId;
 	const [profileId, setProfileId] = useState('');
+	const { openLoginModal } = useAuthModal();
 
 	// Character state: portraits, loading, error
 	const { portraitMap, isLoadingPortraits, portraitError } = useCharacterState(
@@ -41,7 +44,15 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 
 	// Handlers
 	const handleStartNewSession = () => {
-		if (!profileId) return;
+		if (!userId) {
+			openLoginModal();
+			return;
+		}
+
+		if (!profileId) {
+			alert(getLangAlertText(LANG_KEYS.CREATE_NEW_PROFILE));
+			return;
+		}
 		navigate(`/${routeConstants.CHAT}`, { state: { characterId, profileId } });
 	};
 
@@ -81,7 +92,7 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 						<Typography variant="subtitle1" color="text.secondary" mt={1}>
 							{characterInfo.showName}
 						</Typography>
-						<Typography variant="body1" mt={2}>
+						<Typography variant="body2" mt={2}>
 							{characterInfo.description}
 						</Typography>
 					</CardContent>
@@ -90,8 +101,8 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 				{/* Session List */}
 				<Card variant="outlined">
 					<CardContent>
-						<Typography variant="h6" mb={1}>
-							Sessions with this character
+						<Typography variant="subtitle1" mb={1}>
+							{getLangText(LANG_KEYS.SESSIONS_WITH_CHARACTER)}
 						</Typography>
 						{userId && (
 							<List dense>

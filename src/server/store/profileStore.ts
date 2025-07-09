@@ -136,6 +136,8 @@ export const profileStore = {
 
 		const updatedMetadata: ProfileMetadata = {
 			...updatedProfile,
+			profileId:
+				updatedProfile.profileId || buildProfileId(updatedProfile.sessionId, updatedProfile.userId),
 			createdAt: updatedProfile.createdAt || now,
 			updatedAt: now,
 		};

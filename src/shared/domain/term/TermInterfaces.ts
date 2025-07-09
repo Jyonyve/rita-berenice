@@ -1,10 +1,10 @@
 // src/shared/domain/glossaryInterfaces.ts
 
 import { METADATA_TYPES } from '../../config/constants.js';
-import { BaseMetadataType } from '../chat/ChatInterfaces.js';
+import { ChatBaseMetadataType } from '../chat/ChatInterfaces.js';
 
 export interface TermMetadata
-	extends Pick<BaseMetadataType, 'sessionId' | 'createdAt' | 'updatedAt'> {
+	extends Pick<ChatBaseMetadataType, 'sessionId' | 'createdAt' | 'updatedAt'> {
 	termId: string; // Unique ID for this glossary entry (e.g., UUID)
 	koreanTerm: string; // The Korean proper noun, e.g., "라이타 베르니스"
 	englishTerm: string; // The *current* English translation to be used for summarization guidance.

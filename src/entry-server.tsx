@@ -7,7 +7,7 @@ import { CacheProvider } from '@emotion/react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import createEmotionServer from '@emotion/server/create-instance';
-import { ToastProvider } from '#client/style/ToastProvider.jsx';
+import { ToastProvider } from '#client/src/client/provider/ToastProvider.js';
 import { App } from '#client/App.jsx';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createEmotionCache } from './shared/config/createEmotionCache.js';

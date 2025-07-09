@@ -5,7 +5,7 @@ import { SessionInfo } from '#shared/domain/session/SessionInterfaces.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { genApiUrl } from '#shared/util/apiHelpers.js';
 import { SessionResponse } from '#shared/api/ModuleResponse.js';
-import { useToast } from '../../style/ToastProvider.jsx';
+import { useToast } from '../../provider/ToastProvider.tsx';
 import { apiClient } from '../../util/clientHelpers.js';
 
 /**

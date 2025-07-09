@@ -1,7 +1,7 @@
 // src/client/hooks/useLoreApi.ts
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useToast } from '../../style/ToastProvider.jsx';
+import { useToast } from '../../provider/ToastProvider.tsx';
 import { apiClient } from '../../util/clientHelpers.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { HistoryInfo, LoreInfo } from '#shared/domain/lore/LoreInterfaces.js';

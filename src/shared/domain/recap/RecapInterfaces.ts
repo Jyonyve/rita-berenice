@@ -1,8 +1,8 @@
 import { METADATA_TYPES } from '#shared/config/constants.js';
-import { BaseMetadataType } from '../chat/ChatInterfaces.js';
+import { ChatBaseMetadataType } from '../chat/ChatInterfaces.js';
 
 // --- RECAP METADATA ---
-export interface RecapMetadata extends BaseMetadataType {
+export interface RecapMetadata extends ChatBaseMetadataType {
 	recapId: string;
 	type: typeof METADATA_TYPES.RECAP | typeof METADATA_TYPES.RELATIONSHIP;
 

@@ -1,5 +1,5 @@
 import React, { FC, useState, useEffect } from 'react';
-import { Outlet } from 'react-router';
+import { Outlet, useNavigate } from 'react-router';
 import {
 	AppBar,
 	Box,
@@ -12,13 +12,15 @@ import {
 	Modal,
 	Paper,
 } from '@mui/material';
-import { useColorMode } from '../style/ColorModeContext.jsx';
+import { useColorMode } from '../provider/ColorModeProvider.tsx';
 import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpassword/prebuiltui.js';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { AuthPage } from 'supertokens-auth-react/ui/index.js';
 import { signOut, useSessionContext } from 'supertokens-auth-react/recipe/session/index.js';
 import { APPNAME } from '#shared/config/constants.js';
+import { routeConstants } from '../routeConstants.js';
+import { useAuthModal } from '../provider/AuthModalProvider.tsx';
 
 interface LoginModalProps {
 	loginOpen: boolean;
@@ -50,17 +52,19 @@ const LoginModal: FC<LoginModalProps> = ({ loginOpen, handleCloseLogin }) => (
 export function RootLayout() {
 	const { mode, toggleMode } = useColorMode();
 	const session = useSessionContext();
-	const [loginOpen, setLoginOpen] = useState(false);
+	const navigate = useNavigate();
+	const { isLoginModalOpen, openLoginModal, closeLoginModal } = useAuthModal();
 
 	// Automatically close modal when login succeeds
 	useEffect(() => {
-		if (!session.loading && session.doesSessionExist && loginOpen) {
-			setLoginOpen(false);
+		if (!session.loading && session.doesSessionExist && isLoginModalOpen) {
+			closeLoginModal();
 		}
-	}, [session, loginOpen, mode]);
+	}, [session, isLoginModalOpen, closeLoginModal, mode]);
 
-	const handleLoginModal = () => setLoginOpen(true);
-	const handleCloseLogin = () => setLoginOpen(false);
+	const goCharacterPage = () => {
+		navigate(`/${routeConstants.CHARACTER}`);
+	};
 
 	const onLogout = async () => {
 		await signOut();
@@ -72,7 +76,13 @@ export function RootLayout() {
 			<CssBaseline />
 			<AppBar position="static">
 				<Toolbar>
-					<Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+					<Typography
+						variant="h6"
+						component="div"
+						sx={{ flexGrow: 1 }}
+						onClick={goCharacterPage}
+						role="button"
+					>
 						{APPNAME}
 					</Typography>
 					<Switch
@@ -93,7 +103,7 @@ export function RootLayout() {
 									</IconButton>
 								</>
 							) : (
-								<IconButton color="inherit" onClick={handleLoginModal} aria-label="login">
+								<IconButton color="inherit" onClick={openLoginModal} aria-label="login">
 									<LoginIcon />
 								</IconButton>
 							)}
@@ -106,7 +116,7 @@ export function RootLayout() {
 			</Container>
 			{/* Only render the modal if not logged in */}
 			{!session.loading && !session.doesSessionExist && (
-				<LoginModal loginOpen={loginOpen} handleCloseLogin={handleCloseLogin} />
+				<LoginModal loginOpen={isLoginModalOpen} handleCloseLogin={closeLoginModal} />
 			)}
 			<Box
 				component="footer"

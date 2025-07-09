@@ -8,7 +8,7 @@ import {
 } from '../domain/lore/LoreInterfaces.js';
 import { convertArrayToString, convertStringToArray } from './chatParseUtils.js';
 import { ChatTurnMetadata, ChatTurn, ChatMessage } from '../domain/chat/ChatInterfaces.js';
-import { buildChatTurnId } from './buildIdUtils.js';
+import { buildChatTurnId, buildProfileId } from './buildIdUtils.js';
 import { DEFAULT_EMOTION } from '../config/emotionWordsMapper.js';
 
 import { Metadata } from '../api/ModuleResponse.js';
@@ -241,6 +241,7 @@ export const chatTurnToMetadata = (chatTurn: ChatTurn): ChatTurnMetadata => {
 		sessionId: chatTurn.sessionId,
 		characterId: chatTurn.characterId,
 		userId: chatTurn.userId,
+		profileId: buildProfileId(chatTurn.sessionId, chatTurn.userId),
 		type: chatTurn.type,
 		createdAt: chatTurn.createdAt,
 		updatedAt: chatTurn.updatedAt,
@@ -290,6 +291,7 @@ export const metadataToChatTurn = (
 		sessionId: metadata.sessionId as string,
 		characterId: metadata.characterId as string,
 		userId: metadata.userId as string,
+		profileId: buildProfileId(metadata.sessionId as string, metadata.userId as string),
 		type: 'turn',
 		createdAt: metadata.createdAt as string,
 		updatedAt: metadata.updatedAt as string,
@@ -424,6 +426,7 @@ export const recapToMetadata = (recapInfo: RecapInfo): RecapMetadata => {
 		sessionId: recapInfo.sessionId,
 		characterId: recapInfo.characterId,
 		userId: recapInfo.userId,
+		profileId: buildProfileId(recapInfo.sessionId, recapInfo.userId),
 		type: recapInfo.type, // 'recap' or 'relationship'
 		createdAt: recapInfo.createdAt,
 		updatedAt: recapInfo.updatedAt,
@@ -492,6 +495,7 @@ export const metadataToRecap = (metadata: RecapMetadata, content: string): Recap
 		sessionId: metadata.sessionId,
 		characterId: metadata.characterId,
 		userId: metadata.userId,
+		profileId: buildProfileId(metadata.sessionId, metadata.userId),
 		type: metadata.type,
 
 		// --- Recap-specific fields ---

@@ -13,7 +13,6 @@ export const APPNAME_LOWERCASE = APPNAME.toLowerCase();
 
 // Default limit for querying chat logs
 export const DEFAULT_QUERY_LIMIT: number = 10 as const;
-export type LangCode = 'kor' | 'eng';
 
 export const MODULE_NAMES = {
 	CHARACTER: 'character',
