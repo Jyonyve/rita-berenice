@@ -59,29 +59,6 @@ router.get(
 );
 
 /**
- * GET /api/session/get-sessions-by-user-id-and-character-id/:userId/:characterId
- * Retrieves all sessions associated with a specific user, sorted by last update time.
- * @param {string} userId - ID of the user whose sessions are to be retrieved.
- * @returns {SessionResponse} An array of matching session objects.
- * @throws {404} If no sessions are found for the user.
- * @throws {500} Internal server error.
- */
-router.get(
-	genRoutePattern('getSessionsByUserIdAndCharacterId', ['userId', 'characterId']),
-	asyncHandler(async (req: Request, res: Response) => {
-		validateRequestData(req.params, 'params', ['userId', 'characterId']);
-		const { userId, characterId } = req.params;
-
-		console.log(
-			`API HIT: GET /api/session/get-sessions-by-user-id-and-character-id/${userId}/${characterId}`
-		);
-
-		const response = await sessionStore.getSessionsByUserIdAndCharacterId(userId, characterId);
-		res.status(200).json(response);
-	})
-);
-
-/**
  * GET /api/session/get-session/:sessionId
  * Retrieves a single session by its ID.
  * @param {string} sessionId - The unique ID of the session.

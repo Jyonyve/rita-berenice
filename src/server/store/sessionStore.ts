@@ -114,35 +114,6 @@ export const sessionStore = {
 		}
 	},
 
-	async getSessionsByUserIdAndCharacterId(
-		userId: string,
-		characterId: string
-	): Promise<SessionResponse> {
-		const collection = await sessionStore._getCollection();
-		const where: Where = {
-			$and: [
-				{ type: { $eq: METADATA_TYPES.SESSION } },
-				{ userId: { $eq: userId } },
-				{ characterId: { $eq: characterId } },
-			],
-		};
-		try {
-			const rawResults = await getRecords(collection, where);
-			const results = validateChromaResponse(rawResults, 'getList', collectionType);
-
-			// Assuming a constructSession method similar to your other stores
-			const sessionRes = sessionStore._constructSession(results);
-			sessionRes.sessionInfos.sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
-			return sessionRes;
-		} catch (error: any) {
-			handleServiceError(
-				error,
-				'An internal error occurred while fetching user sessions.',
-				`Failed to get sessions for user ${userId}`
-			);
-		}
-	},
-
 	getSession: async (sessionId: string): Promise<SessionResponse> => {
 		const collection = await sessionStore._getCollection();
 		try {

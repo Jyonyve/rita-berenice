@@ -1,4 +1,4 @@
-// Add this to shared/domain/session/sessionInterfaces.ts
+// shared/domain/session/sessionInterfaces.ts
 
 import { METADATA_TYPES } from '../../config/constants.js';
 
@@ -18,9 +18,3 @@ export interface SessionMetadata {
 export interface SessionInfo extends SessionMetadata {
 	lastCharMessage: string; // A short preview of the last message
 }
-
-// This type defines the data needed to create a new session.
-export type SessionCdo = Pick<
-	SessionInfo,
-	'userId' | 'profileId' | 'characterId' | 'lastCharMessage'
->;

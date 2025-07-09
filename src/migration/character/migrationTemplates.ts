@@ -1,4 +1,4 @@
-import { buildCharacterId } from '#shared/index.js';
+import { buildCharacterId } from '#server/index.js';
 import { CharacterMetadata, METADATA_TYPES } from '#shared/index.js';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 
