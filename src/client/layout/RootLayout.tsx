@@ -117,6 +117,7 @@ export function RootLayout() {
 					flex: 1,
 					overflowY: 'auto', // This makes the main content area scrollable
 					p: { xs: 1, md: 2 }, // Add some padding around the content
+					backgroundColor: (theme) => theme.palette.background.default,
 				}}
 			>
 				<Outlet />
@@ -127,13 +128,7 @@ export function RootLayout() {
 			)}
 			<Box
 				component="footer"
-				sx={{
-					py: 2,
-					px: 2,
-					mt: 'auto',
-					backgroundColor: (theme) =>
-						theme.palette.mode === 'light' ? theme.palette.grey[200] : theme.palette.grey[800],
-				}}
+				sx={{ py: 2, px: 2, mt: 'auto', backgroundColor: (theme) => theme.palette.background.default }}
 			>
 				<Container maxWidth="sm">
 					<Typography variant="body2" color="text.secondary" align="center">
