@@ -19,12 +19,15 @@ import { SessionPreviewList } from './SessionPreviewList.jsx';
 import { useNavigate } from 'react-router';
 import { routeConstants } from '../../routeConstants.js';
 import { CharacterPortrait } from './CharacterPortrait.jsx';
-import { ProfileCdo, ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { ProfileCdo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { ProfileCard } from './ProfileCard.jsx';
 import { useProfileApi } from '../../hook/api/useProfileApi.js';
 import { useAuthModal } from '../../provider/AuthModalProvider.jsx';
-import { alertConstants, LANG_KEYS } from '#shared/config/langConstants.js';
+import { LANG_KEYS } from '#shared/config/langConstants.js';
 import { getLangAlertText, getLangText } from '#shared/util/languageUtils.js';
+import { GlassPaper } from '../../layout/GlassPaper.jsx';
+import { MetallicButton } from '../../layout/MetallicButton.jsx';
+import { GlassCard } from '../../layout/GlassCard.jsx';
 
 const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 	characterInfo,
@@ -72,7 +75,7 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 			? Object.values(portraitMap)[0]
 			: '';
 	return (
-		<Paper className="paper">
+		<GlassPaper className="paper" sx={{ p: 3 }}>
 			<Grid container spacing={3}>
 				{/* Left Column: Using the correct MUI v7 'size' prop */}
 				<Grid size={{ xs: 12, md: 5 }}>
@@ -91,7 +94,7 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 				<Grid size={{ xs: 12, md: 7 }}>
 					<Box display="flex" flexDirection="column" gap={2}>
 						{/* Title and Description Card */}
-						<Card variant="outlined">
+						<GlassCard variant="outlined">
 							<CardContent>
 								<Typography variant="subtitle1" color="primary" mt={1}>
 									{characterInfo.showName}
@@ -100,12 +103,12 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 									{characterInfo.description}
 								</Typography>
 							</CardContent>
-						</Card>
+						</GlassCard>
 
 						{/* Session List Card */}
-						<Card variant="outlined">
+						<GlassCard variant="outlined">
 							<CardContent>
-								<Typography variant="subtitle1" color='text.secondary' mb={1}>
+								<Typography variant="subtitle1" color="text.secondary" mb={1}>
 									{getLangText('SESSIONS_WITH_CHARACTER')}
 								</Typography>
 								{userId && (
@@ -118,21 +121,21 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 									</List>
 								)}
 							</CardContent>
-						</Card>
+						</GlassCard>
 
 						{/* Profile Card */}
 						{userId && <ProfileCard userId={userId} onSubmit={handleSubmitProfile} />}
 
 						{/* Start New Session Button */}
 						<Box display="flex" justifyContent="flex-end" mt={2}>
-							<Button variant="contained" color="primary" size="large" onClick={handleStartNewSession}>
-								Start New Session
-							</Button>
+							<MetallicButton onClick={handleStartNewSession}>
+								{getLangText(LANG_KEYS.START_NEW_SESSION)}
+							</MetallicButton>
 						</Box>
 					</Box>
 				</Grid>
 			</Grid>
-		</Paper>
+		</GlassPaper>
 	);
 };
 

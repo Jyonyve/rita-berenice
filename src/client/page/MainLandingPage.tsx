@@ -5,6 +5,7 @@ import { Box, Container, Typography, Paper } from '@mui/material';
 import { useNavigate } from 'react-router';
 import { routeConstants } from '../routeConstants.js';
 import { APPNAME } from '#shared/config/constants.js';
+import { GlassPaper } from '../layout/GlassPaper.jsx';
 
 export default function MainLandingPage() {
 	const navigate = useNavigate();
@@ -24,7 +25,7 @@ export default function MainLandingPage() {
 			}}
 		>
 			<Container maxWidth="md">
-				<Paper elevation={4} sx={{ p: { xs: 3, md: 5 }, mb: 4 }}>
+				<GlassPaper elevation={4} sx={{ p: { xs: 3, md: 5 }, mb: 4 }}>
 					<Typography
 						variant="h3"
 						component="h1"
@@ -35,8 +36,8 @@ export default function MainLandingPage() {
 					>
 						{APPNAME}
 					</Typography>
-				</Paper>
-				<Paper elevation={2} sx={{ p: { xs: 2, md: 4 } }}>
+				</GlassPaper>
+				<GlassPaper elevation={2} sx={{ p: { xs: 2, md: 4 } }}>
 					<Typography variant="h5" component="h2" gutterBottom fontWeight="bold">
 						1 Corinthians 15:29-31
 					</Typography>
@@ -47,7 +48,7 @@ export default function MainLandingPage() {
 						And as for us, why do we endanger ourselves every hour? I face death every day—yes, just as
 						surely as I boast about you in Christ Jesus our Lord.”
 					</Typography>
-				</Paper>
+				</GlassPaper>
 			</Container>
 		</Box>
 	);

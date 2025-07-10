@@ -1,13 +1,16 @@
-// src/client/component/page/CharacterPage.tsx
+// src/client/component/page/CharacterListPage.tsx
 
-import { Typography, Box, Container, Stack, CircularProgress, Grid, Paper } from '@mui/material'; // Import CircularProgress
-
+import React from 'react';
+import { Typography, Box, CircularProgress, Grid } from '@mui/material';
 import { useCharacterState } from '../../hook/state/useCharacterState.js';
 import { DEFAULT_IMAGE_NUMBER } from '#shared/config/emotionWordsMapper.js';
 import { CharacterPortrait } from './CharacterPortrait.jsx';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { useNavigate } from 'react-router';
-// Helper Component to manage state for a single character's portrait
+import { GlassPaper } from '../../layout/GlassPaper.jsx';
+import { GlassCard } from '../../layout/GlassCard.jsx'; // Import GlassCard
+
+// Helper Component: CharacterItem now uses GlassCard
 const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterInfo }) => {
 	const { portraitMap, isLoadingPortraits, portraitError } = useCharacterState(
 		characterInfo.characterId
@@ -20,30 +23,27 @@ const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterIn
 	};
 
 	return (
-		<Box
+		<GlassCard
 			sx={{
+				height: '100%', // Make card fill the grid item height
 				display: 'flex',
 				flexDirection: 'column',
-				border: '1px solid #ddd',
-				p: 1,
-				cursor: 'pointer',
-				'&:hover': { borderColor: 'primary.main', boxShadow: 3 },
-				height: '100%', // Make box fill the grid item height
+				p: 1, // Add padding inside the card
 			}}
+			role='button'
 			onClick={handleCharacterPage}
 		>
 			<Box
 				sx={{
-					// This box will act as the container for the image
 					width: '100%',
-					// Use aspect-ratio to maintain a consistent shape for all image containers
-					aspectRatio: '1 / 1.2', // A slightly portrait orientation
-					backgroundColor: 'grey.200',
+					aspectRatio: '1 / 1.2',
+					backgroundColor: 'rgba(0,0,0,0.2)', // Darker background for contrast
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'center',
-					overflow: 'hidden', // Ensures parts of the image outside the box are hidden
-					mb: 1, // Margin bottom for spacing
+					overflow: 'hidden',
+					mb: 1,
+					borderRadius: 1, // Rounded corners for the image container
 				}}
 			>
 				{isLoadingPortraits ? (
@@ -53,8 +53,6 @@ const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterIn
 						Error
 					</Typography>
 				) : defaultImageUrl ? (
-					// The CharacterPortrait component should handle the <img> tag
-					// Make sure its internal <img> has the `object-fit` style
 					<CharacterPortrait imageUrl={defaultImageUrl} />
 				) : (
 					<Typography variant="caption" color="textSecondary">
@@ -62,33 +60,31 @@ const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterIn
 					</Typography>
 				)}
 			</Box>
-			{/* Text content aligned at the bottom */}
 			<Box sx={{ mt: 'auto' }}>
 				<Typography variant="h6" noWrap>
 					{characterInfo.showName}
 				</Typography>
 				<Typography noWrap>{characterInfo.title}</Typography>
 			</Box>
-		</Box>
+		</GlassCard>
 	);
 };
 
+// Main Component: Already uses GlassPaper, no change needed here.
 export const CharacterListPage = ({ characterInfos }: { characterInfos: CharacterInfo[] }) => {
 	if (characterInfos.length === 0) {
-		return <Typography>No characters found.</Typography>; // Handle empty state
+		return <Typography>No characters found.</Typography>;
 	}
 
 	return (
-		// Use Paper as the root element instead of Container
-		<Paper className="paper" sx={{ p: 2, overflowY: 'auto' }}>
+		<GlassPaper className="paper" sx={{ p: 2, overflowY: 'auto' }}>
 			<Grid container spacing={2}>
 				{characterInfos.map((characterInfo) => (
-					// Grid items remain the same, using the correct MUI v7 'size' prop
 					<Grid key={characterInfo.characterId} size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
 						<CharacterItem characterInfo={characterInfo} />
 					</Grid>
 				))}
 			</Grid>
-		</Paper>
+		</GlassPaper>
 	);
 };

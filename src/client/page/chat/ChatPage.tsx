@@ -21,6 +21,7 @@ import { parseEntriesToText, parseTextToEntries } from '#shared/util/chatParseUt
 import { CharacterPortrait } from '../character/CharacterPortrait.jsx';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { useTempChatApi } from '../../hook/api/useTempChatApi.js';
+import { GlassPaper } from '../../layout/GlassPaper.jsx';
 
 export const ChatPage: FC<{
 	characterInfo: CharacterInfo;
@@ -244,7 +245,7 @@ export const ChatPage: FC<{
 
 	// --- RENDER ---
 	return (
-		<Paper className="paper" sx={{ display: 'flex', flexDirection: 'column' }}>
+		<GlassPaper className="paper" sx={{ display: 'flex', flexDirection: 'column' }}>
 			<Grid container spacing={2} sx={{ flex: 1, overflow: 'hidden' }}>
 				{/* Portrait Section */}
 				<Grid size={{ xs: 12, md: 5 }}>
@@ -288,6 +289,6 @@ export const ChatPage: FC<{
 					</Box>
 				</Grid>
 			</Grid>
-		</Paper>
+		</GlassPaper>
 	);
 };

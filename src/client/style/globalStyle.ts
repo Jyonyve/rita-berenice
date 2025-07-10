@@ -6,7 +6,23 @@ export const getTheme = (mode: 'light' | 'dark') =>
 			mode,
 			...(mode === 'light'
 				? { primary: { main: '#1976d2' }, secondary: { main: '#dc004e' } }
-				: { primary: { main: '#90caf9' }, secondary: { main: '#f48fb1' } }),
+				: // : { primary: { main: '#90caf9' }, secondary: { main: '#f48fb1' } }
+					{
+						primary: {
+							main: '#00A9FF', // A vibrant, clear blue
+						},
+						secondary: {
+							main: '#A0E9FF', // A lighter blue for accents
+						},
+						background: {
+							default: '#0A0A0A', // A very dark, near-black
+							paper: 'rgba(10, 10, 10, 0.5)', // A semi-transparent black for surfaces
+						},
+						text: {
+							primary: '#E0E0E0', // A light grey for primary text for readability
+							secondary: '#BDBDBD', // A slightly dimmer grey for secondary text
+						},
+					}),
 		},
 		components: {
 			MuiTextField: { defaultProps: { size: 'small' } },

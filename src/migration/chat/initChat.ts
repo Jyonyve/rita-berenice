@@ -6,14 +6,12 @@ import { ChromaClient, Collection } from 'chromadb';
 import { fileURLToPath } from 'node:url';
 import { ChatMessage, ChatTurn, MigChatMessage } from '#shared/domain/chat/ChatInterfaces.js';
 import {
-	buildChatTurnMetadataPrompt,
 	buildCharacterId,
 	buildChatTurnId,
 	buildMessageId,
-	flatChatTurnToDoc,
 	buildSessionId,
 	buildProfileId,
-} from '#server/util/index.js';
+} from '#shared/util/index.js';
 import {
 	parseChatTurnToMetadata,
 	parseSessionId,
@@ -23,6 +21,7 @@ import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
 import { validEmotions } from '#shared/config/emotionWordsMapper.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
 import { chatStore } from '#server/store/chatStore.js';
+import { buildChatTurnMetadataPrompt } from '#server/util/templateUtils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
