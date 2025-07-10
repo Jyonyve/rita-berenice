@@ -1,10 +1,11 @@
 import { FC } from 'react';
-import { ListItem, ListItemText, Typography, Divider } from '@mui/material';
+import { ListItem, ListItemText, Typography, Divider, CircularProgress, Box } from '@mui/material';
 import { useChatApi } from '../../hook/api/useChatApi.js';
 import { parseEntriesToText, parseSessionId } from '#shared/util/chatParseUtils.js';
 import { ListItemButton } from '@mui/material';
 import { UserInfo } from '#shared/domain/user/UserInterfaces.js';
 import { useSessionApi } from '../../hook/api/useSessionApi.js';
+import { notFoundMessage } from '#shared/util/languageUtils.js';
 
 export const SessionPreviewList: FC<{
 	userId: string;
@@ -20,13 +21,7 @@ export const SessionPreviewList: FC<{
 	if (isLoading) {
 		return (
 			<ListItem>
-				<ListItemText
-					primary={
-						<Typography variant="body2" color="text.secondary">
-							Loading session previews...
-						</Typography>
-					}
-				/>
+				<CircularProgress size={24} />
 			</ListItem>
 		);
 	}
@@ -50,7 +45,7 @@ export const SessionPreviewList: FC<{
 				<ListItemText
 					primary={
 						<Typography variant="body2" color="text.secondary">
-							No sessions found.
+							{notFoundMessage('sessions')}
 						</Typography>
 					}
 				/>
@@ -67,9 +62,46 @@ export const SessionPreviewList: FC<{
 						<ListItem disablePadding key={info.sessionId}>
 							<ListItemButton onClick={() => handleSessionStart(info.sessionId)}>
 								<ListItemText
+									// We disable the default styling to build our own layout
+									disableTypography
 									primary={
-										<>
-											<Typography variant="subtitle1">{info.title}</Typography>
+										<Box>
+											{/* --- ROW 1: Title and Timestamp --- */}
+											<Box
+												sx={{
+													display: 'flex',
+													justifyContent: 'space-between',
+													alignItems: 'center', // Vertically aligns the title and date
+													width: '100%',
+												}}
+											>
+												{/* Title - Aligned to the left */}
+												<Typography
+													variant="subtitle2"
+													sx={{
+														// These styles prevent a long title from pushing the date away
+														overflow: 'hidden',
+														textOverflow: 'ellipsis',
+														whiteSpace: 'nowrap',
+														pr: 2, // Adds space between title and date
+													}}
+												>
+													{info.title}
+												</Typography>
+
+												{/* Timestamp - Aligned to the right */}
+												<Typography
+													variant="body2" // Using body2 for a clean, matching style
+													color="text.secondary"
+													sx={{
+														flexShrink: 0, // Prevents the date from wrapping or shrinking
+													}}
+												>
+													{info.updatedAt}
+												</Typography>
+											</Box>
+
+											{/* --- ROW 2: Message Snippet --- */}
 											<Typography
 												variant="body2"
 												color="text.secondary"
@@ -79,14 +111,13 @@ export const SessionPreviewList: FC<{
 													overflow: 'hidden',
 													textOverflow: 'ellipsis',
 													WebkitBoxOrient: 'vertical',
-													WebkitLineClamp: 2, // The number of lines to show
+													WebkitLineClamp: 2,
 												}}
 											>
 												{info.lastCharMessage}
 											</Typography>
-										</>
+										</Box>
 									}
-									secondary={info.updatedAt}
 								/>
 							</ListItemButton>
 							<Divider component="li" />

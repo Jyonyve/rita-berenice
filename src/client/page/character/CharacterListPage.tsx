@@ -1,6 +1,6 @@
 // src/client/component/page/CharacterPage.tsx
 
-import { Typography, Box, Container, Stack, CircularProgress, Grid } from '@mui/material'; // Import CircularProgress
+import { Typography, Box, Container, Stack, CircularProgress, Grid, Paper } from '@mui/material'; // Import CircularProgress
 
 import { useCharacterState } from '../../hook/state/useCharacterState.js';
 import { DEFAULT_IMAGE_NUMBER } from '#shared/config/emotionWordsMapper.js';
@@ -79,20 +79,16 @@ export const CharacterListPage = ({ characterInfos }: { characterInfos: Characte
 	}
 
 	return (
-		// 3. Use a wider container to fit more items
-		<Container maxWidth="lg">
-			{/* <Typography variant="h4" gutterBottom>
-				Select Character
-			</Typography> */}
-			{/* 4. Replace Stack with a responsive Grid */}
+		// Use Paper as the root element instead of Container
+		<Paper className="paper" sx={{ p: 2, overflowY: 'auto' }}>
 			<Grid container spacing={2}>
 				{characterInfos.map((characterInfo) => (
-					// Define column widths for different screen sizes
+					// Grid items remain the same, using the correct MUI v7 'size' prop
 					<Grid key={characterInfo.characterId} size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
 						<CharacterItem characterInfo={characterInfo} />
 					</Grid>
 				))}
 			</Grid>
-		</Container>
+		</Paper>
 	);
 };

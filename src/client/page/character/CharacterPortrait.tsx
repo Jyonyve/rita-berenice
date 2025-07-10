@@ -22,7 +22,6 @@ export const CharacterPortrait: FC<CharacterPortraitProps> = ({ imageUrl, alt = 
 				objectFit: 'cover', // or 'contain' if you want to avoid cropping
 				borderRadius: 'inherit',
 			},
-			// backgroundColor: '#f5f5f5', // fallback bg
 			display: 'block',
 		}}
 	/>

@@ -10,6 +10,8 @@ import {
 	ListItem,
 	ListItemText,
 	CircularProgress,
+	Paper,
+	Grid,
 } from '@mui/material';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { useCharacterState } from '../../hook/state/useCharacterState.js';
@@ -69,63 +71,68 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 		!isLoadingPortraits && portraitMap && Object.values(portraitMap)[0]
 			? Object.values(portraitMap)[0]
 			: '';
-
 	return (
-		<Box display="flex" flexDirection="row" width="100%" minHeight="80vh" p={4} gap={4}>
-			{/* Left: Portrait */}
-			<Box flex="0 0 240px" display="flex" alignItems="flex-start" justifyContent="center">
-				{isLoadingPortraits ? (
-					<CircularProgress />
-				) : portraitUrl ? (
-					<CharacterPortrait imageUrl={portraitUrl} />
-				) : (
-					<Box width={200} height={200} bgcolor="#eee" borderRadius={3} />
-				)}
-			</Box>
-
-			{/* Right: Info and actions */}
-			<Box flex="1 1 0" display="flex" flexDirection="column" gap={3}>
-				{/* Title and Description */}
-				<Card variant="outlined">
-					<CardContent>
-						<Typography variant="subtitle1" color="text.secondary" mt={1}>
-							{characterInfo.showName}
-						</Typography>
-						<Typography variant="body2" mt={2}>
-							{characterInfo.description}
-						</Typography>
-					</CardContent>
-				</Card>
-
-				{/* Session List */}
-				<Card variant="outlined">
-					<CardContent>
-						<Typography variant="subtitle1" mb={1}>
-							{getLangText(LANG_KEYS.SESSIONS_WITH_CHARACTER)}
-						</Typography>
-						{userId && (
-							<List dense>
-								<SessionPreviewList
-									userId={userId}
-									characterId={characterId}
-									handleSessionStart={handleStartSession}
-								/>
-							</List>
+		<Paper className="paper">
+			<Grid container spacing={3}>
+				{/* Left Column: Using the correct MUI v7 'size' prop */}
+				<Grid size={{ xs: 12, md: 5 }}>
+					<Box display="flex" justifyContent="center">
+						{isLoadingPortraits ? (
+							<CircularProgress />
+						) : portraitUrl ? (
+							<CharacterPortrait imageUrl={portraitUrl} />
+						) : (
+							<Box width={200} height={200} bgcolor="#eee" borderRadius={3} />
 						)}
-					</CardContent>
-				</Card>
+					</Box>
+				</Grid>
 
-				{/* User Character Info */}
-				{userId && <ProfileCard userId={userId} onSubmit={handleSubmitProfile} />}
+				{/* Right Column: Using the correct MUI v7 'size' prop */}
+				<Grid size={{ xs: 12, md: 7 }}>
+					<Box display="flex" flexDirection="column" gap={2}>
+						{/* Title and Description Card */}
+						<Card variant="outlined">
+							<CardContent>
+								<Typography variant="subtitle1" color="primary" mt={1}>
+									{characterInfo.showName}
+								</Typography>
+								<Typography variant="body2" mt={2}>
+									{characterInfo.description}
+								</Typography>
+							</CardContent>
+						</Card>
 
-				{/* Start New Session */}
-				<Box display="flex" justifyContent="flex-end" mt={2}>
-					<Button variant="contained" color="primary" size="large" onClick={handleStartNewSession}>
-						Start New Session
-					</Button>
-				</Box>
-			</Box>
-		</Box>
+						{/* Session List Card */}
+						<Card variant="outlined">
+							<CardContent>
+								<Typography variant="subtitle1" color='text.secondary' mb={1}>
+									{getLangText('SESSIONS_WITH_CHARACTER')}
+								</Typography>
+								{userId && (
+									<List dense>
+										<SessionPreviewList
+											userId={userId}
+											characterId={characterId}
+											handleSessionStart={handleStartSession}
+										/>
+									</List>
+								)}
+							</CardContent>
+						</Card>
+
+						{/* Profile Card */}
+						{userId && <ProfileCard userId={userId} onSubmit={handleSubmitProfile} />}
+
+						{/* Start New Session Button */}
+						<Box display="flex" justifyContent="flex-end" mt={2}>
+							<Button variant="contained" color="primary" size="large" onClick={handleStartNewSession}>
+								Start New Session
+							</Button>
+						</Box>
+					</Box>
+				</Grid>
+			</Grid>
+		</Paper>
 	);
 };
 

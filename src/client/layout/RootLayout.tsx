@@ -71,16 +71,7 @@ export function RootLayout() {
 	};
 
 	return (
-		<Box
-			sx={{
-				display: 'flex',
-				flexDirection: 'column',
-				minHeight: '100vh',
-				width: '100vw',
-				boxSizing: 'border-box',
-				backgroundColor: (theme) => theme.palette.background.default,
-			}}
-		>
+		<Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
 			<CssBaseline />
 			<AppBar position="static" color="primary" elevation={1}>
 				<Toolbar>
@@ -123,13 +114,9 @@ export function RootLayout() {
 			<Box
 				component="main"
 				sx={{
-					flex: 1, // Let this area grow to fill available space
-					display: 'flex',
-					flexDirection: 'column', // Stack content vertically
-					alignItems: 'center', // Center content horizontally
-					justifyContent: 'center', // Center content vertically
-					p: 2, // Add some padding around the content area
-					overflow: 'hidden', // Hide any potential overflow
+					flex: 1,
+					overflowY: 'auto', // This makes the main content area scrollable
+					p: { xs: 1, md: 2 }, // Add some padding around the content
 				}}
 			>
 				<Outlet />

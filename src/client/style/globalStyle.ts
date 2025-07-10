@@ -9,25 +9,37 @@ export const getTheme = (mode: 'light' | 'dark') =>
 				: { primary: { main: '#90caf9' }, secondary: { main: '#f48fb1' } }),
 		},
 		components: {
+			MuiTextField: { defaultProps: { size: 'small' } },
+			MuiFormControl: { defaultProps: { size: 'small' } },
+			// MuiButton: { defaultProps: { size: 'small' } },
 			MuiCssBaseline: {
 				styleOverrides: {
 					"[role='button']": { cursor: 'pointer' },
-					'.container': {
-						width: '100vw',
-						height: '100vh',
-						display: 'flex',
-						alignItems: 'center',
-						justifyContent: 'center',
-						boxSizing: 'border-box',
+
+					// BOX SIZE
+					html: { height: '100%', margin: 0, padding: 0 },
+					body: { height: '100%', margin: 0, padding: 0 },
+					'#root': { height: '100%' },
+					'*, *::before, *::after': { boxSizing: 'border-box' },
+
+					// --- ADD THIS SECTION TO HIDE THE SCROLLBAR ---
+					// Target the main scrollable container in your RootLayout
+					'main::-webkit-scrollbar': {
+						display: 'none', // For Webkit browsers (Chrome, Safari, Edge)
 					},
+					main: {
+						'-ms-overflow-style': 'none', // For Internet Explorer and Edge
+						'scrollbar-width': 'none', // For Firefox
+					},
+
+					// main background
 					'.paper': {
 						width: '100%',
-						flexGrow: 1, // Allow the paper to fill the container's height
-						display: 'flex',
+						maxWidth: '1200px', // ADDED: A standard max-width for all pages.
+						padding: '12px', // ADDED: Consistent padding for all content.
 						flexDirection: 'column',
-						overflow: 'hidden', // Prevents content from spilling out
+						marginInline: 'auto',
 					},
-					// The .messagesBody class is no longer needed.
 				},
 			},
 		},

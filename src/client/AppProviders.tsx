@@ -26,7 +26,7 @@ const ThemedAppContent: FC<{ children: ReactNode }> = ({ children }) => {
 	return (
 		<ThemeProvider theme={theme}>
 			<CssBaseline />
-			<Box className="container">{children}</Box>
+			{children}
 		</ThemeProvider>
 	);
 };

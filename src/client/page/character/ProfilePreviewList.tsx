@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import { useProfileApi } from '../../hook/api/useProfileApi.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { notFoundMessage } from '#shared/util/languageUtils.js';
 
 // The props are updated to handle two separate click events
 export const ProfilePreviewList: FC<{
@@ -34,7 +35,7 @@ export const ProfilePreviewList: FC<{
 				<ListItemText
 					primary={
 						<Typography variant="body2" color="error">
-							Error: {error.message}
+							{error.message}
 						</Typography>
 					}
 				/>
@@ -47,7 +48,7 @@ export const ProfilePreviewList: FC<{
 				<ListItemText
 					primary={
 						<Typography variant="body2" color="text.secondary">
-							No profiles found.
+							{notFoundMessage('profiles')}
 						</Typography>
 					}
 				/>

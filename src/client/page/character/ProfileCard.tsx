@@ -16,10 +16,13 @@ import {
 	TextField,
 	Typography,
 	List,
+	Grid,
 } from '@mui/material';
 import { ProfileCdo, ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { ProfilePreviewList } from './ProfilePreviewList.jsx';
 import { useForm, Controller } from 'react-hook-form';
+import { getLangText } from '#shared/util/languageUtils.js';
+import { LANG_KEYS } from '#shared/config/langConstants.js';
 
 const getInitialFormData = (userId: string): ProfileCdo => ({
 	name: '',
@@ -95,39 +98,58 @@ export const ProfileCard: FC<{ userId: string; onSubmit: (profileData: ProfileCd
 			<Card variant="outlined">
 				<Box component="form" onSubmit={handleSubmit(onFormSubmit)} noValidate>
 					<CardContent>
-						<Typography variant="h5" component="h2" gutterBottom>
-							Create New Profile
-						</Typography>
-
-						<Stack spacing={2}>
-							<Button variant="outlined" onClick={handleOpenModal} fullWidth>
-								Choose from Existing Profile as Template
+						<Box
+							sx={{
+								display: 'flex',
+								justifyContent: 'space-between',
+								alignItems: 'center',
+								width: '100%',
+							}}
+							mb={1}
+						>
+							<Typography variant="subtitle1" color="text.secondary" mb={1}>
+								{getLangText(LANG_KEYS.CREATE_NEW_PROFILE)}
+							</Typography>
+							<Button variant="outlined" onClick={handleOpenModal}>
+								{getLangText(LANG_KEYS.CHOOSE_EXISTING_PROFILE)}
 							</Button>
+						</Box>
 
+						<Stack spacing={1}>
 							<TextField required fullWidth label="Profile Name" {...register('name')} />
 							<TextField required fullWidth label="Display Name (in chat)" {...register('showName')} />
-							<TextField
-								required
-								fullWidth
-								label="Title or Role"
-								placeholder="e.g., Crown Prince, Lead Researcher"
-								{...register('title')}
-							/>
-							<FormControl fullWidth required>
-								<InputLabel id="gender-select-label">Gender</InputLabel>
-								<Controller
-									name="gender"
-									control={control}
-									render={({ field }) => (
-										<Select labelId="gender-select-label" label="Gender" {...field}>
-											<MenuItem value="male">Male</MenuItem>
-											<MenuItem value="female">Female</MenuItem>
-											<MenuItem value="non-binary">Non-binary</MenuItem>
-											<MenuItem value="other">Other</MenuItem>
-										</Select>
-									)}
-								/>
-							</FormControl>
+
+							{/* 2. Replace the Box with a Grid container */}
+							<Grid container spacing={2}>
+								{/* Gender takes 3/12 width on medium screens */}
+								<Grid size={{ xs: 12, md: 3 }}>
+									<FormControl fullWidth required>
+										<InputLabel id="gender-select-label">{getLangText(LANG_KEYS.GENDER)}</InputLabel>
+										<Controller
+											name="gender"
+											control={control}
+											render={({ field }) => (
+												<Select labelId="gender-select-label" label="Gender" {...field}>
+													<MenuItem value="male">{getLangText(LANG_KEYS.MALE)}</MenuItem>
+													<MenuItem value="female">{getLangText(LANG_KEYS.FEMALE)}</MenuItem>
+													<MenuItem value="other">{getLangText(LANG_KEYS.OTHER)}</MenuItem>
+												</Select>
+											)}
+										/>
+									</FormControl>
+								</Grid>
+								{/* Title takes 9/12 width on medium screens */}
+								<Grid size={{ xs: 12, md: 9 }}>
+									<TextField
+										required
+										fullWidth
+										label="Title or Role"
+										placeholder="e.g., Crown Prince, Lead Researcher"
+										{...register('title')}
+									/>
+								</Grid>
+							</Grid>
+
 							<TextField
 								required
 								fullWidth
@@ -139,9 +161,9 @@ export const ProfileCard: FC<{ userId: string; onSubmit: (profileData: ProfileCd
 							/>
 						</Stack>
 					</CardContent>
-					<CardActions sx={{ justifyContent: 'flex-end', p: 2 }}>
+					<CardActions sx={{ justifyContent: 'flex-end', p: 2, pt: 0 }}>
 						<Button type="submit" variant="contained" disabled={isSubmitting}>
-							Create Profile
+							{getLangText(LANG_KEYS.CREATE_PROFILE)}
 						</Button>
 					</CardActions>
 				</Box>

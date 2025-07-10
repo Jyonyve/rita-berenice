@@ -74,3 +74,4 @@ export const getLangAlertText = (key: LangKey, lang: LangCode = DEFAULT_LANG): s
 
 	return record[lang] || record[DEFAULT_LANG];
 };
+export const notFoundMessage = (noWhat: string) => `No ${noWhat} found.`;
