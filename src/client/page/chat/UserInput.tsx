@@ -1,20 +1,14 @@
+// src/client/component/page/chat/UserInput.tsx
+
 import React, { FC, ChangeEventHandler } from 'react';
-import {
-	TextField,
-	Button,
-	CircularProgress,
-	Box,
-	Typography,
-	useTheme, // Import useTheme for spacing
-} from '@mui/material';
-import { AiModelComp } from '../../layout/AiModelComp.jsx'; // Ensure correct path
+import { TextField, Button, CircularProgress, Box } from '@mui/material';
+import { AiModelSelector } from './AiModelSelector.jsx';
 
 interface UserInputProps {
 	sessionId: string;
 	value: string;
 	isProcessing: boolean;
 	isDisabled: boolean;
-	isLoadingCredentials?: boolean;
 	onChange: ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>;
 	onSend: () => void;
 }
@@ -24,66 +18,55 @@ export const UserInput: FC<UserInputProps> = ({
 	value,
 	isProcessing,
 	isDisabled,
-	isLoadingCredentials,
 	onChange,
 	onSend,
 }) => {
-	const theme = useTheme(); // Hook to access theme values
+	// Function to handle Enter key press for sending the message
+	const handleKeyDown = (event: React.KeyboardEvent) => {
+		if (event.key === 'Enter' && !event.shiftKey) {
+			event.preventDefault(); // Prevents adding a new line
+			if (!isDisabled && value.trim()) {
+				onSend();
+			}
+		}
+	};
 
 	return (
-		<>
-			{/* Main container Box */}
-			<Box sx={{ width: '100%', padding: theme.spacing(1) }}>
-				{/* Add padding if needed */}
-				{/* Row 1: Full Width TextField */}
-				<TextField
-					label="Enter your message"
-					variant="outlined"
-					fullWidth // Makes the TextField take the full width of its container [3][4][5]
-					multiline
-					// maxRows={4}
-					value={value}
-					onChange={onChange}
-					disabled={isDisabled}
-					// onKeyDown={handleKeyDown}
-					sx={{
-						mb: 1.5, // Add margin-bottom for space before the next row
-					}}
-				/>
-				{/* Row 2: Container for AiModelComp and Button */}
-				<Box
-					sx={{
-						display: 'flex', // Use Flexbox for horizontal layout
-						justifyContent: 'space-between', // Pushes AiModelComp left, Button right
-						alignItems: 'center', // Vertically align items in the center of the row
-						width: '100%', // Ensure this row also takes full width
-					}}
+		<Box sx={{ p: 1 }}>
+			{/* Row 1: Full-width TextField with fixed height */}
+			<TextField
+				label="Enter your message"
+				variant="outlined"
+				fullWidth
+				multiline
+				rows={3} // Start with a height of 3 rows
+				value={value}
+				onChange={onChange}
+				disabled={isDisabled}
+				onKeyDown={handleKeyDown}
+				sx={{ mb: 1.5 }} // Margin-bottom for spacing
+			/>
+
+			{/* Row 2: Model Selector and Send Button */}
+			<Box
+				sx={{
+					display: 'flex',
+					justifyContent: 'space-between',
+					alignItems: 'center',
+				}}
+			>
+				<AiModelSelector sessionId={sessionId} />
+
+				<Button
+					variant="contained"
+					color="primary"
+					onClick={onSend}
+					disabled={isDisabled || !value.trim()}
+					sx={{ minWidth: '100px' }} // Give the button a consistent width
 				>
-					<Box>
-						{/* Optional Box wrapper if needed for specific styling */}
-						<AiModelComp sessionId={sessionId} />
-					</Box>
-
-					{/* Right Item in Row 2 */}
-					<Box>
-						{/* Optional Box wrapper */}
-						<Button
-							variant="contained"
-							onClick={onSend}
-							disabled={isDisabled || !value.trim()} // Disable if processing or input empty
-						>
-							{isProcessing ? <CircularProgress size={24} color="inherit" /> : 'Send'}
-						</Button>
-					</Box>
-				</Box>
+					{isProcessing ? <CircularProgress size={24} color="inherit" /> : 'Send'}
+				</Button>
 			</Box>
-
-			{/* Optional Loading Indicator (remains below the main input Box) */}
-			{isLoadingCredentials && (
-				<Typography variant="caption" sx={{ display: 'block', textAlign: 'center', mt: 1 }}>
-					Loading credentials...
-				</Typography>
-			)}
-		</>
+		</Box>
 	);
 };

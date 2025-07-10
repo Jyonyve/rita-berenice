@@ -282,7 +282,6 @@ export const ChatPage: FC<{
 							value={userInput}
 							isProcessing={isProcessing}
 							isDisabled={isInputDisabled}
-							isLoadingCredentials={false} // Assuming this is handled elsewhere
 							onChange={handleUserInput}
 							onSend={handleSendMessage}
 						/>
