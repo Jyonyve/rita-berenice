@@ -4,14 +4,13 @@ import React, { FC, ReactNode, useMemo, useState } from 'react';
 import { BrowserRouter } from 'react-router';
 import { SuperTokensWrapper } from 'supertokens-auth-react';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { CssBaseline, GlobalStyles } from '@mui/material';
-import { ThemeProvider } from '@mui/material/styles';
+import { Box, CssBaseline, ThemeProvider } from '@mui/material';
 
 import { ToastProvider } from './provider/ToastProvider.jsx';
 import { ColorModeProvider, useColorMode } from './provider/ColorModeProvider.jsx'; // Using the new standalone provider
 import { AuthModalProvider } from './provider/AuthModalProvider.jsx';
 import { LanguageProvider } from './provider/LanguageProvider.jsx';
-import { getTheme, globalStyle } from './style/globalStyle.js';
+import { getTheme } from './style/globalStyle.js';
 import { initQueryClient } from '#shared/api/queryClient.js';
 import { createEmotionCache } from '#shared/config/createEmotionCache.js';
 import { CacheProvider } from '@emotion/react';
@@ -23,8 +22,7 @@ const ThemedAppContent: FC<{ children: ReactNode }> = ({ children }) => {
 	return (
 		<ThemeProvider theme={theme}>
 			<CssBaseline />
-			<GlobalStyles styles={globalStyle} />
-			{children}
+			<Box className="container">{children}</Box>
 		</ThemeProvider>
 	);
 };

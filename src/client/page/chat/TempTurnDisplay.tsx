@@ -35,7 +35,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 }) => {
 	const [isEditing, setIsEditing] = useState(false); // Local state to control edit mode UI
 
-	const currentSet: ChatMessageSet | undefined = tempTurn.chatTurnSets[currentTempSetNo];
+	const currentSet: ChatMessageSet = tempTurn?.chatTurnSets?.[currentTempSetNo];
 
 	// When we enter edit mode, populate the text fields from the current set
 	const handleStartEdit = () => {
@@ -94,24 +94,29 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 				</>
 			) : (
 				<>
-					{/* Render Request Entries */}
-					{currentSet.request.entries.map((entry, idx) => (
-						<span key={`temp-req-${idx}`} className={styleEntryFont('user', entry.type)}>
-							{entry.prompt}
-						</span>
-					))}
-					{/* Render Response Entries */}
-					{currentSet.response ? (
-						currentSet.response.entries.map((entry, idx) => (
-							<span key={`temp-res-${idx}`} className={styleEntryFont('assistant', entry.type)}>
+					{/* User Request Block */}
+					<Box sx={{ mb: 1 }}>
+						{currentSet.request.entries.map((entry, idx) => (
+							<span key={`temp-req-${idx}`} className={styleEntryFont('user', entry.type)}>
 								{entry.prompt}
 							</span>
-						))
-					) : (
-						<Typography sx={{ fontStyle: 'italic', color: 'gray', ml: '10px' }}>
-							<CircularProgress size={12} sx={{ mr: 1 }} /> Generating response...
-						</Typography>
-					)}
+						))}
+					</Box>
+
+					{/* Bot Response Block */}
+					<Box>
+						{currentSet.response ? (
+							currentSet.response.entries.map((entry, idx) => (
+								<span key={`temp-res-${idx}`} className={styleEntryFont('assistant', entry.type)}>
+									{entry.prompt}
+								</span>
+							))
+						) : (
+							<Typography sx={{ fontStyle: 'italic', color: 'gray', ml: '10px' }}>
+								<CircularProgress size={12} sx={{ mr: 1 }} /> Generating response...
+							</Typography>
+						)}
+					</Box>
 				</>
 			)}
 

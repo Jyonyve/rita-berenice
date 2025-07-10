@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import styles from '#client/asset/style/ChatComp.module.scss';
 import { supportAiModelInfo } from '#shared/config/supportAiModelInfo.js';
-import { ChatRoleType, ChatType } from '#shared/domain/chat/ChatInterfaces.js';
+import { ChatRoleType } from '#shared/domain/chat/ChatInterfaces.js';
 
 export const useErrorDialog = (initialMessage?: string) => {
 	const [open, setOpen] = useState(false);
@@ -74,7 +74,7 @@ export const SelectAiModel = ({ id }: { id?: string }) => {
 	);
 };
 
-export const styleEntryFont = (role: ChatRoleType, type: ChatType): string => {
+export const styleEntryFont = (role: ChatRoleType, type: 'dialogue' | 'action'): string => {
 	if (role === 'user') {
 		return type === 'dialogue' ? styles.userDialogue : styles.userAction;
 	} else {

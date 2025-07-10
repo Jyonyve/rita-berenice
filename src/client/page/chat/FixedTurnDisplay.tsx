@@ -1,3 +1,5 @@
+// src/client/component/page/chat/FixedTurnDisplay.tsx
+
 import React, { FC } from 'react';
 import { Box, IconButton } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
@@ -12,18 +14,26 @@ interface FixedTurnDisplayProps {
 export const FixedTurnDisplay: FC<FixedTurnDisplayProps> = ({ turn, onEdit }) => {
 	return (
 		<Box key={`${turn.sessionId}-${turn.sequence}`} className={commonStyle.turnContainer}>
-			{/* Render Request Entries */}
-			{turn.request.entries.map((entry, idx) => (
-				<span key={`req-${turn.sequence}-${idx}`} className={styleEntryFont('user', entry.type)}>
-					{entry.prompt}
-				</span>
-			))}
-			{/* Render Response Entries */}
-			{turn.response.entries.map((entry, idx) => (
-				<span key={`res-${turn.sequence}-${idx}`} className={styleEntryFont('assistant', entry.type)}>
-					{entry.prompt}
-				</span>
-			))}
+			{/* User Request Block */}
+			<Box sx={{ mb: 1 }}>
+				{/* Added a container for the request */}
+				{turn.request.entries.map((entry, idx) => (
+					<span key={`req-${turn.sequence}-${idx}`} className={styleEntryFont('user', entry.type)}>
+						{entry.prompt}
+					</span>
+				))}
+			</Box>
+
+			{/* Bot Response Block */}
+			<Box sx={{ mb: 1 }}>
+				{/* Added a container for the response */}
+				{turn.response.entries.map((entry, idx) => (
+					<span key={`res-${turn.sequence}-${idx}`} className={styleEntryFont('assistant', entry.type)}>
+						{entry.prompt}
+					</span>
+				))}
+			</Box>
+
 			{/* Buttons for Fixed Turn */}
 			<Box className={commonStyle.buttonGroup}>
 				<IconButton

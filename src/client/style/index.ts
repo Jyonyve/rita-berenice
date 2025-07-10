@@ -1,2 +1,2 @@
-export * from './globalStyle.ts';
-export * from '../provider/ColorModeProvider.tsx';
+export * from './globalStyle.js';
+export * from '../provider/ColorModeProvider.jsx';
