@@ -13,7 +13,7 @@ import { ThemeProvider } from '@mui/material/styles';
 
 import { ColorModeProvider, useColorMode } from '#client/provider/ColorModeProvider.jsx'; // Using the new standalone provider
 
-import { getTheme, globalStyle } from '#client/style/globalStyle.js';
+import { getTheme } from '#client/style/globalStyle.js';
 import { initQueryClient } from '#shared/api/queryClient.js';
 import { createEmotionCache } from '#shared/config/createEmotionCache.js';
 import { AppProviders } from '#client/AppProviders.jsx';
@@ -29,19 +29,6 @@ SuperTokens.init({
 	},
 	recipeList: [EmailPassword.init(), Session.init()],
 });
-
-const ThemedAppContent: FC<{ children: ReactNode }> = ({ children }) => {
-	const { mode } = useColorMode();
-	const theme = useMemo(() => getTheme(mode), [mode]);
-
-	return (
-		<ThemeProvider theme={theme}>
-			<CssBaseline />
-			<GlobalStyles styles={globalStyle} />
-			{children}
-		</ThemeProvider>
-	);
-};
 
 function ClientApp() {
 	const clientSideEmotionCache = createEmotionCache();

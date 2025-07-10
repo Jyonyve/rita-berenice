@@ -20,7 +20,7 @@ import { CharacterPortrait } from './CharacterPortrait.jsx';
 import { ProfileCdo, ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { ProfileCard } from './ProfileCard.jsx';
 import { useProfileApi } from '../../hook/api/useProfileApi.js';
-import { useAuthModal } from '../../provider/AuthModalProvider.tsx';
+import { useAuthModal } from '../../provider/AuthModalProvider.jsx';
 import { alertConstants, LANG_KEYS } from '#shared/config/langConstants.js';
 import { getLangAlertText, getLangText } from '#shared/util/languageUtils.js';
 

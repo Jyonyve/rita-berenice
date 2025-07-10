@@ -7,7 +7,7 @@ import React, { useState, useEffect, useCallback, ChangeEvent, JSX, FC } from 'r
 import { ChatLog } from './ChatLog.jsx';
 import { UserInput } from './UserInput.jsx';
 // MUI Components
-import { Grid, Box, Typography } from '@mui/material';
+import { Grid, Box, Typography, Paper } from '@mui/material';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { useOrchestrationApi } from '../../hook/api/useOrchestrationApi.js';
 import { useCharacterState } from '../../hook/state/useCharacterState.js';
@@ -20,6 +20,7 @@ import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
 import { parseEntriesToText, parseTextToEntries } from '#shared/util/chatParseUtils.js';
 import { CharacterPortrait } from '../character/CharacterPortrait.jsx';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { useTempChatApi } from '../../hook/api/useTempChatApi.js';
 
 export const ChatPage: FC<{
 	characterInfo: CharacterInfo;
@@ -28,7 +29,7 @@ export const ChatPage: FC<{
 	userId: string;
 }> = ({ characterInfo, profileInfo, sessionId, userId }) => {
 	const { receiveBotResponse, finalizeChatTurn } = useOrchestrationApi();
-	const { saveTempChatTurn } = useChatApi();
+	const { saveTempChatTurn } = useTempChatApi();
 	const { portraitMap, getImageNumberForEmotion } = useCharacterState(characterInfo.characterId);
 	const {
 		chatTurns,
@@ -59,6 +60,7 @@ export const ChatPage: FC<{
 		const imageNumber = getImageNumberForEmotion(emotion);
 		const newImageUrl = portraitMap[imageNumber];
 		newImageUrl && setImageUrl(newImageUrl);
+		console.log(newImageUrl);
 	};
 
 	// Scroll Handler
@@ -91,7 +93,12 @@ export const ChatPage: FC<{
 			if (!userInput.trim()) return null;
 			const recentChatTurnString = JSON.stringify(getRecentTurnsForMemory());
 			const newTempSequence = getNextSequence();
-			const tempChatTurnCdo: TempChatTurnCdo = { sessionId, sequence: newTempSequence, userInput };
+			const tempChatTurnCdo: TempChatTurnCdo = {
+				sessionId,
+				sequence: newTempSequence,
+				userInput,
+				userId,
+			};
 
 			return receiveBotResponse.mutateAsync({
 				tempChatTurnCdo,
@@ -151,7 +158,7 @@ export const ChatPage: FC<{
 				tempChatTurn.chatTurnSets[currentTempSetNo].request.entries
 			);
 			const recentChatTurnString = JSON.stringify(getRecentTurnsForMemory());
-			const tempChatTurnCdo: TempChatTurnCdo = { sessionId, sequence, userInput };
+			const tempChatTurnCdo: TempChatTurnCdo = { sessionId, sequence, userInput, userId };
 			const result: TempChatTurn = await receiveBotResponse.mutateAsync({
 				tempChatTurnCdo,
 				characterInfo,
@@ -218,27 +225,35 @@ export const ChatPage: FC<{
 	const isInputDisabled =
 		isProcessing || (!!tempChatTurn && !tempChatTurn.chatTurnSets[0]?.response);
 
+	useEffect(() => {
+		if (tempChatTurn) {
+			const currentEmotion = tempChatTurn.chatTurnSets[currentTempSetNo]?.response?.emotion;
+			handleChatacterImage(currentEmotion || DEFAULT_EMOTION);
+		} else if (chatTurns && chatTurns.length > 0) {
+			const lastTurn = chatTurns.slice(-1);
+
+			if (lastTurn.length > 0 && lastTurn[0].response?.emotion) {
+				handleChatacterImage(lastTurn[0].response.emotion);
+			} else {
+				handleChatacterImage(DEFAULT_EMOTION);
+			}
+		} else {
+			handleChatacterImage(DEFAULT_EMOTION);
+		}
+	}, [tempChatTurn, chatTurns, currentTempSetNo]);
+
 	// --- RENDER ---
 	return (
-		<Grid container spacing={2} sx={{ height: 'calc(100vh - 100px)', p: 2 }}>
-			{/* Portrait Section */}
-			<Grid size={{ xs: 12, md: 3 }}>
-				<CharacterPortrait imageUrl={imageUrl} />
-			</Grid>
+		<Paper className="paper" sx={{ display: 'flex', flexDirection: 'column' }}>
+			<Grid container spacing={2} sx={{ flex: 1, overflow: 'hidden' }}>
+				{/* Portrait Section */}
+				<Grid size={{ xs: 12, md: 5 }}>
+					<CharacterPortrait imageUrl={imageUrl} />
+				</Grid>
 
-			{/* Chat Area Section */}
-			<Grid size={{ xs: 12, md: 9 }} sx={{ height: '100%' }}>
-				<Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-					<Box
-						id="chat-log-container"
-						sx={{
-							flexGrow: 1,
-							overflowY: 'auto',
-							display: 'flex',
-							flexDirection: 'column-reverse',
-							height: 'calc(100% - 60px)',
-						}}
-					>
+				{/* Chat Area Section */}
+				<Grid size={{ xs: 12, md: 7 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+					<Box sx={{ flexGrow: 1, overflow: 'hidden', position: 'relative' }}>
 						<ChatLog
 							chatTurns={chatTurns}
 							tempChatTurn={tempChatTurn}
@@ -256,22 +271,24 @@ export const ChatPage: FC<{
 							changeTempSetNo={setCurrentTempSetNo}
 						/>
 					</Box>
-					{pageError && (
-						<Typography color="error" sx={{ p: 1 }}>
-							{pageError}
-						</Typography>
-					)}
-					<UserInput
-						sessionId={sessionId}
-						value={userInput}
-						isProcessing={isProcessing}
-						isDisabled={isInputDisabled}
-						isLoadingCredentials={false} // Assuming this is handled elsewhere
-						onChange={handleUserInput}
-						onSend={handleSendMessage}
-					/>
-				</Box>
+					<Box sx={{ flexShrink: 0, p: 1 }}>
+						{pageError && (
+							<Typography color="error" sx={{ p: 1 }}>
+								{pageError}
+							</Typography>
+						)}
+						<UserInput
+							sessionId={sessionId}
+							value={userInput}
+							isProcessing={isProcessing}
+							isDisabled={isInputDisabled}
+							isLoadingCredentials={false} // Assuming this is handled elsewhere
+							onChange={handleUserInput}
+							onSend={handleSendMessage}
+						/>
+					</Box>
+				</Grid>
 			</Grid>
-		</Grid>
+		</Paper>
 	);
 };

@@ -3,14 +3,14 @@
 import React, { FC, ReactNode, useMemo, useState } from 'react';
 import { SuperTokensWrapper } from 'supertokens-auth-react';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { CssBaseline, GlobalStyles, ThemeProvider } from '@mui/material';
+import { Box, CssBaseline, GlobalStyles, ThemeProvider } from '@mui/material';
 import { CacheProvider, EmotionCache } from '@emotion/react';
 
 import { ToastProvider } from './provider/ToastProvider.jsx';
 import { ColorModeProvider, useColorMode } from './provider/ColorModeProvider.jsx';
 import { AuthModalProvider } from './provider/AuthModalProvider.jsx';
 import { LanguageProvider } from './provider/LanguageProvider.jsx';
-import { getTheme, globalStyle } from './style/globalStyle.js';
+import { getTheme } from './style/globalStyle.js';
 import { initQueryClient } from '#shared/api/queryClient.js';
 
 // Define the props for our provider component
@@ -27,8 +27,7 @@ const ThemedAppContent: FC<{ children: ReactNode }> = ({ children }) => {
 	return (
 		<ThemeProvider theme={theme}>
 			<CssBaseline />
-			<GlobalStyles styles={globalStyle} />
-			{children}
+			<Box className="container">{children}</Box>
 		</ThemeProvider>
 	);
 };
