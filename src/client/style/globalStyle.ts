@@ -5,22 +5,30 @@ export const getTheme = (mode: 'light' | 'dark') =>
 		palette: {
 			mode,
 			...(mode === 'light'
-				? {
-						primary: { main: '#1976d2' },
-						secondary: { main: '#dc004e' },
-						// background: { default: '#fff', paper: '#fff' }
-					}
-				: {
-						primary: { main: '#90caf9' },
-						secondary: { main: '#f48fb1' },
-						// background: { default: '#121212', paper: '#121212' }
-					}),
+				? { primary: { main: '#1976d2' }, secondary: { main: '#dc004e' } }
+				: { primary: { main: '#90caf9' }, secondary: { main: '#f48fb1' } }),
 		},
-		// Add typography, components, etc. here as needed
+		components: {
+			MuiCssBaseline: {
+				styleOverrides: {
+					"[role='button']": { cursor: 'pointer' },
+					'.container': {
+						width: '100vw',
+						height: '100vh',
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						boxSizing: 'border-box',
+					},
+					'.paper': {
+						width: '100%',
+						flexGrow: 1, // Allow the paper to fill the container's height
+						display: 'flex',
+						flexDirection: 'column',
+						overflow: 'hidden', // Prevents content from spilling out
+					},
+					// The .messagesBody class is no longer needed.
+				},
+			},
+		},
 	});
-
-export const globalStyle = {
-	// Apply a pointer cursor to any element with role="button"
-	"[role='button']": { cursor: 'pointer' },
-	// You can add other global styles here as needed
-};

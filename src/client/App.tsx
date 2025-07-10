@@ -11,7 +11,7 @@ import { getSuperTokensRoutesForReactRouterDom } from 'supertokens-auth-react/ui
 import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpassword/prebuiltui.js';
 import * as reactRouter from 'react-router';
 import { useEffect, useState } from 'react';
-import { useToast } from './provider/ToastProvider.tsx';
+import { useToast } from './provider/ToastProvider.jsx';
 import { setupApiClient } from './util/clientHelpers.js';
 import { NewChatPageLoader } from './page/chat/NewChatPageLoader.jsx';
 import { AppProviders } from './AppProviders.jsx';

@@ -1,4 +1,4 @@
-import React, { FC, useState, useEffect } from 'react';
+import React, { FC, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router';
 import {
 	AppBar,
@@ -12,7 +12,7 @@ import {
 	Modal,
 	Paper,
 } from '@mui/material';
-import { useColorMode } from '../provider/ColorModeProvider.tsx';
+import { useColorMode } from '../provider/ColorModeProvider.jsx';
 import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpassword/prebuiltui.js';
 import LoginIcon from '@mui/icons-material/Login';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -20,7 +20,7 @@ import { AuthPage } from 'supertokens-auth-react/ui/index.js';
 import { signOut, useSessionContext } from 'supertokens-auth-react/recipe/session/index.js';
 import { APPNAME } from '#shared/config/constants.js';
 import { routeConstants } from '../routeConstants.js';
-import { useAuthModal } from '../provider/AuthModalProvider.tsx';
+import { useAuthModal } from '../provider/AuthModalProvider.jsx';
 
 interface LoginModalProps {
 	loginOpen: boolean;
@@ -55,7 +55,6 @@ export function RootLayout() {
 	const navigate = useNavigate();
 	const { isLoginModalOpen, openLoginModal, closeLoginModal } = useAuthModal();
 
-	// Automatically close modal when login succeeds
 	useEffect(() => {
 		if (!session.loading && session.doesSessionExist && isLoginModalOpen) {
 			closeLoginModal();
@@ -72,14 +71,23 @@ export function RootLayout() {
 	};
 
 	return (
-		<Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+		<Box
+			sx={{
+				display: 'flex',
+				flexDirection: 'column',
+				minHeight: '100vh',
+				width: '100vw',
+				boxSizing: 'border-box',
+				backgroundColor: (theme) => theme.palette.background.default,
+			}}
+		>
 			<CssBaseline />
-			<AppBar position="static">
+			<AppBar position="static" color="primary" elevation={1}>
 				<Toolbar>
 					<Typography
 						variant="h6"
 						component="div"
-						sx={{ flexGrow: 1 }}
+						sx={{ flexGrow: 1, cursor: 'pointer' }}
 						onClick={goCharacterPage}
 						role="button"
 					>
@@ -111,10 +119,22 @@ export function RootLayout() {
 					)}
 				</Toolbar>
 			</AppBar>
-			<Container component="main" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
+			{/* Main Content Area */}
+			<Box
+				component="main"
+				sx={{
+					flex: 1, // Let this area grow to fill available space
+					display: 'flex',
+					flexDirection: 'column', // Stack content vertically
+					alignItems: 'center', // Center content horizontally
+					justifyContent: 'center', // Center content vertically
+					p: 2, // Add some padding around the content area
+					overflow: 'hidden', // Hide any potential overflow
+				}}
+			>
 				<Outlet />
-			</Container>
-			{/* Only render the modal if not logged in */}
+			</Box>
+			{/* Login Modal */}
 			{!session.loading && !session.doesSessionExist && (
 				<LoginModal loginOpen={isLoginModalOpen} handleCloseLogin={closeLoginModal} />
 			)}

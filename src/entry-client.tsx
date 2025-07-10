@@ -6,7 +6,7 @@ import ReactDOM from 'react-dom/client';
 import { App } from './client/App.jsx';
 import { routeConstants } from './client/routeConstants.js';
 import { APPNAME } from '#shared/config/constants.js';
-import { AppProviders } from './client/AppProviders.jsx';
+import { AppProviders } from '#client/AppProviders.jsx';
 
 // 1. Initialize SuperTokens BEFORE rendering anything
 SuperTokens.init({

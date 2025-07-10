@@ -117,30 +117,23 @@ export const ChatLog: FC<ChatLogProps> = memo(
 
 		return (
 			<Box
-				// className={styles.logContainer} // Use sx for consistency if other MUI styling is used
 				sx={{
 					flexGrow: 1,
-					overflow: 'hidden', // AutoSizer needs this on its direct parent
-					height: '100%', // Ensure AutoSizer has a bounded height
+					overflow: 'hidden',
+					height: '100%',
 					position: 'relative',
 					display: 'flex',
-					flexDirection: 'column', // To stack loader and list
+					flexDirection: 'column',
 				}}
 			>
-				{/* Loading indicator for older messages, shown at the "top" of the visual list */}
 				{isLoadingChat && (
-					<Box sx={{ textAlign: 'center', py: 1, width: '100%' }}>
+					<Box sx={{ textAlign: 'center', py: 1 }}>
 						<CircularProgress size={24} /> Loading older...
 					</Box>
 				)}
 
-				<Box
-					sx={{
-						flexGrow: 1,
-						width: '100%',
-						height: 'calc(100% - 40px)' /* Adjust if loader is present */,
-					}}
-				>
+				{/* This container now correctly uses flex-grow to fill remaining space */}
+				<Box sx={{ flex: 1, width: '100%', height: '100%' }}>
 					<AutoSizer>
 						{({ height, width }) => (
 							<List<ChatLogRowData>
@@ -159,7 +152,6 @@ export const ChatLog: FC<ChatLogProps> = memo(
 					</AutoSizer>
 				</Box>
 
-				{/* Error display, potentially with a retry button */}
 				{clientError && (
 					<Typography color="error" sx={{ p: 1, textAlign: 'center' }}>
 						{clientError}{' '}
@@ -168,7 +160,6 @@ export const ChatLog: FC<ChatLogProps> = memo(
 						</Button>
 					</Typography>
 				)}
-				{/* pageError and credentialError are likely better handled directly in ChatPage */}
 			</Box>
 		);
 	}
