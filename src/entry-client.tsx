@@ -9,6 +9,7 @@ import { APPNAME } from '#shared/config/constants.js';
 import { BrowserRouter } from 'react-router';
 import { createEmotionCache } from '#shared/config/createEmotionCache.js';
 import { AppProviders } from '#client/AppProviders.jsx';
+import '#client/style/index.css';
 
 // 1. Initialize SuperTokens BEFORE rendering anything
 SuperTokens.init({

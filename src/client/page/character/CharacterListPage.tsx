@@ -59,10 +59,12 @@ const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterIn
 				)}
 			</Box>
 			<Box sx={{ mt: 'auto' }}>
-				<Typography variant="h6" noWrap>
+				<Typography variant="subtitle1" noWrap color="primary">
 					{characterInfo.showName}
 				</Typography>
-				<Typography noWrap>{characterInfo.title}</Typography>
+				<Typography variant="body2" noWrap>
+					{characterInfo.title}
+				</Typography>
 			</Box>
 		</GlassCard>
 	);

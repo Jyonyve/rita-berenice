@@ -30,6 +30,7 @@ import {
 	GlassPaper,
 	GlassPortrait,
 } from '../../layout/glass/index.js';
+import { SolidMetallicButton } from '../../layout/SolidMetallicButton.jsx';
 
 const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 	characterInfo,
@@ -130,9 +131,9 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 
 						{/* Start New Session Button */}
 						<Box display="flex" justifyContent="flex-end" mt={2}>
-							<GlassMetallicButton colorVariant="gold" size="large" onClick={handleStartNewSession}>
+							<SolidMetallicButton colorVariant="gold" size="large" onClick={handleStartNewSession}>
 								{getLangText(LANG_KEYS.START_NEW_SESSION)}
-							</GlassMetallicButton>
+							</SolidMetallicButton>
 						</Box>
 					</Box>
 				</Grid>

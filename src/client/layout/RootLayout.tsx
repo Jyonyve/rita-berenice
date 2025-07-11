@@ -13,17 +13,16 @@ import {
 } from '@mui/material';
 import { useColorMode } from '../provider/ColorModeProvider.jsx';
 import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpassword/prebuiltui.js';
-import LoginIcon from '@mui/icons-material/Login';
-import LogoutIcon from '@mui/icons-material/Logout';
+import AccountCircle from '@mui/icons-material/AccountCircle'; // Import the new icon
 import { AuthPage } from 'supertokens-auth-react/ui/index.js';
 import { signOut, useSessionContext } from 'supertokens-auth-react/recipe/session/index.js';
 import { APPNAME } from '#shared/config/constants.js';
-import { routeConstants } from '../routeConstants.js';
 import { useAuthModal } from '../provider/AuthModalProvider.jsx';
-import { GlassPaper } from './glass/GlassPaper.tsx';
-import { GlassAppBar } from './glass/GlassAppBar.tsx';
-import { GlassFooter } from './glass/GlassFooter.tsx';
-import { GlassBox } from './glass/GlassBox.tsx';
+import { GlassPaper, GlassAppBar, GlassFooter, GlassMetallicButton } from './glass/index.js';
+import { RomanticTitle } from './RomanticTitle.jsx';
+import { SolidMetallicButton } from './SolidMetallicButton.jsx';
+import { gold } from '../style/colors.js';
+import { GlassMetallicIconButton } from './glass/GlassMetallicIconButton.jsx';
 
 interface LoginModalProps {
 	loginOpen: boolean;
@@ -66,12 +65,12 @@ export function RootLayout() {
 	}, [session, isLoginModalOpen, closeLoginModal, mode]);
 
 	const goCharacterPage = () => {
-		navigate(`/${routeConstants.CHARACTER}`);
+		navigate('/');
 	};
 
 	const onLogout = async () => {
 		await signOut();
-		window.location.href = '/';
+		navigate('/');
 	};
 
 	return (
@@ -79,7 +78,7 @@ export function RootLayout() {
 			sx={{
 				display: 'flex',
 				flexDirection: 'column',
-				minHeight: '100vh',
+				height: '100vh',
 				backgroundColor: (theme) => theme.palette.background.default,
 				// backgroundImage: `url('/path/to/your/image.png')`,
 				// backgroundSize: 'cover',
@@ -87,42 +86,50 @@ export function RootLayout() {
 			}}
 		>
 			<CssBaseline />
+
 			<GlassAppBar position="sticky">
-				<Toolbar>
-					<Typography
+				<Toolbar sx={{ justifyContent: 'space-between' }}>
+					{/* Left side of the AppBar */}
+					<RomanticTitle
+						logo
 						variant="h6"
 						component="div"
-						sx={{ flexGrow: 1, cursor: 'pointer' }}
 						onClick={goCharacterPage}
 						role="button"
+						sx={{ cursor: 'pointer' }} // The cursor is now on the sx prop
 					>
 						{APPNAME}
-					</Typography>
-					<Switch
-						checked={mode === 'dark'}
-						onChange={toggleMode}
-						color="default"
-						size="small"
-						aria-label="toggle theme"
-					/>
-					{!session.loading && (
-						<>
-							{session.doesSessionExist ? (
-								<>
-									<Typography variant="body2" sx={{ mx: 2 }}>
-										User: {session.userId}
-									</Typography>
-									<IconButton color="inherit" onClick={onLogout} aria-label="logout">
-										<LogoutIcon />
-									</IconButton>
-								</>
-							) : (
-								<IconButton color="inherit" onClick={openLoginModal} aria-label="login">
-									<LoginIcon />
-								</IconButton>
-							)}
-						</>
-					)}
+					</RomanticTitle>
+
+					{/* Right side of the AppBar, grouped in a Box */}
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+						<Switch
+							checked={mode === 'dark'}
+							onChange={toggleMode}
+							color="default"
+							size="small"
+							aria-label="toggle theme"
+						/>
+
+						{!session.loading && (
+							<IconButton
+								onClick={session.doesSessionExist ? onLogout : openLoginModal}
+								aria-label={session.doesSessionExist ? 'logout' : 'login'}
+							>
+								<AccountCircle
+									sx={{
+										// 1. Icon color is dynamic
+										color: session.doesSessionExist ? gold.main : 'grey.500',
+										transition: 'all 0.5s ease-in-out',
+										'&:hover': {
+											color: gold.main, // Always turns gold on hover
+											filter: `drop-shadow(0 0 8px ${gold.light})`,
+										},
+									}}
+								/>
+							</IconButton>
+						)}
+					</Box>
 				</Toolbar>
 			</GlassAppBar>
 			{/* Main Content Area */}

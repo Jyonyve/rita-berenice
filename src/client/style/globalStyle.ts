@@ -1,6 +1,7 @@
 // src/styles/theme.ts
 
 import { createTheme } from '@mui/material/styles';
+import { typography } from './typography.js';
 
 // --- PALETTES ---
 
@@ -37,6 +38,9 @@ const lightPalette = {
 export const getTheme = (mode: 'light' | 'dark') =>
 	createTheme({
 		palette: { mode, ...(mode === 'dark' ? darkPalette : lightPalette) },
+		// --- THE NEW TYPOGRAPHY SECTION ---
+		typography: typography,
+
 		components: {
 			MuiTextField: { defaultProps: { size: 'small' } },
 			MuiFormControl: { defaultProps: { size: 'small' } },
