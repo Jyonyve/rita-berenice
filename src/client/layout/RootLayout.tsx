@@ -10,7 +10,6 @@ import {
 	Switch,
 	IconButton,
 	Modal,
-	Paper,
 } from '@mui/material';
 import { useColorMode } from '../provider/ColorModeProvider.jsx';
 import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpassword/prebuiltui.js';
@@ -21,34 +20,39 @@ import { signOut, useSessionContext } from 'supertokens-auth-react/recipe/sessio
 import { APPNAME } from '#shared/config/constants.js';
 import { routeConstants } from '../routeConstants.js';
 import { useAuthModal } from '../provider/AuthModalProvider.jsx';
+import { GlassPaper } from './GlassPaper.jsx';
+import { GlassAppBar } from './GlassAppBar.jsx';
+import { GlassFooter } from './GlassFooter.jsx';
+import { GlassBox } from './GlassBox.jsx';
 
 interface LoginModalProps {
 	loginOpen: boolean;
 	handleCloseLogin: () => void;
 }
-
 const LoginModal: FC<LoginModalProps> = ({ loginOpen, handleCloseLogin }) => (
-	<Modal open={loginOpen} onClose={handleCloseLogin} aria-labelledby="login-modal-title">
-		<Box
+	<Modal
+		open={loginOpen}
+		onClose={handleCloseLogin} // This still handles the 'Escape' key for accessibility
+		disableScrollLock={true} // FIX #1: Allows the background page to be scrolled
+		aria-labelledby="login-modal-title"
+	>
+		<GlassPaper
+			onClick={handleCloseLogin} // FIX #2: Makes the entire glass surface a close button
 			sx={{
-				position: 'absolute',
-				top: '50%',
-				left: '50%',
-				transform: 'translate(-50%, -50%)',
-				minWidth: 320,
-				bgcolor: 'background.paper',
-				boxShadow: 24,
-				borderRadius: 2,
-				p: 2,
+				height: '100vh',
+				width: '100vw',
+				display: 'flex',
+				alignItems: 'center',
+				justifyContent: 'center',
+				borderRadius: 0,
 			}}
 		>
-			<Paper sx={{ p: 2 }}>
+			<Box onClick={(e) => e.stopPropagation()}>
 				<AuthPage preBuiltUIList={[EmailPasswordPreBuiltUI]} />
-			</Paper>
-		</Box>
+			</Box>
+		</GlassPaper>
 	</Modal>
 );
-
 export function RootLayout() {
 	const { mode, toggleMode } = useColorMode();
 	const session = useSessionContext();
@@ -71,9 +75,19 @@ export function RootLayout() {
 	};
 
 	return (
-		<Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+		<Box
+			sx={{
+				display: 'flex',
+				flexDirection: 'column',
+				minHeight: '100vh',
+				backgroundColor: (theme) => theme.palette.background.default,
+				// backgroundImage: `url('/path/to/your/image.png')`,
+				// backgroundSize: 'cover',
+				// backgroundAttachment: 'fixed',
+			}}
+		>
 			<CssBaseline />
-			<AppBar position="static" color="primary" elevation={1}>
+			<GlassAppBar position="sticky">
 				<Toolbar>
 					<Typography
 						variant="h6"
@@ -88,6 +102,7 @@ export function RootLayout() {
 						checked={mode === 'dark'}
 						onChange={toggleMode}
 						color="default"
+						size="small"
 						aria-label="toggle theme"
 					/>
 					{!session.loading && (
@@ -109,27 +124,16 @@ export function RootLayout() {
 						</>
 					)}
 				</Toolbar>
-			</AppBar>
+			</GlassAppBar>
 			{/* Main Content Area */}
-			<Box
-				component="main"
-				sx={{
-					flex: 1,
-					overflowY: 'auto', // This makes the main content area scrollable
-					p: { xs: 1, md: 2 }, // Add some padding around the content
-					backgroundColor: (theme) => theme.palette.background.default,
-				}}
-			>
+			<Box component="main" sx={{ flex: 1, overflowY: 'auto', p: { xs: 1, md: 2 } }}>
 				<Outlet />
 			</Box>
 			{/* Login Modal */}
 			{!session.loading && !session.doesSessionExist && (
 				<LoginModal loginOpen={isLoginModalOpen} handleCloseLogin={closeLoginModal} />
 			)}
-			<Box
-				component="footer"
-				sx={{ py: 2, px: 2, mt: 'auto', backgroundColor: (theme) => theme.palette.background.default }}
-			>
+			<GlassFooter sx={{ position: 'sticky', bottom: 0, zIndex: (theme) => theme.zIndex.appBar }}>
 				<Container maxWidth="sm">
 					<Typography variant="body2" color="text.secondary" align="center">
 						{`Copyright © ${APPNAME} `}
@@ -137,7 +141,7 @@ export function RootLayout() {
 						{'.'}
 					</Typography>
 				</Container>
-			</Box>
+			</GlassFooter>
 		</Box>
 	);
 }

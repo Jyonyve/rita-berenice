@@ -1,10 +1,10 @@
 // src/components/ui/GlassCard.tsx
 
 import { Box, styled } from '@mui/material';
-import { glassEffect } from '../style/glassEffect.ts'; // Adjust path based on your structure
+import { getGlassEffect } from '../style/glassEffect.js'; // Adjust path based on your structure
 
 export const GlassBox = styled(Box)(({ theme }) => ({
-	...glassEffect,
+	...getGlassEffect(theme.palette.mode),
 
 	// Ensure the box's own background color is fully transparent
 	backgroundColor: 'transparent',

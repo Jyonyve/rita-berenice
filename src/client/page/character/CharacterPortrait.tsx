@@ -10,7 +10,7 @@ export const CharacterPortrait: FC<CharacterPortraitProps> = ({ imageUrl, alt = 
 	<Avatar
 		src={imageUrl}
 		alt={alt}
-		variant="rounded"
+		// variant="rounded"
 		sx={{
 			width: '100%',
 			height: 'auto',

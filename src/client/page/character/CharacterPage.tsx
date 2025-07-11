@@ -26,8 +26,9 @@ import { useAuthModal } from '../../provider/AuthModalProvider.jsx';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
 import { getLangAlertText, getLangText } from '#shared/util/languageUtils.js';
 import { GlassPaper } from '../../layout/GlassPaper.jsx';
-import { MetallicButton } from '../../layout/MetallicButton.jsx';
 import { GlassCard } from '../../layout/GlassCard.jsx';
+import { MetallicGlassButton } from '../../layout/MetallicGlassButton.jsx';
+import { GlassButton } from '../../layout/GlassButton.jsx';
 
 const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 	characterInfo,
@@ -128,9 +129,9 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 
 						{/* Start New Session Button */}
 						<Box display="flex" justifyContent="flex-end" mt={2}>
-							<MetallicButton onClick={handleStartNewSession}>
+							<MetallicGlassButton colorVariant="gold" size="large" onClick={handleStartNewSession}>
 								{getLangText(LANG_KEYS.START_NEW_SESSION)}
-							</MetallicButton>
+							</MetallicGlassButton>
 						</Box>
 					</Box>
 				</Grid>

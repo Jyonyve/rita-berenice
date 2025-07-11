@@ -22,12 +22,12 @@ export const GlassPaper = styled(Paper)(({ theme }) => ({
     inset -1px -1px 1px rgba(0, 0, 0, 0.2)      /* Bottom-right shadow */
   `,
 
-	// --- Optional: Enhance on Hover ---
-	'&:hover': {
-		background: 'rgba(255, 255, 255, 0.1)', // Slightly lighten the background
-		boxShadow: `
-      inset 1px 1px 2px rgba(255, 255, 255, 0.2), /* Stronger highlight */
-      inset -1px -1px 2px rgba(0, 0, 0, 0.3)      /* Deeper shadow */
-    `,
-	},
+	// // --- Optional: Enhance on Hover ---
+	// '&:hover': {
+	// 	background: 'rgba(255, 255, 255, 0.1)', // Slightly lighten the background
+	// 	boxShadow: `
+    //   inset 1px 1px 2px rgba(255, 255, 255, 0.2), /* Stronger highlight */
+    //   inset -1px -1px 2px rgba(0, 0, 0, 0.3)      /* Deeper shadow */
+    // `,
+	// },
 }));
