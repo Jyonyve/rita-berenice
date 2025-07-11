@@ -26,7 +26,7 @@ export const RomanticTitle = (props: RomanticTitleProps) => {
 				// --- Base Styles ---
 				fontFamily: logo ? logoFontFamily : titleFontFamily,
 				whiteSpace: 'nowrap', // Default style to prevent line breaks
-				transition: 'all 0.3s ease-in-out',
+				transition: 'all 0.5s ease-in-out',
 				// --- Hover Effect ---
 				'&:hover': {
 					// The text shadow now uses the dynamic glowColor
