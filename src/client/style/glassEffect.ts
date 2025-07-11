@@ -20,15 +20,15 @@ export const glassEffect = {
   `,
 	transition: 'all 0.3s ease-in-out',
 
-	// --- Hover State (Final Tuned Version) ---
+	// --- Hover State (Subtly Dimmed) ---
 	'&:hover': {
-		// A background that is a perfect midpoint in brightness.
-		background: 'rgba(42, 47, 60, 0.58)',
+		// A slightly darker background color than the previous version.
+		background: 'rgba(40, 45, 55, 0.56)',
 
-		// Shadows are enhanced for a crisp, clear effect without being too bright.
+		// The shadows are subtly softened for a less bright effect.
 		boxShadow: `
-      inset 1px 1px 2px rgba(255, 255, 255, 0.18), /* Balanced highlight */
-      inset -1px -1px 2px rgba(0, 0, 0, 0.38)      /* Balanced deeper shadow */
+      inset 1px 1px 2px rgba(255, 255, 255, 0.16), /* A softer highlight */
+      inset -1px -1px 2px rgba(0, 0, 0, 0.36)      /* A slightly less deep shadow */
     `,
 	},
 };

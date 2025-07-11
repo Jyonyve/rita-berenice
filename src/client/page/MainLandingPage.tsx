@@ -5,7 +5,7 @@ import { Box, Container, Typography, Paper } from '@mui/material';
 import { useNavigate } from 'react-router';
 import { routeConstants } from '../routeConstants.js';
 import { APPNAME } from '#shared/config/constants.js';
-import { GlassPaper } from '../layout/GlassPaper.jsx';
+import { GlassPaper } from '../layout/glass/GlassPaper.tsx';
 
 export default function MainLandingPage() {
 	const navigate = useNavigate();

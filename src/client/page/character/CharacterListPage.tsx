@@ -4,11 +4,9 @@ import React from 'react';
 import { Typography, Box, CircularProgress, Grid } from '@mui/material';
 import { useCharacterState } from '../../hook/state/useCharacterState.js';
 import { DEFAULT_IMAGE_NUMBER } from '#shared/config/emotionWordsMapper.js';
-import { CharacterPortrait } from './CharacterPortrait.jsx';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { useNavigate } from 'react-router';
-import { GlassPaper } from '../../layout/GlassPaper.jsx';
-import { GlassCard } from '../../layout/GlassCard.jsx'; // Import GlassCard
+import { GlassCard, GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
 
 // Helper Component: CharacterItem now uses GlassCard
 const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterInfo }) => {
@@ -30,7 +28,7 @@ const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterIn
 				flexDirection: 'column',
 				p: 1, // Add padding inside the card
 			}}
-			role='button'
+			role="button"
 			onClick={handleCharacterPage}
 		>
 			<Box
@@ -53,7 +51,7 @@ const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterIn
 						Error
 					</Typography>
 				) : defaultImageUrl ? (
-					<CharacterPortrait imageUrl={defaultImageUrl} />
+					<GlassPortrait imageUrl={defaultImageUrl} />
 				) : (
 					<Typography variant="caption" color="textSecondary">
 						No Image

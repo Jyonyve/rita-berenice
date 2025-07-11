@@ -18,17 +18,18 @@ import { useCharacterState } from '../../hook/state/useCharacterState.js';
 import { SessionPreviewList } from './SessionPreviewList.jsx';
 import { useNavigate } from 'react-router';
 import { routeConstants } from '../../routeConstants.js';
-import { CharacterPortrait } from './CharacterPortrait.jsx';
 import { ProfileCdo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { ProfileCard } from './ProfileCard.jsx';
 import { useProfileApi } from '../../hook/api/useProfileApi.js';
 import { useAuthModal } from '../../provider/AuthModalProvider.jsx';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
 import { getLangAlertText, getLangText } from '#shared/util/languageUtils.js';
-import { GlassPaper } from '../../layout/GlassPaper.jsx';
-import { GlassCard } from '../../layout/GlassCard.jsx';
-import { MetallicGlassButton } from '../../layout/MetallicGlassButton.jsx';
-import { GlassButton } from '../../layout/GlassButton.jsx';
+import {
+	GlassCard,
+	GlassMetallicButton,
+	GlassPaper,
+	GlassPortrait,
+} from '../../layout/glass/index.js';
 
 const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 	characterInfo,
@@ -84,7 +85,7 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 						{isLoadingPortraits ? (
 							<CircularProgress />
 						) : portraitUrl ? (
-							<CharacterPortrait imageUrl={portraitUrl} />
+							<GlassPortrait imageUrl={portraitUrl} />
 						) : (
 							<Box width={200} height={200} bgcolor="#eee" borderRadius={3} />
 						)}
@@ -129,9 +130,9 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 
 						{/* Start New Session Button */}
 						<Box display="flex" justifyContent="flex-end" mt={2}>
-							<MetallicGlassButton colorVariant="gold" size="large" onClick={handleStartNewSession}>
+							<GlassMetallicButton colorVariant="gold" size="large" onClick={handleStartNewSession}>
 								{getLangText(LANG_KEYS.START_NEW_SESSION)}
-							</MetallicGlassButton>
+							</GlassMetallicButton>
 						</Box>
 					</Box>
 				</Grid>

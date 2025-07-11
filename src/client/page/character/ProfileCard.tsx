@@ -23,6 +23,7 @@ import { ProfilePreviewList } from './ProfilePreviewList.jsx';
 import { useForm, Controller } from 'react-hook-form';
 import { getLangText } from '#shared/util/languageUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
+import { GlassButton, GlassCard, GlassMetallicButton } from '../../layout/glass/index.js';
 
 const getInitialFormData = (userId: string): ProfileCdo => ({
 	name: '',
@@ -95,7 +96,7 @@ export const ProfileCard: FC<{ userId: string; onSubmit: (profileData: ProfileCd
 
 	return (
 		<>
-			<Card variant="outlined">
+			<GlassCard variant="outlined">
 				<Box component="form" onSubmit={handleSubmit(onFormSubmit)} noValidate>
 					<CardContent>
 						<Box
@@ -110,9 +111,9 @@ export const ProfileCard: FC<{ userId: string; onSubmit: (profileData: ProfileCd
 							<Typography variant="subtitle1" color="text.secondary" mb={1}>
 								{getLangText(LANG_KEYS.CREATE_NEW_PROFILE)}
 							</Typography>
-							<Button variant="outlined" onClick={handleOpenModal}>
+							<GlassButton colorVariant="silver" variant="outlined" onClick={handleOpenModal}>
 								{getLangText(LANG_KEYS.CHOOSE_EXISTING_PROFILE)}
-							</Button>
+							</GlassButton>
 						</Box>
 
 						<Stack spacing={1}>
@@ -162,12 +163,17 @@ export const ProfileCard: FC<{ userId: string; onSubmit: (profileData: ProfileCd
 						</Stack>
 					</CardContent>
 					<CardActions sx={{ justifyContent: 'flex-end', p: 2, pt: 0 }}>
-						<Button type="submit" variant="contained" disabled={isSubmitting}>
+						<GlassButton
+							colorVariant="primary"
+							type="submit"
+							variant="outlined"
+							disabled={isSubmitting}
+						>
 							{getLangText(LANG_KEYS.CREATE_PROFILE)}
-						</Button>
+						</GlassButton>
 					</CardActions>
 				</Box>
-			</Card>
+			</GlassCard>
 
 			<Modal open={isModalOpen} onClose={handleCloseModal}>
 				<Box sx={modalStyle}>

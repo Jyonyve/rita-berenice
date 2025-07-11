@@ -18,10 +18,10 @@ import { DEFAULT_LOADING_BATCH_TURN_COUNT } from '#shared/config/constants.js';
 import { ChatTurnCdo, TempChatTurn, TempChatTurnCdo } from '#shared/domain/chat/ChatInterfaces.js';
 import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
 import { parseEntriesToText, parseTextToEntries } from '#shared/util/chatParseUtils.js';
-import { CharacterPortrait } from '../character/CharacterPortrait.jsx';
+
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { useTempChatApi } from '../../hook/api/useTempChatApi.js';
-import { GlassPaper } from '../../layout/GlassPaper.jsx';
+import { GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
 
 export const ChatPage: FC<{
 	characterInfo: CharacterInfo;
@@ -249,7 +249,7 @@ export const ChatPage: FC<{
 			<Grid container spacing={2} sx={{ flex: 1, overflow: 'hidden' }}>
 				{/* Portrait Section */}
 				<Grid size={{ xs: 12, md: 5 }}>
-					<CharacterPortrait imageUrl={imageUrl} />
+					<GlassPortrait imageUrl={imageUrl} />
 				</Grid>
 
 				{/* Chat Area Section */}

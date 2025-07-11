@@ -1,18 +1,18 @@
 // src/components/ui/MetallicGlassButton.tsx
 
 import { Button, Palette, styled } from '@mui/material';
-import { getGlassEffect, glassEffect, glassEffectLight } from '../style/glassEffect.js';
-import { ColorVariant, getColor, gold, silver } from '../style/colors.js';
+import { getGlassEffect, glassEffect, glassEffectLight } from '../../style/glassEffect.ts';
+import { ColorVariant, getColor, gold, silver } from '../../style/colors.ts';
 
 // The props interface now uses the unified 'ColorVariant' type
-interface MetallicGlassButtonProps {
+interface GlassMetallicButtonProps {
 	colorVariant?: ColorVariant;
 }
 
-export const MetallicGlassButton = styled(Button, {
+export const GlassMetallicButton = styled(Button, {
 	shouldForwardProp: (prop) => prop !== 'colorVariant',
 	// Set a default colorVariant, so the button is visually appealing by default
-})<MetallicGlassButtonProps>(({ theme, colorVariant = 'primary' }) => {
+})<GlassMetallicButtonProps>(({ theme, colorVariant = 'primary' }) => {
 	const baseGlassStyle = getGlassEffect(theme.palette.mode);
 	// Determine the color set for the metallic effects
 	let metallicColors;

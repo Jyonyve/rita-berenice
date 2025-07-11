@@ -1,7 +1,7 @@
 // src/components/ui/GlassFooter.tsx
 
 import { Box, styled } from '@mui/material';
-import { getGlassEffect } from '../style/glassEffect.js';
+import { getGlassEffect } from '../../style/glassEffect.ts';
 
 /**
  * A glassmorphism-styled Footer component based on MUI's Box.

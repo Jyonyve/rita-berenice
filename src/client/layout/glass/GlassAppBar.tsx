@@ -1,7 +1,7 @@
 // src/components/ui/GlassAppBar.tsx
 
 import { AppBar, styled } from '@mui/material';
-import { getGlassEffect } from '../style/glassEffect.ts'; // Adjust path based on your structure
+import { getGlassEffect } from '../../style/glassEffect.js'; // Adjust path based on your structure
 
 export const GlassAppBar = styled(AppBar)(({ theme }) => ({
 	...getGlassEffect(theme.palette.mode),

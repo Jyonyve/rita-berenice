@@ -20,10 +20,10 @@ import { signOut, useSessionContext } from 'supertokens-auth-react/recipe/sessio
 import { APPNAME } from '#shared/config/constants.js';
 import { routeConstants } from '../routeConstants.js';
 import { useAuthModal } from '../provider/AuthModalProvider.jsx';
-import { GlassPaper } from './GlassPaper.jsx';
-import { GlassAppBar } from './GlassAppBar.jsx';
-import { GlassFooter } from './GlassFooter.jsx';
-import { GlassBox } from './GlassBox.jsx';
+import { GlassPaper } from './glass/GlassPaper.tsx';
+import { GlassAppBar } from './glass/GlassAppBar.tsx';
+import { GlassFooter } from './glass/GlassFooter.tsx';
+import { GlassBox } from './glass/GlassBox.tsx';
 
 interface LoginModalProps {
 	loginOpen: boolean;
