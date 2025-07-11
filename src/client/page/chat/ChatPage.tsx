@@ -246,7 +246,7 @@ export const ChatPage: FC<{
 	// --- RENDER ---
 	return (
 		<GlassPaper className="paper" sx={{ display: 'flex', flexDirection: 'column' }}>
-			<Grid container spacing={2} sx={{ flex: 1, overflow: 'hidden' }}>
+			<Grid container spacing={3}>
 				{/* Portrait Section */}
 				<Grid size={{ xs: 12, md: 5 }}>
 					<GlassPortrait imageUrl={imageUrl} />
