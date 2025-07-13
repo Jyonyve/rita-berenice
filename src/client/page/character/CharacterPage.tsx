@@ -24,13 +24,9 @@ import { useProfileApi } from '../../hook/api/useProfileApi.js';
 import { useAuthModal } from '../../provider/AuthModalProvider.jsx';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
 import { getLangAlertText, getLangText } from '#shared/util/languageUtils.js';
-import {
-	GlassCard,
-	GlassMetallicButton,
-	GlassPaper,
-	GlassPortrait,
-} from '../../layout/glass/index.js';
+import { GlassCard, GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
 import { SolidMetallicButton } from '../../layout/SolidMetallicButton.jsx';
+import { RomanticTitle } from '../../layout/RomanticTitle.jsx';
 
 const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 	characterInfo,
@@ -78,14 +74,23 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 			? Object.values(portraitMap)[0]
 			: '';
 	return (
-		<GlassPaper className="paper" sx={{ p: 3 }}>
-			<Grid container spacing={3}>
-				{/* Left Column: Using the correct MUI v7 'size' prop */}
+		<GlassPaper className="paper" sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
+			<Grid container spacing={2}>
+				{/* Left Column */}
 				<Grid size={{ xs: 12, md: 5 }}>
-					<Box display="flex" justifyContent="center">
+					<Box
+						sx={{
+							height: { xs: 'auto', md: '100%' }, // Ensure box takes full height on medium screens
+							minHeight: { xs: 300, md: 500 },
+							display: 'flex',
+							justifyContent: 'center',
+							alignItems: 'center', // Center the portrait if width is less than container
+						}}
+					>
 						{isLoadingPortraits ? (
 							<CircularProgress />
 						) : portraitUrl ? (
+							// Use the new 'fit' prop here
 							<GlassPortrait imageUrl={portraitUrl} />
 						) : (
 							<Box width={200} height={200} bgcolor="#eee" borderRadius={3} />
@@ -99,10 +104,10 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 						{/* Title and Description Card */}
 						<GlassCard variant="outlined">
 							<CardContent>
-								<Typography variant="subtitle1" color="primary" mt={1}>
+								<RomanticTitle variant="h6" color="primary" mt={1}>
 									{characterInfo.showName}
-								</Typography>
-								<Typography variant="body2" mt={2}>
+								</RomanticTitle>
+								<Typography variant="body1" mt={2}>
 									{characterInfo.description}
 								</Typography>
 							</CardContent>
@@ -130,7 +135,7 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 						{userId && <ProfileCard userId={userId} onSubmit={handleSubmitProfile} />}
 
 						{/* Start New Session Button */}
-						<Box display="flex" justifyContent="flex-end" mt={2}>
+						<Box display="flex" justifyContent="flex-end">
 							<SolidMetallicButton colorVariant="gold" size="large" onClick={handleStartNewSession}>
 								{getLangText(LANG_KEYS.START_NEW_SESSION)}
 							</SolidMetallicButton>

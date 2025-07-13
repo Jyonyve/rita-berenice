@@ -1,4 +1,4 @@
-import React, { FC, useEffect } from 'react';
+import React, { FC, useEffect, useLayoutEffect, useRef } from 'react';
 import { Outlet, useNavigate } from 'react-router';
 import {
 	AppBar,
@@ -57,6 +57,24 @@ export function RootLayout() {
 	const session = useSessionContext();
 	const navigate = useNavigate();
 	const { isLoginModalOpen, openLoginModal, closeLoginModal } = useAuthModal();
+	const headerRef = useRef<HTMLElement>(null);
+	const footerRef = useRef<HTMLElement>(null);
+
+	// --- Step 2: Measure heights and set CSS variables ---
+	useLayoutEffect(() => {
+		if (headerRef.current) {
+			document.documentElement.style.setProperty(
+				'--header-height',
+				`${headerRef.current.offsetHeight}px`
+			);
+		}
+		if (footerRef.current) {
+			document.documentElement.style.setProperty(
+				'--footer-height',
+				`${footerRef.current.offsetHeight}px`
+			);
+		}
+	}, []);
 
 	useEffect(() => {
 		if (!session.loading && session.doesSessionExist && isLoginModalOpen) {
@@ -87,7 +105,7 @@ export function RootLayout() {
 		>
 			<CssBaseline />
 
-			<GlassAppBar position="sticky">
+			<GlassAppBar position="sticky" ref={headerRef}>
 				<Toolbar sx={{ justifyContent: 'space-between' }}>
 					{/* Left side of the AppBar */}
 					<RomanticTitle
@@ -106,7 +124,7 @@ export function RootLayout() {
 						<Switch
 							checked={mode === 'dark'}
 							onChange={toggleMode}
-							color="default"
+							color="warning"
 							size="small"
 							aria-label="toggle theme"
 						/>
@@ -140,7 +158,11 @@ export function RootLayout() {
 			{!session.loading && !session.doesSessionExist && (
 				<LoginModal loginOpen={isLoginModalOpen} handleCloseLogin={closeLoginModal} />
 			)}
-			<GlassFooter sx={{ position: 'sticky', bottom: 0, zIndex: (theme) => theme.zIndex.appBar }}>
+
+			<GlassFooter
+				ref={footerRef}
+				sx={{ position: 'sticky', bottom: 0, zIndex: (theme) => theme.zIndex.appBar }}
+			>
 				<Container maxWidth="sm">
 					<Typography variant="body2" color="text.secondary" align="center">
 						{`Copyright © ${APPNAME} `}

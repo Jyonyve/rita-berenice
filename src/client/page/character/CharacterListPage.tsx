@@ -1,12 +1,14 @@
 // src/client/component/page/CharacterListPage.tsx
 
-import React from 'react';
-import { Typography, Box, CircularProgress, Grid } from '@mui/material';
+import React, { useState } from 'react';
+import { Typography, Box, CircularProgress, Grid, Theme } from '@mui/material';
 import { useCharacterState } from '../../hook/state/useCharacterState.js';
 import { DEFAULT_IMAGE_NUMBER } from '#shared/config/emotionWordsMapper.js';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { useNavigate } from 'react-router';
 import { GlassCard, GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
+import { RomanticTitle } from '../../layout/RomanticTitle.jsx';
+import { gold, silver } from '../../style/colors.ts';
 
 // Helper Component: CharacterItem now uses GlassCard
 const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterInfo }) => {
@@ -15,43 +17,43 @@ const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterIn
 	);
 	const defaultImageUrl = portraitMap[DEFAULT_IMAGE_NUMBER];
 	const navigate = useNavigate();
+	const [isHovered, setIsHovered] = useState(false);
 
 	const handleCharacterPage = () => {
 		navigate(`${characterInfo.characterId}`);
 	};
+	const characterCardSx = {
+		height: '100%',
+		display: 'flex',
+		flexDirection: 'column',
+		p: 1,
+		position: 'relative',
+		zIndex: 1,
+		'&:hover': {
+			zIndex: 2, // Lifts card to prevent glow clipping, but no shadow on the card itself.
+			'& .character-showname': { textShadow: `0 0 8px ${gold.main}`, transition: 'text-shadow 0.5s' },
+		},
+	};
 
 	return (
 		<GlassCard
-			sx={{
-				height: '100%', // Make card fill the grid item height
-				display: 'flex',
-				flexDirection: 'column',
-				p: 1, // Add padding inside the card
-			}}
+			sx={characterCardSx}
 			role="button"
 			onClick={handleCharacterPage}
+			// Add event handlers to update the hover state.
+			onMouseEnter={() => setIsHovered(true)}
+			onMouseLeave={() => setIsHovered(false)}
 		>
-			<Box
-				sx={{
-					width: '100%',
-					aspectRatio: '1 / 1.2',
-					backgroundColor: 'rgba(0,0,0,0.2)', // Darker background for contrast
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-					overflow: 'hidden',
-					mb: 1,
-					borderRadius: 1, // Rounded corners for the image container
-				}}
-			>
+			<Box sx={{ width: '100%', display: 'flex', mb: 1 }}>
 				{isLoadingPortraits ? (
 					<CircularProgress size={24} />
-				) : portraitError ? (
-					<Typography color="error" variant="caption">
-						Error
-					</Typography>
 				) : defaultImageUrl ? (
-					<GlassPortrait imageUrl={defaultImageUrl} />
+					<GlassPortrait
+						imageUrl={defaultImageUrl}
+						className="character-portrait"
+						// Pass the hover state down to the portrait component.
+						forceGlow={isHovered}
+					/>
 				) : (
 					<Typography variant="caption" color="textSecondary">
 						No Image
@@ -59,9 +61,9 @@ const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterIn
 				)}
 			</Box>
 			<Box sx={{ mt: 'auto' }}>
-				<Typography variant="subtitle1" noWrap color="primary">
+				<RomanticTitle noGlow className="character-showname" variant="h6" noWrap color="gold">
 					{characterInfo.showName}
-				</Typography>
+				</RomanticTitle>
 				<Typography variant="body2" noWrap>
 					{characterInfo.title}
 				</Typography>

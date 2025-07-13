@@ -62,8 +62,8 @@ export const getTheme = (mode: 'light' | 'dark') =>
 						display: 'flex',
 						flexDirection: 'column',
 						width: '100%',
-						height: '100%',
-						maxWidth: '1200px',
+						minHeight: '100%',
+						// maxWidth: '1200px',
 						marginInline: 'auto',
 						padding: '16px', // Standardized padding
 					},

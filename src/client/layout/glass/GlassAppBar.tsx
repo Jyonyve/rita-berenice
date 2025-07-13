@@ -9,6 +9,7 @@ export const GlassAppBar = styled(AppBar)(({ theme }) => ({
 	// Override MUI's default AppBar color to be transparent,
 	// allowing the glass effect to be visible.
 	backgroundColor: 'transparent',
+	
 
 	// The position is often 'sticky' for AppBars, but this component will respect
 	// any position prop you pass to it.
