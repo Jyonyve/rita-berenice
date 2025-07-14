@@ -3,7 +3,7 @@
 import React, { useState, Children, cloneElement, isValidElement, FC } from 'react';
 // Import CardContent to use it internally
 import { Card, styled, PaperProps, CardContent, CardContentProps } from '@mui/material';
-import { getGlassEffect } from '../../style/glassEffect.ts';
+import { getGlassEffect } from '../../style/glassEffect.js';
 
 // The styled container, unchanged
 const StyledGlassContainer = styled(Card)(({ theme }) => ({

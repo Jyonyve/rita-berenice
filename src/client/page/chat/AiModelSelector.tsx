@@ -12,7 +12,7 @@ import {
 	Divider,
 } from '@mui/material';
 import { supportAiModelInfo } from '#shared/config/supportAiModelInfo.js';
-import { GlassSelect } from '../../layout/glass/index.js';
+import { GlassMenuItem, GlassSelect } from '../../layout/glass/index.js';
 import { getGlassEffect, glassEffect, glassEffectLight } from '../../style/glassEffect.js';
 export const AiModelSelector = () => {
 	const { aiModelInfo, changeAiModel } = useAiModel();
@@ -59,33 +59,9 @@ export const AiModelSelector = () => {
 			);
 
 			const modelItems = models.map((modelName) => (
-				<MenuItem
-					key={modelName}
-					value={modelName}
-					sx={{
-						pl: 6,
-						py: 0.5,
-						fontSize: '0.8rem',
-						color: 'text.secondary',
-						whiteSpace: 'nowrap',
-						overflow: 'hidden',
-						textOverflow: 'ellipsis',
-						'&:hover': {
-							backgroundColor: 'transparent',
-							boxShadow: (theme) => `inset 0 0 0 1px ${alpha(theme.palette.primary.main, 0.5)}`,
-						},
-						'&.Mui-selected': {
-							backgroundColor: 'transparent',
-							boxShadow: (theme) => `inset 0 0 0 1.5px ${alpha(theme.palette.primary.main, 0.8)}`,
-							'&:hover': {
-								backgroundColor: 'transparent',
-								boxShadow: (theme) => `inset 0 0 0 1.5px ${alpha(theme.palette.primary.main, 1)}`,
-							},
-						},
-					}}
-				>
+				<GlassMenuItem key={modelName} value={modelName} sx={{ pl: 6, py: 0.5 }}>
 					{platform === 'openrouter' ? modelName.split('/').pop() : modelName}
-				</MenuItem>
+				</GlassMenuItem>
 			));
 
 			// THE FIX: The divider has been completely removed.

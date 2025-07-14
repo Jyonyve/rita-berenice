@@ -7,3 +7,4 @@ export * from './GlassCard.jsx';
 export * from './GlassButton.jsx';
 export * from './GlassPortrait.jsx';
 export * from './GlassSelect.jsx';
+export * from './GlassMenuItem.jsx';

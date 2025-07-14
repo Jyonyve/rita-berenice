@@ -1,4 +1,4 @@
-import React, { FC, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { FC, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router';
 import {
 	AppBar,
@@ -10,34 +10,39 @@ import {
 	Switch,
 	IconButton,
 	Modal,
+	Menu,
+	MenuItem,
+	alpha,
 } from '@mui/material';
 import { useColorMode } from '../provider/ColorModeProvider.jsx';
 import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpassword/prebuiltui.js';
-import AccountCircle from '@mui/icons-material/AccountCircle'; // Import the new icon
+import AccountCircle from '@mui/icons-material/AccountCircle';
 import { AuthPage } from 'supertokens-auth-react/ui/index.js';
 import { signOut, useSessionContext } from 'supertokens-auth-react/recipe/session/index.js';
 import { APPNAME } from '#shared/config/constants.js';
 import { useAuthModal } from '../provider/AuthModalProvider.jsx';
-import { GlassPaper, GlassAppBar, GlassFooter, GlassMetallicButton } from './glass/index.js';
+import { GlassPaper, GlassAppBar, GlassFooter, GlassMenuItem } from './glass/index.js';
 import { RomanticTitle } from './RomanticTitle.jsx';
-import { SolidMetallicButton } from './SolidMetallicButton.jsx';
-import { gold } from '../style/colors.js';
-import { GlassMetallicIconButton } from './glass/GlassMetallicIconButton.jsx';
-import { mainPadding } from '../style/padding.js';
+import { gold, silver } from '../style/colors.js';
+import { routeConstants } from '../routeConstants.js';
+import { glassEffect, glassEffectLight } from '../style/glassEffect.js';
+import { getLangText } from '#shared/util/languageUtils.js';
+import { LANG_KEYS } from '#shared/config/langConstants.js';
 
 interface LoginModalProps {
 	loginOpen: boolean;
 	handleCloseLogin: () => void;
 }
+
 const LoginModal: FC<LoginModalProps> = ({ loginOpen, handleCloseLogin }) => (
 	<Modal
 		open={loginOpen}
-		onClose={handleCloseLogin} // This still handles the 'Escape' key for accessibility
-		disableScrollLock={true} // FIX #1: Allows the background page to be scrolled
+		onClose={handleCloseLogin}
+		disableScrollLock={true}
 		aria-labelledby="login-modal-title"
 	>
 		<GlassPaper
-			onClick={handleCloseLogin} // FIX #2: Makes the entire glass surface a close button
+			onClick={handleCloseLogin}
 			sx={{
 				height: '100vh',
 				width: '100vw',
@@ -61,7 +66,10 @@ export function RootLayout() {
 	const headerRef = useRef<HTMLElement>(null);
 	const footerRef = useRef<HTMLElement>(null);
 
-	// --- Step 2: Measure heights and set CSS variables ---
+	// State for controlling the dropdown menu
+	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+	const isMenuOpen = Boolean(anchorEl);
+
 	useLayoutEffect(() => {
 		if (headerRef.current) {
 			document.documentElement.style.setProperty(
@@ -84,12 +92,22 @@ export function RootLayout() {
 	}, [session, isLoginModalOpen, closeLoginModal, mode]);
 
 	const goCharacterPage = () => {
-		navigate('/');
+		navigate(`/${routeConstants.CHARACTER}`);
+		handleMenuClose(); // Close menu after navigation
 	};
 
 	const onLogout = async () => {
 		await signOut();
 		navigate('/');
+		handleMenuClose(); // Close menu after logout
+	};
+
+	const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+		setAnchorEl(event.currentTarget);
+	};
+
+	const handleMenuClose = () => {
+		setAnchorEl(null);
 	};
 
 	return (
@@ -99,28 +117,23 @@ export function RootLayout() {
 				flexDirection: 'column',
 				height: '100vh',
 				backgroundColor: (theme) => theme.palette.background.default,
-				// backgroundImage: `url('/path/to/your/image.png')`,
-				// backgroundSize: 'cover',
-				// backgroundAttachment: 'fixed',
 			}}
 		>
 			<CssBaseline />
 
 			<GlassAppBar position="sticky" ref={headerRef}>
 				<Toolbar sx={{ justifyContent: 'space-between' }}>
-					{/* Left side of the AppBar */}
 					<RomanticTitle
 						logo
 						variant="h6"
 						component="div"
-						onClick={goCharacterPage}
+						onClick={() => navigate('/')}
 						role="button"
-						sx={{ cursor: 'pointer' }} // The cursor is now on the sx prop
+						sx={{ cursor: 'pointer' }}
 					>
 						{APPNAME}
 					</RomanticTitle>
 
-					{/* Right side of the AppBar, grouped in a Box */}
 					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
 						<Switch
 							checked={mode === 'dark'}
@@ -131,31 +144,58 @@ export function RootLayout() {
 						/>
 
 						{!session.loading && (
-							<IconButton
-								onClick={session.doesSessionExist ? onLogout : openLoginModal}
-								aria-label={session.doesSessionExist ? 'logout' : 'login'}
-							>
-								<AccountCircle
-									sx={{
-										// 1. Icon color is dynamic
-										color: session.doesSessionExist ? gold.main : 'grey.500',
-										transition: 'all 0.5s ease-in-out',
-										'&:hover': {
-											color: gold.main, // Always turns gold on hover
-											filter: `drop-shadow(0 0 8px ${gold.light})`,
+							<div>
+								<IconButton
+									onClick={session.doesSessionExist ? handleMenuOpen : openLoginModal}
+									aria-label={session.doesSessionExist ? 'account of current user' : 'login'}
+									aria-controls={isMenuOpen ? 'account-menu' : undefined}
+									aria-haspopup="true"
+								>
+									<AccountCircle
+										sx={{
+											color: session.doesSessionExist ? gold.main : 'grey.500',
+											transition: 'all 0.5s ease-in-out',
+											'&:hover': { color: gold.main, filter: `drop-shadow(0 0 8px ${gold.light})` },
+										}}
+									/>
+								</IconButton>
+								<Menu
+									id="account-menu"
+									anchorEl={anchorEl}
+									open={isMenuOpen}
+									onClose={handleMenuClose}
+									onClick={handleMenuClose}
+									transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+									anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+									// Apply the permanent "hovered" glass style to the menu's background
+									slotProps={{
+										paper: {
+											className: 'hide-scrollbar',
+											sx: (theme) => {
+												const styleObject = theme.palette.mode === 'dark' ? glassEffect : glassEffectLight;
+												const { '&:hover': hoverStyles, ...baseStyles } = styleObject;
+												return { ...baseStyles, ...hoverStyles };
+											},
 										},
 									}}
-								/>
-							</IconButton>
+								>
+									<GlassMenuItem onClick={goCharacterPage} colorVariant="silver">
+										{getLangText(LANG_KEYS.CHARACTERS)}
+									</GlassMenuItem>
+
+									{/* Custom glow using the colorVariant prop */}
+									<GlassMenuItem onClick={onLogout} colorVariant="silver">
+										{getLangText(LANG_KEYS.LOGOUT)}
+									</GlassMenuItem>
+								</Menu>
+							</div>
 						)}
 					</Box>
 				</Toolbar>
 			</GlassAppBar>
-			{/* Main Content Area */}
-			<Box component="main" sx={{ flex: 1, overflowY: 'auto' }}>
+			<Box component="main" sx={{ flex: 1, overflowY: 'auto', p: { xs: 1, md: 2 } }}>
 				<Outlet />
 			</Box>
-			{/* Login Modal */}
 			{!session.loading && !session.doesSessionExist && (
 				<LoginModal loginOpen={isLoginModalOpen} handleCloseLogin={closeLoginModal} />
 			)}

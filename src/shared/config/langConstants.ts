@@ -16,6 +16,8 @@ export const LANG_KEYS = {
 	MALE: 'MALE',
 	FEMALE: 'FEMALE',
 	OTHER: 'OTHER',
+	CHARACTERS: 'CHARACTERS',
+	LOGOUT: 'LOGOUT',
 } as const;
 export type LangKey = keyof typeof LANG_KEYS;
 
@@ -31,6 +33,8 @@ export const langConstants: LangRecord = {
 	MALE: { kor: '남성', eng: 'Male' },
 	FEMALE: { kor: '여성', eng: 'Female' },
 	OTHER: { kor: '기타', eng: 'Other' },
+	CHARACTERS: { kor: '캐릭터', eng: 'Characters' },
+	LOGOUT: { kor: '로그아웃', eng: 'Logout' },
 };
 
 export const alertConstants: LangRecord = {
