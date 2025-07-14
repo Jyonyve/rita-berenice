@@ -1,7 +1,7 @@
 // src/components/ui/GlassCard.tsx
 
 import { Box, styled } from '@mui/material';
-import { getGlassEffect } from '../../style/glassEffect.ts'; // Adjust path based on your structure
+import { getGlassEffect } from '../../style/glassEffect.js'; // Adjust path based on your structure
 
 export const GlassBox = styled(Box)(({ theme }) => ({
 	...getGlassEffect(theme.palette.mode),

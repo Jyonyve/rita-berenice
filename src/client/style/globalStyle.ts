@@ -28,6 +28,17 @@ export const getTheme = (mode: 'light' | 'dark') =>
 		components: {
 			MuiTextField: { defaultProps: { size: 'small' } },
 			MuiFormControl: { defaultProps: { size: 'small' } },
+			MuiInputLabel: {
+				styleOverrides: {
+					// root: ({ theme }) => ({
+					// 	fontSize: theme.typography.body2.fontSize, // Use a smaller typography variant
+					// }),
+
+					shrink: ({ theme }) => ({
+						fontSize: theme.typography.body2.fontSize, // Adjust if you want different size when shrunk
+					}),
+				},
+			},
 			MuiCssBaseline: {
 				styleOverrides: {
 					// --- BASE & BOX-SIZING ---

@@ -152,7 +152,7 @@ export function RootLayout() {
 				</Toolbar>
 			</GlassAppBar>
 			{/* Main Content Area */}
-			<Box component="main" sx={{ flex: 1, overflowY: 'auto', p: mainPadding }}>
+			<Box component="main" sx={{ flex: 1, overflowY: 'auto' }}>
 				<Outlet />
 			</Box>
 			{/* Login Modal */}

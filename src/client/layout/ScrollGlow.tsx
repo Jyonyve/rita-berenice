@@ -47,7 +47,7 @@ export const ScrollGlow: FC<ScrollGlowProps> = ({ showTop, showBottom, isScrolli
 					top: `-${glowOffset}`,
 					background: `linear-gradient(to bottom, 
                         ${solidBackgroundColor} 50%, 
-                        ${alpha(theme.palette.primary.main, 0.3)} 80%, 
+                        ${alpha(theme.palette.primary.light, 0.3)} 90%, 
                         transparent 100%
                     )`,
 					opacity: 'var(--top-glow-opacity)',
@@ -58,7 +58,7 @@ export const ScrollGlow: FC<ScrollGlowProps> = ({ showTop, showBottom, isScrolli
 					bottom: `-${glowOffset}`,
 					background: `linear-gradient(to top, 
                         ${solidBackgroundColor} 50%, 
-                        ${alpha(theme.palette.primary.main, 0.3)} 80%, 
+                        ${alpha(theme.palette.primary.light, 0.3)} 90%, 
                         transparent 100%
                     )`,
 					opacity: 'var(--bottom-glow-opacity)',

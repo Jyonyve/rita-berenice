@@ -89,7 +89,7 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 						height: (theme) => ({
 							xs: 'auto',
 							md: `calc(100vh - var(--header-height, 64px) - var(--footer-height, 37px) - ${theme.spacing(
-								3
+								2
 							)} * 2)`,
 						}),
 					}}

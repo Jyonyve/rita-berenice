@@ -3,6 +3,8 @@
 import React, { FC, ChangeEventHandler } from 'react';
 import { TextField, Button, CircularProgress, Box } from '@mui/material';
 import { AiModelSelector } from './AiModelSelector.jsx';
+import { GlassBox, GlassButton, GlassMetallicButton } from '../../layout/glass/index.js';
+import { innerPadding, stickyPadding } from '../../style/padding.js';
 
 interface UserInputProps {
 	sessionId: string;
@@ -32,40 +34,40 @@ export const UserInput: FC<UserInputProps> = ({
 	};
 
 	return (
-		<Box sx={{ p: 1 }}>
-			{/* Row 1: Full-width TextField with fixed height */}
-			<TextField
-				label="Enter your message"
-				variant="outlined"
-				fullWidth
-				multiline
-				rows={3} // Start with a height of 3 rows
-				value={value}
-				onChange={onChange}
-				disabled={isDisabled}
-				onKeyDown={handleKeyDown}
-				sx={{ mb: 1.5 }} // Margin-bottom for spacing
-			/>
-
+		<Box>
+			<GlassBox margin={1}>
+				<TextField
+					placeholder="Enter your message"
+					variant="outlined"
+					fullWidth
+					multiline
+					rows={2}
+					value={value}
+					onChange={onChange}
+					disabled={isDisabled}
+					onKeyDown={handleKeyDown}
+				/>
+			</GlassBox>
 			{/* Row 2: Model Selector and Send Button */}
 			<Box
 				sx={{
 					display: 'flex',
 					justifyContent: 'space-between',
 					alignItems: 'center',
+					marginLeft: 1,
+					marginRight: 1,
 				}}
 			>
-				<AiModelSelector sessionId={sessionId} />
+				<AiModelSelector />
 
-				<Button
+				<GlassButton
 					variant="contained"
-					color="primary"
+					colorVariant="secondary"
 					onClick={onSend}
-					disabled={isDisabled || !value.trim()}
-					sx={{ minWidth: '100px' }} // Give the button a consistent width
+					// disabled={isDisabled || !value.trim()}
 				>
 					{isProcessing ? <CircularProgress size={24} color="inherit" /> : 'Send'}
-				</Button>
+				</GlassButton>
 			</Box>
 		</Box>
 	);

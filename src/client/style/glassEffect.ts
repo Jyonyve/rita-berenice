@@ -60,6 +60,18 @@ export const glassEffectLight = {
 	},
 };
 
-export function getGlassEffect(mode: ColorMode) {
-	return mode === 'dark' ? glassEffect : glassEffectLight;
+export function getGlassEffect(mode: ColorMode, options?: { withHover?: boolean }) {
+	// Default to including the hover effect if not specified
+	const { withHover = true } = options || {};
+
+	const baseStyle = mode === 'dark' ? glassEffect : glassEffectLight;
+
+	if (withHover) {
+		// If hover is enabled, return the full style object
+		return baseStyle;
+	} else {
+		// If hover is disabled, create a new object without the '&:hover' key
+		const { '&:hover': hover, ...rest } = baseStyle;
+		return rest;
+	}
 }

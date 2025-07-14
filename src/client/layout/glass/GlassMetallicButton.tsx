@@ -14,21 +14,15 @@ export const GlassMetallicButton = styled(Button, {
 	// Set a default colorVariant, so the button is visually appealing by default
 })<GlassMetallicButtonProps>(({ theme, colorVariant = 'primary' }) => {
 	const baseGlassStyle = getGlassEffect(theme.palette.mode);
-	// Determine the color set for the metallic effects
+
 	let metallicColors;
 	if (colorVariant === 'gold') {
 		metallicColors = gold;
 	} else if (colorVariant === 'silver') {
 		metallicColors = silver;
 	} else {
-		// For all other MUI colors, derive the effect colors from the theme
 		const mainColor = getColor(theme, colorVariant);
-		metallicColors = {
-			main: mainColor,
-			// For non-metallic colors, the 'light' highlight can be the same as the main color
-			light: mainColor,
-			shadow: mainColor,
-		};
+		metallicColors = { main: mainColor, light: mainColor, shadow: mainColor };
 	}
 
 	return {
@@ -40,7 +34,7 @@ export const GlassMetallicButton = styled(Button, {
 		transition: 'all 0.7s ease-in-out',
 
 		'&:hover': {
-			...baseGlassStyle['&:hover'],
+			...baseGlassStyle,
 			// Apply the gradient border ONLY for gold and silver variants
 			borderImageSlice: colorVariant === 'gold' || colorVariant === 'silver' ? 1 : undefined,
 			borderImageSource:
