@@ -5,31 +5,17 @@ import { typography } from './typography.js';
 
 // --- PALETTES ---
 
-// A cohesive dark mode palette
 const darkPalette = {
-	primary: {
-		main: '#00A9FF', // A vibrant, clear blue
-	},
-	secondary: {
-		main: '#A0E9FF', // A lighter blue for accents
-	},
-	background: {
-		default: '#0A0A0A', // A very dark, near-black
-		paper: 'rgba(10, 10, 10, 0.5)', // A semi-transparent black for surfaces
-	},
+	primary: { main: '#00A9FF' },
+	secondary: { main: '#A0E9FF' },
+	background: { default: '#0A0A0A', paper: 'rgba(10, 10, 10, 0.5)' },
 	text: { primary: '#E0E0E0', secondary: '#BDBDBD' },
 };
 
-// A corresponding light mode palette
 const lightPalette = {
-	primary: {
-		main: '#007AB8', // A slightly deeper blue for better contrast in light mode
-	},
+	primary: { main: '#007AB8' },
 	secondary: { main: '#0091ea' },
-	background: {
-		default: '#F4F6F8', // A very light grey
-		paper: 'rgba(255, 255, 255, 0.7)',
-	},
+	background: { default: '#F4F6F8', paper: 'rgba(255, 255, 255, 0.7)' },
 	text: { primary: '#212B36', secondary: '#637381' },
 };
 
@@ -38,9 +24,7 @@ const lightPalette = {
 export const getTheme = (mode: 'light' | 'dark') =>
 	createTheme({
 		palette: { mode, ...(mode === 'dark' ? darkPalette : lightPalette) },
-		// --- THE NEW TYPOGRAPHY SECTION ---
 		typography: typography,
-
 		components: {
 			MuiTextField: { defaultProps: { size: 'small' } },
 			MuiFormControl: { defaultProps: { size: 'small' } },
@@ -53,7 +37,7 @@ export const getTheme = (mode: 'light' | 'dark') =>
 					'#root': { height: '100%' },
 					"[role='button']": { cursor: 'pointer' },
 
-					// --- SCROLLBAR HIDING ---
+					// --- MAIN SCROLLBAR HIDING ---
 					'main::-webkit-scrollbar': { display: 'none' },
 					main: { '-ms-overflow-style': 'none', 'scrollbar-width': 'none' },
 
@@ -63,9 +47,15 @@ export const getTheme = (mode: 'light' | 'dark') =>
 						flexDirection: 'column',
 						width: '100%',
 						minHeight: '100%',
-						// maxWidth: '1200px',
 						marginInline: 'auto',
-						padding: '16px', // Standardized padding
+					},
+
+					// --- NEW: GLOBAL CLASS FOR HIDING SCROLLBARS ---
+					// This will hide the scrollbar on any element with className="hide-scrollbar"
+					'.hide-scrollbar::-webkit-scrollbar': { display: 'none' },
+					'.hide-scrollbar': {
+						'-ms-overflow-style': 'none', // IE and Edge
+						'scrollbar-width': 'none', // Firefox
 					},
 				},
 			},

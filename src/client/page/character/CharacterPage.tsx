@@ -22,10 +22,9 @@ import { ProfileCdo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { ProfileCard } from './ProfileCard.jsx';
 import { useProfileApi } from '../../hook/api/useProfileApi.js';
 import { useAuthModal } from '../../provider/AuthModalProvider.jsx';
-import { LANG_KEYS } from '#shared/config/langConstants.js';
-import { getLangAlertText, getLangText } from '#shared/util/languageUtils.js';
+import { containerSpacing, containerPadding as containerPadding } from '../../style/index.js';
+import { getLangText } from '#shared/util/languageUtils.js';
 import { GlassCard, GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
-import { SolidMetallicButton } from '../../layout/SolidMetallicButton.jsx';
 import { RomanticTitle } from '../../layout/RomanticTitle.jsx';
 
 const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
@@ -46,26 +45,29 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 	const { storeProfile } = useProfileApi();
 
 	// Handlers
-	const handleStartNewSession = () => {
+	const handleStartSession = (sessionId: string) => {
+		navigate(`/${routeConstants.CHAT}/${sessionId}`);
+	};
+
+	const handleStartNewSession = async (profileCdo: ProfileCdo) => {
 		if (!userId) {
 			openLoginModal();
 			return;
 		}
 
-		if (!profileId) {
-			alert(getLangAlertText(LANG_KEYS.CREATE_NEW_PROFILE));
-			return;
+		try {
+			const result = await storeProfile(profileCdo);
+			const { profileId } = JSON.parse(result);
+
+			if (profileId) {
+				navigate(`/${routeConstants.CHAT}`, { state: { characterId, profileId } });
+			} else {
+				alert('Failed to create a profile. Please try again.');
+			}
+		} catch (error) {
+			console.error('Error starting new session:', error);
+			alert('An error occurred while starting the session.');
 		}
-		navigate(`/${routeConstants.CHAT}`, { state: { characterId, profileId } });
-	};
-
-	const handleStartSession = (sessionId: string) => {
-		navigate(`/${routeConstants.CHAT}/${sessionId}`);
-	};
-
-	const handleSubmitProfile = async (profileCdo: ProfileCdo) => {
-		const profileId: string = JSON.parse(await storeProfile(profileCdo)).profileId;
-		setProfileId(profileId);
 	};
 
 	// Portrait: pick default or first available
@@ -73,20 +75,26 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 		!isLoadingPortraits && portraitMap && Object.values(portraitMap)[0]
 			? Object.values(portraitMap)[0]
 			: '';
+
 	return (
-		<GlassPaper className="paper" sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
-			<Grid container spacing={2}>
+		<GlassPaper className="paper" sx={{ position: 'relative' }}>
+			<Grid container spacing={containerSpacing} padding={containerPadding}>
 				{/* Left Column */}
-				<Grid size={{ xs: 12, md: 5 }}>
-					<Box
-						sx={{
-							height: { xs: 'auto', md: '100%' }, // Ensure box takes full height on medium screens
-							minHeight: { xs: 300, md: 500 },
-							display: 'flex',
-							justifyContent: 'center',
-							alignItems: 'center', // Center the portrait if width is less than container
-						}}
-					>
+				<Grid
+					size={{ xs: 12, md: 5 }}
+					sx={{
+						position: { xs: 'static', md: 'sticky' },
+						top: (theme) => theme.spacing(2),
+						alignSelf: 'flex-start',
+						height: (theme) => ({
+							xs: 'auto',
+							md: `calc(100vh - var(--header-height, 64px) - var(--footer-height, 37px) - ${theme.spacing(
+								3
+							)} * 2)`,
+						}),
+					}}
+				>
+					<Box sx={{ height: '100%', display: 'flex' }}>
 						{isLoadingPortraits ? (
 							<CircularProgress />
 						) : portraitUrl ? (
@@ -103,43 +111,32 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 					<Box display="flex" flexDirection="column" gap={2}>
 						{/* Title and Description Card */}
 						<GlassCard variant="outlined">
-							<CardContent>
-								<RomanticTitle variant="h6" color="primary" mt={1}>
-									{characterInfo.showName}
-								</RomanticTitle>
-								<Typography variant="body1" mt={2}>
-									{characterInfo.description}
-								</Typography>
-							</CardContent>
+							<RomanticTitle noGlow isHovered variant="h6" color="primary" mt={1}>
+								{characterInfo.showName}
+							</RomanticTitle>
+							<Typography variant="body1" mt={2}>
+								{characterInfo.description}
+							</Typography>
 						</GlassCard>
 
 						{/* Session List Card */}
 						<GlassCard variant="outlined">
-							<CardContent>
-								<Typography variant="subtitle1" color="text.secondary" mb={1}>
-									{getLangText('SESSIONS_WITH_CHARACTER')}
-								</Typography>
-								{userId && (
-									<List dense>
-										<SessionPreviewList
-											userId={userId}
-											characterId={characterId}
-											handleSessionStart={handleStartSession}
-										/>
-									</List>
-								)}
-							</CardContent>
+							<Typography variant="subtitle1" color="text.secondary" mb={1}>
+								{getLangText('SESSIONS_WITH_CHARACTER')}
+							</Typography>
+							{userId && (
+								<List dense>
+									<SessionPreviewList
+										userId={userId}
+										characterId={characterId}
+										handleSessionStart={handleStartSession}
+									/>
+								</List>
+							)}
 						</GlassCard>
 
 						{/* Profile Card */}
-						{userId && <ProfileCard userId={userId} onSubmit={handleSubmitProfile} />}
-
-						{/* Start New Session Button */}
-						<Box display="flex" justifyContent="flex-end">
-							<SolidMetallicButton colorVariant="gold" size="large" onClick={handleStartNewSession}>
-								{getLangText(LANG_KEYS.START_NEW_SESSION)}
-							</SolidMetallicButton>
-						</Box>
+						{userId && <ProfileCard userId={userId} onSubmit={handleStartNewSession} />}
 					</Box>
 				</Grid>
 			</Grid>

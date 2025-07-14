@@ -23,6 +23,7 @@ import { RomanticTitle } from './RomanticTitle.jsx';
 import { SolidMetallicButton } from './SolidMetallicButton.jsx';
 import { gold } from '../style/colors.js';
 import { GlassMetallicIconButton } from './glass/GlassMetallicIconButton.jsx';
+import { mainPadding } from '../style/padding.js';
 
 interface LoginModalProps {
 	loginOpen: boolean;
@@ -124,7 +125,7 @@ export function RootLayout() {
 						<Switch
 							checked={mode === 'dark'}
 							onChange={toggleMode}
-							color="warning"
+							color="default"
 							size="small"
 							aria-label="toggle theme"
 						/>
@@ -151,7 +152,7 @@ export function RootLayout() {
 				</Toolbar>
 			</GlassAppBar>
 			{/* Main Content Area */}
-			<Box component="main" sx={{ flex: 1, overflowY: 'auto', p: { xs: 1, md: 2 } }}>
+			<Box component="main" sx={{ flex: 1, overflowY: 'auto', p: mainPadding }}>
 				<Outlet />
 			</Box>
 			{/* Login Modal */}

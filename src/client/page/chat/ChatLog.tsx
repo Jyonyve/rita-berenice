@@ -1,166 +1,122 @@
-// ChatLog.tsx
-import React, { FC, useRef, useCallback, useEffect, memo } from 'react';
-import { Box, Typography, CircularProgress, Button } from '@mui/material'; // Added Button for retry
-import { VariableSizeList as List, ListOnScrollProps } from 'react-window'; // Import ListOnScrollProps
-import AutoSizer from 'react-virtualized-auto-sizer';
-import ChatLogRow, { ChatLogRowData } from './ChatLogRow.jsx';
-import { ChatTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+// src/client/component/page/ChatLog.tsx
 
-// --- Helper Hook for Dynamic Sizes (largely okay, minor tweak for initial scroll) ---
-const useDynamicListSizes = (itemCountForScroll: number) => {
-	// Pass itemCount for scroll logic
+import React, { FC, useRef, useCallback, useEffect, memo } from 'react';
+import { Box, Typography, CircularProgress, Button } from '@mui/material';
+import { VariableSizeList as List } from 'react-window';
+import AutoSizer from 'react-virtualized-auto-sizer';
+
+import ChatLogRow, { ChatLogRowData } from './ChatLogRow.jsx';
+import { useScrollEffect } from '../../hook/useScrollEffect.js'; // Import the new hook
+import { ChatTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { ScrollGlow } from '../../layout/ScrollGlow.jsx';
+import { innerPadding } from '../../style/padding.js';
+
+// --- Component-Specific Helper Hook ---
+const useDynamicListSizes = (itemCount: number) => {
 	const listRef = useRef<List>(null);
 	const sizeMap = useRef<Record<number, number>>({});
 
 	const setSize = useCallback((index: number, size: number) => {
 		if (typeof size === 'number' && !isNaN(size) && sizeMap.current[index] !== size) {
 			sizeMap.current = { ...sizeMap.current, [index]: size };
-			if (listRef.current) {
-				listRef.current.resetAfterIndex(index);
-			}
+			listRef.current?.resetAfterIndex(index);
 		}
 	}, []);
 
-	const getSize = useCallback((index: number) => {
-		return sizeMap.current[index] ?? 150; // Default estimate, adjust
-	}, []);
+	const getSize = useCallback((index: number) => sizeMap.current[index] ?? 150, []);
 
-	// Effect to scroll to bottom when itemCountForScroll (e.g., chatTurns.length + tempTurn) changes
 	useEffect(() => {
-		if (listRef.current && itemCountForScroll > 0) {
-			listRef.current.scrollToItem(itemCountForScroll - 1, 'end');
+		if (listRef.current && itemCount > 0) {
+			listRef.current.scrollToItem(itemCount - 1, 'end');
 		}
-	}, [itemCountForScroll]); // Trigger when the relevant item count changes
+	}, [itemCount]);
 
 	return { listRef, setSize, getSize };
 };
 
-// --- ChatLog Component Props ---
+// --- Component Props Interface ---
 interface ChatLogProps {
-	chatTurns: ChatTurn[]; // Sorted [oldest, ..., newest]
+	chatTurns: ChatTurn[];
 	tempChatTurn?: TempChatTurn;
-	currentTempSetNo: number; // For FixedTurnDisplay
+	currentTempSetNo: number;
 	changeTempSetNo: (index: number) => void;
-	isLoadingChat: boolean; // From useChatState, for loading older messages
-	hasMore: boolean; // From useChatState
-	isProcessing: boolean; // From ChatPage, for temp turn processing indicator
-	clientError?: string; // From useChatState
+	isLoadingChat: boolean;
+	hasMore: boolean;
+	isProcessing: boolean;
+	clientError?: string;
 	userEditInput: string;
 	botEditInput: string;
 	onEditTempTurnText: (value: string, req: boolean) => void;
 	onSaveTempTurnText: () => void;
 	onRegenerateResponse: () => void;
-	loadOlderMessages: () => void; // Callback from ChatPage to trigger loading older
+	loadOlderMessages: () => void;
 }
 
+// --- Main Component ---
 export const ChatLog: FC<ChatLogProps> = memo(
-	({
-		chatTurns,
-		tempChatTurn,
-		currentTempSetNo,
-		changeTempSetNo,
-		isLoadingChat,
-		hasMore,
-		isProcessing,
-		clientError,
-		userEditInput,
-		botEditInput,
-		onEditTempTurnText,
-		onSaveTempTurnText,
-		onRegenerateResponse,
-		loadOlderMessages,
-	}) => {
+	({ chatTurns, tempChatTurn, loadOlderMessages, hasMore, isLoadingChat, clientError, ...rest }) => {
+		// --- HOOKS ---
 		const itemCount = chatTurns.length + (tempChatTurn ? 1 : 0);
-		const { listRef, setSize, getSize } = useDynamicListSizes(itemCount); // Pass current total item count
+		const { listRef, setSize, getSize } = useDynamicListSizes(itemCount);
+		const { scrollContainerRef, handleScroll, showTopGlow, showBottomGlow, isScrolling } =
+			useScrollEffect({ loadOlderMessages, hasMore, isLoadingChat });
 
+		// --- MEMOIZED DATA ---
 		const itemData = React.useMemo<ChatLogRowData>(
-			() => ({
-				chatTurns,
-				tempChatTurn,
-				currentTempSetNo,
-				changeTempSetNo,
-				isProcessing,
-				userEditInput,
-				botEditInput,
-				onEditTempTurnText,
-				onSaveTempTurnText,
-				onRegenerateResponse,
-				setSize,
-			}),
-			[
-				chatTurns,
-				tempChatTurn,
-				currentTempSetNo,
-				changeTempSetNo,
-				isProcessing,
-				userEditInput,
-				botEditInput,
-				onEditTempTurnText,
-				onSaveTempTurnText,
-				onRegenerateResponse,
-				setSize,
-			]
+			() => ({ chatTurns, tempChatTurn, setSize, ...rest }),
+			[chatTurns, tempChatTurn, setSize, rest]
 		);
 
-		// <<< --- SCROLL HANDLER FOR INFINITE LOAD --- >>>
-		const handleScroll = useCallback(
-			({ scrollOffset, scrollDirection }: ListOnScrollProps) => {
-				// Trigger loading older messages when scrolling up and near the top
-				// For lists where items are prepended, "top" means scrollOffset is small.
-				if (scrollDirection === 'backward' && scrollOffset < 200 && hasMore && !isLoadingChat) {
-					// console.log('ChatLog: Requesting older messages...');
-					loadOlderMessages();
-				}
-			},
-			[loadOlderMessages, hasMore, isLoadingChat]
-		);
-
+		// --- RENDER ---
 		return (
-			<Box
-				sx={{
-					flexGrow: 1,
-					overflow: 'hidden',
-					height: '100%',
-					position: 'relative',
-					display: 'flex',
-					flexDirection: 'column',
-				}}
-			>
-				{isLoadingChat && (
-					<Box sx={{ textAlign: 'center', py: 1 }}>
-						<CircularProgress size={24} /> Loading older...
+			<>
+				<ScrollGlow showTop={showTopGlow} showBottom={showBottomGlow} isScrolling={isScrolling} />
+				<Box
+					sx={{
+						flexGrow: 1,
+						height: '100%',
+						position: 'relative',
+						display: 'flex',
+						flexDirection: 'column',
+					}}
+				>
+					{isLoadingChat && (
+						<Box sx={{ textAlign: 'center', py: 1 }}>
+							<CircularProgress size={24} /> Loading older...
+						</Box>
+					)}
+
+					<Box sx={{ flex: 1, width: '100%', height: '100%', py: 2 }}>
+						<AutoSizer>
+							{({ height, width }) => (
+								<List<ChatLogRowData>
+									ref={listRef}
+									outerRef={scrollContainerRef}
+									height={height}
+									width={width}
+									itemCount={itemCount}
+									itemSize={getSize}
+									itemData={itemData}
+									onScroll={handleScroll}
+									overscanCount={5}
+									className="hide-scrollbar"
+								>
+									{ChatLogRow}
+								</List>
+							)}
+						</AutoSizer>
 					</Box>
-				)}
 
-				{/* This container now correctly uses flex-grow to fill remaining space */}
-				<Box sx={{ flex: 1, width: '100%', height: '100%' }}>
-					<AutoSizer>
-						{({ height, width }) => (
-							<List<ChatLogRowData>
-								ref={listRef}
-								height={height}
-								width={width}
-								itemCount={itemCount}
-								itemSize={getSize}
-								itemData={itemData}
-								onScroll={handleScroll}
-								overscanCount={5}
-							>
-								{ChatLogRow}
-							</List>
-						)}
-					</AutoSizer>
+					{clientError && (
+						<Typography color="error" sx={{ p: 1, textAlign: 'center' }}>
+							{clientError}
+							<Button size="small" onClick={loadOlderMessages} disabled={isLoadingChat}>
+								Retry
+							</Button>
+						</Typography>
+					)}
 				</Box>
-
-				{clientError && (
-					<Typography color="error" sx={{ p: 1, textAlign: 'center' }}>
-						{clientError}{' '}
-						<Button size="small" onClick={loadOlderMessages} disabled={isLoadingChat}>
-							Retry
-						</Button>
-					</Typography>
-				)}
-			</Box>
+			</>
 		);
 	}
 );

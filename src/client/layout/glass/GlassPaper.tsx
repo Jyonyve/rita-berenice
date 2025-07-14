@@ -1,7 +1,9 @@
 // src/components/ui/GlassPaper.tsx
 import { Paper, styled } from '@mui/material';
+import { containerPadding } from '../../style/padding.js';
 
 export const GlassPaper = styled(Paper)(({ theme }) => ({
+	padding: containerPadding,
 	// --- Core Glassmorphism Styles (from before) ---
 	background: 'rgba(255, 255, 255, 0.05)',
 	backdropFilter: 'blur(10px)',
@@ -26,8 +28,8 @@ export const GlassPaper = styled(Paper)(({ theme }) => ({
 	// '&:hover': {
 	// 	background: 'rgba(255, 255, 255, 0.1)', // Slightly lighten the background
 	// 	boxShadow: `
-    //   inset 1px 1px 2px rgba(255, 255, 255, 0.2), /* Stronger highlight */
-    //   inset -1px -1px 2px rgba(0, 0, 0, 0.3)      /* Deeper shadow */
-    // `,
+	//   inset 1px 1px 2px rgba(255, 255, 255, 0.2), /* Stronger highlight */
+	//   inset -1px -1px 2px rgba(0, 0, 0, 0.3)      /* Deeper shadow */
+	// `,
 	// },
 }));

@@ -18,10 +18,10 @@ import { DEFAULT_LOADING_BATCH_TURN_COUNT } from '#shared/config/constants.js';
 import { ChatTurnCdo, TempChatTurn, TempChatTurnCdo } from '#shared/domain/chat/ChatInterfaces.js';
 import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
 import { parseEntriesToText, parseTextToEntries } from '#shared/util/chatParseUtils.js';
-
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { useTempChatApi } from '../../hook/api/useTempChatApi.js';
 import { GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
+import { containerSpacing, containerPadding } from '../../style/index.js';
 
 export const ChatPage: FC<{
 	characterInfo: CharacterInfo;
@@ -245,11 +245,26 @@ export const ChatPage: FC<{
 
 	// --- RENDER ---
 	return (
-		<GlassPaper className="paper" sx={{ display: 'flex', flexDirection: 'column' }}>
-			<Grid container spacing={3}>
+		<GlassPaper className="paper" sx={{ position: 'relative' }}>
+			<Grid container spacing={containerSpacing} padding={containerPadding}>
 				{/* Portrait Section */}
-				<Grid size={{ xs: 12, md: 5 }}>
-					<GlassPortrait imageUrl={imageUrl} />
+				<Grid
+					size={{ xs: 12, md: 5 }}
+					sx={{
+						position: { xs: 'static', md: 'sticky' },
+						top: (theme) => theme.spacing(2),
+						alignSelf: 'flex-start',
+						height: (theme) => ({
+							xs: 'auto',
+							md: `calc(100vh - var(--header-height, 64px) - var(--footer-height, 37px) - ${theme.spacing(
+								2
+							)} * 2)`,
+						}),
+					}}
+				>
+					<Box sx={{ height: '100%', display: 'flex' }}>
+						<GlassPortrait imageUrl={imageUrl} />
+					</Box>
 				</Grid>
 
 				{/* Chat Area Section */}
@@ -272,7 +287,7 @@ export const ChatPage: FC<{
 							changeTempSetNo={setCurrentTempSetNo}
 						/>
 					</Box>
-					<Box sx={{ flexShrink: 0, p: 1 }}>
+					<Box sx={{ flexShrink: 0 }}>
 						{pageError && (
 							<Typography color="error" sx={{ p: 1 }}>
 								{pageError}

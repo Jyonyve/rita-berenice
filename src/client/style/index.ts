@@ -1,2 +1,2 @@
 export * from './globalStyle.js';
-export * from '../provider/ColorModeProvider.jsx';
+export * from './padding.js';

@@ -40,7 +40,7 @@ export const SolidMetallicButton = styled(Button, {
 		)})`,
 		// A slightly darker border provides a clean, defined edge
 		border: `1px solid ${alpha(metallicColors.main, 0.7)}`,
-		transition: 'all 0.7s ease-in-out',
+		transition: 'all 0.05s ease-in-out',
 		fontWeight: 'bold',
 		// 3. The hover effect to make it shine and glow
 		'&:hover': {

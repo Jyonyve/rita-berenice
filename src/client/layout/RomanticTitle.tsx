@@ -8,36 +8,38 @@ import { ColorVariant, getColor } from '../style/colors.js';
 interface RomanticTitleProps extends TypographyProps {
 	colorVariant?: ColorVariant;
 	logo?: boolean;
+	isHovered?: boolean;
+	/**
+	 * If true, the component will not glow on its own hover.
+	 * This is useful when a parent component controls the glow state.
+	 */
 	noGlow?: boolean;
 }
 
-// This component accepts all the same props as MUI's Typography component.
 export const RomanticTitle = (props: RomanticTitleProps) => {
-	// Destructure the new prop and the sx prop to handle them separately
-	const { logo, colorVariant, noGlow, sx, ...rest } = props;
+	// Destructure all custom props
+	const { logo, colorVariant, isHovered, noGlow, sx, ...rest } = props;
 
 	const theme = useTheme();
-	// Determine the glow color. It defaults to the theme's primary color.
 	const glowColor = getColor(theme, colorVariant || 'primary');
+	const glowStyles = { textShadow: `0 0 8px ${glowColor}` };
 
 	return (
 		<Typography
-			{...rest} // Pass all remaining props through
+			{...rest}
 			sx={{
-				// --- Base Styles ---
 				fontFamily: logo ? logoFontFamily : titleFontFamily,
-				whiteSpace: 'nowrap', // Default style to prevent line breaks
-				transition: 'all 0.5s ease-in-out',
-				// --- Hover Effect ---
-				'&:hover': !noGlow
-					? {
-							// The text shadow now uses the dynamic glowColor
-							textShadow: `0 0 8px ${glowColor}`,
-						}
-					: undefined,
+				whiteSpace: 'nowrap',
+				transition: 'text-shadow 0.3s ease-in-out',
 
-				// --- Merging with Custom Styles ---
-				...sx, // This allows you to add or override any styles from the parent
+				// --- DYNAMIC GLOW LOGIC ---
+				// 1. Apply glow if the 'isHovered' prop is true.
+				...(isHovered && glowStyles),
+				// 2. Apply the standalone hover effect ONLY if 'noGlow' is not passed.
+				...(!noGlow && { '&:hover': glowStyles }),
+
+				// Merge with any custom styles from the parent
+				...sx,
 			}}
 		/>
 	);
