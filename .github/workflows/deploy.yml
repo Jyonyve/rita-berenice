@@ -36,8 +36,6 @@ jobs:
       # --- ADD THIS STEP ---
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 8 # You can specify a pnpm version
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
