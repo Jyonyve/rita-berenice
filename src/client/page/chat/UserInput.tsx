@@ -64,7 +64,7 @@ export const UserInput: FC<UserInputProps> = ({
 					variant="contained"
 					colorVariant="secondary"
 					onClick={onSend}
-					// disabled={isDisabled || !value.trim()}
+					disabled={isDisabled || !value.trim()}
 				>
 					{isProcessing ? <CircularProgress size={24} color="inherit" /> : 'Send'}
 				</GlassButton>
