@@ -11,23 +11,22 @@ import {
 	IconButton,
 	Modal,
 	Menu,
-	MenuItem,
-	alpha,
 } from '@mui/material';
 import { useColorMode } from '../provider/ColorModeProvider.jsx';
 import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpassword/prebuiltui.js';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import { AuthPage } from 'supertokens-auth-react/ui/index.js';
-import { signOut, useSessionContext } from 'supertokens-auth-react/recipe/session/index.js';
+import { signOut } from 'supertokens-auth-react/recipe/session/index.js';
 import { APPNAME } from '#shared/config/constants.js';
-import { useAuthModal } from '../provider/AuthModalProvider.jsx';
+
 import { GlassPaper, GlassAppBar, GlassFooter, GlassMenuItem } from './glass/index.js';
 import { RomanticTitle } from './RomanticTitle.jsx';
-import { gold, silver } from '../style/colors.js';
+import { gold } from '../style/colors.js';
 import { routeConstants } from '../routeConstants.js';
 import { glassEffect, glassEffectLight } from '../style/glassEffect.js';
-import { getLangText } from '#shared/util/languageUtils.js';
+import { getLangText } from '../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
+import { useAuth } from '../provider/AuthProvider.jsx';
 
 interface LoginModalProps {
 	loginOpen: boolean;
@@ -58,11 +57,13 @@ const LoginModal: FC<LoginModalProps> = ({ loginOpen, handleCloseLogin }) => (
 		</GlassPaper>
 	</Modal>
 );
+
 export function RootLayout() {
 	const { mode, toggleMode } = useColorMode();
-	const session = useSessionContext();
 	const navigate = useNavigate();
-	const { isLoginModalOpen, openLoginModal, closeLoginModal } = useAuthModal();
+	const { isSessionLoading, isLoggedIn, isLoginModalOpen, openLoginModal, closeLoginModal } =
+		useAuth();
+
 	const headerRef = useRef<HTMLElement>(null);
 	const footerRef = useRef<HTMLElement>(null);
 
@@ -84,12 +85,6 @@ export function RootLayout() {
 			);
 		}
 	}, []);
-
-	useEffect(() => {
-		if (!session.loading && session.doesSessionExist && isLoginModalOpen) {
-			closeLoginModal();
-		}
-	}, [session, isLoginModalOpen, closeLoginModal, mode]);
 
 	const goCharacterPage = () => {
 		navigate(`/${routeConstants.CHARACTER}`);
@@ -143,19 +138,19 @@ export function RootLayout() {
 							aria-label="toggle theme"
 						/>
 
-						{!session.loading && (
-							<div>
+						{!isSessionLoading && (
+							<>
 								<IconButton
-									onClick={session.doesSessionExist ? handleMenuOpen : openLoginModal}
-									aria-label={session.doesSessionExist ? 'account of current user' : 'login'}
+									onClick={isLoggedIn ? handleMenuOpen : openLoginModal}
+									aria-label={isLoggedIn ? 'account of current user' : 'login'}
 									aria-controls={isMenuOpen ? 'account-menu' : undefined}
 									aria-haspopup="true"
 								>
 									<AccountCircle
 										sx={{
-											color: session.doesSessionExist ? gold.main : 'grey.500',
-											transition: 'all 0.5s ease-in-out',
-											'&:hover': { color: gold.main, filter: `drop-shadow(0 0 8px ${gold.light})` },
+											color: isLoggedIn ? gold.main : 'grey.500',
+											transition: 'all 0.3s ease-in-out',
+											'&:hover': { color: gold.main, filter: `drop-shadow(0 0 6px ${gold.light})` },
 										}}
 									/>
 								</IconButton>
@@ -188,18 +183,15 @@ export function RootLayout() {
 										{getLangText(LANG_KEYS.LOGOUT)}
 									</GlassMenuItem>
 								</Menu>
-							</div>
+							</>
 						)}
 					</Box>
 				</Toolbar>
 			</GlassAppBar>
-			<Box component="main" sx={{ flex: 1, overflowY: 'auto', p: { xs: 1, md: 2 } }}>
+			<Box component="main" sx={{ flex: 1, overflowY: 'auto' }}>
 				<Outlet />
 			</Box>
-			{!session.loading && !session.doesSessionExist && (
-				<LoginModal loginOpen={isLoginModalOpen} handleCloseLogin={closeLoginModal} />
-			)}
-
+			{!isLoggedIn && <LoginModal loginOpen={isLoginModalOpen} handleCloseLogin={closeLoginModal} />}
 			<GlassFooter
 				ref={footerRef}
 				sx={{ position: 'sticky', bottom: 0, zIndex: (theme) => theme.zIndex.appBar }}

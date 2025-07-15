@@ -82,7 +82,7 @@ export const CharacterListPage = ({ characterInfos }: { characterInfos: Characte
 	}
 
 	return (
-		<GlassPaper className="paper" sx={{ p: 2, overflowY: 'auto' }}>
+		<GlassPaper key="character-list-page" className="paper" sx={{ overflowY: 'auto' }}>
 			<Grid container spacing={containerSpacing}>
 				{characterInfos.map((characterInfo) => (
 					<Grid key={characterInfo.characterId} size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>

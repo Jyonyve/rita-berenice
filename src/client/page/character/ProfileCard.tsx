@@ -21,9 +21,9 @@ import {
 import { ProfileCdo, ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { ProfilePreviewList } from './ProfilePreviewList.jsx';
 import { useForm, Controller } from 'react-hook-form';
-import { getLangText } from '#shared/util/languageUtils.js';
+import { getLangText } from '../../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
-import { GlassButton, GlassCard, GlassMetallicButton } from '../../layout/glass/index.js';
+import { GlassButton, GlassCard } from '../../layout/glass/index.js';
 import { SolidMetallicButton } from '../../layout/index.js';
 import { innerSpacing } from '../../style/index.js';
 

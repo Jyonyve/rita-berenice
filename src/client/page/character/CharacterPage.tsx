@@ -21,22 +21,22 @@ import { routeConstants } from '../../routeConstants.js';
 import { ProfileCdo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { ProfileCard } from './ProfileCard.jsx';
 import { useProfileApi } from '../../hook/api/index.js';
-import { useAuthModal } from '../../provider/AuthModalProvider.jsx';
 import { containerSpacing, containerPadding as containerPadding } from '../../style/index.js';
-import { getLangText, getLangAlertText } from '#shared/util/languageUtils.js';
+import { getLangText, getLangAlertText } from '../../util/translateUtils.js';
 import { GlassCard, GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
 import { RomanticTitle } from '../../layout/RomanticTitle.jsx';
 import { useToast } from '../../provider/ToastProvider.jsx';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
+import { useAuth } from '../../provider/AuthProvider.jsx';
 
 const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 	characterInfo,
 	userId,
 }) => {
+	const { openLoginModal } = useAuth();
 	const navigate = useNavigate();
 	const { addToast } = useToast();
 	const characterId = characterInfo.characterId;
-	const { openLoginModal } = useAuthModal();
 
 	// Character state: portraits, loading, error
 	const { portraitMap, isLoadingPortraits, portraitError } = useCharacterState(
@@ -83,7 +83,7 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 			: '';
 
 	return (
-		<GlassPaper className="paper" sx={{ position: 'relative' }}>
+		<GlassPaper key="character-page" className="paper">
 			<Grid container spacing={containerSpacing} padding={containerPadding}>
 				{/* Left Column */}
 				<Grid

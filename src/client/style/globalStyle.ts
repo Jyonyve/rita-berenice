@@ -2,6 +2,7 @@
 
 import { createTheme } from '@mui/material/styles';
 import { typography } from './typography.js';
+import { margin, padding } from '@mui/system';
 
 // --- PALETTES ---
 
@@ -54,11 +55,13 @@ export const getTheme = (mode: 'light' | 'dark') =>
 
 					// --- GLOBAL PAGE CONTAINER STYLE ---
 					'.paper': {
+						margin: '16px',
 						display: 'flex',
 						flexDirection: 'column',
 						width: '100%',
 						minHeight: '100%',
 						marginInline: 'auto',
+						position: 'relative',
 					},
 
 					// --- NEW: GLOBAL CLASS FOR HIDING SCROLLBARS ---

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { chatStore, characterStore, profileStore, sessionStore } from '../../server/store/index.js';
+import { chatStore, characterStore, profileStore, sessionStore } from '../src/server/store/index.js';
 
 // ESM-compatible way to get the current directory path
 const __filename = fileURLToPath(import.meta.url);

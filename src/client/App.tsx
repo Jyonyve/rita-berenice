@@ -14,7 +14,6 @@ import { useEffect, useState } from 'react';
 import { useToast } from './provider/ToastProvider.jsx';
 import { setupApiClient } from './util/clientHelpers.js';
 import { NewChatPageLoader } from './page/chat/NewChatPageLoader.jsx';
-import { AppProviders } from './AppProviders.jsx';
 import { SessionAuth } from 'supertokens-auth-react/recipe/session/index.js';
 
 export function App() {

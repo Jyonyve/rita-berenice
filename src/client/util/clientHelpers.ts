@@ -38,8 +38,6 @@ export function setupApiClient(
 					return apiClient(originalRequest); // Retry ONCE
 				} else {
 					addToast('Your session has expired. Please log in again.', 'error');
-					// Optionally, redirect to login page here
-					// window.location.href = '/auth';
 				}
 				return Promise.reject(error);
 			}

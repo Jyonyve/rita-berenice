@@ -3,69 +3,79 @@ import SuperTokens from 'supertokens-auth-react';
 import EmailPassword from 'supertokens-auth-react/recipe/emailpassword/index.js';
 import Session from 'supertokens-auth-react/recipe/session/index.js';
 import ReactDOM from 'react-dom/client';
-import { App } from './client/App.jsx';
-import { routeConstants } from './client/routeConstants.js';
+import { App } from '#client/App.jsx';
+import { routeConstants } from '#client/routeConstants.js';
 import { APPNAME } from '#shared/config/constants.js';
 import { BrowserRouter } from 'react-router';
 import { createEmotionCache } from '#shared/config/createEmotionCache.js';
 import { AppProviders } from '#client/AppProviders.jsx';
 import '#client/style/index.css';
+import { superTokenUiStyle } from '#client/style/superTokensUi.js';
+import { mockAuthStore } from '#client/mock/mockAuthStore.js';
 import { User } from 'supertokens-web-js/types/index.js';
-import { getMockLoggedIn, setMockLoggedIn } from '#client/mock/supertokensMockState.js';
 
-const isStatic = import.meta.env.VITE_APP_MODE === 'static';
+// Fixed timestamp value to avoid SSR/client hydration errors
+const FIXED_TIME_JOINED = 1752625706636;
+const dummyResponse = new Response(null, { status: 200 });
+const mockUser: User = {
+	id: 'mock-user',
+	timeJoined: FIXED_TIME_JOINED,
+	isPrimaryUser: false,
+	tenantIds: ['public'],
+	emails: ['mock@example.com'],
+	phoneNumbers: [],
+	thirdParty: [],
+	webauthn: { credentialIds: [] },
+	loginMethods: [
+		{
+			tenantIds: ['public'],
+			timeJoined: FIXED_TIME_JOINED,
+			recipeId: 'emailpassword',
+			recipeUserId: 'mock-user',
+			verified: true,
+			email: 'mock@example.com',
+		},
+	],
+};
+
+	const isStatic = import.meta.env.VITE_APP_MODE === 'static';
 
 if (isStatic) {
-	const dummyResponse = new Response(null, { status: 200 });
-	const now = Date.now();
-
-	const mockUser: User = {
-		id: 'mock-user',
-		timeJoined: now,
-		isPrimaryUser: false,
-		tenantIds: ['public'],
-		emails: ['mock@example.com'],
-		phoneNumbers: [],
-		thirdParty: [],
-		webauthn: { credentialIds: [] },
-		loginMethods: [
-			{
-				tenantIds: ['public'],
-				timeJoined: now,
-				recipeId: 'emailpassword',
-				recipeUserId: 'mock-user',
-				verified: true,
-				email: 'mock@example.com',
-			},
-		],
-	};
-
 	SuperTokens.init({
 		appInfo: {
 			appName: APPNAME,
 			websiteDomain: import.meta.env.VITE_APP_DOMAIN,
 			apiDomain: import.meta.env.VITE_API_DOMAIN,
-			apiBasePath: `/${routeConstants.API}/${routeConstants.AUTH}`,
-			websiteBasePath: `/${routeConstants.AUTH}`,
+			apiBasePath: `/${routeConstants.AUTH}`,
 		},
+		style: superTokenUiStyle,
+		getRedirectionURL: async (context) => {
+			// return undefined to let the default behaviour play out
+			return null;
+		},
+		style: superTokenUiStyle,
 		recipeList: [
 			EmailPassword.init({
+				getRedirectionURL: async (context) => {
+					return null;
+				},
 				override: {
-					functions: (original, builder) => ({
+					functions: (original) => ({
 						...original,
 						signIn: async (input) => {
-							setMockLoggedIn(true);
+							console.log('Mock signIn called');
+							mockAuthStore.setLoggedIn(true);
 							return { status: 'OK', user: mockUser, fetchResponse: dummyResponse };
 						},
 						signUp: async (input) => {
-							setMockLoggedIn(true);
+							console.log('Mock signUp called');
+							mockAuthStore.setLoggedIn(true);
 							return { status: 'OK', user: mockUser, fetchResponse: dummyResponse };
 						},
 						signOut: async () => {
-							setMockLoggedIn(false);
+							await Session.signOut();
 							return { status: 'OK', fetchResponse: dummyResponse };
 						},
-						doesSessionExist: async () => getMockLoggedIn(),
 						sendPasswordResetEmail: async () => ({ status: 'OK', fetchResponse: dummyResponse }),
 						submitNewPassword: async () => ({ status: 'OK', fetchResponse: dummyResponse }),
 					}),
@@ -73,13 +83,18 @@ if (isStatic) {
 			}),
 			Session.init({
 				override: {
-					functions: (original, builder) => ({
+					functions: (original) => ({
 						...original,
-						doesSessionExist: async () => getMockLoggedIn(),
-						getUserId: async () => (getMockLoggedIn() ? 'mock-user' : ''),
-						getAccessTokenPayloadSecurely: async () => (getMockLoggedIn() ? {} : undefined),
+						doesSessionExist: async () => {
+							const isLoggedIn = mockAuthStore.getSnapshot();
+							console.log('[SuperTokens Mock] doesSessionExist called, returning:', isLoggedIn);
+							return isLoggedIn;
+						},
+						getUserId: async () => (mockAuthStore.getSnapshot() ? 'mock-user' : ''),
+						getAccessTokenPayloadSecurely: async () => (mockAuthStore.getSnapshot() ? {} : undefined),
 						signOut: async () => {
-							setMockLoggedIn(false);
+							console.log('[SuperTokens Mock] Session.signOut called');
+							mockAuthStore.setLoggedIn(false);
 						},
 						shouldDoInterceptionBasedOnUrl: () => false,
 					}),
@@ -96,15 +111,13 @@ if (isStatic) {
 			apiBasePath: `/${routeConstants.API}/${routeConstants.AUTH}`,
 			websiteBasePath: `/${routeConstants.AUTH}`,
 		},
+		style: superTokenUiStyle,
 		recipeList: [EmailPassword.init(), Session.init()],
 	});
 }
 
-function ClientApp() {
-	const clientSideEmotionCache = createEmotionCache();
-
 	return (
-		<BrowserRouter>
+		<BrowserRouter basename={import.meta.env.BASE_URL}>
 			<AppProviders emotionCache={clientSideEmotionCache}>
 				<App />
 			</AppProviders>

@@ -9,7 +9,7 @@ import {
 	ListItemButton,
 } from '@mui/material';
 import { useSessionApi } from '../../hook/api/index.js';
-import { notFoundMessage } from '#shared/util/languageUtils.js';
+import { notFoundMessage } from '../../util/translateUtils.js';
 
 export const SessionPreviewList: FC<{
 	userId: string;

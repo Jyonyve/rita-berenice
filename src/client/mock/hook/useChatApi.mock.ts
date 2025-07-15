@@ -12,7 +12,7 @@ export const useChatApiMock = () => {
 	/**
 	 * Mocks fetching all chat turns for a session.
 	 */
-	const getAllChatTurns = () => ({
+	const getAllChatTurns = (sessionId: string) => ({
 		data: mockMondayChat,
 		isLoading: false,
 		isError: false,

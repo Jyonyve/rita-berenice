@@ -7,7 +7,7 @@ import { Box, CssBaseline, ThemeProvider } from '@mui/material';
 import { CacheProvider, EmotionCache } from '@emotion/react';
 import { ToastProvider } from './provider/ToastProvider.jsx';
 import { ColorModeProvider, useColorMode } from './provider/ColorModeProvider.jsx';
-import { AuthModalProvider } from './provider/AuthModalProvider.jsx';
+import { AuthProvider } from './provider/AuthProvider.jsx';
 import { LanguageProvider } from './provider/LanguageProvider.jsx';
 import { getTheme } from './style/globalStyle.js';
 import { initQueryClient } from '#shared/api/queryClient.js';
@@ -38,19 +38,19 @@ export const AppProviders: FC<AppProvidersProps> = ({ children, emotionCache }) 
 	return (
 		<React.StrictMode>
 			<QueryClientProvider client={queryClient}>
-				<CacheProvider value={emotionCache}>
-					<ToastProvider>
-						<AuthModalProvider>
+				<SuperTokensWrapper>
+					<AuthProvider>
+						<CacheProvider value={emotionCache}>
 							<LanguageProvider>
 								<ColorModeProvider>
-									<ThemedAppContent>
-										<SuperTokensWrapper>{children}</SuperTokensWrapper>
-									</ThemedAppContent>
+									<ToastProvider>
+										<ThemedAppContent>{children}</ThemedAppContent>
+									</ToastProvider>
 								</ColorModeProvider>
 							</LanguageProvider>
-						</AuthModalProvider>
-					</ToastProvider>
-				</CacheProvider>
+						</CacheProvider>
+					</AuthProvider>
+				</SuperTokensWrapper>
 			</QueryClientProvider>
 		</React.StrictMode>
 	);

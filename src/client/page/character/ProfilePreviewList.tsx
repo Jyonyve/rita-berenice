@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { useProfileApi } from '../../hook/api/index.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
-import { notFoundMessage } from '#shared/util/languageUtils.js';
+import { notFoundMessage } from '../../util/translateUtils.js';
 
 // The props are updated to handle two separate click events
 export const ProfilePreviewList: FC<{

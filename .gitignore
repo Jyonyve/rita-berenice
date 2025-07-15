@@ -1,37 +1,51 @@
-# ✅ 로그
+# ✅ 로그 (Logs)
+# Ignore all log files
 *.log
+# Ignore debug logs from various package managers
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# ✅ Node 관련
+# ✅ Node 관련 (Node related)
+# Ignore node modules folder
 node_modules/
 
-# ✅ 빌드 결과물
+# ✅ 빌드 결과물 (Build artifacts)
+# Ignore build output folders
 dist/
 dist-ssr/
 .vite_cache/
+coverage/
 
-# ✅ 환경 변수
+# ✅ 환경 변수 (Environment variables)
+# Ignore environment variable files
 .env*
+# But do not ignore the example file
 !.env.example
 
-# ✅ pnpm 관련
-.pnpm-debug.log
+# ✅ pnpm 관련 (pnpm related)
+# Ignore the local pnpm store if it's created within the project
 .pnpm-store/
 
-# ✅ IDE 설정
-.vscode/*
+# ✅ IDE 및 시스템 파일 (IDE & System files)
+# Ignore OS-generated files
+.DS_Store
+Thumbs.db
+*.sw?
+
+# Ignore IDE settings folders
+.vscode/
 !.vscode/extensions.json
 .idea/
-.DS_Store
+
+# Ignore Visual Studio files
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
 
-# ✅ 기타
+# ✅ 기타 (Etc)
 *.local
+

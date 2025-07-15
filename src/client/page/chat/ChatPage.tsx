@@ -243,7 +243,7 @@ export const ChatPage: FC<{
 
 	// --- RENDER ---
 	return (
-		<GlassPaper className="paper" sx={{ position: 'relative' }}>
+		<GlassPaper key="chat-page" className="paper">
 			<Grid container spacing={containerSpacing} padding={containerPadding}>
 				{/* Portrait Section */}
 				<Grid

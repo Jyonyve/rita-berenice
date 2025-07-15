@@ -2,9 +2,11 @@
 name: Deploy Static Site to GitHub Pages
 
 on:
- # Runs on pushes targeting the main branch
+ # Runs on pushes targeting your main and develop branches
  push:
-  branches: ['main', 'develop']
+  branches:
+   - 'main'
+   - 'develop' # Or any other branches you want to deploy from
 
  # Allows you to run this workflow manually from the Actions tab
  workflow_dispatch:
@@ -15,7 +17,7 @@ permissions:
  pages: write
  id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# Allow only one concurrent deployment
 concurrency:
  group: 'pages'
  cancel-in-progress: true
@@ -31,20 +33,27 @@ jobs:
    - name: Checkout
      uses: actions/checkout@v4
 
+   # --- ADD THIS STEP ---
+   - name: Install pnpm
+     uses: pnpm/action-setup@v4
+
    - name: Set up Node.js
      uses: actions/setup-node@v4
      with:
       node-version: 22
-      cache: 'pnpm'
+      cache: 'pnpm' # This tells setup-node to use pnpm's cache
 
-   - name: Install pnpm
-     run: npm install -g pnpm
+   - name: Install Dependencies (Client-Side Only)
+     run: pnpm install --no-optional
 
-   - name: Install dependencies
-     run: pnpm install
+   - name: Create .env.static from GitHub Variables
+     run: |
+      echo "VITE_APP_MODE=${{ vars.VITE_APP_MODE }}" > .env.static
+      echo "VITE_API_DOMAIN=${{ vars.VITE_API_DOMAIN }}" >> .env.static
+      echo "VITE_APP_DOMAIN=${{ vars.VITE_APP_DOMAIN }}" >> .env.static
 
-   - name: Build static site
-     run: pnpm run build:static
+   - name: Build Static Site
+     run: pnpm run build:static # This command will now use the generated .env.static
 
    - name: Setup Pages
      uses: actions/configure-pages@v5
@@ -52,8 +61,7 @@ jobs:
    - name: Upload artifact
      uses: actions/upload-pages-artifact@v3
      with:
-      # Upload the output of your static build script
-      path: './dist/static' # This should match the --outDir of your build:static script
+      path: './dist/static'
 
    - name: Deploy to GitHub Pages
      id: deployment

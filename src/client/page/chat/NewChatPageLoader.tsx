@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { useSessionContext } from 'supertokens-auth-react/recipe/session/index.js';
 import { ChatMessage, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
 import { useCharacterState } from '../../hook/state/useCharacterState.js';
@@ -11,11 +10,12 @@ import { parseTextToEntries } from '#shared/util/chatParseUtils.js';
 import { buildMessageId } from '#shared/util/buildIdUtils.js';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { routeConstants } from '../../routeConstants.js';
+import { useAuth } from '../../provider/AuthProvider.jsx';
 
 export function NewChatPageLoader() {
 	const navigate = useNavigate();
 	const { state } = useLocation();
-	const session = useSessionContext();
+	const { isSessionLoading, userId } = useAuth();
 	const [error, setError] = useState<string | null>(null);
 
 	// Ensure state exists before destructuring
@@ -34,14 +34,14 @@ export function NewChatPageLoader() {
 		// This function will be defined and then called within the effect
 		const initializeSession = async () => {
 			// **Guard Clause**: Wait until all dependencies are loaded and valid
-			if (session.loading || isProfileLoading || !profileRes?.profileInfo || !characterInfo) {
+			if (isSessionLoading || isProfileLoading || !profileRes?.profileInfo || !characterInfo) {
 				return; // Do nothing until all data is ready
 			}
 
 			try {
 				// **Create Session**
 				const sessionInfo = await createSession.mutateAsync({
-					userId: session.userId,
+					userId,
 					characterId: characterInfo.characterId,
 					profileId: profileRes.profileInfo.profileId,
 					firstCharMessage: characterInfo.firstMessage,
@@ -78,7 +78,7 @@ export function NewChatPageLoader() {
 						type: 'message',
 					};
 					const firstTurn: TempChatTurn = {
-						userId: session.userId,
+						userId,
 						sessionId: sessionInfo.sessionId,
 						sequence,
 						chatTurnSets: [{ request, response, setNo: 0 }],
@@ -102,10 +102,10 @@ export function NewChatPageLoader() {
 		};
 
 		// **Initial Validation**: Check for session and required IDs early
-		if (session.loading) {
+		if (isSessionLoading) {
 			return; // Wait for session to load
 		}
-		if (!session.userId || !characterId || !profileId) {
+		if (!userId || !characterId || !profileId) {
 			navigate('/create-session-error', { replace: true });
 			return;
 		}
@@ -114,7 +114,8 @@ export function NewChatPageLoader() {
 	}, [
 		// **Dependencies**: The effect will re-run if any of these change.
 		// This ensures we always work with the latest data and avoids race conditions.
-		session,
+		isSessionLoading,
+		userId,
 		isProfileLoading,
 		profileRes,
 		characterInfo,
