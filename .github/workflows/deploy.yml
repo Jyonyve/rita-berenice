@@ -4,7 +4,7 @@ name: Deploy Static Site to GitHub Pages
 on:
  # Runs on pushes targeting the main branch
  push:
-  branches: ['main', 'develop']
+  branches: ['main', 'feature/dev/mock']
 
  # Allows you to run this workflow manually from the Actions tab
  workflow_dispatch:
