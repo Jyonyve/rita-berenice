@@ -9,9 +9,8 @@ import { UserInput } from './UserInput.jsx';
 // MUI Components
 import { Grid, Box, Typography, Paper } from '@mui/material';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
-import { useOrchestrationApi } from '../../hook/api/useOrchestrationApi.js';
+import { useOrchestrationApi, useTempChatApi } from '../../hook/api/index.js';
 import { useCharacterState } from '../../hook/state/useCharacterState.js';
-import { useChatApi } from '../../hook/api/useChatApi.js';
 import { useChatState } from '../../hook/state/useChatState.js';
 import { useAiModel } from '../../hook/useAiModel.js';
 import { DEFAULT_LOADING_BATCH_TURN_COUNT } from '#shared/config/constants.js';
@@ -19,7 +18,6 @@ import { ChatTurnCdo, TempChatTurn, TempChatTurnCdo } from '#shared/domain/chat/
 import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
 import { parseEntriesToText, parseTextToEntries } from '#shared/util/chatParseUtils.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
-import { useTempChatApi } from '../../hook/api/useTempChatApi.js';
 import { GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
 import { containerSpacing, containerPadding } from '../../style/index.js';
 

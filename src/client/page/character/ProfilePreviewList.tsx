@@ -9,7 +9,7 @@ import {
 	CircularProgress,
 	Divider,
 } from '@mui/material';
-import { useProfileApi } from '../../hook/api/useProfileApi.js';
+import { useProfileApi } from '../../hook/api/index.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { notFoundMessage } from '#shared/util/languageUtils.js';
 

@@ -28,7 +28,7 @@
 		"check:his": "tsx ./src/migration/lore/checkHistory.ts",
 		"link:chat": "tsx ./src/migration/lore/linkChatToHistory.ts",
 		"extract:lore": "tsx ./src/migration/source/htmlParserCheerio.ts",
-		"mock:chat": "tsx ./src/client/mock/mockGenerator.ts",
+		"mock": "tsx ./src/client/mock/mockGenerator.ts",
 		"drop": "tsx ./src/migration/dropCollection.ts"
 	},
 	"dependencies": {

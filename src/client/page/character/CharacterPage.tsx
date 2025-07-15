@@ -20,7 +20,7 @@ import { useNavigate } from 'react-router';
 import { routeConstants } from '../../routeConstants.js';
 import { ProfileCdo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { ProfileCard } from './ProfileCard.jsx';
-import { useProfileApi } from '../../hook/api/useProfileApi.js';
+import { useProfileApi } from '../../hook/api/index.js';
 import { useAuthModal } from '../../provider/AuthModalProvider.jsx';
 import { containerSpacing, containerPadding as containerPadding } from '../../style/index.js';
 import { getLangText } from '#shared/util/languageUtils.js';

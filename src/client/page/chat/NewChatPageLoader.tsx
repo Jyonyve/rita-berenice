@@ -4,13 +4,11 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useSessionContext } from 'supertokens-auth-react/recipe/session/index.js';
 import { ChatMessage, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
-import { useSessionApi } from '../../hook/api/useSessionApi.js';
 import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
 import { useCharacterState } from '../../hook/state/useCharacterState.js';
-import { useProfileApi } from '../../hook/api/useProfileApi.js';
+import { useProfileApi, useSessionApi, useTempChatApi } from '../../hook/api/index.js';
 import { parseTextToEntries } from '#shared/util/chatParseUtils.js';
 import { buildMessageId } from '#shared/util/buildIdUtils.js';
-import { useTempChatApi } from '../../hook/api/useTempChatApi.js';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { routeConstants } from '../../routeConstants.js';
 

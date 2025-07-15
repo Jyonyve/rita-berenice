@@ -1,10 +1,14 @@
 import { FC } from 'react';
-import { ListItem, ListItemText, Typography, Divider, CircularProgress, Box } from '@mui/material';
-import { useChatApi } from '../../hook/api/useChatApi.js';
-import { parseEntriesToText, parseSessionId } from '#shared/util/chatParseUtils.js';
-import { ListItemButton } from '@mui/material';
-import { UserInfo } from '#shared/domain/user/UserInterfaces.js';
-import { useSessionApi } from '../../hook/api/useSessionApi.js';
+import {
+	ListItem,
+	ListItemText,
+	Typography,
+	Divider,
+	CircularProgress,
+	Box,
+	ListItemButton,
+} from '@mui/material';
+import { useSessionApi } from '../../hook/api/index.js';
 import { notFoundMessage } from '#shared/util/languageUtils.js';
 
 export const SessionPreviewList: FC<{

@@ -97,9 +97,13 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 					{/* User Request Block */}
 					<Box sx={{ mb: 1 }}>
 						{currentSet.request.entries.map((entry, idx) => (
-							<span key={`temp-req-${idx}`} className={styleEntryFont('user', entry.type)}>
+							<Typography
+								sx={{ whiteSpace: 'pre-line' }}
+								key={`temp-req-${idx}`}
+								className={styleEntryFont('user', entry.type)}
+							>
 								{entry.prompt}
-							</span>
+							</Typography>
 						))}
 					</Box>
 
@@ -107,9 +111,13 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 					<Box>
 						{currentSet.response ? (
 							currentSet.response.entries.map((entry, idx) => (
-								<span key={`temp-res-${idx}`} className={styleEntryFont('assistant', entry.type)}>
+								<Typography
+									sx={{ whiteSpace: 'pre-line' }}
+									key={`temp-res-${idx}`}
+									className={styleEntryFont('assistant', entry.type)}
+								>
 									{entry.prompt}
-								</span>
+								</Typography>
 							))
 						) : (
 							<Typography sx={{ fontStyle: 'italic', color: 'gray', ml: '10px' }}>

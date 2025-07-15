@@ -1,9 +1,8 @@
 import { Container, CircularProgress, Typography } from '@mui/material';
-import { useCharacterApi, useChatApi } from '../../hook/index.js';
+import { useCharacterApi } from '../../hook/index.js';
 import CharacterPage from './CharacterPage.jsx';
 import { useNavigate, useParams } from 'react-router';
 import { useEffect } from 'react';
-import { useUserApi } from '../../hook/api/useUserApi.js';
 import { useSessionContext } from 'supertokens-auth-react/recipe/session/index.js';
 
 export function CharacterPageLoader() {

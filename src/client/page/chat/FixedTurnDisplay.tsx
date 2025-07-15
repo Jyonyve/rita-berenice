@@ -1,7 +1,7 @@
 // src/client/component/page/chat/FixedTurnDisplay.tsx
 
 import React, { FC } from 'react';
-import { Box, IconButton } from '@mui/material';
+import { Box, IconButton, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { commonStyle, styleEntryFont } from '../../util/styleUtils.jsx';
@@ -18,9 +18,13 @@ export const FixedTurnDisplay: FC<FixedTurnDisplayProps> = ({ turn, onEdit }) =>
 			<Box sx={{ mb: 1 }}>
 				{/* Added a container for the request */}
 				{turn.request.entries.map((entry, idx) => (
-					<span key={`req-${turn.sequence}-${idx}`} className={styleEntryFont('user', entry.type)}>
+					<Typography
+						sx={{ whiteSpace: 'pre-line' }}
+						key={`req-${turn.sequence}-${idx}`}
+						className={styleEntryFont('user', entry.type)}
+					>
 						{entry.prompt}
-					</span>
+					</Typography>
 				))}
 			</Box>
 
@@ -28,9 +32,13 @@ export const FixedTurnDisplay: FC<FixedTurnDisplayProps> = ({ turn, onEdit }) =>
 			<Box sx={{ mb: 1 }}>
 				{/* Added a container for the response */}
 				{turn.response.entries.map((entry, idx) => (
-					<span key={`res-${turn.sequence}-${idx}`} className={styleEntryFont('assistant', entry.type)}>
+					<Typography
+						sx={{ whiteSpace: 'pre-line' }}
+						key={`res-${turn.sequence}-${idx}`}
+						className={styleEntryFont('assistant', entry.type)}
+					>
 						{entry.prompt}
-					</span>
+					</Typography>
 				))}
 			</Box>
 

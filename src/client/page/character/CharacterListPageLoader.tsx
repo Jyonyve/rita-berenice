@@ -1,7 +1,7 @@
 // src/client/page/CharacterPage.tsx
 import { CircularProgress, Container, Typography } from '@mui/material';
 import { CharacterListPage } from './CharacterListPage.jsx';
-import { useCharacterApi } from '../../hook/api/useCharacterApi.js';
+import { useCharacterApi } from '../../hook/api/index.js';
 
 export function CharacterListPageLoader() {
 	const { data: characterRes, isLoading, isError } = useCharacterApi().getAllCharacters();
