@@ -21,6 +21,7 @@ const allBuiltinModules = [...new Set([...builtinModules, ...nodeBuiltinModules]
 
 export default defineConfig({
 	root: '.',
+	base: '/rita-berenice/',
 	cacheDir: '.vite_cache',
 	define: { 'process.env.APP_ENV': JSON.stringify(process.env.APP_ENV) },
 	// SSR specific options
