@@ -11,6 +11,7 @@ import { createEmotionCache } from '#shared/config/createEmotionCache.js';
 import { AppProviders } from '#client/AppProviders.jsx';
 import '#client/style/index.css';
 import { User } from 'supertokens-web-js/types/index.js';
+import { getMockLoggedIn, setMockLoggedIn } from '#client/mock/supertokensMockState.js';
 
 const isStatic = import.meta.env.VITE_APP_MODE === 'static';
 
@@ -52,8 +53,18 @@ if (isStatic) {
 				override: {
 					functions: (original, builder) => ({
 						...original,
-						signIn: async (input) => ({ status: 'OK', user: mockUser, fetchResponse: dummyResponse }),
-						signUp: async (input) => ({ status: 'OK', user: mockUser, fetchResponse: dummyResponse }),
+						signIn: async (input) => {
+							setMockLoggedIn(true);
+							return { status: 'OK', user: mockUser, fetchResponse: dummyResponse };
+						},
+						signUp: async (input) => {
+							setMockLoggedIn(true);
+							return { status: 'OK', user: mockUser, fetchResponse: dummyResponse };
+						},
+						signOut: async () => {
+							setMockLoggedIn(false);
+							return { status: 'OK', fetchResponse: dummyResponse };
+						},
 						sendPasswordResetEmail: async () => ({ status: 'OK', fetchResponse: dummyResponse }),
 						submitNewPassword: async () => ({ status: 'OK', fetchResponse: dummyResponse }),
 					}),
@@ -63,10 +74,12 @@ if (isStatic) {
 				override: {
 					functions: (original, builder) => ({
 						...original,
-						doesSessionExist: async () => true,
-						getUserId: async () => 'mock-user',
-						getAccessTokenPayloadSecurely: async () => ({}),
-						signOut: async () => {},
+						doesSessionExist: async () => getMockLoggedIn(),
+						getUserId: async () => (getMockLoggedIn() ? 'mock-user' : ''),
+						getAccessTokenPayloadSecurely: async () => (getMockLoggedIn() ? {} : undefined),
+						signOut: async () => {
+							setMockLoggedIn(false);
+						},
 						shouldDoInterceptionBasedOnUrl: () => false,
 					}),
 				},

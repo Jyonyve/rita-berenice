@@ -1,5 +1,5 @@
 import { ChatResponse } from '#shared/api/ModuleResponse.js';
-import { mockMondayChat } from '../data/mockChatData.ts';
+import { mockMondayChat } from '../data/mockChatData.js';
 import { mockMondaySession } from '../data/mockSessionData.js';
 import { SessionInfo } from '#shared/domain/session/SessionInterfaces.js';
 
