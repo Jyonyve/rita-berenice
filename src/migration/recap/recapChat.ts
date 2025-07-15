@@ -5,6 +5,9 @@ import {
 	METADATA_TYPES,
 	DEFAULT_RECAP_INTERVAL,
 	DEFAULT_RELATIONSHIP_RECAP_INTERVAL,
+	buildRecapId,
+	buildRelationshipRecapId,
+	buildStoryId,
 } from '../../shared/index.js';
 import {
 	buildFactualRecapPrompt,
@@ -14,21 +17,13 @@ import {
 import { chromaDbClient } from '../../server/db/index.js';
 import { Where } from 'chromadb';
 import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
-import {
-	buildRecapId,
-	buildRelationshipRecapId,
-	buildStoryId,
-	handleServiceError,
-	validateChromaResponse,
-} from '../../server/util/index.js';
+import { handleServiceError, validateChromaResponse } from '../../server/util/index.js';
 
 // --- Configuration ---
 
 // 'gemini-2.5-pro-preview-05-06'; // 고품질 스토리용
-const OPENROUTER_API_KEY =
-	process.env.OPENROUTER_API_KEY ||
-	'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'; // OpenRouter API 키
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDcw_sDLQSjD0fJARHJNaRoIZv_Se6YGj8';
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 const PROGRESS_DIR = './src/migration/recap';
 const OUTPUT_DIR = `${PROGRESS_DIR}/output`;

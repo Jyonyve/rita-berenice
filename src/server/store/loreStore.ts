@@ -51,8 +51,8 @@ export const loreStore = {
 			ids,
 			documents,
 			metadatas,
-			lores,
-			lore: lores[0] || null,
+			loreInfos: lores,
+			loreInfo: lores[0] || null,
 			loreContent: lores.length > 0 ? lores[0].content : '',
 			loreContents: lores.map((lore) => lore.content),
 		};
@@ -70,8 +70,8 @@ export const loreStore = {
 			ids,
 			documents,
 			metadatas,
-			histories,
-			history: histories[0] || null,
+			historyInfos: histories,
+			historyInfo: histories[0] || null,
 			historyContent: histories.length > 0 ? histories[0].content : '',
 			historyContents: histories.map((history) => history.content),
 		};
@@ -165,7 +165,7 @@ export const loreStore = {
 
 			for (const rawResult of rawResults) {
 				const results = validateChromaResponse(rawResult, 'getList', collectionType);
-				const lores = loreStore._constuctLore(results).lores;
+				const lores = loreStore._constuctLore(results).loreInfos;
 
 				allLores.push(...lores);
 				allIds.push(...results.ids);
@@ -177,9 +177,9 @@ export const loreStore = {
 				ids: allIds,
 				documents: allDocuments,
 				metadatas: allMetadatas,
-				lores: allLores,
+				loreInfos: allLores,
 				loreContents: allLores.map((lore) => lore.content),
-				lore: allLores[0] || null,
+				loreInfo: allLores[0] || null,
 				loreContent: allLores.length > 0 ? allLores[0].content : '',
 			};
 		} catch (error) {
@@ -222,7 +222,7 @@ export const loreStore = {
 
 			for (const rawResult of rawResults) {
 				const results = validateChromaResponse(rawResult, 'getList', collectionType);
-				const histories = loreStore._constuctHistory(results).histories;
+				const histories = loreStore._constuctHistory(results).historyInfos;
 				allHistories.push(...histories);
 				allIds.push(...results.ids);
 				allDocuments.push(...results.documents);
@@ -237,8 +237,8 @@ export const loreStore = {
 				ids: allIds,
 				documents: allDocuments,
 				metadatas: allMetadatas,
-				histories: uniqueHistories,
-				history: uniqueHistories[0] || null,
+				historyInfos: uniqueHistories,
+				historyInfo: uniqueHistories[0] || null,
 				historyContents: uniqueHistories.map((h) => h.content),
 				historyContent: uniqueHistories[0]?.content || '',
 			};
@@ -298,12 +298,12 @@ export const loreStore = {
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 			const historyInfos = loreStore._constuctHistory(results);
 			// Sort by sequence for chronological order
-			const sorted = historyInfos.histories.sort((a, b) => a.sequence - b.sequence);
+			const sorted = historyInfos.historyInfos.sort((a, b) => a.sequence - b.sequence);
 
 			return {
 				...historyInfos,
 				historyContents: sorted.map((history) => history.content),
-				history: sorted[0] || null,
+				historyInfo: sorted[0] || null,
 				historyContent: sorted.length > 0 ? sorted[0].content : '',
 			};
 		} catch (error) {

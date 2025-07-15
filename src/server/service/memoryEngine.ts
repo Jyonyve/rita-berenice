@@ -136,8 +136,8 @@ export const memoryEngine = {
 				langCode,
 				shortTermHistory,
 				longTermHistory: rerankedLongTerm.contents?.slice(0, FINAL_MEMORY_LIMIT) || [],
-				relevantLore: relevantLoreRes?.lores || [],
-				relevantHistory: relevantHistoryRes?.histories || [],
+				relevantLore: relevantLoreRes?.loreInfos || [],
+				relevantHistory: relevantHistoryRes?.historyInfos || [],
 				// Pass the concise summaries, not the full objects
 				factualRecapSummary: factualRecapSummary,
 				relationshipRecapSummary: relationshipRecapSummary,
@@ -177,8 +177,8 @@ export const memoryEngine = {
 				loreStore.getLores(characterId),
 				loreStore.getHistories(characterId),
 			]);
-			const loreIds = loreRes.lores.map((lore) => lore.loreId);
-			const historyIds = historyRes.histories.map((history) => history.historyId);
+			const loreIds = loreRes.loreInfos.map((lore) => lore.loreId);
+			const historyIds = historyRes.historyInfos.map((history) => history.historyId);
 
 			// 4. Build the guided prompt for the LLM
 			const prompt = buildChatTurnMetadataPrompt(

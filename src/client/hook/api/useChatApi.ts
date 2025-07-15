@@ -3,10 +3,10 @@
 import type { Where } from 'chromadb';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../util/clientHelpers.js';
-import { ChatTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { genApiUrl } from '#shared/util/apiHelpers.js';
-import { ChatResponse, TempChatResponse } from '#shared/api/ModuleResponse.js';
+import { ChatResponse } from '#shared/api/ModuleResponse.js';
 
 /**
  * A client-side hook for interacting with the CHAT and TEMP_CHAT API endpoints.

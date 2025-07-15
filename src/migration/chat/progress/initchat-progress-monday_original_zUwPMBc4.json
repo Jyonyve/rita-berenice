@@ -1,0 +1,11 @@
+{
+  "sessionId": "monday_original_zUwPMBc4",
+  "totalTurnsInLogFile": 9,
+  "lastProcessedSequence": 8,
+  "successfullyEnrichedTurnsCount": 9,
+  "fallbackSavedTurnsCount": 0,
+  "startedAt": "2025-07-14T23:57:58.721Z",
+  "lastUpdatedAt": "2025-07-14T23:58:53.726Z",
+  "status": "completed",
+  "errors": []
+}

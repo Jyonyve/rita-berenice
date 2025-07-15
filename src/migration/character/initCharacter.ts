@@ -1,6 +1,5 @@
 // Save this file as scripts/initCharacter.ts
 
-import { ChromaClient } from 'chromadb';
 import { mondayOriginal, getTarionOriginal, getTarionSpinoff } from './migrationTemplates.js';
 import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
 import { characterStore } from '#server/index.js';

@@ -79,7 +79,7 @@ const queryExistingHistories = async (
 
 	for (const characterId of characterIds) {
 		try {
-			const { histories } = await loreStore.getHistories(characterId);
+			const { historyInfos: histories } = await loreStore.getHistories(characterId);
 			if (histories.length > 0) {
 				const mapped = histories.map((h) => ({
 					originalTitle: h.title,
@@ -106,7 +106,7 @@ const queryExistingLore = async (characterIds: string[]): Promise<string[]> => {
 
 	for (const characterId of characterIds) {
 		try {
-			const { lores } = await loreStore.getLores(characterId);
+			const { loreInfos: lores } = await loreStore.getLores(characterId);
 			if (lores.length > 0) {
 				allLoreIds.push(...lores.map((l) => l.loreId));
 			}

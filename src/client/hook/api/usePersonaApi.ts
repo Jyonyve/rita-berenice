@@ -3,7 +3,8 @@
 import { apiClient } from '../../util/clientHelpers.js';
 import { useMutation } from '@tanstack/react-query';
 import { MemoryResponse, PersonaResponse } from '#shared/api/ModuleResponse.js';
-import { CharacterInfo, ProfileInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 
 import { ChatMessage } from '@langchain/core/messages';
 import { MODULE_NAMES } from '#shared/config/constants.js';

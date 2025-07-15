@@ -29,7 +29,7 @@ async function duplicateHistoryEntries() {
 		// --- Step 1: Fetch the original history entries ---
 		console.log(`\n1. Fetching original histories for character: ${SOURCE_CHARACTER_ID}`);
 		// Use the loreStore to get all histories for the source character.
-		const { histories: allOriginalHistories } = await loreStore.getHistories(SOURCE_CHARACTER_ID);
+		const { historyInfos: allOriginalHistories } = await loreStore.getHistories(SOURCE_CHARACTER_ID);
 
 		// Filter down to the specific two records we care about.
 		const sourceHistories = allOriginalHistories.filter((h) =>

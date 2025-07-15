@@ -12,7 +12,7 @@ const userId = '6b335673-c837-43f9-a1c7-0b92c90edefb';
  * @param {string} sessionId - The unique session ID for this profile instance.
  * @returns {ProfileCdo} A profile creation data object.
  */
-export const getUserProfileTemplate = (userId: string, sessionId: string): ProfileCdo => ({
+export const getTarionUserProfileTemplate = (userId: string, sessionId: string): ProfileCdo => ({
 	name: 'yonyve',
 	gender: 'female',
 	title: "The Marquis' Eldest Daughter",
@@ -22,10 +22,21 @@ export const getUserProfileTemplate = (userId: string, sessionId: string): Profi
 	sessionId: sessionId,
 });
 
+export const getMondayUserProfileTemplate = (userId: string, sessionId: string): ProfileCdo => ({
+	name: 'yonyve',
+	gender: 'female',
+	title: 'AI lover developer',
+	showName: '요니브',
+	description: `A user profile for session ${sessionId}.`,
+	userId: userId,
+	sessionId: sessionId,
+});
+
 // --- Main Seeding Logic ---
 async function initProfile() {
 	// const sessionId = 'tarion_original_fhTob3vkzxHF6tJc';
-	const sessionId = 'tarion_spinoff_Oin8t5Lxbc8glaU7';
+	// const sessionId = 'tarion_spinoff_Oin8t5Lxbc8glaU7';
+	const sessionId = 'monday_original_zUwPMBc4';
 	try {
 		// Step 1: GET the collection. Do NOT create it.
 		console.log(`Getting collection "${COLLECTIONS.PROFILE}"...`);
@@ -34,7 +45,7 @@ async function initProfile() {
 		console.log(`Upserting profiles...`);
 
 		// Upsert sample profiles with a specific userId and unique sessionIds
-		console.log(await profileStore.storeProfile(getUserProfileTemplate(userId, sessionId)));
+		console.log(await profileStore.storeProfile(getMondayUserProfileTemplate(userId, sessionId)));
 
 		console.log(`✅ Successfully seeded profiles.`);
 		process.exit(0);

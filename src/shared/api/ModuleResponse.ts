@@ -58,17 +58,17 @@ export type TempChatResponse = TempChatChromaResponse;
 
 // Lore
 interface LoreChromaResponse extends ChromaResponse {
-	lore: LoreInfo;
+	loreInfo: LoreInfo;
 	loreContent: string;
-	lores: LoreInfo[];
+	loreInfos: LoreInfo[];
 	loreContents: string[];
 }
 export type LoreResponse = LoreChromaResponse;
 
 interface HistoryChromaResponse extends ChromaResponse {
-	history: HistoryInfo;
+	historyInfo: HistoryInfo;
 	historyContent: string;
-	histories: HistoryInfo[];
+	historyInfos: HistoryInfo[];
 	historyContents: string[];
 }
 export type HistoryResponse = HistoryChromaResponse;

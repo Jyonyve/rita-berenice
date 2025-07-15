@@ -12,7 +12,7 @@ import { genApiUrl } from '#shared/util/apiHelpers.js';
  * A client-side hook for interacting with the AI (LLM) API endpoints.
  * It encapsulates API logic, loading/error states, and user notifications via a toast system.
  */
-export const useAiApi = () => {
+export const useLlmApi = () => {
 	const MODULE_NAME = MODULE_NAMES.LLM; // Assuming LLM is the module name for AI routes
 
 	const invokeLlm = useMutation<

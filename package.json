@@ -8,6 +8,7 @@
 		"dev": "tsx --env-file .env.development ./src/server/server.ts",
 		"build:client": "vite build --outDir dist/client",
 		"build:server": "tsc --project tsconfig.server.json && tsc-alias -p tsconfig.server.json",
+		"build:static": "vite build --mode static",
 		"build": "pnpm run build:client && pnpm run build:server",
 		"start": "cross-env NODE_ENV=production node --env-file .env.production dist/server/server.js",
 		"preview": "cross-env NODE_ENV=development node --env-file .env.development dist/server/server.js",
@@ -27,6 +28,7 @@
 		"check:his": "tsx ./src/migration/lore/checkHistory.ts",
 		"link:chat": "tsx ./src/migration/lore/linkChatToHistory.ts",
 		"extract:lore": "tsx ./src/migration/source/htmlParserCheerio.ts",
+		"mock:chat": "tsx ./src/client/mock/mockGenerator.ts",
 		"drop": "tsx ./src/migration/dropCollection.ts"
 	},
 	"dependencies": {

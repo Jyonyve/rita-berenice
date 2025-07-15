@@ -1,9 +1,8 @@
-// src/client/hooks/useChatApi.ts
+// src/client/hooks/useTempChatApi.ts
 
-import type { Where } from 'chromadb';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiClient } from '../../util/clientHelpers.js';
-import { ChatTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { genApiUrl } from '#shared/util/apiHelpers.js';
 import { ChatResponse, TempChatResponse } from '#shared/api/ModuleResponse.js';
@@ -13,8 +12,6 @@ import { ChatResponse, TempChatResponse } from '#shared/api/ModuleResponse.js';
  * It encapsulates API logic, loading/error states, and user notifications via a toast system.
  */
 export const useTempChatApi = () => {
-	const queryClient = useQueryClient();
-
 	// --- Temporary Chat Turn Operations ---
 
 	/**
