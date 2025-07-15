@@ -2,59 +2,63 @@
 name: Deploy Static Site to GitHub Pages
 
 on:
- # Runs on pushes targeting the main branch
- push:
-  branches: ['main', 'develop']
+  # Runs on pushes targeting your main and develop branches
+  push:
+    branches:
+      - "main"
+      - "develop" # Or any other branches you want to deploy from
 
- # Allows you to run this workflow manually from the Actions tab
- workflow_dispatch:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 # Sets GITHUB_TOKEN permissions to allow deployment to GitHub Pages
 permissions:
- contents: read
- pages: write
- id-token: write
+  contents: read
+  pages: write
+  id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# Allow only one concurrent deployment
 concurrency:
- group: 'pages'
- cancel-in-progress: true
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
- # Build and deploy job
- deploy:
-  environment:
-   name: github-pages
-   url: ${{ steps.deployment.outputs.page_url }}
-  runs-on: ubuntu-latest
-  steps:
-   - name: Checkout
-     uses: actions/checkout@v4
+  # Build and deploy job
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-   - name: Set up Node.js
-     uses: actions/setup-node@v4
-     with:
-      node-version: 22
-      cache: 'pnpm'
+      # --- ADD THIS STEP ---
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8 # You can specify a pnpm version
 
-   - name: Install pnpm
-     run: npm install -g pnpm
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm' # This tells setup-node to use pnpm's cache
 
-   - name: Install dependencies
-     run: pnpm install
+      - name: Install dependencies
+        run: pnpm install
 
-   - name: Build static site
-     run: pnpm run build:static
+      - name: Build static site
+        run: pnpm run build:static
 
-   - name: Setup Pages
-     uses: actions/configure-pages@v5
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
 
-   - name: Upload artifact
-     uses: actions/upload-pages-artifact@v3
-     with:
-      # Upload the output of your static build script
-      path: './dist/static' # This should match the --outDir of your build:static script
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist/static'
 
-   - name: Deploy to GitHub Pages
-     id: deployment
-     uses: actions/deploy-pages@v4
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
