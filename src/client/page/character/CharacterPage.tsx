@@ -23,17 +23,19 @@ import { ProfileCard } from './ProfileCard.jsx';
 import { useProfileApi } from '../../hook/api/index.js';
 import { useAuthModal } from '../../provider/AuthModalProvider.jsx';
 import { containerSpacing, containerPadding as containerPadding } from '../../style/index.js';
-import { getLangText } from '#shared/util/languageUtils.js';
+import { getLangText, getLangAlertText } from '#shared/util/languageUtils.js';
 import { GlassCard, GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
 import { RomanticTitle } from '../../layout/RomanticTitle.jsx';
+import { useToast } from '../../provider/ToastProvider.jsx';
+import { LANG_KEYS } from '#shared/config/langConstants.js';
 
 const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 	characterInfo,
 	userId,
 }) => {
 	const navigate = useNavigate();
+	const { addToast } = useToast();
 	const characterId = characterInfo.characterId;
-	const [profileId, setProfileId] = useState('');
 	const { openLoginModal } = useAuthModal();
 
 	// Character state: portraits, loading, error
@@ -50,6 +52,10 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 	};
 
 	const handleStartNewSession = async (profileCdo: ProfileCdo) => {
+		if (import.meta.env.VITE_APP_MODE === 'static') {
+			addToast(getLangAlertText(LANG_KEYS.STATIC_SESSION_DISABLE), 'error');
+			return;
+		}
 		if (!userId) {
 			openLoginModal();
 			return;

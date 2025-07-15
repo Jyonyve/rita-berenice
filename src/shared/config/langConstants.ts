@@ -7,6 +7,8 @@ type LanguageMap = Record<LangCode, string>;
 // The outer record now uses this dynamic LanguageMap type.
 
 export const LANG_KEYS = {
+	STATIC_SESSION_DISABLE: 'STATIC_SESSION_DISABLE',
+	STATIC_SENDING_DISABLE: 'STATIC_SENDING_DISABLE',
 	SESSIONS_WITH_CHARACTER: 'SESSIONS_WITH_CHARACTER',
 	CREATE_NEW_PROFILE: 'CREATE_NEW_PROFILE',
 	START_NEW_SESSION: 'START_NEW_SESSION',
@@ -41,5 +43,13 @@ export const alertConstants: LangRecord = {
 	CREATE_NEW_PROFILE: {
 		kor: '대화에 참여할 프로필을 생성해 주세요.',
 		eng: 'Please create a profile before starting a session.',
+	},
+	STATIC_SENDING_DISABLE: {
+		kor: '샘플 사이트에서는 메시지를 보내실 수 없습니다.',
+		eng: 'Sending is disabled in static mode',
+	},
+	STATIC_SESSION_DISABLE: {
+		kor: '샘플 사이트에서는 새 대화를 시작하실 수 없습니다.',
+		eng: 'New session is disabled in static mode',
 	},
 };

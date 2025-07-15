@@ -38,16 +38,21 @@ const getInitialFormData = (userId: string): ProfileCdo => ({
 });
 
 const modalStyle = {
-	position: 'absolute' as 'absolute',
+	position: 'absolute',
 	top: '50%',
 	left: '50%',
 	transform: 'translate(-50%, -50%)',
 	width: { xs: '90%', sm: 600 },
 	maxHeight: '80vh',
 	overflowY: 'auto',
-	bgcolor: 'background.paper',
+	bgcolor: 'background.paper', // This can be replaced or extended
 	boxShadow: 24,
 	borderRadius: 2,
+	// Add these styles for a glassy, visible background:
+	background: 'rgba(255,255,255,0.18)', // Slight white tint, adjust alpha as needed
+	backdropFilter: 'blur(12px)',
+	WebkitBackdropFilter: 'blur(12px)',
+	border: '1px solid rgba(255,255,255,0.22)',
 };
 
 export const ProfileCard: FC<{ userId: string; onSubmit: (profileData: ProfileCdo) => void }> = ({
@@ -58,7 +63,6 @@ export const ProfileCard: FC<{ userId: string; onSubmit: (profileData: ProfileCd
 		register,
 		handleSubmit,
 		control,
-		setValue,
 		reset,
 		formState: { isSubmitting },
 	} = useForm<ProfileCdo>({ defaultValues: getInitialFormData(userId) });
@@ -82,13 +86,15 @@ export const ProfileCard: FC<{ userId: string; onSubmit: (profileData: ProfileCd
 
 	// On double click, populate the form with the profile's data and close the modal.
 	const handleDoubleClickProfile = (profile: ProfileInfo) => {
-		setValue('name', profile.name);
-		setValue('gender', profile.gender);
-		setValue('title', profile.title);
-		setValue('showName', profile.showName);
-		setValue('description', profile.description);
-		setValue('userId', userId);
-
+		reset({
+			name: profile.name,
+			gender: profile.gender,
+			title: profile.title,
+			showName: profile.showName,
+			description: profile.description,
+			userId,
+			sessionId: '',
+		});
 		handleCloseModal();
 	};
 
@@ -113,13 +119,23 @@ export const ProfileCard: FC<{ userId: string; onSubmit: (profileData: ProfileCd
 					</Box>
 
 					<Stack spacing={1}>
-						<TextField required fullWidth label="Profile Name" {...register('name')} />
-						<TextField required fullWidth label="Display Name (in chat)" {...register('showName')} />
+						{/* --- UPDATED TEXTFIELDS --- */}
+						<Controller
+							name="name"
+							control={control}
+							render={({ field }) => <TextField required fullWidth label="Profile Name" {...field} />}
+						/>
+						<Controller
+							name="showName"
+							control={control}
+							render={({ field }) => (
+								<TextField required fullWidth label="Display Name (in chat)" {...field} />
+							)}
+						/>
 
-						{/* 2. Replace the Box with a Grid container */}
 						<Grid container spacing={innerSpacing}>
-							{/* Gender takes 3/12 width on medium screens */}
 							<Grid size={{ xs: 12, md: 3 }}>
+								{/* Your existing Controller for Select is already correct */}
 								<FormControl fullWidth required>
 									<InputLabel id="gender-select-label">{getLangText(LANG_KEYS.GENDER)}</InputLabel>
 									<Controller
@@ -135,26 +151,39 @@ export const ProfileCard: FC<{ userId: string; onSubmit: (profileData: ProfileCd
 									/>
 								</FormControl>
 							</Grid>
-							{/* Title takes 9/12 width on medium screens */}
 							<Grid size={{ xs: 12, md: 9 }}>
-								<TextField
-									required
-									fullWidth
-									label="Title or Role"
-									placeholder="e.g., Crown Prince, Lead Researcher"
-									{...register('title')}
+								{/* --- UPDATED TEXTFIELD --- */}
+								<Controller
+									name="title"
+									control={control}
+									render={({ field }) => (
+										<TextField
+											required
+											fullWidth
+											label="Title or Role"
+											placeholder="e.g., Crown Prince, Lead Researcher"
+											{...field}
+										/>
+									)}
 								/>
 							</Grid>
 						</Grid>
 
-						<TextField
-							required
-							fullWidth
-							label="Description"
-							multiline
-							rows={4}
-							placeholder="Describe the persona's background and key traits."
-							{...register('description')}
+						{/* --- UPDATED TEXTFIELD --- */}
+						<Controller
+							name="description"
+							control={control}
+							render={({ field }) => (
+								<TextField
+									required
+									fullWidth
+									label="Description"
+									multiline
+									rows={4}
+									placeholder="Describe the persona's background and key traits."
+									{...field}
+								/>
+							)}
 						/>
 					</Stack>
 					<CardActions sx={{ justifyContent: 'flex-end', p: 2, pb: 0 }}>

@@ -65,6 +65,7 @@ if (isStatic) {
 							setMockLoggedIn(false);
 							return { status: 'OK', fetchResponse: dummyResponse };
 						},
+						doesSessionExist: async () => getMockLoggedIn(),
 						sendPasswordResetEmail: async () => ({ status: 'OK', fetchResponse: dummyResponse }),
 						submitNewPassword: async () => ({ status: 'OK', fetchResponse: dummyResponse }),
 					}),
