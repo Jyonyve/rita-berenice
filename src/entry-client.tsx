@@ -119,7 +119,7 @@ function ClientApp() {
 	const clientSideEmotionCache = createEmotionCache();
 
 	return (
-		<BrowserRouter>
+		<BrowserRouter basename={import.meta.env.BASE_URL}>
 			<AppProviders emotionCache={clientSideEmotionCache}>
 				<App />
 			</AppProviders>
