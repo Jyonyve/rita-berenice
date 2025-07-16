@@ -2,7 +2,6 @@
 
 import { NavigateFunction } from 'react-router';
 
-// This file remains unchanged.
 let isMockLoggedIn = false;
 let navigate: NavigateFunction | null = null;
 const listeners = new Set<(isLoggedIn: boolean) => void>();
@@ -32,25 +31,5 @@ export const mockAuthStore = {
 		if (navigate) {
 			navigate(path);
 		}
-	},
-
-	// --- NEW ---
-	// Method to register the navigate function from our React app
-	setNavigate: (navigateFn: NavigateFunction) => {
-		mockNavigate = navigateFn;
-	},
-	// Method to perform client-side navigation
-	handleNavigation: (path: string) => {
-		if (mockNavigate) {
-			console.log(`[Mock Auth] Navigating to ${path} using React Router.`);
-			mockNavigate(path);
-			window.history.replaceState({}, '', import.meta.env.BASE_URL);
-		} else {
-			console.error('Navigate function not set. Cannot perform client-side navigation.');
-			setTimeout(() => mockAuthStore.handleNavigation(path), 20);
-		}
-	},
-	setNavigate: (navigateFn: NavigateFunction) => {
-		mockNavigate = navigateFn;
 	},
 };

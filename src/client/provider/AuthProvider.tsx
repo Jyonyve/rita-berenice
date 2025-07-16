@@ -10,7 +10,7 @@ import React, {
 	useRef,
 } from 'react';
 import { useSessionContext } from 'supertokens-auth-react/recipe/session/index.js';
-import { mockUserId, useMockAuthStore } from '../mock/index.js';
+import { useMockAuthStore } from '../mock/index.js';
 
 // --- Define the shape of our unified context ---
 interface AuthContextType {
@@ -23,7 +23,7 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
+const mockUserId = 'mock-user-id';
 const isStatic = import.meta.env.VITE_APP_MODE === 'static';
 
 // --- Create the single, intelligent provider ---
