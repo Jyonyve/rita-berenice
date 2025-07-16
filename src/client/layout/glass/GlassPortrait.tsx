@@ -9,7 +9,7 @@ interface GlassPortraitProps {
 	colorVariant?: ColorVariant;
 	sx?: SxProps<Theme>;
 	fit?: 'cover' | 'contain';
-	isHovered?: boolean;
+	hover?: boolean;
 }
 
 export const GlassPortrait: FC<GlassPortraitProps> = ({
@@ -19,7 +19,7 @@ export const GlassPortrait: FC<GlassPortraitProps> = ({
 	className,
 	sx = {},
 	fit = 'cover',
-	isHovered = false,
+	hover = false,
 }) => {
 	const theme = useTheme();
 	const glowColor = getColor(theme, colorVariant);
@@ -64,7 +64,7 @@ export const GlassPortrait: FC<GlassPortraitProps> = ({
       inset 1px 1px 2px rgba(255, 255, 255, 0.15)
     `,
 		transition: 'box-shadow 0.5s ease-in-out',
-		...(isHovered && glowStyles),
+		...(hover && glowStyles),
 		'&:hover': glowStyles,
 		...sx,
 	};

@@ -18,7 +18,7 @@ export const ScrollGlow: FC<ScrollGlowProps> = ({ showTop, showBottom, isScrolli
 
 	// Define the height and offset for the glow for easy tweaking.
 	const glowHeight = theme.spacing(9); // 64px, a large area for a very soft gradient.
-	const glowOffset = theme.spacing(5); // 32px, how much it "bleeds" in from outside.
+	const glowOffset = theme.spacing(6); // 32px, how much it "bleeds" in from outside.
 
 	return (
 		<Box
@@ -39,6 +39,7 @@ export const ScrollGlow: FC<ScrollGlowProps> = ({ showTop, showBottom, isScrolli
 					left: 0,
 					right: 0,
 					height: glowHeight,
+					marginX:theme.spacing(1),
 					transition: 'opacity 0.3s ease-out',
 				},
 

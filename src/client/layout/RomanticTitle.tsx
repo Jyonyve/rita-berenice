@@ -8,7 +8,7 @@ import { ColorVariant, getColor } from '../style/colors.js';
 interface RomanticTitleProps extends TypographyProps {
 	colorVariant?: ColorVariant;
 	logo?: boolean;
-	isHovered?: boolean;
+	hover?: boolean;
 	/**
 	 * If true, the component will not glow on its own hover.
 	 * This is useful when a parent component controls the glow state.
@@ -18,7 +18,7 @@ interface RomanticTitleProps extends TypographyProps {
 
 export const RomanticTitle = (props: RomanticTitleProps) => {
 	// Destructure all custom props
-	const { logo, colorVariant, isHovered, noGlow, sx, ...rest } = props;
+	const { logo, colorVariant, hover, noGlow, sx, ...rest } = props;
 
 	const theme = useTheme();
 	const glowColor = getColor(theme, colorVariant || 'primary');
@@ -33,8 +33,8 @@ export const RomanticTitle = (props: RomanticTitleProps) => {
 				transition: 'text-shadow 0.3s ease-in-out',
 
 				// --- DYNAMIC GLOW LOGIC ---
-				// 1. Apply glow if the 'isHovered' prop is true.
-				...(isHovered && glowStyles),
+				// 1. Apply glow if the 'hover' prop is true.
+				...(hover && glowStyles),
 				// 2. Apply the standalone hover effect ONLY if 'noGlow' is not passed.
 				...(!noGlow && { '&:hover': glowStyles }),
 

@@ -22,13 +22,13 @@ interface GlassCardProps extends PaperProps {
 }
 
 export const GlassCard: FC<GlassCardProps> = ({ children, sx, contentProps, ...rest }) => {
-	const [isHovered, setIsHovered] = useState(false);
+	const [hover, setIsHovered] = useState(false);
 
 	// The logic for passing the hover state down to children remains.
-	// We'll pass it as 'isHovered' for consistency with our other components.
+	// We'll pass it as 'hover' for consistency with our other components.
 	const childrenWithGlow = Children.map(children, (child) => {
 		if (isValidElement(child)) {
-			return cloneElement(child as React.ReactElement<any>, { isHovered });
+			return cloneElement(child as React.ReactElement<any>, { hover });
 		}
 		return child;
 	});

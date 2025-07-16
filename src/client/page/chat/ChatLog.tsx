@@ -1,13 +1,12 @@
 import { Box, CircularProgress, Typography } from '@mui/material';
-import React, { FC, memo, useEffect, useRef } from 'react';
-import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
+import React, { FC, memo } from 'react';
+import { Virtuoso } from 'react-virtuoso';
 
 import { ChatTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { useScrollEffect } from '../../hook/useScrollEffect.js';
-import { ScrollGlow } from '../../layout/ScrollGlow.jsx';
-import ChatLogRow, { ChatLogRowProps } from './ChatLogRow.jsx'; // Import the props type as well
+import ChatLogRow, { ChatLogRowProps } from './ChatLogRow.jsx';
+import { ScrollGlow } from '../../layout/index.js';
 
-// The main component's props interface remains the same
 interface ChatLogProps {
 	chatTurns: ChatTurn[];
 	tempChatTurn?: TempChatTurn;
@@ -25,32 +24,17 @@ interface ChatLogProps {
 
 export const ChatLog: FC<ChatLogProps> = memo(
 	({ chatTurns, tempChatTurn, isLoadingChat, isProcessing, clientError, ...rest }) => {
+		// --- HOOKS ---
 		const {
-			atTopStateChange,
-			atBottomStateChange,
-			isScrollingChange,
+			isScrolling,
 			showTopGlow,
 			showBottomGlow,
-			isScrolling,
+			scrollerRef, // Now correctly typed as a callback function
+			isScrollingChange,
 		} = useScrollEffect();
-		const virtuosoRef = useRef<VirtuosoHandle>(null); // Ref to control the Virtuoso instance
 
 		// Combine historical turns with the temporary turn for rendering
 		const allTurns = tempChatTurn ? [...chatTurns, tempChatTurn] : chatTurns;
-
-		useEffect(() => {
-			if (virtuosoRef.current && allTurns.length > 0) {
-				// Use a short timeout to allow the final item to render and its height to be calculated
-				const timer = setTimeout(() => {
-					virtuosoRef.current?.scrollToIndex({
-						index: allTurns.length - 1,
-						align: 'end', // Align to the bottom of the item
-						behavior: 'smooth',
-					});
-				}, 100);
-				return () => clearTimeout(timer);
-			}
-		}, [allTurns.length]);
 
 		if (isLoadingChat && allTurns.length === 0) {
 			return (
@@ -69,23 +53,18 @@ export const ChatLog: FC<ChatLogProps> = memo(
 					initialTopMostItemIndex={allTurns.length - 1}
 					followOutput="auto"
 					className="hide-scrollbar"
-					atTopStateChange={atTopStateChange}
-					atBottomStateChange={atBottomStateChange}
-					isScrolling={isScrollingChange}
-					// --- This is the corrected implementation ---
+					// Direct DOM access with correct callback type
+					scrollerRef={scrollerRef}
+					isScrolling={isScrollingChange} // Fallback only
 					itemContent={(index, turn) => {
-						const isTemp = 'setCount' in turn; // Check if it's a TempChatTurn
-
-						// The props are now passed individually to ChatLogRow
+						const isTemp = 'setCount' in turn;
 						const rowProps: ChatLogRowProps = {
 							turn,
 							isTemp,
 							isProcessing: isTemp && isProcessing,
-							...rest, // Pass all other necessary functions and state
+							...rest,
 						};
-
 						return (
-							// This Box provides the consistent padding for each row
 							<Box sx={{ py: 2, px: 1 }}>
 								<ChatLogRow {...rowProps} />
 							</Box>
