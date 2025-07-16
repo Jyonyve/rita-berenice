@@ -244,20 +244,32 @@ export const ChatPage: FC<{
 	// --- RENDER ---
 	return (
 		<GlassPaper key="chat-page" className="paper">
-			<Grid container spacing={containerSpacing} padding={containerPadding}>
+			<Grid container spacing={containerSpacing}>
 				{/* Portrait Section */}
 				<Grid
-					size={{ xs: 12, md: 5 }}
+					size={{ xs: 12, md: 4 }}
 					sx={{
+						// Define this column as a sticky "pillar" on larger screens.
 						position: { xs: 'static', md: 'sticky' },
+
+						// Pin it to the top of the scrollable <main> area, respecting its padding.
 						top: (theme) => theme.spacing(2),
+
+						// Prevent this column from stretching if the right-side content is taller.
 						alignSelf: 'flex-start',
-						height: (theme) => ({
-							xs: 'auto',
-							md: `calc(100vh - var(--header-height, 64px) - var(--footer-height, 37px) - ${theme.spacing(
-								2
-							)} * 2)`,
-						}),
+
+						// --- THE CORRECTED HEIGHT CALCULATION ---
+						// We subtract the header, footer, main's padding (2*2), and paper's padding (2*2).
+						height: {
+							xs: 'auto', // On mobile, height is automatic.
+							md: (theme) =>
+								`calc(100vh - var(--header-height) - var(--footer-height) - ${theme.spacing(8)})`,
+						},
+						// --- FLEXBOX CENTERING FOR THE IMAGE ---
+						// These properties ensure the image is centered within the pillar and scales correctly.
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
 					}}
 				>
 					<Box sx={{ height: '100%', display: 'flex' }}>
@@ -266,7 +278,7 @@ export const ChatPage: FC<{
 				</Grid>
 
 				{/* Chat Area Section */}
-				<Grid size={{ xs: 12, md: 7 }} sx={{ display: 'flex', flexDirection: 'column' }}>
+				<Grid size={{ xs: 12, md: 8 }} sx={{ display: 'flex', flexDirection: 'column' }}>
 					<Box sx={{ flexGrow: 1, overflow: 'hidden', position: 'relative' }}>
 						<ChatLog
 							chatTurns={chatTurns}

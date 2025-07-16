@@ -2,7 +2,6 @@
 
 import { createTheme } from '@mui/material/styles';
 import { typography } from './typography.js';
-import { margin, padding } from '@mui/system';
 
 // --- PALETTES ---
 
@@ -30,18 +29,10 @@ export const getTheme = (mode: 'light' | 'dark') =>
 			MuiTextField: { defaultProps: { size: 'small' } },
 			MuiFormControl: { defaultProps: { size: 'small' } },
 			MuiInputLabel: {
-				styleOverrides: {
-					// root: ({ theme }) => ({
-					// 	fontSize: theme.typography.body2.fontSize, // Use a smaller typography variant
-					// }),
-
-					shrink: ({ theme }) => ({
-						fontSize: theme.typography.body2.fontSize, // Adjust if you want different size when shrunk
-					}),
-				},
+				styleOverrides: { shrink: ({ theme }) => ({ fontSize: theme.typography.body2.fontSize }) },
 			},
 			MuiCssBaseline: {
-				styleOverrides: {
+				styleOverrides: (theme) => ({
 					// --- BASE & BOX-SIZING ---
 					'*, *::before, *::after': { boxSizing: 'border-box' },
 					html: { height: '100%', margin: 0, padding: 0 },
@@ -49,29 +40,48 @@ export const getTheme = (mode: 'light' | 'dark') =>
 					'#root': { height: '100%' },
 					"[role='button']": { cursor: 'pointer' },
 
-					// --- MAIN SCROLLBAR HIDING ---
-					'main::-webkit-scrollbar': { display: 'none' },
-					main: { '-ms-overflow-style': 'none', 'scrollbar-width': 'none' },
+					// --- MAIN CONTENT AREA STYLE ---
+					main: {
+						// Apply padding here. This creates the permanent 16px gap that
+						// will always be visible around the scrolling .paper.
+						padding: theme.spacing(2),
 
-					// --- GLOBAL PAGE CONTAINER STYLE ---
+						// Hide the scrollbar visuals on the main element itself
+						'&::-webkit-scrollbar': { display: 'none' },
+						'-ms-overflow-style': 'none', // IE and Edge
+						'scrollbar-width': 'none', // Firefox
+					},
+
+					// --- REVISED GLOBAL PAGE CONTAINER STYLE ---
 					'.paper': {
-						margin: '16px',
+						// Fill the available width inside the padded 'main' container.
+						width: '100%',
+
+						// This is key: The paper should be at least as tall as its container.
+						// If its content makes it taller, it will push past 100% and
+						// trigger the parent 'main' element to scroll.
+						minHeight: '100%',
+
+						// Add 16px of *inner* padding. This fixes the issue of child
+						// components overflowing the paper's borders.
+						padding: theme.spacing(2),
+
+						// Ensure the paper itself does not scroll or hide its content.
+						// Its children are now contained by the padding above.
+						overflow: 'visible',
+
+						// Flex properties to arrange the content *inside* the paper.
 						display: 'flex',
 						flexDirection: 'column',
-						width: '100%',
-						minHeight: '100%',
-						marginInline: 'auto',
 						position: 'relative',
 					},
 
-					// --- NEW: GLOBAL CLASS FOR HIDING SCROLLBARS ---
-					// This will hide the scrollbar on any element with className="hide-scrollbar"
 					'.hide-scrollbar::-webkit-scrollbar': { display: 'none' },
 					'.hide-scrollbar': {
 						'-ms-overflow-style': 'none', // IE and Edge
 						'scrollbar-width': 'none', // Firefox
 					},
-				},
+				}),
 			},
 		},
 	});

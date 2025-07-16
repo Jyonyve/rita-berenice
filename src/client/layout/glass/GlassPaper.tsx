@@ -1,9 +1,7 @@
 // src/components/ui/GlassPaper.tsx
 import { Paper, styled } from '@mui/material';
-import { containerPadding } from '../../style/padding.js';
 
 export const GlassPaper = styled(Paper)(({ theme }) => ({
-	padding: containerPadding,
 	// --- Core Glassmorphism Styles (from before) ---
 	background: 'rgba(255, 255, 255, 0.05)',
 	backdropFilter: 'blur(10px)',

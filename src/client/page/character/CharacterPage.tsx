@@ -84,20 +84,32 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 
 	return (
 		<GlassPaper key="character-page" className="paper">
-			<Grid container spacing={containerSpacing} padding={containerPadding}>
+			<Grid container spacing={containerSpacing}>
 				{/* Left Column */}
 				<Grid
-					size={{ xs: 12, md: 5 }}
+					size={{ xs: 12, md: 4 }}
 					sx={{
+						// Define this column as a sticky "pillar" on larger screens.
 						position: { xs: 'static', md: 'sticky' },
+
+						// Pin it to the top of the scrollable <main> area, respecting its padding.
 						top: (theme) => theme.spacing(2),
+
+						// Prevent this column from stretching if the right-side content is taller.
 						alignSelf: 'flex-start',
-						height: (theme) => ({
-							xs: 'auto',
-							md: `calc(100vh - var(--header-height, 64px) - var(--footer-height, 37px) - ${theme.spacing(
-								2
-							)} * 2)`,
-						}),
+
+						// --- THE CORRECTED HEIGHT CALCULATION ---
+						// We subtract the header, footer, main's padding (2*2), and paper's padding (2*2).
+						height: {
+							xs: 'auto', // On mobile, height is automatic.
+							md: (theme) =>
+								`calc(100vh - var(--header-height) - var(--footer-height) - ${theme.spacing(8)})`,
+						},
+						// --- FLEXBOX CENTERING FOR THE IMAGE ---
+						// These properties ensure the image is centered within the pillar and scales correctly.
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
 					}}
 				>
 					<Box sx={{ height: '100%', display: 'flex' }}>
@@ -113,7 +125,7 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 				</Grid>
 
 				{/* Right Column: Using the correct MUI v7 'size' prop */}
-				<Grid size={{ xs: 12, md: 7 }}>
+				<Grid size={{ xs: 12, md: 8 }}>
 					<Box display="flex" flexDirection="column" gap={2}>
 						{/* Title and Description Card */}
 						<GlassCard variant="outlined">
