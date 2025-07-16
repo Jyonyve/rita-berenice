@@ -94,7 +94,6 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 				>
 					<Box sx={{ height: '100%', width: '100%', display: 'flex' }}>
 						{!!portraits ? (
-							// Use the new 'fit' prop here
 							<GlassPortraitSlider imageUrls={portraits.slice(0, 3)} />
 						) : (
 							<Box width={200} height={200} bgcolor="#eee" borderRadius={3} />
@@ -110,7 +109,7 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 							<RomanticTitle noGlow isHovered variant="h6" color="primary" mt={1}>
 								{characterInfo.showName}
 							</RomanticTitle>
-							<Typography variant="body1" mt={2}>
+							<Typography variant="body1" mt={2} ml={2}>
 								{characterInfo.description}
 							</Typography>
 						</GlassCard>
