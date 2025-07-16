@@ -1,46 +1,19 @@
-// src/client/component/page/ChatLog.tsx
-
-import { Box, Button, CircularProgress, Typography } from '@mui/material';
-import React, { FC, memo, useCallback, useEffect, useRef } from 'react';
-import AutoSizer from 'react-virtualized-auto-sizer';
-import { VariableSizeList as List } from 'react-window';
+import { Box, CircularProgress, Typography } from '@mui/material';
+import React, { FC, memo, useEffect, useRef } from 'react';
+import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 
 import { ChatTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
-import { useScrollEffect } from '../../hook/useScrollEffect.js'; // Import the new hook
+import { useScrollEffect } from '../../hook/useScrollEffect.js';
 import { ScrollGlow } from '../../layout/ScrollGlow.jsx';
-import ChatLogRow, { ChatLogRowData } from './ChatLogRow.jsx';
+import ChatLogRow, { ChatLogRowProps } from './ChatLogRow.jsx'; // Import the props type as well
 
-// --- Component-Specific Helper Hook ---
-const useDynamicListSizes = (itemCount: number) => {
-	const listRef = useRef<List>(null);
-	const sizeMap = useRef<Record<number, number>>({});
-
-	const setSize = useCallback((index: number, size: number) => {
-		if (typeof size === 'number' && !isNaN(size) && sizeMap.current[index] !== size) {
-			sizeMap.current = { ...sizeMap.current, [index]: size };
-			listRef.current?.resetAfterIndex(index);
-		}
-	}, []);
-
-	const getSize = useCallback((index: number) => sizeMap.current[index] ?? 150, []);
-
-	useEffect(() => {
-		if (listRef.current && itemCount > 0) {
-			listRef.current.scrollToItem(itemCount - 1, 'end');
-		}
-	}, [itemCount]);
-
-	return { listRef, setSize, getSize };
-};
-
-// --- Component Props Interface ---
+// The main component's props interface remains the same
 interface ChatLogProps {
 	chatTurns: ChatTurn[];
 	tempChatTurn?: TempChatTurn;
 	currentTempSetNo: number;
 	changeTempSetNo: (index: number) => void;
 	isLoadingChat: boolean;
-	hasMore: boolean;
 	isProcessing: boolean;
 	clientError?: string;
 	userEditInput: string;
@@ -48,74 +21,86 @@ interface ChatLogProps {
 	onEditTempTurnText: (value: string, req: boolean) => void;
 	onSaveTempTurnText: () => void;
 	onRegenerateResponse: () => void;
-	loadOlderMessages: () => void;
 }
 
-// --- Main Component ---
 export const ChatLog: FC<ChatLogProps> = memo(
-	({ chatTurns, tempChatTurn, loadOlderMessages, hasMore, isLoadingChat, clientError, ...rest }) => {
-		// --- HOOKS ---
-		const itemCount = chatTurns.length + (tempChatTurn ? 1 : 0);
-		const { listRef, setSize, getSize } = useDynamicListSizes(itemCount);
-		const { scrollContainerRef, handleScroll, showTopGlow, showBottomGlow, isScrolling } =
-			useScrollEffect({ loadOlderMessages, hasMore, isLoadingChat });
+	({ chatTurns, tempChatTurn, isLoadingChat, isProcessing, clientError, ...rest }) => {
+		const {
+			atTopStateChange,
+			atBottomStateChange,
+			isScrollingChange,
+			showTopGlow,
+			showBottomGlow,
+			isScrolling,
+		} = useScrollEffect();
+		const virtuosoRef = useRef<VirtuosoHandle>(null); // Ref to control the Virtuoso instance
 
-		// --- MEMOIZED DATA ---
-		const itemData = React.useMemo<ChatLogRowData>(
-			() => ({ chatTurns, tempChatTurn, setSize, ...rest }),
-			[chatTurns, tempChatTurn, setSize, rest]
-		);
+		// Combine historical turns with the temporary turn for rendering
+		const allTurns = tempChatTurn ? [...chatTurns, tempChatTurn] : chatTurns;
 
-		// --- RENDER ---
-		return (
-			<>
-				<ScrollGlow showTop={showTopGlow} showBottom={showBottomGlow} isScrolling={isScrolling} />
-				<Box
-					sx={{
-						flexGrow: 1,
-						height: '100%',
-						position: 'relative',
-						display: 'flex',
-						flexDirection: 'column',
-					}}
-				>
-					{isLoadingChat && (
-						<Box sx={{ textAlign: 'center', py: 1 }}>
-							<CircularProgress size={24} /> Loading older...
-						</Box>
-					)}
+		useEffect(() => {
+			if (virtuosoRef.current && allTurns.length > 0) {
+				// Use a short timeout to allow the final item to render and its height to be calculated
+				const timer = setTimeout(() => {
+					virtuosoRef.current?.scrollToIndex({
+						index: allTurns.length - 1,
+						align: 'end', // Align to the bottom of the item
+						behavior: 'smooth',
+					});
+				}, 100);
+				return () => clearTimeout(timer);
+			}
+		}, [allTurns.length]);
 
-					<Box sx={{ flex: 1, width: '100%', height: '100%', py: 2 }}>
-						<AutoSizer>
-							{({ height, width }) => (
-								<List<ChatLogRowData>
-									ref={listRef}
-									outerRef={scrollContainerRef}
-									height={height}
-									width={width}
-									itemCount={itemCount}
-									itemSize={getSize}
-									itemData={itemData}
-									onScroll={handleScroll}
-									overscanCount={5}
-									className="hide-scrollbar"
-								>
-									{ChatLogRow}
-								</List>
-							)}
-						</AutoSizer>
-					</Box>
-
-					{clientError && (
-						<Typography color="error" sx={{ p: 1, textAlign: 'center' }}>
-							{clientError}
-							<Button size="small" onClick={loadOlderMessages} disabled={isLoadingChat}>
-								Retry
-							</Button>
-						</Typography>
-					)}
+		if (isLoadingChat && allTurns.length === 0) {
+			return (
+				<Box display="flex" justifyContent="center" alignItems="center" height="100%">
+					<CircularProgress />
 				</Box>
-			</>
+			);
+		}
+
+		return (
+			<Box sx={{ flex: 1, width: '100%', height: '100%', position: 'relative' }}>
+				<ScrollGlow showTop={showTopGlow} showBottom={showBottomGlow} isScrolling={isScrolling} />
+				<Virtuoso
+					style={{ height: '100%' }}
+					data={allTurns}
+					initialTopMostItemIndex={allTurns.length - 1}
+					followOutput="auto"
+					className="hide-scrollbar"
+					atTopStateChange={atTopStateChange}
+					atBottomStateChange={atBottomStateChange}
+					isScrolling={isScrollingChange}
+					// --- This is the corrected implementation ---
+					itemContent={(index, turn) => {
+						const isTemp = 'setCount' in turn; // Check if it's a TempChatTurn
+
+						// The props are now passed individually to ChatLogRow
+						const rowProps: ChatLogRowProps = {
+							turn,
+							isTemp,
+							isProcessing: isTemp && isProcessing,
+							...rest, // Pass all other necessary functions and state
+						};
+
+						return (
+							// This Box provides the consistent padding for each row
+							<Box sx={{ py: 2, px: 1 }}>
+								<ChatLogRow {...rowProps} />
+							</Box>
+						);
+					}}
+					components={{
+						Footer: () =>
+							clientError ? (
+								<Typography color="error" sx={{ p: 1, textAlign: 'center' }}>
+									{clientError}
+								</Typography>
+							) : null,
+					}}
+				/>
+			</Box>
 		);
 	}
 );

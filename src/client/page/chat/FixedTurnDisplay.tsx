@@ -8,10 +8,9 @@ import { commonStyle, styleEntryFont } from '../../util/styleUtils.jsx';
 
 interface FixedTurnDisplayProps {
 	turn: ChatTurn;
-	onEdit: (turn: ChatTurn) => void;
 }
 
-export const FixedTurnDisplay: FC<FixedTurnDisplayProps> = ({ turn, onEdit }) => {
+export const FixedTurnDisplay: FC<FixedTurnDisplayProps> = ({ turn }) => {
 	return (
 		<Box key={`${turn.sessionId}-${turn.sequence}`} className={commonStyle.turnContainer}>
 			{/* User Request Block */}
@@ -43,7 +42,7 @@ export const FixedTurnDisplay: FC<FixedTurnDisplayProps> = ({ turn, onEdit }) =>
 			</Box>
 
 			{/* Buttons for Fixed Turn */}
-			<Box className={commonStyle.buttonGroup}>
+			{/* <Box className={commonStyle.buttonGroup}>
 				<IconButton
 					size="small"
 					aria-label="edit turn"
@@ -52,7 +51,7 @@ export const FixedTurnDisplay: FC<FixedTurnDisplayProps> = ({ turn, onEdit }) =>
 				>
 					<EditIcon fontSize="inherit" />
 				</IconButton>
-			</Box>
+			</Box> */}
 		</Box>
 	);
 };

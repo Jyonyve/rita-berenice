@@ -1,62 +1,70 @@
-// src/client/hook/useScrollEffects.ts
 import { useState, useCallback, useRef } from 'react';
-import { ListOnScrollProps } from 'react-window';
-
-interface UseScrollEffectsProps {
-	loadOlderMessages: () => void;
-	hasMore: boolean;
-	isLoadingChat: boolean;
-}
 
 /**
- * Manages all scroll-related effects for a virtualized list,
- * including infinite loading and directional scroll glows.
+ * Manages a "text consuming" scroll glow effect for a Virtuoso component.
+ * - No glows when at an edge.
+ * - While scrolling, a single glow appears on the side the text is scrolling away from.
+ * - When scrolling stops in the middle, the last directional glow remains visible.
  */
-export const useScrollEffect = ({
-	loadOlderMessages,
-	hasMore,
-	isLoadingChat,
-}: UseScrollEffectsProps) => {
+export const useScrollEffect = () => {
 	const [showTopGlow, setShowTopGlow] = useState(false);
 	const [showBottomGlow, setShowBottomGlow] = useState(false);
 	const [isScrolling, setIsScrolling] = useState(false);
 
-	const scrollContainerRef = useRef<HTMLDivElement>(null);
-	const scrollTimeoutRef = useRef<number | null>(null);
+	// Refs to track the list's state without causing re-renders
+	const lastScrollOffset = useRef(0);
+	const atTop = useRef(true);
+	const atBottom = useRef(false);
 
-	const handleScroll = useCallback(
-		({ scrollOffset, scrollDirection }: ListOnScrollProps) => {
-			// Set scrolling state and manage fade-out timer
-			setIsScrolling(true);
-			if (scrollTimeoutRef.current) {
-				clearTimeout(scrollTimeoutRef.current);
+	// This is the primary callback that drives the effect
+	const isScrollingChange = useCallback((scrolling: boolean, scrollOffset?: number) => {
+		setIsScrolling(scrolling);
+
+		if (scrollOffset !== undefined && scrolling) {
+			const direction = scrollOffset > lastScrollOffset.current ? 'down' : 'up';
+			const hasScrolled = Math.abs(scrollOffset - lastScrollOffset.current) > 1;
+
+			if (hasScrolled) {
+				// If scrolling DOWN, show the top glow (unless we are at the top)
+				if (direction === 'down') {
+					setShowTopGlow(!atTop.current);
+					setShowBottomGlow(false);
+				}
+				// If scrolling UP, show the bottom glow (unless we are at the bottom)
+				else {
+					setShowTopGlow(false);
+					setShowBottomGlow(!atBottom.current);
+				}
 			}
-			scrollTimeoutRef.current = window.setTimeout(() => {
-				setIsScrolling(false);
-			}, 150); // Fade out after 150ms of inactivity
+		}
 
-			// Trigger infinite loading when near the top
-			if (scrollOffset < 200 && hasMore && !isLoadingChat) {
-				loadOlderMessages();
-			}
+		if (scrollOffset !== undefined) {
+			lastScrollOffset.current = scrollOffset;
+		}
+	}, []);
 
-			// Determine glow visibility based on scroll position and direction
-			const container = scrollContainerRef.current;
-			if (!container) return;
+	// This callback acts as the final authority for the top edge
+	const atTopStateChange = useCallback((isAtTop: boolean) => {
+		atTop.current = isAtTop;
+		if (isAtTop) {
+			setShowTopGlow(false);
+		}
+	}, []);
 
-			const isAtTop = scrollOffset <= 10;
-			const isAtBottom = scrollOffset >= container.scrollHeight - container.clientHeight - 10;
+	// This callback acts as the final authority for the bottom edge
+	const atBottomStateChange = useCallback((isAtBottom: boolean) => {
+		atBottom.current = isAtBottom;
+		if (isAtBottom) {
+			setShowBottomGlow(false);
+		}
+	}, []);
 
-			if (scrollDirection === 'backward') {
-				setShowTopGlow(false); // Hide top glow when scrolling down
-				setShowBottomGlow(!isAtBottom);
-			} else if (scrollDirection === 'forward') {
-				setShowTopGlow(!isAtTop);
-				setShowBottomGlow(false); // Hide bottom glow when scrolling up
-			}
-		},
-		[loadOlderMessages, hasMore, isLoadingChat]
-	);
-
-	return { scrollContainerRef, handleScroll, showTopGlow, showBottomGlow, isScrolling };
+	return {
+		atTopStateChange,
+		atBottomStateChange,
+		isScrollingChange,
+		showTopGlow,
+		showBottomGlow,
+		isScrolling,
+	};
 };

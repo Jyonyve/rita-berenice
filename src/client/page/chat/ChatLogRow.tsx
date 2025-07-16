@@ -1,80 +1,59 @@
-// src/client/component/page/chat/ChatLogRow.tsx
-
 import { ChatTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
-import { FC, useEffect, useRef } from 'react';
-import { ListChildComponentProps } from 'react-window';
+import { FC } from 'react';
 import { FixedTurnDisplay } from './FixedTurnDisplay.jsx';
 import { TempTurnDisplay } from './TempTurnDisplay.jsx';
 
-// Interface remains the same
-export interface ChatLogRowData {
-	chatTurns: ChatTurn[];
-	tempChatTurn?: TempChatTurn;
+// The props interface is now much simpler.
+// It receives the specific 'turn' to render, not the whole list.
+export interface ChatLogRowProps {
+	turn: ChatTurn | TempChatTurn;
+	isTemp: boolean; // Flag to determine which component to render
+	isProcessing: boolean;
 	currentTempSetNo: number;
 	changeTempSetNo: (index: number) => void;
-	isProcessing: boolean;
 	userEditInput: string;
 	botEditInput: string;
 	onEditTempTurnText: (value: string, req: boolean) => void;
 	onSaveTempTurnText: () => void;
 	onRegenerateResponse: () => void;
-	setSize: (index: number, size: number) => void;
 }
 
-const ChatLogRow: FC<ListChildComponentProps<ChatLogRowData>> = ({ index, style, data }) => {
-	const {
-		chatTurns,
-		tempChatTurn,
-		currentTempSetNo,
-		changeTempSetNo,
-		isProcessing,
-		onSaveTempTurnText: onEditTurn, // Assuming this is the correct prop for FixedTurnDisplay
-		onRegenerateResponse,
-		setSize,
-		userEditInput,
-		botEditInput,
-		onEditTempTurnText,
-		onSaveTempTurnText,
-	} = data;
+const ChatLogRow: FC<ChatLogRowProps> = ({
+	turn,
+	isTemp,
+	isProcessing,
+	currentTempSetNo,
+	changeTempSetNo,
+	userEditInput,
+	botEditInput,
+	onEditTempTurnText,
+	onSaveTempTurnText,
+	onRegenerateResponse,
+}) => {
+	// All the logic for measuring height (useRef, useEffect, setSize) has been removed.
+	// The complex wrapper divs have also been removed.
 
-	// This ref is now on the inner div for accurate measurement
-	const rowRef = useRef<HTMLDivElement>(null);
+	if (isTemp) {
+		// If it's a temporary turn, we render the TempTurnDisplay.
+		// We safely cast the turn prop here.
+		return (
+			<TempTurnDisplay
+				isProcessing={isProcessing}
+				onRegenerate={onRegenerateResponse}
+				tempTurn={turn as TempChatTurn}
+				currentTempSetNo={currentTempSetNo}
+				changeTempSetNo={changeTempSetNo}
+				userEditInput={userEditInput}
+				botEditInput={botEditInput}
+				onEditTempTurnText={onEditTempTurnText}
+				onSaveTempTurnText={onSaveTempTurnText}
+			/>
+		);
+	}
 
-	useEffect(() => {
-		if (rowRef.current) {
-			setSize(index, rowRef.current.getBoundingClientRect().height);
-		}
-		// The dependency array needs to include all data to re-measure if content changes
-	}, [index, setSize, data]);
-
-	const isTempTurnRow = index === chatTurns.length && tempChatTurn;
-
-	return (
-		// This outer div gets the style from react-window (with position: absolute)
-		<div style={style}>
-			{/* This inner div wraps the content, allowing us to measure its true height */}
-			<div ref={rowRef}>
-				{isTempTurnRow ? (
-					<TempTurnDisplay
-						isProcessing={isProcessing}
-						onRegenerate={onRegenerateResponse}
-						tempTurn={tempChatTurn}
-						currentTempSetNo={currentTempSetNo}
-						changeTempSetNo={changeTempSetNo}
-						userEditInput={userEditInput}
-						botEditInput={botEditInput}
-						onEditTempTurnText={onEditTempTurnText}
-						onSaveTempTurnText={onSaveTempTurnText}
-					/>
-				) : (
-					(() => {
-						const turn = chatTurns[index];
-						return turn ? <FixedTurnDisplay turn={turn} onEdit={() => onEditTurn()} /> : null;
-					})()
-				)}
-			</div>
-		</div>
-	);
+	// Otherwise, it's a fixed historical turn.
+	//TODO add onEdit
+	return <FixedTurnDisplay turn={turn as ChatTurn} />;
 };
 
 export default ChatLogRow;
