@@ -2,7 +2,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs'; // This type is needed client-side
 
-import { apiClient } from '../../util/clientHelpers.js';
+import { apiClient } from '../../util/clientApiHelpers.ts';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { ChatRoleType } from '#shared/domain/chat/ChatInterfaces.js';
 import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';

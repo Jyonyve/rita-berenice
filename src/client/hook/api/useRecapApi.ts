@@ -2,7 +2,7 @@
 
 import type { Where, WhereDocument } from 'chromadb';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../util/clientHelpers.js';
+import { apiClient } from '../../util/clientApiHelpers.ts';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { genApiUrl } from '#shared/util/apiHelpers.js';
 import { RecapInfo } from '#shared/domain/recap/RecapInterfaces.js';

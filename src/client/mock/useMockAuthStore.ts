@@ -1,7 +1,7 @@
 // src/client/hooks/useMockAuthStore.ts
 
 import { useState, useEffect } from 'react';
-import { mockAuthStore } from './mockAuthStore.ts';
+import { mockAuthStore } from './mockAuthStore.js';
 
 // This hook subscribes to the external store and provides its state to React.
 export const useMockAuthStore = (isStatic: boolean) => {

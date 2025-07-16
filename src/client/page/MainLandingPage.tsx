@@ -1,7 +1,7 @@
 // src/client/page/MainLandingPage.tsx
 
 import React, { Fragment } from 'react';
-import { Box, Container, Typography, Paper } from '@mui/material';
+import { Box, Container, Typography, useTheme } from '@mui/material';
 import { useNavigate } from 'react-router';
 import { routeConstants } from '../routeConstants.js';
 import { APPNAME } from '#shared/config/constants.js';
@@ -10,6 +10,7 @@ import { GlassBox, GlassPaper } from '../layout/glass/index.js';
 
 export default function MainLandingPage() {
 	const navigate = useNavigate();
+	const theme = useTheme();
 	const goCharacterPage = () => {
 		navigate(routeConstants.CHARACTER);
 	};
@@ -35,10 +36,21 @@ export default function MainLandingPage() {
 							display: 'flex',
 							alignItems: 'center',
 							justifyContent: 'center',
+							cursor: 'pointer',
+							// 1. Establish this box as a size-based container for its children.
+							// This allows child elements to query its dimensions.
+							containerType: 'inline-size',
 						}}
 						role="button"
 					>
-						<RomanticTitle logo variant="h2" component="h1">
+						<RomanticTitle
+							logo
+							// The variant is still 'h2' for semantic correctness,
+							// but the font size is now controlled by the sx prop for dynamic sizing.
+							variant="h2"
+							component="h1"
+							sx={{ fontSize: `clamp(1.5rem, 8vw, ${theme.typography.h2.fontSize})` }}
+						>
 							{APPNAME}
 						</RomanticTitle>
 					</GlassBox>

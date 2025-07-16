@@ -1,13 +1,13 @@
-import { FC } from 'react';
 import {
+	Box,
+	CircularProgress,
+	Divider,
 	ListItem,
+	ListItemButton,
 	ListItemText,
 	Typography,
-	Divider,
-	CircularProgress,
-	Box,
-	ListItemButton,
 } from '@mui/material';
+import React, { FC, Fragment } from 'react'; // Import Fragment
 import { useSessionApi } from '../../hook/api/index.js';
 import { notFoundMessage } from '../../util/translateUtils.js';
 
@@ -43,7 +43,9 @@ export const SessionPreviewList: FC<{
 		);
 	}
 
-	if (!sessionRes?.sessionInfos?.length) {
+	const activeSessions = sessionRes?.sessionInfos?.filter((info) => info.status === 'active') || [];
+
+	if (activeSessions.length === 0) {
 		return (
 			<ListItem>
 				<ListItemText
@@ -59,75 +61,58 @@ export const SessionPreviewList: FC<{
 
 	return (
 		<>
-			{sessionRes.sessionInfos
-				.filter((info) => info.status === 'active')
-				.map((info) => {
-					return (
-						<ListItem disablePadding key={info.sessionId}>
-							<ListItemButton onClick={() => handleSessionStart(info.sessionId)}>
-								<ListItemText
-									// We disable the default styling to build our own layout
-									disableTypography
-									primary={
-										<Box>
-											{/* --- ROW 1: Title and Timestamp --- */}
-											<Box
-												sx={{
-													display: 'flex',
-													justifyContent: 'space-between',
-													alignItems: 'center', // Vertically aligns the title and date
-													width: '100%',
-												}}
-											>
-												{/* Title - Aligned to the left */}
-												<Typography
-													variant="subtitle2"
-													sx={{
-														// These styles prevent a long title from pushing the date away
-														overflow: 'hidden',
-														textOverflow: 'ellipsis',
-														whiteSpace: 'nowrap',
-														pr: 2, // Adds space between title and date
-													}}
-												>
-													{info.title}
-												</Typography>
-
-												{/* Timestamp - Aligned to the right */}
-												<Typography
-													variant="body2" // Using body2 for a clean, matching style
-													color="text.secondary"
-													sx={{
-														flexShrink: 0, // Prevents the date from wrapping or shrinking
-													}}
-												>
-													{info.updatedAt}
-												</Typography>
-											</Box>
-
-											{/* --- ROW 2: Message Snippet --- */}
+			{activeSessions.map((info, index) => (
+				// Use React.Fragment to provide a key for each looped item
+				<Fragment key={info.sessionId}>
+					<ListItem disablePadding>
+						<ListItemButton onClick={() => handleSessionStart(info.sessionId)}>
+							<ListItemText
+								disableTypography
+								primary={
+									<Box>
+										{/* --- ROW 1: Title and Timestamp --- */}
+										<Box
+											sx={{
+												display: 'flex',
+												justifyContent: 'space-between',
+												alignItems: 'center',
+												width: '100%',
+											}}
+										>
 											<Typography
-												variant="body2"
-												color="text.secondary"
-												sx={{
-													mt: 0.5,
-													display: '-webkit-box',
-													overflow: 'hidden',
-													textOverflow: 'ellipsis',
-													WebkitBoxOrient: 'vertical',
-													WebkitLineClamp: 2,
-												}}
+												variant="subtitle2"
+												sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', pr: 2 }}
 											>
-												{info.lastCharMessage}
+												{info.title}
+											</Typography>
+											<Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0 }}>
+												{info.updatedAt}
 											</Typography>
 										</Box>
-									}
-								/>
-							</ListItemButton>
-							<Divider component="li" />
-						</ListItem>
-					);
-				})}
+										{/* --- ROW 2: Message Snippet --- */}
+										<Typography
+											variant="body2"
+											color="text.secondary"
+											sx={{
+												mt: 0.5,
+												display: '-webkit-box',
+												overflow: 'hidden',
+												textOverflow: 'ellipsis',
+												WebkitBoxOrient: 'vertical',
+												WebkitLineClamp: 2,
+											}}
+										>
+											{info.lastCharMessage}
+										</Typography>
+									</Box>
+								}
+							/>
+						</ListItemButton>
+					</ListItem>
+					{/* Render a divider after each item except the last one */}
+					{index < activeSessions.length - 1 && <Divider component="li" />}
+				</Fragment>
+			))}
 		</>
 	);
 };

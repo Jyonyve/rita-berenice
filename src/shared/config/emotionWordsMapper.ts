@@ -712,7 +712,6 @@ export const numberToEmotionWordsMap = {
 // Default portrait number
 export type EmotionKey = keyof typeof numberToEmotionWordsMap;
 export type EmotionValue = (typeof numberToEmotionWordsMap)[EmotionKey][number];
-export const DEFAULT_IMAGE_NUMBER: EmotionKey = 0 as const;
 export const DEFAULT_EMOTION: EmotionValue = 'default' as const;
 
 // The PortraitMap stores loaded image URLs, keyed by their valid EmotionKey (image number).
