@@ -1,19 +1,15 @@
 // src/client/component/page/chat/AiModelSelector.tsx
 
-import React, { useEffect } from 'react';
 import { useAiModel } from '#client/hook/useAiModel.js';
+import { supportAiModelInfo } from '#shared/config/supportAiModelInfo.js';
 import {
+	alpha,
 	FormControl,
 	InputLabel,
-	MenuItem,
-	ListSubheader,
-	alpha,
-	Typography,
-	Divider,
+	ListSubheader
 } from '@mui/material';
-import { supportAiModelInfo } from '#shared/config/supportAiModelInfo.js';
 import { GlassMenuItem, GlassSelect } from '../../layout/glass/index.js';
-import { getGlassEffect, glassEffect, glassEffectLight } from '../../style/glassEffect.js';
+import { glassEffect, glassEffectLight } from '../../style/glassEffect.js';
 export const AiModelSelector = () => {
 	const { aiModelInfo, changeAiModel } = useAiModel();
 

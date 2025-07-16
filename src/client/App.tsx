@@ -12,7 +12,7 @@ import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpass
 import * as reactRouter from 'react-router';
 import { useEffect, useState } from 'react';
 import { useToast } from './provider/ToastProvider.jsx';
-import { setupApiClient } from './util/clientHelpers.js';
+import { setupApiClient } from './util/clientApiHelpers.ts';
 import { NewChatPageLoader } from './page/chat/NewChatPageLoader.jsx';
 import { SessionAuth } from 'supertokens-auth-react/recipe/session/index.js';
 

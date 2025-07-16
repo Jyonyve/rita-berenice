@@ -1,16 +1,20 @@
 // src/client/page/ChatPageLoader.tsx
 
-import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router';
-import { ChatMessage, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
-import { useCharacterState } from '../../hook/state/useCharacterState.js';
-import { useProfileApi, useSessionApi, useTempChatApi } from '../../hook/api/index.js';
-import { parseTextToEntries } from '#shared/util/chatParseUtils.js';
+import { ChatMessage, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { buildMessageId } from '#shared/util/buildIdUtils.js';
+import { parseTextToEntries } from '#shared/util/chatParseUtils.js';
 import { Box, CircularProgress, Typography } from '@mui/material';
-import { routeConstants } from '../../routeConstants.js';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router';
+import {
+	useCharacterApi,
+	useProfileApi,
+	useSessionApi,
+	useTempChatApi,
+} from '../../hook/api/index.js';
 import { useAuth } from '../../provider/AuthProvider.jsx';
+import { routeConstants } from '../../routeConstants.js';
 
 export function NewChatPageLoader() {
 	const navigate = useNavigate();
@@ -19,22 +23,29 @@ export function NewChatPageLoader() {
 	const [error, setError] = useState<string | null>(null);
 
 	// Ensure state exists before destructuring
-	const characterId: string | undefined = state?.characterId;
-	const profileId: string | undefined = state?.profileId;
+	const characterId: string = state?.characterId || '';
+	const profileId: string = state?.profileId || '';
 
 	// --- API and State Hooks ---
+	const {
+		data: characterRes,
+		isLoading: isLoadingCharacter,
+		isError: isCharacterError,
+	} = useCharacterApi().getCharacter(characterId);
 	const { createSession } = useSessionApi();
-	const { data: profileRes, isLoading: isProfileLoading } = useProfileApi().getProfile(
-		profileId || ''
-	);
-	const { characterInfo } = useCharacterState(characterId || '');
+	const { data: profileRes, isLoading: isProfileLoading } = useProfileApi().getProfile(profileId);
 	const { saveTempChatTurn } = useTempChatApi();
 
 	useEffect(() => {
 		// This function will be defined and then called within the effect
 		const initializeSession = async () => {
 			// **Guard Clause**: Wait until all dependencies are loaded and valid
-			if (isSessionLoading || isProfileLoading || !profileRes?.profileInfo || !characterInfo) {
+			if (
+				isSessionLoading ||
+				isProfileLoading ||
+				!profileRes?.profileInfo ||
+				!characterRes?.characterInfo
+			) {
 				return; // Do nothing until all data is ready
 			}
 
@@ -42,13 +53,13 @@ export function NewChatPageLoader() {
 				// **Create Session**
 				const sessionInfo = await createSession.mutateAsync({
 					userId,
-					characterId: characterInfo.characterId,
+					characterId: characterRes.characterInfo.characterId,
 					profileId: profileRes.profileInfo.profileId,
-					firstCharMessage: characterInfo.firstMessage,
+					firstCharMessage: characterRes.characterInfo.firstMessage,
 				});
 
 				// **Create and Save the First Chat Turn (if applicable)**
-				if (characterInfo.firstMessage) {
+				if (characterRes.characterInfo.firstMessage) {
 					const now = new Date().toISOString();
 					const sequence = 0;
 					const request: ChatMessage = {
@@ -65,12 +76,12 @@ export function NewChatPageLoader() {
 						type: 'message',
 					};
 					const response: ChatMessage = {
-						entries: parseTextToEntries(characterInfo.firstMessage),
+						entries: parseTextToEntries(characterRes.characterInfo.firstMessage),
 						sessionId: sessionInfo.sessionId,
 						sequence,
 						messageType: 'response',
 						role: 'assistant',
-						showName: characterInfo.showName,
+						showName: characterRes.characterInfo.showName,
 						messageId: buildMessageId(sessionInfo.sessionId, sequence, 'response'),
 						createdAt: now,
 						updatedAt: now,
@@ -118,7 +129,7 @@ export function NewChatPageLoader() {
 		userId,
 		isProfileLoading,
 		profileRes,
-		characterInfo,
+		characterRes,
 		characterId,
 		profileId,
 		navigate,

@@ -77,6 +77,9 @@ importers:
       supertokens-web-js:
         specifier: ^0.15.0
         version: 0.15.0
+      swiper:
+        specifier: ^11.2.10
+        version: 11.2.10
     devDependencies:
       '@emotion/babel-plugin':
         specifier: ^11.13.5
@@ -1179,8 +1182,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@rollup/wasm-node@4.45.0':
-    resolution: {integrity: sha512-Z97ImkKNMUgY5xwLZpmg3tWmWpDrmE3uiA9BklG8/BB5Al4UcSTucc9rr2SBAdVa10WCw4zoIKSnW2uuB2Tf4A==}
+  '@rollup/wasm-node@4.45.1':
+    resolution: {integrity: sha512-0ydWt30RgbJ55QJfJxQ7L4Prs4geZmAZBMGaQtuNOQH+IilZkF4Is5dLi7G2sdb92Mnba5Mf1NKNyvxk8ohnzg==}
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
 
@@ -3928,6 +3931,10 @@ packages:
   svg-parser@2.0.4:
     resolution: {integrity: sha512-e4hG1hRwoOdRb37cIMSgzNsxyzKfayW6VOflrwvR+/bzrkyxY/31WkbgnQpgtrNp1SdpJvpUAGTa/ZoiPNDuRQ==}
 
+  swiper@11.2.10:
+    resolution: {integrity: sha512-RMeVUUjTQH+6N3ckimK93oxz6Sn5la4aDlgPzB+rBrG/smPdCTicXyhxa+woIpopz+jewEloiEE3lKo1h9w2YQ==}
+    engines: {node: '>= 4.7.0'}
+
   tar-fs@3.1.0:
     resolution: {integrity: sha512-5Mty5y/sOF1YWj1J6GiBodjlDc05CUR8PKXrsnFAiSG0xA+GHeWLovaZPYUDXkH/1iKRf2+M5+OrRgzC7O9b7w==}
 
@@ -5206,7 +5213,7 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.44.1':
     optional: true
 
-  '@rollup/wasm-node@4.45.0':
+  '@rollup/wasm-node@4.45.1':
     dependencies:
       '@types/estree': 1.0.8
     optionalDependencies:
@@ -8661,6 +8668,8 @@ snapshots:
 
   svg-parser@2.0.4: {}
 
+  swiper@11.2.10: {}
+
   tar-fs@3.1.0:
     dependencies:
       pump: 3.0.3
@@ -8948,7 +8957,7 @@ snapshots:
       fdir: 6.4.6(picomatch@4.0.2)
       picomatch: 4.0.2
       postcss: 8.5.6
-      rollup: '@rollup/wasm-node@4.45.0'
+      rollup: '@rollup/wasm-node@4.45.1'
       tinyglobby: 0.2.14
     optionalDependencies:
       '@types/node': 22.16.0

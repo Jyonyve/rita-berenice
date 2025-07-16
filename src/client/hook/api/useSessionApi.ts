@@ -5,7 +5,7 @@ import { SessionInfo } from '#shared/domain/session/SessionInterfaces.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { genApiUrl } from '#shared/util/apiHelpers.js';
 import { SessionResponse } from '#shared/api/ModuleResponse.js';
-import { apiClient } from '../../util/clientHelpers.js';
+import { apiClient } from '../../util/clientApiHelpers.ts';
 
 /**
  * A client-side hook for interacting with the SESSION API endpoints.

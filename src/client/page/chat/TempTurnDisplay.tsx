@@ -1,13 +1,13 @@
-import React, { FC, useEffect, useState } from 'react';
-import { Box, IconButton, Typography, CircularProgress, TextField } from '@mui/material';
-import ReplayIcon from '@mui/icons-material/Replay';
-import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
-import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import EditIcon from '@mui/icons-material/Edit';
-import SaveIcon from '@mui/icons-material/Save';
-import CancelIcon from '@mui/icons-material/Cancel';
 import { ChatMessageSet, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { parseEntriesToText } from '#shared/util/chatParseUtils.js';
+import CancelIcon from '@mui/icons-material/Cancel';
+import EditIcon from '@mui/icons-material/Edit';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import ReplayIcon from '@mui/icons-material/Replay';
+import SaveIcon from '@mui/icons-material/Save';
+import { Box, CircularProgress, IconButton, TextField, Typography } from '@mui/material';
+import { FC, useEffect, useState } from 'react';
 import { commonStyle, styleEntryFont } from '../../util/styleUtils.jsx';
 
 interface TempTurnDisplayProps {

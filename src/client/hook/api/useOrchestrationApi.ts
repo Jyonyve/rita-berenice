@@ -1,7 +1,7 @@
 // src/client/hooks/useOrchestrationApi.ts
 
 import { useMutation } from '@tanstack/react-query';
-import { apiClient } from '../../util/clientHelpers.js';
+import { apiClient } from '../../util/clientApiHelpers.ts';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import {
 	ChatTurn,

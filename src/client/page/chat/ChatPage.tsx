@@ -1,25 +1,25 @@
 // src/client/component/page/ChatPage.tsx
 
-import React, { useState, useEffect, useCallback, ChangeEvent, JSX, FC } from 'react';
+import { ChangeEvent, FC, useCallback, useEffect, useState } from 'react';
 
 // Import the new components
 
 import { ChatLog } from './ChatLog.jsx';
 import { UserInput } from './UserInput.jsx';
 // MUI Components
-import { Grid, Box, Typography, Paper } from '@mui/material';
+import { DEFAULT_LOADING_BATCH_TURN_COUNT } from '#shared/config/constants.js';
+import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import { ChatTurnCdo, TempChatTurn, TempChatTurnCdo } from '#shared/domain/chat/ChatInterfaces.js';
+import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { parseEntriesToText, parseTextToEntries } from '#shared/util/chatParseUtils.js';
+import { Box, Grid, Typography } from '@mui/material';
 import { useOrchestrationApi, useTempChatApi } from '../../hook/api/index.js';
-import { useCharacterState } from '../../hook/state/useCharacterState.js';
 import { useChatState } from '../../hook/state/useChatState.js';
 import { useAiModel } from '../../hook/useAiModel.js';
-import { DEFAULT_LOADING_BATCH_TURN_COUNT } from '#shared/config/constants.js';
-import { ChatTurnCdo, TempChatTurn, TempChatTurnCdo } from '#shared/domain/chat/ChatInterfaces.js';
-import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
-import { parseEntriesToText, parseTextToEntries } from '#shared/util/chatParseUtils.js';
-import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
-import { containerSpacing, containerPadding } from '../../style/index.js';
+import { containerSpacing } from '../../style/index.js';
+import { getImageForEmotion } from '../../util/portraitUtils.ts';
 
 export const ChatPage: FC<{
 	characterInfo: CharacterInfo;
@@ -29,7 +29,7 @@ export const ChatPage: FC<{
 }> = ({ characterInfo, profileInfo, sessionId, userId }) => {
 	const { receiveBotResponse, finalizeChatTurn } = useOrchestrationApi();
 	const { saveTempChatTurn } = useTempChatApi();
-	const { portraitMap, getImageNumberForEmotion } = useCharacterState(characterInfo.characterId);
+
 	const {
 		chatTurns,
 		tempChatTurn,
@@ -56,10 +56,8 @@ export const ChatPage: FC<{
 
 	// Load Character Image
 	const handleChatacterImage = (emotion: string) => {
-		const imageNumber = getImageNumberForEmotion(emotion);
-		const newImageUrl = portraitMap[imageNumber];
+		const newImageUrl = getImageForEmotion(characterInfo.characterId, emotion);
 		newImageUrl && setImageUrl(newImageUrl);
-		console.log(newImageUrl);
 	};
 
 	// Scroll Handler

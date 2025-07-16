@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../../provider/ToastProvider.jsx';
-import { apiClient } from '../../util/clientHelpers.js';
+import { apiClient } from '../../util/clientApiHelpers.ts';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { HistoryInfo, LoreInfo } from '#shared/domain/lore/LoreInterfaces.js';
 import { genApiUrl } from '#shared/util/apiHelpers.js';
