@@ -1,16 +1,16 @@
 // src/client/components/profile/ProfilePreviewList.tsx
 
-import { FC, Fragment } from 'react';
+import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import {
+	CircularProgress,
+	Divider,
 	ListItem,
 	ListItemButton,
 	ListItemText,
 	Typography,
-	CircularProgress,
-	Divider,
 } from '@mui/material';
+import { FC, Fragment } from 'react';
 import { useProfileApi } from '../../hook/api/index.js';
-import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { notFoundMessage } from '../../util/translateUtils.js';
 
 // The props are updated to handle two separate click events

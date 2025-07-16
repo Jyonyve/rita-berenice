@@ -1,12 +1,12 @@
 // src/client/component/page/chat/UserInput.tsx
 
-import React, { FC, ChangeEventHandler } from 'react';
-import { TextField, CircularProgress, Box, useTheme } from '@mui/material';
-import { AiModelSelector } from './AiModelSelector.jsx';
+import { LANG_KEYS } from '#shared/config/langConstants.js';
+import { Box, CircularProgress, TextField, useTheme } from '@mui/material';
+import React, { ChangeEventHandler, FC } from 'react';
 import { GlassBox, GlassButton } from '../../layout/glass/index.js';
 import { useToast } from '../../provider/ToastProvider.jsx';
-import { LANG_KEYS } from '#shared/config/langConstants.js';
 import { getLangAlertText } from '../../util/translateUtils.js';
+import { AiModelSelector } from './AiModelSelector.jsx';
 
 interface UserInputProps {
 	sessionId: string;

@@ -1,15 +1,14 @@
 // src/client/component/page/ChatLog.tsx
 
-import React, { FC, useRef, useCallback, useEffect, memo } from 'react';
-import { Box, Typography, CircularProgress, Button } from '@mui/material';
-import { VariableSizeList as List } from 'react-window';
+import { Box, Button, CircularProgress, Typography } from '@mui/material';
+import React, { FC, memo, useCallback, useEffect, useRef } from 'react';
 import AutoSizer from 'react-virtualized-auto-sizer';
+import { VariableSizeList as List } from 'react-window';
 
-import ChatLogRow, { ChatLogRowData } from './ChatLogRow.jsx';
-import { useScrollEffect } from '../../hook/useScrollEffect.js'; // Import the new hook
 import { ChatTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { useScrollEffect } from '../../hook/useScrollEffect.js'; // Import the new hook
 import { ScrollGlow } from '../../layout/ScrollGlow.jsx';
-import { innerPadding } from '../../style/padding.js';
+import ChatLogRow, { ChatLogRowData } from './ChatLogRow.jsx';
 
 // --- Component-Specific Helper Hook ---
 const useDynamicListSizes = (itemCount: number) => {

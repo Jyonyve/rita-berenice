@@ -1,6 +1,6 @@
 // src/client/hooks/usePersonaApi.ts
 
-import { apiClient } from '../../util/clientHelpers.js';
+import { apiClient } from '../../util/clientApiHelpers.ts';
 import { useMutation } from '@tanstack/react-query';
 import { MemoryResponse, PersonaResponse } from '#shared/api/ModuleResponse.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';

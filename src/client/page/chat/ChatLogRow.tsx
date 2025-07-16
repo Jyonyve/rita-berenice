@@ -1,8 +1,8 @@
 // src/client/component/page/chat/ChatLogRow.tsx
 
-import { FC, useRef, useEffect } from 'react';
-import { ListChildComponentProps } from 'react-window';
 import { ChatTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { FC, useEffect, useRef } from 'react';
+import { ListChildComponentProps } from 'react-window';
 import { FixedTurnDisplay } from './FixedTurnDisplay.jsx';
 import { TempTurnDisplay } from './TempTurnDisplay.jsx';
 

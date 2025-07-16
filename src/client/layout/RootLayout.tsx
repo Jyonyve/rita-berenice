@@ -1,5 +1,5 @@
-import React, { FC, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Outlet, useNavigate } from 'react-router';
+import React, { FC, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Outlet, useMatch, useNavigate } from 'react-router';
 import {
 	AppBar,
 	Box,
@@ -11,6 +11,7 @@ import {
 	IconButton,
 	Modal,
 	Menu,
+	Avatar,
 } from '@mui/material';
 import { useColorMode } from '../provider/ColorModeProvider.jsx';
 import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpassword/prebuiltui.js';
@@ -19,7 +20,7 @@ import { AuthPage } from 'supertokens-auth-react/ui/index.js';
 import { signOut } from 'supertokens-auth-react/recipe/session/index.js';
 import { APPNAME } from '#shared/config/constants.js';
 
-import { GlassPaper, GlassAppBar, GlassFooter, GlassMenuItem } from './glass/index.js';
+import { GlassPaper, GlassAppBar, GlassFooter, GlassMenuItem, GlassBox } from './glass/index.js';
 import { RomanticTitle } from './RomanticTitle.jsx';
 import { gold } from '../style/colors.js';
 import { routeConstants } from '../routeConstants.js';
@@ -58,6 +59,13 @@ const LoginModal: FC<LoginModalProps> = ({ loginOpen, handleCloseLogin }) => (
 	</Modal>
 );
 
+interface HeaderInfo {
+	characterId: string;
+	showName: string;
+	avatarUrl?: string;
+}
+export type HeaderContextType = (info?: HeaderInfo) => void;
+
 export function RootLayout() {
 	const { mode, toggleMode } = useColorMode();
 	const navigate = useNavigate();
@@ -66,6 +74,8 @@ export function RootLayout() {
 
 	const headerRef = useRef<HTMLElement>(null);
 	const footerRef = useRef<HTMLElement>(null);
+
+	const [headerInfo, setHeaderInfo] = useState<HeaderInfo>();
 
 	// State for controlling the dropdown menu
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -86,9 +96,13 @@ export function RootLayout() {
 		}
 	}, []);
 
-	const goCharacterPage = () => {
+	const goCharacterListPage = () => {
 		navigate(`/${routeConstants.CHARACTER}`);
 		handleMenuClose(); // Close menu after navigation
+	};
+
+	const goCharacterPage = (characterId: string) => {
+		navigate(`/${routeConstants.CHARACTER}/${characterId}`);
 	};
 
 	const onLogout = async () => {
@@ -115,19 +129,33 @@ export function RootLayout() {
 			}}
 		>
 			<CssBaseline />
-
 			<GlassAppBar position="sticky" ref={headerRef}>
 				<Toolbar sx={{ justifyContent: 'space-between' }}>
-					<RomanticTitle
-						logo
-						variant="h6"
-						component="div"
-						onClick={() => navigate('/')}
-						role="button"
-						sx={{ cursor: 'pointer' }}
-					>
-						{APPNAME}
-					</RomanticTitle>
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+						<RomanticTitle
+							logo
+							variant="h6"
+							component="div"
+							onClick={() => navigate('/')}
+							role="button"
+							sx={{ cursor: 'pointer' }}
+						>
+							{APPNAME}
+						</RomanticTitle>
+						{headerInfo && (
+							<GlassBox
+								role="button"
+								sx={{ display: 'flex', alignItems: 'center', pl: 1, pr: 1, pt: 0.5, pb: 0.5 }}
+								gap={1}
+								onClick={() => goCharacterPage(headerInfo.characterId)}
+							>
+								<Avatar src={headerInfo.avatarUrl} variant="circular">
+									<AccountCircle />
+								</Avatar>
+								<Typography variant="caption">{headerInfo.showName}</Typography>
+							</GlassBox>
+						)}
+					</Box>
 
 					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
 						<Switch
@@ -174,7 +202,7 @@ export function RootLayout() {
 										},
 									}}
 								>
-									<GlassMenuItem onClick={goCharacterPage} colorVariant="silver">
+									<GlassMenuItem onClick={goCharacterListPage} colorVariant="silver">
 										{getLangText(LANG_KEYS.CHARACTERS)}
 									</GlassMenuItem>
 
@@ -188,9 +216,13 @@ export function RootLayout() {
 					</Box>
 				</Toolbar>
 			</GlassAppBar>
+
+			{/* main box */}
 			<Box component="main" sx={{ flex: 1, overflowY: 'auto' }}>
-				<Outlet />
+				<Outlet context={setHeaderInfo satisfies HeaderContextType} />
 			</Box>
+
+			{/* Footer */}
 			{!isLoggedIn && <LoginModal loginOpen={isLoginModalOpen} handleCloseLogin={closeLoginModal} />}
 			<GlassFooter
 				ref={footerRef}

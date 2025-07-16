@@ -1,31 +1,28 @@
 // src/client/components/profile/ProfileCard.tsx
 
-import React, { FC, useEffect, useState } from 'react';
+import { LANG_KEYS } from '#shared/config/langConstants.js';
+import { ProfileCdo, ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import {
 	Box,
-	Button,
-	Card,
-	CardContent,
 	CardActions,
 	FormControl,
+	Grid,
 	InputLabel,
+	List,
 	MenuItem,
 	Modal,
 	Select,
 	Stack,
 	TextField,
-	Typography,
-	List,
-	Grid,
+	Typography
 } from '@mui/material';
-import { ProfileCdo, ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
-import { ProfilePreviewList } from './ProfilePreviewList.jsx';
-import { useForm, Controller } from 'react-hook-form';
-import { getLangText } from '../../util/translateUtils.js';
-import { LANG_KEYS } from '#shared/config/langConstants.js';
+import { FC, useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { GlassButton, GlassCard } from '../../layout/glass/index.js';
 import { SolidMetallicButton } from '../../layout/index.js';
 import { innerSpacing } from '../../style/index.js';
+import { getLangText } from '../../util/translateUtils.js';
+import { ProfilePreviewList } from './ProfilePreviewList.jsx';
 
 const getInitialFormData = (userId: string): ProfileCdo => ({
 	name: '',

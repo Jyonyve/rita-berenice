@@ -46,7 +46,7 @@ if (isStatic) {
 			appName: APPNAME,
 			websiteDomain: import.meta.env.VITE_APP_DOMAIN,
 			apiDomain: import.meta.env.VITE_API_DOMAIN,
-			apiBasePath: `/${routeConstants.AUTH}`,
+			apiBasePath: `/${routeConstants.API}/${routeConstants.AUTH}`,
 		},
 		style: superTokenUiStyle,
 		getRedirectionURL: async (context) => {

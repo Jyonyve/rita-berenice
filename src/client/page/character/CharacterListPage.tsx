@@ -2,22 +2,17 @@
 
 import React, { useState } from 'react';
 import { Typography, Box, CircularProgress, Grid, Theme } from '@mui/material';
-import { useCharacterState } from '../../hook/state/useCharacterState.js';
-import { DEFAULT_IMAGE_NUMBER } from '#shared/config/emotionWordsMapper.js';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { useNavigate } from 'react-router';
 import { GlassCard, GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
 import { HoverBox, RomanticTitle } from '../../layout/index.js';
 import { containerSpacing } from '../../style/index.js';
+import { getDefaultImage } from '../../util/portraitUtils.js';
 
 // Helper Component: CharacterItem now uses GlassCard
 const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterInfo }) => {
-	const { portraitMap, isLoadingPortraits, portraitError } = useCharacterState(
-		characterInfo.characterId
-	);
-	const defaultImageUrl = portraitMap[DEFAULT_IMAGE_NUMBER];
 	const navigate = useNavigate();
-
+	const defaultImage = getDefaultImage(characterInfo.characterId);
 	const handleCharacterPage = () => {
 		navigate(`${characterInfo.characterId}`);
 	};
@@ -48,10 +43,8 @@ const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterIn
 			contentProps={{ sx: contentSx }}
 		>
 			<HoverBox sx={{ width: '100%', display: 'flex', mb: 1 }}>
-				{isLoadingPortraits ? (
-					<CircularProgress size={24} />
-				) : defaultImageUrl ? (
-					<GlassPortrait imageUrl={defaultImageUrl} />
+				{defaultImage ? (
+					<GlassPortrait imageUrl={defaultImage} />
 				) : (
 					<Typography variant="caption" color="textSecondary">
 						No Image

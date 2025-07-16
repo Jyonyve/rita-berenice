@@ -1,33 +1,20 @@
-import React, { FC, useState } from 'react';
-import {
-	Box,
-	Typography,
-	Button,
-	Card,
-	CardContent,
-	Avatar,
-	List,
-	ListItem,
-	ListItemText,
-	CircularProgress,
-	Paper,
-	Grid,
-} from '@mui/material';
-import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
-import { useCharacterState } from '../../hook/state/useCharacterState.js';
-import { SessionPreviewList } from './SessionPreviewList.jsx';
-import { useNavigate } from 'react-router';
-import { routeConstants } from '../../routeConstants.js';
-import { ProfileCdo } from '#shared/domain/profile/ProfileInterfaces.js';
-import { ProfileCard } from './ProfileCard.jsx';
-import { useProfileApi } from '../../hook/api/index.js';
-import { containerSpacing, containerPadding as containerPadding } from '../../style/index.js';
-import { getLangText, getLangAlertText } from '../../util/translateUtils.js';
-import { GlassCard, GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
-import { RomanticTitle } from '../../layout/RomanticTitle.jsx';
-import { useToast } from '../../provider/ToastProvider.jsx';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
+import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import { ProfileCdo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { Box, Grid, List, Typography } from '@mui/material';
+import { FC } from 'react';
+import { useNavigate } from 'react-router';
+import { useProfileApi } from '../../hook/api/index.js';
+import { GlassCard, GlassPaper, GlassPortraitSlider } from '../../layout/glass/index.js';
+import { RomanticTitle } from '../../layout/RomanticTitle.jsx';
 import { useAuth } from '../../provider/AuthProvider.jsx';
+import { useToast } from '../../provider/ToastProvider.jsx';
+import { routeConstants } from '../../routeConstants.js';
+import { containerSpacing } from '../../style/index.js';
+import { getCharacterImageArray } from '../../util/portraitUtils.js';
+import { getLangAlertText, getLangText } from '../../util/translateUtils.js';
+import { ProfileCard } from './ProfileCard.jsx';
+import { SessionPreviewList } from './SessionPreviewList.jsx';
 
 const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 	characterInfo,
@@ -39,10 +26,6 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 	const characterId = characterInfo.characterId;
 
 	// Character state: portraits, loading, error
-	const { portraitMap, isLoadingPortraits, portraitError } = useCharacterState(
-		characterId,
-		characterInfo
-	);
 	// profile state
 	const { storeProfile } = useProfileApi();
 
@@ -77,10 +60,7 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 	};
 
 	// Portrait: pick default or first available
-	const portraitUrl =
-		!isLoadingPortraits && portraitMap && Object.values(portraitMap)[0]
-			? Object.values(portraitMap)[0]
-			: '';
+	const portraits = getCharacterImageArray(characterId);
 
 	return (
 		<GlassPaper key="character-page" className="paper">
@@ -112,12 +92,9 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 						justifyContent: 'center',
 					}}
 				>
-					<Box sx={{ height: '100%', display: 'flex' }}>
-						{isLoadingPortraits ? (
-							<CircularProgress />
-						) : portraitUrl ? (
-							// Use the new 'fit' prop here
-							<GlassPortrait imageUrl={portraitUrl} />
+					<Box sx={{ height: '100%', width: '100%', display: 'flex' }}>
+						{!!portraits ? (
+							<GlassPortraitSlider imageUrls={portraits.slice(0, 3)} />
 						) : (
 							<Box width={200} height={200} bgcolor="#eee" borderRadius={3} />
 						)}
@@ -132,7 +109,7 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 							<RomanticTitle noGlow isHovered variant="h6" color="primary" mt={1}>
 								{characterInfo.showName}
 							</RomanticTitle>
-							<Typography variant="body1" mt={2}>
+							<Typography variant="body1" mt={2} ml={2}>
 								{characterInfo.description}
 							</Typography>
 						</GlassCard>

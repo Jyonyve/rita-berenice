@@ -1,9 +1,9 @@
-import { Container, CircularProgress, Typography } from '@mui/material';
-import { useCharacterApi } from '../../hook/index.js';
-import CharacterPage from './CharacterPage.jsx';
-import { useNavigate, useParams } from 'react-router';
+import { CircularProgress, Container, Typography } from '@mui/material';
 import { useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import { useCharacterApi } from '../../hook/index.js';
 import { useAuth } from '../../provider/index.js';
+import CharacterPage from './CharacterPage.jsx';
 
 export function CharacterPageLoader() {
 	const navigate = useNavigate();
