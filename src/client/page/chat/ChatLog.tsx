@@ -35,22 +35,18 @@ export const ChatLog: FC<ChatLogProps> = memo(
 		...rest
 	}) => {
 		// --- HOOKS ---
-		const {
-			isScrolling,
-			showTopGlow,
-			showBottomGlow,
-			scrollerRef, // Now correctly typed as a callback function
-			isScrollingChange,
-		} = useScrollEffect();
+		const { isScrolling, showTopGlow, showBottomGlow, scrollerRef, isScrollingChange } =
+			useScrollEffect();
 
-		// --- NEW: Track focused turn ---
+		// --- REFS ---
 		const focusedTurnRef = useRef<number>(-1);
 		const virtuosoRef = useRef<VirtuosoHandle>(null);
+		const rangeTimeoutRef = useRef<NodeJS.Timeout | null>(null); // ✅ This is what you need
 
 		// Combine historical turns with the temporary turn for rendering
 		const allTurns = tempChatTurn ? [...chatTurns, tempChatTurn] : chatTurns;
 
-		// --- NEW: Handle turn focus changes ---
+		// --- Handle turn focus changes ---
 		const handleTurnFocusChange = useCallback(
 			(turnIndex: number) => {
 				if (focusedTurnRef.current === turnIndex) return;
@@ -70,30 +66,71 @@ export const ChatLog: FC<ChatLogProps> = memo(
 						// ChatTurn
 						emotion = turn.response?.emotion || DEFAULT_EMOTION;
 					}
-					console.log(`handleCharacterImage(emotion) ${emotion}`);
+
+					console.log(`handleCharacterImage(emotion), turnIndex: ${turnIndex} ${emotion}`);
 					handleCharacterImage(emotion);
 				}
 			},
 			[allTurns, handleCharacterImage, rest.currentTempSetNo]
 		);
 
-		// --- NEW: Handle viewport range changes ---
+		// --- Handle viewport range changes with debouncing ---
 		const handleRangeChanged = useCallback(
 			(range: { startIndex: number; endIndex: number }) => {
 				console.log(`startIndex ${range.startIndex}, endIndex ${range.endIndex}`);
-				// Focus on the middle item in the current viewport
-				const middleIndex = Math.floor((range.startIndex + range.endIndex) / 2);
-				handleTurnFocusChange(middleIndex);
+
+				// Clear any existing timeout
+				if (rangeTimeoutRef.current) {
+					clearTimeout(rangeTimeoutRef.current);
+				}
+
+				// Set a new timeout to process the range after it stabilizes
+				rangeTimeoutRef.current = setTimeout(() => {
+					if (range.startIndex < 0 || range.endIndex <= 0 || range.startIndex >= allTurns.length) {
+						return;
+					}
+
+					if (range.startIndex >= range.endIndex) {
+						if (range.startIndex === allTurns.length - 1) {
+							handleTurnFocusChange(allTurns.length - 1);
+						}
+						return;
+					}
+
+					const lastTurnIndex = allTurns.length - 1;
+
+					// Always focus on last turn when we're near the end
+					if (range.startIndex >= lastTurnIndex - 1) {
+						console.log(`Near end detected, focusing on last turn: ${lastTurnIndex}`);
+						handleTurnFocusChange(lastTurnIndex);
+					} else {
+						// Focus on middle of visible range
+						const actualEndIndex = Math.min(range.endIndex - 1, lastTurnIndex);
+						const actualStartIndex = Math.max(range.startIndex, 0);
+						const middleIndex = Math.floor((actualStartIndex + actualEndIndex) / 2);
+						console.log(`Middle focus: ${middleIndex}`);
+						handleTurnFocusChange(middleIndex);
+					}
+				}, 100); // 100ms debounce
 			},
-			[handleTurnFocusChange]
+			[handleTurnFocusChange, allTurns.length]
 		);
 
-		// --- NEW: Initialize with the last turn ---
+		// --- Initialize with the last turn ---
 		useEffect(() => {
 			if (allTurns.length > 0) {
 				handleTurnFocusChange(allTurns.length - 1);
 			}
 		}, [allTurns.length, handleTurnFocusChange]);
+
+		// --- Cleanup timeout on unmount ---
+		useEffect(() => {
+			return () => {
+				if (rangeTimeoutRef.current) {
+					clearTimeout(rangeTimeoutRef.current);
+				}
+			};
+		}, []);
 
 		if (isLoadingChat && allTurns.length === 0) {
 			return (
