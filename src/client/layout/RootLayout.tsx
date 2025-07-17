@@ -231,24 +231,20 @@ export function RootLayout() {
 			sx={{
 				display: 'flex',
 				flexDirection: 'column',
+
 				height: '100vh',
 				backgroundColor: (theme) => theme.palette.background.default,
 			}}
 		>
 			<CssBaseline />
-			<GlassAppBar position="sticky" ref={headerRef}>
+			<GlassAppBar sx={{ width: '100%', position: 'sticky' }} ref={headerRef}>
 				<Toolbar sx={{ justifyContent: 'space-between' }}>
 					<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-						<RomanticTitle
-							logo
-							variant="h6"
-							component="div"
-							onClick={() => navigate('/')}
-							role="button"
-							sx={{ cursor: 'pointer' }}
-						>
-							{APPNAME}
-						</RomanticTitle>
+						{!headerInfo?.mobileImageUrl && (
+							<RomanticTitle logo variant="h6" component="div" onClick={() => navigate('/')} role="button">
+								{APPNAME}
+							</RomanticTitle>
+						)}
 						{headerInfo && (
 							<GlassBox
 								role="button"
@@ -355,7 +351,7 @@ export function RootLayout() {
 			{/* Footer */}
 			<GlassFooter
 				ref={footerRef}
-				sx={{ position: 'sticky', bottom: 0, zIndex: (theme) => theme.zIndex.appBar }}
+				sx={{ width: '100%', position: 'sticky', bottom: 0, zIndex: (theme) => theme.zIndex.appBar }}
 			>
 				<Container maxWidth="sm">
 					<Typography variant="body2" color="text.secondary" align="center">
