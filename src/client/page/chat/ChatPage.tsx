@@ -10,13 +10,13 @@ import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { ChatTurnCdo, TempChatTurn, TempChatTurnCdo } from '#shared/domain/chat/ChatInterfaces.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { parseEntriesToText, parseTextToEntries } from '#shared/util/chatParseUtils.js';
-import { Box, Grid, Typography } from '@mui/material';
+import { Box, Grid, useMediaQuery, useTheme } from '@mui/material';
 import { useOrchestrationApi, useTempChatApi } from '../../hook/api/index.js';
 import { useChatState } from '../../hook/state/useChatState.js';
 import { useAiModel } from '../../hook/useAiModel.js';
 import { GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
 import { containerSpacing } from '../../style/index.js';
-import { getImageForEmotion } from '../../util/portraitUtils.js';
+import { useEmotionContext } from './ChatPageLoader.jsx';
 
 export const ChatPage: FC<{
 	characterInfo: CharacterInfo;
@@ -26,6 +26,23 @@ export const ChatPage: FC<{
 }> = ({ characterInfo, profileInfo, sessionId, userId }) => {
 	const { receiveBotResponse, finalizeChatTurn } = useOrchestrationApi();
 	const { saveTempChatTurn } = useTempChatApi();
+	const theme = useTheme();
+
+	// Get emotion context from Loader
+	const { currentEmotion, setCurrentEmotion, imageUrl } = useEmotionContext();
+
+	// Responsive detection
+	const isSmallScreen = useMediaQuery(theme.breakpoints.down('md'));
+	const isTabletPortrait = useMediaQuery(
+		'(min-width: 768px) and (max-width: 1024px) and (orientation: portrait)'
+	);
+	const hasEnoughSpaceForDesktop = useMediaQuery('(min-width: 1200px)');
+	const isWideTablet = useMediaQuery(
+		'(min-width: 1024px) and (max-width: 1199px) and (orientation: landscape)'
+	);
+
+	const shouldUseMobileLayout =
+		isSmallScreen || isTabletPortrait || (!hasEnoughSpaceForDesktop && !isWideTablet);
 
 	// --- HOOKS ---
 	const {
@@ -41,27 +58,25 @@ export const ChatPage: FC<{
 
 	const { aiModelInfo } = useAiModel();
 
-	// --- STATE ---
+	// --- STATE (simplified - no image state) ---
 	const [currentTempSetNo, setCurrentTempSetNo] = useState(0);
 	const [userInput, setUserInput] = useState('');
-	const [imageUrl, setImageUrl] = useState('');
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [pageError, setPageError] = useState<string>();
 	const [userEditInput, setUserEditInput] = useState('');
 	const [botEditInput, setBotEditInput] = useState('');
 
 	// --- HANDLERS ---
+	// Simplified: just update emotion in Loader context
 	const handleCharacterImage = useCallback(
 		(emotion: string) => {
-			const newImageUrl = getImageForEmotion(characterInfo.characterId, emotion);
-			if (newImageUrl) {
-				setImageUrl(newImageUrl);
-			}
+			setCurrentEmotion(emotion);
 		},
-		[characterInfo.characterId]
+		[setCurrentEmotion]
 	);
+
+	// Initialize emotion from chat data
 	useEffect(() => {
-		// Initialize the character image when the component mounts
 		let emotion: string = DEFAULT_EMOTION;
 
 		if (tempChatTurn) {
@@ -72,10 +87,6 @@ export const ChatPage: FC<{
 
 		handleCharacterImage(emotion);
 	}, [chatTurns, tempChatTurn, currentTempSetNo, handleCharacterImage]);
-
-	// The `loadOlderMessages` and `hasMoreHistory` props were removed from useChatState,
-	// so the scroll handler is no longer needed.
-	// const handleTriggerLoadOlder = ... (REMOVED)
 
 	const handleSendMessage = useCallback(async () => {
 		setPageError(undefined);
@@ -233,87 +244,196 @@ export const ChatPage: FC<{
 	const isInputDisabled =
 		isProcessing || (!!tempChatTurn && !tempChatTurn.chatTurnSets[0]?.response);
 
-	return (
-		<GlassPaper key="chat-page" className="paper">
-			<Grid
-				container
-				spacing={containerSpacing}
-				sx={{
-					height: '100%',
-					minHeight: 0,
-					flex: 1, // This connects Grid to GlassPaper's flex behavior
-				}}
-			>
-				{/* Portrait Section */}
-				<Grid
-					size={{ xs: 12, md: 4 }}
-					sx={{
-						position: { xs: 'static', md: 'sticky' },
-						top: (theme) => theme.spacing(2),
-						alignSelf: 'flex-start',
-						height: {
-							xs: 'auto',
-							md: (theme) =>
-								`calc(100vh - var(--header-height) - var(--footer-height) - ${theme.spacing(8)})`,
-						},
-						display: 'flex',
-						alignItems: 'center',
-						justifyContent: 'center',
-					}}
-				>
-					<Box sx={{ height: '100%', display: 'flex' }}>
-						<GlassPortrait imageUrl={imageUrl} />
-					</Box>
-				</Grid>
+	// --- SHARED CHAT LOG PROPS ---
+	const chatLogProps = {
+		chatTurns,
+		tempChatTurn,
+		isLoadingChat: isLoadingHistory,
+		isProcessing,
+		clientError: clientError || pageError,
+		userEditInput,
+		botEditInput,
+		onEditTempTurnText: handleEditTempTurnText,
+		onSaveTempTurnText: handleSaveTempTurnText,
+		onRegenerateResponse: handleRegenerateResponse,
+		currentTempSetNo,
+		changeTempSetNo: setCurrentTempSetNo,
+		handleCharacterImage,
+		shouldUseMobileLayout,
+	};
 
-				{/* Chat Area Section */}
-				<Grid
-					size={{ xs: 12, md: 8 }}
-					sx={{
-						display: 'flex',
-						flexDirection: 'column',
-						// FIXED: Use flex to fill remaining space in the Grid container
-						flex: 1,
-						minHeight: 0,
-					}}
-				>
+	const userInputProps = {
+		sessionId,
+		value: userInput,
+		isProcessing,
+		isDisabled: isInputDisabled,
+		onChange: handleUserInput,
+		onSend: handleSendMessage,
+	};
+
+	// --- RENDER ---
+	return (
+		<>
+			{shouldUseMobileLayout ? (
+				<>
+					{/* Mobile Background */}
 					<Box
 						sx={{
-							flexGrow: 1, // This grows when browser height increases
-							overflow: 'hidden',
+							position: 'absolute',
+							top: 0,
+							left: 0,
+							right: 0,
+							bottom: 0,
+							backgroundImage: imageUrl ? `url(${imageUrl})` : 'none',
+							backgroundSize: 'cover',
+							backgroundPosition: 'center',
+							backgroundRepeat: 'no-repeat',
+							backgroundAttachment: 'fixed',
+							zIndex: 1,
+							transition: 'background-image 0.3s ease-in-out',
+						}}
+					/>
+
+					{/* Mobile Overlay */}
+					<Box
+						sx={{
+							position: 'absolute',
+							top: 0,
+							left: 0,
+							right: 0,
+							bottom: 0,
+							backgroundColor: 'rgba(0, 0, 0, 0.6)',
+							backdropFilter: 'blur(2px)',
+							zIndex: 2,
+						}}
+					/>
+
+					{/* Mobile Content */}
+					<Box
+						sx={{
+							display: 'flex',
+							flexDirection: 'column',
+							height: '100%',
 							position: 'relative',
-							width: '100%',
-							minHeight: 0,
+							zIndex: 10,
+							padding: theme.spacing(2), // Proper padding
+							gap: theme.spacing(2),
+							paddingTop: 'env(safe-area-inset-top)',
+							paddingBottom: 'env(safe-area-inset-bottom)',
 						}}
 					>
-						<ChatLog
-							chatTurns={chatTurns}
-							tempChatTurn={tempChatTurn}
-							isLoadingChat={isLoadingHistory}
-							isProcessing={isProcessing}
-							clientError={clientError || pageError} // Combine client and page errors
-							userEditInput={userEditInput}
-							botEditInput={botEditInput}
-							onEditTempTurnText={handleEditTempTurnText}
-							onSaveTempTurnText={handleSaveTempTurnText}
-							onRegenerateResponse={handleRegenerateResponse}
-							currentTempSetNo={currentTempSetNo}
-							changeTempSetNo={setCurrentTempSetNo}
-							handleCharacterImage={handleCharacterImage}
-						/>
+						{/* Mobile Chat */}
+						<Box
+							sx={{
+								flexGrow: 1,
+								overflow: 'hidden',
+								borderRadius: theme.spacing(2),
+								backdropFilter: 'blur(2px)',
+								WebkitBackdropFilter: 'blur(2px)',
+								border: '1px solid rgba(255, 255, 255, 0.2)',
+								boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+								WebkitOverflowScrolling: 'touch',
+								overscrollBehavior: 'contain',
+							}}
+						>
+							<ChatLog {...chatLogProps} />
+						</Box>
+
+						{/* Mobile Input */}
+						<Box
+							sx={{
+								flexShrink: 0,
+								backdropFilter: 'blur(10px)',
+								WebkitBackdropFilter: 'blur(10px)',
+								'& input': { fontSize: '16px' },
+							}}
+						>
+							<UserInput {...userInputProps} />
+						</Box>
 					</Box>
-					<Box sx={{ flexShrink: 0 }}>
-						<UserInput
-							sessionId={sessionId}
-							value={userInput}
-							isProcessing={isProcessing}
-							isDisabled={isInputDisabled}
-							onChange={handleUserInput}
-							onSend={handleSendMessage}
-						/>
-					</Box>
-				</Grid>
-			</Grid>
-		</GlassPaper>
+				</>
+			) : (
+				// Desktop Layout - Only when there's enough space
+				<GlassPaper
+					key="chat-page"
+					className="paper"
+					sx={{
+						position: 'relative',
+						zIndex: 3,
+						// FIXED: Remove overflow hidden - content should naturally fit
+						padding: theme.spacing(2), // Proper inner padding
+						display: 'flex',
+						flexDirection: 'column',
+					}}
+				>
+					<Grid
+						container
+						spacing={containerSpacing}
+						sx={{
+							height: '100%',
+							minHeight: 0,
+							flex: 1,
+							// FIXED: Let content flow naturally within the padded container
+							width: '100%',
+							margin: 0,
+						}}
+					>
+						{/* Portrait Section - Properly contained */}
+						<Grid
+							size={{
+								md: 4,
+								lg: 3, // Smaller on very wide screens
+								xl: 2.5,
+							}}
+							sx={{
+								position: 'sticky',
+								top: theme.spacing(2),
+								alignSelf: 'flex-start',
+								height: `calc(100vh - var(--header-height) - var(--footer-height) - ${theme.spacing(12)})`, // Account for GlassPaper padding
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: 'center',
+								// FIXED: Natural sizing within grid constraints
+								minWidth: 0, // Allow grid to control width
+							}}
+						>
+							<Box
+								sx={{
+									height: '100%',
+									width: '100%',
+									display: 'flex',
+									justifyContent: 'center',
+									alignItems: 'center',
+								}}
+							>
+								<GlassPortrait imageUrl={imageUrl} />
+							</Box>
+						</Grid>
+
+						{/* Chat Area Section - Takes remaining space */}
+						<Grid
+							size={{ md: 8, lg: 9, xl: 9.5 }}
+							sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0 }}
+						>
+							<Box
+								sx={{
+									flexGrow: 1,
+									overflow: 'hidden',
+									position: 'relative',
+									width: '100%',
+									minHeight: 0,
+									minWidth: 0,
+								}}
+							>
+								<ChatLog {...chatLogProps} />
+							</Box>
+							<Box sx={{ flexShrink: 0, width: '100%', minWidth: 0 }}>
+								<UserInput {...userInputProps} />
+							</Box>
+						</Grid>
+					</Grid>
+				</GlassPaper>
+			)}
+		</>
 	);
 };

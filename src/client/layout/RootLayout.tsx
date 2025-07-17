@@ -12,6 +12,9 @@ import {
 	Modal,
 	Menu,
 	Avatar,
+	Dialog,
+	DialogContent,
+	useTheme,
 } from '@mui/material';
 import { useColorMode } from '../provider/ColorModeProvider.jsx';
 import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpassword/prebuiltui.js';
@@ -20,14 +23,23 @@ import { AuthPage } from 'supertokens-auth-react/ui/index.js';
 import { signOut } from 'supertokens-auth-react/recipe/session/index.js';
 import { APPNAME } from '#shared/config/constants.js';
 
-import { GlassPaper, GlassAppBar, GlassFooter, GlassMenuItem, GlassBox } from './glass/index.js';
+import {
+	GlassPaper,
+	GlassAppBar,
+	GlassFooter,
+	GlassMenuItem,
+	GlassBox,
+	GlassPortrait,
+} from './glass/index.js';
 import { RomanticTitle } from './RomanticTitle.jsx';
-import { gold } from '../style/colors.js';
+import { gold, silver } from '../style/colors.js';
 import { routeConstants } from '../routeConstants.js';
 import { glassEffect, glassEffectLight } from '../style/glassEffect.js';
 import { getLangText } from '../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
 import { useAuth } from '../provider/AuthProvider.jsx';
+import ImageIcon from '@mui/icons-material/Image';
+import CloseIcon from '@mui/icons-material/Close';
 
 interface LoginModalProps {
 	loginOpen: boolean;
@@ -59,10 +71,96 @@ const LoginModal: FC<LoginModalProps> = ({ loginOpen, handleCloseLogin }) => (
 	</Modal>
 );
 
+interface ImageModalProps {
+	open: boolean;
+	onClose: () => void;
+	imageUrl?: string;
+	characterId?: string;
+}
+
+const ImageModal: FC<ImageModalProps> = ({ open, onClose, imageUrl, characterId }) => {
+	const theme = useTheme();
+
+	if (!imageUrl) return null;
+
+	return (
+		<Dialog
+			open={open}
+			onClose={onClose}
+			maxWidth="md"
+			fullWidth
+			slotProps={{
+				paper: {
+					sx: {
+						backgroundColor: 'rgba(0, 0, 0, 0.6)', // Semi-transparent background
+						boxShadow: 'none',
+						maxHeight: '90vh',
+						overflow: 'visible',
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+					},
+				},
+			}}
+		>
+			<DialogContent
+				sx={{
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+					width: '100%',
+					height: '100%',
+					overflow: 'visible',
+				}}
+				onClick={onClose} // Close when clicking the background
+			>
+				<Box
+					sx={{
+						position: 'relative',
+						display: 'flex',
+						justifyContent: 'center',
+						alignItems: 'center',
+						maxWidth: '100%',
+						maxHeight: '100%',
+						overflow: 'visible',
+					}}
+					onClick={(e) => e.stopPropagation()} // Prevent closing when clicking the image
+				>
+					<GlassPortrait
+						imageUrl={imageUrl}
+						colorVariant="secondary"
+						alt={`${characterId} portrait`}
+						sx={{
+							width: '100%',
+							height: 'auto',
+							borderRadius: theme.spacing(2),
+							maxHeight: '80vh',
+							objectFit: 'contain',
+						}}
+					/>
+					<IconButton
+						onClick={onClose}
+						sx={{
+							position: 'absolute',
+							top: theme.spacing(1),
+							right: theme.spacing(1),
+							color: 'white',
+							transition: 'all 0.2s ease-in-out',
+						}}
+					>
+						<CloseIcon />
+					</IconButton>
+				</Box>
+			</DialogContent>
+		</Dialog>
+	);
+};
+
 interface HeaderInfo {
 	characterId: string;
 	showName: string;
 	avatarUrl?: string;
+	mobileImageUrl?: string;
 }
 export type HeaderContextType = (info?: HeaderInfo) => void;
 
@@ -76,6 +174,7 @@ export function RootLayout() {
 	const footerRef = useRef<HTMLElement>(null);
 
 	const [headerInfo, setHeaderInfo] = useState<HeaderInfo>();
+	const [imageModalOpen, setImageModalOpen] = useState(false);
 
 	// State for controlling the dropdown menu
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -119,6 +218,14 @@ export function RootLayout() {
 		setAnchorEl(null);
 	};
 
+	const handleImageModalOpen = () => {
+		setImageModalOpen(true);
+	};
+
+	const handleImageModalClose = () => {
+		setImageModalOpen(false);
+	};
+
 	return (
 		<Box
 			sx={{
@@ -157,7 +264,20 @@ export function RootLayout() {
 						)}
 					</Box>
 
-					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+						{headerInfo && headerInfo.mobileImageUrl && (
+							<IconButton
+								onClick={handleImageModalOpen}
+								aria-label="view character image"
+								sx={{
+									color: 'silver',
+									transition: 'all 0.3s ease-in-out',
+									'&:hover': { color: silver.main },
+								}}
+							>
+								<ImageIcon />
+							</IconButton>
+						)}
 						<Switch
 							checked={mode === 'dark'}
 							onChange={toggleMode}
@@ -176,7 +296,7 @@ export function RootLayout() {
 								>
 									<AccountCircle
 										sx={{
-											color: isLoggedIn ? gold.main : 'grey.500',
+											color: isLoggedIn ? gold.main : 'grey',
 											transition: 'all 0.3s ease-in-out',
 											'&:hover': { color: gold.main, filter: `drop-shadow(0 0 6px ${gold.light})` },
 										}}
@@ -222,8 +342,17 @@ export function RootLayout() {
 				<Outlet context={setHeaderInfo satisfies HeaderContextType} />
 			</Box>
 
-			{/* Footer */}
+			{/* Login Modal */}
 			{!isLoggedIn && <LoginModal loginOpen={isLoginModalOpen} handleCloseLogin={closeLoginModal} />}
+			{/* Image Modal */}
+			<ImageModal
+				open={imageModalOpen}
+				onClose={handleImageModalClose}
+				imageUrl={headerInfo?.mobileImageUrl}
+				characterId={headerInfo?.characterId}
+			/>
+
+			{/* Footer */}
 			<GlassFooter
 				ref={footerRef}
 				sx={{ position: 'sticky', bottom: 0, zIndex: (theme) => theme.zIndex.appBar }}

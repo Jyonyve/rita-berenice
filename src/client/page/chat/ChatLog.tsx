@@ -22,6 +22,7 @@ interface ChatLogProps {
 	onSaveTempTurnText: () => void;
 	onRegenerateResponse: () => void;
 	handleCharacterImage: (emotion: string) => void;
+	shouldUseMobileLayout: boolean;
 }
 
 export const ChatLog: FC<ChatLogProps> = memo(
@@ -32,6 +33,7 @@ export const ChatLog: FC<ChatLogProps> = memo(
 		isProcessing,
 		clientError,
 		handleCharacterImage,
+		shouldUseMobileLayout,
 		...rest
 	}) => {
 		// --- HOOKS ---
@@ -152,7 +154,12 @@ export const ChatLog: FC<ChatLogProps> = memo(
 					py: 1,
 				}}
 			>
-				<ScrollGlow showTop={showTopGlow} showBottom={showBottomGlow} isScrolling={isScrolling} />
+				<ScrollGlow
+					showTop={showTopGlow}
+					showBottom={showBottomGlow}
+					isScrolling={isScrolling}
+					shouldUseMobileLayout={shouldUseMobileLayout}
+				/>
 				<Virtuoso
 					style={{ height: '100%', width: '100%' }}
 					data={allTurns}

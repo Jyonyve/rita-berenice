@@ -6,13 +6,19 @@ interface ScrollGlowProps {
 	showTop: boolean;
 	showBottom: boolean;
 	isScrolling: boolean;
+	shouldUseMobileLayout: boolean;
 }
 
 /**
  * A presentational component that renders a smooth, "bleed-in" glow effect
  * by positioning the gradients outside the visible container.
  */
-export const ScrollGlow: FC<ScrollGlowProps> = ({ showTop, showBottom, isScrolling }) => {
+export const ScrollGlow: FC<ScrollGlowProps> = ({
+	showTop,
+	showBottom,
+	isScrolling,
+	shouldUseMobileLayout,
+}) => {
 	const theme = useTheme();
 	const solidBackgroundColor = theme.palette.background.default;
 
@@ -39,7 +45,7 @@ export const ScrollGlow: FC<ScrollGlowProps> = ({ showTop, showBottom, isScrolli
 					left: 0,
 					right: 0,
 					height: glowHeight,
-					marginX:theme.spacing(1),
+					marginX: shouldUseMobileLayout ? 0 : theme.spacing(1),
 					transition: 'opacity 0.3s ease-out',
 				},
 
