@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 
 type ScrollDirection = 'up' | 'down' | null;
 
@@ -96,7 +96,6 @@ export const useScrollEffect = () => {
 		}
 	}, []);
 
-	// The glow logic remains the same
 	const showTopGlow = scrollDirection === 'down';
 	const showBottomGlow = scrollDirection === 'up';
 

@@ -60,6 +60,18 @@ export const ChatPage: FC<{
 		},
 		[characterInfo.characterId]
 	);
+	useEffect(() => {
+		// Initialize the character image when the component mounts
+		let emotion: string = DEFAULT_EMOTION;
+
+		if (tempChatTurn) {
+			emotion = tempChatTurn.chatTurnSets[currentTempSetNo]?.response?.emotion || DEFAULT_EMOTION;
+		} else if (chatTurns.length > 0) {
+			emotion = chatTurns[chatTurns.length - 1].response?.emotion || DEFAULT_EMOTION;
+		}
+
+		handleCharacterImage(emotion);
+	}, [chatTurns, tempChatTurn, currentTempSetNo, handleCharacterImage]);
 
 	// The `loadOlderMessages` and `hasMoreHistory` props were removed from useChatState,
 	// so the scroll handler is no longer needed.
@@ -217,17 +229,6 @@ export const ChatPage: FC<{
 		setUserInput(e.target.value);
 	};
 
-	// --- EFFECTS ---
-	useEffect(() => {
-		let emotion: string = DEFAULT_EMOTION;
-		if (tempChatTurn) {
-			emotion = tempChatTurn.chatTurnSets[currentTempSetNo]?.response?.emotion || emotion;
-		} else if (chatTurns.length > 0) {
-			emotion = chatTurns[chatTurns.length - 1].response?.emotion || emotion;
-		}
-		handleCharacterImage(emotion);
-	}, [tempChatTurn, chatTurns, currentTempSetNo, handleCharacterImage]);
-
 	// --- RENDER ---
 	const isInputDisabled =
 		isProcessing || (!!tempChatTurn && !tempChatTurn.chatTurnSets[0]?.response);
@@ -273,6 +274,7 @@ export const ChatPage: FC<{
 							onRegenerateResponse={handleRegenerateResponse}
 							currentTempSetNo={currentTempSetNo}
 							changeTempSetNo={setCurrentTempSetNo}
+							handleCharacterImage={handleCharacterImage}
 						/>
 					</Box>
 					<Box sx={{ flexShrink: 0 }}>
