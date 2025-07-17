@@ -63,17 +63,8 @@ export const UserInput: FC<UserInputProps> = ({
 				/>
 			</GlassBox>
 			{/* Row 2: Model Selector and Send Button */}
-			<Box
-				sx={{
-					display: 'flex',
-					justifyContent: 'space-between',
-					alignItems: 'center',
-					marginLeft: 1,
-					marginRight: 1,
-				}}
-			>
+			<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginX: 1 }}>
 				<AiModelSelector />
-
 				<GlassButton
 					variant="contained"
 					colorVariant="secondary"

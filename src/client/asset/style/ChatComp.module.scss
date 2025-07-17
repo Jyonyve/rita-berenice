@@ -12,7 +12,7 @@
 .userDialogue {
 	composes: messageEntry;
 	font-weight: bold;
-	color: #2c5a8c; /* CHANGED: Darker shade of SteelBlue */
+	color: #3580ae; /* CHANGED: Darker shade of SteelBlue #3c71aa */
 	background-color: transparent;
 	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.15);
 }
@@ -21,7 +21,7 @@
 	composes: messageEntry;
 	font-weight: bold;
 	font-style: italic;
-	color: #555555;
+	color: #989898;
 	background-color: transparent;
 	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.15);
 }
@@ -30,7 +30,7 @@
 .assistantDialogue {
 	composes: messageEntry;
 	font-weight: bold;
-	color: #777777; /* CHANGED: Brighter shade of gray */
+	color: #bbbbbb; /* CHANGED: Brighter shade of gray */
 	background-color: transparent;
 	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
 }

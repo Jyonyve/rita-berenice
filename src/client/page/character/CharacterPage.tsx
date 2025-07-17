@@ -106,10 +106,10 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 					<Box display="flex" flexDirection="column" gap={2}>
 						{/* Title and Description Card */}
 						<GlassCard variant="outlined">
-							<RomanticTitle noGlow hover variant="h6" color="primary" mt={1}>
+							<RomanticTitle noGlow hover variant="h6" color="primary" mt={1} ml={1}>
 								{characterInfo.showName}
 							</RomanticTitle>
-							<Typography variant="body1" mt={2} ml={2}>
+							<Typography variant="body2" mt={1} ml={2}>
 								{characterInfo.description}
 							</Typography>
 						</GlassCard>

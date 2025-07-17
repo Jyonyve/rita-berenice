@@ -235,7 +235,15 @@ export const ChatPage: FC<{
 
 	return (
 		<GlassPaper key="chat-page" className="paper">
-			<Grid container spacing={containerSpacing}>
+			<Grid
+				container
+				spacing={containerSpacing}
+				sx={{
+					height: '100%',
+					minHeight: 0,
+					flex: 1, // This connects Grid to GlassPaper's flex behavior
+				}}
+			>
 				{/* Portrait Section */}
 				<Grid
 					size={{ xs: 12, md: 4 }}
@@ -259,8 +267,25 @@ export const ChatPage: FC<{
 				</Grid>
 
 				{/* Chat Area Section */}
-				<Grid size={{ xs: 12, md: 8 }} sx={{ display: 'flex', flexDirection: 'column' }}>
-					<Box sx={{ flexGrow: 1, overflow: 'hidden', position: 'relative' }}>
+				<Grid
+					size={{ xs: 12, md: 8 }}
+					sx={{
+						display: 'flex',
+						flexDirection: 'column',
+						// FIXED: Use flex to fill remaining space in the Grid container
+						flex: 1,
+						minHeight: 0,
+					}}
+				>
+					<Box
+						sx={{
+							flexGrow: 1, // This grows when browser height increases
+							overflow: 'hidden',
+							position: 'relative',
+							width: '100%',
+							minHeight: 0,
+						}}
+					>
 						<ChatLog
 							chatTurns={chatTurns}
 							tempChatTurn={tempChatTurn}

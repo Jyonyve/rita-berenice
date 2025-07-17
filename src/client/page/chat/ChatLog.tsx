@@ -104,10 +104,20 @@ export const ChatLog: FC<ChatLogProps> = memo(
 		}
 
 		return (
-			<Box sx={{ flex: 1, width: '100%', height: '100%', position: 'relative' }}>
+			<Box
+				sx={{
+					width: '100%',
+					height: '100%',
+					position: 'relative',
+					display: 'flex',
+					flexDirection: 'column',
+					minHeight: 0,
+					py: 1,
+				}}
+			>
 				<ScrollGlow showTop={showTopGlow} showBottom={showBottomGlow} isScrolling={isScrolling} />
 				<Virtuoso
-					style={{ height: '100%' }}
+					style={{ height: '100%', width: '100%' }}
 					data={allTurns}
 					initialTopMostItemIndex={allTurns.length - 1}
 					followOutput="auto"
