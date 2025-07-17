@@ -3,19 +3,19 @@
 import React, { Children, cloneElement, isValidElement, FC } from 'react';
 import { Box, BoxProps } from '@mui/material';
 
-// Add 'isHovered' to the props interface
+// Add 'hover' to the props interface
 interface HoverBoxProps extends BoxProps {
-	isHovered?: boolean;
+	hover?: boolean;
 }
 
-export const HoverBox: FC<HoverBoxProps> = ({ children, isHovered = false, ...rest }) => {
+export const HoverBox: FC<HoverBoxProps> = ({ children, hover = false, ...rest }) => {
 	// The component no longer needs a hook. It receives the state directly.
 
-	// It maps over its children and injects the 'isHovered' prop.
+	// It maps over its children and injects the 'hover' prop.
 	const childrenWithGlow = Children.map(children, (child) => {
 		if (isValidElement(child)) {
-			// Clones the child (e.g., GlassPortrait) and passes the state as 'isHovered'.
-			return cloneElement(child as React.ReactElement<any>, { isHovered });
+			// Clones the child (e.g., GlassPortrait) and passes the state as 'hover'.
+			return cloneElement(child as React.ReactElement<any>, { hover });
 		}
 		return child;
 	});

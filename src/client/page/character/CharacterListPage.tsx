@@ -31,7 +31,6 @@ const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterIn
 		display: 'flex',
 		flexDirection: 'column',
 		justifyContent: 'space-between',
-		// p: 1, // We can define our own padding
 		'&:last-child': { pb: 1 }, // Override MUI's default bottom padding
 	};
 

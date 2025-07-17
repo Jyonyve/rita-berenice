@@ -1,62 +1,114 @@
-// src/client/hook/useScrollEffects.ts
-import { useState, useCallback, useRef } from 'react';
-import { ListOnScrollProps } from 'react-window';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 
-interface UseScrollEffectsProps {
-	loadOlderMessages: () => void;
-	hasMore: boolean;
-	isLoadingChat: boolean;
-}
+type ScrollDirection = 'up' | 'down' | null;
 
 /**
- * Manages all scroll-related effects for a virtualized list,
- * including infinite loading and directional scroll glows.
+ * Enhanced scroll effect hook that combines react-virtuoso's API with direct DOM access
+ * for maximum responsiveness - identical to react-window behavior.
  */
-export const useScrollEffect = ({
-	loadOlderMessages,
-	hasMore,
-	isLoadingChat,
-}: UseScrollEffectsProps) => {
-	const [showTopGlow, setShowTopGlow] = useState(false);
-	const [showBottomGlow, setShowBottomGlow] = useState(false);
+export const useScrollEffect = () => {
 	const [isScrolling, setIsScrolling] = useState(false);
+	const [scrollDirection, setScrollDirection] = useState<ScrollDirection>(null);
+	const scrollContainerElement = useRef<HTMLElement | null>(null);
+	const lastScrollTop = useRef<number>(0);
+	const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-	const scrollContainerRef = useRef<HTMLDivElement>(null);
-	const scrollTimeoutRef = useRef<number | null>(null);
+	/**
+	 * Direct scroll event handler - this gives us the real-time responsiveness
+	 * that react-window provided through outerRef.
+	 */
+	const handleScroll = useCallback((event: Event) => {
+		const target = event.target as HTMLDivElement;
+		const currentScrollTop = target.scrollTop;
 
-	const handleScroll = useCallback(
-		({ scrollOffset, scrollDirection }: ListOnScrollProps) => {
-			// Set scrolling state and manage fade-out timer
-			setIsScrolling(true);
-			if (scrollTimeoutRef.current) {
-				clearTimeout(scrollTimeoutRef.current);
+		// Determine scroll direction based on scroll position change
+		if (currentScrollTop > lastScrollTop.current) {
+			setScrollDirection('down'); // Scrolling down (newer messages)
+		} else if (currentScrollTop < lastScrollTop.current) {
+			setScrollDirection('up'); // Scrolling up (older messages)
+		}
+
+		lastScrollTop.current = currentScrollTop;
+		setIsScrolling(true);
+
+		// Clear any existing timeout and set a new one
+		if (scrollTimeoutRef.current) {
+			clearTimeout(scrollTimeoutRef.current);
+		}
+
+		// Reset scrolling state after scroll stops (same as react-window behavior)
+		scrollTimeoutRef.current = setTimeout(() => {
+			setIsScrolling(false);
+			setScrollDirection(null);
+		}, 150); // 150ms matches typical scroll momentum timing
+	}, []);
+
+	/**
+	 * Callback function for Virtuoso's scrollerRef prop
+	 * Fixed to match the expected type signature and behavior
+	 */
+	const scrollerRef = useCallback(
+		(ref: HTMLElement | Window | null) => {
+			// Remove listener from previous element
+			if (scrollContainerElement.current instanceof HTMLElement) {
+				scrollContainerElement.current.removeEventListener('scroll', handleScroll);
 			}
-			scrollTimeoutRef.current = window.setTimeout(() => {
-				setIsScrolling(false);
-			}, 150); // Fade out after 150ms of inactivity
 
-			// Trigger infinite loading when near the top
-			if (scrollOffset < 200 && hasMore && !isLoadingChat) {
-				loadOlderMessages();
+			// Store the new element and add listener only if it's an HTMLElement
+			if (ref instanceof HTMLElement) {
+				ref.addEventListener('scroll', handleScroll, { passive: true });
+				scrollContainerElement.current = ref;
+			} else {
+				// Handle Window case or null - we only care about HTMLElement for scroll events
+				scrollContainerElement.current = null;
 			}
 
-			// Determine glow visibility based on scroll position and direction
-			const container = scrollContainerRef.current;
-			if (!container) return;
-
-			const isAtTop = scrollOffset <= 10;
-			const isAtBottom = scrollOffset >= container.scrollHeight - container.clientHeight - 10;
-
-			if (scrollDirection === 'backward') {
-				setShowTopGlow(false); // Hide top glow when scrolling down
-				setShowBottomGlow(!isAtBottom);
-			} else if (scrollDirection === 'forward') {
-				setShowTopGlow(!isAtTop);
-				setShowBottomGlow(false); // Hide bottom glow when scrolling up
-			}
+			// Don't return anything - Virtuoso expects void or any, not a cleanup function
 		},
-		[loadOlderMessages, hasMore, isLoadingChat]
+		[handleScroll]
 	);
 
-	return { scrollContainerRef, handleScroll, showTopGlow, showBottomGlow, isScrolling };
+	/**
+	 * Cleanup function to be called when component unmounts
+	 */
+	const cleanup = useCallback(() => {
+		if (scrollContainerElement.current instanceof HTMLElement) {
+			scrollContainerElement.current.removeEventListener('scroll', handleScroll);
+		}
+		if (scrollTimeoutRef.current) {
+			clearTimeout(scrollTimeoutRef.current);
+		}
+	}, [handleScroll]);
+
+	// Use cleanup in a useEffect for proper component unmounting
+	useEffect(() => {
+		return cleanup;
+	}, [cleanup]);
+
+	/**
+	 * Fallback handler for react-virtuoso's isScrolling prop
+	 * This ensures we don't miss any scroll state changes
+	 */
+	const handleIsScrollingChange = useCallback((scrolling: boolean) => {
+		if (!scrolling) {
+			setIsScrolling(false);
+			setScrollDirection(null);
+		}
+	}, []);
+
+	const showTopGlow = scrollDirection === 'down';
+	const showBottomGlow = scrollDirection === 'up';
+
+	return {
+		// State for the ScrollGlow component
+		isScrolling,
+		showTopGlow,
+		showBottomGlow,
+
+		// Callback function for Virtuoso's scrollerRef (now with correct type)
+		scrollerRef,
+
+		// Callback for Virtuoso's isScrolling prop (fallback only)
+		isScrollingChange: handleIsScrollingChange,
+	};
 };

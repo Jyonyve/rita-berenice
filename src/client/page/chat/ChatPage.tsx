@@ -1,13 +1,10 @@
-// src/client/component/page/ChatPage.tsx
-
 import { ChangeEvent, FC, useCallback, useEffect, useState } from 'react';
 
 // Import the new components
-
 import { ChatLog } from './ChatLog.jsx';
 import { UserInput } from './UserInput.jsx';
+
 // MUI Components
-import { DEFAULT_LOADING_BATCH_TURN_COUNT } from '#shared/config/constants.js';
 import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { ChatTurnCdo, TempChatTurn, TempChatTurnCdo } from '#shared/domain/chat/ChatInterfaces.js';
@@ -19,7 +16,7 @@ import { useChatState } from '../../hook/state/useChatState.js';
 import { useAiModel } from '../../hook/useAiModel.js';
 import { GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
 import { containerSpacing } from '../../style/index.js';
-import { getImageForEmotion } from '../../util/portraitUtils.ts';
+import { getImageForEmotion } from '../../util/portraitUtils.js';
 
 export const ChatPage: FC<{
 	characterInfo: CharacterInfo;
@@ -30,13 +27,12 @@ export const ChatPage: FC<{
 	const { receiveBotResponse, finalizeChatTurn } = useOrchestrationApi();
 	const { saveTempChatTurn } = useTempChatApi();
 
+	// --- HOOKS ---
 	const {
 		chatTurns,
 		tempChatTurn,
 		isLoadingHistory,
-		hasMoreHistory,
 		clientError,
-		loadOlderMessages,
 		addChatTurn,
 		changeTempChatTurn,
 		getNextSequence,
@@ -54,18 +50,32 @@ export const ChatPage: FC<{
 	const [userEditInput, setUserEditInput] = useState('');
 	const [botEditInput, setBotEditInput] = useState('');
 
-	// Load Character Image
-	const handleChatacterImage = (emotion: string) => {
-		const newImageUrl = getImageForEmotion(characterInfo.characterId, emotion);
-		newImageUrl && setImageUrl(newImageUrl);
-	};
+	// --- HANDLERS ---
+	const handleCharacterImage = useCallback(
+		(emotion: string) => {
+			const newImageUrl = getImageForEmotion(characterInfo.characterId, emotion);
+			if (newImageUrl) {
+				setImageUrl(newImageUrl);
+			}
+		},
+		[characterInfo.characterId]
+	);
+	useEffect(() => {
+		// Initialize the character image when the component mounts
+		let emotion: string = DEFAULT_EMOTION;
 
-	// Scroll Handler
-	const handleTriggerLoadOlder = useCallback(() => {
-		if (sessionId && hasMoreHistory && !isLoadingHistory) {
-			loadOlderMessages(DEFAULT_LOADING_BATCH_TURN_COUNT);
+		if (tempChatTurn) {
+			emotion = tempChatTurn.chatTurnSets[currentTempSetNo]?.response?.emotion || DEFAULT_EMOTION;
+		} else if (chatTurns.length > 0) {
+			emotion = chatTurns[chatTurns.length - 1].response?.emotion || DEFAULT_EMOTION;
 		}
-	}, [sessionId, loadOlderMessages, hasMoreHistory, isLoadingHistory]);
+
+		handleCharacterImage(emotion);
+	}, [chatTurns, tempChatTurn, currentTempSetNo, handleCharacterImage]);
+
+	// The `loadOlderMessages` and `hasMoreHistory` props were removed from useChatState,
+	// so the scroll handler is no longer needed.
+	// const handleTriggerLoadOlder = ... (REMOVED)
 
 	const handleSendMessage = useCallback(async () => {
 		setPageError(undefined);
@@ -112,7 +122,7 @@ export const ChatPage: FC<{
 			if (newTempTurnResult) {
 				changeTempChatTurn(newTempTurnResult);
 				const emotion = newTempTurnResult.chatTurnSets[0]?.response?.emotion || DEFAULT_EMOTION;
-				handleChatacterImage(emotion);
+				handleCharacterImage(emotion);
 				setUserInput('');
 			}
 
@@ -139,7 +149,8 @@ export const ChatPage: FC<{
 		addChatTurn,
 		changeTempChatTurn,
 		getNextSequence,
-		handleChatacterImage,
+		handleCharacterImage,
+		getRecentTurnsForMemory,
 	]);
 
 	const handleRegenerateResponse = useCallback(async () => {
@@ -167,7 +178,7 @@ export const ChatPage: FC<{
 			if (result) {
 				const emotion =
 					result.chatTurnSets[result.chatTurnSets.length - 1].response.emotion || DEFAULT_EMOTION;
-				handleChatacterImage(emotion);
+				handleCharacterImage(emotion);
 				changeTempChatTurn(result);
 			}
 		} catch (err: any) {
@@ -184,7 +195,9 @@ export const ChatPage: FC<{
 		changeTempChatTurn,
 		characterInfo,
 		profileInfo,
-		handleChatacterImage,
+		handleCharacterImage,
+		getRecentTurnsForMemory,
+		currentTempSetNo,
 	]);
 
 	const handleEditTempTurnText = (value: string, req: boolean) => {
@@ -201,12 +214,9 @@ export const ChatPage: FC<{
 			response: { ...currentTurnSet.response, entries: parseTextToEntries(botEditInput) },
 		};
 
-		const newChatTurnSets = tempChatTurn.chatTurnSets.map((set, index) => {
-			if (index === currentTempSetNo) {
-				return updatedTurnSet;
-			}
-			return set;
-		});
+		const newChatTurnSets = tempChatTurn.chatTurnSets.map((set, index) =>
+			index === currentTempSetNo ? updatedTurnSet : set
+		);
 		const updateTempTurn = { ...tempChatTurn, chatTurnSets: newChatTurnSets };
 
 		await saveTempChatTurn.mutateAsync(updateTempTurn);
@@ -219,52 +229,33 @@ export const ChatPage: FC<{
 		setUserInput(e.target.value);
 	};
 
+	// --- RENDER ---
 	const isInputDisabled =
 		isProcessing || (!!tempChatTurn && !tempChatTurn.chatTurnSets[0]?.response);
 
-	useEffect(() => {
-		if (tempChatTurn) {
-			const currentEmotion = tempChatTurn.chatTurnSets[currentTempSetNo]?.response?.emotion;
-			handleChatacterImage(currentEmotion || DEFAULT_EMOTION);
-		} else if (chatTurns && chatTurns.length > 0) {
-			const lastTurn = chatTurns.slice(-1);
-
-			if (lastTurn.length > 0 && lastTurn[0].response?.emotion) {
-				handleChatacterImage(lastTurn[0].response.emotion);
-			} else {
-				handleChatacterImage(DEFAULT_EMOTION);
-			}
-		} else {
-			handleChatacterImage(DEFAULT_EMOTION);
-		}
-	}, [tempChatTurn, chatTurns, currentTempSetNo]);
-
-	// --- RENDER ---
 	return (
 		<GlassPaper key="chat-page" className="paper">
-			<Grid container spacing={containerSpacing}>
+			<Grid
+				container
+				spacing={containerSpacing}
+				sx={{
+					height: '100%',
+					minHeight: 0,
+					flex: 1, // This connects Grid to GlassPaper's flex behavior
+				}}
+			>
 				{/* Portrait Section */}
 				<Grid
 					size={{ xs: 12, md: 4 }}
 					sx={{
-						// Define this column as a sticky "pillar" on larger screens.
 						position: { xs: 'static', md: 'sticky' },
-
-						// Pin it to the top of the scrollable <main> area, respecting its padding.
 						top: (theme) => theme.spacing(2),
-
-						// Prevent this column from stretching if the right-side content is taller.
 						alignSelf: 'flex-start',
-
-						// --- THE CORRECTED HEIGHT CALCULATION ---
-						// We subtract the header, footer, main's padding (2*2), and paper's padding (2*2).
 						height: {
-							xs: 'auto', // On mobile, height is automatic.
+							xs: 'auto',
 							md: (theme) =>
 								`calc(100vh - var(--header-height) - var(--footer-height) - ${theme.spacing(8)})`,
 						},
-						// --- FLEXBOX CENTERING FOR THE IMAGE ---
-						// These properties ensure the image is centered within the pillar and scales correctly.
 						display: 'flex',
 						alignItems: 'center',
 						justifyContent: 'center',
@@ -276,31 +267,42 @@ export const ChatPage: FC<{
 				</Grid>
 
 				{/* Chat Area Section */}
-				<Grid size={{ xs: 12, md: 8 }} sx={{ display: 'flex', flexDirection: 'column' }}>
-					<Box sx={{ flexGrow: 1, overflow: 'hidden', position: 'relative' }}>
+				<Grid
+					size={{ xs: 12, md: 8 }}
+					sx={{
+						display: 'flex',
+						flexDirection: 'column',
+						// FIXED: Use flex to fill remaining space in the Grid container
+						flex: 1,
+						minHeight: 0,
+					}}
+				>
+					<Box
+						sx={{
+							flexGrow: 1, // This grows when browser height increases
+							overflow: 'hidden',
+							position: 'relative',
+							width: '100%',
+							minHeight: 0,
+						}}
+					>
 						<ChatLog
 							chatTurns={chatTurns}
 							tempChatTurn={tempChatTurn}
-							hasMore={hasMoreHistory}
 							isLoadingChat={isLoadingHistory}
 							isProcessing={isProcessing}
-							clientError={clientError}
+							clientError={clientError || pageError} // Combine client and page errors
 							userEditInput={userEditInput}
 							botEditInput={botEditInput}
 							onEditTempTurnText={handleEditTempTurnText}
 							onSaveTempTurnText={handleSaveTempTurnText}
 							onRegenerateResponse={handleRegenerateResponse}
-							loadOlderMessages={handleTriggerLoadOlder}
 							currentTempSetNo={currentTempSetNo}
 							changeTempSetNo={setCurrentTempSetNo}
+							handleCharacterImage={handleCharacterImage}
 						/>
 					</Box>
 					<Box sx={{ flexShrink: 0 }}>
-						{pageError && (
-							<Typography color="error" sx={{ p: 1 }}>
-								{pageError}
-							</Typography>
-						)}
 						<UserInput
 							sessionId={sessionId}
 							value={userInput}

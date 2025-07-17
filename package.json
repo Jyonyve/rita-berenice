@@ -20,6 +20,7 @@
 		"init:chat": "tsx ./src/migration/chat/initChat.ts",
 		"check:chat": "tsx ./src/migration/chat/checkChat.ts",
 		"delete:chat": "tsx ./src/migration/chat/deleteChat.ts",
+		"patch:chat": "tsx ./src/migration/chat/patchEmotion.ts",
 		"init:prof": "tsx ./src/migration/profile/initProfile.ts",
 		"check:prof": "tsx ./src/migration/profile/checkProfile.ts",
 		"init:sess": "tsx ./src/migration/session/initSession.ts",
@@ -30,7 +31,8 @@
 		"link:chat": "tsx ./src/migration/lore/linkChatToHistory.ts",
 		"extract:lore": "tsx ./src/migration/source/htmlParserCheerio.ts",
 		"mock": "tsx ./src/client/mock/mockGenerator.ts",
-		"drop": "tsx ./src/migration/dropCollection.ts"
+		"drop": "tsx ./src/migration/dropCollection.ts",
+		"temp": "tsx ./scripts/patchResponseEmotionToPrimaryFile.ts"
 	},
 	"dependencies": {
 		"@emotion/cache": "^11.14.0",
@@ -48,9 +50,7 @@
 		"react-hook-form": "^7.60.0",
 		"react-infinite-scroll-component": "^6.1.0",
 		"react-router": "^7.6.3",
-		"react-virtualized-auto-sizer": "^1.0.26",
 		"react-virtuoso": "^4.13.0",
-		"react-window": "^1.8.11",
 		"supertokens-auth-react": "^0.49.1",
 		"supertokens-web-js": "^0.15.0",
 		"swiper": "^11.2.10"
@@ -90,7 +90,6 @@
 		"@types/node": "^22.14.0",
 		"@types/react": "^19.1.8",
 		"@types/react-dom": "^19.1.6",
-		"@types/react-window": "^1.8.8",
 		"@typescript-eslint/eslint-plugin": "^8.34.0",
 		"@typescript-eslint/parser": "^8.34.0",
 		"@vitejs/plugin-react": "^4.5.2",

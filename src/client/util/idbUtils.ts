@@ -1,40 +1,55 @@
-// idbUtils.ts
-import { openDB } from 'idb';
+// src/client/util/idbUtils.ts
+
+import { openDB, IDBPDatabase } from 'idb';
 import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 
 const DB_NAME = 'ChatTurnDB';
 const STORE_NAME = 'messages';
+const VERSION = 2; // Increment DB version to trigger the upgrade
 
-export const initDB = async () => {
-	const db = await openDB(DB_NAME, 1, {
-		upgrade(db) {
-			if (!db.objectStoreNames.contains(STORE_NAME)) {
-				const store = db.createObjectStore(STORE_NAME, { keyPath: 'sequence' });
-				store.createIndex('sequence', 'sequence');
+// Define a compound key for uniqueness
+type MessageKey = [string, number]; // [sessionId, sequence]
+
+export const initDB = async (): Promise<IDBPDatabase> => {
+	const db = await openDB(DB_NAME, VERSION, {
+		upgrade(db, oldVersion) {
+			if (oldVersion < 2) {
+				// Re-create the store with a compound key and a proper index
+				if (db.objectStoreNames.contains(STORE_NAME)) {
+					db.deleteObjectStore(STORE_NAME);
+				}
+				const store = db.createObjectStore(STORE_NAME, { keyPath: ['sessionId', 'sequence'] });
+				// Create an index on sessionId to query by session
+				store.createIndex('by-session', 'sessionId');
 			}
 		},
 	});
 	return db;
 };
 
+// Now accepts sessionId to fetch only relevant messages
 export const getCachedMessages = async (
+	sessionId: string,
 	beforeSequence: number,
 	batchSize: number
 ): Promise<ChatTurn[]> => {
 	const db = await initDB();
 	const tx = db.transaction(STORE_NAME, 'readonly');
-	const index = tx.store.index('sequence');
-	const range = IDBKeyRange.upperBound(beforeSequence - 1);
-	const result: ChatTurn[] = [];
-	let cursor = await index.openCursor(range, 'prev');
-	while (cursor && result.length < batchSize) {
-		result.push(cursor.value as ChatTurn);
-		cursor = await cursor.continue();
-	}
+	const index = tx.store.index('by-session');
+	// Query the index for the specific session, then sort by sequence manually
+	const allMessagesForSession = await index.getAll(sessionId);
+
+	// Filter and sort in memory
+	const relevantMessages = allMessagesForSession
+		.filter((msg) => msg.sequence < beforeSequence)
+		.sort((a, b) => b.sequence - a.sequence)
+		.slice(0, batchSize);
+
 	await tx.done;
-	return result;
+	return relevantMessages;
 };
 
+// No change needed here, as the keyPath is set on the object
 export const saveMessagesToCache = async (messages: ChatTurn[]) => {
 	const db = await initDB();
 	const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -44,10 +59,26 @@ export const saveMessagesToCache = async (messages: ChatTurn[]) => {
 	await tx.done;
 };
 
-export const loadAllCachedMessages = async (): Promise<ChatTurn[]> => {
+// This function is now session-specific
+export const loadAllCachedMessagesForSession = async (sessionId: string): Promise<ChatTurn[]> => {
 	const db = await initDB();
 	const tx = db.transaction(STORE_NAME, 'readonly');
-	const all = await tx.store.getAll();
+	const index = tx.store.index('by-session');
+	const all = await index.getAll(sessionId); // Use the index to get all messages for the session
 	await tx.done;
-	return all.sort((a, b) => b.sequence - a.sequence);
+	return all.sort((a, b) => b.sequence - a.sequence); // Sort by sequence descending
+};
+
+// Add a function to clear the cache for a specific session if needed
+export const clearSessionCache = async (sessionId: string) => {
+	const db = await initDB();
+	const tx = db.transaction(STORE_NAME, 'readwrite');
+	const index = tx.store.index('by-session');
+	let cursor = await index.openCursor(IDBKeyRange.only(sessionId));
+	while (cursor) {
+		await cursor.delete();
+		cursor = await cursor.continue();
+	}
+	await tx.done;
+	console.log(`Cache cleared for session: ${sessionId}`);
 };

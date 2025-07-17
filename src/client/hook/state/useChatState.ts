@@ -1,60 +1,92 @@
-// src/hook/useChatState.ts
 import { useState, useCallback, useEffect } from 'react';
 import { ChatTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
-import { DEFAULT_LOADING_BATCH_TURN_COUNT } from '#shared/config/constants.js';
-import { getCachedMessages, saveMessagesToCache } from '../../util/idbUtils.js';
+import { loadAllCachedMessagesForSession, saveMessagesToCache } from '../../util/idbUtils.js';
+import { useChatApi } from '../api/index.js';
 
 export const useChatState = (sessionId: string) => {
-	const [chatTurns, setChatTurns] = useState<ChatTurn[]>([]); // Sorted: oldest at index 0, newest at end
-	const [isLoadingHistory, setIsLoadingHistory] = useState(false); // Renamed to avoid confusion with API loading
-	const [hasMoreHistory, setHasMoreHistory] = useState(true); // Renamed
+	// --- STATE MANAGEMENT ---
+	const [chatTurns, setChatTurns] = useState<ChatTurn[]>([]);
+	const [isCacheLoading, setIsCacheLoading] = useState(true);
 	const [clientError, setClientError] = useState<string>();
 	const [tempChatTurn, setTempChatTurn] = useState<TempChatTurn>();
 
+	// --- API HOOK ---
+	// This hook is called declaratively at the top level.
+	// It automatically runs when `sessionId` is valid and fetches the latest data.
+	const {
+		data: apiResponse,
+		isLoading: isApiLoading,
+		isError: isApiError,
+		error: apiError,
+	} = useChatApi().getAllChatTurns(sessionId);
+
+	// --- UTILITY FUNCTIONS ---
 	const _sortTurns = useCallback(
 		(turns: ChatTurn[]) => turns.sort((a, b) => a.sequence - b.sequence),
 		[]
 	);
 
-	// Function to load older messages from IndexedDB
-	const loadOlderMessages = useCallback(
-		async (batchSize: number = DEFAULT_LOADING_BATCH_TURN_COUNT) => {
-			if (isLoadingHistory || !hasMoreHistory) {
-				if (!hasMoreHistory) console.log('No more older messages to load from IDB.');
+	const clearChatState = useCallback(() => {
+		setChatTurns([]);
+		setTempChatTurn(undefined);
+		setIsCacheLoading(true);
+		setClientError(undefined);
+	}, []);
+
+	// --- DATA FLOW & LIFECYCLE ---
+
+	// EFFECT 1: Handles the initial, fast load from the local cache when the session changes.
+	useEffect(() => {
+		const loadFromCache = async () => {
+			if (!sessionId) {
+				clearChatState();
 				return;
 			}
-
-			setIsLoadingHistory(true);
-			setClientError(undefined);
+			// Immediately clear old state and prepare for new session
+			clearChatState();
 			try {
-				// Sequence of the oldest message currently in state (start of the array)
-				const oldestLoadedSequence = chatTurns.length > 0 ? chatTurns[0].sequence : Infinity;
-
-				const cachedOlder = await getCachedMessages(oldestLoadedSequence, batchSize);
-
-				if (cachedOlder.length > 0) {
-					const sortedCachedOlder = _sortTurns(cachedOlder);
-					setChatTurns((prev) => [...sortedCachedOlder, ...prev]);
-					setHasMoreHistory(cachedOlder.length === batchSize);
-				} else {
-					setHasMoreHistory(false); // No more turns in IDB for this range
+				const cachedTurns = await loadAllCachedMessagesForSession(sessionId);
+				if (cachedTurns.length > 0) {
+					setChatTurns(_sortTurns(cachedTurns));
 				}
 			} catch (err: any) {
-				console.error('Load Older Messages from IDB Error:', err);
-				setClientError('Failed to load older messages from cache.');
-				setHasMoreHistory(false);
+				console.error(`Failed to load session ${sessionId} from cache:`, err);
+				setClientError('Failed to load chat from local cache.');
 			} finally {
-				setIsLoadingHistory(false);
+				setIsCacheLoading(false);
 			}
-		},
-		[sessionId, isLoadingHistory, hasMoreHistory, chatTurns, _sortTurns]
-	);
+		};
 
-	// Add a new fixed turn (appended at the end - newest)
+		loadFromCache();
+
+		// Cleanup function to clear state if component unmounts
+		return () => clearChatState();
+	}, [sessionId, _sortTurns, clearChatState]);
+
+	// EFFECT 2: Reacts to the API data to "revalidate" the UI and update the cache.
+	useEffect(() => {
+		if (isApiError) {
+			setClientError(`Server error: ${apiError?.message || 'Failed to sync with server.'}`);
+			return;
+		}
+
+		if (apiResponse?.chatTurns) {
+			const sortedApiTurns = _sortTurns(apiResponse.chatTurns);
+			// Update state and cache only if the server data is different from what's currently shown.
+			// This prevents unnecessary re-renders.
+			if (JSON.stringify(sortedApiTurns) !== JSON.stringify(chatTurns)) {
+				setChatTurns(sortedApiTurns);
+				saveMessagesToCache(sortedApiTurns);
+			}
+		}
+	}, [apiResponse, isApiError, apiError, chatTurns, _sortTurns]);
+
+	// --- STATE UPDATERS & GETTERS ---
+
 	const addChatTurn = useCallback(
 		async (turn: ChatTurn) => {
 			setChatTurns((prev) => _sortTurns([...prev, turn]));
-			await saveMessagesToCache([turn]); // Save the new turn to IDB
+			await saveMessagesToCache([turn]);
 		},
 		[_sortTurns]
 	);
@@ -62,13 +94,12 @@ export const useChatState = (sessionId: string) => {
 	const addChatTurns = useCallback(
 		async (newTurns: ChatTurn[]) => {
 			if (newTurns.length === 0) return;
-
 			setChatTurns((prevTurns) => {
-				const existingSequenceMap = new Map(prevTurns.map((t) => [t.sequence, t]));
-				const uniqueNewTurns = newTurns.filter((nt) => !existingSequenceMap.has(nt.sequence));
+				const existingSequences = new Set(prevTurns.map((t) => t.sequence));
+				const uniqueNewTurns = newTurns.filter((nt) => !existingSequences.has(nt.sequence));
 				return _sortTurns([...prevTurns, ...uniqueNewTurns]);
 			});
-			await saveMessagesToCache(newTurns); // Save to IDB
+			await saveMessagesToCache(newTurns);
 		},
 		[_sortTurns]
 	);
@@ -76,14 +107,6 @@ export const useChatState = (sessionId: string) => {
 	const changeTempChatTurn = useCallback((temp?: TempChatTurn) => {
 		setTempChatTurn(temp);
 	}, []);
-
-	const clearChatState = useCallback(() => {
-		setChatTurns([]);
-		setTempChatTurn(undefined); // [FIX] Recommended to uncomment this for a full reset.
-		setIsLoadingHistory(false);
-		setClientError(undefined);
-		setHasMoreHistory(true);
-	}, [sessionId]);
 
 	const getCurrentSequence = useCallback((): number => {
 		if (chatTurns.length === 0) return -1;
@@ -96,37 +119,18 @@ export const useChatState = (sessionId: string) => {
 	}, [getCurrentSequence]);
 
 	const getRecentTurnsForMemory = useCallback((): ChatTurn[] => {
-		// The `chatTurns` state is already sorted, so we can just take the last 5.
 		return chatTurns.slice(-5);
 	}, [chatTurns]);
 
-	// Initial load strategy from IDB or server
-	useEffect(() => {
-		const loadInitialView = async () => {
-			if (!sessionId) return;
-			setIsLoadingHistory(true);
-			const initialTurns = await getCachedMessages(Infinity, DEFAULT_LOADING_BATCH_TURN_COUNT);
-			setChatTurns(_sortTurns(initialTurns));
-			setHasMoreHistory(true);
-			setIsLoadingHistory(false);
-		};
-		loadInitialView();
-	}, [sessionId, _sortTurns]);
-
+	// --- RETURNED VALUES ---
 	return {
 		chatTurns,
 		tempChatTurn,
-		isLoadingHistory, // Keep alias for existing usage
+		isLoadingHistory: isCacheLoading || isApiLoading,
 		clientError,
-		hasMoreHistory, // Keep alias
-
-		loadOlderMessages, // Expose for InfiniteScroll
-		addChatTurn, // Renamed from addChatTurnIndexedDB for simplicity
-		addChatTurns, // Renamed
+		addChatTurn,
+		addChatTurns,
 		changeTempChatTurn,
-		setIsLoadingHistory,
-		setClientError,
-		setHasMoreHistory,
 		clearChatState,
 		getCurrentSequence,
 		getNextSequence,
