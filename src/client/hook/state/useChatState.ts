@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { ChatTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { loadAllCachedMessagesForSession, saveMessagesToCache } from '../../util/idbUtils.js';
-import { useChatApi } from '../api/useChatApi.js';
+import { useChatApi } from '../api/index.js';
 
 export const useChatState = (sessionId: string) => {
 	// --- STATE MANAGEMENT ---

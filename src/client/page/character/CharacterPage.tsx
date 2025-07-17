@@ -131,7 +131,7 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 						</GlassCard>
 
 						{/* Profile Card */}
-						{userId && <ProfileCard userId={userId} onSubmit={handleStartNewSession} />}
+						<ProfileCard userId={userId} onSubmit={handleStartNewSession} />
 					</Box>
 				</Grid>
 			</Grid>
