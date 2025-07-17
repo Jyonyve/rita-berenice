@@ -5,14 +5,14 @@ import { chromaDbClient, flatSessionToDoc, sessionStore } from '#server/index.js
 import { SessionInfo, SessionMetadata } from '#shared/domain/index.js';
 import { buildProfileId, METADATA_TYPES } from '#shared/index.js';
 
+const tarion_original = 'tarion_original_ueDVsINn';
+const tarion_spinoff = 'tarion_spinoff_sw1MLtIj';
+const userId = '6b335673-c837-43f9-a1c7-0b92c90edefb';
 const getTarionOriginalSessionTemplate = (): SessionInfo => {
 	return {
-		sessionId: 'tarion_original_fhTob3vkzxHF6tJc',
-		userId: '6b335673-c837-43f9-a1c7-0b92c90edefb',
-		profileId: buildProfileId(
-			'tarion_original_fhTob3vkzxHF6tJc',
-			'6b335673-c837-43f9-a1c7-0b92c90edefb'
-		),
+		sessionId: tarion_original,
+		userId,
+		profileId: buildProfileId(tarion_original, userId),
 		characterId: 'tarion_original',
 		title: `타리온 x 요니브`,
 		createdAt: '2025-06-22T13:05:15.294Z',
@@ -27,12 +27,9 @@ const getTarionOriginalSessionTemplate = (): SessionInfo => {
 
 const getTarionSpinoffSessionTemplate = (): SessionInfo => {
 	return {
-		sessionId: 'tarion_spinoff_Oin8t5Lxbc8glaU7',
-		userId: '6b335673-c837-43f9-a1c7-0b92c90edefb',
-		profileId: buildProfileId(
-			'tarion_spinoff_Oin8t5Lxbc8glaU7',
-			'6b335673-c837-43f9-a1c7-0b92c90edefb'
-		),
+		sessionId: tarion_spinoff,
+		userId,
+		profileId: buildProfileId(tarion_spinoff, userId),
 		characterId: 'tarion_spinoff',
 		title: `타리온 x 요니브`,
 		createdAt: '2025-07-06T17:05:05.115Z',
@@ -68,9 +65,9 @@ async function initSession() {
 		// Step 1: GET the collection directly.
 		console.log(`Getting collection "${COLLECTIONS.SESSION}"...`);
 		const collection = await chromaDbClient.getSessionCollection();
-
+		collection.delete({ ids: ['tarion_spinoff_Oin8t5Lxbc8glaU7'] });
 		// const sessionInfo = getTarionOriginalSessionTemplate();
-		const sessionInfo = getMondaySessionTemplate();
+		const sessionInfo = getTarionSpinoffSessionTemplate();
 
 		// Step 4: Prepare the record for ChromaDB.
 		// The document is the text to be embedded for semantic search.

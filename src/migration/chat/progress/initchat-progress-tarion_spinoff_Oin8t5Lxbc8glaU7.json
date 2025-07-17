@@ -1,1382 +1,1382 @@
 {
-  "sessionId": "tarion_spinoff_Oin8t5Lxbc8glaU7",
-  "totalTurnsInLogFile": 1351,
-  "lastProcessedSequence": 1350,
-  "successfullyEnrichedTurnsCount": 1079,
-  "fallbackSavedTurnsCount": 273,
-  "startedAt": "2025-07-04T05:55:01.550Z",
-  "lastUpdatedAt": "2025-07-07T03:20:08.036Z",
-  "status": "completed",
-  "errors": [
-    {
-      "sequence": 267,
-      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
-      "timestamp": "2025-07-04T06:28:01.876Z"
-    },
-    {
-      "sequence": 268,
-      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
-      "timestamp": "2025-07-04T06:32:13.636Z"
-    },
-    {
-      "sequence": 276,
-      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
-      "timestamp": "2025-07-04T06:42:08.932Z"
-    },
-    {
-      "sequence": 277,
-      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
-      "timestamp": "2025-07-04T06:46:14.649Z"
-    },
-    {
-      "sequence": 278,
-      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
-      "timestamp": "2025-07-04T06:50:24.855Z"
-    },
-    {
-      "sequence": 279,
-      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
-      "timestamp": "2025-07-04T06:54:32.077Z"
-    },
-    {
-      "sequence": 280,
-      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
-      "timestamp": "2025-07-04T06:58:40.605Z"
-    },
-    {
-      "sequence": 482,
-      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
-      "timestamp": "2025-07-04T07:24:29.548Z"
-    },
-    {
-      "sequence": 483,
-      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
-      "timestamp": "2025-07-04T07:28:39.107Z"
-    },
-    {
-      "sequence": 484,
-      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
-      "timestamp": "2025-07-04T07:32:46.176Z"
-    },
-    {
-      "sequence": 485,
-      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
-      "timestamp": "2025-07-04T07:36:55.567Z"
-    },
-    {
-      "sequence": 486,
-      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
-      "timestamp": "2025-07-04T07:41:03.097Z"
-    },
-    {
-      "sequence": 488,
-      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
-      "timestamp": "2025-07-04T07:49:21.963Z"
-    },
-    {
-      "sequence": 489,
-      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
-      "timestamp": "2025-07-04T07:53:34.215Z"
-    },
-    {
-      "sequence": 490,
-      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
-      "timestamp": "2025-07-04T07:57:40.454Z"
-    },
-    {
-      "sequence": 491,
-      "error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
-      "timestamp": "2025-07-04T08:01:50.647Z"
-    },
-    {
-      "sequence": 696,
-      "error": "Enrichment failed: Groq API Error 429: {\"error\":{\"message\":\"Rate limit reached for model `llama3-70b-8192` in organization `org_01jbx2c1jbevzah5a64508cqyw` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Used 4971, Requested 3794. Please try again in 27.649s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing\",\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\"}}\n",
-      "timestamp": "2025-07-05T03:05:24.510Z"
-    },
-    {
-      "sequence": 697,
-      "error": "Enrichment failed: Groq API Error 429: {\"error\":{\"message\":\"Rate limit reached for model `llama3-70b-8192` in organization `org_01jbx2c1jbevzah5a64508cqyw` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Used 4636, Requested 3775. Please try again in 24.109s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing\",\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\"}}\n",
-      "timestamp": "2025-07-05T03:05:27.855Z"
-    },
-    {
-      "sequence": 698,
-      "error": "Enrichment failed: Groq API Error 429: {\"error\":{\"message\":\"Rate limit reached for model `llama3-70b-8192` in organization `org_01jbx2c1jbevzah5a64508cqyw` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Used 4306, Requested 3948. Please try again in 22.531999999s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing\",\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\"}}\n",
-      "timestamp": "2025-07-05T03:05:31.165Z"
-    },
-    {
-      "sequence": 739,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T03:44:27.384Z"
-    },
-    {
-      "sequence": 741,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T03:45:09.665Z"
-    },
-    {
-      "sequence": 751,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T03:53:11.149Z"
-    },
-    {
-      "sequence": 756,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T03:56:54.029Z"
-    },
-    {
-      "sequence": 763,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T04:02:25.035Z"
-    },
-    {
-      "sequence": 780,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T06:55:47.350Z"
-    },
-    {
-      "sequence": 786,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:00:12.121Z"
-    },
-    {
-      "sequence": 791,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:03:47.265Z"
-    },
-    {
-      "sequence": 796,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:07:11.545Z"
-    },
-    {
-      "sequence": 810,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:18:35.991Z"
-    },
-    {
-      "sequence": 814,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:21:31.717Z"
-    },
-    {
-      "sequence": 818,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:24:12.375Z"
-    },
-    {
-      "sequence": 823,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:27:37.992Z"
-    },
-    {
-      "sequence": 824,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:28:05.843Z"
-    },
-    {
-      "sequence": 825,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:28:33.289Z"
-    },
-    {
-      "sequence": 826,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:29:00.836Z"
-    },
-    {
-      "sequence": 827,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:29:28.894Z"
-    },
-    {
-      "sequence": 828,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:29:56.340Z"
-    },
-    {
-      "sequence": 829,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:30:23.781Z"
-    },
-    {
-      "sequence": 830,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:30:51.226Z"
-    },
-    {
-      "sequence": 831,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:31:19.071Z"
-    },
-    {
-      "sequence": 832,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:31:46.511Z"
-    },
-    {
-      "sequence": 833,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:32:14.058Z"
-    },
-    {
-      "sequence": 834,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:32:41.715Z"
-    },
-    {
-      "sequence": 835,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:33:09.666Z"
-    },
-    {
-      "sequence": 836,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:33:39.166Z"
-    },
-    {
-      "sequence": 837,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:34:07.118Z"
-    },
-    {
-      "sequence": 838,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:34:34.551Z"
-    },
-    {
-      "sequence": 839,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:35:01.845Z"
-    },
-    {
-      "sequence": 840,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:35:29.438Z"
-    },
-    {
-      "sequence": 841,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:35:56.984Z"
-    },
-    {
-      "sequence": 842,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:36:24.429Z"
-    },
-    {
-      "sequence": 843,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:36:52.684Z"
-    },
-    {
-      "sequence": 844,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:37:20.951Z"
-    },
-    {
-      "sequence": 845,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:37:48.594Z"
-    },
-    {
-      "sequence": 846,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:38:16.457Z"
-    },
-    {
-      "sequence": 847,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:38:44.207Z"
-    },
-    {
-      "sequence": 849,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:40:07.256Z"
-    },
-    {
-      "sequence": 850,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:40:34.610Z"
-    },
-    {
-      "sequence": 851,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:41:02.448Z"
-    },
-    {
-      "sequence": 852,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:41:30.197Z"
-    },
-    {
-      "sequence": 853,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:41:58.051Z"
-    },
-    {
-      "sequence": 854,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:42:26.003Z"
-    },
-    {
-      "sequence": 855,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:42:53.649Z"
-    },
-    {
-      "sequence": 856,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:43:21.602Z"
-    },
-    {
-      "sequence": 857,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:43:49.661Z"
-    },
-    {
-      "sequence": 858,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:44:17.104Z"
-    },
-    {
-      "sequence": 859,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:44:44.548Z"
-    },
-    {
-      "sequence": 860,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:45:12.084Z"
-    },
-    {
-      "sequence": 861,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:45:39.586Z"
-    },
-    {
-      "sequence": 862,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:46:07.286Z"
-    },
-    {
-      "sequence": 863,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:46:34.942Z"
-    },
-    {
-      "sequence": 864,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:47:02.635Z"
-    },
-    {
-      "sequence": 865,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:47:30.130Z"
-    },
-    {
-      "sequence": 866,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:47:57.666Z"
-    },
-    {
-      "sequence": 867,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:48:25.519Z"
-    },
-    {
-      "sequence": 868,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:48:53.167Z"
-    },
-    {
-      "sequence": 869,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:49:21.133Z"
-    },
-    {
-      "sequence": 870,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:49:48.779Z"
-    },
-    {
-      "sequence": 871,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:50:16.427Z"
-    },
-    {
-      "sequence": 872,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:50:44.182Z"
-    },
-    {
-      "sequence": 873,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:51:12.958Z"
-    },
-    {
-      "sequence": 874,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:51:41.016Z"
-    },
-    {
-      "sequence": 875,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:52:09.098Z"
-    },
-    {
-      "sequence": 876,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:52:36.616Z"
-    },
-    {
-      "sequence": 877,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:53:04.871Z"
-    },
-    {
-      "sequence": 878,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:53:37.849Z"
-    },
-    {
-      "sequence": 879,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:54:06.111Z"
-    },
-    {
-      "sequence": 880,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:54:33.760Z"
-    },
-    {
-      "sequence": 882,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:55:44.416Z"
-    },
-    {
-      "sequence": 883,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:56:12.372Z"
-    },
-    {
-      "sequence": 884,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:56:39.710Z"
-    },
-    {
-      "sequence": 885,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:57:07.794Z"
-    },
-    {
-      "sequence": 886,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:57:35.727Z"
-    },
-    {
-      "sequence": 887,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:58:03.066Z"
-    },
-    {
-      "sequence": 888,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:58:30.611Z"
-    },
-    {
-      "sequence": 889,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:58:58.973Z"
-    },
-    {
-      "sequence": 890,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-05T07:59:27.253Z"
-    },
-    {
-      "sequence": 1151,
-      "error": "Enrichment failed: Groq API Error 503: upstream connect error or disconnect/reset before headers. reset reason: remote connection failure, transport failure reason: delayed connect error: Connection timed out",
-      "timestamp": "2025-07-07T01:34:14.637Z"
-    },
-    {
-      "sequence": 1163,
-      "error": "Enrichment failed: terminated",
-      "timestamp": "2025-07-07T01:44:23.765Z"
-    },
-    {
-      "sequence": 1171,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T01:50:29.759Z"
-    },
-    {
-      "sequence": 1172,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T01:50:58.238Z"
-    },
-    {
-      "sequence": 1173,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T01:51:26.419Z"
-    },
-    {
-      "sequence": 1174,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T01:51:55.431Z"
-    },
-    {
-      "sequence": 1175,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T01:52:24.043Z"
-    },
-    {
-      "sequence": 1176,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T01:52:52.166Z"
-    },
-    {
-      "sequence": 1177,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T01:53:21.558Z"
-    },
-    {
-      "sequence": 1178,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T01:53:50.036Z"
-    },
-    {
-      "sequence": 1179,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T01:54:18.168Z"
-    },
-    {
-      "sequence": 1180,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T01:54:46.772Z"
-    },
-    {
-      "sequence": 1181,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T01:55:16.245Z"
-    },
-    {
-      "sequence": 1182,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T01:55:44.669Z"
-    },
-    {
-      "sequence": 1183,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T01:56:13.059Z"
-    },
-    {
-      "sequence": 1184,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T01:56:41.319Z"
-    },
-    {
-      "sequence": 1185,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T01:57:09.659Z"
-    },
-    {
-      "sequence": 1186,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T01:57:38.218Z"
-    },
-    {
-      "sequence": 1187,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T01:58:06.532Z"
-    },
-    {
-      "sequence": 1188,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T01:58:34.638Z"
-    },
-    {
-      "sequence": 1189,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T01:59:02.749Z"
-    },
-    {
-      "sequence": 1190,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T01:59:30.720Z"
-    },
-    {
-      "sequence": 1191,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T01:59:59.919Z"
-    },
-    {
-      "sequence": 1192,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:00:27.943Z"
-    },
-    {
-      "sequence": 1193,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:00:56.254Z"
-    },
-    {
-      "sequence": 1194,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:01:24.682Z"
-    },
-    {
-      "sequence": 1195,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:01:53.163Z"
-    },
-    {
-      "sequence": 1196,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:02:21.135Z"
-    },
-    {
-      "sequence": 1197,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:02:49.439Z"
-    },
-    {
-      "sequence": 1198,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:03:17.511Z"
-    },
-    {
-      "sequence": 1199,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:03:45.646Z"
-    },
-    {
-      "sequence": 1200,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:04:14.194Z"
-    },
-    {
-      "sequence": 1201,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:04:43.350Z"
-    },
-    {
-      "sequence": 1203,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:06:06.401Z"
-    },
-    {
-      "sequence": 1204,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:06:34.709Z"
-    },
-    {
-      "sequence": 1205,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:07:02.977Z"
-    },
-    {
-      "sequence": 1206,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:07:31.176Z"
-    },
-    {
-      "sequence": 1207,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:07:59.940Z"
-    },
-    {
-      "sequence": 1208,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:08:28.533Z"
-    },
-    {
-      "sequence": 1209,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:08:56.793Z"
-    },
-    {
-      "sequence": 1210,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:09:26.010Z"
-    },
-    {
-      "sequence": 1211,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:09:54.007Z"
-    },
-    {
-      "sequence": 1212,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:10:22.344Z"
-    },
-    {
-      "sequence": 1213,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:10:50.417Z"
-    },
-    {
-      "sequence": 1214,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:11:19.096Z"
-    },
-    {
-      "sequence": 1215,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:11:47.778Z"
-    },
-    {
-      "sequence": 1216,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:12:15.885Z"
-    },
-    {
-      "sequence": 1217,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:12:43.920Z"
-    },
-    {
-      "sequence": 1218,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:13:12.258Z"
-    },
-    {
-      "sequence": 1219,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:13:40.459Z"
-    },
-    {
-      "sequence": 1220,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:14:08.471Z"
-    },
-    {
-      "sequence": 1221,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:14:36.631Z"
-    },
-    {
-      "sequence": 1222,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:15:05.006Z"
-    },
-    {
-      "sequence": 1223,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:15:33.174Z"
-    },
-    {
-      "sequence": 1224,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:16:06.947Z"
-    },
-    {
-      "sequence": 1224,
-      "error": "DB Upsert failed: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.",
-      "timestamp": "2025-07-07T02:16:13.986Z"
-    },
-    {
-      "sequence": 1227,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:22:15.965Z"
-    },
-    {
-      "sequence": 1228,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:22:44.655Z"
-    },
-    {
-      "sequence": 1229,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:23:13.131Z"
-    },
-    {
-      "sequence": 1230,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:23:41.323Z"
-    },
-    {
-      "sequence": 1231,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:24:09.540Z"
-    },
-    {
-      "sequence": 1232,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:24:37.913Z"
-    },
-    {
-      "sequence": 1233,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:25:06.113Z"
-    },
-    {
-      "sequence": 1234,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:25:34.449Z"
-    },
-    {
-      "sequence": 1235,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:26:06.648Z"
-    },
-    {
-      "sequence": 1236,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:26:35.040Z"
-    },
-    {
-      "sequence": 1237,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:27:03.493Z"
-    },
-    {
-      "sequence": 1238,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:27:31.913Z"
-    },
-    {
-      "sequence": 1239,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:28:00.252Z"
-    },
-    {
-      "sequence": 1240,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:28:28.579Z"
-    },
-    {
-      "sequence": 1241,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:28:56.771Z"
-    },
-    {
-      "sequence": 1242,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:29:25.430Z"
-    },
-    {
-      "sequence": 1243,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:29:53.934Z"
-    },
-    {
-      "sequence": 1244,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:30:22.547Z"
-    },
-    {
-      "sequence": 1245,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:30:50.951Z"
-    },
-    {
-      "sequence": 1246,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:31:19.250Z"
-    },
-    {
-      "sequence": 1247,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:31:47.581Z"
-    },
-    {
-      "sequence": 1248,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:32:16.040Z"
-    },
-    {
-      "sequence": 1249,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:32:44.394Z"
-    },
-    {
-      "sequence": 1250,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:33:13.339Z"
-    },
-    {
-      "sequence": 1251,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:33:41.546Z"
-    },
-    {
-      "sequence": 1252,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:34:11.310Z"
-    },
-    {
-      "sequence": 1253,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:34:39.526Z"
-    },
-    {
-      "sequence": 1254,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:35:07.929Z"
-    },
-    {
-      "sequence": 1255,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:35:36.274Z"
-    },
-    {
-      "sequence": 1256,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:36:04.598Z"
-    },
-    {
-      "sequence": 1257,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:36:32.806Z"
-    },
-    {
-      "sequence": 1258,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:37:00.950Z"
-    },
-    {
-      "sequence": 1259,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:37:29.220Z"
-    },
-    {
-      "sequence": 1260,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:37:58.954Z"
-    },
-    {
-      "sequence": 1262,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:38:31.252Z"
-    },
-    {
-      "sequence": 1263,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:38:59.530Z"
-    },
-    {
-      "sequence": 1264,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:39:27.786Z"
-    },
-    {
-      "sequence": 1265,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:39:56.424Z"
-    },
-    {
-      "sequence": 1266,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:40:24.962Z"
-    },
-    {
-      "sequence": 1267,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:40:53.258Z"
-    },
-    {
-      "sequence": 1268,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:41:21.772Z"
-    },
-    {
-      "sequence": 1269,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:41:50.239Z"
-    },
-    {
-      "sequence": 1270,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:42:18.743Z"
-    },
-    {
-      "sequence": 1271,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:42:47.085Z"
-    },
-    {
-      "sequence": 1272,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:43:15.439Z"
-    },
-    {
-      "sequence": 1273,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:43:45.764Z"
-    },
-    {
-      "sequence": 1274,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:44:13.904Z"
-    },
-    {
-      "sequence": 1275,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:44:42.146Z"
-    },
-    {
-      "sequence": 1276,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:45:10.434Z"
-    },
-    {
-      "sequence": 1277,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:45:38.728Z"
-    },
-    {
-      "sequence": 1278,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:46:07.095Z"
-    },
-    {
-      "sequence": 1279,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:46:35.516Z"
-    },
-    {
-      "sequence": 1280,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:47:04.155Z"
-    },
-    {
-      "sequence": 1281,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:47:32.567Z"
-    },
-    {
-      "sequence": 1282,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:48:02.929Z"
-    },
-    {
-      "sequence": 1283,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:48:31.760Z"
-    },
-    {
-      "sequence": 1284,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:49:00.063Z"
-    },
-    {
-      "sequence": 1285,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:49:28.665Z"
-    },
-    {
-      "sequence": 1286,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:49:57.003Z"
-    },
-    {
-      "sequence": 1287,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:50:28.109Z"
-    },
-    {
-      "sequence": 1288,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:50:57.424Z"
-    },
-    {
-      "sequence": 1289,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:51:25.667Z"
-    },
-    {
-      "sequence": 1290,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:51:54.118Z"
-    },
-    {
-      "sequence": 1291,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:52:22.708Z"
-    },
-    {
-      "sequence": 1292,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:52:51.013Z"
-    },
-    {
-      "sequence": 1293,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:53:19.726Z"
-    },
-    {
-      "sequence": 1294,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:53:48.103Z"
-    },
-    {
-      "sequence": 1295,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:54:16.737Z"
-    },
-    {
-      "sequence": 1296,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:54:46.073Z"
-    },
-    {
-      "sequence": 1298,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:55:18.789Z"
-    },
-    {
-      "sequence": 1299,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:55:47.214Z"
-    },
-    {
-      "sequence": 1300,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:56:15.790Z"
-    },
-    {
-      "sequence": 1301,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:56:44.140Z"
-    },
-    {
-      "sequence": 1302,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:57:12.575Z"
-    },
-    {
-      "sequence": 1303,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:57:40.918Z"
-    },
-    {
-      "sequence": 1304,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:58:09.265Z"
-    },
-    {
-      "sequence": 1305,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:58:37.514Z"
-    },
-    {
-      "sequence": 1306,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:59:06.170Z"
-    },
-    {
-      "sequence": 1307,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T02:59:34.531Z"
-    },
-    {
-      "sequence": 1308,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:00:02.974Z"
-    },
-    {
-      "sequence": 1309,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:00:31.869Z"
-    },
-    {
-      "sequence": 1310,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:01:00.377Z"
-    },
-    {
-      "sequence": 1311,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:01:29.048Z"
-    },
-    {
-      "sequence": 1312,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:01:57.416Z"
-    },
-    {
-      "sequence": 1313,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:02:25.834Z"
-    },
-    {
-      "sequence": 1314,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:02:54.284Z"
-    },
-    {
-      "sequence": 1315,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:03:22.790Z"
-    },
-    {
-      "sequence": 1316,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:03:51.464Z"
-    },
-    {
-      "sequence": 1317,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:04:20.423Z"
-    },
-    {
-      "sequence": 1318,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:04:51.210Z"
-    },
-    {
-      "sequence": 1319,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:05:19.725Z"
-    },
-    {
-      "sequence": 1320,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:05:48.340Z"
-    },
-    {
-      "sequence": 1321,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:06:16.856Z"
-    },
-    {
-      "sequence": 1322,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:06:45.242Z"
-    },
-    {
-      "sequence": 1323,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:07:13.589Z"
-    },
-    {
-      "sequence": 1324,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:07:42.398Z"
-    },
-    {
-      "sequence": 1325,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:08:11.221Z"
-    },
-    {
-      "sequence": 1326,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:08:39.674Z"
-    },
-    {
-      "sequence": 1327,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:09:06.890Z"
-    },
-    {
-      "sequence": 1328,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:09:34.162Z"
-    },
-    {
-      "sequence": 1329,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:10:02.203Z"
-    },
-    {
-      "sequence": 1331,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:11:24.731Z"
-    },
-    {
-      "sequence": 1332,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:11:52.544Z"
-    },
-    {
-      "sequence": 1333,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:12:20.911Z"
-    },
-    {
-      "sequence": 1334,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:12:48.354Z"
-    },
-    {
-      "sequence": 1335,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:13:15.738Z"
-    },
-    {
-      "sequence": 1336,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:13:43.019Z"
-    },
-    {
-      "sequence": 1337,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:14:10.711Z"
-    },
-    {
-      "sequence": 1338,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:14:37.925Z"
-    },
-    {
-      "sequence": 1339,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:15:05.391Z"
-    },
-    {
-      "sequence": 1340,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:15:32.960Z"
-    },
-    {
-      "sequence": 1341,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:16:00.178Z"
-    },
-    {
-      "sequence": 1342,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:16:27.411Z"
-    },
-    {
-      "sequence": 1343,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:16:54.977Z"
-    },
-    {
-      "sequence": 1344,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:17:22.385Z"
-    },
-    {
-      "sequence": 1345,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:17:49.974Z"
-    },
-    {
-      "sequence": 1346,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:18:17.241Z"
-    },
-    {
-      "sequence": 1347,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:18:44.809Z"
-    },
-    {
-      "sequence": 1348,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:19:12.030Z"
-    },
-    {
-      "sequence": 1349,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:19:39.574Z"
-    },
-    {
-      "sequence": 1350,
-      "error": "Enrichment failed: Groq API rate limit (429) after retry.",
-      "timestamp": "2025-07-07T03:20:07.152Z"
-    }
-  ]
+	"sessionId": "tarion_spinoff_sw1MLtIj",
+	"totalTurnsInLogFile": 1351,
+	"lastProcessedSequence": 1350,
+	"successfullyEnrichedTurnsCount": 1079,
+	"fallbackSavedTurnsCount": 273,
+	"startedAt": "2025-07-04T05:55:01.550Z",
+	"lastUpdatedAt": "2025-07-07T03:20:08.036Z",
+	"status": "completed",
+	"errors": [
+		{
+			"sequence": 267,
+			"error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+			"timestamp": "2025-07-04T06:28:01.876Z"
+		},
+		{
+			"sequence": 268,
+			"error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+			"timestamp": "2025-07-04T06:32:13.636Z"
+		},
+		{
+			"sequence": 276,
+			"error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+			"timestamp": "2025-07-04T06:42:08.932Z"
+		},
+		{
+			"sequence": 277,
+			"error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+			"timestamp": "2025-07-04T06:46:14.649Z"
+		},
+		{
+			"sequence": 278,
+			"error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+			"timestamp": "2025-07-04T06:50:24.855Z"
+		},
+		{
+			"sequence": 279,
+			"error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+			"timestamp": "2025-07-04T06:54:32.077Z"
+		},
+		{
+			"sequence": 280,
+			"error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+			"timestamp": "2025-07-04T06:58:40.605Z"
+		},
+		{
+			"sequence": 482,
+			"error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+			"timestamp": "2025-07-04T07:24:29.548Z"
+		},
+		{
+			"sequence": 483,
+			"error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+			"timestamp": "2025-07-04T07:28:39.107Z"
+		},
+		{
+			"sequence": 484,
+			"error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+			"timestamp": "2025-07-04T07:32:46.176Z"
+		},
+		{
+			"sequence": 485,
+			"error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+			"timestamp": "2025-07-04T07:36:55.567Z"
+		},
+		{
+			"sequence": 486,
+			"error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+			"timestamp": "2025-07-04T07:41:03.097Z"
+		},
+		{
+			"sequence": 488,
+			"error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+			"timestamp": "2025-07-04T07:49:21.963Z"
+		},
+		{
+			"sequence": 489,
+			"error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+			"timestamp": "2025-07-04T07:53:34.215Z"
+		},
+		{
+			"sequence": 490,
+			"error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+			"timestamp": "2025-07-04T07:57:40.454Z"
+		},
+		{
+			"sequence": 491,
+			"error": "Enrichment failed: Gemini API Error: 429 Too Many Requests after 5 attempts.",
+			"timestamp": "2025-07-04T08:01:50.647Z"
+		},
+		{
+			"sequence": 696,
+			"error": "Enrichment failed: Groq API Error 429: {\"error\":{\"message\":\"Rate limit reached for model `llama3-70b-8192` in organization `org_01jbx2c1jbevzah5a64508cqyw` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Used 4971, Requested 3794. Please try again in 27.649s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing\",\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\"}}\n",
+			"timestamp": "2025-07-05T03:05:24.510Z"
+		},
+		{
+			"sequence": 697,
+			"error": "Enrichment failed: Groq API Error 429: {\"error\":{\"message\":\"Rate limit reached for model `llama3-70b-8192` in organization `org_01jbx2c1jbevzah5a64508cqyw` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Used 4636, Requested 3775. Please try again in 24.109s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing\",\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\"}}\n",
+			"timestamp": "2025-07-05T03:05:27.855Z"
+		},
+		{
+			"sequence": 698,
+			"error": "Enrichment failed: Groq API Error 429: {\"error\":{\"message\":\"Rate limit reached for model `llama3-70b-8192` in organization `org_01jbx2c1jbevzah5a64508cqyw` service tier `on_demand` on tokens per minute (TPM): Limit 6000, Used 4306, Requested 3948. Please try again in 22.531999999s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing\",\"type\":\"tokens\",\"code\":\"rate_limit_exceeded\"}}\n",
+			"timestamp": "2025-07-05T03:05:31.165Z"
+		},
+		{
+			"sequence": 739,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T03:44:27.384Z"
+		},
+		{
+			"sequence": 741,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T03:45:09.665Z"
+		},
+		{
+			"sequence": 751,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T03:53:11.149Z"
+		},
+		{
+			"sequence": 756,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T03:56:54.029Z"
+		},
+		{
+			"sequence": 763,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T04:02:25.035Z"
+		},
+		{
+			"sequence": 780,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T06:55:47.350Z"
+		},
+		{
+			"sequence": 786,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:00:12.121Z"
+		},
+		{
+			"sequence": 791,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:03:47.265Z"
+		},
+		{
+			"sequence": 796,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:07:11.545Z"
+		},
+		{
+			"sequence": 810,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:18:35.991Z"
+		},
+		{
+			"sequence": 814,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:21:31.717Z"
+		},
+		{
+			"sequence": 818,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:24:12.375Z"
+		},
+		{
+			"sequence": 823,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:27:37.992Z"
+		},
+		{
+			"sequence": 824,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:28:05.843Z"
+		},
+		{
+			"sequence": 825,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:28:33.289Z"
+		},
+		{
+			"sequence": 826,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:29:00.836Z"
+		},
+		{
+			"sequence": 827,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:29:28.894Z"
+		},
+		{
+			"sequence": 828,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:29:56.340Z"
+		},
+		{
+			"sequence": 829,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:30:23.781Z"
+		},
+		{
+			"sequence": 830,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:30:51.226Z"
+		},
+		{
+			"sequence": 831,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:31:19.071Z"
+		},
+		{
+			"sequence": 832,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:31:46.511Z"
+		},
+		{
+			"sequence": 833,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:32:14.058Z"
+		},
+		{
+			"sequence": 834,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:32:41.715Z"
+		},
+		{
+			"sequence": 835,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:33:09.666Z"
+		},
+		{
+			"sequence": 836,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:33:39.166Z"
+		},
+		{
+			"sequence": 837,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:34:07.118Z"
+		},
+		{
+			"sequence": 838,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:34:34.551Z"
+		},
+		{
+			"sequence": 839,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:35:01.845Z"
+		},
+		{
+			"sequence": 840,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:35:29.438Z"
+		},
+		{
+			"sequence": 841,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:35:56.984Z"
+		},
+		{
+			"sequence": 842,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:36:24.429Z"
+		},
+		{
+			"sequence": 843,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:36:52.684Z"
+		},
+		{
+			"sequence": 844,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:37:20.951Z"
+		},
+		{
+			"sequence": 845,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:37:48.594Z"
+		},
+		{
+			"sequence": 846,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:38:16.457Z"
+		},
+		{
+			"sequence": 847,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:38:44.207Z"
+		},
+		{
+			"sequence": 849,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:40:07.256Z"
+		},
+		{
+			"sequence": 850,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:40:34.610Z"
+		},
+		{
+			"sequence": 851,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:41:02.448Z"
+		},
+		{
+			"sequence": 852,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:41:30.197Z"
+		},
+		{
+			"sequence": 853,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:41:58.051Z"
+		},
+		{
+			"sequence": 854,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:42:26.003Z"
+		},
+		{
+			"sequence": 855,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:42:53.649Z"
+		},
+		{
+			"sequence": 856,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:43:21.602Z"
+		},
+		{
+			"sequence": 857,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:43:49.661Z"
+		},
+		{
+			"sequence": 858,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:44:17.104Z"
+		},
+		{
+			"sequence": 859,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:44:44.548Z"
+		},
+		{
+			"sequence": 860,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:45:12.084Z"
+		},
+		{
+			"sequence": 861,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:45:39.586Z"
+		},
+		{
+			"sequence": 862,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:46:07.286Z"
+		},
+		{
+			"sequence": 863,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:46:34.942Z"
+		},
+		{
+			"sequence": 864,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:47:02.635Z"
+		},
+		{
+			"sequence": 865,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:47:30.130Z"
+		},
+		{
+			"sequence": 866,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:47:57.666Z"
+		},
+		{
+			"sequence": 867,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:48:25.519Z"
+		},
+		{
+			"sequence": 868,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:48:53.167Z"
+		},
+		{
+			"sequence": 869,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:49:21.133Z"
+		},
+		{
+			"sequence": 870,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:49:48.779Z"
+		},
+		{
+			"sequence": 871,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:50:16.427Z"
+		},
+		{
+			"sequence": 872,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:50:44.182Z"
+		},
+		{
+			"sequence": 873,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:51:12.958Z"
+		},
+		{
+			"sequence": 874,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:51:41.016Z"
+		},
+		{
+			"sequence": 875,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:52:09.098Z"
+		},
+		{
+			"sequence": 876,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:52:36.616Z"
+		},
+		{
+			"sequence": 877,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:53:04.871Z"
+		},
+		{
+			"sequence": 878,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:53:37.849Z"
+		},
+		{
+			"sequence": 879,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:54:06.111Z"
+		},
+		{
+			"sequence": 880,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:54:33.760Z"
+		},
+		{
+			"sequence": 882,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:55:44.416Z"
+		},
+		{
+			"sequence": 883,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:56:12.372Z"
+		},
+		{
+			"sequence": 884,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:56:39.710Z"
+		},
+		{
+			"sequence": 885,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:57:07.794Z"
+		},
+		{
+			"sequence": 886,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:57:35.727Z"
+		},
+		{
+			"sequence": 887,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:58:03.066Z"
+		},
+		{
+			"sequence": 888,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:58:30.611Z"
+		},
+		{
+			"sequence": 889,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:58:58.973Z"
+		},
+		{
+			"sequence": 890,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-05T07:59:27.253Z"
+		},
+		{
+			"sequence": 1151,
+			"error": "Enrichment failed: Groq API Error 503: upstream connect error or disconnect/reset before headers. reset reason: remote connection failure, transport failure reason: delayed connect error: Connection timed out",
+			"timestamp": "2025-07-07T01:34:14.637Z"
+		},
+		{
+			"sequence": 1163,
+			"error": "Enrichment failed: terminated",
+			"timestamp": "2025-07-07T01:44:23.765Z"
+		},
+		{
+			"sequence": 1171,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T01:50:29.759Z"
+		},
+		{
+			"sequence": 1172,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T01:50:58.238Z"
+		},
+		{
+			"sequence": 1173,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T01:51:26.419Z"
+		},
+		{
+			"sequence": 1174,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T01:51:55.431Z"
+		},
+		{
+			"sequence": 1175,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T01:52:24.043Z"
+		},
+		{
+			"sequence": 1176,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T01:52:52.166Z"
+		},
+		{
+			"sequence": 1177,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T01:53:21.558Z"
+		},
+		{
+			"sequence": 1178,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T01:53:50.036Z"
+		},
+		{
+			"sequence": 1179,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T01:54:18.168Z"
+		},
+		{
+			"sequence": 1180,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T01:54:46.772Z"
+		},
+		{
+			"sequence": 1181,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T01:55:16.245Z"
+		},
+		{
+			"sequence": 1182,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T01:55:44.669Z"
+		},
+		{
+			"sequence": 1183,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T01:56:13.059Z"
+		},
+		{
+			"sequence": 1184,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T01:56:41.319Z"
+		},
+		{
+			"sequence": 1185,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T01:57:09.659Z"
+		},
+		{
+			"sequence": 1186,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T01:57:38.218Z"
+		},
+		{
+			"sequence": 1187,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T01:58:06.532Z"
+		},
+		{
+			"sequence": 1188,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T01:58:34.638Z"
+		},
+		{
+			"sequence": 1189,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T01:59:02.749Z"
+		},
+		{
+			"sequence": 1190,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T01:59:30.720Z"
+		},
+		{
+			"sequence": 1191,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T01:59:59.919Z"
+		},
+		{
+			"sequence": 1192,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:00:27.943Z"
+		},
+		{
+			"sequence": 1193,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:00:56.254Z"
+		},
+		{
+			"sequence": 1194,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:01:24.682Z"
+		},
+		{
+			"sequence": 1195,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:01:53.163Z"
+		},
+		{
+			"sequence": 1196,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:02:21.135Z"
+		},
+		{
+			"sequence": 1197,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:02:49.439Z"
+		},
+		{
+			"sequence": 1198,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:03:17.511Z"
+		},
+		{
+			"sequence": 1199,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:03:45.646Z"
+		},
+		{
+			"sequence": 1200,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:04:14.194Z"
+		},
+		{
+			"sequence": 1201,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:04:43.350Z"
+		},
+		{
+			"sequence": 1203,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:06:06.401Z"
+		},
+		{
+			"sequence": 1204,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:06:34.709Z"
+		},
+		{
+			"sequence": 1205,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:07:02.977Z"
+		},
+		{
+			"sequence": 1206,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:07:31.176Z"
+		},
+		{
+			"sequence": 1207,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:07:59.940Z"
+		},
+		{
+			"sequence": 1208,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:08:28.533Z"
+		},
+		{
+			"sequence": 1209,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:08:56.793Z"
+		},
+		{
+			"sequence": 1210,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:09:26.010Z"
+		},
+		{
+			"sequence": 1211,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:09:54.007Z"
+		},
+		{
+			"sequence": 1212,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:10:22.344Z"
+		},
+		{
+			"sequence": 1213,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:10:50.417Z"
+		},
+		{
+			"sequence": 1214,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:11:19.096Z"
+		},
+		{
+			"sequence": 1215,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:11:47.778Z"
+		},
+		{
+			"sequence": 1216,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:12:15.885Z"
+		},
+		{
+			"sequence": 1217,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:12:43.920Z"
+		},
+		{
+			"sequence": 1218,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:13:12.258Z"
+		},
+		{
+			"sequence": 1219,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:13:40.459Z"
+		},
+		{
+			"sequence": 1220,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:14:08.471Z"
+		},
+		{
+			"sequence": 1221,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:14:36.631Z"
+		},
+		{
+			"sequence": 1222,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:15:05.006Z"
+		},
+		{
+			"sequence": 1223,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:15:33.174Z"
+		},
+		{
+			"sequence": 1224,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:16:06.947Z"
+		},
+		{
+			"sequence": 1224,
+			"error": "DB Upsert failed: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.",
+			"timestamp": "2025-07-07T02:16:13.986Z"
+		},
+		{
+			"sequence": 1227,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:22:15.965Z"
+		},
+		{
+			"sequence": 1228,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:22:44.655Z"
+		},
+		{
+			"sequence": 1229,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:23:13.131Z"
+		},
+		{
+			"sequence": 1230,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:23:41.323Z"
+		},
+		{
+			"sequence": 1231,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:24:09.540Z"
+		},
+		{
+			"sequence": 1232,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:24:37.913Z"
+		},
+		{
+			"sequence": 1233,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:25:06.113Z"
+		},
+		{
+			"sequence": 1234,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:25:34.449Z"
+		},
+		{
+			"sequence": 1235,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:26:06.648Z"
+		},
+		{
+			"sequence": 1236,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:26:35.040Z"
+		},
+		{
+			"sequence": 1237,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:27:03.493Z"
+		},
+		{
+			"sequence": 1238,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:27:31.913Z"
+		},
+		{
+			"sequence": 1239,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:28:00.252Z"
+		},
+		{
+			"sequence": 1240,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:28:28.579Z"
+		},
+		{
+			"sequence": 1241,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:28:56.771Z"
+		},
+		{
+			"sequence": 1242,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:29:25.430Z"
+		},
+		{
+			"sequence": 1243,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:29:53.934Z"
+		},
+		{
+			"sequence": 1244,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:30:22.547Z"
+		},
+		{
+			"sequence": 1245,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:30:50.951Z"
+		},
+		{
+			"sequence": 1246,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:31:19.250Z"
+		},
+		{
+			"sequence": 1247,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:31:47.581Z"
+		},
+		{
+			"sequence": 1248,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:32:16.040Z"
+		},
+		{
+			"sequence": 1249,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:32:44.394Z"
+		},
+		{
+			"sequence": 1250,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:33:13.339Z"
+		},
+		{
+			"sequence": 1251,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:33:41.546Z"
+		},
+		{
+			"sequence": 1252,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:34:11.310Z"
+		},
+		{
+			"sequence": 1253,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:34:39.526Z"
+		},
+		{
+			"sequence": 1254,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:35:07.929Z"
+		},
+		{
+			"sequence": 1255,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:35:36.274Z"
+		},
+		{
+			"sequence": 1256,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:36:04.598Z"
+		},
+		{
+			"sequence": 1257,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:36:32.806Z"
+		},
+		{
+			"sequence": 1258,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:37:00.950Z"
+		},
+		{
+			"sequence": 1259,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:37:29.220Z"
+		},
+		{
+			"sequence": 1260,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:37:58.954Z"
+		},
+		{
+			"sequence": 1262,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:38:31.252Z"
+		},
+		{
+			"sequence": 1263,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:38:59.530Z"
+		},
+		{
+			"sequence": 1264,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:39:27.786Z"
+		},
+		{
+			"sequence": 1265,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:39:56.424Z"
+		},
+		{
+			"sequence": 1266,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:40:24.962Z"
+		},
+		{
+			"sequence": 1267,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:40:53.258Z"
+		},
+		{
+			"sequence": 1268,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:41:21.772Z"
+		},
+		{
+			"sequence": 1269,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:41:50.239Z"
+		},
+		{
+			"sequence": 1270,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:42:18.743Z"
+		},
+		{
+			"sequence": 1271,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:42:47.085Z"
+		},
+		{
+			"sequence": 1272,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:43:15.439Z"
+		},
+		{
+			"sequence": 1273,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:43:45.764Z"
+		},
+		{
+			"sequence": 1274,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:44:13.904Z"
+		},
+		{
+			"sequence": 1275,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:44:42.146Z"
+		},
+		{
+			"sequence": 1276,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:45:10.434Z"
+		},
+		{
+			"sequence": 1277,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:45:38.728Z"
+		},
+		{
+			"sequence": 1278,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:46:07.095Z"
+		},
+		{
+			"sequence": 1279,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:46:35.516Z"
+		},
+		{
+			"sequence": 1280,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:47:04.155Z"
+		},
+		{
+			"sequence": 1281,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:47:32.567Z"
+		},
+		{
+			"sequence": 1282,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:48:02.929Z"
+		},
+		{
+			"sequence": 1283,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:48:31.760Z"
+		},
+		{
+			"sequence": 1284,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:49:00.063Z"
+		},
+		{
+			"sequence": 1285,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:49:28.665Z"
+		},
+		{
+			"sequence": 1286,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:49:57.003Z"
+		},
+		{
+			"sequence": 1287,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:50:28.109Z"
+		},
+		{
+			"sequence": 1288,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:50:57.424Z"
+		},
+		{
+			"sequence": 1289,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:51:25.667Z"
+		},
+		{
+			"sequence": 1290,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:51:54.118Z"
+		},
+		{
+			"sequence": 1291,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:52:22.708Z"
+		},
+		{
+			"sequence": 1292,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:52:51.013Z"
+		},
+		{
+			"sequence": 1293,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:53:19.726Z"
+		},
+		{
+			"sequence": 1294,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:53:48.103Z"
+		},
+		{
+			"sequence": 1295,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:54:16.737Z"
+		},
+		{
+			"sequence": 1296,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:54:46.073Z"
+		},
+		{
+			"sequence": 1298,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:55:18.789Z"
+		},
+		{
+			"sequence": 1299,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:55:47.214Z"
+		},
+		{
+			"sequence": 1300,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:56:15.790Z"
+		},
+		{
+			"sequence": 1301,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:56:44.140Z"
+		},
+		{
+			"sequence": 1302,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:57:12.575Z"
+		},
+		{
+			"sequence": 1303,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:57:40.918Z"
+		},
+		{
+			"sequence": 1304,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:58:09.265Z"
+		},
+		{
+			"sequence": 1305,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:58:37.514Z"
+		},
+		{
+			"sequence": 1306,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:59:06.170Z"
+		},
+		{
+			"sequence": 1307,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T02:59:34.531Z"
+		},
+		{
+			"sequence": 1308,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:00:02.974Z"
+		},
+		{
+			"sequence": 1309,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:00:31.869Z"
+		},
+		{
+			"sequence": 1310,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:01:00.377Z"
+		},
+		{
+			"sequence": 1311,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:01:29.048Z"
+		},
+		{
+			"sequence": 1312,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:01:57.416Z"
+		},
+		{
+			"sequence": 1313,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:02:25.834Z"
+		},
+		{
+			"sequence": 1314,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:02:54.284Z"
+		},
+		{
+			"sequence": 1315,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:03:22.790Z"
+		},
+		{
+			"sequence": 1316,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:03:51.464Z"
+		},
+		{
+			"sequence": 1317,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:04:20.423Z"
+		},
+		{
+			"sequence": 1318,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:04:51.210Z"
+		},
+		{
+			"sequence": 1319,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:05:19.725Z"
+		},
+		{
+			"sequence": 1320,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:05:48.340Z"
+		},
+		{
+			"sequence": 1321,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:06:16.856Z"
+		},
+		{
+			"sequence": 1322,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:06:45.242Z"
+		},
+		{
+			"sequence": 1323,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:07:13.589Z"
+		},
+		{
+			"sequence": 1324,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:07:42.398Z"
+		},
+		{
+			"sequence": 1325,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:08:11.221Z"
+		},
+		{
+			"sequence": 1326,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:08:39.674Z"
+		},
+		{
+			"sequence": 1327,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:09:06.890Z"
+		},
+		{
+			"sequence": 1328,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:09:34.162Z"
+		},
+		{
+			"sequence": 1329,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:10:02.203Z"
+		},
+		{
+			"sequence": 1331,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:11:24.731Z"
+		},
+		{
+			"sequence": 1332,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:11:52.544Z"
+		},
+		{
+			"sequence": 1333,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:12:20.911Z"
+		},
+		{
+			"sequence": 1334,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:12:48.354Z"
+		},
+		{
+			"sequence": 1335,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:13:15.738Z"
+		},
+		{
+			"sequence": 1336,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:13:43.019Z"
+		},
+		{
+			"sequence": 1337,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:14:10.711Z"
+		},
+		{
+			"sequence": 1338,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:14:37.925Z"
+		},
+		{
+			"sequence": 1339,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:15:05.391Z"
+		},
+		{
+			"sequence": 1340,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:15:32.960Z"
+		},
+		{
+			"sequence": 1341,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:16:00.178Z"
+		},
+		{
+			"sequence": 1342,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:16:27.411Z"
+		},
+		{
+			"sequence": 1343,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:16:54.977Z"
+		},
+		{
+			"sequence": 1344,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:17:22.385Z"
+		},
+		{
+			"sequence": 1345,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:17:49.974Z"
+		},
+		{
+			"sequence": 1346,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:18:17.241Z"
+		},
+		{
+			"sequence": 1347,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:18:44.809Z"
+		},
+		{
+			"sequence": 1348,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:19:12.030Z"
+		},
+		{
+			"sequence": 1349,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:19:39.574Z"
+		},
+		{
+			"sequence": 1350,
+			"error": "Enrichment failed: Groq API rate limit (429) after retry.",
+			"timestamp": "2025-07-07T03:20:07.152Z"
+		}
+	]
 }

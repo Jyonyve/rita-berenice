@@ -20,7 +20,7 @@
 		"init:chat": "tsx ./src/migration/chat/initChat.ts",
 		"check:chat": "tsx ./src/migration/chat/checkChat.ts",
 		"delete:chat": "tsx ./src/migration/chat/deleteChat.ts",
-		"patch:chat": "tsx ./src/migration/chat/patchEmotion.ts",
+		"patch:chat": "tsx ./src/migration/chat/patchChat.ts",
 		"init:prof": "tsx ./src/migration/profile/initProfile.ts",
 		"check:prof": "tsx ./src/migration/profile/checkProfile.ts",
 		"init:sess": "tsx ./src/migration/session/initSession.ts",

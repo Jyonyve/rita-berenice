@@ -1,5 +1,3 @@
-// Save this file as scripts/checkMondayChat.ts
-import { ChromaClient, Collection, IncludeEnum, Where } from 'chromadb';
 import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
 import { chatStore } from '#server/index.js';
 
@@ -7,8 +5,8 @@ import { chatStore } from '#server/index.js';
 
 const TARGET_COLLECTION_NAME = COLLECTIONS.CHAT; // The collection where data was inserted
 // const TARGET_SESSION_ID = MONDAY_ORIGINAL_SESSIONID ?? '';
-// const TARGET_SESSION_ID = TARION_ORIGINAL_SESSIONID ?? '';
-const TARGET_SESSION_ID = 'tarion_spinoff_Oin8t5Lxbc8glaU7';
+const TARGET_SESSION_ID = 'tarion_spinoff_sw1MLtIj';
+// const TARGET_SESSION_ID = 'tarion_spinoff_Oin8t5Lxbc8glaU7';
 
 // --- Main Checking Logic ---
 async function checkSeededData() {
@@ -17,7 +15,8 @@ async function checkSeededData() {
 		console.log(`Accessing collection "${TARGET_COLLECTION_NAME}"...`);
 
 		try {
-			console.log(await chatStore.getChatTurns(TARGET_SESSION_ID, 2));
+			const result = await chatStore.getAllChatTurns(TARGET_SESSION_ID);
+			console.log(result.chatTurns.length);
 			console.log(`Collection "${TARGET_COLLECTION_NAME}" accessed.`);
 		} catch (error) {
 			// Handle cases where the collection might *actually* not exist

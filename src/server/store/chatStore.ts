@@ -12,7 +12,11 @@ import {
 	TempChatTurn,
 	TempChatTurnMetadata,
 } from '#shared/domain/chat/ChatInterfaces.js';
-import { buildChatTurnId, buildMessageId, buildTempChatTurnId } from '../../shared/util/buildIdUtils.js';
+import {
+	buildChatTurnId,
+	buildMessageId,
+	buildTempChatTurnId,
+} from '../../shared/util/buildIdUtils.js';
 import {
 	flatChatMessageToDoc,
 	flatChatTurnToDoc,
@@ -25,7 +29,14 @@ import { parseTextToEntries } from '#shared/util/chatParseUtils.js';
 import { isAndWhere } from '../util/queryUtils.js';
 
 // Destructure outside the object
-const { getChatCollection, upsertRecord, getRecordById, getRecords, queryRecords } = chromaDbClient;
+const {
+	getChatCollection,
+	upsertRecord,
+	getRecordById,
+	getRecords,
+	queryRecords,
+	deleteRecordById,
+} = chromaDbClient;
 const collectionType = COLLECTIONS.CHAT;
 
 export const chatStore = {
@@ -310,6 +321,11 @@ export const chatStore = {
 				`Failed to get chat turn by sequence for session ${sessionId}:`
 			);
 		}
+	},
+
+	_deleteChatTurn: async (chatTurnId: string): Promise<void> => {
+		const collection = await chatStore._getChatCollection();
+		await deleteRecordById(collection, chatTurnId);
 	},
 
 	// Method to clear the cache if needed (e.g., for testing or memory management)
