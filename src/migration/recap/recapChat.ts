@@ -16,7 +16,7 @@ const OUTPUT_DIR = './src/migration/recap/output';
 const PROGRESS_DIR = './src/migration/recap/progress'; // Separate dir for progress files
 const BATCH_SIZE = 3;
 
-const DEEPSEEK_MODEL = 'deepseek/deepseek-v3-0324:free';
+const DEEPSEEK_MODEL = 'deepseek/deepseek-chat-v3-0324:free';
 const DEEPSEEK_API_KEY = process.env.OPENROUTER_API_KEY;
 const GROQ_MODEL = 'llama3-70b-8192';
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
