@@ -5,14 +5,12 @@ import { chromaDbClient, flatSessionToDoc, sessionStore } from '#server/index.js
 import { SessionInfo, SessionMetadata } from '#shared/domain/index.js';
 import { buildProfileId, METADATA_TYPES } from '#shared/index.js';
 
-const tarion_original = 'tarion_original_ueDVsINn';
-const tarion_spinoff = 'tarion_spinoff_sw1MLtIj';
 const userId = '6b335673-c837-43f9-a1c7-0b92c90edefb';
-const getTarionOriginalSessionTemplate = (): SessionInfo => {
+const getTarionOriginalSessionTemplate = (sessionId: string): SessionInfo => {
 	return {
-		sessionId: tarion_original,
+		sessionId,
 		userId,
-		profileId: buildProfileId(tarion_original, userId),
+		profileId: buildProfileId(sessionId, userId),
 		characterId: 'tarion_original',
 		title: `타리온 x 요니브`,
 		createdAt: '2025-06-22T13:05:15.294Z',
@@ -25,30 +23,30 @@ const getTarionOriginalSessionTemplate = (): SessionInfo => {
 	};
 };
 
-const getTarionSpinoffSessionTemplate = (): SessionInfo => {
+const getTarionSpinoffSessionTemplate = (sessionId: string): SessionInfo => {
 	return {
-		sessionId: tarion_spinoff,
+		sessionId,
 		userId,
-		profileId: buildProfileId(tarion_spinoff, userId),
+		profileId: buildProfileId(sessionId, userId),
 		characterId: 'tarion_spinoff',
 		title: `타리온 x 요니브`,
 		createdAt: '2025-07-06T17:05:05.115Z',
 		updatedAt: '2025-07-06T17:15:53.965Z',
-		messageCount: 2702,
+		messageCount: 2852,
 		status: 'active',
 		type: METADATA_TYPES.SESSION,
 		lastCharMessage:
-			'*그가 부른 이름은 허공에 흩어졌지만, 그녀의 잠꼬대는 그의 심장에 직접 내려앉았다. ‘응…’. 그 나지막한 소리는 단순한 잠꼬대 이상이었다. 그것은 그의 존재에 대한 무조건적인 긍정이었고, 경계심이라곤 찾아볼 수 없는 완전한 신뢰의 증표였다. 한때 적국의 기사단장과 후작의 딸이었던 두 사람이, 이제는 서로의 숨소리만으로도 위안을 얻는 사이가 되었다. 그는 그녀의 뺨에 머물렀던 손을 거두지 않고, 엄지손가락으로 부드러운 살결을 아주 천천히 쓸었다. 어젯밤, 그는 그녀의 품에서 다시 태어났다. 그리고 그녀 역시, 그의 탄생과 함께 ‘코릴리’로 다시 태어났음을, 그는 이 작은 응답 하나로 직감할 수 있었다.*\n\n*그는 미동도 없이 한참 동안 그녀의 잠든 얼굴을 바라보았다. 오두막 안은 고요했다. 간밤의 모닥불은 재만 남기고 사그라들었지만, 창문으로 쏟아지는 아침 햇살이 방 안을 따스하게 데우고 있었다. 밖에서는 이름 모를 새들이 지저귀는 소리가 들려왔다. 지독한 도망자의 아침이라고는 믿기지 않을 만큼 평화로운 풍경이었다. 그는 이 순간이 영원처럼 느껴지길 바랐다. 추격대의 칼날도, 제국의 분노도, 과거의 죄업도 모두 잊게 만드는 완벽한 평온. 오직 그와 그의 코릴리만이 존재하는 세상.*\n\n*그는 조심스럽게 몸을 일으켰다. 그녀가 깨지 않도록, 담요가 그녀의 몸에서 흘러내리지 않도록 세심하게 덮어주었다. 맨몸으로 침대에서 내려선 그는, 구석에 아무렇게나 던져져 있던 자신의 셔츠를 집어 들었다. 그리곤 다시 그녀의 곁으로 돌아와, 침대 가장자리에 걸터앉았다. 그의 시선은 여전히 그녀에게 고정되어 있었다. 그는 셔츠를 입는 대신, 그녀의 어깨 위로 조심스럽게 셔츠를 덮어주었다. 차가운 아침 공기에 그녀의 맨살이 닿지 않도록. 어젯밤 그가 남긴 붉은 흔적들이 셔츠 아래로 숨었다.*\n\n*모든 것이 새로웠다. 어제까지만 해도 ‘타리온’이었던 자신은 이제 없다. 후작가의 영애였던 ‘요니브’도 이제 없다. 그들은 서로를 위해 기꺼이 과거의 자신을 없애고, 서로의 곁에서 다시 태어났다. 클로드와 코릴리로. 그는 검게 물든 자신의 머리카락 한 올을 손가락으로 매만졌다. 어색했지만, 이것이 이제 자신의 모습이었다. 그녀의 남자, 클로드 시아누스.*\n\n*그는 몸을 숙여 잠든 그녀의 이마에 아주 가볍게 입을 맞추었다. 깃털이 스치듯 부드러운 입맞춤이었다. 그리고 그녀의 귓가에, 잠을 깨우지 않을 만큼 작은 목소리로 속삭였다.*\n\n자고 있어, 내 아내.\n\n*그는 자리에서 일어나, 오두막의 낡은 문을 향해 걸어갔다. 문고리를 잡기 전, 그는 마지막으로 침대에 누운 그녀를 돌아보았다. 햇살 아래 잠든 그녀의 모습은 성스럽기까지 했다. 그는 희미하게 미소 지으며 조용히 문을 열고 밖으로 나갔다. 새로운 삶의 첫날을 시작하기 위해서였다. 그녀가 깨어났을 때, 그녀의 남편으로서 무언가 준비해두고 싶었다.*',
+			'*그의 입술이 그녀의 유두를 부드럽게 빨아들일 때마다 따뜻한 액체가 스며나왔다. 그는 이제 금방이라도 잠에 빠질 것 같은 나른한 상태였지만, 그녀가 자신의 것을 그녀의 젖은 사타구니 사이에 끼워넣는 순간 작은 전율이 그의 몸을 타고 흘렀다. 따스하고 부드러운 그 감각에 그는 편안함과 동시에 은은한 쾌락을 느꼈다. 본능적으로 그녀의 품에 더 파고들었다.*\n\n*그녀가 속삭이는 말에 그는 이미 반쯤 꿈속으로 빠져들고 있었다. 눈꺼풀은 무겁게 내려앉았고, 그의 숨결은 점차 깊고 고르게 변해갔다. 그는 마지막 힘을 모아 그녀의 유두를 한 번 더 빨아들였다가 입술을 살짝 떼고 중얼거렸다.*\n\n엄마... 좋아... 그래... 일어나면... 또 맘마... 줘야 돼...\n\n*그의 목소리는 이미 꿈결 같았다. 다시 입술로 유두를 찾아 물었지만, 이젠 빨지도 못한 채 그저 물고 있을 뿐이었다. 그의 손은 그녀의 허리에서 힘없이 미끄러져 내렸고, 곧이어 깊은 숨소리가 들려왔다. 그는 완전히 잠에 빠져들었다. 그의 얼굴은 평화로웠고, 미간에 늘 자리하던 긴장의 주름은 온데간데없었다. 한때 엘리시아의 군대를 무릎 꿇게 했던 바르가스의 전설적인 기사단장은 이제 그저 엄마의 품에서 젖을 물고 잠든 아기일 뿐이었다.*\n\n*클로드의 눈꺼풀이 미세하게 떨렸다. 아마도 꿈을 꾸는 모양이었다. 그의 입가에는 희미한 미소가 어렸다. 오늘의 격렬했던 쾌락도, 죽음의 위협도, 과거의 후회도 모두 잊은 채, 그는 오로지 그녀의 품 안에서 완전한 안식을 찾았다.*',
 	};
 };
 
-const getMondaySessionTemplate = (): SessionInfo => {
+const getMondaySessionTemplate = (sessionId: string): SessionInfo => {
 	return {
-		sessionId: 'monday_original_zUwPMBc4',
-		userId: '6b335673-c837-43f9-a1c7-0b92c90edefb',
-		profileId: buildProfileId('monday_original_zUwPMBc4', '6b335673-c837-43f9-a1c7-0b92c90edefb'),
+		sessionId,
+		userId,
+		profileId: buildProfileId(sessionId, userId),
 		characterId: 'monday_original',
-		title: `Monday`,
+		title: `먼데이 x 죠니브`,
 		createdAt: '2025-04-18T00:00:00.000Z',
 		updatedAt: '2025-04-18T00:08:00.000Z',
 		messageCount: 9,
@@ -65,9 +63,10 @@ async function initSession() {
 		// Step 1: GET the collection directly.
 		console.log(`Getting collection "${COLLECTIONS.SESSION}"...`);
 		const collection = await chromaDbClient.getSessionCollection();
-		collection.delete({ ids: ['tarion_spinoff_Oin8t5Lxbc8glaU7'] });
+		// collection.delete({ ids: ['monday_original_zUwPMBc4'] });
 		// const sessionInfo = getTarionOriginalSessionTemplate();
-		const sessionInfo = getTarionSpinoffSessionTemplate();
+		// const sessionInfo = getTarionSpinoffSessionTemplate();
+		const sessionInfo = getTarionOriginalSessionTemplate('tarion_original_dw2xVb8s');
 
 		// Step 4: Prepare the record for ChromaDB.
 		// The document is the text to be embedded for semantic search.

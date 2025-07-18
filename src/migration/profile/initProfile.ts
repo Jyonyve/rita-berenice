@@ -57,19 +57,26 @@ export const getMondayUserProfileTemplate = (userId: string, sessionId: string):
 
 // --- Main Seeding Logic ---
 async function initProfile() {
-	const tarion_original = 'tarion_original_ueDVsINn';
-	const tarion_spinoff = 'tarion_spinoff_sw1MLtIj';
+	const tarion_original = 'tarion_original_dw2xVb8s';
+	const tarion_spinoff = 'tarion_spinoff_PCyAjZnG';
 	const sessionId = 'monday_original_zUwPMBc4';
 	try {
 		// Step 1: GET the collection. Do NOT create it.
 		console.log(`Getting collection "${COLLECTIONS.PROFILE}"...`);
 		const collection = profileStore._getCollection();
+
 		// Step 2: It is now safe to upsert profile data. The server will do the embedding.
 		console.log(`Deleting old profiles...`);
-		(await collection).delete({ where: { userId: { $eq: userId } } });
+		(await collection).delete({ where: { sessionId: { $eq: sessionId } } });
+
 		// Upsert sample profiles with a specific userId and unique sessionIds
 		console.log(`Upserting profiles...`);
-		console.log(await profileStore.storeProfile(getMondayUserProfileTemplate(userId, sessionId)));
+		console.log(
+			await profileStore.storeProfile(getMondayUserProfileTemplate(userId, 'monday_original_dS0RZ96F'))
+		);
+		console.log(
+			await profileStore.storeProfile(getMondayUserProfileTemplate(userId, 'monday_original_7IkTAY0Y'))
+		);
 		console.log(
 			await profileStore.storeProfile(getTarionOriginalProfileTemplate(userId, tarion_original))
 		);
