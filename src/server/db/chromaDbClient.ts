@@ -1,5 +1,5 @@
 // src/server/db/chromaDbClient.ts
-import 'dotenv/config';
+import 'dotenv/config.js';
 import { ChromaClient, Collection, IncludeEnum, Where, WhereDocument } from 'chromadb';
 import { COLLECTIONS } from './ChromaInterfaces.js';
 import { MetadataType } from '#shared/config/constants.js';

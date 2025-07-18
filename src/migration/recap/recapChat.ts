@@ -1,6 +1,6 @@
 // src/migration/chat/recapChatBatch.ts
 
-import 'dotenv/config'; // <-- ADD THIS AT THE VERY TOP
+import 'dotenv/config.js'; // <-- ADD THIS AT THE VERY TOP
 import { writeFile, access, readFile, mkdir, unlink } from 'fs/promises';
 import { ChatTurn, METADATA_TYPES, buildRecapId, parseEntriesToText } from '../../shared/index.js';
 import { buildFactualRecapPrompt } from '../../server/util/templateUtils.js';
