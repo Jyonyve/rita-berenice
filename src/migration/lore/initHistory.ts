@@ -23,7 +23,7 @@ const USER_ID = process.env.USER_ID || '6b335673-c837-43f9-a1c7-0b92c90edefb';
 
 const HISTORY_RESULT_DIR = path.join(__dirname, 'result');
 const CHARACTER_IDS = ['tarion_original', 'tarion_spinoff'];
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyAfhl_AyupNyz9CpxscySkvGmxRsJKcXxk';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const ENRICHMENT_MODEL = 'gemini-2.0-flash-001';
 const MAX_LLM_RETRIES = 3;
 

@@ -5,8 +5,7 @@ import { MetadataType } from '#shared/config/constants.js';
 import { ChromaResponse } from '#shared/api/ModuleResponse.js';
 import { OpenAIEmbeddingFunction } from '@chroma-core/openai';
 
-const apiKey = process.env.OPENAI_API_KEY;
-
+const apiKey = process.env.OPENAI_API_KEY
 if (!apiKey) {
 	// This check is important. It will cause the server to crash on startup
 	// if the secret is not set, which is good practice (fail fast).
@@ -281,7 +280,40 @@ export const chromaDbClient = {
 		await collection.add(params);
 	},
 
+	/**
+	 * Upserts multiple records into a collection in a single batch operation.
+	 * This is highly efficient for creating or updating many records at once.
+	 */
+	upsertRecords: async (
+		collection: Collection,
+		ids: string[],
+		documents: string[],
+		metadatas: Record<string, any>[],
+		embeddings?: number[][] // Optional pre-computed embeddings
+	): Promise<void> => {
+		const params: any = { ids, documents, metadatas };
+
+		if (embeddings) {
+			params.embeddings = embeddings;
+		}
+
+		await collection.upsert(params);
+	},
+
 	deleteRecordById: async (collection: Collection, id: string): Promise<void> => {
 		return await collection.delete({ ids: [id] });
+	},
+
+	/**
+	 * Deletes multiple records from a collection in a single batch operation.
+	 * @param collection The ChromaDB Collection object.
+	 * @param ids An array of record IDs to delete.
+	 */
+	deleteRecordsByIds: async (collection: Collection, ids: string[]): Promise<void> => {
+		if (!ids || ids.length === 0) {
+			console.log('[ChromaClient.deleteRecordsByIds] No IDs provided to delete.');
+			return;
+		}
+		return await collection.delete({ ids });
 	},
 };

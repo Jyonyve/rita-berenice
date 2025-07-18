@@ -2,6 +2,7 @@
 
 import { LangCode } from '#shared/config/langConstants.js';
 import { franc } from 'franc';
+import { Term } from '#shared/api/ModuleResponse.js';
 
 /**
  * Detects the language of a given text string using the 'franc' library.
@@ -30,4 +31,10 @@ export const detectLanguage = (text: string): LangCode => {
 			// If the language is something else or undetectable ('und'), default to Korean.
 			return 'kor';
 	}
+};
+
+export const mapTerms = (terms: Term[]) => {
+	const termMap: Map<string, string> = new Map();
+	terms.forEach((term) => termMap.set(term.koreanTerm, term.englishTerm));
+	return termMap;
 };
