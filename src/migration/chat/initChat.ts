@@ -128,6 +128,8 @@ const extractJsonFromMarkdown = (response: string): any => {
 let firstGeminiDone = false;
 let secondGeminiDone = false; // Track if Groq fallback was used
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+
 const generateEnrichedMetadataLLM = async (prompt: string, attempt = 1): Promise<string> => {
 	// 이미 Groq 사용했다면 Gemini 재시도 금지
 	if (secondGeminiDone) {
@@ -216,7 +218,6 @@ const generateEnrichedMetadataLLM = async (prompt: string, attempt = 1): Promise
 		return generateEnrichedMetadataLLM(prompt, attempt + 1);
 	}
 };
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const callGroqFallback = async (prompt: string, attempt = 1): Promise<string> => {
 	if (!GROQ_API_KEY) throw new Error('GROQ_API_KEY environment variable is required.');
 	console.log(`    🔁 Fallback: Calling Groq (LLaMA3 70B), attempt ${attempt}`);
@@ -295,13 +296,25 @@ const enrichChatTurnWithMetadata = async (
 		{ showName: basicTurn.response.showName, name: 'tarion', gender: 'male' },
 		basicTurn.response,
 		existingLoreIds,
-		existingHistoryIds
+		existingHistoryIds,
+		termGuidanceMap
 	);
 	const llmResponse = await generateEnrichedMetadataLLM(prompt);
 	const parsedLlmJson = extractJsonFromMarkdown(llmResponse);
 	const defaults = getDefaultEnrichedMetadata();
+	function defineEmotion(emotion: string, primary: string) {
+		return primary && emotion === 'default' ? primary : emotion;
+	}
 	return {
 		...basicTurn,
+		request: {
+			...basicTurn.request,
+			emotion: defineEmotion(basicTurn.request.emotion, parsedLlmJson.userEmotion?.primary),
+		},
+		response: {
+			...basicTurn.response,
+			emotion: defineEmotion(basicTurn.response.emotion, parsedLlmJson.characterEmotion?.primary),
+		},
 		summary: parsedLlmJson.summary || defaults.summary,
 		keywords: parsedLlmJson.keywords || defaults.keywords,
 		topics: parsedLlmJson.topics || defaults.topics,
@@ -372,7 +385,7 @@ async function processAndUpsertTurn(
 			`    ✅ [Batch ${
 				currentIndex + 1
 			}/${batchTotal}] Turn ${enrichedTurnResult.sequence} saved. Total processed for session: ${
-				progress.lastProcessedSequence + 1
+				Number(progress.lastProcessedSequence) + 1
 			}/${progress.totalTurnsInLogFile}`
 		);
 	} catch (dbError) {
@@ -394,9 +407,6 @@ async function processAndUpsertTurn(
 
 async function initChatFromLogFiles() {
 	console.log(`🚀 Starting chat initialization script...`);
-	// ✅ Recommendation: Load all API keys from environment variables for security.
-	const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-	const GROQ_API_KEY = process.env.GROQ_API_KEY;
 	if (!GEMINI_API_KEY || !GROQ_API_KEY) {
 		console.error('🚨 GEMINI_API_KEY or GROQ_API_KEY is not set in environment variables. Aborting.');
 		process.exit(1);
