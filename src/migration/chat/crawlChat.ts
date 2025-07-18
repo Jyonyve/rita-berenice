@@ -210,13 +210,11 @@ MANUAL LOGIN REQUIRED:
 			}
 
 			console.log(`\n--- Processing character: ${character.name} (Chat ID: ${chatId}) ---`);
-			const allMessagesForThisCharacter: MigChatMessage[] = [...character.firstTurn];
+			const fetchedMessages: MigChatMessage[] = [];
 			let currentOffset = 0;
 			let moreMessagesExist = true;
-			let apiRequestBatch = 0;
 
 			while (moreMessagesExist) {
-				apiRequestBatch++;
 				const apiPayload = {
 					chatId: chatId,
 					offset: currentOffset,
@@ -224,63 +222,12 @@ MANUAL LOGIN REQUIRED:
 					characterNameForLog: character.name,
 				};
 
-				let logEntries: RofanChatLog[] = [];
-				let fetchSuccessful = false;
-				let lastInvalidEntry: InvalidEntryInfo | null = null;
+				const logEntries = await fetchChatLogsFromBrowser(page, GET_CHAT_LOGS_API_URL, apiPayload);
 
-				for (let attempt = 1; attempt <= MAX_FETCH_RETRIES; attempt++) {
-					const fetchedBatch = await fetchChatLogsFromBrowser(page, GET_CHAT_LOGS_API_URL, apiPayload);
-
-					if (!fetchedBatch || fetchedBatch.length === 0) {
-						logEntries = [];
-						fetchSuccessful = true;
-						break;
-					}
-
-					const invalidEntry = findInvalidEntry(fetchedBatch);
-					lastInvalidEntry = invalidEntry;
-
-					if (invalidEntry === null) {
-						logEntries = fetchedBatch;
-						fetchSuccessful = true;
-						if (attempt > 1) {
-							console.log(`     [INFO] Successfully fetched valid data on attempt ${attempt}.`);
-						}
-						break;
-					}
-
-					console.warn(
-						`     [WARN] Attempt ${attempt}/${MAX_FETCH_RETRIES}: Fetched data invalid (odd number of '*'). Retrying in ${FETCH_RETRY_DELAY_MS}ms...`
-					);
-
-					if (attempt < MAX_FETCH_RETRIES) {
-						await new Promise((resolve) => setTimeout(resolve, FETCH_RETRY_DELAY_MS));
-					}
-				}
-
-				if (!fetchSuccessful) {
-					if (lastInvalidEntry) {
-						throw new Error(
-							`Failed to fetch valid data after ${MAX_FETCH_RETRIES} attempts. Halting script to prevent data omission.\n\n` +
-								`--- FAILURE DETAILS ---\n` +
-								`Character:         ${character.name}\n` +
-								`Offset:            ${currentOffset}\n` +
-								`Log ID:            ${lastInvalidEntry.log.log_id}\n` +
-								`Invalid Field:     '${lastInvalidEntry.type}'\n` +
-								`Problematic Content: "${lastInvalidEntry.content}"\n` +
-								`-----------------------`
-						);
-					} else {
-						throw new Error(
-							`Failed to fetch data for character '${character.name}' (offset: ${currentOffset}) after ${MAX_FETCH_RETRIES} attempts. The API returned empty or failed responses consistently.`
-						);
-					}
-				}
-
-				if (logEntries.length > 0) {
+				if (logEntries && logEntries.length > 0) {
 					logEntries.forEach((logEntry) => {
 						if (logEntry.user_chat) {
-							allMessagesForThisCharacter.push({
+							fetchedMessages.push({
 								role: 'user',
 								messageType: 'request',
 								content: logEntry.user_chat,
@@ -290,10 +237,11 @@ MANUAL LOGIN REQUIRED:
 								name: 'yonyve',
 								showName: '요니브',
 								emotion: logEntry.emotion || 'default',
+								index: -1,
 							});
 						}
 						if (logEntry.bot_chat) {
-							allMessagesForThisCharacter.push({
+							fetchedMessages.push({
 								role: 'assistant',
 								messageType: 'response',
 								content: logEntry.bot_chat,
@@ -304,29 +252,16 @@ MANUAL LOGIN REQUIRED:
 								uuid: logEntry.log_id,
 								name: 'tarion',
 								showName: '타리온',
+								index: -1,
 							});
 						}
 					});
 
-					currentOffset += API_FETCH_LIMIT;
-
+					currentOffset += logEntries.length;
 					if (logEntries.length < API_FETCH_LIMIT) {
-						console.log(
-							`   Fetched ${logEntries.length} messages, less than limit. Assuming end of logs for ${character.name}.`
-						);
 						moreMessagesExist = false;
 					}
 				} else {
-					console.log(
-						`   No more messages returned for offset ${currentOffset}. Ending crawl for ${character.name}.`
-					);
-					moreMessagesExist = false;
-				}
-
-				if (apiRequestBatch > 500) {
-					console.warn(
-						`   [WARN] Exceeded 500 API requests for ${character.name}. Breaking to prevent infinite loop.`
-					);
 					moreMessagesExist = false;
 				}
 
@@ -334,25 +269,56 @@ MANUAL LOGIN REQUIRED:
 					await new Promise((resolve) => setTimeout(resolve, API_REQUEST_DELAY_MS));
 				}
 			}
+			console.log(`   Fetched a total of ${fetchedMessages.length} message objects.`);
 
-			if (allMessagesForThisCharacter.length > character.firstTurn.length) {
-				allMessagesForThisCharacter.sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
+			if (fetchedMessages.length > 0) {
+				// --- STAGE 2: Combine, sort, and assign final index ---
+				console.log('   [2/3] Sorting messages and assigning final index...');
 
+				// Combine the hardcoded first turn with all fetched messages
+				const allMessages = [...character.firstTurn, ...fetchedMessages];
+
+				// Sort the entire collection by creation timestamp
+				allMessages.sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
+
+				// Group messages by turn UUID to assign a consistent index
+				const turns = new Map<string, MigChatMessage[]>();
+				allMessages.forEach((msg) => {
+					if (!turns.has(msg.uuid)) {
+						turns.set(msg.uuid, []);
+					}
+					turns.get(msg.uuid)!.push(msg);
+				});
+
+				// Assign a sequential index to each turn
+				// The order is preserved because we sorted the messages before creating the Map
+				let turnIndex = 0;
+				for (const turnMessages of turns.values()) {
+					for (const msg of turnMessages) {
+						msg.index = turnIndex;
+					}
+					turnIndex++;
+				}
+
+				// --- STAGE 3: Save the final, ordered result ---
+				console.log(`   [3/3] Saving ${allMessages.length} messages to file...`);
 				const sanitizedCharacterName = character.name.replace(/[^a-z0-9_.-]/gi, '_').toLowerCase();
 				const filePath = path.join(
 					resultDir,
-					`${sanitizedCharacterName}_${localTimezoneHelper(new Date().toISOString())}_${allMessagesForThisCharacter.length}.json`
+					`${sanitizedCharacterName}_${localTimezoneHelper(
+						new Date().toISOString()
+					)}_${allMessages.length}.json`
 				);
 				try {
-					await fs.writeFile(filePath, JSON.stringify(allMessagesForThisCharacter, null, 2), 'utf8');
+					await fs.writeFile(filePath, JSON.stringify(allMessages, null, 2), 'utf8');
 					console.log(
-						`[SUCCESS] Saved ${allMessagesForThisCharacter.length} messages for ${character.name} to ${filePath}`
+						`[SUCCESS] Saved ${allMessages.length} messages for ${character.name} to ${filePath}`
 					);
 				} catch (writeError) {
 					console.error(`[ERROR] Failed to write file for ${character.name}:`, writeError);
 				}
 			} else {
-				console.warn(`[WARN] No new messages were fetched for ${character.name} (Chat ID: ${chatId}).`);
+				console.warn(`[WARN] No new messages were fetched for ${character.name}.`);
 			}
 		}
 	} catch (error) {

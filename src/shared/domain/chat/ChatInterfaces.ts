@@ -139,6 +139,7 @@ export interface MigChatMessage {
 	name: string;
 	showName: string;
 	emotion: string;
+	index: number;
 	model?: string;
 }
 

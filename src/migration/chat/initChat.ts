@@ -22,6 +22,7 @@ import { validEmotions } from '#shared/config/emotionWordsMapper.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
 import { chatStore } from '#server/store/chatStore.js';
 import { buildChatTurnMetadataPrompt } from '#server/util/templateUtils.js';
+import { mapTerms, termStore } from '#server/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,11 +34,6 @@ const MAX_LLM_RETRIES = 3;
 const USER_ID = process.env.USER_ID || '6b335673-c837-43f9-a1c7-0b92c90edefb';
 
 const ENRICHMENT_MODEL = 'gemini-2.0-flash-001'; // Fast model for metadata extraction
-
-// --- ADJUST THESE FOR DEBUGGING ---
-const UPSERT_BATCH_SIZE = 10; // Smaller batch size for enriched turns
-const DELAY_BETWEEN_LLM_CALLS_MS = 1000; // Delay between individual LLM calls
-// ---
 
 // ✅ Add Progress Tracking Configuration
 const PROGRESS_DIR = path.join(__dirname, 'progress');
@@ -131,7 +127,7 @@ const extractJsonFromMarkdown = (response: string): any => {
 };
 let firstGeminiDone = false;
 let secondGeminiDone = false; // Track if Groq fallback was used
-const GEMINI_API_KEY = '';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const generateEnrichedMetadataLLM = async (prompt: string, attempt = 1): Promise<string> => {
 	// 이미 Groq 사용했다면 Gemini 재시도 금지
 	if (secondGeminiDone) {
@@ -220,7 +216,7 @@ const generateEnrichedMetadataLLM = async (prompt: string, attempt = 1): Promise
 		return generateEnrichedMetadataLLM(prompt, attempt + 1);
 	}
 };
-const GROQ_API_KEY = '';
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const callGroqFallback = async (prompt: string, attempt = 1): Promise<string> => {
 	if (!GROQ_API_KEY) throw new Error('GROQ_API_KEY environment variable is required.');
 	console.log(`    🔁 Fallback: Calling Groq (LLaMA3 70B), attempt ${attempt}`);
@@ -289,6 +285,7 @@ const getDefaultEnrichedMetadata = () => ({
 });
 const enrichChatTurnWithMetadata = async (
 	basicTurn: ChatTurn,
+	termGuidanceMap: Map<string, string>,
 	existingLoreIds: string[] = [],
 	existingHistoryIds: string[] = []
 ): Promise<ChatTurn> => {
@@ -330,18 +327,25 @@ const enrichChatTurnWithMetadata = async (
 		updatedAt: new Date().toISOString(),
 	};
 };
-async function processAndUpsertTurn(turnToProcess: ChatTurn, progress: InitChatProgress) {
+async function processAndUpsertTurn(
+	turnToProcess: ChatTurn,
+	progress: InitChatProgress,
+	termGuidanceMap: Map<string, string>,
+	currentIndex: number,
+	batchTotal: number
+) {
 	let enrichedTurnResult: ChatTurn;
 	let wasEnrichedSuccessfully = false;
 
 	try {
 		console.log(
-			`    🧠 Enriching turn ${turnToProcess.sequence} (${progress.lastProcessedSequence + 2}/${progress.totalTurnsInLogFile})...`
+			`    🧠 [Batch ${currentIndex + 1}/${batchTotal}] Enriching turn with sequence: ${
+				turnToProcess.sequence
+			}...`
 		);
-		enrichedTurnResult = await enrichChatTurnWithMetadata(turnToProcess);
+		enrichedTurnResult = await enrichChatTurnWithMetadata(turnToProcess, termGuidanceMap);
 		wasEnrichedSuccessfully = true;
 		progress.successfullyEnrichedTurnsCount++;
-		console.log(`    🗣️ Turn ${turnToProcess.sequence} LLM enrichment successful.`);
 	} catch (enrichmentError) {
 		const errorMessage =
 			enrichmentError instanceof Error ? enrichmentError.message : String(enrichmentError);
@@ -362,13 +366,14 @@ async function processAndUpsertTurn(turnToProcess: ChatTurn, progress: InitChatP
 	}
 
 	try {
-		// Use the high-level store function. It handles the upsert internally.
-		// It already contains all the necessary logic from your application.
 		await chatStore._storeFullChatTurn(enrichedTurnResult);
-
 		progress.lastProcessedSequence = enrichedTurnResult.sequence;
 		console.log(
-			`    ✅ Turn ${enrichedTurnResult.sequence} ${wasEnrichedSuccessfully ? 'enriched' : 'fallback'} and saved via chatStore. Progress: ${progress.lastProcessedSequence + 1}/${progress.totalTurnsInLogFile}`
+			`    ✅ [Batch ${
+				currentIndex + 1
+			}/${batchTotal}] Turn ${enrichedTurnResult.sequence} saved. Total processed for session: ${
+				progress.lastProcessedSequence + 1
+			}/${progress.totalTurnsInLogFile}`
 		);
 	} catch (dbError) {
 		const dbErrorMessage = dbError instanceof Error ? dbError.message : String(dbError);
@@ -388,88 +393,58 @@ async function processAndUpsertTurn(turnToProcess: ChatTurn, progress: InitChatP
 // ---
 
 async function initChatFromLogFiles() {
-	console.log(`🚀 Starting chat initialization with LLM enrichment...`);
-	if (!GEMINI_API_KEY) {
-		console.error('🚨 GEMINI_API_KEY is not set. Aborting.');
+	console.log(`🚀 Starting chat initialization script...`);
+	// ✅ Recommendation: Load all API keys from environment variables for security.
+	const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+	const GROQ_API_KEY = process.env.GROQ_API_KEY;
+	if (!GEMINI_API_KEY || !GROQ_API_KEY) {
+		console.error('🚨 GEMINI_API_KEY or GROQ_API_KEY is not set in environment variables. Aborting.');
 		process.exit(1);
 	}
-	console.log(`Using enrichment model: ${ENRICHMENT_MODEL}`);
 
-	// --- REFACTOR START ---
-	// We no longer need to initialize the client or get the collection here.
-	// The `chatStore` will handle this automatically via its cached `getChatCollection` method.
-	console.log(`Ensuring connection to ChromaDB via centralized client...`);
-	try {
-		// We can "warm up" the connection by calling the store's getter.
-		// This will ensure the collection exists before the loop starts.
-		await chatStore._getChatCollection();
-		console.log(`Collection "${COLLECTIONS.CHAT}" is ready via chatStore.`);
-	} catch (e) {
-		const errorMessage = e instanceof Error ? e.message : String(e);
-		console.error(
-			`🚨 Failed to connect to or create ChromaDB collection "${COLLECTIONS.CHAT}" via chatStore. Aborting. Error: ${errorMessage}`
-		);
-		process.exit(1);
-	}
+	console.log(`Ensuring connection to ChromaDB...`);
+	await chatStore._getChatCollection();
+	console.log(`Collection "${COLLECTIONS.CHAT}" is ready.`);
 
 	const allLogFiles = (await fs.readdir(CRAWLER_RESULT_DIR)).filter((file) =>
 		file.endsWith('.json')
 	);
+	console.log(`Found ${allLogFiles.length} log files to process.`);
 
-	if (allLogFiles.length === 0) {
-		console.log(`No JSON log files found in ${CRAWLER_RESULT_DIR}. Nothing to process.`);
-		return;
-	}
-	console.log(`Found the following log files to process: ${allLogFiles.join(', ')}`);
+	const cliSessionId = process.argv[2];
 
 	for (const logFile of allLogFiles) {
 		const fileNameParts = path.basename(logFile, '.json').split('_');
-		// --- REFACTOR ---
-		// It is CRITICAL that filenames are stable. Using a timestamp in the filename
-		// will cause a new sessionId to be generated every time.
-		// Good filename: `MyCharacter_Original.json`
-		// Bad filename:  `MyCharacter_Original_1686774840.json`
 		if (fileNameParts.length < 2) {
-			console.warn(
-				`  ⚠️ Invalid log file name format: "${logFile}". Should be 'characterName_variant'. Skipping.`
-			);
+			console.warn(`  ⚠️ Invalid log file name: "${logFile}". Skipping.`);
 			continue;
 		}
 		const characterNameFromFile = fileNameParts[0];
-		const characterVariantFromFile = fileNameParts[1];
+		const characterId = buildCharacterId(characterNameFromFile, fileNameParts[1]);
+		const TARGET_SESSION_ID = cliSessionId || buildSessionId(characterId);
 
-		const characterId = buildCharacterId(characterNameFromFile, characterVariantFromFile);
-		const TARGET_SESSION_ID = buildSessionId(characterId);
-		// const TARGET_SESSION_ID = 'tarion_spinoff_Oin8t5Lxbc8glaU7';
-
-		console.log(`\n📝 Processing log file: "${logFile}" for session ID: "${TARGET_SESSION_ID}"...`);
-
-		let progress = await loadInitProgress(TARGET_SESSION_ID);
-		let crawledLogs: MigChatMessage[];
-		try {
-			const fileContent = await fs.readFile(path.join(CRAWLER_RESULT_DIR, logFile), 'utf-8');
-			crawledLogs = JSON.parse(fileContent);
-		} catch (fileError) {
-			console.error(`  ❌ Error reading or parsing log file "${logFile}":`, fileError);
-			if (progress) {
-				progress.errors.push({
-					sequence: -1,
-					error: `Failed to read/parse log file: ${fileError instanceof Error ? fileError.message : String(fileError)}`,
-					timestamp: new Date().toISOString(),
-				});
-				await saveInitProgress(progress);
-			}
-			continue;
+		if (cliSessionId) {
+			console.log(`\n📝 Using provided Session ID: "${cliSessionId}" for log file: "${logFile}"...`);
+		} else {
+			console.log(
+				`\n📝 Processing log file: "${logFile}" for generated session ID: "${TARGET_SESSION_ID}"...`
+			);
 		}
 
-		if (!Array.isArray(crawledLogs) || crawledLogs.length === 0) {
-			console.warn(`  No logs found or invalid format in "${logFile}". Skipping.`);
-			continue;
-		}
+		// --- The rest of the logic remains the same ---
+		console.log(`  📚 Fetching glossary terms for session ${TARGET_SESSION_ID}...`);
+		const termResponse = await termStore.getTermsBySessionId(TARGET_SESSION_ID);
+		const termGuidanceMap = mapTerms(termResponse.terms);
+		const { chatTurns: existingTurnsInDB } = await chatStore.getAllChatTurns(TARGET_SESSION_ID);
+		const latestSequenceInDB =
+			existingTurnsInDB.length > 0 ? Math.max(...existingTurnsInDB.map((t) => t.sequence)) : -1;
+		console.log(
+			`  🔍 DB Check: Found ${existingTurnsInDB.length} turns. Latest sequence is ${latestSequenceInDB}.`
+		);
 
-		// Convert logs to a standardized ChatTurn format
+		const fileContent = await fs.readFile(path.join(CRAWLER_RESULT_DIR, logFile), 'utf-8');
+		const crawledLogs: MigChatMessage[] = JSON.parse(fileContent);
 		const basicTurnsFromLog: ChatTurn[] = [];
-		// ... (Your logic for parsing crawledLogs into basicTurnsFromLog remains the same)
 		const turnsMap = new Map<string, { user?: MigChatMessage; bot?: MigChatMessage }>();
 		crawledLogs.forEach((log) => {
 			const turnUuid = log.uuid || `${log.createdAt}_${log.role}`;
@@ -483,11 +458,14 @@ async function initChatFromLogFiles() {
 				Date.parse(turnsMap.get(a)?.user?.createdAt || '0') -
 				Date.parse(turnsMap.get(b)?.user?.createdAt || '0')
 		);
-		for (const [index, uuid] of sortedUuids.entries()) {
+		for (const uuid of sortedUuids) {
 			const turnPair = turnsMap.get(uuid);
 			if (turnPair?.user && turnPair?.bot) {
 				const [userLog, botLog] = [turnPair.user, turnPair.bot];
-				const currentSequence = index;
+				const currentSequence = userLog.index;
+
+				if (currentSequence === undefined) continue;
+
 				const requestMessage: ChatMessage = {
 					role: 'user',
 					messageId: buildMessageId(TARGET_SESSION_ID, currentSequence, 'request'),
@@ -512,7 +490,7 @@ async function initChatFromLogFiles() {
 					updatedAt: botLog.updatedAt || botLog.createdAt,
 					model: botLog.model,
 					sessionId: TARGET_SESSION_ID,
-					showName: botLog.showName || characterNameFromFile,
+					showName: botLog.showName,
 					type: METADATA_TYPES.MESSAGE,
 					sequence: currentSequence,
 				};
@@ -540,71 +518,48 @@ async function initChatFromLogFiles() {
 			}
 		}
 
-		// --- REFACTOR START: Smarter progress handling ---
+		let progress = await loadInitProgress(TARGET_SESSION_ID);
 		if (!progress) {
-			console.log(`  No progress file found for "${TARGET_SESSION_ID}". Creating a new one.`);
 			progress = createInitialProgress(TARGET_SESSION_ID, basicTurnsFromLog.length);
 		} else {
-			const previouslyProcessedCount = progress.lastProcessedSequence + 1;
-			if (progress.status === 'completed' && basicTurnsFromLog.length > previouslyProcessedCount) {
-				console.log(
-					`  🔄 New turns found in completed session "${TARGET_SESSION_ID}". Re-opening for processing.`
-				);
-				progress.status = 'in_progress';
-				progress.totalTurnsInLogFile = basicTurnsFromLog.length; // Update total count
-			} else if (progress.status === 'completed') {
-				console.log(`  ✅ Session "${TARGET_SESSION_ID}" is up-to-date and completed. Skipping.`);
-				continue;
-			} else if (progress.status === 'failed') {
-				console.warn(
-					`  ❌ Session "${TARGET_SESSION_ID}" previously failed. Skipping. Please review and reset progress file manually if safe.`
-				);
-				continue;
-			}
-			// If in_progress, just update the total turn count in case the file grew
 			progress.totalTurnsInLogFile = basicTurnsFromLog.length;
 		}
-		// --- REFACTOR END ---
 
-		const nextSequenceToProcess = progress.lastProcessedSequence + 1;
-		const turnsToProcessThisRun = basicTurnsFromLog.filter(
-			(turn) => turn.sequence >= nextSequenceToProcess
-		);
+		const nextSequenceToProcess = latestSequenceInDB + 1;
+		const turnsToProcessThisRun = basicTurnsFromLog
+			.filter((turn) => turn.sequence >= nextSequenceToProcess)
+			.sort((a, b) => a.sequence - b.sequence);
 
 		if (turnsToProcessThisRun.length === 0) {
-			console.log(
-				`  No new turns to process for session "${TARGET_SESSION_ID}". (Last processed sequence: ${progress.lastProcessedSequence})`
-			);
-			if (
-				progress.lastProcessedSequence + 1 >= progress.totalTurnsInLogFile &&
-				progress.totalTurnsInLogFile > 0
-			) {
-				progress.status = 'completed';
-				console.log(`  Marking session "${TARGET_SESSION_ID}" as completed.`);
-			}
+			console.log(`  ✅ Session is up-to-date according to DB. No new turns to process.`);
+			progress.status = 'completed'; // Mark as completed in the log
 			await saveInitProgress(progress);
 			continue;
 		}
 
 		console.log(
-			`  📊 Starting processing of ${turnsToProcessThisRun.length} turns for session "${TARGET_SESSION_ID}" (from sequence ${nextSequenceToProcess}).`
+			`  📊 Found ${turnsToProcessThisRun.length} new turns to process, starting from sequence ${nextSequenceToProcess}.`
 		);
+		progress.status = 'in_progress';
 		await saveInitProgress(progress);
 
-		for (let i = 0; i < turnsToProcessThisRun.length; i++) {
-			const turn = turnsToProcessThisRun[i];
+		console.log(
+			`  📊 Found ${turnsToProcessThisRun.length} new turns to process, starting from sequence ${nextSequenceToProcess}.`
+		);
+		progress.status = 'in_progress';
+		await saveInitProgress(progress);
+
+		for (const [i, turn] of turnsToProcessThisRun.entries()) {
 			try {
-				await processAndUpsertTurn(turn, progress);
+				await processAndUpsertTurn(turn, progress, termGuidanceMap, i, turnsToProcessThisRun.length);
 				await saveInitProgress(progress);
 			} catch (turnProcessingError) {
 				console.error(
-					`  🛑 Halting processing for session "${TARGET_SESSION_ID}" due to critical error on turn ${turn.sequence}.`
+					`  🛑 Halting processing for session "${TARGET_SESSION_ID}" due to critical error.`
 				);
+				progress.status = 'failed';
+				await saveInitProgress(progress);
 				break;
-			}
-
-			if (i < turnsToProcessThisRun.length - 1 && progress.status !== 'failed') {
-				await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_LLM_CALLS_MS));
 			}
 		}
 
@@ -624,15 +579,9 @@ async function initChatFromLogFiles() {
 	}
 
 	console.log('\n🎉 Chat initialization with LLM enrichment finished for all files.');
-	// --- REFACTOR ---
-	// The cleanup function is disabled as it prevents incremental updates.
-	// await cleanupAndBackupCompletedProgress();
-	console.log(
-		'✅ Process complete. Completed progress files are kept in place for future incremental updates.'
-	);
 }
 
 initChatFromLogFiles().catch((err) => {
-	console.error('🚨🚨🚨 FATAL Unhandled error in initChatFromLogFiles outer scope:', err);
+	console.error('🚨🚨🚨 FATAL SCRIPT ERROR:', err);
 	process.exit(1);
 });

@@ -32,6 +32,7 @@ import { isAndWhere } from '../util/queryUtils.js';
 const {
 	getChatCollection,
 	upsertRecord,
+	upsertRecords,
 	getRecordById,
 	getRecords,
 	queryRecords,
@@ -167,6 +168,41 @@ export const chatStore = {
 				error,
 				'An internal error occurred while do [storeChatTurn].',
 				`Failed to store chat turn for session ${sessionId}:`
+			);
+		}
+	},
+
+	/**
+	 * Stores multiple chat turns in a single bulk operation.
+	 * Ideal for data migration or batch processing.
+	 * @param chatTurns An array of ChatTurn objects to store.
+	 */
+	storeChatTurns: async (chatTurns: ChatTurn[]): Promise<void> => {
+		if (!chatTurns || chatTurns.length === 0) {
+			return;
+		}
+
+		const collection = await chatStore._getChatCollection();
+
+		const recordsToUpsert = chatTurns.map((turn) => {
+			const metadata = chatTurnToMetadata(turn);
+			const document = flatChatTurnToDoc(turn);
+			return { id: metadata.chatTurnId, document, metadata };
+		});
+
+		try {
+			await upsertRecords(
+				collection,
+				recordsToUpsert.map((r) => r.id),
+				recordsToUpsert.map((r) => r.document),
+				recordsToUpsert.map((r) => r.metadata)
+			);
+			console.log(`[chatStore] Successfully stored ${chatTurns.length} chat turns in bulk.`);
+		} catch (error) {
+			handleServiceError(
+				error,
+				'An internal error occurred while doing [storeChatTurns].',
+				`Failed to bulk store ${chatTurns.length} chat turns.`
 			);
 		}
 	},
