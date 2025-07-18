@@ -1,16 +1,21 @@
-// src/migration/chat/recapChatBatch.ts
+// src/migration/chat/recapChatRelationshipBatch.ts
 
 import 'dotenv/config'; // <-- ADD THIS AT THE VERY TOP
 import { writeFile, access, readFile, mkdir, unlink } from 'fs/promises';
-import { ChatTurn, METADATA_TYPES, buildRecapId, parseEntriesToText } from '../../shared/index.js';
-import { buildFactualRecapPrompt } from '../../server/util/templateUtils.js';
+import {
+	ChatTurn,
+	METADATA_TYPES,
+	buildRelationshipRecapId,
+	parseEntriesToText,
+} from '../../shared/index.js';
+import { buildLlmRelationshipRecapPrompt } from '../../server/util/templateUtils.js';
 import { chatStore } from '#server/index.js';
 import { chromaDbClient } from '#server/db/index.js';
 
 // --- Configuration ---
 const TARGET_SESSION_ID = process.argv[2];
 if (!TARGET_SESSION_ID) {
-	console.error('Usage: bun recapChatBatch.ts <session_id>');
+	console.error('Usage: bun recapChatRelationshipBatch.ts <session_id>');
 	process.exit(1);
 }
 const OUTPUT_DIR = './src/migration/recap/output';
@@ -91,14 +96,14 @@ const callLLMWithFallback = async (prompt: string): Promise<string> => {
 			console.warn('  ⚠️ Deepseek rate limited, falling back to Groq...');
 			return callGroq(prompt);
 		}
-		throw e; // Fail fast if other error
+		throw e;
 	}
 };
 
 // --- Main logic with Resumability ---
 const main = async () => {
 	// 1. Setup paths and load progress
-	const progressFilePath = `${PROGRESS_DIR}/${TARGET_SESSION_ID}_factual_progress.json`;
+	const progressFilePath = `${PROGRESS_DIR}/${TARGET_SESSION_ID}_relationship_progress.json`;
 	let recapTexts: string[] = [];
 	let startBatchIndex = 0;
 
@@ -123,7 +128,7 @@ const main = async () => {
 
 	const batches = createBatches(chatTurns, BATCH_SIZE);
 
-	// 2. Main processing loop, starting from the last successful point
+	// 2. Main processing loop
 	for (let batchIdx = startBatchIndex; batchIdx < batches.length; ++batchIdx) {
 		const batch = batches[batchIdx];
 		const turnsText = batch
@@ -138,7 +143,7 @@ const main = async () => {
 		const availableTopics = [...new Set(batch.flatMap((turn) => turn.topics))];
 		const availableEntities = [...new Set(batch.flatMap((turn) => turn.entities))];
 
-		const prompt = buildFactualRecapPrompt(
+		const prompt = buildLlmRelationshipRecapPrompt(
 			userName,
 			charName,
 			'female',
@@ -151,19 +156,21 @@ const main = async () => {
 
 		try {
 			console.log(
-				`Recapping batch ${batchIdx + 1}/${batches.length} [turns ${batch[0].sequence}~${
-					batch[batch.length - 1].sequence
-				}]`
+				`Recapping RELATIONSHIP for batch ${batchIdx + 1}/${batches.length} [turns ${
+					batch[0].sequence
+				}~${batch[batch.length - 1].sequence}]`
 			);
 			const recap = await callLLMWithFallback(prompt);
-			console.log(`  - Recap generated successfully.`);
+			console.log(`  - Relationship recap generated successfully.`);
 
-			const recapId = buildRecapId(
+			const recapId = buildRelationshipRecapId(
 				TARGET_SESSION_ID,
 				batchIdx + 1,
 				batch[batch.length - 1]?.sequence ?? 0
 			);
-			recapTexts.push(`# Recap batch ${batchIdx + 1} (recapId=${recapId})\n\n${recap}\n\n---\n`);
+			recapTexts.push(
+				`# Relationship Recap Batch ${batchIdx + 1} (recapId=${recapId})\n\n${recap}\n\n---\n`
+			);
 
 			// 3. Save progress immediately after a successful batch
 			const currentProgress: ProgressState = {
@@ -175,27 +182,29 @@ const main = async () => {
 		} catch (e) {
 			console.error(`❌ Failed batch ${batchIdx + 1}:`, e);
 			console.log(`\n🛑 Process stopping. Run script again to resume from this point.`);
-			process.exit(1); // Exit gracefully so the user knows to restart
+			process.exit(1);
 		}
 	}
 
 	// 4. Finalization after the loop completes
-	console.log('\n🎉 All batches processed successfully!');
+	console.log('\n🎉 All relationship batches processed successfully!');
 
 	await mkdir(OUTPUT_DIR, { recursive: true });
-	const outPath = `${OUTPUT_DIR}/${TARGET_SESSION_ID}_all_factual_recaps.md`;
-	const finalContent = `# Factual Recaps for session: ${TARGET_SESSION_ID}\n\n${recapTexts.join('\n')}`;
+	const outPath = `${OUTPUT_DIR}/${TARGET_SESSION_ID}_all_relationship_recaps.md`;
+	const finalContent = `# Relationship Recaps for session: ${TARGET_SESSION_ID}\n\n${recapTexts.join(
+		'\n'
+	)}`;
 	await writeFile(outPath, finalContent);
-	console.log(`Final factual recap file saved to: ${outPath}`);
+	console.log(`Final relationship recap file saved to: ${outPath}`);
 
-	const recapDocId = buildRecapId(TARGET_SESSION_ID, 0, 0);
+	const recapDocId = buildRelationshipRecapId(TARGET_SESSION_ID, 0, 0);
 	const recapCollection = await chromaDbClient.getRecapCollection();
 	await recapCollection.upsert({
 		ids: [recapDocId],
 		documents: [finalContent],
-		metadatas: [{ sessionId: TARGET_SESSION_ID, type: METADATA_TYPES.RECAP }],
+		metadatas: [{ sessionId: TARGET_SESSION_ID, type: METADATA_TYPES.RELATIONSHIP }],
 	});
-	console.log(`Final factual recaps upserted to ChromaDB with id: ${recapDocId}`);
+	console.log(`Final relationship recaps upserted to ChromaDB with id: ${recapDocId}`);
 
 	// 5. Clean up the progress file
 	try {
@@ -207,6 +216,6 @@ const main = async () => {
 };
 
 main().catch((e) => {
-	console.error('Fatal error in factual recap generation:', e);
+	console.error('Fatal error in relationship recap generation:', e);
 	process.exit(1);
 });

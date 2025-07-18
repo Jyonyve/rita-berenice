@@ -1,4 +1,5 @@
 // src/server/db/chromaDbClient.ts
+import 'dotenv/config';
 import { ChromaClient, Collection, IncludeEnum, Where, WhereDocument } from 'chromadb';
 import { COLLECTIONS } from './ChromaInterfaces.js';
 import { MetadataType } from '#shared/config/constants.js';
@@ -6,7 +7,6 @@ import { ChromaResponse } from '#shared/api/ModuleResponse.js';
 import { OpenAIEmbeddingFunction } from '@chroma-core/openai';
 
 const apiKey = process.env.OPENAI_API_KEY;
-
 if (!apiKey) {
 	// This check is important. It will cause the server to crash on startup
 	// if the secret is not set, which is good practice (fail fast).

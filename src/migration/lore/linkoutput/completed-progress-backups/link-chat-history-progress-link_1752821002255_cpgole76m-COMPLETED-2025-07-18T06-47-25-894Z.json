@@ -1,0 +1,21 @@
+{
+  "processId": "link_1752821002255_cpgole76m",
+  "totalChatTurns": 3658,
+  "processedChatTurns": 3658,
+  "lastProcessedChatTurnId": "tarion_original_dw2xVb8s_402_turn",
+  "totalHistoryEvents": 2,
+  "updatedChatTurns": 48,
+  "totalReferencesAdded": 54,
+  "startedAt": "2025-07-18T06:43:32.323Z",
+  "lastUpdatedAt": "2025-07-18T06:47:25.890Z",
+  "status": "completed",
+  "currentBatch": 365,
+  "totalBatches": 183,
+  "errors": [],
+  "statistics": {
+    "averageRelevanceScore": 0.2688747221194763,
+    "highestRelevanceScore": 0.3285714285714286,
+    "chatTurnsWithNoMatches": 3610,
+    "chatTurnsAlreadyLinked": 0
+  }
+}

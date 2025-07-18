@@ -43,16 +43,15 @@ export type AiRole = DefaultAiRole | 'custom';
 
 export const DEFAULT_CHAT_MODEL_FREE: AiModelInfo = {
 	platform: 'openrouter',
-	provider: 'google',
-	model: 'google/gemini-2.5-pro-exp-03-25:free',
+	provider: 'deepseek',
+	model: 'deepseek/deepseek-chat-v3-0324:free',
 };
 
 export const DEFAULT_RECAP_MODEL_FREE: AiModelInfo = {
 	platform: 'openrouter',
-	provider: 'google',
-	model: 'gemini-2.0-flash-001',
+	provider: 'deepseek',
+	model: 'deepseek/deepseek-chat-v3-0324:free',
 	temperature: 0.7,
-	maxTokens: 5000,
 };
 
 export const DEFAULT_LOCAL_MODEL: AiModelInfo = {

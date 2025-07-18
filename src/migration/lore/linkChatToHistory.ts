@@ -305,7 +305,6 @@ async function linkChatToHistory() {
 	console.log('🔗 Starting chat-to-history linking process with progress tracking...');
 	console.log(`📋 Process ID: ${processId}`);
 
-	const chroma = new ChromaClient({ path: CHROMA_URL });
 	let chatCollection: Collection;
 	let loreCollection: Collection;
 
@@ -376,7 +375,7 @@ async function linkChatToHistory() {
 		// ✅ Filter chat turns to process (skip already processed)
 		const chatTurnsToProcess = allChatTurns.slice(progress.processedChatTurns);
 		if (chatTurnsToProcess.length === 0) {
-			/* ... same as before ... */ console.log('✅ All chat turns already processed!');
+			console.log('✅ All chat turns already processed!');
 			progress.status = 'completed';
 			await saveLinkingProgress(progress);
 			return;
