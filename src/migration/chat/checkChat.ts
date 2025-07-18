@@ -2,38 +2,41 @@ import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
 import { chatStore } from '#server/index.js';
 
 // --- Configuration ---
+const TARGET_COLLECTION_NAME = COLLECTIONS.CHAT;
 
-const TARGET_COLLECTION_NAME = COLLECTIONS.CHAT; // The collection where data was inserted
-// const TARGET_SESSION_ID = MONDAY_ORIGINAL_SESSIONID ?? '';
-const TARGET_SESSION_ID = 'tarion_spinoff_sw1MLtIj';
-// const TARGET_SESSION_ID = 'tarion_spinoff_Oin8t5Lxbc8glaU7';
-
-// --- Main Checking Logic ---
-async function checkSeededData() {
+/**
+ * Checks the database for chat turns associated with a specific session ID.
+ * @param sessionId The ID of the session to check.
+ */
+async function checkSeededData(sessionId: string) {
 	try {
-		// 1. Get the Collection (use getCollection, assumes it exists)
-		console.log(`Accessing collection "${TARGET_COLLECTION_NAME}"...`);
+		console.log(`Accessing collection "${TARGET_COLLECTION_NAME}" for session ID: ${sessionId}...`);
 
-		try {
-			const result = await chatStore.getAllChatTurns(TARGET_SESSION_ID);
-			console.log(result.chatTurns.length);
-			console.log(`Collection "${TARGET_COLLECTION_NAME}" accessed.`);
-		} catch (error) {
-			// Handle cases where the collection might *actually* not exist
-			if (error instanceof Error && error.message.includes('does not exist')) {
-				console.error(
-					`Error: Collection "${TARGET_COLLECTION_NAME}" does not exist. Ensure the seeding script ran successfully.`
-				);
-			} else {
-				console.error(`Error accessing collection "${TARGET_COLLECTION_NAME}":`, error);
-			}
-			process.exit(1);
-		}
+		const result = await chatStore.getAllChatTurns(sessionId);
+		console.log(`✅ Found ${result.chatTurns.length} chat turns for the session.`);
 	} catch (error) {
-		console.error('Error checking seeded data:', error);
+		// Handle cases where the collection or data might not exist
+		if (error instanceof Error && error.message.includes('does not exist')) {
+			console.error(
+				`Error: Collection "${TARGET_COLLECTION_NAME}" does not exist. Ensure the seeding script ran successfully.`
+			);
+		} else {
+			console.error(`Error accessing data for session "${sessionId}":`, error);
+		}
 		process.exit(1);
 	}
 }
 
-// --- Run the script ---
-checkSeededData();
+// --- Script Execution ---
+const sessionId = process.argv[2];
+
+if (!sessionId) {
+	console.error('🚨 Please provide a sessionId as a command-line argument.');
+	console.error('Usage: tsx ./path/to/your/script.ts <sessionId>');
+	process.exit(1);
+}
+
+checkSeededData(sessionId).catch((err) => {
+	console.error('FATAL ERROR:', err);
+	process.exit(1);
+});

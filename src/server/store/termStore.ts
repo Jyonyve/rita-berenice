@@ -107,6 +107,70 @@ export const termStore = {
 		}
 	},
 
+	/**
+	 * Stores multiple glossary terms in a single bulk operation.
+	 * @param terms An array of TermCdo or TermInfo objects.
+	 */
+	storeTerms: async (terms: (TermCdo | TermInfo)[]): Promise<void> => {
+		if (!terms || terms.length === 0) {
+			return;
+		}
+
+		const collection = await termStore._getCollection();
+		const now = new Date().toISOString();
+
+		const recordsToUpsert = terms.map((termInfo) => {
+			const isTerm = isTermInfo(termInfo);
+			const metadata: TermMetadata = {
+				...termInfo,
+				termId: isTerm ? termInfo.termId : buildTermId(termInfo.sessionId),
+				type: METADATA_TYPES.TERM,
+				initialTerm: termInfo.initialTerm,
+				englishTerm: isTerm ? termInfo.englishTerm : termInfo.initialTerm,
+				createdAt: isTerm ? termInfo.createdAt : now,
+				updatedAt: now,
+			};
+			const document = flatTermToDoc(metadata);
+			return { id: metadata.termId, document, metadata };
+		});
+
+		try {
+			await chromaDbClient.upsertRecords(
+				collection,
+				recordsToUpsert.map((r) => r.id),
+				recordsToUpsert.map((r) => r.document),
+				recordsToUpsert.map((r) => r.metadata)
+			);
+
+			// Group terms by session to update caches efficiently
+			const termsBySession = new Map<string, TermMetadata[]>();
+			for (const record of recordsToUpsert) {
+				const { sessionId } = record.metadata;
+				if (!termsBySession.has(sessionId)) {
+					termsBySession.set(sessionId, []);
+				}
+				termsBySession.get(sessionId)!.push(record.metadata);
+			}
+
+			// Update the session cache for each affected session
+			for (const [sessionId, sessionTerms] of termsBySession.entries()) {
+				const sessionCache = await termStore._getOrBuildSessionTermMap(sessionId);
+				for (const term of sessionTerms) {
+					sessionCache.set(term.koreanTerm, term);
+				}
+				console.log(
+					`TermService: Bulk updated cache for ${sessionTerms.length} terms in session ${sessionId}.`
+				);
+			}
+		} catch (error: any) {
+			handleServiceError(
+				error,
+				`[termService] Internal error during bulk storing of ${terms.length} terms.`,
+				`Failed to bulk store terms.`
+			);
+		}
+	},
+
 	getTermByKorean: async (sessionId: string, koreanTerm: string): Promise<TermResponse> => {
 		const collection = await termStore._getCollection();
 		const where: Where = {

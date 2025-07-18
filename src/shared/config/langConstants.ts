@@ -29,7 +29,7 @@ export const langConstants: LangRecord = {
 	SESSIONS_WITH_CHARACTER: { kor: '지난 이야기', eng: 'Sessions with this character' },
 	CREATE_NEW_PROFILE: { kor: '새 프로필 만들기', eng: 'Create New Profile' },
 	CREATE_PROFILE: { kor: '프로필 생성', eng: 'Create Profile' },
-	CHOOSE_EXISTING_PROFILE: { kor: '기존 프로필 고르기', eng: 'Choose from Existing Profile' },
+	CHOOSE_EXISTING_PROFILE: { kor: '기존 프로필', eng: 'Choose from Existing Profile' },
 	START_NEW_SESSION: { kor: '새로운 대화 시작하기', eng: 'Start New Session' },
 	GENDER: { kor: '성별', eng: 'GENDER' },
 	MALE: { kor: '남성', eng: 'Male' },
