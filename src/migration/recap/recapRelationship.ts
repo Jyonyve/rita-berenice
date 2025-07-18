@@ -1,11 +1,14 @@
 // src/migration/chat/recapChatRelationshipBatch.ts
 
+import 'dotenv/config'; // Ensure .env variables are loaded
 import { writeFile, access, readFile, mkdir, unlink } from 'fs/promises';
 import {
 	ChatTurn,
 	METADATA_TYPES,
+	RecapInfo,
 	buildRelationshipRecapId,
 	parseEntriesToText,
+	recapToMetadata, // Import the helper
 } from '../../shared/index.js';
 import { buildLlmRelationshipRecapPrompt } from '../../server/util/templateUtils.js';
 import { chatStore } from '#server/index.js';
@@ -14,11 +17,11 @@ import { chromaDbClient } from '#server/db/index.js';
 // --- Configuration ---
 const TARGET_SESSION_ID = process.argv[2];
 if (!TARGET_SESSION_ID) {
-	console.error('Usage: bun recapChatRelationshipBatch.ts <session_id>');
+	console.error('Usage: pnpm recap:relationship -- <session_id>');
 	process.exit(1);
 }
 const OUTPUT_DIR = './src/migration/recap/output';
-const PROGRESS_DIR = './src/migration/recap/progress'; // Separate dir for progress files
+const PROGRESS_DIR = './src/migration/recap/progress';
 const BATCH_SIZE = 3;
 
 const DEEPSEEK_MODEL = 'deepseek/deepseek-v3-0324:free';
@@ -32,7 +35,7 @@ interface ProgressState {
 	recapTexts: string[];
 }
 
-// --- Helper & LLM functions (identical, no changes needed) ---
+// --- Helper & LLM functions ---
 const getSessionChatTurns = async (sessionId: string): Promise<ChatTurn[]> => {
 	const chatRes = await chatStore.getAllChatTurns(sessionId);
 	return chatRes.chatTurns.sort((a, b) => a.sequence - b.sequence);
@@ -55,6 +58,7 @@ const callDeepseek = async (prompt: string): Promise<string> => {
 			messages: [{ role: 'system', content: prompt }],
 			max_tokens: 1536,
 			temperature: 0.3,
+			response_format: { type: 'json_object' }, // Ask for JSON output
 		}),
 	});
 	if (res.status === 429) throw new Error('RATE_LIMIT');
@@ -77,6 +81,7 @@ const callGroq = async (prompt: string): Promise<string> => {
 			],
 			temperature: 0.3,
 			max_tokens: 1536,
+			response_format: { type: 'json_object' }, // Ask for JSON output
 		}),
 	});
 	if (res.status === 429) throw new Error('RATE_LIMIT');
@@ -99,9 +104,8 @@ const callLLMWithFallback = async (prompt: string): Promise<string> => {
 	}
 };
 
-// --- Main logic with Resumability ---
+// --- Main logic with Individual DB Inserts ---
 const main = async () => {
-	// 1. Setup paths and load progress
 	const progressFilePath = `${PROGRESS_DIR}/${TARGET_SESSION_ID}_relationship_progress.json`;
 	let recapTexts: string[] = [];
 	let startBatchIndex = 0;
@@ -121,20 +125,24 @@ const main = async () => {
 	if (!chatTurns.length) throw new Error('No chat turns found for session.');
 	const userName = chatTurns[0].request.showName;
 	const charName = chatTurns[0].response.showName;
+	const firstTurn = chatTurns[0];
 	console.log(
 		`Loaded ${chatTurns.length} turns for session ${TARGET_SESSION_ID}: ${userName} vs ${charName}`
 	);
 
 	const batches = createBatches(chatTurns, BATCH_SIZE);
+	const recapCollection = await chromaDbClient.getRecapCollection();
 
-	// 2. Main processing loop
 	for (let batchIdx = startBatchIndex; batchIdx < batches.length; ++batchIdx) {
 		const batch = batches[batchIdx];
+		const firstBatchTurn = batch[0];
+		const lastBatchTurn = batch[batch.length - 1];
+
 		const turnsText = batch
 			.map((turn) => {
 				const userMsg = parseEntriesToText(turn.request.entries);
 				const charMsg = parseEntriesToText(turn.response.entries);
-				return `[Turn ${turn.sequence}]\n${userName}: "${userMsg}"\n${charName}: "${charMsg}"`;
+				return `[Turn ${turn.sequence}, CreatedAt: ${turn.createdAt}]\n${userName}: "${userMsg}"\n${charName}: "${charMsg}"`;
 			})
 			.join('\n\n');
 
@@ -142,6 +150,7 @@ const main = async () => {
 		const availableTopics = [...new Set(batch.flatMap((turn) => turn.topics))];
 		const availableEntities = [...new Set(batch.flatMap((turn) => turn.entities))];
 
+		// [CHANGED] Use relationship prompt
 		const prompt = buildLlmRelationshipRecapPrompt(
 			userName,
 			charName,
@@ -156,22 +165,60 @@ const main = async () => {
 		try {
 			console.log(
 				`Recapping RELATIONSHIP for batch ${batchIdx + 1}/${batches.length} [turns ${
-					batch[0].sequence
-				}~${batch[batch.length - 1].sequence}]`
+					firstBatchTurn.sequence
+				}~${lastBatchTurn.sequence}]`
 			);
-			const recap = await callLLMWithFallback(prompt);
-			console.log(`  - Relationship recap generated successfully.`);
+			const llmResponseJsonString = await callLLMWithFallback(prompt);
+			console.log(`  - LLM response received.`);
 
+			// --- [CHANGED] Parse JSON and upsert to DB ---
+			const parsedRecap = JSON.parse(llmResponseJsonString);
+
+			// [CHANGED] Use relationship ID builder
 			const recapId = buildRelationshipRecapId(
 				TARGET_SESSION_ID,
 				batchIdx + 1,
-				batch[batch.length - 1]?.sequence ?? 0
-			);
-			recapTexts.push(
-				`# Relationship Recap Batch ${batchIdx + 1} (recapId=${recapId})\n\n${recap}\n\n---\n`
+				lastBatchTurn.sequence
 			);
 
-			// 3. Save progress immediately after a successful batch
+			const recapInfo: RecapInfo = {
+				recapId,
+				sessionId: TARGET_SESSION_ID,
+				characterId: firstTurn.characterId,
+				userId: firstTurn.userId,
+				profileId: firstTurn.profileId,
+				type: METADATA_TYPES.RELATIONSHIP, // [CHANGED] Set correct type
+				turnStart: firstBatchTurn.sequence,
+				turnEnd: lastBatchTurn.sequence,
+				model: DEEPSEEK_MODEL,
+				content: parsedRecap.content || '',
+				keywords: parsedRecap.keywords?.join(',') || '',
+				topics: parsedRecap.topics?.join(',') || '',
+				entities: parsedRecap.entities?.join(',') || '',
+				flagsArray: parsedRecap.flags || [],
+				loreReferencesArray: parsedRecap.loreReferences || [],
+				historyReferencesArray: parsedRecap.historyReferences || [],
+				createdAt: new Date().toISOString(),
+				updatedAt: new Date().toISOString(),
+				sequence: batchIdx + 1,
+			};
+
+			const recapMetadata = recapToMetadata(recapInfo);
+
+			await recapCollection.upsert({
+				ids: [recapId],
+				documents: [recapInfo.content],
+				metadatas: [recapMetadata as any],
+			});
+			console.log(`  - Upserted relationship recap ${recapId} to DB.`);
+			// --- [END CHANGED] ---
+
+			recapTexts.push(
+				`# Relationship Recap Batch ${batchIdx + 1} (recapId=${recapId})\n\n${
+					recapInfo.content
+				}\n\n---\n`
+			);
+
 			const currentProgress: ProgressState = {
 				lastSuccessfulBatchIndex: batchIdx,
 				recapTexts: recapTexts,
@@ -185,7 +232,7 @@ const main = async () => {
 		}
 	}
 
-	// 4. Finalization after the loop completes
+	// Finalization
 	console.log('\n🎉 All relationship batches processed successfully!');
 
 	await mkdir(OUTPUT_DIR, { recursive: true });
@@ -196,16 +243,6 @@ const main = async () => {
 	await writeFile(outPath, finalContent);
 	console.log(`Final relationship recap file saved to: ${outPath}`);
 
-	const recapDocId = buildRelationshipRecapId(TARGET_SESSION_ID, 0, 0);
-	const recapCollection = await chromaDbClient.getRecapCollection();
-	await recapCollection.upsert({
-		ids: [recapDocId],
-		documents: [finalContent],
-		metadatas: [{ sessionId: TARGET_SESSION_ID, type: METADATA_TYPES.RELATIONSHIP }],
-	});
-	console.log(`Final relationship recaps upserted to ChromaDB with id: ${recapDocId}`);
-
-	// 5. Clean up the progress file
 	try {
 		await unlink(progressFilePath);
 		console.log('✅ Temporary progress file cleaned up.');
