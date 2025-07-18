@@ -1,6 +1,5 @@
 // src/migration/chat/recapChatRelationshipBatch.ts
 
-import 'dotenv/config.js'; // <-- ADD THIS AT THE VERY TOP
 import { writeFile, access, readFile, mkdir, unlink } from 'fs/promises';
 import {
 	ChatTurn,
