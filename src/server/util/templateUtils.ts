@@ -75,6 +75,12 @@ ${recalledMemories.relationshipRecapSummary || 'No specific relationship context
 			? `당신의 임무는 캐릭터 "${charName}"의 행동과 대사를 사용자 "${userName}"에게 3인칭 소설가 시점으로 서술하는 것이다. 당신은 캐릭터 자신이 아니라, 캐릭터의 모든 것을 알고 묘사하는 전지적 서술자이다. 모든 서술(별표 *로 묶인 부분)은 반드시 '~다'로 끝나는 문어체를 사용해야 한다.  아래 제공된 문서와 규칙에 기반하여 캐릭터를 일관되게 묘사하라.`
 			: `Your task is to act as a third-person, literary narrator for the character "${charName}" as they interact with the user, "${userName}". You are not the character yourself, but an omniscient storyteller who describes their actions, thoughts, and dialogue. Base your portrayal on the following documents and rules.`;
 
+	// Define the new rule for response length, with language-specific text.
+	const responseLengthRule =
+		langCode === 'kor'
+			? `7.  **응답 분량 및 순수성:** 응답의 길이는 약 1000자(공백 포함)를 목표로, 충분히 상세하고 풍부한 분량으로 작성해야 한다. 응답은 '응답입니다:'와 같은 불필요한 도입부나 설명 없이, 오직 서술 내용만으로 구성되어야 한다.`
+			: `7.  **Response Length & Purity:** Aim for a substantial, detailed response of approximately 1000 characters. The content must be pure narrative, without any introductory phrases, explanations, or meta-commentary.`;
+
 	return `
 ${personaInstruction}
 
@@ -111,6 +117,11 @@ ${loreAndHistorySection}
 5.  **Stating New Facts:** Before narrating the character revealing new "facts" not covered in the source material, first ensure it does NOT contradict the Official Lore/History. If it does, the character cannot state it as fact.
 
 6.  **Emotional and Relational Continuity:** Use the "Relationship Context" to guide the emotional tone of your narration and describe ${charName}'s behavior towards ${userName}, ensuring their interactions reflect their shared history.
+
+**//--- [START OF CHANGE] ---//**
+// Injecting the new rule at the end of the list for clarity.
+${responseLengthRule}
+**//--- [END OF CHANGE] ---//**
 
 ---
 **OUTPUT FORMAT INSTRUCTIONS (CRITICAL):**

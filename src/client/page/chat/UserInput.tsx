@@ -17,6 +17,11 @@ interface UserInputProps {
 	onSend: () => void;
 }
 
+// --- [START OF CHANGE] ---
+// Define the character limit as a constant for easy maintenance.
+const CHARACTER_LIMIT = 1000;
+// --- [END OF CHANGE] ---
+
 export const UserInput: FC<UserInputProps> = ({
 	sessionId,
 	value,
@@ -56,10 +61,22 @@ export const UserInput: FC<UserInputProps> = ({
 					multiline
 					rows={2}
 					value={value}
-					slotProps={{ input: { sx: { fontSize: theme.typography.body2.fontSize } } }}
+					slotProps={{
+						formHelperText: {
+							sx: {
+								textAlign: 'right', // Aligns the counter to the right
+								m: 0, // Removes the default margin for a tighter look
+								mr: 1, // Adds a little margin to the right
+							},
+						},
+						htmlInput: { maxLength: CHARACTER_LIMIT },
+						input: { sx: { fontSize: theme.typography.body2.fontSize } },
+					}}
 					onChange={onChange}
 					disabled={isDisabled}
 					onKeyDown={handleKeyDown}
+					error={value.length >= CHARACTER_LIMIT}
+					helperText={`${value.length} / ${CHARACTER_LIMIT}`}
 				/>
 			</GlassBox>
 			{/* Row 2: Model Selector and Send Button */}
