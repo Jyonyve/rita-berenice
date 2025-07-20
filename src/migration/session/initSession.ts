@@ -63,7 +63,6 @@ async function initSession() {
 		// Step 1: GET the collection directly.
 		console.log(`Getting collection "${COLLECTIONS.SESSION}"...`);
 		const collection = await chromaDbClient.getSessionCollection();
-		// collection.delete({ ids: ['monday_original_zUwPMBc4'] });
 		// const sessionInfo = getTarionOriginalSessionTemplate();
 		// const sessionInfo = getTarionSpinoffSessionTemplate();
 		const sessionInfo = getTarionOriginalSessionTemplate('tarion_original_dw2xVb8s');

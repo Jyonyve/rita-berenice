@@ -1,6 +1,5 @@
 // src/migration/chat/recapChatBatch.ts
 
-import 'dotenv/config'; // Make sure to use dotenv
 import { writeFile, access, readFile, mkdir, unlink } from 'fs/promises';
 import {
 	ChatTurn,
@@ -24,7 +23,9 @@ const OUTPUT_DIR = './src/migration/recap/output';
 const PROGRESS_DIR = './src/migration/recap/progress';
 const BATCH_SIZE = 3;
 
-const DEEPSEEK_MODEL = 'deepseek/deepseek-v3-0324:free';
+const GEMINI_MODEL = 'gemini-2.0-flash-001'; // Fast model for metadata extraction
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const DEEPSEEK_MODEL = 'deepseek/deepseek-chat-v3-0324:free';
 const DEEPSEEK_API_KEY = process.env.OPENROUTER_API_KEY;
 const GROQ_MODEL = 'llama3-70b-8192';
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
@@ -36,6 +37,31 @@ interface ProgressState {
 }
 
 // --- Helper & LLM functions (Same) ---
+const extractJsonFromMarkdown = (response: string): any => {
+	let cleaned = response.trim();
+	try {
+		const codeBlockMatch = cleaned.match(/``````/i);
+		if (codeBlockMatch && codeBlockMatch[1]) {
+			return JSON.parse(codeBlockMatch[1]);
+		}
+		const jsonMatch = cleaned.match(/(\{[\s\S]*\})/);
+		if (jsonMatch && jsonMatch[1]) {
+			return JSON.parse(jsonMatch[1]);
+		}
+		if (!cleaned.startsWith('{') && cleaned.includes('{') && cleaned.includes('}')) {
+			const firstBrace = cleaned.indexOf('{');
+			const lastBrace = cleaned.lastIndexOf('}');
+			if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+				cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+			}
+		}
+		return JSON.parse(cleaned);
+	} catch (error) {
+		console.error('JSON extraction failed. Raw text snippet:', cleaned.substring(0, 500));
+		return {};
+	}
+};
+
 const getSessionChatTurns = async (sessionId: string): Promise<ChatTurn[]> => {
 	const chatRes = await chatStore.getAllChatTurns(sessionId);
 	return chatRes.chatTurns.sort((a, b) => a.sequence - b.sequence);
@@ -47,57 +73,124 @@ const createBatches = <T>(items: T[], batchSize: number): T[][] => {
 	}
 	return batches;
 };
-const callDeepseek = async (prompt: string): Promise<string> => {
-	const res = await fetch(`https://openrouter.ai/api/v1/chat/completions`, {
-		method: 'POST',
-		headers: { Authorization: `Bearer ${DEEPSEEK_API_KEY}`, 'Content-Type': 'application/json' },
-		body: JSON.stringify({
-			model: DEEPSEEK_MODEL,
-			messages: [{ role: 'system', content: prompt }],
-			max_tokens: 1536,
-			temperature: 0.3,
-			response_format: { type: 'json_object' }, // Ask for JSON output
-		}),
-	});
+// --- LLM API Call Functions ---
+
+const callGemini = async (prompt: string): Promise<string> => {
+	if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY is not set.');
+	const res = await fetch(
+		`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+		{
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				contents: [{ parts: [{ text: prompt }] }],
+				generationConfig: {
+					temperature: 0.3,
+					maxOutputTokens: 2048,
+					response_mime_type: 'application/json',
+				},
+			}),
+		}
+	);
 	if (res.status === 429) throw new Error('RATE_LIMIT');
-	if (!res.ok) throw new Error(`[DS] ${res.status}: ${(await res.text()).slice(0, 300)}`);
+	if (!res.ok) throw new Error(`[Gemini] ${res.status}: ${(await res.text()).slice(0, 300)}`);
 	const json = await res.json();
-	const content = json?.choices?.[0]?.message?.content;
-	if (!content) throw new Error(`[DS] Empty response`);
+	const content = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+	if (!content) throw new Error(`[Gemini] Empty response`);
 	return content.trim();
 };
-// ... Groq and Fallback functions are the same ...
-const callGroq = async (prompt: string): Promise<string> => {
+
+const callGroq = async (prompt: string, attempt = 1): Promise<string> => {
+	if (!GROQ_API_KEY) throw new Error('GROQ_API_KEY is not set.');
 	const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_API_KEY}` },
 		body: JSON.stringify({
 			model: GROQ_MODEL,
 			messages: [
-				{ role: 'system', content: 'You are a helpful assistant.' },
+				// ✅ FIX: Added explicit instruction for JSON output.
+				{
+					role: 'system',
+					content: 'You are a helpful assistant. Please provide the output in valid JSON format.',
+				},
 				{ role: 'user', content: prompt },
 			],
 			temperature: 0.3,
-			max_tokens: 1536,
-			response_format: { type: 'json_object' }, // Ask for JSON output
+			max_tokens: 2048,
+			response_format: { type: 'json_object' },
 		}),
 	});
-	if (res.status === 429) throw new Error('RATE_LIMIT');
+	if (res.status === 429) {
+		const errorJson = await res.json();
+		const match = errorJson?.error?.message?.match(/try again in ([\d.]+)s/i);
+		const waitMs = match ? parseFloat(match[1]) * 1000 : 25000;
+
+		console.warn(`    ⏳ Groq rate limited. Waiting ${waitMs / 1000}s before retrying...`);
+
+		if (attempt >= 2) throw new Error(`Groq API rate limit (429) after retry.`);
+
+		await new Promise((resolve) => setTimeout(resolve, waitMs));
+		return callGroq(prompt, attempt + 1); // retry once
+	}
 	if (!res.ok) throw new Error(`[Groq] ${res.status}: ${(await res.text()).slice(0, 300)}`);
 	const json = await res.json();
 	const content = json?.choices?.[0]?.message?.content;
 	if (!content) throw new Error(`[Groq] Empty content`);
 	return content.trim();
 };
-const callLLMWithFallback = async (prompt: string): Promise<string> => {
+
+const callDeepseek = async (prompt: string): Promise<string> => {
+	if (!DEEPSEEK_API_KEY) throw new Error('OPENROUTER_API_KEY is not set.');
+	const res = await fetch(`https://openrouter.ai/api/v1/chat/completions`, {
+		method: 'POST',
+		headers: { Authorization: `Bearer ${DEEPSEEK_API_KEY}`, 'Content-Type': 'application/json' },
+		body: JSON.stringify({
+			model: DEEPSEEK_MODEL,
+			messages: [{ role: 'system', content: prompt }],
+			max_tokens: 2048,
+			temperature: 0.3,
+			response_format: { type: 'json_object' },
+		}),
+	});
+	if (res.status === 429) throw new Error('RATE_LIMIT');
+	if (!res.ok) throw new Error(`[Deepseek] ${res.status}: ${(await res.text()).slice(0, 300)}`);
+	const json = await res.json();
+	const content = json?.choices?.[0]?.message?.content;
+	if (!content) throw new Error(`[Deepseek] Empty response`);
+	return content.trim();
+};
+
+/**
+ * Calls LLMs in a specific order (Gemini -> Groq -> Deepseek) with fallbacks.
+ * @returns An object containing the response string and the name of the model that succeeded.
+ */
+const callLLMWithFallback = async (
+	prompt: string
+): Promise<{ response: string; model: string }> => {
 	try {
-		return await callDeepseek(prompt);
+		console.log('  - Attempting to call Gemini...');
+		const response = await callGemini(prompt);
+		return { response, model: GEMINI_MODEL };
 	} catch (e) {
-		if (e instanceof Error && e.message === 'RATE_LIMIT') {
-			console.warn('  ⚠️ Deepseek rate limited, falling back to Groq...');
-			return callGroq(prompt);
+		console.warn('  ⚠️ Gemini failed, falling back to Groq...', e instanceof Error ? e.message : '');
+		try {
+			console.log('  - Attempting to call Groq...');
+			const response = await callGroq(prompt);
+			return { response, model: GROQ_MODEL };
+		} catch (e2) {
+			console.warn(
+				'  ⚠️ Groq failed, falling back to Deepseek...',
+				e2 instanceof Error ? e2.message : ''
+			);
+			try {
+				console.log('  - Attempting to call Deepseek...');
+				const response = await callDeepseek(prompt);
+				return { response, model: DEEPSEEK_MODEL };
+			} catch (e3) {
+				console.error('  ❌ All LLM providers failed.');
+				throw e3;
+			}
 		}
-		throw e;
 	}
 };
 
@@ -158,15 +251,13 @@ const main = async () => {
 		);
 
 		try {
-			console.log(
-				`Recapping batch ${batchIdx + 1}/${batches.length} [turns ${firstBatchTurn.sequence}~${lastBatchTurn.sequence}]`
-			);
-			const llmResponseJsonString = await callLLMWithFallback(prompt);
-			console.log(`  - LLM response received.`);
+			console.log(`Recapping batch ${batchIdx + 1}/${batches.length}...`);
+			const { response: llmResponseJsonString, model: successfulModel } =
+				await callLLMWithFallback(prompt);
 
-			// --- [NEW] Parse JSON and upsert to DB ---
-			const parsedRecap = JSON.parse(llmResponseJsonString);
+			console.log(`  - LLM response received from ${successfulModel}.`);
 
+			const parsedRecap = extractJsonFromMarkdown(llmResponseJsonString);
 			const recapId = buildRecapId(TARGET_SESSION_ID, batchIdx + 1, lastBatchTurn.sequence);
 
 			const recapInfo: RecapInfo = {
@@ -178,7 +269,7 @@ const main = async () => {
 				type: METADATA_TYPES.RECAP,
 				turnStart: firstBatchTurn.sequence,
 				turnEnd: lastBatchTurn.sequence,
-				model: DEEPSEEK_MODEL, // Or enhance logic to track fallback model
+				model: successfulModel, // Or enhance logic to track fallback model
 				content: parsedRecap.content || '',
 				keywords: parsedRecap.keywords?.join(',') || '',
 				topics: parsedRecap.topics?.join(',') || '',
