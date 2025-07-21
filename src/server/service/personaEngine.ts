@@ -47,20 +47,6 @@ export const personaEngine = {
 				{ role: 'system', content: systemPromptContent },
 			];
 
-			for (const turn of recalledMemories.shortTermHistory) {
-				const reqContent = parseEntriesToText(turn.request.entries);
-				const resContent = parseEntriesToText(turn.response.entries);
-				if (reqContent) messages.push({ role: 'user', content: reqContent, name: profileInfo.name });
-				if (resContent)
-					messages.push({ role: 'assistant', content: resContent, name: characterInfo.name });
-			}
-
-			messages.push({
-				role: 'user',
-				content: parseEntriesToText(currentUserRequest.entries),
-				name: profileInfo.name,
-			});
-
 			// --- 3. INVOKE LLM AND PARSE (Initial Attempt) ---
 			const rawLlmResponse = await llmService.invokeLlmFromMessages(
 				messages,

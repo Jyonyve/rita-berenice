@@ -1,7 +1,7 @@
 // src/util/templateUtils.ts (or your path)
 
 import { BasicBeingInfo, CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
-import { ChatMessage } from '#shared/domain/chat/ChatInterfaces.js';
+import { ChatMessage, ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { allEmotionKeywordsList } from '#shared/config/emotionWordsMapper.js';
 import { parseEntriesToText } from '#shared/util/chatParseUtils.js';
 import { HistoryInfo, LoreInfo } from '#shared/domain/lore/LoreInterfaces.js';
@@ -28,8 +28,35 @@ const _formatMemoryForPrompt = (
 };
 
 /**
+ * Formats an array of chat turns into a string for the system prompt.
+ * @private
+ */
+const _formatChatHistoryForPrompt = (
+	history: ChatTurn[],
+	title: string,
+	guidance: string,
+	notFoundMessage: string,
+	userName: string,
+	charName: string
+): string => {
+	if (!history || history.length === 0) {
+		return `\n${title}\n${notFoundMessage}`;
+	}
+
+	const formattedTurns = history
+		.map((turn) => {
+			const request = parseEntriesToText(turn.request.entries);
+			const response = parseEntriesToText(turn.response.entries);
+			return `- [Turn ${turn.sequence}] ${userName}: "${request}" | ${charName}: "${response}"`;
+		})
+		.join('\n');
+
+	return `\n${title}\n${guidance}\n${formattedTurns}\n`;
+};
+
+/**
  * Builds the comprehensive system prompt for the persona engine.
- * This is the definitive "best practice" version, integrating detailed rules.
+ * This version includes short and long-term conversation history.
  */
 export const buildPersonaSystemPrompt = (
 	characterInfo: CharacterInfo,
@@ -58,17 +85,43 @@ ${recalledMemories.relationshipRecapSummary || 'No specific relationship context
 		profileInfo.showName
 	);
 
+	const shortTermHistorySection = _formatChatHistoryForPrompt(
+		recalledMemories.shortTermHistory,
+		langCode === 'kor'
+			? `### 단기 대화 기록 (최근 5-10턴)`
+			: `### Short-Term Conversation History (Last 5-10 Turns)`,
+		langCode === 'kor'
+			? `가장 최근에 오고 간 대화이다. 대화의 직접적인 흐름을 파악하는 데 사용하라.`
+			: `The most recent exchanges. Use this to understand the immediate flow of conversation.`,
+		langCode === 'kor' ? `최근 대화 기록이 없습니다.` : `No recent conversation history was found.`,
+		userName,
+		charName
+	);
+
+	const longTermHistorySection = _formatChatHistoryForPrompt(
+		recalledMemories.longTermHistory,
+		langCode === 'kor'
+			? `### 장기 대화 기록 (의미적으로 관련된 과거 대화)`
+			: `### Long-Term Conversation History (Semantically Relevant Past Turns)`,
+		langCode === 'kor'
+			? `과거 대화 중 현재 상황과 의미적으로 관련이 깊은 대화들이다. 과거의 중요한 사건이나 관계 변화를 참고하는 데 사용하라.`
+			: `Semantically relevant exchanges from the more distant past. Use this to recall important past events or relationship shifts.`,
+		langCode === 'kor'
+			? `관련된 장기 대화 기록이 없습니다.`
+			: `No relevant long-term conversation history was recalled.`,
+		userName,
+		charName
+	);
+
 	const loreAndHistorySection =
 		_formatMemoryForPrompt(
 			recalledMemories.relevantLore,
-			// Use the concise, atomic summary for Lore
 			(l: LoreInfo) => `- Lore Entry ("${l.title}"): ${l.summary}`,
 			'### Official Lore (Absolute Truth)',
 			'No specific lore was recalled for this interaction.'
 		) +
 		_formatMemoryForPrompt(
 			recalledMemories.relevantHistory,
-			// Continue using the summary for History
 			(h: HistoryInfo) => `- Historical Event ("${h.title}"): ${h.summary}`,
 			'### Relevant History (Absolute Truth)',
 			'No specific history was recalled for this interaction.'
@@ -77,10 +130,9 @@ ${recalledMemories.relationshipRecapSummary || 'No specific relationship context
 	// --- Main Prompt Assembly ---
 	const personaInstruction =
 		langCode === 'kor'
-			? `당신의 임무는 캐릭터 "${charName}"의 행동과 대사를 사용자 "${userName}"에게 3인칭 소설가 시점으로 서술하는 것이다. 당신은 캐릭터 자신이 아니라, 캐릭터의 모든 것을 알고 묘사하는 전지적 서술자이다. 모든 서술(별표 *로 묶인 부분)은 반드시 '~다'로 끝나는 문어체를 사용해야 한다.  아래 제공된 문서와 규칙에 기반하여 캐릭터를 일관되게 묘사하라.`
+			? `당신의 임무는 캐릭터 "${charName}"의 행동과 대사를 사용자 "${userName}"에게 3인칭 소설가 시점으로 서술하는 것이다. 당신은 캐릭터 자신이 아니라, 캐릭터의 모든 것을 알고 묘사하는 전지적 서술자이다. 모든 서술(별표 *로 묶인 부분)은 반드시 '~다'로 끝나는 문어체를 사용해야 한다. 아래 제공된 문서와 규칙에 기반하여 캐릭터를 일관되게 묘사하라.`
 			: `Your task is to act as a third-person, literary narrator for the character "${charName}" as they interact with the user, "${userName}". You are not the character yourself, but an omniscient storyteller who describes their actions, thoughts, and dialogue. Base your portrayal on the following documents and rules.`;
 
-	// Define the new rule for response length, with language-specific text.
 	const responseLengthRule =
 		langCode === 'kor'
 			? `7.  **응답 분량 및 순수성:** 응답의 길이는 약 1000자(공백 포함)를 목표로, 충분히 상세하고 풍부한 분량으로 작성해야 한다. 응답은 '응답입니다:'와 같은 불필요한 도입부나 설명 없이, 오직 서술 내용만으로 구성되어야 한다.`
@@ -99,6 +151,8 @@ ${instructionForBackend}
 To ensure you are a consistent and believable narrator, consult the following information sources.
 ${factualRecapSection}
 ${relationshipRecapSection}
+${shortTermHistorySection}
+${longTermHistorySection}
 ${loreAndHistorySection}
 
 ---
@@ -121,13 +175,12 @@ ${loreAndHistorySection}
 
 5.  **Stating New Facts:** Before narrating the character revealing new "facts" not covered in the source material, first ensure it does NOT contradict the Official Lore/History. If it does, the character cannot state it as fact.
 
-6.  **Emotional and Relational Continuity:** Use the "Relationship Context" to guide the emotional tone of your narration and describe ${charName}'s behavior towards ${userName}, ensuring their interactions reflect their shared history.
+6.  **Emotional and Relational Continuity:** Use the "Relationship Context" and Conversation Histories to guide the emotional tone of your narration and describe ${charName}'s behavior towards ${userName}, ensuring their interactions reflect their shared history.
 
 ${responseLengthRule}
 
 ---
 **OUTPUT FORMAT INSTRUCTIONS (CRITICAL):**
-// ... (This section remains the same, as it's already robust) ...
 \`\`\`json
 {
   "response": "The character's response, narrated in the third person. Actions/descriptions MUST be enclosed in asterisks (*). In Korean, these actions MUST end with '~다'. Spoken dialogue is plain text. Refer to the user as '${userName}'. Example: '${langCode === 'kor' ? `*타리온이 바닥에 앉는다.* 오늘 하루 길었네. *그는 ${userName}을(를) 본다.*` : `*Tarion sits on the floor.* A long day today. *He sees ${userName}.*`}'",
