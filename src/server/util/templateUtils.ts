@@ -53,6 +53,11 @@ This is a summary of your (${charName}'s) current relationship dynamics with ${u
 ${recalledMemories.relationshipRecapSummary || 'No specific relationship context recalled.'}
 `;
 
+	const instructionForBackend = characterInfo.instruction.replaceAll(
+		'{{user}}',
+		profileInfo.showName
+	);
+
 	const loreAndHistorySection =
 		_formatMemoryForPrompt(
 			recalledMemories.relevantLore,
@@ -87,7 +92,7 @@ ${personaInstruction}
 ---
 **CHARACTER BRIEFING: ${charName}**
 This is the personality and background you must portray.
-${characterInfo.instruction}
+${instructionForBackend}
 
 ---
 **NARRATOR'S SOURCE MATERIAL:**
@@ -118,10 +123,7 @@ ${loreAndHistorySection}
 
 6.  **Emotional and Relational Continuity:** Use the "Relationship Context" to guide the emotional tone of your narration and describe ${charName}'s behavior towards ${userName}, ensuring their interactions reflect their shared history.
 
-**//--- [START OF CHANGE] ---//**
-// Injecting the new rule at the end of the list for clarity.
 ${responseLengthRule}
-**//--- [END OF CHANGE] ---//**
 
 ---
 **OUTPUT FORMAT INSTRUCTIONS (CRITICAL):**

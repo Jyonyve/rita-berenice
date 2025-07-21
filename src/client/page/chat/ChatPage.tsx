@@ -1,4 +1,4 @@
-import { ChangeEvent, FC, useCallback, useEffect, useState } from 'react';
+import { ChangeEvent, FC, useCallback, useEffect, useMemo, useState } from 'react';
 
 // Import the new components
 import { ChatLog } from './ChatLog.jsx';
@@ -13,10 +13,16 @@ import { parseEntriesToText, parseTextToEntries } from '#shared/util/chatParseUt
 import { Box, Grid, useMediaQuery, useTheme } from '@mui/material';
 import { useOrchestrationApi, useTempChatApi } from '../../hook/api/index.js';
 import { useChatState } from '../../hook/state/useChatState.js';
-import { useAiModel } from '../../hook/useAiModel.js';
 import { GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
 import { containerSpacing } from '../../style/index.js';
 import { useEmotionContext } from './ChatPageLoader.jsx';
+import { getAiModelInfo, isValidAiModelInfo } from '#shared/util/aiModelUtils.js';
+import {
+	AiModelInfo,
+	AllModelNames,
+	DEFAULT_CHAT_MODEL_FREE,
+} from '#shared/domain/aimodel/AiInfoTypes.js';
+import { useErrorDialog } from '../../util/styleUtils.jsx';
 
 export const ChatPage: FC<{
 	characterInfo: CharacterInfo;
@@ -27,6 +33,7 @@ export const ChatPage: FC<{
 	const { receiveBotResponse, finalizeChatTurn } = useOrchestrationApi();
 	const { saveTempChatTurn } = useTempChatApi();
 	const theme = useTheme();
+	const { showError } = useErrorDialog();
 
 	// Get emotion context from Loader
 	const { currentEmotion, setCurrentEmotion, imageUrl } = useEmotionContext();
@@ -56,8 +63,6 @@ export const ChatPage: FC<{
 		getRecentTurnsForMemory,
 	} = useChatState(sessionId);
 
-	const { aiModelInfo } = useAiModel();
-
 	// --- STATE (simplified - no image state) ---
 	const [currentTempSetNo, setCurrentTempSetNo] = useState(0);
 	const [userInput, setUserInput] = useState('');
@@ -65,6 +70,7 @@ export const ChatPage: FC<{
 	const [pageError, setPageError] = useState<string>();
 	const [userEditInput, setUserEditInput] = useState('');
 	const [botEditInput, setBotEditInput] = useState('');
+	const [aiModelInfo, setAiModelInfo] = useState<AiModelInfo>(DEFAULT_CHAT_MODEL_FREE);
 
 	// --- HANDLERS ---
 	// Simplified: just update emotion in Loader context
@@ -73,6 +79,22 @@ export const ChatPage: FC<{
 			setCurrentEmotion(emotion);
 		},
 		[setCurrentEmotion]
+	);
+
+	const handleAiModel = useCallback(
+		(modelName: AllModelNames) => {
+			const newAiInfo = getAiModelInfo(modelName);
+
+			if (!isValidAiModelInfo(newAiInfo)) {
+				const errorMsg = `Invalid or unsupported AI model selected: ${modelName}`;
+				showError(errorMsg);
+				return;
+			}
+
+			console.log('Setting AI model to:', newAiInfo);
+			setAiModelInfo(newAiInfo);
+		},
+		[showError]
 	);
 
 	// Initialize emotion from chat data
@@ -92,20 +114,6 @@ export const ChatPage: FC<{
 		setPageError(undefined);
 		setIsProcessing(true);
 		console.log(Date.now());
-		const finalizePromise = (async () => {
-			if (!tempChatTurn || tempChatTurn.chatTurnSets.length === 0) return null;
-			const pickedTurnSet = tempChatTurn.chatTurnSets[currentTempSetNo];
-			if (!pickedTurnSet) return null;
-
-			const finalizedTurnCdo: ChatTurnCdo = {
-				userId,
-				sessionId: tempChatTurn.sessionId,
-				sequence: tempChatTurn.sequence,
-				request: pickedTurnSet.request,
-				response: pickedTurnSet.response,
-			};
-			return finalizeChatTurn.mutateAsync(finalizedTurnCdo);
-		})();
 
 		const generatePromise = (async () => {
 			if (!userInput.trim()) return null;
@@ -124,6 +132,21 @@ export const ChatPage: FC<{
 				aiModelInfo,
 				recentChatTurnString,
 			});
+		})();
+
+		const finalizePromise = (async () => {
+			if (!tempChatTurn || tempChatTurn.chatTurnSets.length === 0) return null;
+			const pickedTurnSet = tempChatTurn.chatTurnSets[currentTempSetNo];
+			if (!pickedTurnSet) return null;
+
+			const finalizedTurnCdo: ChatTurnCdo = {
+				userId,
+				sessionId: tempChatTurn.sessionId,
+				sequence: tempChatTurn.sequence,
+				request: pickedTurnSet.request,
+				response: pickedTurnSet.response,
+			};
+			return finalizeChatTurn.mutateAsync(finalizedTurnCdo);
 		})();
 
 		try {
@@ -269,6 +292,8 @@ export const ChatPage: FC<{
 		isDisabled: isInputDisabled,
 		onChange: handleUserInput,
 		onSend: handleSendMessage,
+		modelName: aiModelInfo.model,
+		onAiModel: handleAiModel,
 	};
 
 	// --- RENDER ---

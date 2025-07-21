@@ -181,8 +181,10 @@ export function ChatPageLoader() {
 				onClose={() => setShowMobileImage(false)}
 				maxWidth="sm"
 				fullWidth
-				PaperProps={{
-					sx: { backgroundColor: 'transparent', boxShadow: 'none', maxHeight: '80vh', margin: 2 },
+				slotProps={{
+					paper: {
+						sx: { backgroundColor: 'transparent', boxShadow: 'none', maxHeight: '80vh', margin: 2 },
+					},
 				}}
 			>
 				<DialogContent sx={{ p: 1 }}>

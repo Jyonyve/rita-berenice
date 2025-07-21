@@ -7,6 +7,7 @@ import { GlassBox, GlassButton } from '../../layout/glass/index.js';
 import { useToast } from '../../provider/ToastProvider.jsx';
 import { getLangAlertText } from '../../util/translateUtils.js';
 import { AiModelSelector } from './AiModelSelector.jsx';
+import { AllModelNames } from '#shared/domain/aimodel/AiInfoTypes.js';
 
 interface UserInputProps {
 	sessionId: string;
@@ -15,6 +16,8 @@ interface UserInputProps {
 	isDisabled: boolean;
 	onChange: ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>;
 	onSend: () => void;
+	modelName: AllModelNames;
+	onAiModel: (modelName: AllModelNames) => void;
 }
 
 // --- [START OF CHANGE] ---
@@ -29,6 +32,8 @@ export const UserInput: FC<UserInputProps> = ({
 	isDisabled,
 	onChange,
 	onSend,
+	modelName,
+	onAiModel,
 }) => {
 	const { addToast } = useToast();
 	const theme = useTheme();
@@ -81,7 +86,7 @@ export const UserInput: FC<UserInputProps> = ({
 			</GlassBox>
 			{/* Row 2: Model Selector and Send Button */}
 			<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginX: 1 }}>
-				<AiModelSelector />
+				<AiModelSelector modelName={modelName} onAiModel={onAiModel} />
 				<GlassButton
 					variant="contained"
 					colorVariant="secondary"

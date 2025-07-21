@@ -1,20 +1,19 @@
 // src/client/component/page/chat/AiModelSelector.tsx
 
-import { useAiModel } from '#client/hook/useAiModel.js';
 import { supportAiModelInfo } from '#shared/config/supportAiModelInfo.js';
-import {
-	alpha,
-	FormControl,
-	InputLabel,
-	ListSubheader
-} from '@mui/material';
+import { alpha, FormControl, InputLabel, ListSubheader } from '@mui/material';
 import { GlassMenuItem, GlassSelect } from '../../layout/glass/index.js';
 import { glassEffect, glassEffectLight } from '../../style/glassEffect.js';
-export const AiModelSelector = () => {
-	const { aiModelInfo, changeAiModel } = useAiModel();
-
+import { AllModelNames } from '#shared/domain/aimodel/AiInfoTypes.js';
+export const AiModelSelector = ({
+	modelName,
+	onAiModel,
+}: {
+	modelName: AllModelNames;
+	onAiModel: (modelName: AllModelNames) => void;
+}) => {
 	const handleModelChange = (eventValue: string) => {
-		changeAiModel(eventValue);
+		onAiModel(eventValue);
 	};
 	const modelOptions = Object.entries(supportAiModelInfo).flatMap(([platform, providers]) => {
 		// THE FIX: The platform header now has the prominent, uppercase style.
@@ -75,7 +74,7 @@ export const AiModelSelector = () => {
 			<GlassSelect
 				labelId="ai-model-select-label"
 				id="ai-model-select"
-				value={aiModelInfo?.model || ''}
+				value={modelName || ''}
 				label="AI Model"
 				onChange={(e) => handleModelChange(`${e.target.value}`)}
 				MenuProps={{

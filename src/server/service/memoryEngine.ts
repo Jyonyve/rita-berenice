@@ -91,8 +91,8 @@ export const memoryEngine = {
 		recentChatTurns: string
 	): Promise<MemoryResponse> {
 		const { characterId } = parseSessionId(sessionId);
-		const INITIAL_QUERY_LIMIT = 15;
-		const FINAL_MEMORY_LIMIT = 5;
+		const INITIAL_QUERY_LIMIT = 5;
+		const FINAL_MEMORY_LIMIT = 3;
 		const langCode = detectLanguage(userRequestText);
 
 		try {

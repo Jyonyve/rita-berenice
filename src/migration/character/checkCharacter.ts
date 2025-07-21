@@ -51,6 +51,7 @@ async function checkCharacterData() {
 			const retrievedMetadata = results.metadatas?.[0] as CharacterMetadata | null | undefined;
 			console.log('\n--- Retrieved Metadata ---');
 			console.log(JSON.stringify(retrievedMetadata, null, 2));
+			console.log(results.documents[0]!);
 			// ...and so on for your other checks.
 		}
 	} catch (error) {

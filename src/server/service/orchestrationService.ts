@@ -46,7 +46,7 @@ export const receiveBotResponse = async (
 	});
 
 	console.log(
-		`[Orchestrator] Starting response generation for session ${sessionId}, turn ${sequence}...`
+		`[Orchestrator: ${aiModelInfo.model}] Starting response generation for session ${sessionId}, turn ${sequence}...`
 	);
 
 	try {
@@ -76,8 +76,13 @@ export const receiveBotResponse = async (
 			}
 		}
 
-		const userChatMessage = buildChatMessage('user', sequence, sessionId, 'User', userInput);
-		userChatMessage.showName = profileInfo.showName;
+		const userChatMessage = buildChatMessage(
+			'user',
+			sequence,
+			profileInfo.showName,
+			userInput,
+			sessionId
+		);
 
 		console.log(`[Orchestrator] Recalling memories for: "${userInput.substring(0, 50)}..."`);
 		const recalledMemories = await memoryEngine.recallRelevantMemories(
@@ -95,12 +100,13 @@ export const receiveBotResponse = async (
 			aiModelInfo,
 			{ signal: overallTimeoutSignal }
 		);
+
 		const botChatMessage = buildChatMessage(
 			'assistant',
 			sequence,
-			sessionId,
 			characterInfo.showName,
 			personaResponse.response,
+			sessionId,
 			personaResponse.emotion
 		);
 
