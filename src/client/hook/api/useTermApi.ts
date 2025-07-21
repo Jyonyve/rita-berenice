@@ -1,7 +1,7 @@
 // src/client/hooks/useGlossaryApi.ts
 
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
-import { apiClient } from '../../util/clientApiHelpers.ts';
+import { apiClient } from '../../util/clientApiHelpers.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { TermCdo, TermInfo } from '#shared/domain/term/TermInterfaces.js';
 import { genApiUrl } from '#shared/util/apiHelpers.js';

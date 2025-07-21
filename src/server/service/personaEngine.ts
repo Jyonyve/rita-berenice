@@ -74,6 +74,7 @@ export const personaEngine = {
 			const rawLlmResponse = await llmService.invokeLlmFromMessages(
 				messages,
 				aiModelInfo, // Or a user-selected model
+				profileInfo.userId,
 				options
 			);
 
@@ -101,7 +102,8 @@ export const personaEngine = {
 					const correctedLlmResponse = await llmService.invokeLlm(
 						'user',
 						correctionPrompt,
-						DEFAULT_MODEL_GOOGLEAI,
+						aiModelInfo,
+						profileInfo.userId,
 						options
 					);
 

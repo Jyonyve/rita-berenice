@@ -21,7 +21,7 @@ import { detectLanguage } from '../util/languageUtils.js';
 import { handleServiceError } from '../util/serviceHelpers.js';
 import { parseLlmJsonResponse, reRankByRecency } from '../util/llmUtils.js';
 import { llmService } from './llmService.js';
-import { DEFAULT_MODEL_GOOGLEAI } from '#shared/domain/aimodel/AiInfoTypes.js';
+import { DEFAULT_CHAT_MODEL_FREE } from '#shared/domain/aimodel/AiInfoTypes.js';
 
 // --- 2. Corrected and Renamed Metadata Creation Helper ---
 /**
@@ -165,10 +165,14 @@ export const memoryEngine = {
 				parseEntriesToText(turn.request.entries),
 				parseEntriesToText(turn.response.entries),
 			].join('\n');
-			const extractedKpns = await llmService.extractProperNouns(textForNer);
+			const extractedKpns = await llmService.extractProperNouns(textForNer, turn.userId);
 
 			// 2. Ensure terms are in the glossary and get the guidance map
-			const termGuidanceMap = await termStore.ensureAndGetTermsForPrompt(sessionId, extractedKpns);
+			const termGuidanceMap = await termStore.ensureAndGetTermsForPrompt(
+				sessionId,
+				turn.userId,
+				extractedKpns
+			);
 
 			// 3. Fetch context (lore, history, user/char info)
 			const [profileInfo, charInfo, loreRes, historyRes] = await Promise.all([
@@ -192,7 +196,12 @@ export const memoryEngine = {
 			);
 
 			// 5. Call the LLM and robustly parse the JSON response
-			const llmResponse = await llmService.invokeLlm('user', prompt, DEFAULT_MODEL_GOOGLEAI);
+			const llmResponse = await llmService.invokeLlm(
+				'user',
+				prompt,
+				DEFAULT_CHAT_MODEL_FREE,
+				turn.userId
+			);
 			const enrichment = parseLlmJsonResponse<Record<string, any>>(llmResponse);
 
 			// 6. Create the final metadata object using your utilityd

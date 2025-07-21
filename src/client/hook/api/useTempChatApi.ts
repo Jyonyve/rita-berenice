@@ -1,7 +1,7 @@
 // src/client/hooks/useTempChatApi.ts
 
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { apiClient } from '../../util/clientApiHelpers.ts';
+import { apiClient } from '../../util/clientApiHelpers.js';
 import { TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { genApiUrl } from '#shared/util/apiHelpers.js';

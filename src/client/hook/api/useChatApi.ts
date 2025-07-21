@@ -2,7 +2,7 @@
 
 import type { Where } from 'chromadb';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../util/clientApiHelpers.ts';
+import { apiClient } from '../../util/clientApiHelpers.js';
 import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { genApiUrl } from '#shared/util/apiHelpers.js';

@@ -216,6 +216,7 @@ export const termStore = {
 
 	ensureAndGetTermsForPrompt: async (
 		sessionId: string,
+		userId: string,
 		koreanTermsToEnsure: string[]
 	): Promise<Map<string, string>> => {
 		const sessionTermMap = await termStore._getOrBuildSessionTermMap(sessionId);
@@ -231,7 +232,7 @@ export const termStore = {
 				console.log(
 					`TermService: Term "${koreanTerm}" not found in cache for session ${sessionId}. Auto-translating.`
 				);
-				const initialTerm = await llmService.translateProperNoun(koreanTerm);
+				const initialTerm = await llmService.translateProperNoun(koreanTerm, userId);
 
 				if (initialTerm && initialTerm.trim() !== '') {
 					const newTermCdo: TermCdo = { sessionId, koreanTerm, initialTerm, termId: '' };

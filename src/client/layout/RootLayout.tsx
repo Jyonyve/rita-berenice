@@ -241,14 +241,21 @@ export function RootLayout() {
 				<Toolbar sx={{ justifyContent: 'space-between' }}>
 					<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
 						{!headerInfo?.mobileImageUrl && (
-							<RomanticTitle logo variant="h6" component="div" onClick={() => navigate('/')} role="button">
+							<RomanticTitle
+								logo
+								variant="h6"
+								component="div"
+								onClick={() => navigate('/')}
+								role="button"
+								sx={{ paddingRight: 1 }}
+							>
 								{APPNAME}
 							</RomanticTitle>
 						)}
 						{headerInfo && (
-							<GlassBox
+							<Box
 								role="button"
-								sx={{ display: 'flex', alignItems: 'center', pl: 1, pr: 1, pt: 0.5, pb: 0.5 }}
+								sx={{ display: 'flex', alignItems: 'center', pr: 1, pt: 0.5, pb: 0.5 }}
 								gap={1}
 								onClick={() => goCharacterPage(headerInfo.characterId)}
 							>
@@ -256,7 +263,7 @@ export function RootLayout() {
 									<AccountCircle />
 								</Avatar>
 								<Typography variant="caption">{headerInfo.showName}</Typography>
-							</GlassBox>
+							</Box>
 						)}
 					</Box>
 

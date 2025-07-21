@@ -19,9 +19,9 @@ const router = express.Router();
 router.post(
 	genRoutePattern('invokeLlm'),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { role, prompt, aiModelInfo } = req.body;
+		const { role, prompt, aiModelInfo, userId } = req.body;
 
-		const requiredFields = ['role', 'prompt', 'aiModelInfo'];
+		const requiredFields = ['role', 'prompt', 'aiModelInfo', 'userId'];
 		const customValidations: CustomValidationRule[] = [
 			{
 				predicate: (body) => !isValidAiModelInfo(body.aiModelInfo),
@@ -35,7 +35,7 @@ router.post(
 		const path = genRoutePattern('invokeLlm');
 		console.log(`API HIT: POST ${path} with model ${aiModelInfo.model}`);
 
-		const assistantResponse = await llmService.invokeLlm(role, prompt, aiModelInfo, {
+		const assistantResponse = await llmService.invokeLlm(role, prompt, aiModelInfo, userId, {
 			signal: (req as Request & { signal: AbortSignal }).signal,
 		});
 		res.status(200).json({ response: assistantResponse });
@@ -52,9 +52,9 @@ router.post(
 router.post(
 	genRoutePattern('invokeLlmFromMessages'),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { messages, aiModelInfo } = req.body;
+		const { messages, aiModelInfo, userId } = req.body;
 
-		const requiredFields = ['messages', 'aiModelInfo'];
+		const requiredFields = ['messages', 'aiModelInfo', 'userId'];
 		const customValidations: CustomValidationRule[] = [
 			{
 				predicate: (body) => !Array.isArray(body.messages) || body.messages.length === 0,
@@ -72,7 +72,7 @@ router.post(
 		const path = genRoutePattern('invokeLlmFromMessages');
 		console.log(`API HIT: POST ${path} with model ${aiModelInfo.model}`);
 
-		const assistantResponse = await llmService.invokeLlmFromMessages(messages, aiModelInfo, {
+		const assistantResponse = await llmService.invokeLlmFromMessages(messages, aiModelInfo, userId, {
 			signal: (req as Request & { signal: AbortSignal }).signal,
 		});
 		res.status(200).json({ response: assistantResponse });
@@ -87,21 +87,16 @@ router.post(
  */
 router.post(
 	genRoutePattern('translateProperNoun'),
-	asyncHandler(
-		async (
-			req: Request<object, { translation: string }, { koreanTerm: string }>,
-			res: Response<{ translation: string }>
-		): Promise<void> => {
-			const { koreanTerm } = req.body;
-			validateRequestData(req.body, 'body', ['koreanTerm']);
+	asyncHandler(async (req: Request, res: Response<{ translation: string }>): Promise<void> => {
+		const { koreanTerm, userId } = req.body;
+		validateRequestData(req.body, 'body', ['koreanTerm', 'userId']);
 
-			const path = genRoutePattern('translateProperNoun');
-			console.log(`API HIT: POST ${path} for term "${koreanTerm}"`);
+		const path = genRoutePattern('translateProperNoun');
+		console.log(`API HIT: POST ${path} for term "${koreanTerm}"`);
 
-			const translation = await llmService.translateProperNoun(koreanTerm);
-			res.status(200).json({ translation });
-		}
-	)
+		const translation = await llmService.translateProperNoun(koreanTerm, userId);
+		res.status(200).json({ translation });
+	})
 );
 
 /**
@@ -112,21 +107,16 @@ router.post(
  */
 router.post(
 	genRoutePattern('extractProperNouns'),
-	asyncHandler(
-		async (
-			req: Request<object, { nouns: string[] }, { textToAnalyze: string }>,
-			res: Response<{ nouns: string[] }>
-		): Promise<void> => {
-			const { textToAnalyze } = req.body;
-			validateRequestData(req.body, 'body', ['textToAnalyze']);
+	asyncHandler(async (req: Request, res: Response<{ nouns: string[] }>): Promise<void> => {
+		const { textToAnalyze, userId } = req.body;
+		validateRequestData(req.body, 'body', ['textToAnalyze', 'userId']);
 
-			const path = genRoutePattern('extractProperNouns');
-			console.log(`API HIT: POST ${path}`);
+		const path = genRoutePattern('extractProperNouns');
+		console.log(`API HIT: POST ${path}`);
 
-			const nouns = await llmService.extractProperNouns(textToAnalyze);
-			res.status(200).json({ nouns });
-		}
-	)
+		const nouns = await llmService.extractProperNouns(textToAnalyze, userId);
+		res.status(200).json({ nouns });
+	})
 );
 
 export default router;

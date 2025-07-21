@@ -52,9 +52,11 @@ export const useTermApiMock = () => {
 	const ensureAndGetTermsForPrompt = {
 		mutateAsync: async ({
 			sessionId,
+			userId,
 			koreanTermsToEnsure,
 		}: {
 			sessionId: string;
+			userId: string;
 			koreanTermsToEnsure: string[];
 		}): Promise<Record<string, string> | null> => {
 			console.log('[MOCK] ensureAndGetTermsForPrompt called with:', {

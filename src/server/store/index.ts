@@ -7,3 +7,4 @@ export * from './termStore.js';
 export * from './userStore.js';
 export * from './tempStore.js';
 export * from './sessionStore.js';
+export * from './credentialStore.js';

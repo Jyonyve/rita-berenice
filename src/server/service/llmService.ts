@@ -5,12 +5,19 @@ import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import OpenAI from 'openai'; // For OpenRouter
 
-import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
+import {
+	ChatCompletionCreateParamsNonStreaming,
+	ChatCompletionMessageParam,
+} from 'openai/resources/index.mjs';
 import { BaseMessage, SystemMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
 
-import { credentialService } from '../credential/credentialService.js';
+import { credentialStore } from '../store/credentialStore.js';
 import { CredentialDataType } from '../db/ChromaInterfaces.js';
-import { AiModelInfo, DEFAULT_MODEL_GOOGLEAI } from '#shared/domain/aimodel/AiInfoTypes.js';
+import {
+	AiModelInfo,
+	DEFAULT_CHAT_MODEL_FREE,
+	DEFAULT_MODEL_GOOGLEAI,
+} from '#shared/domain/aimodel/AiInfoTypes.js';
 import { supportAiModelInfo } from '#shared/config/supportAiModelInfo.js';
 import { ChatRoleType } from '#shared/domain/chat/ChatInterfaces.js';
 import { extractValidOpenAiContent, isDirectOpenAIClient } from '../util/llmUtils.js';
@@ -18,19 +25,69 @@ import { convertMessageContentToString } from '#shared/util/chatParseUtils.js';
 import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
 import { buildNerPrompt, buildTermTranslationPrompt } from '../util/templateUtils.js';
 
-const _normalizeMessageContent = (content: ChatCompletionMessageParam['content']): string => {
-	// A simple check for any "falsy" value (null, undefined, '') will handle all edge cases.
+/**
+ * A robust function to ensure message content is always a simple string.
+ * It handles null, undefined, strings, and arrays of content parts.
+ *
+ * @param content The message content, which can be of various types.
+ * @returns A simple string.
+ */
+export const normalizeMessageContent = (content: unknown) => {
 	if (!content) {
 		return '';
 	}
 	if (typeof content === 'string') {
 		return content;
 	}
-	// If it's an array of parts, concatenate the text from each part.
 	if (Array.isArray(content)) {
+		// Handles cases like [{ type: 'text', text: 'Hello' }]
 		return content.map((part) => (part.type === 'text' ? part.text : '')).join('');
 	}
-	return ''; // Fallback for any other unexpected type
+	// Fallback for any other unexpected type
+	return '';
+}; /**
+ * A new, robust validation and sanitization function.
+ * It will log the exact payload it receives and attempt to fix it.
+ */
+const sanitizeAndValidateMessages = (
+	messages: any, // Intentionally 'any' to catch fundamental type errors
+	modelName: string
+): ChatCompletionMessageParam[] => {
+	// ✅ DIAGNOSTIC LOGGING: This is the most important step.
+	// It will show you exactly what the personaEngine is sending.
+	console.log(
+		`[llmService] Received messages payload for model ${modelName}. Type: ${typeof messages}`
+	);
+	if (typeof messages !== 'object' || messages === null) {
+		console.log('Raw Payload Snippet:', String(messages).substring(0, 500));
+	} else {
+		console.log('Payload Structure:', JSON.stringify(messages, null, 2));
+	}
+
+	if (!Array.isArray(messages)) {
+		throw new Error(
+			`[llmService] Validation Failed: The 'messages' payload must be an array, but received type '${typeof messages}'. Check the calling service (e.g., personaEngine).`
+		);
+	}
+
+	return messages
+		.map((msg): ChatCompletionMessageParam | null => {
+			if (typeof msg !== 'object' || msg === null || !msg.role) {
+				console.warn('[llmService] Skipping invalid message object:', msg);
+				return null;
+			}
+
+			// Ensure content is a string, handling null for tool calls
+			const content = msg.content === null ? null : String(msg.content || '');
+
+			return {
+				role: msg.role,
+				content: content,
+				// Preserve other valid properties like tool_calls if they exist
+				...(msg.tool_calls && { tool_calls: msg.tool_calls }),
+			};
+		})
+		.filter((msg): msg is ChatCompletionMessageParam => msg !== null);
 };
 
 /**
@@ -40,7 +97,7 @@ const _normalizeMessageContent = (content: ChatCompletionMessageParam['content']
 const convertToLangChainMessages = (messages: ChatCompletionMessageParam[]): BaseMessage[] => {
 	return messages.map((msg) => {
 		// This is now fully type-safe, as _normalizeMessageContent accepts msg.content directly.
-		const safeContent = _normalizeMessageContent(msg.content);
+		const safeContent = normalizeMessageContent(msg.content);
 
 		switch (msg.role) {
 			case 'system':
@@ -60,7 +117,10 @@ export const llmService = {
 	/**
 	 * Creates an LLM instance based on the provided AI model info.
 	 */
-	createLlmInstance: async (aiInfo: AiModelInfo): Promise<BaseChatModel | OpenAI> => {
+	createLlmInstance: async (
+		aiInfo: AiModelInfo,
+		userId: string
+	): Promise<BaseChatModel | OpenAI> => {
 		// --- 1. Destructure aiInfo to separate routing logic from LLM options ---
 		const { platform, provider, ...llmOptions } = aiInfo; // llmOptions now holds { model, temperature, maxTokens, etc. }
 		const { model } = llmOptions;
@@ -75,48 +135,57 @@ export const llmService = {
 		console.log(`[llmService] Creating instance for: ${platform}/${provider}/${model}`);
 
 		// --- 3. Credential Handling ---
-		// const credentials = await credentialService.getUserSecret();
-		const getRequiredApiKey = (keyName: CredentialDataType): string => {
-			const key = process.env?.[keyName];
-			if (!key) throw new Error(`Required API key "${keyName}" not found.`);
-			return key;
-		};
-
-		// --- 4. Client Instantiation (Switch Statement) ---
+		const userApiKeys = await credentialStore.getUserApiKeys(userId);
 		try {
-			switch (platform) {
-				case 'direct': {
-					let apiKey: string;
-					switch (provider) {
-						case 'openai':
-							apiKey = getRequiredApiKey('OPENAI_API_KEY');
-							return new ChatOpenAI({ apiKey, ...llmOptions });
-						case 'anthropic':
-							apiKey = getRequiredApiKey('ANTHROPIC_API_KEY');
-							return new ChatAnthropic({ apiKey, ...llmOptions });
-						case 'google':
-							apiKey = getRequiredApiKey('GOOGLE_API_KEY');
-							return new ChatGoogleGenerativeAI({ ...llmOptions, apiKey });
-					}
-					break;
+			// --- 4. Client Instantiation (Switch Statement) ---
+			if (platform === 'openrouter') {
+				if (!userApiKeys.openrouterApiKey) {
+					throw new Error('[llmService] OpenRouter API key not found. Please configure your API keys.');
 				}
-				case 'openrouter': {
-					const apiKey = getRequiredApiKey('OPENROUTER_API_KEY');
-					return new OpenAI({
-						baseURL: 'https://openrouter.ai/api/v1',
-						apiKey: apiKey,
-						defaultHeaders: {
-							'HTTP-Referer': 'https://github.com/Jyonyve/rita-berenice',
-							'X-Title': 'Rita Berenice',
-						},
-					});
+				return new OpenAI({
+					apiKey: userApiKeys.openrouterApiKey,
+					baseURL: 'https://openrouter.ai/api/v1',
+				});
+			} else if (platform === 'direct') {
+				switch (provider) {
+					case 'openai':
+						if (!userApiKeys.openaiApiKey) {
+							throw new Error('[llmService] OpenAI API key not found. Please configure your API keys.');
+						}
+						return new ChatOpenAI({
+							apiKey: userApiKeys.openaiApiKey,
+							model,
+							temperature: llmOptions.temperature,
+							maxTokens: llmOptions.maxTokens,
+						});
+					case 'anthropic':
+						if (!userApiKeys.anthropicApiKey) {
+							throw new Error('[llmService] Anthropic API key not found. Please configure your API keys.');
+						}
+						return new ChatAnthropic({
+							apiKey: userApiKeys.anthropicApiKey,
+							model,
+							temperature: llmOptions.temperature,
+							maxTokens: llmOptions.maxTokens,
+						});
+
+					case 'google':
+						if (!userApiKeys.googleApiKey) {
+							throw new Error('[llmService] Google API key not found. Please configure your API keys.');
+						}
+						return new ChatGoogleGenerativeAI({
+							apiKey: userApiKeys.googleApiKey,
+							model,
+							temperature: llmOptions.temperature,
+							maxOutputTokens: llmOptions.maxTokens,
+						});
+
+					default:
+						throw new Error(`[llmService] Unsupported provider: ${provider}`);
 				}
-				// case 'local': {
-				// 	const localUrl = process.env.LOCAL_AI_URL;
-				// 	return new ChatOllama({ ...(localUrl && { baseUrl: localUrl }), ...llmOptions });
-				// }
+			} else {
+				throw new Error(`[llmService] Unsupported platform: ${platform}`);
 			}
-			throw new Error(`Unsupported platform configuration: ${platform}`);
 		} catch (error) {
 			console.error(
 				`[llmService] Failed to create LLM instance for ${platform}/${provider}/${model}:`,
@@ -131,25 +200,41 @@ export const llmService = {
 		role: ChatRoleType,
 		content: string,
 		aiModelInfo: AiModelInfo,
+		userId: string,
 		options?: { signal?: AbortSignal } // Correctly accepts the AbortSignal
 	): Promise<string> => {
 		const { model, ...llmOptions } = aiModelInfo;
-		const llmOrClient = await llmService.createLlmInstance(aiModelInfo);
+		const llmOrClient = await llmService.createLlmInstance(aiModelInfo, userId);
 		const messages: ChatCompletionMessageParam[] = [{ role, content }];
 
 		try {
+			// ✅ USE THE NEW VALIDATION FUNCTION
+			const sanitizedMessages = sanitizeAndValidateMessages(messages, aiModelInfo.model);
+
+			if (sanitizedMessages.length === 0) {
+				throw new Error(
+					'[llmService] All messages were filtered out during sanitization. Aborting LLM call.'
+				);
+			}
+
 			if (isDirectOpenAIClient(llmOrClient)) {
-				const completion = await llmOrClient.chat.completions.create({
+				const requestPayload: ChatCompletionCreateParamsNonStreaming = {
 					...llmOptions,
 					model,
-					messages, // Make sure this is properly formatted
+					messages: sanitizedMessages,
 					response_format: { type: 'json_object' },
+				};
+
+				console.log('[llmService] Full request payload being sent to OpenRouter:');
+				console.log(JSON.stringify(requestPayload, null, 2));
+				const completion = await llmOrClient.chat.completions.create(requestPayload, {
+					signal: options?.signal,
 				});
 				return extractValidOpenAiContent(completion);
 			} else {
-				const langchainMessages = convertToLangChainMessages(messages);
-				const responseMessage = await llmOrClient.invoke(langchainMessages, {
-					signal: options?.signal, // Pass the signal
+				const langChainMessages = convertToLangChainMessages(sanitizedMessages);
+				const responseMessage = await llmOrClient.invoke(langChainMessages, {
+					signal: options?.signal,
 				});
 				return convertMessageContentToString(responseMessage.content);
 			}
@@ -170,19 +255,25 @@ export const llmService = {
 	invokeLlmFromMessages: async (
 		messages: ChatCompletionMessageParam[],
 		aiModelInfo: AiModelInfo,
+		userId: string,
 		options?: { signal?: AbortSignal } // Correctly accepts the AbortSignal
 	): Promise<string> => {
 		const { model, ...llmOptions } = aiModelInfo;
-		const llmOrClient = await llmService.createLlmInstance(aiModelInfo);
+		const llmOrClient = await llmService.createLlmInstance(aiModelInfo, userId);
 
 		try {
+			const sanitizedMessages = messages.map((msg) => ({
+				...msg,
+				content: normalizeMessageContent(msg.content),
+			}));
+
 			// For OpenAI/OpenRouter, use native JSON mode for higher reliability.
 			if (isDirectOpenAIClient(llmOrClient)) {
 				const completion = await llmOrClient.chat.completions.create(
 					{
 						...llmOptions,
 						model,
-						messages,
+						messages: sanitizedMessages,
 						// This strongly encourages OpenAI models to return valid JSON.
 						response_format: { type: 'json_object' },
 					},
@@ -212,17 +303,17 @@ export const llmService = {
 
 	// --- Specific Task Methods ---
 
-	translateProperNoun: async (koreanTerm: string): Promise<string> => {
-		const aiModelInfo = DEFAULT_MODEL_GOOGLEAI;
+	translateProperNoun: async (koreanTerm: string, userId: string): Promise<string> => {
+		const aiModelInfo = DEFAULT_CHAT_MODEL_FREE;
 		const prompt = buildTermTranslationPrompt(koreanTerm);
-		const translation = await llmService.invokeLlm('user', prompt, aiModelInfo);
+		const translation = await llmService.invokeLlm('user', prompt, aiModelInfo, userId);
 		return translation.replace(/["'.]/g, '').trim(); // Clean the output
 	},
 
-	extractProperNouns: async (textToAnalyze: string): Promise<string[]> => {
+	extractProperNouns: async (textToAnalyze: string, userId: string): Promise<string[]> => {
 		const aiModelInfo = DEFAULT_MODEL_GOOGLEAI;
 		const prompt = buildNerPrompt(textToAnalyze);
-		const jsonResponse = await llmService.invokeLlm('user', prompt, aiModelInfo);
+		const jsonResponse = await llmService.invokeLlm('user', prompt, aiModelInfo, userId);
 		try {
 			const potentialJson = jsonResponse.match(/{[\s\S]*?}|\[[\s\S]*?\]/)?.[0] || '[]';
 			const nouns = JSON.parse(potentialJson);

@@ -3,7 +3,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { genApiUrl } from '#shared/util/apiHelpers.js';
 
-import { apiClient } from '../../util/clientApiHelpers.ts';
+import { apiClient } from '../../util/clientApiHelpers.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { MemoryResponse } from '#shared/api/ModuleResponse.js';
 import { ChatTurn, ChatTurnMetadata } from '#shared/domain/chat/ChatInterfaces.js';

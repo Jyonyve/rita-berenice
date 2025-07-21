@@ -1,7 +1,7 @@
 // src/client/hooks/useProfileApi.ts
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../util/clientApiHelpers.ts';
+import { apiClient } from '../../util/clientApiHelpers.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { ProfileCdo, ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { genApiUrl } from '#shared/util/apiHelpers.js';

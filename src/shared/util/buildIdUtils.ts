@@ -17,8 +17,13 @@ export const SUFFIX = {
 	LORE: 'lore',
 	HISTORY: 'history',
 	TERM: 'term',
+	CREDENTIAL: 'credential',
 } as const;
 export type SuffixType = (typeof SUFFIX)[keyof typeof SUFFIX];
+
+export const buildCredentialId = (userId: string) => {
+	return `${userId}_${SUFFIX.CREDENTIAL}`;
+};
 
 /* character id */
 export const buildCharacterId = (characterName: string, variant?: string): string => {

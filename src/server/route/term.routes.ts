@@ -92,24 +92,23 @@ router.get(
  */
 router.post(
 	genRoutePattern('ensureAndGetTermsForPrompt'),
-	asyncHandler(
-		async (
-			req: Request<object, object, { sessionId: string; koreanTermsToEnsure: string[] }>,
-			res: Response<object>
-		): Promise<void> => {
-			const { sessionId, koreanTermsToEnsure } = req.body;
-			validateServiceId(sessionId, collectionType);
-			validateRequestData(req.body, 'body', ['sessionId', 'koreanTermsToEnsure']);
+	asyncHandler(async (req: Request, res: Response<object>): Promise<void> => {
+		const { sessionId, koreanTermsToEnsure, userId } = req.body;
+		validateServiceId(sessionId, collectionType);
+		validateRequestData(req.body, 'body', ['sessionId', 'koreanTermsToEnsure', 'userId']);
 
-			const path = genRoutePattern('ensureAndGetTermsForPrompt');
-			console.log(`API HIT: POST ${path} for session ${sessionId}`);
+		const path = genRoutePattern('ensureAndGetTermsForPrompt');
+		console.log(`API HIT: POST ${path} for session ${sessionId}`);
 
-			const termMap = await termStore.ensureAndGetTermsForPrompt(sessionId, koreanTermsToEnsure);
-			// Convert Map to a plain object for JSON serialization
-			const response = Object.fromEntries(termMap);
-			res.status(200).json(response);
-		}
-	)
+		const termMap = await termStore.ensureAndGetTermsForPrompt(
+			sessionId,
+			koreanTermsToEnsure,
+			userId
+		);
+		// Convert Map to a plain object for JSON serialization
+		const response = Object.fromEntries(termMap);
+		res.status(200).json(response);
+	})
 );
 
 /**

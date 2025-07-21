@@ -28,6 +28,7 @@
 		"check:prof": "tsx --env-file .env ./src/migration/profile/checkProfile.ts",
 		"init:sess": "tsx --env-file .env ./src/migration/session/initSession.ts",
 		"init:term": "tsx --env-file .env ./src/migration/term/initTerm.ts",
+		"init:cred": "tsx --env-file .env ./src/migration/credential/initializeApiKeys.ts",
 		"recap:factual": "tsx --env-file .env ./src/migration/recap/recapChat.ts",
 		"recap:modify": "tsx --env-file .env ./src/migration/recap/modifyRecap.ts",
 		"recap:relationship": "tsx --env-file .env ./src/migration/recap/recapRelationship.ts",
