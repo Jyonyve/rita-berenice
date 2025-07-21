@@ -177,7 +177,7 @@ const main = async () => {
 			// [CHANGED] Use relationship ID builder
 			const recapId = buildRelationshipRecapId(
 				TARGET_SESSION_ID,
-				batchIdx + 1,
+				firstBatchTurn.sequence,
 				lastBatchTurn.sequence
 			);
 

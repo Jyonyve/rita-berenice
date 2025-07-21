@@ -222,7 +222,7 @@ const main = async () => {
 	const batches = createBatches(chatTurns, BATCH_SIZE);
 	const recapCollection = await chromaDbClient.getRecapCollection();
 
-	for (let batchIdx = startBatchIndex; batchIdx < batches.length; ++batchIdx) {
+	for (let batchIdx = startBatchIndex; batchIdx < 0; ++batchIdx) {
 		const batch = batches[batchIdx];
 		const firstBatchTurn = batch[0];
 		const lastBatchTurn = batch[batch.length - 1];
@@ -258,7 +258,7 @@ const main = async () => {
 			console.log(`  - LLM response received from ${successfulModel}.`);
 
 			const parsedRecap = extractJsonFromMarkdown(llmResponseJsonString);
-			const recapId = buildRecapId(TARGET_SESSION_ID, batchIdx + 1, lastBatchTurn.sequence);
+			const recapId = buildRecapId(TARGET_SESSION_ID, firstBatchTurn.sequence, lastBatchTurn.sequence);
 
 			const recapInfo: RecapInfo = {
 				recapId,

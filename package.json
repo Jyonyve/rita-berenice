@@ -29,6 +29,7 @@
 		"init:sess": "tsx --env-file .env ./src/migration/session/initSession.ts",
 		"init:term": "tsx --env-file .env ./src/migration/term/initTerm.ts",
 		"recap:factual": "tsx --env-file .env ./src/migration/recap/recapChat.ts",
+		"recap:modify": "tsx --env-file .env ./src/migration/recap/modifyRecap.ts",
 		"recap:relationship": "tsx --env-file .env ./src/migration/recap/recapRelationship.ts",
 		"export:recap": "tsx ./src/migration/recap/exportSingleRecap.ts",
 		"init:his": "tsx --env-file .env ./src/migration/lore/initHistory.ts",

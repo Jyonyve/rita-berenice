@@ -414,6 +414,7 @@ For the "content" field, provide a comprehensive factual ledger focusing on:
 5. **Timeline Events**: Actions or statements that establish chronology or sequence of events.
 
 Format each entry as: "Speaker: ${charName}, Statement: 'I've been searching for the ancient scroll for three years.' (Turn Sequence: 15, Timestamp: 2025-05-16T10:05:00.000Z)"
+Turn and Timestamp is only set when the info is chnaged.
 
 For metadata fields:
 - **Keywords**: Select 5-10 most relevant factual keywords from available list (focus on concrete nouns, actions, concepts)
@@ -448,20 +449,20 @@ ${stringifyChatTurns}
   "historyReferences": [{"id": "history_id", "relevance": 0.8}]
 }
 
-"content" 필드에는 다음에 중점을 둔 포괄적인 사실 기록부를 제공한다:
+"content" 필드에는 다음에 중점을 둔 포괄적인 사실 기록부를 제공한다. 사실 기록부는 대화 내용을 요약하여 작성하며,.번호는 포함 우선 순위이다:
 
 1. **주요 사실적 진술**: ${userName} 또는 ${charName}이 밝힌 중요한 주장, 선언, 정보 (턴 순서, 타임스탬프 포함).
-2. **중요한 행동**: 관찰 가능한 태도, 물리적 행동, 몸짓 (종종 괄호 안에 묘사됨).
-3. **핵심 대화**: 의도, 계획, 지식, 감정 상태를 드러내는 중요한 대화.
-4. **객관적 사실**: 언급된 사건, 장소, 물건, 관계, 능력에 대한 구체적 정보.
-5. **시간선 사건**: 연대기나 사건 순서를 확립하는 행동이나 진술.
+2. **시간선 사건**: 연대기나 사건 순서를 확립하는 행동이나 진술.
+3. **객관적 사실**: 언급된 사건, 장소, 물건, 관계, 능력에 대한 구체적 정보.
+4. **핵심 대화**: 의도, 계획, 지식, 감정 상태를 드러내는 중요한 대화.
+5. **중요한 행동**: 관찰 가능한 태도, 물리적 행동, 몸짓 (종종 괄호 안에 묘사됨).
 
 각 항목 형식: "화자: ${charName}, 진술: '나는 3년 동안 고대 두루마리를 찾고 있었다.' (턴 순서: 15, 타임스탬프: 2025-05-16T10:05:00.000Z)"
 턴 순서 및 타임스탬프는 값이 바뀌기 전, 각 턴의 마지막에만 기록한다.
 
 **메타데이터 지침 (모두 영어로):**
-- **keywords**: 사용 가능한 목록에서 가장 관련성 높은 사실적 키워드 5-10개 선별
-- **topics**: 논의된 핵심 사실적 테마와 주제 3-7개 선별
+- **keywords**: 사용 가능한 목록에서 가장 관련성 높은 사실적 키워드 5-7개 선별
+- **topics**: 논의된 핵심 사실적 테마와 주제 3-5개 선별
 - **entities**: 사실적으로 언급된 중요한 인물, 장소, 아이템, 조직 선별 (형식: "type:name")
 - **flags**: "new_lore_revealed", "character_background_disclosed", "plot_advancement" 같은 사실별 플래그 사용
 

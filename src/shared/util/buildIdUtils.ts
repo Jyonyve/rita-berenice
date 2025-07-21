@@ -76,11 +76,6 @@ export const buildRelationshipRecapId = (
 	return `${sessionId}_${turnStart}to${turnEnd}_${SUFFIX.RELATIONSHIP}`;
 };
 
-export const buildRecapDocId = (sessionId: string): string => `${sessionId}_${SUFFIX.RECAP}`;
-
-export const buildRelationshipRecapDocId = (sessionId: string): string =>
-	`${sessionId}_${SUFFIX.RELATIONSHIP}`;
-
 export const buildStoryId = (sessionId: string, type?: 'NSFW'): string => {
 	return type ? `${sessionId}_${SUFFIX.STORY}_${type}` : `${sessionId}_${SUFFIX.STORY}`;
 };

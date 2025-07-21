@@ -7,22 +7,21 @@ import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
 import { chromaDbClient } from '../db/chromaDbClient.js';
 import { ChromaResponse, RecapResponse } from '#shared/api/ModuleResponse.js';
-import { inflateRecapDoc } from '../util/documentUtils.js';
+import { flatRecapToDoc, inflateRecapDoc } from '../util/documentUtils.js';
 import { metadataToRecap } from '#shared/util/dbConvertUtils.js';
 import { RecapMetadata, RecapInfo } from '#shared/domain/recap/RecapInterfaces.js';
 import { convertArrayToString, parseSessionId } from '#shared/util/chatParseUtils.js';
 import {
 	buildProfileId,
-	buildRecapDocId,
 	buildRecapId,
-	buildRelationshipRecapDocId,
 	buildRelationshipRecapId,
 } from '../../shared/util/buildIdUtils.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import { isAndWhere } from '../util/queryUtils.js';
 
 // Destructure chromaDbClient methods
-const { getRecapCollection, upsertRecord, getRecordById, queryRecords } = chromaDbClient;
+const { getRecapCollection, upsertRecord, getRecordById, queryRecords, getRecords } =
+	chromaDbClient;
 const collectionType = COLLECTIONS.RECAP;
 
 export const recapStore = {
@@ -101,13 +100,10 @@ export const recapStore = {
 			};
 
 			const collection = await recapStore._getCollection();
-			await upsertRecord(collection, recapMetadata.recapId, recapInfo.content, recapMetadata);
-			// whole texts document
-			await upsertRecord(collection, buildRecapDocId(sessionId), recapInfo.content, {
-				sessionId,
-				type: METADATA_TYPES.DOCUMENT,
-				timeStamp: now,
-			});
+			const documentForEmbedding = JSON.stringify({ content: recapInfo.content });
+			// const documentForEmbedding = flatRecapToDoc(recapInfo);
+
+			await upsertRecord(collection, recapMetadata.recapId, documentForEmbedding, recapMetadata);
 
 			console.log(`[RecapService] Successfully stored factual recap for session ${sessionId}`);
 		} catch (error) {
@@ -160,13 +156,9 @@ export const recapStore = {
 				flags: convertArrayToString(recapInfo.flagsArray),
 			};
 			const collection = await recapStore._getCollection();
-			await upsertRecord(collection, recapMetadata.recapId, recapInfo.content, recapMetadata);
-			// whole texts document
-			await upsertRecord(collection, buildRelationshipRecapDocId(sessionId), recapInfo.content, {
-				sessionId,
-				type: METADATA_TYPES.DOCUMENT,
-				timeStamp: now,
-			});
+			const documentForEmbedding = flatRecapToDoc(recapInfo);
+
+			await upsertRecord(collection, recapMetadata.recapId, documentForEmbedding, recapMetadata);
 
 			console.log(`[RecapService] Successfully stored relationship recap for session ${sessionId}`);
 		} catch (error) {
@@ -178,26 +170,37 @@ export const recapStore = {
 		}
 	},
 
-	/**
-	 * Get whole document recap for a session
-	 */
-	getRecapWholeDoc: async (
+	getRecap: async (recapId: string): Promise<RecapResponse> => {
+		const collection = await recapStore._getCollection();
+		try {
+			const rawResult = await getRecordById(collection, recapId);
+			const results = validateChromaResponse(rawResult, 'getOne', collectionType);
+			return recapStore._constuctRecap(results);
+		} catch (error) {
+			handleServiceError(
+				error,
+				'An internal error occurred while do [getRecap].',
+				`Failed to get profile with ID ${recapId}:`
+			);
+		}
+	},
+
+	getRecapsBySessionId: async (
 		sessionId: string,
 		type: typeof METADATA_TYPES.RECAP | typeof METADATA_TYPES.RELATIONSHIP
-	): Promise<string> => {
+	): Promise<RecapResponse> => {
 		const collection = await recapStore._getCollection();
-		const recapDocId =
-			type === METADATA_TYPES.RECAP
-				? buildRecapDocId(sessionId)
-				: buildRelationshipRecapDocId(sessionId);
-		console.log(`[RecapService] Fetching recap document for session ${sessionId}, type: ${type}`);
-
 		try {
-			const result = await getRecordById(collection, recapDocId);
-			return result.documents?.[0] || '';
+			const where: Where = { $and: [{ type: { $eq: type } }, { sessionId: { $eq: sessionId } }] };
+			const rawResults = await getRecords(collection, where);
+			const results = validateChromaResponse(rawResults, 'getList', collectionType);
+			return recapStore._constuctRecap(results);
 		} catch (error) {
-			console.info(`[RecapService] No factual recap found for session ${sessionId}`);
-			return '';
+			handleServiceError(
+				error,
+				'An internal error occurred while do [getRecapsBySessionId].',
+				`Failed to get recaps with ID ${sessionId}:`
+			);
 		}
 	},
 

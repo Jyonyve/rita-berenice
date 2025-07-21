@@ -101,6 +101,7 @@ export const flatRecapToDoc = (recap: RecapInfo) => {
 };
 
 export const inflateRecapDoc = (document: string): { content: string } => {
+	console.log(document);
 	const parsed = JSON.parse(document);
 	return { content: parsed.content };
 };
