@@ -91,7 +91,7 @@ export const ChatPage: FC<{
 	const handleSendMessage = useCallback(async () => {
 		setPageError(undefined);
 		setIsProcessing(true);
-
+		console.log(Date.now());
 		const finalizePromise = (async () => {
 			if (!tempChatTurn || tempChatTurn.chatTurnSets.length === 0) return null;
 			const pickedTurnSet = tempChatTurn.chatTurnSets[currentTempSetNo];
@@ -117,7 +117,6 @@ export const ChatPage: FC<{
 				userInput,
 				userId,
 			};
-
 			return receiveBotResponse.mutateAsync({
 				tempChatTurnCdo,
 				characterInfo,
@@ -146,6 +145,7 @@ export const ChatPage: FC<{
 			setPageError(`An error occurred: ${err.clientMessage || err.message || 'Unknown error'}`);
 		} finally {
 			setIsProcessing(false);
+			console.log(Date.now());
 		}
 	}, [
 		userInput,

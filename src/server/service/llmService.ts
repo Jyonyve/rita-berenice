@@ -75,9 +75,9 @@ export const llmService = {
 		console.log(`[llmService] Creating instance for: ${platform}/${provider}/${model}`);
 
 		// --- 3. Credential Handling ---
-		const credentials = await credentialService.getUserSecret();
+		// const credentials = await credentialService.getUserSecret();
 		const getRequiredApiKey = (keyName: CredentialDataType): string => {
-			const key = credentials?.[keyName];
+			const key = process.env?.[keyName];
 			if (!key) throw new Error(`Required API key "${keyName}" not found.`);
 			return key;
 		};
@@ -139,10 +139,12 @@ export const llmService = {
 
 		try {
 			if (isDirectOpenAIClient(llmOrClient)) {
-				const completion = await llmOrClient.chat.completions.create(
-					{ model, messages, ...llmOptions },
-					{ signal: options?.signal } // Pass the signal
-				);
+				const completion = await llmOrClient.chat.completions.create({
+					...llmOptions,
+					model,
+					messages, // Make sure this is properly formatted
+					response_format: { type: 'json_object' },
+				});
 				return extractValidOpenAiContent(completion);
 			} else {
 				const langchainMessages = convertToLangChainMessages(messages);

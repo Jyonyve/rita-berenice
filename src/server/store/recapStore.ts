@@ -52,8 +52,8 @@ export const recapStore = {
 			metadatas,
 			recapInfos,
 			recapInfo: recapInfos[0] || null,
-			recapContents: recapInfos.map((r) => r.content),
-			recapContent: recapInfos[0].content,
+			recapContents: (recapInfos || []).map((r) => r.content),
+			recapContent: recapInfos[0]?.content || '',
 		};
 	},
 
@@ -245,9 +245,9 @@ export const recapStore = {
 				documents: allDocuments,
 				metadatas: allMetadatas,
 				recapInfos: allRecapInfos,
-				recapInfo: allRecapInfos[0],
+				recapInfo: allRecapInfos[0] || null,
 				recapContents: allRecapInfos.flatMap((r) => r.content),
-				recapContent: allRecapInfos[0].content,
+				recapContent: allRecapInfos[0]?.content || '',
 			};
 		} catch (error) {
 			console.error(`Failed to query chat log for session ${sessionId}:`, error);

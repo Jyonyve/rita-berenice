@@ -33,7 +33,7 @@ export const receiveBotResponse = async (
 	tempChatTurnCdo: TempChatTurnCdo,
 	characterInfo: CharacterInfo,
 	profileInfo: ProfileInfo,
-	aiModel: AiModelInfo,
+	aiModelInfo: AiModelInfo,
 	recentChatTurnString: string
 ): Promise<TempChatTurn> => {
 	const { sequence, sessionId, userInput } = tempChatTurnCdo;
@@ -92,7 +92,7 @@ export const receiveBotResponse = async (
 			characterInfo,
 			profileInfo,
 			userChatMessage,
-			aiModel,
+			aiModelInfo,
 			{ signal: overallTimeoutSignal }
 		);
 		const botChatMessage = buildChatMessage(

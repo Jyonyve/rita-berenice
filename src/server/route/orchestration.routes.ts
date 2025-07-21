@@ -19,7 +19,7 @@ interface ReceiveBotResponseBody {
 	tempChatTurnCdo: TempChatTurnCdo;
 	characterInfo: CharacterInfo;
 	profileInfo: ProfileInfo;
-	aiModel: AiModelInfo;
+	aiModelInfo: AiModelInfo;
 	recentChatTurnString: string;
 }
 
@@ -35,13 +35,15 @@ router.post(
 			req: Request<object, TempChatTurn, ReceiveBotResponseBody>,
 			res: Response<TempChatTurn>
 		): Promise<void> => {
-			const { tempChatTurnCdo, characterInfo, profileInfo, aiModel, recentChatTurnString } = req.body;
+			const { tempChatTurnCdo, characterInfo, profileInfo, aiModelInfo, recentChatTurnString } =
+				req.body;
 
 			// Validate the incoming request payload
 			const requiredFields: (keyof ReceiveBotResponseBody)[] = [
 				'tempChatTurnCdo',
 				'characterInfo',
 				'profileInfo',
+				'aiModelInfo',
 			];
 			validateRequestData(req.body, 'body', requiredFields);
 			validateRequestData(tempChatTurnCdo, 'body', ['sessionId', 'sequence', 'userInput']);
@@ -57,7 +59,7 @@ router.post(
 				tempChatTurnCdo,
 				characterInfo,
 				profileInfo,
-				aiModel,
+				aiModelInfo,
 				recentChatTurnString
 			);
 

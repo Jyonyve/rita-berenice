@@ -11,17 +11,11 @@ import { getAiModelInfo, isValidAiModelInfo } from '#shared/util/aiModelUtils.js
 
 // Determine initial states using the refactored utils (which don't include apiKey)
 const initialDefaultAiInfo: AiModelInfo = DEFAULT_CHAT_MODEL_FREE; // Or use determineInitialDefaultAiInfo if preferred
-const initialDefaultSummaryAiInfo: AiModelInfo = DEFAULT_RECAP_MODEL_FREE; // Or use determineDefaultSummaryAiInfo
 
 export const useAiModel = () => {
 	// --- State ---
 	// Stores the user's currently selected AI model configuration (platform, provider, model)
 	const [aiModelInfo, setAiModelInfo] = useState<AiModelInfo>(initialDefaultAiInfo);
-	// Stores the AI model configuration used for summary tasks
-	const [summaryAiModelInfo, setSummaryAiModelInfo] = useState<AiModelInfo>(
-		initialDefaultSummaryAiInfo
-	);
-
 	// --- Hooks ---
 	const { showError } = useErrorDialog();
 
@@ -53,5 +47,5 @@ export const useAiModel = () => {
 	);
 
 	// --- Return Hook Values ---
-	return { aiModelInfo, summaryAiModelInfo, changeAiModel };
+	return { aiModelInfo, changeAiModel };
 };
