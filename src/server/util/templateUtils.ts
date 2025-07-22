@@ -2,7 +2,10 @@
 
 import { BasicBeingInfo, CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { ChatMessage, ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
-import { allEmotionKeywordsList } from '#shared/config/emotionWordsMapper.js';
+import {
+	allEmotionKeywordsList,
+	curatedEmotionKeywords,
+} from '#shared/config/emotionWordsMapper.js';
 import { parseEntriesToText } from '#shared/util/chatParseUtils.js';
 import { HistoryInfo, LoreInfo } from '#shared/domain/lore/LoreInterfaces.js';
 import { MemoryResponse } from '#shared/api/ModuleResponse.js';
@@ -54,6 +57,7 @@ const _formatChatHistoryForPrompt = (
 	return `\n${title}\n${guidance}\n${formattedTurns}\n`;
 };
 
+// personaEngine 또는 관련 유틸리티 파일에 추가
 /**
  * Builds the comprehensive system prompt for the persona engine.
  * This version includes short and long-term conversation history.
@@ -135,8 +139,8 @@ ${recalledMemories.relationshipRecapSummary || 'No specific relationship context
 
 	const responseLengthRule =
 		langCode === 'kor'
-			? `7.  **응답 분량 및 순수성:** 응답의 길이는 약 1000자(공백 포함)를 목표로, 충분히 상세하고 풍부한 분량으로 작성해야 한다. 응답은 '응답입니다:'와 같은 불필요한 도입부나 설명 없이, 오직 서술 내용만으로 구성되어야 한다.`
-			: `7.  **Response Length & Purity:** Aim for a substantial, detailed response of approximately 1000 characters. The content must be pure narrative, without any introductory phrases, explanations, or meta-commentary.`;
+			? `7.  **응답 분량 및 순수성:** 응답의 길이는 반드시 1000자(공백 포함)내외가 되어야 한다. 500자 이하의 짧은 응답은 허용되지 않는다. 충분히 상세하고 풍부한 서사와 묘사를 제공하라. 응답은 '응답입니다:'와 같은 불필요한 도입부나 설명 없이, 오직 서술 내용만으로 구성되어야 한다.`
+			: `7.  **Response Length & Purity:** The response MUST be around 1000 characters long. Short responses under 500 characters are not acceptable. Provide a substantial and detailed narrative. The content must be pure narrative, without any introductory phrases, explanations, or meta-commentary.`;
 
 	return `
 ${personaInstruction}
@@ -188,6 +192,180 @@ ${responseLengthRule}
 }
 \`\`\`
 `.trim();
+};
+
+/**
+ * API 게이트웨이 파서에서 문제를 일으킬 수 있는 복잡한 문자 구조를 제거하여
+ * 프롬프트에 사용될 텍스트를 안전하게 정제(sanitize)합니다.
+ * @param text - 정제할 원본 문자열
+ * @returns 핵심 의미는 유지하면서 구조가 단순화된 문자열
+ */
+const _sanitizeTextForPrompt = (text: string): string => {
+	if (!text) {
+		return '';
+	}
+
+	// 1. 여러 개의 연속된 줄 바꿈을 하나의 줄 바꿈으로 통합합니다.
+	let sanitized = text.replace(/(\r\n|\n|\r){2,}/g, '\n');
+
+	// 2. 파서에 혼동을 줄 수 있는 백틱(`)을 작은따옴표(')로 변경합니다.
+	//    롤플레잉 형식에 필수적인 별표(*)는 유지합니다.
+	sanitized = sanitized.replace(/`/g, "'");
+
+	// 3. 앞뒤 공백을 제거합니다.
+	return sanitized.trim();
+};
+
+// personaEngine 또는 관련 유틸리티 파일에 위치
+
+// 이 함수는 이제 동적 메모리(recalledMemories)를 받지 않습니다.
+// 대신 언어 코드(langCode)를 직접 전달받습니다.
+
+/**
+ * 페르소나 엔진을 위한 핵심 시스템 프롬프트를 생성합니다.
+ * 이 프롬프트는 캐릭터의 변하지 않는 정적 정보(페르소나, 규칙, 출력 형식)만을 포함합니다.
+ * @param characterInfo - 캐릭터의 기본 정보
+ * @param profileInfo - 사용자의 프로필 정보
+ * @param langCode - 응답에 사용될 언어 코드 ('kor' 또는 'eng')
+ * @returns messages 배열의 첫 번째에 사용될 시스템 프롬프트 문자열
+ */
+export const buildStaticSystemPrompt = (
+	characterInfo: CharacterInfo,
+	profileInfo: ProfileInfo,
+	langCode: 'kor' | 'eng' = 'kor'
+): string => {
+	const charName = characterInfo.showName;
+	const userName = profileInfo.showName;
+
+	// 캐릭터 지시사항은 정적 정보이므로 유지합니다.
+	const instructionForBackend = _sanitizeTextForPrompt(
+		characterInfo.instruction.replaceAll('{{user}}', profileInfo.showName)
+	);
+
+	// --- Main Prompt Assembly ---
+	// 핵심 임무 지시
+	const personaInstruction =
+		langCode === 'kor'
+			? `당신의 임무는 캐릭터 "${charName}"의 행동과 대사를 사용자 "${userName}"에게 3인칭 소설가 시점으로 서술하는 것이다. 당신은 캐릭터 자신이 아니라, 캐릭터의 모든 것을 알고 묘사하는 전지적 서술자이다. 모든 서술(별표 *로 묶인 부분)은 반드시 '~다'로 끝나는 문어체를 사용해야 한다. 아래 제공된 문서와 규칙에 기반하여 캐릭터를 일관되게 묘사하라.`
+			: `Your task is to act as a third-person, literary narrator for the character "${charName}" as they interact with the user, "${userName}". You are not the character yourself, but an omniscient storyteller who describes their actions, thoughts, and dialogue. Base your portrayal on the following documents and rules.`;
+
+	// 응답 길이 규칙 (정적 규칙의 일부)
+	const responseLengthRule =
+		langCode === 'kor'
+			? `7.  **응답 분량 및 순수성:** 응답의 길이는 반드시 1000자(공백 포함)내외가 되어야 한다. 500자 이하의 짧은 응답은 허용되지 않는다. 충분히 상세하고 풍부한 서사와 묘사를 제공하라. 응답은 '응답입니다:'와 같은 불필요한 도입부나 설명 없이, 오직 서술 내용만으로 구성되어야 한다.`
+			: `7.  **Response Length & Purity:** The response MUST be around 1000 characters long. Short responses under 500 characters are not acceptable. Provide a substantial and detailed narrative. The content must be pure narrative, without any introductory phrases, explanations, or meta-commentary.`;
+
+	// 최종 프롬프트 조립: NARRATOR'S SOURCE MATERIAL 섹션을 완전히 제거하여 동적 정보를 분리합니다.
+	return `
+${personaInstruction}
+
+---
+**CHARACTER BRIEFING: ${charName}**
+This is the personality and background you must portray.
+${instructionForBackend}
+
+---
+**RULES FOR NARRATION, CONSISTENCY, AND TRUTHFULNESS (CRITICAL):**
+
+**//--- Stylistic Rules ---//**
+
+1.  **Strictly Third-Person Perspective:** You MUST narrate all actions and describe all dialogue from a third-person point of view. Use pronouns like "he," "she," "his," "her," or the character's name (${charName}). **Never use first-person pronouns like "I," "me," or "my" on behalf of the character.**
+
+2.  **Narrative Style (Korean):** If responding in Korean, all narrated actions (text within *) MUST use a formal, literary style ending in '~다'. **Never use polite endings like '~요' or '~습니다' for narrated actions.** Spoken dialogue can use any style appropriate for the character.
+
+**//--- Truthfulness & Consistency Rules ---//**
+
+3.  **Official Lore & History is Ultimate Truth:** The "Official Lore" and "Relevant History" sections are your canon—the absolute, unchangeable truth. Your internal understanding and all statements must align with this.
+
+4.  **Your Recent Statements (from Recaps):** The "Ledger" and "Relationship Context" show what ${charName} has recently said. This is *how the character has presented things* to ${userName}.
+    *   If something the character recently said *contradicts* the Official Lore/History:
+        *   **You MUST acknowledge the Lore/History as the ultimate truth internally.**
+        *   **How you narrate the response depends on the character's persona (from the Character Briefing):** An honest character might be portrayed as correcting themselves ("*He shakes his head, a look of confusion on his face.* I apologize, I misspoke."). A deceptive or forgetful character might be portrayed as evading or doubling down ("*He raises an eyebrow, a sly smile playing on his lips.* Did I say that? Perhaps I was merely testing you.").
+
+5.  **Stating New Facts:** Before narrating the character revealing new "facts" not covered in the source material, first ensure it does NOT contradict the Official Lore/History. If it does, the character cannot state it as fact.
+
+6.  **Emotional and Relational Continuity:** Use the "Relationship Context" and Conversation Histories to guide the emotional tone of your narration and describe ${charName}'s behavior towards ${userName}, ensuring their interactions reflect their shared history.
+
+${responseLengthRule}
+
+---
+**OUTPUT FORMAT INSTRUCTIONS (CRITICAL):**
+\`\`\`json
+{
+  "response": "The character's response, narrated in the third person. Actions/descriptions MUST be enclosed in asterisks (*). In Korean, these actions MUST end with '~다'. Spoken dialogue is plain text. Refer to the user as '${userName}'. Example: '${langCode === 'kor' ? `*타리온이 바닥에 앉는다.* 오늘 하루 길었네. *그는 ${userName}을(를) 본다.*` : `*Tarion sits on the floor.* A long day today. *He sees ${userName}.*`}'",
+  "emotion": "A single English word representing the character's dominant emotion. You MUST choose the closest match from this list: [${allEmotionKeywordsList.join(',')}]"
+}
+\`\`\`
+`.trim();
+};
+
+// personaEngine 또는 관련 유틸리티 파일에 위치
+
+/**
+ * RAG를 통해 검색된 장기 기억 및 요약 정보를 바탕으로,
+ * LLM에게 배경지식을 제공하는 시스템 프롬프트를 생성합니다.
+ * @param recalledMemories - RAG 검색 결과가 담긴 객체
+ * @param langCode - 프롬프트 생성에 사용될 언어 코드
+ * @returns {string | null} - 생성된 프롬프트 문자열, 내용이 없으면 null 반환
+ */
+export const buildLongTermMemoryPrompt = (
+	recalledMemories: MemoryResponse,
+	langCode: 'kor' | 'eng' = 'kor'
+): string | null => {
+	const promptSections: string[] = [];
+
+	// --- 1. 사실 관계 요약 (Factual Recap) ---
+	if (recalledMemories.factualRecapSummary) {
+		const title =
+			langCode === 'kor'
+				? '### 사실 관계 요약 (캐릭터가 이전에 언급한 사실들)'
+				: "### Factual Recap (Character's Stated Facts)";
+		promptSections.push(`${title}\n${recalledMemories.factualRecapSummary}`);
+	}
+
+	// --- 2. 관계도 요약 (Relationship Recap) ---
+	if (recalledMemories.relationshipRecapSummary) {
+		const title =
+			langCode === 'kor'
+				? '### 관계도 요약 (사용자와 캐릭터의 현재 관계)'
+				: '### Relationship Recap (Current Dynamics with the User)';
+		promptSections.push(`${title}\n${recalledMemories.relationshipRecapSummary}`);
+	}
+
+	// --- 3. 관련 Lore 정보 ---
+	if (recalledMemories.relevantLore && recalledMemories.relevantLore.length > 0) {
+		const title =
+			langCode === 'kor' ? '### 관련 공식 설정 (절대적 진실)' : '### Relevant Lore (Absolute Truth)';
+		const loreItems = recalledMemories.relevantLore
+			.map((lore) => `- "${lore.title}": ${lore.summary}`)
+			.join('\n');
+		promptSections.push(`${title}\n${loreItems}`);
+	}
+
+	// --- 4. 관련 History 정보 ---
+	if (recalledMemories.relevantHistory && recalledMemories.relevantHistory.length > 0) {
+		const title =
+			langCode === 'kor'
+				? '### 관련 과거 사건 (절대적 진실)'
+				: '### Relevant History (Absolute Truth)';
+		const historyItems = recalledMemories.relevantHistory
+			.map((history) => `- "${history.title}": ${history.summary}`)
+			.join('\n');
+		promptSections.push(`${title}\n${historyItems}`);
+	}
+
+	// 모든 섹션이 비어있으면 null을 반환하여 아무것도 추가하지 않도록 합니다.
+	if (promptSections.length === 0) {
+		return null;
+	}
+
+	// 최종 프롬프트 조립
+	const header =
+		langCode === 'kor'
+			? "--- 배경지식 (NARRATOR'S SOURCE MATERIAL) ---\n이 정보는 당신이 서사를 진행하기 전에 반드시 알아야 할 배경지식이다. 이 내용을 바탕으로 이어지는 대화를 해석하고, 일관성을 유지하며 응답하라."
+			: "--- BACKGROUND KNOWLEDGE (NARRATOR'S SOURCE MATERIAL) ---\nThis is essential background information you must know before continuing the narrative. Use it to interpret the upcoming conversation and maintain consistency.";
+
+	return `${header}\n\n${promptSections.join('\n\n')}`;
 };
 
 /**

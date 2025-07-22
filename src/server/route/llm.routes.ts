@@ -35,7 +35,7 @@ router.post(
 		const path = genRoutePattern('invokeLlm');
 		console.log(`API HIT: POST ${path} with model ${aiModelInfo.model}`);
 
-		const assistantResponse = await llmService.invokeLlm(role, prompt, aiModelInfo, userId, {
+		const assistantResponse = await llmService.invokeLlm(prompt, aiModelInfo, userId, {
 			signal: (req as Request & { signal: AbortSignal }).signal,
 		});
 		res.status(200).json({ response: assistantResponse });
@@ -72,7 +72,7 @@ router.post(
 		const path = genRoutePattern('invokeLlmFromMessages');
 		console.log(`API HIT: POST ${path} with model ${aiModelInfo.model}`);
 
-		const assistantResponse = await llmService.invokeLlmFromMessages(messages, aiModelInfo, userId, {
+		const assistantResponse = await llmService.invokeLlm(messages, aiModelInfo, userId, {
 			signal: (req as Request & { signal: AbortSignal }).signal,
 		});
 		res.status(200).json({ response: assistantResponse });

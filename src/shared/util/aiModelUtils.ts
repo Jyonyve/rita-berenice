@@ -13,6 +13,8 @@ import {
 // --- Constants (Client-safe) ---
 const PLATFORM_OPENROUTER = 'openrouter';
 const PLATFORM_LOCAL = 'local';
+const DEFAULT_TEMPERATURE = 0.85;
+const DEFAULT_MAX_TOKEN = 1500;
 
 // --- Utility Functions (Client-Side Safe) ---
 
@@ -34,7 +36,8 @@ const extractFreeModels = (platform: AiPlatform = PLATFORM_OPENROUTER): AiModelI
 					platform,
 					provider: provider as AiProvider<'openrouter'>,
 					model: model as AllModelNames,
-					// No apiKey
+					maxTokens: DEFAULT_MAX_TOKEN,
+					temperature: DEFAULT_TEMPERATURE,
 				}))
 		);
 	}
@@ -67,6 +70,8 @@ export const getAiModelInfo = (modelName: string): AiModelInfo => {
 						platform: PLATFORM_OPENROUTER,
 						provider: provider as AiProvider<'openrouter'>,
 						model: fullModelNameInMap as AllModelNames,
+						maxTokens: DEFAULT_MAX_TOKEN,
+						temperature: DEFAULT_TEMPERATURE,
 						// No apiKey
 					};
 				}
@@ -85,7 +90,8 @@ export const getAiModelInfo = (modelName: string): AiModelInfo => {
 						platform: platform as AiPlatform,
 						provider: providerKey as AiProvider<typeof platform>,
 						model: modelName as AllModelNames,
-						// No apiKey
+						maxTokens: DEFAULT_MAX_TOKEN,
+						temperature: DEFAULT_TEMPERATURE,
 					};
 				}
 			}

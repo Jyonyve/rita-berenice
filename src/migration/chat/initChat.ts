@@ -100,30 +100,37 @@ const createInitialProgress = (
 // --- LLM and Data Processing Functions (Unchanged) ---
 // ... (extractJsonFromMarkdown, generateEnrichedMetadataLLM, getDefaultEnrichedMetadata, enrichChatTurnWithMetadata, processAndUpsertTurn functions remain the same as in your file) ...
 // NOTE: For brevity, the unchanged helper functions are omitted here. Please keep them in your actual file.
-const extractJsonFromMarkdown = (response: string): any => {
-	let cleaned = response.trim();
+/**
+ * Best-of-both-worlds function.
+ * Extracts a JSON object from a string that may be wrapped in Markdown code blocks or have surrounding text.
+ */
+const extractJsonSafely = (text: string) => {
+	let jsonString = text.trim();
+
+	// 1. Try to find a Markdown code block first.
+	// Handles `````` or ``````
+	const markdownMatch = jsonString.match(/``````/);
+	if (markdownMatch && markdownMatch[1]) {
+		jsonString = markdownMatch[1];
+	} else {
+		// 2. If no code block, find the main JSON object using a greedy regex.
+		// This is robust against surrounding text.
+		const braceMatch = jsonString.match(/{[\s\S]*}/);
+		if (braceMatch && braceMatch[0]) {
+			jsonString = braceMatch[0];
+		}
+	}
+
+	// 3. Finally, validate if the extracted string is valid JSON.
 	try {
-		const codeBlockMatch = cleaned.match(/``````/i);
-		if (codeBlockMatch && codeBlockMatch[1]) {
-			return JSON.parse(codeBlockMatch[1]);
-		}
-		const jsonMatch = cleaned.match(/(\{[\s\S]*\})/);
-		if (jsonMatch && jsonMatch[1]) {
-			return JSON.parse(jsonMatch[1]);
-		}
-		if (!cleaned.startsWith('{') && cleaned.includes('{') && cleaned.includes('}')) {
-			const firstBrace = cleaned.indexOf('{');
-			const lastBrace = cleaned.lastIndexOf('}');
-			if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-				cleaned = cleaned.substring(firstBrace, lastBrace + 1);
-			}
-		}
-		return JSON.parse(cleaned);
+		JSON.parse(jsonString);
+		return JSON.parse(jsonString); // Return the clean, valid JSON string.
 	} catch (error) {
-		console.error('JSON extraction failed. Raw text snippet:', cleaned.substring(0, 500));
-		return {};
+		console.error('JSON extraction failed. Raw text snippet:', text.substring(0, 500));
+		return {}; // On failure, return null for explicit error handling.
 	}
 };
+
 let firstGeminiDone = false;
 let secondGeminiDone = false; // Track if Groq fallback was used
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -299,7 +306,7 @@ const enrichChatTurnWithMetadata = async (
 		termGuidanceMap
 	);
 	const llmResponse = await generateEnrichedMetadataLLM(prompt);
-	const parsedLlmJson = extractJsonFromMarkdown(llmResponse);
+	const parsedLlmJson = extractJsonSafely(llmResponse);
 	const defaults = getDefaultEnrichedMetadata();
 	function defineEmotion(emotion: string, primary: string) {
 		return primary && emotion === 'default' ? primary : emotion;

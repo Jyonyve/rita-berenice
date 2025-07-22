@@ -77,6 +77,9 @@ importers:
       swiper:
         specifier: ^11.2.10
         version: 11.2.10
+      tiktoken:
+        specifier: ^1.0.21
+        version: 1.0.21
     devDependencies:
       '@emotion/babel-plugin':
         specifier: ^11.13.5
@@ -3938,6 +3941,9 @@ packages:
 
   through@2.3.8:
     resolution: {integrity: sha512-w89qg7PI8wAdvX60bMDP+bFoD5Dvhm9oLheFp5O4a2QF0cSBGsBX4qZmadPMvVqlLJBBci+WqGGOAPvcDeNSVg==}
+
+  tiktoken@1.0.21:
+    resolution: {integrity: sha512-/kqtlepLMptX0OgbYD9aMYbM7EFrMZCL7EoHM8Psmg2FuhXoo/bH64KqOiZGGwa6oS9TPdSEDKBnV2LuB8+5vQ==}
 
   timers-browserify@2.0.12:
     resolution: {integrity: sha512-9phl76Cqm6FhSX9Xe1ZUAMLtm1BLkKj2Qd5ApyWkXzsMRaA7dgr81kf4wJmQf/hAvg8EEyJxDo3du/0KlhPiKQ==}
@@ -8681,6 +8687,8 @@ snapshots:
 
   through@2.3.8:
     optional: true
+
+  tiktoken@1.0.21: {}
 
   timers-browserify@2.0.12:
     dependencies:

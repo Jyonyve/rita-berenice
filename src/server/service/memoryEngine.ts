@@ -91,8 +91,8 @@ export const memoryEngine = {
 		recentChatTurns: string
 	): Promise<MemoryResponse> {
 		const { characterId } = parseSessionId(sessionId);
-		const INITIAL_QUERY_LIMIT = 5;
-		const FINAL_MEMORY_LIMIT = 3;
+		const INITIAL_QUERY_LIMIT = 10;
+		const FINAL_MEMORY_LIMIT = 5;
 		const langCode = detectLanguage(userRequestText);
 
 		try {
@@ -197,8 +197,10 @@ export const memoryEngine = {
 
 			// 5. Call the LLM and robustly parse the JSON response
 			const llmResponse = await llmService.invokeLlm(
-				'user',
-				prompt,
+				[
+					{ role: 'system', content: 'You are a helpful assistant.' },
+					{ role: 'user', content: prompt },
+				],
 				DEFAULT_CHAT_MODEL_FREE,
 				turn.userId
 			);

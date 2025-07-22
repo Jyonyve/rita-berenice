@@ -34,3 +34,23 @@ export const supportAiModelInfo: Record<string, Record<string, string[]>> = {
 		],
 	},
 } as const;
+
+export const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
+	// Anthropic Models (via OpenRouter)
+	'anthropic/claude-3.5-sonnet-20240620': 200_000,
+	'anthropic/claude-3-haiku-20240307': 200_000,
+	// Aliases for user's config
+	'anthropic/claude-sonnet-4': 200_000,
+	'anthropic/claude-3.7-sonnet': 200_000,
+	'anthropic/claude-3.5-haiku': 200_000,
+
+	// Google Models (via OpenRouter)
+	'google/gemini-2.5-pro': 1_048_576,
+
+	// OpenAI Models (via OpenRouter)
+	'openai/gpt-4o': 128_000,
+	'openai/gpt-4.1': 1_047_576,
+	// Other Models (via OpenRouter)
+	'deepseek/deepseek-chat-v3-0324:free': 32_000,
+	'mistralai/mistral-small-3.2-24b-instruct:free': 32_000,
+};

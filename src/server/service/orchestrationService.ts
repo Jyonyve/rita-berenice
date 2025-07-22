@@ -36,14 +36,18 @@ export const receiveBotResponse = async (
 	aiModelInfo: AiModelInfo,
 	recentChatTurnString: string
 ): Promise<TempChatTurn> => {
-	const { sequence, sessionId, userInput } = tempChatTurnCdo;
-	const overallTimeoutSignal = AbortSignal.timeout(ABORT_TIMEOUT * 1000);
+	// 1. 함수 시작과 동시에 시간 측정 시작
+	const startTime = performance.now();
 
-	overallTimeoutSignal.addEventListener('abort', () => {
+	const { sequence, sessionId, userInput } = tempChatTurnCdo;
+
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => {
 		console.log(
 			`[Orchestrator] Global ${ABORT_TIMEOUT}s timeout triggered for session ${sessionId}.`
 		);
-	});
+		controller.abort();
+	}, ABORT_TIMEOUT * 1000);
 
 	console.log(
 		`[Orchestrator: ${aiModelInfo.model}] Starting response generation for session ${sessionId}, turn ${sequence}...`
@@ -96,10 +100,12 @@ export const receiveBotResponse = async (
 			recalledMemories,
 			characterInfo,
 			profileInfo,
-			userChatMessage,
+			userInput,
 			aiModelInfo,
-			{ signal: overallTimeoutSignal }
+			{ signal: controller.signal }
 		);
+
+		console.log(JSON.stringify(personaResponse, null, 2));
 
 		const botChatMessage = buildChatMessage(
 			'assistant',
@@ -130,6 +136,17 @@ export const receiveBotResponse = async (
 			error,
 			`[Orchestrator] Failed to process chat request for session ${sessionId}, turn ${sequence}.`,
 			'An unexpected error occurred while processing the request.'
+		);
+	} finally {
+		clearTimeout(timeoutId);
+
+		// 3. 함수 종료 시점의 시간을 기록하고, 총 소요 시간을 계산하여 출력합니다.
+		const endTime = performance.now();
+		const durationInMs = endTime - startTime;
+		const durationInSec = (durationInMs / 1000).toFixed(2); // 초 단위로 변환 후 소수점 2자리까지 표시
+
+		console.log(
+			`[Orchestrator] Execution of receiveBotResponse for session ${sessionId} completed in ${durationInSec} seconds.`
 		);
 	}
 };

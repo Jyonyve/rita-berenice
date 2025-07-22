@@ -709,6 +709,86 @@ export const numberToEmotionWordsMap = {
 	],
 } as const;
 
+// A curated list of essential emotion keywords for LLM prompting.
+// This is a more stable and efficient alternative to the exhaustive list.
+export const curatedEmotionKeywords = [
+	// --- Neutral / Default States ---
+	'neutral',
+	'calm',
+	'pensive',
+	'curious',
+	'observant',
+
+	// --- Joy / Happiness ---
+	'content',
+	'happy',
+	'amused',
+	'joyful',
+	'elated',
+	'triumphant',
+	'playful',
+
+	// --- Sadness / Grief ---
+	'disappointed',
+	'sad',
+	'melancholy',
+	'lonely',
+	'heartbroken',
+	'worried',
+	'anxious',
+
+	// --- Anger / Frustration ---
+	'annoyed',
+	'frustrated',
+	'irritated',
+	'angry',
+	'resentful',
+	'indignant',
+
+	// --- Fear / Surprise ---
+	'surprised',
+	'shocked',
+	'uneasy',
+	'nervous',
+	'afraid',
+	'terrified',
+
+	// --- Affection / Love ---
+	'affectionate',
+	'caring',
+	'loving',
+	'passionate',
+	'longing',
+	'sentimental',
+
+	// --- Contempt / Dislike ---
+	'disgusted',
+	'skeptical',
+	'disdainful',
+	'sarcastic',
+	'cold',
+
+	// --- Pride / Confidence ---
+	'confident',
+	'smug',
+	'proud',
+	'bold',
+
+	// --- Shame / Guilt ---
+	'shy',
+	'embarrassed',
+	'ashamed',
+	'guilty',
+	'vulnerable',
+
+	// --- Complex / Nuanced ---
+	'conflicted',
+	'bittersweet',
+	'awe',
+	'determined',
+	'relieved',
+];
+
 // Default portrait number
 export type EmotionKey = keyof typeof numberToEmotionWordsMap;
 export type EmotionValue = (typeof numberToEmotionWordsMap)[EmotionKey][number];

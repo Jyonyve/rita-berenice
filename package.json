@@ -60,7 +60,8 @@
 		"react-virtuoso": "^4.13.0",
 		"supertokens-auth-react": "^0.49.1",
 		"supertokens-web-js": "^0.15.0",
-		"swiper": "^11.2.10"
+		"swiper": "^11.2.10",
+		"tiktoken": "^1.0.21"
 	},
 	"optionalDependencies": {
 		"@chroma-core/default-embed": "^0.1.8",

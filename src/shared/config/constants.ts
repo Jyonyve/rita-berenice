@@ -7,7 +7,8 @@ export const DEFAULT_RELATIONSHIP_RECAP_INTERVAL = 5 as const;
 export const DEFAULT_RECENT_TURN_COUNT: number = 10 as const;
 export const DEFAULT_LOADING_TURN_COUNT: number = 5 as const;
 export const DEFAULT_LOADING_BATCH_TURN_COUNT: number = 20 as const;
-export const MAX_LLM_RETRIES = 5;
+export const RECENT_CHAT_TURN: number = 5 as const;
+export const MAX_LLM_RETRIES = 2;
 export const APPNAME = 'Rita-Berenice' as const;
 export const APPNAME_LOWERCASE = APPNAME.toLowerCase();
 
