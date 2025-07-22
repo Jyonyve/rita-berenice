@@ -113,7 +113,6 @@ export const ChatPage: FC<{
 	const handleSendMessage = useCallback(async () => {
 		setPageError(undefined);
 		setIsProcessing(true);
-		console.log(Date.now());
 
 		const generatePromise = (async () => {
 			if (!userInput.trim()) return null;
@@ -168,7 +167,6 @@ export const ChatPage: FC<{
 			setPageError(`An error occurred: ${err.clientMessage || err.message || 'Unknown error'}`);
 		} finally {
 			setIsProcessing(false);
-			console.log(Date.now());
 		}
 	}, [
 		userInput,

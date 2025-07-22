@@ -21,13 +21,10 @@ import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { tempStore } from '../store/tempStore.js';
 
 /**
- * Orchestrates the backend flow for generating a new character response.
- * It fetches context, generates a response, and appends it as a new "option"
- * to the session's temporary turn data, allowing for multiple re-generations.
- * This function does NOT finalize any turns.
- *
- * @param tempChatTurnCdo - Contains the sessionId, sequence, and new user input.
- * @returns A promise resolving to the updated TempChatTurn, including the new response.
+ * FINAL VERSION:
+ * 클라이언트가 호출하는 메인 엔드포인트.
+ * 타임아웃 및 성능 측정과 같은 전체적인 흐름을 관리하고,
+ * 세부 로직은 내부 헬퍼 함수에 위임합니다.
  */
 export const receiveBotResponse = async (
 	tempChatTurnCdo: TempChatTurnCdo,
@@ -36,9 +33,7 @@ export const receiveBotResponse = async (
 	aiModelInfo: AiModelInfo,
 	recentChatTurnString: string
 ): Promise<TempChatTurn> => {
-	// 1. 함수 시작과 동시에 시간 측정 시작
 	const startTime = performance.now();
-
 	const { sequence, sessionId, userInput } = tempChatTurnCdo;
 
 	const controller = new AbortController();
@@ -54,77 +49,21 @@ export const receiveBotResponse = async (
 	);
 
 	try {
-		let tempTurn: TempChatTurn;
-		try {
-			tempTurn = (await tempStore.getTempChatTurn(sessionId, sequence)).tempChatTurn;
-		} catch (error) {
-			if (error instanceof ApiError && error.status === 404) {
-				console.log(
-					`[Orchestrator] No existing temp turn found. Creating a new one for turn ${sequence}.`
-				);
-				const now = new Date().toISOString();
-				tempTurn = {
-					userId: tempChatTurnCdo.userId,
-					tempTurnId: buildTempChatTurnId(sessionId, sequence),
-					sessionId,
-					sequence,
-					chatTurnSets: [],
-					type: METADATA_TYPES.TEMP,
-					createdAt: now,
-					updatedAt: now,
-					setCount: 0,
-					fixedSetNo: -1,
-				};
-			} else {
-				throw error;
-			}
-		}
+		// 1. 턴 가져오기 또는 생성
+		let tempTurn = await _getOrCreateTempTurn(sessionId, sequence, tempChatTurnCdo.userId);
 
-		const userChatMessage = buildChatMessage(
-			'user',
-			sequence,
-			profileInfo.showName,
+		// 2. 새로운 응답 생성 및 추가 (책임 위임)
+		tempTurn = await _generateAndAppendResponseSet(
+			tempTurn,
 			userInput,
-			sessionId
-		);
-
-		console.log(`[Orchestrator] Recalling memories for: "${userInput.substring(0, 50)}..."`);
-		const recalledMemories = await memoryEngine.recallRelevantMemories(
-			sessionId,
-			userInput,
-			recentChatTurnString
-		);
-
-		console.log(`[Orchestrator] Generating new persona response for ${characterInfo.characterId}...`);
-		const personaResponse = await personaEngine.generateResponse(
-			recalledMemories,
 			characterInfo,
 			profileInfo,
-			userInput,
 			aiModelInfo,
+			recentChatTurnString,
 			{ signal: controller.signal }
 		);
 
-		console.log(JSON.stringify(personaResponse, null, 2));
-
-		const botChatMessage = buildChatMessage(
-			'assistant',
-			sequence,
-			characterInfo.showName,
-			personaResponse.response,
-			sessionId,
-			personaResponse.emotion
-		);
-
-		const newSet: ChatMessageSet = {
-			request: userChatMessage,
-			response: botChatMessage,
-			setNo: tempTurn.chatTurnSets.length,
-		};
-
-		tempTurn.chatTurnSets.push(newSet);
-		tempTurn.setCount = tempTurn.chatTurnSets.length;
-
+		// 3. 최종 상태 저장
 		await tempStore.saveTempChatTurn(tempTurn);
 
 		console.log(
@@ -140,11 +79,9 @@ export const receiveBotResponse = async (
 	} finally {
 		clearTimeout(timeoutId);
 
-		// 3. 함수 종료 시점의 시간을 기록하고, 총 소요 시간을 계산하여 출력합니다.
 		const endTime = performance.now();
 		const durationInMs = endTime - startTime;
-		const durationInSec = (durationInMs / 1000).toFixed(2); // 초 단위로 변환 후 소수점 2자리까지 표시
-
+		const durationInSec = (durationInMs / 1000).toFixed(2);
 		console.log(
 			`[Orchestrator] Execution of receiveBotResponse for session ${sessionId} completed in ${durationInSec} seconds.`
 		);
@@ -214,4 +151,106 @@ export const finalizeChatTurn = async (chatTurnCdo: ChatTurnCdo): Promise<ChatTu
 			'An unexpected error occurred while finalizing the chat turn.'
 		);
 	}
+};
+
+/**
+ * [HELPER] 기존 TempChatTurn을 가져오거나, 존재하지 않을 경우 새로 생성합니다.
+ * 이 함수는 턴 데이터의 상태를 관리하는 책임을 가집니다.
+ * @private
+ */
+
+const _getOrCreateTempTurn = async (
+	sessionId: string,
+	sequence: number,
+	userId: string
+): Promise<TempChatTurn> => {
+	// 1. tempStore에서 TempChatTurn을 가져옵니다.
+	// getTempChatTurn은 에러를 던지는 대신, 결과가 없으면 tempChatTurn: null을 포함한 객체를 반환합니다.
+	const response = await tempStore.getTempChatTurn(sessionId, sequence);
+
+	// 2. 응답 객체에 유효한 tempChatTurn 데이터가 있는지 확인합니다.
+	if (response && response.tempChatTurn) {
+		// 기존 턴 데이터가 존재하면, 해당 데이터를 반환합니다.
+		console.log(`[Orchestrator] Existing temp turn found for turn ${sequence}.`);
+		return response.tempChatTurn;
+	}
+
+	// 3. 기존 턴 데이터가 없으면 (null이면), 새로운 턴을 생성하여 반환합니다.
+	console.log(`[Orchestrator] No existing temp turn found. Creating new for turn ${sequence}.`);
+	const now = new Date().toISOString();
+	return {
+		userId: userId,
+		tempTurnId: buildTempChatTurnId(sessionId, sequence),
+		sessionId,
+		sequence,
+		chatTurnSets: [],
+		type: METADATA_TYPES.TEMP,
+		createdAt: now,
+		updatedAt: now,
+		setCount: 0,
+		fixedSetNo: -1,
+	};
+};
+
+/**
+ * [HELPER] LLM을 호출하여 새로운 응답 세트를 생성하고, 이를 TempChatTurn에 추가합니다.
+ * 이 함수는 실제 AI 응답을 생성하고 데이터를 가공하는 핵심 비즈니스 로직을 담당합니다.
+ * @private
+ */
+const _generateAndAppendResponseSet = async (
+	tempTurn: TempChatTurn,
+	userInput: string,
+	characterInfo: CharacterInfo,
+	profileInfo: ProfileInfo,
+	aiModelInfo: AiModelInfo,
+	recentChatTurnString: string,
+	options: { signal?: AbortSignal }
+): Promise<TempChatTurn> => {
+	// 1. 컨텍스트 회상
+	const recalledMemories = await memoryEngine.recallRelevantMemories(
+		tempTurn.sessionId,
+		userInput,
+		recentChatTurnString
+	);
+
+	// 2. 페르소나 응답 생성
+	const personaResponse = await personaEngine.generateResponse(
+		recalledMemories,
+		characterInfo,
+		profileInfo,
+		userInput,
+		aiModelInfo,
+		options // AbortSignal 전달
+	);
+
+	// 3. 새로운 응답 세트(Set) 생성
+	const userChatMessage = buildChatMessage(
+		'user',
+		tempTurn.sequence,
+		profileInfo.showName,
+		userInput,
+		tempTurn.sessionId
+	);
+	const botChatMessage = buildChatMessage(
+		'assistant',
+		tempTurn.sequence,
+		characterInfo.showName,
+		personaResponse.response,
+		tempTurn.sessionId,
+		personaResponse.emotion
+	);
+
+	const newSet: ChatMessageSet = {
+		request: userChatMessage,
+		response: botChatMessage,
+		setNo: tempTurn.chatTurnSets.length,
+	};
+
+	// 4. 기존 턴에 새로운 세트 추가 및 메타데이터 업데이트
+	tempTurn.chatTurnSets.push(newSet);
+	tempTurn.setCount = tempTurn.chatTurnSets.length;
+	tempTurn.updatedAt = new Date().toISOString();
+
+	// 수정된 TempChatTurn 객체를 반환 (아직 저장되지는 않은 상태)
+	return tempTurn;
 };
