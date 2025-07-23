@@ -1,3 +1,5 @@
+// src/client/component/page/chat/TempTurnDisplay.tsx
+
 import { ChatMessageSet, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { parseEntriesToText } from '#shared/util/chatParseUtils.js';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -27,8 +29,7 @@ interface TempTurnDisplayProps {
 
 /**
  * A component for displaying a temporary chat turn with inline editing capabilities.
- * It combines a clean display with on-hover controls and an in-place editing UI,
- * making it suitable for both desktop and mobile views.
+ * Features smaller, transparent icon buttons and response navigation controls.
  */
 export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 	tempTurn,
@@ -74,6 +75,8 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 			className={commonStyle.turnContainer}
 			sx={{
 				position: 'relative',
+				// Ensure the hover buttons don't interfere with text content
+				paddingTop: isEditing ? 0 : '32px',
 				'& .hover-buttons': {
 					opacity: 0,
 					visibility: 'hidden',
@@ -139,7 +142,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 				</>
 			)}
 
-			{/* Buttons Group */}
+			{/* Buttons Group - Now with smaller, transparent buttons */}
 			<Box
 				className="hover-buttons"
 				sx={{
@@ -147,11 +150,14 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 					top: 4,
 					right: 4,
 					display: 'flex',
-					gap: '4px',
-					p: '2px',
-					borderRadius: '8px',
-					backgroundColor: 'rgba(240, 240, 240, 0.95)',
-					boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+					alignItems: 'center',
+					gap: '2px',
+					p: '1px',
+					borderRadius: '6px',
+					backgroundColor: 'rgba(255, 255, 255, 0.1)', // More transparent
+					backdropFilter: 'blur(4px)',
+					border: '1px solid rgba(255, 255, 255, 0.1)',
+					boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
 				}}
 			>
 				{isEditing ? (
@@ -161,8 +167,16 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 							onClick={handleCancelEdit}
 							disabled={isProcessing}
 							title="Cancel Edit"
+							sx={{
+								minWidth: '24px',
+								width: '24px',
+								height: '24px',
+								padding: '2px',
+								backgroundColor: 'transparent',
+								'&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+							}}
 						>
-							<CancelIcon fontSize="small" />
+							<CancelIcon sx={{ fontSize: '14px' }} />
 						</IconButton>
 						<IconButton
 							size="small"
@@ -170,12 +184,21 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 							disabled={isProcessing || !userEditInput.trim() || !botEditInput.trim()}
 							color="primary"
 							title="Save Changes"
+							sx={{
+								minWidth: '24px',
+								width: '24px',
+								height: '24px',
+								padding: '2px',
+								backgroundColor: 'transparent',
+								'&:hover': { backgroundColor: 'rgba(25, 118, 210, 0.1)' },
+							}}
 						>
-							<SaveIcon fontSize="small" />
+							<SaveIcon sx={{ fontSize: '14px' }} />
 						</IconButton>
 					</>
 				) : (
 					<>
+						{/* Navigation Controls with Count Display */}
 						{tempTurn.chatTurnSets.length > 1 && (
 							<>
 								<IconButton
@@ -183,19 +206,54 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 									title="Previous Response"
 									onClick={handlePrevSet}
 									disabled={currentTempSetNo === 0 || isProcessing}
+									sx={{
+										minWidth: '24px',
+										width: '24px',
+										height: '24px',
+										padding: '2px',
+										backgroundColor: 'transparent',
+										'&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+									}}
 								>
-									<NavigateBeforeIcon fontSize="small" />
+									<NavigateBeforeIcon sx={{ fontSize: '14px' }} />
 								</IconButton>
+
+								{/* Response Count Display */}
+								<Typography
+									variant="caption"
+									sx={{
+										px: 0.5,
+										fontSize: '11px',
+										fontWeight: 500,
+										color: 'rgba(255, 255, 255, 0.8)',
+										userSelect: 'none',
+										minWidth: 'fit-content',
+										textAlign: 'center',
+									}}
+								>
+									{currentTempSetNo + 1}/{tempTurn.chatTurnSets.length}
+								</Typography>
+
 								<IconButton
 									size="small"
 									title="Next Response"
 									onClick={handleNextSet}
 									disabled={currentTempSetNo === tempTurn.chatTurnSets.length - 1 || isProcessing}
+									sx={{
+										minWidth: '24px',
+										width: '24px',
+										height: '24px',
+										padding: '2px',
+										backgroundColor: 'transparent',
+										'&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+									}}
 								>
-									<NavigateNextIcon fontSize="small" />
+									<NavigateNextIcon sx={{ fontSize: '14px' }} />
 								</IconButton>
 							</>
 						)}
+
+						{/* Action Buttons */}
 						{currentSet.response && (
 							<>
 								<IconButton
@@ -203,16 +261,32 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 									onClick={handleStartEdit}
 									disabled={isProcessing}
 									title="Edit this turn"
+									sx={{
+										minWidth: '24px',
+										width: '24px',
+										height: '24px',
+										padding: '2px',
+										backgroundColor: 'transparent',
+										'&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+									}}
 								>
-									<EditIcon fontSize="small" />
+									<EditIcon sx={{ fontSize: '14px' }} />
 								</IconButton>
 								<IconButton
 									size="small"
 									onClick={onRegenerate}
 									disabled={isProcessing}
 									title="Regenerate Response"
+									sx={{
+										minWidth: '24px',
+										width: '24px',
+										height: '24px',
+										padding: '2px',
+										backgroundColor: 'transparent',
+										'&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+									}}
 								>
-									<ReplayIcon fontSize="small" />
+									<ReplayIcon sx={{ fontSize: '14px' }} />
 								</IconButton>
 							</>
 						)}

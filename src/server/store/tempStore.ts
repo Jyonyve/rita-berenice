@@ -63,7 +63,7 @@ export const tempStore = {
 		};
 
 		const documentObj: TempChatTurn = { ...updatedMetadata, chatTurnSets: tempData.chatTurnSets };
-		await upsertRecord(collection, tempData.sessionId, JSON.stringify(documentObj), updatedMetadata);
+		await upsertRecord(collection, tempData.tempTurnId, JSON.stringify(documentObj), updatedMetadata);
 		console.log(`Stored temp data for session ${tempData.sessionId}`);
 	},
 

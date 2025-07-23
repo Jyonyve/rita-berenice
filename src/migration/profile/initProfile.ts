@@ -67,8 +67,8 @@ async function initProfile() {
 
 		// Step 2: It is now safe to upsert profile data. The server will do the embedding.
 		console.log(`Deleting old profiles...`);
-		(await collection).delete({ where: { sessionId: { $eq: 'monday_original_dS0RZ96F' } } });
-		(await collection).delete({ where: { sessionId: { $eq: 'monday_original_7IkTAY0Y' } } });
+		// (await collection).delete({ where: { sessionId: { $eq: 'monday_original_dS0RZ96F' } } });
+		// (await collection).delete({ where: { sessionId: { $eq: 'monday_original_7IkTAY0Y' } } });
 
 		// Upsert sample profiles with a specific userId and unique sessionIds
 		console.log(`Upserting profiles...`);
@@ -78,12 +78,12 @@ async function initProfile() {
 		console.log(
 			await profileStore.storeProfile(getMondayUserProfileTemplate(userId, 'monday_original_7IkTAY0Y'))
 		);
-		console.log(
-			await profileStore.storeProfile(getTarionOriginalProfileTemplate(userId, tarion_original))
-		);
-		console.log(
-			await profileStore.storeProfile(getTarionSpinoffProfileTemplate(userId, tarion_spinoff))
-		);
+		// console.log(
+		// 	await profileStore.storeProfile(getTarionOriginalProfileTemplate(userId, tarion_original))
+		// );
+		// console.log(
+		// 	await profileStore.storeProfile(getTarionSpinoffProfileTemplate(userId, tarion_spinoff))
+		// );
 
 		console.log(`✅ Successfully seeded profiles.`);
 		process.exit(0);

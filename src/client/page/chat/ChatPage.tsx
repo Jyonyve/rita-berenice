@@ -221,10 +221,12 @@ export const ChatPage: FC<{
 			});
 
 			if (result) {
-				const emotion =
-					result.chatTurnSets[result.chatTurnSets.length - 1].response.emotion || DEFAULT_EMOTION;
+				const newSetIndex = result.chatTurnSets.length - 1;
+				const emotion = result.chatTurnSets[newSetIndex]?.response?.emotion || DEFAULT_EMOTION;
+
 				handleCharacterImage(emotion);
 				changeTempChatTurn(result);
+				setCurrentTempSetNo(newSetIndex);
 			}
 		} catch (err: any) {
 			console.error('Regenerate Error:', err);

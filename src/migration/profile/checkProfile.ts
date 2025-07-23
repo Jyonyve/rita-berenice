@@ -29,21 +29,7 @@ async function checkProfile(sessionId: string) {
 		}
 
 		console.log(`Found ${result.ids.length} record(s).`);
-		for (let i = 0; i < result.ids.length; i++) {
-			console.log(`\n--- Record ${i + 1} ---`);
-			console.log(`ID:         `, result.ids[i]);
-			console.log(`Metadata:   `, JSON.stringify(result.metadatas[i], null, 2));
-			console.log(`Document:   `, result.documents[i]);
-			console.log('--------------------');
-
-			if (result.documents[i] === null || result.documents[i] === undefined) {
-				console.error(
-					`\n🚨 CRITICAL FINDING: The 'document' for this record is ${result.documents[i]}. This is the direct cause of the JSON.parse error.`
-				);
-			} else {
-				console.log('✅ Document content appears to be present.');
-			}
-		}
+		console.log(result);
 
 		console.log('\nScript finished successfully.');
 	} catch (error: any) {
