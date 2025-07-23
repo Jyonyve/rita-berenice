@@ -63,6 +63,7 @@ export const parseLlmJsonResponse = <T>(
 		return JSON.parse(extractedJson) as T;
 	} catch (error: any) {
 		// Pass the specific JSON.parse error message for the corrective prompt
+		console.log(`[parseLlmJsonResponse] : ${llmResponse}`);
 		throw new LlmResponseParseError('MALFORMED_SYNTAX', callerContext, llmResponse);
 	}
 };

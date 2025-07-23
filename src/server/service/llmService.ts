@@ -24,6 +24,7 @@ import {
 } from '../util/llmUtils.js';
 import { convertMessageContentToString } from '#shared/util/chatParseUtils.js';
 import { buildNerPrompt, buildTermTranslationPrompt } from '../util/templateUtils.js';
+import z from 'zod';
 
 // --- 저수준 유틸리티 함수 ---
 // 이 함수들은 데이터의 '내용'을 변경하지 않고, '형식'을 보장하는 역할만 합니다.
@@ -103,7 +104,13 @@ export const llmService = {
 			switch (provider) {
 				case 'openai':
 					if (!userApiKeys.openaiApiKey) throw new Error('[llmService] OpenAI API key not found.');
-					return new ChatOpenAI({ apiKey: userApiKeys.openaiApiKey, model, temperature, maxTokens });
+					return new ChatOpenAI({
+						apiKey: userApiKeys.openaiApiKey,
+						model,
+						temperature,
+						maxTokens,
+						user: userId,
+					});
 				case 'anthropic':
 					if (!userApiKeys.anthropicApiKey) throw new Error('[llmService] Anthropic API key not found.');
 					return new ChatAnthropic({
@@ -163,37 +170,49 @@ export const llmService = {
 	},
 
 	/**
-	 * 주어진 messages 배열을 사용하여 LLM API를 직접 호출하는 핵심 함수입니다.
+	 * A generic LLM invocation function that supports optional structured output.
+	 * If a Zod schema is provided, it enforces a JSON response. Otherwise, it
+	 * returns a standard text response.
+	 *
+	 * @param messages - The array of messages for the LLM.
+	 * @param aiModelInfo - The configuration for the selected AI model.
+	 * @param userId - The ID of the user making the request.
+	 * @param options - Optional parameters like an AbortSignal.
+	 * @param zodSchema - An optional Zod schema to enforce structured JSON output.
+	 * @returns A promise that resolves to a string, either plain text or a JSON string.
 	 */
 	invokeLlm: async (
 		messages: ChatCompletionMessageParam[],
 		aiModelInfo: AiModelInfo,
 		userId: string,
-		options?: { signal?: AbortSignal }
+		options?: { signal?: AbortSignal },
+		zodSchema?: z.ZodObject<any> // The optional schema parameter
 	): Promise<string> => {
 		try {
 			await llmService.validateTokenCount(messages, aiModelInfo);
 			const sanitizedMessages = reconstructMessagesForApi(messages);
 			const llmClient = await llmService.createLlmInstance(aiModelInfo, userId);
-			console.log(`[llmService] Using LangChain .invoke() for model: ${aiModelInfo.model}`);
 			const langChainMessages = convertToLangChainMessages(sanitizedMessages);
 
-			// --- THE MODERN SOLUTION IS HERE ---
-			// Use `.withStructuredOutput()` to bind the desired JSON schema to the model.
-			// This is the type-safe, recommended replacement for `.bind({ response_format: ... })`.
-			const structuredLlm = llmClient.withStructuredOutput(llmJsonResponseSchema, {
-				name: 'persona_response', // A name for the "tool" the model thinks it's calling
-				user: userId, // Pass OpenAI-specific parameters here
-			});
+			// --- This is the core logic for flexible output ---
+			if (zodSchema) {
+				// If a schema is provided, use structured output.
+				console.log(`[llmService] Invoking model with structured output (Zod schema)`);
+				const structuredLlm = llmClient.withStructuredOutput(zodSchema);
 
-			// The invoke call is now clean and generic.
-			const structuredOutput = await structuredLlm.invoke(langChainMessages, {
-				signal: options?.signal,
-			});
+				const structuredOutput = await structuredLlm.invoke(langChainMessages, {
+					signal: options?.signal,
+				});
 
-			// The output is already a guaranteed-to-be-valid JavaScript object.
-			// We just need to stringify it for the return type.
-			return JSON.stringify(structuredOutput);
+				// The output is a guaranteed-to-be-valid JavaScript object.
+				return JSON.stringify(structuredOutput);
+			} else {
+				// If no schema is provided, perform a standard text invocation.
+				console.log(`[llmService] Invoking model with standard text output`);
+				const responseMessage = await llmClient.invoke(langChainMessages, { signal: options?.signal });
+
+				return convertMessageContentToString(responseMessage.content);
+			}
 		} catch (error: any) {
 			if (error?.name === 'LlmResponseParseError') {
 				throw error;
@@ -207,6 +226,7 @@ export const llmService = {
 			throw new Error(`[llmService] LLM invocation failed: ${errorMessage}`);
 		}
 	},
+
 	/**
 	 * Translates a proper noun using the default free chat model.
 	 */

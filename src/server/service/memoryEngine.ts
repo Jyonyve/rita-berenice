@@ -190,8 +190,6 @@ export const memoryEngine = {
 				turn.request,
 				charInfo.characterInfo,
 				turn.response,
-				loreIds,
-				historyIds,
 				termGuidanceMap
 			);
 
