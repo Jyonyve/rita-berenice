@@ -8,6 +8,7 @@ import { useToast } from '../../provider/ToastProvider.jsx';
 import { getLangAlertText } from '../../util/translateUtils.js';
 import { AiModelSelector } from './AiModelSelector.jsx';
 import { AllModelNames } from '#shared/domain/aimodel/AiInfoTypes.js';
+import { REQUEST_CHARACTER_LIMIT } from '#shared/config/constants.js';
 
 interface UserInputProps {
 	sessionId: string;
@@ -19,11 +20,6 @@ interface UserInputProps {
 	modelName: AllModelNames;
 	onAiModel: (modelName: AllModelNames) => void;
 }
-
-// --- [START OF CHANGE] ---
-// Define the character limit as a constant for easy maintenance.
-const CHARACTER_LIMIT = 1000;
-// --- [END OF CHANGE] ---
 
 export const UserInput: FC<UserInputProps> = ({
 	sessionId,
@@ -58,7 +54,7 @@ export const UserInput: FC<UserInputProps> = ({
 
 	return (
 		<Box>
-			<GlassBox margin={1}>
+			<Box margin={1}>
 				<TextField
 					placeholder="Enter your message"
 					variant="outlined"
@@ -74,16 +70,16 @@ export const UserInput: FC<UserInputProps> = ({
 								mr: 1, // Adds a little margin to the right
 							},
 						},
-						htmlInput: { maxLength: CHARACTER_LIMIT },
+						htmlInput: { maxLength: REQUEST_CHARACTER_LIMIT },
 						input: { sx: { fontSize: theme.typography.body2.fontSize } },
 					}}
 					onChange={onChange}
 					disabled={isDisabled}
 					onKeyDown={handleKeyDown}
-					error={value.length >= CHARACTER_LIMIT}
-					helperText={`${value.length} / ${CHARACTER_LIMIT}`}
+					error={value.length > REQUEST_CHARACTER_LIMIT}
+					helperText={`${value.length} / ${REQUEST_CHARACTER_LIMIT}`}
 				/>
-			</GlassBox>
+			</Box>
 			{/* Row 2: Model Selector and Send Button */}
 			<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginX: 1 }}>
 				<AiModelSelector modelName={modelName} onAiModel={onAiModel} />

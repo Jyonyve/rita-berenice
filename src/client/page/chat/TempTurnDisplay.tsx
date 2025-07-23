@@ -8,9 +8,11 @@ import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import ReplayIcon from '@mui/icons-material/Replay';
 import SaveIcon from '@mui/icons-material/Save';
-import { Box, CircularProgress, IconButton, TextField, Typography } from '@mui/material';
+import { Box, CircularProgress, IconButton, TextField, Typography, useTheme } from '@mui/material';
 import { FC, useEffect, useState } from 'react';
 import { commonStyle, styleEntryFont } from '../../util/styleUtils.jsx';
+import { REQUEST_CHARACTER_LIMIT, RESPONSE_CHARACTER_LIMIT } from '#shared/config/constants.js';
+import { GlassBox } from '../../layout/glass/GlassBox.jsx';
 
 /**
  * Props for the TempTurnDisplay component.
@@ -29,7 +31,7 @@ interface TempTurnDisplayProps {
 
 /**
  * A component for displaying a temporary chat turn with inline editing capabilities.
- * Features smaller, transparent icon buttons and response navigation controls.
+ * It now uses dynamic labels and a background color change to indicate text overflow.
  */
 export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 	tempTurn,
@@ -42,10 +44,10 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 	onRegenerate,
 	changeTempSetNo,
 }) => {
+	const theme = useTheme();
 	const [isEditing, setIsEditing] = useState(false);
 	const currentSet: ChatMessageSet | undefined = tempTurn?.chatTurnSets?.[currentTempSetNo];
 
-	// Exit editing mode if the response set changes
 	useEffect(() => {
 		setIsEditing(false);
 	}, [currentTempSetNo]);
@@ -54,63 +56,83 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 
 	const handleStartEdit = () => {
 		if (!currentSet) return;
-		// Populate text fields with current content
 		onEditTempTurnText(parseEntriesToText(currentSet.request.entries), true);
 		onEditTempTurnText(parseEntriesToText(currentSet.response.entries), false);
 		setIsEditing(true);
 	};
 
 	const handleCancelEdit = () => setIsEditing(false);
-
 	const handleSaveAndExitEdit = () => {
 		onSaveTempTurnText();
 		setIsEditing(false);
 	};
-
 	const handlePrevSet = () => changeTempSetNo(currentTempSetNo - 1);
 	const handleNextSet = () => changeTempSetNo(currentTempSetNo + 1);
+
+	const isUserTextOverflow = userEditInput.length > REQUEST_CHARACTER_LIMIT;
+	const isBotTextOverflow = botEditInput.length > RESPONSE_CHARACTER_LIMIT;
 
 	return (
 		<Box
 			className={commonStyle.turnContainer}
 			sx={{
 				position: 'relative',
-				// Ensure the hover buttons don't interfere with text content
-				paddingTop: isEditing ? 0 : '32px',
+				// 1. If isEditing, padding is fixed. Otherwise, it's 0 initially.
+				paddingTop: isEditing ? theme.spacing(4.5) : 0,
+				// 2. The transition still applies for the non-editing hover effect.
+				transition: 'padding-top 0.2s ease-in-out',
+
+				// 3. Define the hover-buttons class styles.
 				'& .hover-buttons': {
-					opacity: 0,
-					visibility: 'hidden',
+					// If isEditing, buttons are always visible. Otherwise, they start hidden.
+					opacity: isEditing ? 1 : 0,
+					visibility: isEditing ? 'visible' : 'hidden',
 					transition: 'opacity 0.2s, visibility 0.2s',
 				},
-				'&:hover .hover-buttons': { opacity: 1, visibility: 'visible' },
+
+				// 4. The hover effect only applies when NOT in editing mode.
+				...(!isEditing && {
+					'&:hover': {
+						paddingTop: theme.spacing(4.5),
+						'& .hover-buttons': { opacity: 1, visibility: 'visible' },
+					},
+				}),
 			}}
 		>
 			{isEditing ? (
-				<>
-					{/* Editing UI */}
+				<GlassBox gap={2}>
 					<TextField
 						fullWidth
 						multiline
-						label="Edit User Request"
+						label={currentSet.request.showName}
 						variant="outlined"
 						value={userEditInput}
 						onChange={(e) => onEditTempTurnText(e.target.value, true)}
 						disabled={isProcessing}
-						sx={{ mb: 1 }}
+						slotProps={{
+							htmlInput: { maxLength: REQUEST_CHARACTER_LIMIT },
+							input: { sx: { fontSize: theme.typography.body2.fontSize } },
+						}}
+						error={isUserTextOverflow} // Use the built-in error prop
+						sx={{ mb: 3 }}
 					/>
 					<TextField
 						fullWidth
 						multiline
-						label="Edit Bot Response"
+						label={currentSet.response.showName}
 						variant="outlined"
 						value={botEditInput}
 						onChange={(e) => onEditTempTurnText(e.target.value, false)}
 						disabled={isProcessing}
+						slotProps={{
+							htmlInput: { maxLength: REQUEST_CHARACTER_LIMIT },
+							input: { sx: { fontSize: theme.typography.body2.fontSize } },
+						}}
+						error={isUserTextOverflow} // Use the built-in error prop
 					/>
-				</>
+				</GlassBox>
 			) : (
 				<>
-					{/* Display UI */}
 					<Box sx={{ mb: 1 }}>
 						{currentSet.request.entries.map((entry, idx) => (
 							<Typography
@@ -142,7 +164,6 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 				</>
 			)}
 
-			{/* Buttons Group - Now with smaller, transparent buttons */}
 			<Box
 				className="hover-buttons"
 				sx={{
@@ -154,7 +175,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 					gap: '2px',
 					p: '1px',
 					borderRadius: '6px',
-					backgroundColor: 'rgba(255, 255, 255, 0.1)', // More transparent
+					backgroundColor: 'rgba(255, 255, 255, 0.1)',
 					backdropFilter: 'blur(4px)',
 					border: '1px solid rgba(255, 255, 255, 0.1)',
 					boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
@@ -167,38 +188,27 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 							onClick={handleCancelEdit}
 							disabled={isProcessing}
 							title="Cancel Edit"
-							sx={{
-								minWidth: '24px',
-								width: '24px',
-								height: '24px',
-								padding: '2px',
-								backgroundColor: 'transparent',
-								'&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-							}}
 						>
 							<CancelIcon sx={{ fontSize: '14px' }} />
 						</IconButton>
 						<IconButton
 							size="small"
 							onClick={handleSaveAndExitEdit}
-							disabled={isProcessing || !userEditInput.trim() || !botEditInput.trim()}
-							color="primary"
+							disabled={
+								isProcessing ||
+								!userEditInput.trim() ||
+								!botEditInput.trim() ||
+								isUserTextOverflow ||
+								isBotTextOverflow
+							}
 							title="Save Changes"
-							sx={{
-								minWidth: '24px',
-								width: '24px',
-								height: '24px',
-								padding: '2px',
-								backgroundColor: 'transparent',
-								'&:hover': { backgroundColor: 'rgba(25, 118, 210, 0.1)' },
-							}}
+							color="secondary"
 						>
 							<SaveIcon sx={{ fontSize: '14px' }} />
 						</IconButton>
 					</>
 				) : (
 					<>
-						{/* Navigation Controls with Count Display */}
 						{tempTurn.chatTurnSets.length > 1 && (
 							<>
 								<IconButton
@@ -206,19 +216,9 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 									title="Previous Response"
 									onClick={handlePrevSet}
 									disabled={currentTempSetNo === 0 || isProcessing}
-									sx={{
-										minWidth: '24px',
-										width: '24px',
-										height: '24px',
-										padding: '2px',
-										backgroundColor: 'transparent',
-										'&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-									}}
 								>
 									<NavigateBeforeIcon sx={{ fontSize: '14px' }} />
 								</IconButton>
-
-								{/* Response Count Display */}
 								<Typography
 									variant="caption"
 									sx={{
@@ -227,33 +227,20 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 										fontWeight: 500,
 										color: 'rgba(255, 255, 255, 0.8)',
 										userSelect: 'none',
-										minWidth: 'fit-content',
-										textAlign: 'center',
 									}}
 								>
 									{currentTempSetNo + 1}/{tempTurn.chatTurnSets.length}
 								</Typography>
-
 								<IconButton
 									size="small"
 									title="Next Response"
 									onClick={handleNextSet}
 									disabled={currentTempSetNo === tempTurn.chatTurnSets.length - 1 || isProcessing}
-									sx={{
-										minWidth: '24px',
-										width: '24px',
-										height: '24px',
-										padding: '2px',
-										backgroundColor: 'transparent',
-										'&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-									}}
 								>
 									<NavigateNextIcon sx={{ fontSize: '14px' }} />
 								</IconButton>
 							</>
 						)}
-
-						{/* Action Buttons */}
 						{currentSet.response && (
 							<>
 								<IconButton
@@ -261,14 +248,6 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 									onClick={handleStartEdit}
 									disabled={isProcessing}
 									title="Edit this turn"
-									sx={{
-										minWidth: '24px',
-										width: '24px',
-										height: '24px',
-										padding: '2px',
-										backgroundColor: 'transparent',
-										'&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-									}}
 								>
 									<EditIcon sx={{ fontSize: '14px' }} />
 								</IconButton>
@@ -277,14 +256,6 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 									onClick={onRegenerate}
 									disabled={isProcessing}
 									title="Regenerate Response"
-									sx={{
-										minWidth: '24px',
-										width: '24px',
-										height: '24px',
-										padding: '2px',
-										backgroundColor: 'transparent',
-										'&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' },
-									}}
 								>
 									<ReplayIcon sx={{ fontSize: '14px' }} />
 								</IconButton>
