@@ -9,8 +9,7 @@ import { ScrollGlow } from '../../layout/index.js';
 import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
 
 interface ChatLogProps {
-	chatTurns: ChatTurn[];
-	tempChatTurn?: TempChatTurn;
+	allTurns: (ChatTurn | TempChatTurn)[];
 	currentTempSetNo: number;
 	changeTempSetNo: (index: number) => void;
 	isLoadingChat: boolean;
@@ -21,19 +20,19 @@ interface ChatLogProps {
 	onEditTempTurnText: (value: string, req: boolean) => void;
 	onSaveTempTurnText: () => void;
 	onRegenerateResponse: () => void;
-	handleCharacterImage: (emotion: string) => void;
 	shouldUseMobileLayout: boolean;
+	focusedTurnIndex: number; // Receive the focused index
+	onFocusTurn: (index: number) => void; // Receive the handler
 }
 
 export const ChatLog: FC<ChatLogProps> = memo(
 	({
-		chatTurns,
-		tempChatTurn,
+		allTurns,
 		isLoadingChat,
 		isProcessing,
 		clientError,
-		handleCharacterImage,
 		shouldUseMobileLayout,
+		onFocusTurn,
 		...rest
 	}) => {
 		// --- HOOKS ---
@@ -41,89 +40,34 @@ export const ChatLog: FC<ChatLogProps> = memo(
 			useScrollEffect();
 
 		// --- REFS ---
-		const focusedTurnRef = useRef<number>(-1);
 		const virtuosoRef = useRef<VirtuosoHandle>(null);
 		const rangeTimeoutRef = useRef<NodeJS.Timeout | null>(null); // ✅ This is what you need
-
-		// Combine historical turns with the temporary turn for rendering
-		const allTurns = tempChatTurn ? [...chatTurns, tempChatTurn] : chatTurns;
-
-		// --- Handle turn focus changes ---
-		const handleTurnFocusChange = useCallback(
-			(turnIndex: number) => {
-				if (focusedTurnRef.current === turnIndex) return;
-
-				focusedTurnRef.current = turnIndex;
-				const turn = allTurns[turnIndex];
-
-				if (turn) {
-					let emotion: string = DEFAULT_EMOTION;
-
-					// Extract emotion from the turn
-					if ('setCount' in turn) {
-						// TempChatTurn
-						const currentSet = turn.chatTurnSets[rest.currentTempSetNo] || turn.chatTurnSets[0];
-						emotion = currentSet?.response?.emotion || DEFAULT_EMOTION;
-					} else {
-						// ChatTurn
-						emotion = turn.response?.emotion || DEFAULT_EMOTION;
-					}
-
-					console.log(`handleCharacterImage(emotion), turnIndex: ${turnIndex} ${emotion}`);
-					handleCharacterImage(emotion);
-				}
-			},
-			[allTurns, handleCharacterImage, rest.currentTempSetNo]
-		);
 
 		// --- Handle viewport range changes with debouncing ---
 		const handleRangeChanged = useCallback(
 			(range: { startIndex: number; endIndex: number }) => {
-				console.log(`startIndex ${range.startIndex}, endIndex ${range.endIndex}`);
+				if (rangeTimeoutRef.current) clearTimeout(rangeTimeoutRef.current);
 
-				// Clear any existing timeout
-				if (rangeTimeoutRef.current) {
-					clearTimeout(rangeTimeoutRef.current);
-				}
-
-				// Set a new timeout to process the range after it stabilizes
 				rangeTimeoutRef.current = setTimeout(() => {
-					if (range.startIndex < 0 || range.endIndex <= 0 || range.startIndex >= allTurns.length) {
-						return;
-					}
-
-					if (range.startIndex >= range.endIndex) {
-						if (range.startIndex === allTurns.length - 1) {
-							handleTurnFocusChange(allTurns.length - 1);
-						}
-						return;
-					}
-
 					const lastTurnIndex = allTurns.length - 1;
+					if (lastTurnIndex < 0) return;
 
-					// Always focus on last turn when we're near the end
+					let newFocusIndex = -1;
 					if (range.startIndex >= lastTurnIndex - 1) {
-						console.log(`Near end detected, focusing on last turn: ${lastTurnIndex}`);
-						handleTurnFocusChange(lastTurnIndex);
+						newFocusIndex = lastTurnIndex;
 					} else {
-						// Focus on middle of visible range
 						const actualEndIndex = Math.min(range.endIndex - 1, lastTurnIndex);
 						const actualStartIndex = Math.max(range.startIndex, 0);
-						const middleIndex = Math.floor((actualStartIndex + actualEndIndex) / 2);
-						console.log(`Middle focus: ${middleIndex}`);
-						handleTurnFocusChange(middleIndex);
+						newFocusIndex = Math.floor((actualStartIndex + actualEndIndex) / 2);
 					}
-				}, 100); // 100ms debounce
-			},
-			[handleTurnFocusChange, allTurns.length]
-		);
 
-		// --- Initialize with the last turn ---
-		useEffect(() => {
-			if (allTurns.length > 0) {
-				handleTurnFocusChange(allTurns.length - 1);
-			}
-		}, [allTurns.length, handleTurnFocusChange]);
+					if (newFocusIndex !== -1) {
+						onFocusTurn(newFocusIndex); // Call the parent's handler
+					}
+				}, 100);
+			},
+			[allTurns.length, onFocusTurn]
+		);
 
 		// --- Cleanup timeout on unmount ---
 		useEffect(() => {

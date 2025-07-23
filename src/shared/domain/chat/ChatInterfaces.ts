@@ -1,5 +1,5 @@
 import { METADATA_TYPES, MetadataType } from '#shared/config/constants.js';
-import { allEmotionKeywordsList } from '../../config/emotionWordsMapper.js';
+import { allEmotionKeywordsList, EmotionValue } from '../../config/emotionWordsMapper.js';
 import { DefaultAiRole } from '../aimodel/AiInfoTypes.js';
 
 export type ChatRoleType = DefaultAiRole;
@@ -40,7 +40,7 @@ export interface ChatMessageMetadata {
 	messageId: string;
 	createdAt: string; // ISO 8601 format
 	updatedAt: string; // ISO 8601 format
-	emotion: (typeof allEmotionKeywordsList)[number];
+	emotion: EmotionValue;
 	type: typeof METADATA_TYPES.MESSAGE;
 }
 

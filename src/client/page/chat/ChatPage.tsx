@@ -80,6 +80,9 @@ export const ChatPage: FC<{
 	const [userEditInput, setUserEditInput] = useState('');
 	const [botEditInput, setBotEditInput] = useState('');
 	const [aiModelInfo, setAiModelInfo] = useState<AiModelInfo>(DEFAULT_CHAT_MODEL_FREE);
+	const [focusedTurnIndex, setFocusedTurnIndex] = useState(-1);
+
+	const allTurns = tempChatTurn ? [...chatTurns, tempChatTurn] : chatTurns;
 
 	// --- HANDLERS ---
 	// Simplified: just update emotion in Loader context
@@ -89,6 +92,25 @@ export const ChatPage: FC<{
 		},
 		[setCurrentEmotion]
 	);
+
+	useEffect(() => {
+		if (focusedTurnIndex < 0 || focusedTurnIndex >= allTurns.length) return;
+
+		const focusedTurn = allTurns[focusedTurnIndex];
+		let emotion = DEFAULT_EMOTION;
+
+		if (focusedTurn) {
+			if ('setCount' in focusedTurn) {
+				// It's a TempChatTurn
+				emotion = focusedTurn.chatTurnSets[currentTempSetNo]?.response?.emotion || DEFAULT_EMOTION;
+			} else {
+				// It's a finalized ChatTurn
+				emotion = focusedTurn.response?.emotion || DEFAULT_EMOTION;
+			}
+		}
+
+		handleCharacterImage(emotion);
+	}, [focusedTurnIndex, currentTempSetNo, allTurns, handleCharacterImage]);
 
 	const handleAiModel = useCallback(
 		(modelName: AllModelNames) => {
@@ -105,19 +127,6 @@ export const ChatPage: FC<{
 		},
 		[showError]
 	);
-
-	// Initialize emotion from chat data
-	useEffect(() => {
-		let emotion: string = DEFAULT_EMOTION;
-
-		if (tempChatTurn) {
-			emotion = tempChatTurn.chatTurnSets[currentTempSetNo]?.response?.emotion || DEFAULT_EMOTION;
-		} else if (chatTurns.length > 0) {
-			emotion = chatTurns[chatTurns.length - 1].response?.emotion || DEFAULT_EMOTION;
-		}
-
-		handleCharacterImage(emotion);
-	}, [chatTurns, tempChatTurn, currentTempSetNo, handleCharacterImage]);
 
 	const handleSendMessage = useCallback(async () => {
 		setPageError(undefined);
@@ -162,8 +171,6 @@ export const ChatPage: FC<{
 
 			if (newTempTurnResult) {
 				changeTempChatTurn(newTempTurnResult);
-				const emotion = newTempTurnResult.chatTurnSets[0]?.response?.emotion || DEFAULT_EMOTION;
-				handleCharacterImage(emotion);
 				setUserInput('');
 			}
 
@@ -282,8 +289,7 @@ export const ChatPage: FC<{
 
 	// --- SHARED CHAT LOG PROPS ---
 	const chatLogProps = {
-		chatTurns,
-		tempChatTurn,
+		allTurns,
 		isLoadingChat: isLoadingHistory,
 		isProcessing,
 		clientError: clientError || pageError,
@@ -292,10 +298,11 @@ export const ChatPage: FC<{
 		onEditTempTurnText: handleEditTempTurnText,
 		onSaveTempTurnText: handleSaveTempTurnText,
 		onRegenerateResponse: handleRegenerateResponse,
+		shouldUseMobileLayout,
+		focusedTurnIndex, // Pass down the state
+		onFocusTurn: setFocusedTurnIndex, // Pass down the setter
 		currentTempSetNo,
 		changeTempSetNo: setCurrentTempSetNo,
-		handleCharacterImage,
-		shouldUseMobileLayout,
 	};
 
 	const userInputProps = {
