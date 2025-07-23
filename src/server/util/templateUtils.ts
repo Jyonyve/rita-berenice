@@ -95,8 +95,8 @@ export const buildPersonaSystemPrompt = (
 	profileInfo: ProfileInfo,
 	recalledMemories: MemoryResponse
 ): string => {
-	const charName = characterInfo.name;
-	const userName = profileInfo.name;
+	const charName = characterInfo.showName;
+	const userName = profileInfo.showName;
 	const langCode = recalledMemories.langCode;
 
 	const instructionForBackend = characterInfo.instruction.replaceAll(

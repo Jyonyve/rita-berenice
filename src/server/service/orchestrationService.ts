@@ -19,7 +19,7 @@ import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { buildChatMessage, parseSessionId } from '#shared/util/chatParseUtils.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { tempStore } from '../store/tempStore.js';
-import { MemoryResponse } from '#shared/api/ModuleResponse.js';
+import { MemoryResponse, PersonaResponse } from '#shared/api/ModuleResponse.js';
 import { detectLanguage } from '../util/languageUtils.js';
 
 /**
@@ -55,7 +55,7 @@ export const receiveBotResponse = async (
 		let tempTurn = await _getOrCreateTempTurn(sessionId, sequence, tempChatTurnCdo.userId);
 
 		// 2. 새로운 응답 생성 및 추가 (책임 위임)
-		tempTurn = await _generateAndAppendResponseSet(
+		tempTurn = await _generateAndAppendResponse(
 			tempTurn,
 			userInput,
 			characterInfo,
@@ -200,11 +200,11 @@ const _getOrCreateTempTurn = async (
 // In src/server/services/orchestrationService.ts
 
 /**
- * [HELPER] LLM을 호출하여 새로운 응답 세트를 생성하고, 이를 TempChatTurn에 추가합니다.
- * 이 함수는 실제 AI 응답을 생성하고 데이터를 가공하는 핵심 비즈니스 로직을 담당합니다.
+ * [HELPER] Generates a new AI response and adds it to the temp turn's options.
+ * This is the core business logic for a single response generation.
  * @private
  */
-const _generateAndAppendResponseSet = async (
+async function _generateAndAppendResponse(
 	tempTurn: TempChatTurn,
 	userInput: string,
 	characterInfo: CharacterInfo,
@@ -212,10 +212,9 @@ const _generateAndAppendResponseSet = async (
 	aiModelInfo: AiModelInfo,
 	recentChatTurnString: string,
 	options: { signal?: AbortSignal }
-): Promise<TempChatTurn> => {
+): Promise<TempChatTurn> {
+	// 1. Recall relevant memories for context.
 	let recalledMemories: MemoryResponse;
-
-	// 1. Recall context with graceful error handling for "Not Found"
 	try {
 		recalledMemories = await memoryEngine.recallRelevantMemories(
 			tempTurn.sessionId,
@@ -224,9 +223,7 @@ const _generateAndAppendResponseSet = async (
 		);
 	} catch (error: any) {
 		if (error instanceof ApiError && error.status === 404) {
-			console.warn(
-				`[Orchestrator] No relevant memories found for session ${tempTurn.sessionId}. Proceeding with empty context.`
-			);
+			console.warn(`[Orchestrator] No memories found for session. Proceeding with empty context.`);
 			recalledMemories = {
 				langCode: detectLanguage(userInput),
 				shortTermHistory: JSON.parse(recentChatTurnString) ?? [],
@@ -237,43 +234,29 @@ const _generateAndAppendResponseSet = async (
 				relationshipRecapSummary: '',
 			};
 		} else {
-			console.error('[Orchestrator] A critical error occurred during memory recall.', error);
-			throw error;
+			throw error; // Re-throw critical errors
 		}
 	}
 
-	// 2. Generate persona response with targeted error logging
-	let personaResponse;
-	try {
-		personaResponse = await personaEngine.generateResponse(
-			recalledMemories,
-			characterInfo,
-			profileInfo,
-			userInput,
-			aiModelInfo,
-			options // Pass AbortSignal
-		);
-	} catch (error: any) {
-		// This block is for debugging. It catches a critical error, logs it with context,
-		// and then re-throws it to stop the orchestration as intended.
-		console.error(
-			`[Orchestrator] CRITICAL ERROR during personaEngine.generateResponse for session ${tempTurn.sessionId}.`,
-			// Logging the full error object is key to debugging
-			JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
-		);
-		// Re-throw the error to ensure it's handled as a fatal issue by the main service
-		throw error;
-	}
+	// 2. Generate the new persona response.
+	const personaResponse = await personaEngine.generateResponse(
+		recalledMemories,
+		characterInfo,
+		profileInfo,
+		userInput,
+		aiModelInfo,
+		options
+	);
 
-	// 3. Create and append the new chat message set
-	const userChatMessage = buildChatMessage(
+	// 3. Create the new bot response message.
+	const request = buildChatMessage(
 		'user',
 		tempTurn.sequence,
 		profileInfo.showName,
 		userInput,
 		tempTurn.sessionId
 	);
-	const botChatMessage = buildChatMessage(
+	const response = buildChatMessage(
 		'assistant',
 		tempTurn.sequence,
 		characterInfo.showName,
@@ -281,17 +264,11 @@ const _generateAndAppendResponseSet = async (
 		tempTurn.sessionId,
 		personaResponse.emotion
 	);
+	const newChatTurnSet: ChatMessageSet = { request, response, setNo: tempTurn.chatTurnSets.length };
 
-	const newSet: ChatMessageSet = {
-		request: userChatMessage,
-		response: botChatMessage,
-		setNo: tempTurn.chatTurnSets.length,
-	};
-
-	// 4. Update and return the modified TempChatTurn
-	tempTurn.chatTurnSets.push(newSet);
-	tempTurn.setCount = tempTurn.chatTurnSets.length;
+	// 4. Append the new response to the options array and update the timestamp.
+	tempTurn.chatTurnSets.push(newChatTurnSet);
 	tempTurn.updatedAt = new Date().toISOString();
 
 	return tempTurn;
-};
+}

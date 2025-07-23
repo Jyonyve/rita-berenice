@@ -46,10 +46,10 @@ export const getTarionSpinoffProfileTemplate = (userId: string, sessionId: strin
 });
 
 export const getMondayUserProfileTemplate = (userId: string, sessionId: string): ProfileCdo => ({
-	name: 'yonyve',
+	name: 'jyonyve',
 	gender: 'female',
 	title: 'AI lover developer',
-	showName: '요니브',
+	showName: '죠니브',
 	description: `A user profile for session ${sessionId}.`,
 	userId: userId,
 	sessionId: sessionId,
@@ -67,7 +67,8 @@ async function initProfile() {
 
 		// Step 2: It is now safe to upsert profile data. The server will do the embedding.
 		console.log(`Deleting old profiles...`);
-		(await collection).delete({ where: { sessionId: { $eq: sessionId } } });
+		(await collection).delete({ where: { sessionId: { $eq: 'monday_original_dS0RZ96F' } } });
+		(await collection).delete({ where: { sessionId: { $eq: 'monday_original_7IkTAY0Y' } } });
 
 		// Upsert sample profiles with a specific userId and unique sessionIds
 		console.log(`Upserting profiles...`);

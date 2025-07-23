@@ -39,7 +39,11 @@ export const parseTextToEntries = (text: string) => {
 		if (match[1]) {
 			entries.push({ type: 'action', prompt: match[1].trim() });
 		} else if (match[2]) {
-			entries.push({ type: 'dialogue', prompt: match[2].trim() });
+			let dialogueText = match[2].trim();
+			if (dialogueText.startsWith('"') && dialogueText.endsWith('"')) {
+				dialogueText = dialogueText.substring(1, dialogueText.length - 1);
+			}
+			entries.push({ type: 'dialogue', prompt: dialogueText });
 		}
 	}
 
