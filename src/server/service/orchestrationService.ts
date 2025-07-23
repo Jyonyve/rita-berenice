@@ -19,6 +19,8 @@ import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { buildChatMessage, parseSessionId } from '#shared/util/chatParseUtils.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { tempStore } from '../store/tempStore.js';
+import { MemoryResponse } from '#shared/api/ModuleResponse.js';
+import { detectLanguage } from '../util/languageUtils.js';
 
 /**
  * FINAL VERSION:
@@ -154,43 +156,48 @@ export const finalizeChatTurn = async (chatTurnCdo: ChatTurnCdo): Promise<ChatTu
 };
 
 /**
- * [HELPER] 기존 TempChatTurn을 가져오거나, 존재하지 않을 경우 새로 생성합니다.
- * 이 함수는 턴 데이터의 상태를 관리하는 책임을 가집니다.
+ * [HELPER] Retrieves an existing TempChatTurn or creates a new one if it doesn't exist.
+ * This function now uses error handling to manage the control flow.
  * @private
  */
-
 const _getOrCreateTempTurn = async (
 	sessionId: string,
 	sequence: number,
 	userId: string
 ): Promise<TempChatTurn> => {
-	// 1. tempStore에서 TempChatTurn을 가져옵니다.
-	// getTempChatTurn은 에러를 던지는 대신, 결과가 없으면 tempChatTurn: null을 포함한 객체를 반환합니다.
-	const response = await tempStore.getTempChatTurn(sessionId, sequence);
-
-	// 2. 응답 객체에 유효한 tempChatTurn 데이터가 있는지 확인합니다.
-	if (response && response.tempChatTurn) {
-		// 기존 턴 데이터가 존재하면, 해당 데이터를 반환합니다.
+	try {
+		// 1. Attempt to fetch the TempChatTurn.
+		// getTempChatTurn will now throw an ApiError with status 404 if not found.
+		const response = await tempStore.getTempChatTurn(sessionId, sequence);
 		console.log(`[Orchestrator] Existing temp turn found for turn ${sequence}.`);
+		// Assuming the response object contains the turn, e.g., { tempChatTurn: ... }
 		return response.tempChatTurn;
+	} catch (error: any) {
+		// 2. Check if the error is the specific "Not Found" error.
+		if (error instanceof ApiError && error.status === 404) {
+			// 3. If it is a 404, the turn doesn't exist. Create a new one.
+			console.log(`[Orchestrator] No existing temp turn found. Creating new for turn ${sequence}.`);
+			const now = new Date().toISOString();
+			return {
+				userId,
+				tempTurnId: buildTempChatTurnId(sessionId, sequence),
+				sessionId,
+				sequence,
+				chatTurnSets: [],
+				type: METADATA_TYPES.TEMP,
+				createdAt: now,
+				updatedAt: now,
+				setCount: 0,
+				fixedSetNo: -1,
+			};
+		} else {
+			// 4. For any other error (e.g., 500), re-throw it to be handled by the caller.
+			console.error(`[Orchestrator] An unexpected error occurred in _getOrCreateTempTurn:`, error);
+			throw error;
+		}
 	}
-
-	// 3. 기존 턴 데이터가 없으면 (null이면), 새로운 턴을 생성하여 반환합니다.
-	console.log(`[Orchestrator] No existing temp turn found. Creating new for turn ${sequence}.`);
-	const now = new Date().toISOString();
-	return {
-		userId: userId,
-		tempTurnId: buildTempChatTurnId(sessionId, sequence),
-		sessionId,
-		sequence,
-		chatTurnSets: [],
-		type: METADATA_TYPES.TEMP,
-		createdAt: now,
-		updatedAt: now,
-		setCount: 0,
-		fixedSetNo: -1,
-	};
 };
+// In src/server/services/orchestrationService.ts
 
 /**
  * [HELPER] LLM을 호출하여 새로운 응답 세트를 생성하고, 이를 TempChatTurn에 추가합니다.
@@ -206,24 +213,59 @@ const _generateAndAppendResponseSet = async (
 	recentChatTurnString: string,
 	options: { signal?: AbortSignal }
 ): Promise<TempChatTurn> => {
-	// 1. 컨텍스트 회상
-	const recalledMemories = await memoryEngine.recallRelevantMemories(
-		tempTurn.sessionId,
-		userInput,
-		recentChatTurnString
-	);
+	let recalledMemories: MemoryResponse;
 
-	// 2. 페르소나 응답 생성
-	const personaResponse = await personaEngine.generateResponse(
-		recalledMemories,
-		characterInfo,
-		profileInfo,
-		userInput,
-		aiModelInfo,
-		options // AbortSignal 전달
-	);
+	// 1. Recall context with graceful error handling for "Not Found"
+	try {
+		recalledMemories = await memoryEngine.recallRelevantMemories(
+			tempTurn.sessionId,
+			userInput,
+			recentChatTurnString
+		);
+	} catch (error: any) {
+		if (error instanceof ApiError && error.status === 404) {
+			console.warn(
+				`[Orchestrator] No relevant memories found for session ${tempTurn.sessionId}. Proceeding with empty context.`
+			);
+			recalledMemories = {
+				langCode: detectLanguage(userInput),
+				shortTermHistory: JSON.parse(recentChatTurnString) ?? [],
+				longTermHistory: [],
+				relevantLore: [],
+				relevantHistory: [],
+				factualRecapSummary: '',
+				relationshipRecapSummary: '',
+			};
+		} else {
+			console.error('[Orchestrator] A critical error occurred during memory recall.', error);
+			throw error;
+		}
+	}
 
-	// 3. 새로운 응답 세트(Set) 생성
+	// 2. Generate persona response with targeted error logging
+	let personaResponse;
+	try {
+		personaResponse = await personaEngine.generateResponse(
+			recalledMemories,
+			characterInfo,
+			profileInfo,
+			userInput,
+			aiModelInfo,
+			options // Pass AbortSignal
+		);
+	} catch (error: any) {
+		// This block is for debugging. It catches a critical error, logs it with context,
+		// and then re-throws it to stop the orchestration as intended.
+		console.error(
+			`[Orchestrator] CRITICAL ERROR during personaEngine.generateResponse for session ${tempTurn.sessionId}.`,
+			// Logging the full error object is key to debugging
+			JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+		);
+		// Re-throw the error to ensure it's handled as a fatal issue by the main service
+		throw error;
+	}
+
+	// 3. Create and append the new chat message set
 	const userChatMessage = buildChatMessage(
 		'user',
 		tempTurn.sequence,
@@ -246,11 +288,10 @@ const _generateAndAppendResponseSet = async (
 		setNo: tempTurn.chatTurnSets.length,
 	};
 
-	// 4. 기존 턴에 새로운 세트 추가 및 메타데이터 업데이트
+	// 4. Update and return the modified TempChatTurn
 	tempTurn.chatTurnSets.push(newSet);
 	tempTurn.setCount = tempTurn.chatTurnSets.length;
 	tempTurn.updatedAt = new Date().toISOString();
 
-	// 수정된 TempChatTurn 객체를 반환 (아직 저장되지는 않은 상태)
 	return tempTurn;
 };

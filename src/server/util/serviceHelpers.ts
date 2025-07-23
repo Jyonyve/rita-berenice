@@ -11,22 +11,24 @@ import { ChromaResponse } from '#shared/api/ModuleResponse.js';
  */
 export function handleServiceError(
 	caughtError: any,
-	contextMessage: string, // e.g., "Failed to get characters by showName '${showName}'"
-	clientMessage: string = 'An internal server error occurred.' // Default client message for 500s
+	contextMessage: string,
+	clientMessage: string = 'An internal server error occurred.'
 ): never {
-	// 'never' indicates this function always throws
+	// 1. Log the error immediately with its context, regardless of type.
+	// This ensures you always have visibility in your server logs.
+	console.error(
+		`Service Error - ${contextMessage}:`,
+		// If it's an ApiError, its message is already descriptive. Otherwise, use the raw message.
+		caughtError.message || caughtError,
+		caughtError.stack || ''
+	);
+
+	// 2. If it's already a standardized ApiError, just re-throw it.
 	if (caughtError instanceof ApiError) {
 		throw caughtError;
 	}
 
-	// Log the original error with context
-	console.error(
-		`Service Error - ${contextMessage}:`,
-		caughtError.message,
-		caughtError.stack || caughtError
-	);
-
-	// Throw a new ApiError, incorporating the original error's message for better internal logging
+	// 3. For all other error types, wrap them in a generic 500 ApiError.
 	throw new ApiError(
 		500,
 		`${contextMessage}: ${caughtError.message}`, // Developer-facing message
@@ -114,7 +116,7 @@ export class ApiError extends Error {
  * A specific error for when an LLM's response cannot be parsed into the expected JSON format.
  * Extends ApiError to be handled correctly by the global error middleware.
  */
-// In src/server/util/errorHandlers.ts
+// In src/server/util/serviceHelpers.ts
 
 export class LlmResponseParseError extends ApiError {
 	public reason: 'NOT_FOUND' | 'MALFORMED_SYNTAX';

@@ -31,7 +31,7 @@ export const ChatPage: FC<{
 	userId: string;
 }> = ({ characterInfo, profileInfo, sessionId, userId }) => {
 	const { receiveBotResponse, finalizeChatTurn } = useOrchestrationApi();
-	const { saveTempChatTurn } = useTempChatApi();
+	const { saveTempChatTurn, getTempChatTurn } = useTempChatApi();
 	const theme = useTheme();
 	const { showError } = useErrorDialog();
 
@@ -62,6 +62,15 @@ export const ChatPage: FC<{
 		getNextSequence,
 		getRecentTurnsForMemory,
 	} = useChatState(sessionId);
+
+	const tempSequence = chatTurns.length > 0 ? getNextSequence() : 0;
+	const tempTurnRes = getTempChatTurn(sessionId, tempSequence).data;
+
+	useEffect(() => {
+		if (tempTurnRes?.tempChatTurn) {
+			changeTempChatTurn(tempTurnRes.tempChatTurn);
+		}
+	}, [tempTurnRes]);
 
 	// --- STATE (simplified - no image state) ---
 	const [currentTempSetNo, setCurrentTempSetNo] = useState(0);
@@ -186,8 +195,12 @@ export const ChatPage: FC<{
 	]);
 
 	const handleRegenerateResponse = useCallback(async () => {
-		if (!tempChatTurn || !tempChatTurn.chatTurnSets[0]?.request || !aiModelInfo) {
+		if (!aiModelInfo) {
 			setPageError('Cannot regenerate: Missing data or AI model info.');
+			return;
+		}
+		if (!tempChatTurn || !tempChatTurn.chatTurnSets[0]?.request) {
+			setPageError('Cannot regenerate: No curretn Temp chat turn.');
 			return;
 		}
 		setIsProcessing(true);

@@ -6,7 +6,6 @@ export const supportAiModelInfo: Record<string, Record<string, string[]>> = {
 			'anthropic/claude-sonnet-4',
 			'anthropic/claude-3.7-sonnet',
 			'anthropic/claude-3.5-sonnet-20240620',
-			'anthropic/claude-3.5-haiku',
 		],
 		google: ['google/gemini-2.5-pro'],
 		openai: ['openai/gpt-4o', 'openai/gpt-4.1'],
@@ -54,3 +53,30 @@ export const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
 	'deepseek/deepseek-chat-v3-0324:free': 32_000,
 	'mistralai/mistral-small-3.2-24b-instruct:free': 32_000,
 };
+
+export const correctAiModelInfo: Record<string, Record<string, string[]>> = {
+	openrouter: {
+		anthropic: ['anthropic/claude-3.5-haiku'],
+		google: [
+			'google/gemma-3-4b-it:free',
+			'google/gemma-3-12b-it:free',
+			'google/gemma-3-4b-it',
+			'google/gemma-3-12b-it',
+		],
+		openai: ['openai/gpt-4o-mini'],
+		deepseek: ['deepseek/deepseek-chat-v3-0324:free'],
+		mistralai: ['mistralai/mistral-small-3.2-24b-instruct:free'],
+	},
+	// direct: {
+	// 	// Mapping previous types to direct providers
+	// 	openai: ['gpt-4o-mini'], // Previously 'gpt'
+	// 	anthropic: ['claude-3.5-haiku'], // Previously 'claude'
+	// 	google: [
+	// 		'gemini-2.0-flash-001',
+	// 		'gemini-2.0-flash-lite-001',
+	// 		'gemini-2.5-pro-preview-05-06',
+	// 		'gemini-2.5-flash-preview-04-17',
+	// 		'gemini-2.0-flash-live-preview-04-09',
+	// 	],
+	// },
+} as const;

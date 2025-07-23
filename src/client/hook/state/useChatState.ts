@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { ChatTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { loadAllCachedMessagesForSession, saveMessagesToCache } from '../../util/idbUtils.js';
-import { useChatApi } from '../api/index.js';
+import { useChatApi, useTempChatApi } from '../api/index.js';
 import { RECENT_CHAT_TURN } from '#shared/config/constants.js';
 
 export const useChatState = (sessionId: string) => {
@@ -116,7 +116,7 @@ export const useChatState = (sessionId: string) => {
 
 	const getNextSequence = useCallback((): number => {
 		let seq = getCurrentSequence();
-		return seq === -1 ? 0 : seq++;
+		return seq === -1 ? 0 : ++seq;
 	}, [getCurrentSequence]);
 
 	const getRecentTurnsForMemory = useCallback((): ChatTurn[] => {

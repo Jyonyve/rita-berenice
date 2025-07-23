@@ -34,32 +34,15 @@ export const useTempChatApi = () => {
 			queryKey: ['getTempChatTurn', sessionId, sequence], // The query key now reflects the method name
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAMES.TEMP, 'getTempChatTurn', [sessionId, sequence]);
-				const response = await apiClient.get<TempChatResponse>(url);
+				const response = await apiClient.get(url, {
+					_suppressToast: true, // This flag is still useful
+					_suppress404Error: true, // NEW: This will prevent console logs for 404s
+				});
 				return response.data;
 			},
-			enabled: !!sessionId && typeof sequence === 'number', // Only run if both are available
-			retry: (failureCount, error) => (error.name === '404' ? false : failureCount < 3),
+			enabled: !!sessionId && !(sequence < 0), // Only run if both are available
+			retry: (failureCount, error) => (error.name === '404' ? false : failureCount < 1),
 		});
 
-	const getLastTempTurnsForSessions = (sessionIds: string[]) =>
-		useQuery<TempChatResponse, Error>({
-			queryKey: ['getLastTempTurnsForSessions', sessionIds],
-			queryFn: async () => {
-				// Prevent making an API call with no session IDs.
-				// Construct the URL. The sessionIds array is joined into a comma-separated string
-				// to be passed as a single query parameter.
-				const url = `${genApiUrl(
-					MODULE_NAMES.TEMP,
-					'getLastTempTurnsForSessions'
-				)}?sessionIds=${sessionIds.join(',')}`;
-
-				const response = await apiClient.get<TempChatResponse>(url);
-				return response.data;
-			},
-			enabled: !!sessionIds && sessionIds.length > 0,
-			// Optional: Refetch data periodically for a "live" session list.
-			// refetchInterval: 30000, // e.g., every 30 seconds
-		});
-
-	return { saveTempChatTurn, getTempChatTurn, getLastTempTurnsForSessions };
+	return { saveTempChatTurn, getTempChatTurn };
 };

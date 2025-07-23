@@ -21,6 +21,7 @@ import {
 } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { parseEntriesToText } from '#shared/util/chatParseUtils.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { correctAiModelInfo } from '#shared/config/supportAiModelInfo.js';
 
 const buildChatCompletion = (role: DefaultAiRole, content: string, name?: string) => {
 	return { role, content, name };
@@ -127,39 +128,67 @@ export const personaEngine = {
 				'personaEngine.generateResponse (Attempt 1)'
 			);
 		} catch (error: any) {
-			// --- 4. HANDLE ERRORS ---
-			// Check if it's a parsing error that we can try to self-correct.
-			// if (error instanceof LlmResponseParseError) {
-			// 	console.warn(
-			// 		`[personaEngine] Initial LLM response failed parsing. Reason: ${error.reason}. Attempting self-correction...`
-			// 	);
+			// --- 2. Error Handling: Check for a fixable parsing error ---
+			if (error?.name === 'LlmResponseParseError') {
+				console.warn(
+					`[personaEngine] Initial response failed parsing. Reason: ${error.reason}. Attempting self-correction.`,
+					{
+						// By logging the details in an object, you can expand it
+						// in your console to view the full, untruncated rawResponse.
+						details: error.details,
+					}
+				);
 
-			// 	// --- LLM Call #2: Corrective Attempt ---
-			// 	try {
-			// 		const requiredSchema = '{"response": "string", "emotion": "string"}';
-			// 		const correctionPrompt = buildJsonCorrectionPrompt(
-			// 			error.details.rawResponse,
-			// 			`The JSON was malformed. Reason: ${error.reason}.`,
-			// 			requiredSchema
-			// 		)
+				// --- 3. Second Attempt: Corrective LLM Call ---
+				try {
+					// Define cheaper, faster models for the correction task
 
-			// 		// Attempt to parse the corrected response. If this fails, the outer catch will handle it.
-			// 		return parseLlmJsonResponse<PersonaResponse>(
-			// 			correctedLlmResponse,
-			// 			'personaEngine.generateResponse (Attempt 2)'
-			// 		);
-			// 	} catch (correctionError: any) {
-			// 		console.error('[personaEngine] Self-correction attempt also failed.', correctionError);
-			// 		// Throw the original error because it's more indicative of the root cause.
-			// 		// This ensures the failure propagates up to receiveBotResponse.
-			// 		throw error;
-			// 	}
-			// }
+					// Select the appropriate correction model based on the original provider
+					const correctionModelName = correctAiModelInfo[aiModelInfo.platform][aiModelInfo.provider][0];
 
-			// For all other errors (including direct LLM invocation errors or failed corrections),
-			// log the context and re-throw the error to be handled by the caller.
-			console.error('[personaEngine] Failed to generate response for session.', error);
-			throw error;
+					const correctionAiModelInfo: AiModelInfo = {
+						...aiModelInfo, // Inherit platform, temp, etc.
+						model: correctionModelName,
+						maxTokens: 800, // Correction should be short
+					};
+
+					console.log(`[personaEngine] Invoking correction model: ${correctionModelName}`);
+
+					const requiredSchema = '{"response": "string", "emotion": "string"}';
+					const correctionPrompt = buildJsonCorrectionPrompt(
+						error.details.rawResponse,
+						`The JSON was malformed. Reason: ${error.reason}.`,
+						requiredSchema
+					);
+
+					// The entire request is now a single user instruction, ensuring compatibility.
+					const correctionMessages: ChatCompletionMessageParam[] = [
+						buildChatCompletion(
+							'user',
+							`You are an expert at fixing malformed JSON. Please correct the following text to match the required schema.\n\n${correctionPrompt}`
+						),
+					];
+
+					const correctedLlmResponse = await llmService.invokeLlm(
+						correctionMessages,
+						correctionAiModelInfo,
+						profileInfo.userId,
+						options
+					);
+
+					return parseLlmJsonResponse<PersonaResponse>(
+						correctedLlmResponse,
+						'personaEngine (Attempt 2)'
+					);
+				} catch (correctionError: any) {
+					console.error('[personaEngine] Self-correction attempt also failed.', correctionError);
+					throw error;
+				}
+			} else {
+				// This `else` block makes it clear what happens for other errors.
+				console.error('[personaEngine] A non-recoverable error occurred.', error);
+				throw error;
+			}
 		}
 	},
 };

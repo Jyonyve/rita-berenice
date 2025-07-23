@@ -13,7 +13,12 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { parseSessionId } from '#shared/util/chatParseUtils.js';
-import { useChatApi, useCharacterApi, useProfileApi } from '../../hook/api/index.js';
+import {
+	useChatApi,
+	useCharacterApi,
+	useProfileApi,
+	useTempChatApi,
+} from '../../hook/api/index.js';
 import { saveMessagesToCache } from '../../util/idbUtils.js';
 import { ChatPage } from './ChatPage.jsx';
 import { useAuth } from '../../provider/AuthProvider.jsx';

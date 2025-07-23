@@ -75,31 +75,51 @@ export const llmService = {
 	/**
 	 * LLM 클라이언트 인스턴스를 생성합니다.
 	 */
-	createLlmInstance: async (
-		aiInfo: AiModelInfo,
-		userId: string
-	): Promise<BaseChatModel | OpenAI> => {
-		const { platform, provider, model, ...llmOptions } = aiInfo;
+	createLlmInstance: async (aiInfo: AiModelInfo, userId: string): Promise<BaseChatModel> => {
+		const { platform, provider, model, temperature, maxTokens } = aiInfo;
 		const userApiKeys = await credentialStore.getUserApiKeys(userId);
 
 		if (platform === 'openrouter') {
-			if (!userApiKeys.openrouterApiKey) throw new Error('[llmService] OpenRouter API key not found.');
-			return new OpenAI({
+			if (!userApiKeys.openrouterApiKey) {
+				throw new Error(`[llmService] API key for platform 'openrouter' not found.`);
+			}
+			return new ChatOpenAI({
 				apiKey: userApiKeys.openrouterApiKey,
-				baseURL: 'https://openrouter.ai/api/v1',
+				model,
+				temperature,
+				maxTokens,
+				configuration: {
+					baseURL: 'https://openrouter.ai/api/v1',
+					defaultHeaders: {
+						'HTTP-Referer': 'https://github.com/Jyonyve/rita-berenice',
+						'X-Title': 'Rita Berenice',
+					},
+				},
 			});
 		}
+
+		// 2. Handle the 'direct' platform with its various providers
 		if (platform === 'direct') {
 			switch (provider) {
 				case 'openai':
 					if (!userApiKeys.openaiApiKey) throw new Error('[llmService] OpenAI API key not found.');
-					return new ChatOpenAI({ apiKey: userApiKeys.openaiApiKey, model, ...llmOptions });
+					return new ChatOpenAI({ apiKey: userApiKeys.openaiApiKey, model, temperature, maxTokens });
 				case 'anthropic':
 					if (!userApiKeys.anthropicApiKey) throw new Error('[llmService] Anthropic API key not found.');
-					return new ChatAnthropic({ apiKey: userApiKeys.anthropicApiKey, model, ...llmOptions });
+					return new ChatAnthropic({
+						apiKey: userApiKeys.anthropicApiKey,
+						model,
+						temperature,
+						maxTokens,
+					});
 				case 'google':
 					if (!userApiKeys.googleApiKey) throw new Error('[llmService] Google API key not found.');
-					return new ChatGoogleGenerativeAI({ apiKey: userApiKeys.googleApiKey, model, ...llmOptions });
+					return new ChatGoogleGenerativeAI({
+						apiKey: userApiKeys.googleApiKey,
+						model,
+						temperature,
+						maxOutputTokens: maxTokens,
+					});
 				default:
 					throw new Error(`[llmService] Unsupported direct provider: ${provider}`);
 			}
@@ -154,56 +174,34 @@ export const llmService = {
 		try {
 			await llmService.validateTokenCount(messages, aiModelInfo);
 			const sanitizedMessages = reconstructMessagesForApi(messages);
-			const llmOrClient = await llmService.createLlmInstance(aiModelInfo, userId);
+			const llmClient = await llmService.createLlmInstance(aiModelInfo, userId);
+			console.log(`[llmService] Using LangChain .invoke() for model: ${aiModelInfo.model}`);
+			const langChainMessages = convertToLangChainMessages(sanitizedMessages);
 
-			if (isDirectOpenAIClient(llmOrClient)) {
-				// OpenRouter 경로는 SDK 호환성 문제를 피하기 위해 fetch를 사용합니다.
-				console.log(`[llmService] Using native fetch for OpenRouter model: ${aiModelInfo.model}`);
-				const userApiKeys = await credentialStore.getUserApiKeys(userId);
-				if (!userApiKeys.openrouterApiKey)
-					throw new Error('[llmService] OpenRouter API key not found.');
+			// --- THE MODERN SOLUTION IS HERE ---
+			// Use `.withStructuredOutput()` to bind the desired JSON schema to the model.
+			// This is the type-safe, recommended replacement for `.bind({ response_format: ... })`.
+			const structuredLlm = llmClient.withStructuredOutput(llmJsonResponseSchema, {
+				name: 'persona_response', // A name for the "tool" the model thinks it's calling
+				user: userId, // Pass OpenAI-specific parameters here
+			});
 
-				const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-					method: 'POST',
-					headers: {
-						Authorization: `Bearer ${userApiKeys.openrouterApiKey}`,
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify({
-						model: aiModelInfo.model,
-						messages: sanitizedMessages, // 상위 서비스에서 가공된 messages를 그대로 전달
-						temperature: aiModelInfo.temperature,
-						response_format: { type: 'json_object' },
-						max_tokens: aiModelInfo.maxTokens,
-						user: userId,
-					}),
-					signal: options?.signal,
-				});
+			// The invoke call is now clean and generic.
+			const structuredOutput = await structuredLlm.invoke(langChainMessages, {
+				signal: options?.signal,
+			});
 
-				if (!response.ok) {
-					const errorText = await response.text();
-					throw new Error(`OpenRouter API request failed with status ${response.status}: ${errorText}`);
-				}
-
-				const responseData = await response.json();
-				const rawContent = responseData?.choices?.[0]?.message?.content ?? '';
-				const parsedObject = parseLlmJsonResponse(rawContent, 'llmService.invokeLlm');
-				return JSON.stringify(parsedObject);
-			} else {
-				// Direct(LangChain) 경로는 .invoke()를 사용합니다.
-				console.log(`[llmService] Using LangChain .invoke for direct model: ${aiModelInfo.model}`);
-				const langChainMessages = convertToLangChainMessages(sanitizedMessages);
-				const responseMessage = await llmOrClient.invoke(langChainMessages, {
-					signal: options?.signal,
-				});
-				const rawContent = convertMessageContentToString(responseMessage.content);
-				const parsedObject = parseLlmJsonResponse(rawContent, 'llmService.invokeLlm');
-				return JSON.stringify(parsedObject);
-			}
+			// The output is already a guaranteed-to-be-valid JavaScript object.
+			// We just need to stringify it for the return type.
+			return JSON.stringify(structuredOutput);
 		} catch (error: any) {
+			if (error?.name === 'LlmResponseParseError') {
+				throw error;
+			}
+			// For all other unexpected errors, log them and wrap them in a generic Error.
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			console.error(
-				`[llmService.invokeLlm] Invocation failed for '${aiModelInfo.model}':`,
+				`[llmService.invokeLlm] A non-parsing error occurred for '${aiModelInfo.model}':`,
 				errorMessage
 			);
 			throw new Error(`[llmService] LLM invocation failed: ${errorMessage}`);

@@ -27,12 +27,23 @@ export function setupApiClient(
 		return config;
 	});
 	// 응답 인터셉터: 에러 처리
+	// In your apiClient setup file
+
 	apiClient.interceptors.response.use(
 		(response) => response,
 		async (error) => {
 			const originalRequest = error.config as any;
+
+			// Gracefully handle 404 errors when the custom flag is set
+			if (error?.response?.status === 404 && originalRequest._suppress404Error) {
+				// By rejecting the promise directly here, we bypass the logging and toasting logic below,
+				// allowing the calling code (e.g., React Query's `retry` function) to handle it silently.
+				return Promise.reject(error);
+			}
+
+			// Handle 401 Unauthorized for session refresh
 			if (error?.response?.status === 401 && !originalRequest._retry) {
-				originalRequest._retry = true; // Mark as retried
+				originalRequest._retry = true;
 				const refreshResult = await Session.attemptRefreshingSession();
 				if (refreshResult) {
 					return apiClient(originalRequest); // Retry ONCE
@@ -42,9 +53,11 @@ export function setupApiClient(
 				return Promise.reject(error);
 			}
 
-			// For all other errors, show a toast
+			// For all other errors, process and show a toast unless suppressed
 			const processedError = processApiError(error);
-			addToast(processedError.clientMessage || 'apiClient error.', 'error');
+			if (!originalRequest._suppressToast) {
+				addToast(processedError.clientMessage || 'An unexpected error occurred.', 'error');
+			}
 			return Promise.reject(processedError);
 		}
 	);
