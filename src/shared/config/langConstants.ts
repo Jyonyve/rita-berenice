@@ -22,6 +22,7 @@ export const LANG_KEYS = {
 	CHARACTERS: 'CHARACTERS',
 	LOGOUT: 'LOGOUT',
 	LOADING_CHARACTERS: 'LOADING_CHARACTERS',
+	LOADING_CHAT: 'LOADING_CHAT',
 	LOADING_SESSIONS: 'LOADING_SESSIONS',
 	FAILED_LOAD_CHAT: 'FAILED_LOAD_CHAT',
 	CREATING_SESSION: 'CREATING_SESSION',
@@ -50,6 +51,7 @@ export const langConstants: LangRecord = {
 		kor: '채팅을 불러오는 데 실패했습니다. 다시 시도해 주세요.',
 		eng: 'Failed to load essential chat data. Please try again.',
 	},
+	LOADING_CHAT: { kor: '채팅을 불러오는 중입니다...', eng: 'Loading chat...' },
 };
 
 export const alertToastConstants: LangRecord = {

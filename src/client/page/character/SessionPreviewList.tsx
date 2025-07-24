@@ -82,13 +82,14 @@ export const SessionPreviewList: FC<{
 												width: '100%',
 											}}
 										>
-											<Typography
-												variant="subtitle2"
-												sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', pr: 2 }}
-											>
+											<Typography variant="subtitle2" sx={{ overflow: 'hidden', whiteSpace: 'nowrap', pr: 2 }}>
 												{info.title}
 											</Typography>
-											<Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0 }}>
+											<Typography
+												variant="body2"
+												color="text.secondary"
+												sx={{ flexShrink: 0, textOverflow: 'ellipsis' }}
+											>
 												{info.updatedAt}
 											</Typography>
 										</Box>

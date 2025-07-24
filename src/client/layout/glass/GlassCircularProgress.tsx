@@ -18,10 +18,7 @@ export const GlassCircularProgress: FC<GlassCircularProgressProps> = ({
 
 	// Define the glow style using the drop-shadow filter
 	const glowStyle = glow
-		? {
-				// The drop-shadow filter traces the shape of the SVG, creating a perfect glow.
-				filter: `drop-shadow(0 0 3px ${glowColor}) drop-shadow(0 0 6px ${glowColor})`,
-			}
+		? { filter: `drop-shadow(0 0 3px ${glowColor}) drop-shadow(0 0 6px ${glowColor})` }
 		: {};
 
 	return (
@@ -30,13 +27,16 @@ export const GlassCircularProgress: FC<GlassCircularProgressProps> = ({
 				display: 'inline-flex',
 				// Apply the glow effect to the wrapping box
 				...glowStyle,
+
+				// Set the color of the Box, which the CircularProgress will inherit.
+				color: glowColor,
+
 				// Allow for custom styles to be passed in
 				...sx,
 			}}
 		>
-			<GlassCircularProgress
-				// The underlying spinner's color can be set to inherit,
-				// or you can customize it further if needed.
+			<CircularProgress
+				// The spinner will now inherit the glowColor from the parent Box.
 				color="inherit"
 				// Pass down all other props like `size`, `thickness`, etc.
 				{...rest}

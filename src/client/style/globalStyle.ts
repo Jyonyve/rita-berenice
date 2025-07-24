@@ -48,8 +48,8 @@ export const getTheme = (mode: 'light' | 'dark') =>
 
 						// Hide the scrollbar visuals on the main element itself
 						'&::-webkit-scrollbar': { display: 'none' },
-						'-ms-overflow-style': 'none', // IE and Edge
-						'scrollbar-width': 'none', // Firefox
+						msOverflowStyle: 'none', // IE and Edge
+						scrollbarWidth: 'none', // Firefox
 					},
 
 					// --- REVISED GLOBAL PAGE CONTAINER STYLE ---
@@ -78,8 +78,8 @@ export const getTheme = (mode: 'light' | 'dark') =>
 
 					'.hide-scrollbar::-webkit-scrollbar': { display: 'none' },
 					'.hide-scrollbar': {
-						'-ms-overflow-style': 'none', // IE and Edge
-						'scrollbar-width': 'none', // Firefox
+						msOverflowStyle: 'none', // Correct: camelCase for -ms-overflow-style
+						scrollbarWidth: 'none', // Correct: camelCase for scrollbar-width
 					},
 				}),
 			},

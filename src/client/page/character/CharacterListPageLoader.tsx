@@ -16,7 +16,7 @@ export function CharacterListPageLoader() {
 				sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}
 			>
 				<GlassCircularProgress colorVariant="silver" />
-				<Typography sx={{ ml: 2 }}>{getLangText(LANG_KEYS.LOADING_CHARACTERS)}</Typography>
+				<Typography sx={{ mt: 2 }}>{getLangText(LANG_KEYS.LOADING_CHARACTERS)}</Typography>
 			</Container>
 		);
 	}

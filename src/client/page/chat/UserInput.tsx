@@ -1,7 +1,14 @@
 // src/client/component/page/chat/UserInput.tsx
 
 import { LANG_KEYS } from '#shared/config/langConstants.js';
-import { Box, CircularProgress, Switch, TextField, useTheme } from '@mui/material';
+import {
+	Box,
+	CircularProgress,
+	FormControlLabel,
+	Switch,
+	TextField,
+	useTheme,
+} from '@mui/material';
 import React, { ChangeEvent, ChangeEventHandler, FC } from 'react';
 import { GlassBox, GlassButton, GlassCircularProgress } from '../../layout/glass/index.js';
 import { useToast } from '../../provider/ToastProvider.jsx';
@@ -9,6 +16,7 @@ import { getLangAlertText } from '../../util/translateUtils.js';
 import { AiModelSelector } from './AiModelSelector.jsx';
 import { AllModelNames } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { REQUEST_CHARACTER_LIMIT } from '#shared/config/constants.js';
+import { AdultSwitch } from '../../layout/AdultSwitch.jsx';
 
 interface UserInputProps {
 	sessionId: string;
@@ -86,15 +94,15 @@ export const UserInput: FC<UserInputProps> = ({
 			</Box>
 			{/* Row 2: Model Selector and Send Button */}
 			<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginX: 1 }}>
-				<Box>
+				<Box sx={{ display: 'flex', alignItems: 'center' }}>
 					<AiModelSelector modelName={modelName} onAiModel={onAiModel} />
-					<Switch
-						sx={{ pl: 1 }}
+					<AdultSwitch
 						checked={!!isScene}
 						onChange={onScene}
 						color="default"
 						size="small"
-						aria-label="toggle-scene"
+						slotProps={{ input: { 'aria-label': 'toggle scene switch' } }}
+						sx={{ ml: 1 }}
 					/>
 				</Box>
 				<GlassButton

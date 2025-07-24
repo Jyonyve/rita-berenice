@@ -4,3 +4,4 @@ export * from './SolidMetallicButton.jsx';
 export * from './RomanticTitle.jsx';
 export * from './HoverBox.jsx';
 export * from './ScrollGlow.jsx';
+export * from './AdultSwitch.jsx';

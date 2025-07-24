@@ -155,7 +155,8 @@ export function ChatPageLoader() {
 	) {
 		return (
 			<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-				<GlassCircularProgress />
+				<GlassCircularProgress colorVariant="gold" />
+				<Typography sx={{ mt: 2 }}>{getLangText(LANG_KEYS.LOADING_CHAT)}</Typography>
 			</Box>
 		);
 	}
