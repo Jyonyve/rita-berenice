@@ -39,7 +39,6 @@ export const SupportAiModelList = Object.values(supportAiModelInfo)
 
 // 5. Define AiRole (remains unchanged)
 export type DefaultAiRole = 'system' | 'user' | 'assistant';
-export type AiRole = DefaultAiRole | 'custom';
 
 export const DEFAULT_CHAT_MODEL_FREE: AiModelInfo = {
 	platform: 'openrouter',

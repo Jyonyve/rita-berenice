@@ -1,5 +1,5 @@
 // src/server/services/loreStore.ts
-import { Collection, Where } from 'chromadb';
+import { Collection, Where, WhereDocument } from 'chromadb';
 
 import { METADATA_TYPES } from '#shared/config/constants.js';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
@@ -128,43 +128,41 @@ export const loreStore = {
 	queryLores: async (
 		characterId: string,
 		queryTexts: string[],
-		options?: { categories?: string[]; keywords?: string[]; topics?: string[]; limit?: number }
+		whereFilter?: Where, // CHANGED: Replaced 'options' with specific filter objects
+		whereDocument?: WhereDocument,
+		limit?: number
 	): Promise<LoreResponse> => {
-		validateServiceId(characterId, collectionType);
+		validateServiceId(characterId, 'lore');
 		const collection = await loreStore._getCollection();
 
-		// Build where clause with unified metadata structure
-		const whereConditions: Where[] = [
+		// Build the final where clause by combining mandatory filters with optional, AI-generated ones.
+		const baseConditions: Where[] = [
 			{ type: { $eq: METADATA_TYPES.LORE } },
 			{ characterId: { $eq: characterId } },
 		];
 
-		if (!!options) {
-			const { categories, keywords, topics } = options;
-			categories?.length && whereConditions.push({ category: { $in: categories } });
-			keywords?.length && whereConditions.push({ keywords: { $in: keywords } });
-			topics?.length && whereConditions.push({ topics: { $in: topics } });
-		}
-
-		const whereClause: Where = { $and: whereConditions };
+		// If an external filter is provided, add it to the conditions.
+		const whereClause: Where = whereFilter
+			? { $and: [...baseConditions, whereFilter] }
+			: { $and: baseConditions };
 
 		try {
 			const rawResults = await queryRecords(
 				collection,
 				queryTexts,
 				whereClause,
-				undefined,
-				options?.limit
+				whereDocument, // Pass the document filter through
+				limit
 			);
 
-			// Handle array of results from queryRecords
+			// The rest of your result processing logic remains valid.
 			const allLores: LoreInfo[] = [];
 			const allIds: string[] = [];
 			const allDocuments: (string | null)[] = [];
 			const allMetadatas: (any | null)[] = [];
 
 			for (const rawResult of rawResults) {
-				const results = validateChromaResponse(rawResult, 'getList', collectionType);
+				const results = validateChromaResponse(rawResult, 'getList', 'lore');
 				const lores = loreStore._constuctLore(results).loreInfos;
 
 				allLores.push(...lores);
@@ -173,55 +171,63 @@ export const loreStore = {
 				allMetadatas.push(...results.metadatas);
 			}
 
+			// De-duplicate results before returning
+			const uniqueLores = Array.from(new Map(allLores.map((l) => [l.loreId, l])).values());
+
 			return {
 				ids: allIds,
 				documents: allDocuments,
 				metadatas: allMetadatas,
-				loreInfos: allLores,
-				loreContents: allLores.map((lore) => lore.content),
-				loreInfo: allLores[0] || null,
-				loreContent: allLores.length > 0 ? allLores[0].content : '',
+				loreInfos: uniqueLores,
+				loreContents: uniqueLores.map((lore) => lore.content),
+				loreInfo: uniqueLores[0] || null,
+				loreContent: uniqueLores[0]?.content || '',
 			};
 		} catch (error) {
 			handleServiceError(
 				error,
-				'An internal error occurred while do [queryLores].',
+				'An internal error occurred while querying lores.',
 				`Failed to query lores for characterId ${characterId}`
 			);
 		}
 	},
-
 	queryHistories: async (
 		characterId: string,
 		queryTexts: string[],
-		options?: { limit?: number }
+		whereFilter?: Where, // CHANGED: Replaced 'options' with specific filter objects
+		whereDocument?: WhereDocument,
+		limit?: number
 	): Promise<HistoryResponse> => {
-		validateServiceId(characterId, collectionType);
+		validateServiceId(characterId, 'lore');
 		const collection = await loreStore._getCollection();
 
-		// Build where clause with unified metadata structure
-		const whereClause: Where = {
-			$and: [{ type: { $eq: METADATA_TYPES.HISTORY } }, { characterId: { $eq: characterId } }],
-		};
+		// Build the final where clause, similar to queryLores.
+		const baseConditions: Where[] = [
+			{ type: { $eq: METADATA_TYPES.HISTORY } },
+			{ characterId: { $eq: characterId } },
+		];
+
+		const whereClause: Where = whereFilter
+			? { $and: [...baseConditions, whereFilter] }
+			: { $and: baseConditions };
 
 		try {
 			const rawResults = await queryRecords(
 				collection,
 				queryTexts,
 				whereClause,
-				undefined,
-				options?.limit
+				whereDocument, // Pass the document filter through
+				limit
 			);
 
-			// This logic can be simplified if queryRecords returns a single structured response
-			// Assuming it returns an array of results for each queryText
+			// The rest of your result processing logic remains valid.
 			const allHistories: HistoryInfo[] = [];
 			const allIds: string[] = [];
 			const allDocuments: (string | null)[] = [];
 			const allMetadatas: (any | null)[] = [];
 
 			for (const rawResult of rawResults) {
-				const results = validateChromaResponse(rawResult, 'getList', collectionType);
+				const results = validateChromaResponse(rawResult, 'getList', 'lore');
 				const histories = loreStore._constuctHistory(results).historyInfos;
 				allHistories.push(...histories);
 				allIds.push(...results.ids);
@@ -229,11 +235,9 @@ export const loreStore = {
 				allMetadatas.push(...results.metadatas);
 			}
 
-			// De-duplicate results if necessary and return a standard HistoryResponse
 			const uniqueHistories = Array.from(new Map(allHistories.map((h) => [h.historyId, h])).values());
 
 			return {
-				// Construct a valid HistoryResponse object
 				ids: allIds,
 				documents: allDocuments,
 				metadatas: allMetadatas,
@@ -245,7 +249,7 @@ export const loreStore = {
 		} catch (error) {
 			handleServiceError(
 				error,
-				`An internal error occurred while doing [queryHistories].`,
+				`An internal error occurred while querying histories.`,
 				`Failed to query histories for characterId: ${characterId}`
 			);
 		}

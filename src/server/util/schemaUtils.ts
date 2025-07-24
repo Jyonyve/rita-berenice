@@ -341,3 +341,43 @@ export const createNerSchema = () =>
 			.array(z.string())
 			.describe('An array of unique proper nouns extracted from the text.'),
 	});
+
+export const RagFilterSchema = z.object({
+	entities: z
+		.object({
+			characters: z
+				.array(z.string())
+				.optional()
+				.describe("A list of character names explicitly mentioned in the user's query."),
+			locations: z.array(z.string()).optional().describe('A list of locations or places mentioned.'),
+			items: z
+				.array(z.string())
+				.optional()
+				.describe('A list of important items or objects mentioned.'),
+		})
+		.optional()
+		.describe('Key entities identified in the query.'),
+
+	keywords: z
+		.array(z.string())
+		.optional()
+		.describe('A list of single-word keywords from the query.'),
+
+	topics: z
+		.array(z.string())
+		.optional()
+		.describe('A list of broader topics or subjects, which can be multi-word phrases.'),
+
+	emotion: z
+		.string()
+		.optional()
+		.describe(
+			"The dominant emotion conveyed by the user's query (e.g., 'angry', 'curious', 'happy')."
+		),
+	criticalTerm: z
+		.string()
+		.optional()
+		.describe(
+			'The single most important noun or proper noun from the query that MUST be present in any relevant document. If no single term is overwhelmingly critical, this should be omitted.'
+		),
+});

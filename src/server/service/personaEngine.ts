@@ -9,10 +9,10 @@ import {
 	buildStaticSystemPrompt,
 } from '../util/templateUtils.js';
 import { handleServiceError, LlmResponseParseError } from '../util/serviceHelpers.js';
-import { parseLlmJsonResponse } from '../util/llmUtils.js';
+import { buildChatCompletion, parseLlmJsonResponse } from '../util/llmUtils.js';
 import { MemoryResponse, PersonaResponse } from '#shared/api/ModuleResponse.js';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
-import { ChatMessage } from '#shared/domain/chat/ChatInterfaces.js';
+import { ChatMessage, ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { llmService } from './llmService.js';
 import {
 	AiModelInfo,
@@ -24,9 +24,6 @@ import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { correctAiModelInfo } from '#shared/config/supportAiModelInfo.js';
 import { createPersonaResponseSchema } from '../util/schemaUtils.js';
 
-const buildChatCompletion = (role: DefaultAiRole, content: string, name?: string) => {
-	return { role, content, name };
-};
 export const personaEngine = {
 	/**
 	 * Generates a character's conversational response using a rich, recalled memory context.
@@ -47,80 +44,50 @@ export const personaEngine = {
 		console.log(
 			`[personaEngine] Generating response for user ${profileInfo.name} in lang: ${recalledMemories.langCode}...`
 		);
-		const { langCode } = recalledMemories;
+		const { langCode, shortTermHistory } = recalledMemories;
 		const { showName: charName } = characterInfo;
 		const { showName: userName } = profileInfo;
 
-		// --- 1. MESSAGES 배열 구성 ---
-		// LLM에 전달할 최종 메시지 배열을 단계적으로 구성합니다.
+		// --- 1. Assemble Prompt Components ---
 
-		const testSystemPrompt = buildPersonaSystemPrompt(characterInfo, profileInfo, recalledMemories);
-		// 1a. 정적 시스템 프롬프트 (핵심 규칙 및 페르소나)
+		// 1a. Static System Prompt (Core Rules & Persona)
 		const staticSystemPrompt = buildStaticSystemPrompt(characterInfo, profileInfo, langCode);
 
-		// 1b. 동적 컨텍스트 프롬프트 (RAG 검색 결과: Lore, History, Recap 등)
+		// 1b. Long-Term Memory Prompt (RAG Content)
+		// CORRECTION: Pass all necessary arguments for complete formatting.
 		const longTermMemoryContent = buildLongTermMemoryPrompt(recalledMemories, langCode);
 
-		// 1c. 단기 대화 기록 (가장 최근의 N개 턴)
-		const shortTermMessages = recalledMemories.shortTermHistory
-			.sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))
-			.flatMap((turn) => {
-				const turnMessages = [];
-				if (turn.request) {
-					turnMessages.push(
-						buildChatCompletion('user', parseEntriesToText(turn.request.entries), turn.request.showName)
-					);
-				}
-				if (turn.response) {
-					// 로직 오류 수정: assistant의 응답은 turn.response에서 가져옵니다.
-					turnMessages.push(
-						buildChatCompletion(
-							'assistant',
-							parseEntriesToText(turn.response.entries),
-							turn.response.showName
-						)
-					);
-				}
-				return turnMessages;
-			});
+		// 1c. Short-Term History Messages (Verbatim recent chat)
+		// REFACTOR: Use the dedicated builder function for cleanliness.
+		const shortTermMessages = buildShortTermHistoryMessages(shortTermHistory);
 
-		// --- 2. 최종 MESSAGES 배열 조립 ---
-		// 모든 구성 요소를 명확한 순서에 따라 하나의 배열로 결합합니다.
-		// const messages: ChatCompletionMessageParam[] = [
-		// 	// 첫 번째: 핵심 규칙
-		// 	buildChatCompletion('system', staticSystemPrompt),
-
-		// 	// 두 번째: 배경지식 (내용이 있을 경우에만 추가)
-		// 	...(longTermMemoryContent ? [buildChatCompletion('system', longTermMemoryContent)] : []),
-
-		// 	// 세 번째: 최근 대화 기록
-		// 	...shortTermMessages,
-
-		// 	// 네 번째 (마지막): 현재 사용자 입력
-		// 	buildChatCompletion('user', userInput, profileInfo.showName),
-		// ];
-
-		// 1. Build the simplified system prompt (without JSON instructions)
+		// --- 2. Assemble Final Messages Array ---
+		// This structure is optimal and correct.
 		const messages: ChatCompletionMessageParam[] = [
-			// 첫 번째: 핵심 규칙
-			buildChatCompletion('system', testSystemPrompt),
-			// 네 번째 (마지막): 현재 사용자 입력
+			// First: Core rules and persona
+			buildChatCompletion('system', staticSystemPrompt),
+
+			// Second (optional): Background knowledge from RAG
+			...(longTermMemoryContent ? [buildChatCompletion('system', longTermMemoryContent)] : []),
+
+			// Third: Recent conversation verbatim
+			...shortTermMessages,
+
+			// Last: The current user input
 			buildChatCompletion('user', userInput, profileInfo.showName),
 		];
 
 		const personaSchema = createPersonaResponseSchema(charName, userName, langCode);
-		// (디버깅용) 최종적으로 전송될 메시지 배열을 확인하고 싶을 때 유용합니다.
 		console.log('[DEBUG] Final messages payload:', JSON.stringify(messages, null, 2));
 
 		try {
-			// --- 3. LLM 서비스 호출 ---
-			// 잘 정돈된 단일 messages 배열을 서비스에 전달합니다.
+			// --- 3. LLM Service Call ---
 			const rawLlmResponse = await llmService.invokeLlm(
 				messages,
 				aiModelInfo,
 				profileInfo.userId,
 				options,
-				personaSchema // Provide the schema here
+				personaSchema
 			);
 
 			return parseLlmJsonResponse<PersonaResponse>(
@@ -141,15 +108,12 @@ export const personaEngine = {
 
 				// --- 3. Second Attempt: Corrective LLM Call ---
 				try {
-					// Define cheaper, faster models for the correction task
-
-					// Select the appropriate correction model based on the original provider
 					const correctionModelName = correctAiModelInfo[aiModelInfo.platform][aiModelInfo.provider][0];
 
 					const correctionAiModelInfo: AiModelInfo = {
 						...aiModelInfo, // Inherit platform, temp, etc.
 						model: correctionModelName,
-						maxTokens: 800, // Correction should be short
+						maxTokens: 1000, // Correction should be short
 					};
 
 					console.log(`[personaEngine] Invoking correction model: ${correctionModelName}`);
@@ -191,4 +155,38 @@ export const personaEngine = {
 			}
 		}
 	},
+};
+
+const buildShortTermHistoryMessages = (
+	shortTermHistory: ChatTurn[]
+): ChatCompletionMessageParam[] => {
+	if (!shortTermHistory || shortTermHistory.length === 0) {
+		return [];
+	}
+
+	// The flatMap function iterates over each turn and builds the corresponding
+	// user and assistant messages, creating a flat array perfect for the API.
+	return shortTermHistory.flatMap((turn) => {
+		const turnMessages: ChatCompletionMessageParam[] = [];
+
+		// Add the user's message part of the turn, if it exists
+		if (turn.request?.entries) {
+			turnMessages.push(
+				buildChatCompletion('user', parseEntriesToText(turn.request.entries), turn.request.showName)
+			);
+		}
+
+		// Add the assistant's (character's) response part of the turn, if it exists
+		if (turn.response?.entries) {
+			turnMessages.push(
+				buildChatCompletion(
+					'assistant',
+					parseEntriesToText(turn.response.entries),
+					turn.response.showName
+				)
+			);
+		}
+
+		return turnMessages;
+	});
 };

@@ -219,7 +219,9 @@ async function _generateAndAppendResponse(
 		recalledMemories = await memoryEngine.recallRelevantMemories(
 			tempTurn.sessionId,
 			userInput,
-			recentChatTurnString
+			tempTurn.userId,
+			recentChatTurnString,
+			aiModelInfo
 		);
 	} catch (error: any) {
 		if (error instanceof ApiError && error.status === 404) {

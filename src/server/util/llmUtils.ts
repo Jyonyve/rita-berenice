@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import { ChatCompletion } from 'openai/resources/index.mjs';
 import { LlmResponseParseError } from './serviceHelpers.js';
 import { ChromaResponse } from '#shared/api/ModuleResponse.js';
+import { DefaultAiRole } from '#shared/domain/aimodel/index.js';
 
 export function isDirectOpenAIClient(llm: any): llm is OpenAI {
 	// Check for a unique property or method of the OpenAI client instance
@@ -116,3 +117,7 @@ export function reRankByRecency<T extends { updatedAt: string }>(
 		// Note: distances are no longer meaningful after re-ranking
 	};
 }
+
+export const buildChatCompletion = (role: DefaultAiRole, content: string, name?: string) => {
+	return { role, content, name };
+};

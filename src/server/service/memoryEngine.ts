@@ -21,7 +21,9 @@ import { detectLanguage } from '../util/languageUtils.js';
 import { handleServiceError } from '../util/serviceHelpers.js';
 import { parseLlmJsonResponse, reRankByRecency } from '../util/llmUtils.js';
 import { llmService } from './llmService.js';
-import { DEFAULT_CHAT_MODEL_FREE } from '#shared/domain/aimodel/AiInfoTypes.js';
+import { AiModelInfo, DEFAULT_CHAT_MODEL_FREE } from '#shared/domain/aimodel/AiInfoTypes.js';
+import { ragQueryService } from './ragQueryService.js';
+import { WhereDocument } from 'chromadb';
 
 // --- 2. Corrected and Renamed Metadata Creation Helper ---
 /**
@@ -74,7 +76,7 @@ function _extractChatTurnMetadataInfoFromLlm(
 function _formatRecapForPrompt(recap: RecapInfo): string {
 	const flags =
 		recap.flagsArray.length > 0 ? ` [FLAGS: ${convertArrayToString(recap.flagsArray)}]` : '';
-	return `[Recap from turns ${recap.turnStart}-${recap.turnEnd}]${flags} Summary: ${recap.content.substring(0, 150)}...`; // Use a snippet of the content as a summary
+	return `[Recap from turns ${recap.turnStart}-${recap.turnEnd}]${flags} Summary: ${recap.content}...`; // Use a snippet of the content as a summary
 }
 
 export const memoryEngine = {
@@ -82,43 +84,75 @@ export const memoryEngine = {
 	 * Gathers all relevant context (memories) needed to generate a coherent, in-character response.
 	 * This is the primary "recall" step using a multi-tiered memory approach.
 	 * @param sessionId The current session ID.
-	 * @param userRequestText The text from the user's latest prompt for semantic search.
+	 * @param userInput The text from the user's latest prompt for semantic search.
 	 * @returns A MemoryRecallPayload object containing various forms of context.
 	 */
 	async recallRelevantMemories(
 		sessionId: string,
-		userRequestText: string,
-		recentChatTurns: string
+		userInput: string,
+		userId: string,
+		recentChatTurns: string,
+		aiModelInfo: AiModelInfo
 	): Promise<MemoryResponse> {
 		const { characterId } = parseSessionId(sessionId);
-		const INITIAL_QUERY_LIMIT = 10;
-		const FINAL_MEMORY_LIMIT = 5;
-		const langCode = detectLanguage(userRequestText);
+		const INITIAL_QUERY_LIMIT = 30;
+		const FINAL_MEMORY_LIMIT = 10;
+		const langCode = detectLanguage(userInput);
 
 		try {
+			const transformedQuery = await ragQueryService.transformQuery(
+				userInput,
+				aiModelInfo,
+				userId,
+				langCode
+			);
+
+			let documentFilter: WhereDocument | undefined = undefined;
+			const quotedTextMatch = userInput.match(/"(.*?)"/);
+			if (quotedTextMatch && quotedTextMatch[1]) {
+				documentFilter = { $contains: quotedTextMatch[1] };
+			}
+
 			const [
 				longTermChatRes,
 				relevantLoreRes,
 				relevantHistoryRes,
-				// --- KEY CHANGE: Query for relevant recaps, not the latest one ---
 				relevantFactualRecapsRes,
 				relevantRelationshipRecapsRes,
 			] = await Promise.all([
-				// Tier 1: Immediate context
-				// Tier 2: Specific past conversations
 				chatStore.queryChatTurns(
 					sessionId,
-					[userRequestText],
-					undefined,
-					undefined,
+					transformedQuery.queryTexts,
+					transformedQuery.metadataFilter,
+					documentFilter,
 					INITIAL_QUERY_LIMIT
 				),
-				// Foundational truths and chronological background
-				loreStore.queryLores(characterId, [userRequestText]),
-				loreStore.queryHistories(characterId, [userRequestText]),
-				// Tier 3: Narrative milestones
-				recapStore.queryRecaps(sessionId, [userRequestText], METADATA_TYPES.RECAP),
-				recapStore.queryRecaps(sessionId, [userRequestText], METADATA_TYPES.RELATIONSHIP),
+				loreStore.queryLores(
+					characterId,
+					transformedQuery.queryTexts,
+					transformedQuery.metadataFilter,
+					documentFilter
+				),
+				loreStore.queryHistories(
+					characterId,
+					transformedQuery.queryTexts,
+					transformedQuery.metadataFilter,
+					documentFilter
+				),
+				recapStore.queryRecaps(
+					sessionId,
+					transformedQuery.queryTexts,
+					METADATA_TYPES.RECAP,
+					transformedQuery.metadataFilter,
+					documentFilter
+				),
+				recapStore.queryRecaps(
+					sessionId,
+					transformedQuery.queryTexts,
+					METADATA_TYPES.RELATIONSHIP,
+					transformedQuery.metadataFilter,
+					documentFilter
+				),
 			]);
 
 			const shortTermHistory: ChatTurn[] = JSON.parse(recentChatTurns) ?? [];
@@ -138,15 +172,14 @@ export const memoryEngine = {
 				longTermHistory: rerankedLongTerm.contents?.slice(0, FINAL_MEMORY_LIMIT) || [],
 				relevantLore: relevantLoreRes?.loreInfos || [],
 				relevantHistory: relevantHistoryRes?.historyInfos || [],
-				// Pass the concise summaries, not the full objects
-				factualRecapSummary: factualRecapSummary,
-				relationshipRecapSummary: relationshipRecapSummary,
+				factualRecapSummary,
+				relationshipRecapSummary,
 			};
 		} catch (error) {
 			handleServiceError(
 				error,
 				'An internal error occurred while do [recallRelevantMemories].',
-				`Failed to recall relevant memories ${userRequestText.substring(0, 30)}...`
+				`Failed to recall relevant memories ${userInput.substring(0, 30)}...`
 			);
 		}
 	},

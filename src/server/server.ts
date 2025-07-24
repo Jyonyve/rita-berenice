@@ -26,7 +26,6 @@ import profileRoutes from './route/profile.routes.js';
 import tempRoutes from './route/temp.routes.js';
 import loreRoutes from './route/lore.routes.js';
 import termRoutes from './route/term.routes.js';
-import memoryRoutes from './route/memory.routes.js';
 import personaRoutes from './route/persona.routes.js';
 import orchestrationRoutes from './route/orchestration.routes.js';
 import { ApiErrorResponse } from '#shared/api/ModuleResponse.js';
@@ -127,7 +126,6 @@ async function createServer() {
 	app.use(`${BASE_API}/${MODULE_NAMES.LORE}`, loreRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.TERM}`, termRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.SESSION}`, sessionRoutes);
-	app.use(`${BASE_API}/${MODULE_NAMES.MEMORY}`, memoryRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.PERSONA}`, personaRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.ORCHESTRATION}`, orchestrationRoutes);
 	app.use(errorHandler());
