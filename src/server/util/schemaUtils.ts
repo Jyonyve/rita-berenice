@@ -21,13 +21,16 @@ export const createPersonaResponseSchema = (
 		response: z
 			.string()
 			.describe(
-				`The character's response, narrated in the third person. It MUST be around 1000 characters long (including spaces). Narrative actions or descriptions MUST be enclosed in asterisks (*). In Korean, these actions MUST end with '~다'. Spoken dialogue is plain text. Refer to the user as '${userName}'. Example: '${
-					langCode === 'kor'
-						? `*${charName}이 바닥에 앉는다.* 오늘 하루 길었네. *그는 ${userName}을(를) 본다.*`
-						: `*${charName} sits on the floor.* A long day today. *He sees ${userName}.*`
-				}'`
+				`The character's response, narrated in the third person. It MUST be around 1000 characters long, more than 800 characters (including spaces). ` +
+					`Narrative actions or descriptions MUST be enclosed in asterisks (*). Spoken dialogue is plain text. ` +
+					`A line break (\\n) MUST be inserted when switching between narration and dialogue. ` +
+					`In Korean, these actions MUST end with '~다'. Refer to the user as '${userName}'. ` +
+					`Example: '${
+						langCode === 'kor'
+							? `*${charName}이 바닥에 앉는다.*\n오늘 하루 길었네.\n*그는 ${userName}을(를) 본다.*`
+							: `*${charName} sits on the floor.*\nA long day today.\n*He sees ${userName}.*`
+					}'`
 			),
-		// Use z.enum() for strict validation against the provided list.
 		emotion: z
 			.enum(emotionList)
 			.describe(

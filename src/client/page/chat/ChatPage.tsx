@@ -63,8 +63,14 @@ export const ChatPage: FC<{
 		getRecentTurnsForMemory,
 	} = useChatState(sessionId);
 
-	const tempSequence = chatTurns.length > 0 ? getNextSequence() : 0;
-	const tempTurnRes = getTempChatTurn(sessionId, tempSequence).data;
+	const tempSequence = useMemo(() => {
+		if (isLoadingHistory) {
+			return -1; // Return an invalid sequence while loading to prevent firing
+		}
+		return chatTurns.length > 0 ? getNextSequence() : 0;
+	}, [isLoadingHistory, chatTurns, getNextSequence]);
+
+	const { data: tempTurnRes } = getTempChatTurn(sessionId, tempSequence, isLoadingHistory);
 
 	useEffect(() => {
 		if (tempTurnRes?.tempChatTurn) {
@@ -132,6 +138,23 @@ export const ChatPage: FC<{
 		setPageError(undefined);
 		setIsProcessing(true);
 
+		// This promise will finalize the *previous* temp turn
+		const finalizePromise = (async () => {
+			if (!tempChatTurn || tempChatTurn.chatTurnSets.length === 0) return null;
+			const pickedTurnSet = tempChatTurn.chatTurnSets[currentTempSetNo];
+			if (!pickedTurnSet) return null;
+
+			const finalizedTurnCdo: ChatTurnCdo = {
+				userId,
+				sessionId: tempChatTurn.sessionId,
+				sequence: tempChatTurn.sequence,
+				request: pickedTurnSet.request,
+				response: pickedTurnSet.response,
+			};
+			return finalizeChatTurn.mutateAsync(finalizedTurnCdo);
+		})();
+
+		// This promise generates the *new* temp turn
 		const generatePromise = (async () => {
 			if (!userInput.trim()) return null;
 			const recentChatTurnString = JSON.stringify(getRecentTurnsForMemory());
@@ -151,32 +174,19 @@ export const ChatPage: FC<{
 			});
 		})();
 
-		const finalizePromise = (async () => {
-			if (!tempChatTurn || tempChatTurn.chatTurnSets.length === 0) return null;
-			const pickedTurnSet = tempChatTurn.chatTurnSets[currentTempSetNo];
-			if (!pickedTurnSet) return null;
-
-			const finalizedTurnCdo: ChatTurnCdo = {
-				userId,
-				sessionId: tempChatTurn.sessionId,
-				sequence: tempChatTurn.sequence,
-				request: pickedTurnSet.request,
-				response: pickedTurnSet.response,
-			};
-			return finalizeChatTurn.mutateAsync(finalizedTurnCdo);
-		})();
-
 		try {
-			const newTempTurnResult = await generatePromise;
-
-			if (newTempTurnResult) {
-				changeTempChatTurn(newTempTurnResult);
-				setUserInput('');
-			}
-
+			// First, finalize the old turn
 			const savedTurn = await finalizePromise;
 			if (savedTurn) {
 				addChatTurn(savedTurn);
+			}
+
+			// Then, generate and process the new turn
+			const newTempTurnResult = await generatePromise;
+			if (newTempTurnResult) {
+				changeTempChatTurn(newTempTurnResult);
+				setFocusedTurnIndex(chatTurns.length); // The index of the new temp turn
+				setUserInput('');
 			}
 		} catch (err: any) {
 			console.error('Send Message Error:', err);
@@ -185,8 +195,10 @@ export const ChatPage: FC<{
 			setIsProcessing(false);
 		}
 	}, [
+		// Ensure all dependencies are correct
 		userInput,
 		sessionId,
+		userId,
 		characterInfo,
 		profileInfo,
 		aiModelInfo,
@@ -197,8 +209,8 @@ export const ChatPage: FC<{
 		addChatTurn,
 		changeTempChatTurn,
 		getNextSequence,
-		handleCharacterImage,
 		getRecentTurnsForMemory,
+		chatTurns.length, // Keep this dependency
 	]);
 
 	const handleRegenerateResponse = useCallback(async () => {
@@ -229,11 +241,9 @@ export const ChatPage: FC<{
 
 			if (result) {
 				const newSetIndex = result.chatTurnSets.length - 1;
-				const emotion = result.chatTurnSets[newSetIndex]?.response?.emotion || DEFAULT_EMOTION;
-
-				handleCharacterImage(emotion);
 				changeTempChatTurn(result);
 				setCurrentTempSetNo(newSetIndex);
+				setFocusedTurnIndex(chatTurns.length);
 			}
 		} catch (err: any) {
 			console.error('Regenerate Error:', err);
@@ -252,6 +262,7 @@ export const ChatPage: FC<{
 		handleCharacterImage,
 		getRecentTurnsForMemory,
 		currentTempSetNo,
+		chatTurns.length,
 	]);
 
 	const handleEditTempTurnText = (value: string, req: boolean) => {

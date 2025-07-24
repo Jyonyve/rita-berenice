@@ -78,7 +78,7 @@ export const personaEngine = {
 		];
 
 		const personaSchema = createPersonaResponseSchema(charName, userName, langCode);
-		console.log('[DEBUG] Final messages payload:', JSON.stringify(messages, null, 2));
+		// console.log('[DEBUG] Final messages payload:', JSON.stringify(messages, null, 2));
 
 		try {
 			// --- 3. LLM Service Call ---

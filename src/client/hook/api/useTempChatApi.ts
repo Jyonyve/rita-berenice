@@ -29,7 +29,7 @@ export const useTempChatApi = () => {
 	 * Fetches a temporary chat turn.
 	 * Query Key: ['getTempChatTurn']
 	 */
-	const getTempChatTurn = (sessionId: string, sequence: number) =>
+	const getTempChatTurn = (sessionId: string, sequence: number, isHistoryLoading: boolean) =>
 		useQuery<TempChatResponse, Error>({
 			queryKey: ['getTempChatTurn', sessionId, sequence], // The query key now reflects the method name
 			queryFn: async () => {
@@ -40,7 +40,7 @@ export const useTempChatApi = () => {
 				});
 				return response.data;
 			},
-			enabled: !!sessionId && !(sequence < 0), // Only run if both are available
+			enabled: !isHistoryLoading && !!sessionId && sequence >= 0, // Only run if both are available
 			retry: (failureCount, error) => (error.name === '404' ? false : failureCount < 1),
 		});
 

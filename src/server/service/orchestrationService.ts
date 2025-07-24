@@ -22,6 +22,8 @@ import { tempStore } from '../store/tempStore.js';
 import { MemoryResponse, PersonaResponse } from '#shared/api/ModuleResponse.js';
 import { detectLanguage } from '../util/languageUtils.js';
 
+const timerLabel = (sequence: number) => `RESPONSE_GENERATION: Turn ${sequence}`;
+
 /**
  * FINAL VERSION:
  * 클라이언트가 호출하는 메인 엔드포인트.
@@ -35,7 +37,9 @@ export const receiveBotResponse = async (
 	aiModelInfo: AiModelInfo,
 	recentChatTurnString: string
 ): Promise<TempChatTurn> => {
-	const startTime = performance.now();
+	// --- 1. START TIMER ---
+	console.time(timerLabel(tempChatTurnCdo.sequence));
+
 	const { sequence, sessionId, userInput } = tempChatTurnCdo;
 
 	const controller = new AbortController();
@@ -53,6 +57,8 @@ export const receiveBotResponse = async (
 	try {
 		// 1. 턴 가져오기 또는 생성
 		let tempTurn = await _getOrCreateTempTurn(sessionId, sequence, tempChatTurnCdo.userId);
+		// --- 2. LOG CHECKPOINT 1 ---
+		console.timeLog(timerLabel(tempChatTurnCdo.sequence), 'Temp turn ready.');
 
 		// 2. 새로운 응답 생성 및 추가 (책임 위임)
 		tempTurn = await _generateAndAppendResponse(
@@ -64,9 +70,10 @@ export const receiveBotResponse = async (
 			recentChatTurnString,
 			{ signal: controller.signal }
 		);
-
+		console.timeLog(timerLabel(tempTurn.sequence), 'LLM RESPONSE FINISHED.');
 		// 3. 최종 상태 저장
 		await tempStore.saveTempChatTurn(tempTurn);
+		console.timeLog(timerLabel(tempTurn.sequence), 'TEMP TURN SAVED.');
 
 		console.log(
 			`[Orchestrator] Request for turn ${sequence} completed. Temp turn now has ${tempTurn.setCount} options.`
@@ -80,13 +87,8 @@ export const receiveBotResponse = async (
 		);
 	} finally {
 		clearTimeout(timeoutId);
-
-		const endTime = performance.now();
-		const durationInMs = endTime - startTime;
-		const durationInSec = (durationInMs / 1000).toFixed(2);
-		console.log(
-			`[Orchestrator] Execution of receiveBotResponse for session ${sessionId} completed in ${durationInSec} seconds.`
-		);
+		console.timeEnd(timerLabel(tempChatTurnCdo.sequence));
+		console.log(`[Orchestrator] Execution of receiveBotResponse for session ${sessionId} completed.`);
 	}
 };
 
@@ -223,6 +225,8 @@ async function _generateAndAppendResponse(
 			recentChatTurnString,
 			aiModelInfo
 		);
+		// --- 2. LOG CHECKPOINT 2 ---
+		console.timeLog(timerLabel(tempTurn.sequence), 'Memory recall finish. completed.');
 	} catch (error: any) {
 		if (error instanceof ApiError && error.status === 404) {
 			console.warn(`[Orchestrator] No memories found for session. Proceeding with empty context.`);
@@ -235,6 +239,7 @@ async function _generateAndAppendResponse(
 				factualRecapSummary: '',
 				relationshipRecapSummary: '',
 			};
+			console.timeLog(timerLabel(tempTurn.sequence), 'Memory recall finish. Empty memory.');
 		} else {
 			throw error; // Re-throw critical errors
 		}
@@ -249,6 +254,7 @@ async function _generateAndAppendResponse(
 		aiModelInfo,
 		options
 	);
+	console.timeLog(timerLabel(tempTurn.sequence), 'llm generate response finishing.');
 
 	// 3. Create the new bot response message.
 	const request = buildChatMessage(
@@ -270,6 +276,7 @@ async function _generateAndAppendResponse(
 
 	// 4. Append the new response to the options array and update the timestamp.
 	tempTurn.chatTurnSets.push(newChatTurnSet);
+	tempTurn.setCount = tempTurn.chatTurnSets.length;
 	tempTurn.updatedAt = new Date().toISOString();
 
 	return tempTurn;

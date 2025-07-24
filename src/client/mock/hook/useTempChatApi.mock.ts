@@ -29,7 +29,7 @@ export const useTempChatApiMock = () => {
 	 * Mocks fetching a temporary chat turn by session and sequence.
 	 * Returns the first turn as a fallback, or an empty response if not found.
 	 */
-	const getTempChatTurn = (sessionId: string, sequence: number) => {
+	const getTempChatTurn = (sessionId: string, sequence: number, isLoadingHistory: boolean) => {
 		return { data, isLoading: false, isError: false, error: null };
 	};
 

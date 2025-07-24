@@ -155,6 +155,18 @@ export const memoryEngine = {
 				),
 			]);
 
+			console.log('[DEBUG] longTermChatRes:', JSON.stringify(longTermChatRes, null, 2));
+			console.log('[DEBUG] relevantLoreRes:', JSON.stringify(relevantLoreRes, null, 2));
+			console.log('[DEBUG] relevantHistoryRes:', JSON.stringify(relevantHistoryRes, null, 2));
+			console.log(
+				'[DEBUG] relevantFactualRecapsRes:',
+				JSON.stringify(relevantFactualRecapsRes, null, 2)
+			);
+			console.log(
+				'[DEBUG] relevantRelationshipRecapsRes:',
+				JSON.stringify(relevantRelationshipRecapsRes, null, 2)
+			);
+
 			const shortTermHistory: ChatTurn[] = JSON.parse(recentChatTurns) ?? [];
 			const rerankedLongTerm = reRankByRecency<ChatTurn>(longTermChatRes);
 			// Construct a concise, token-friendly summary of the recalled recaps

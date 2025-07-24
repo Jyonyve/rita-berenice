@@ -12,8 +12,15 @@ import { ChromaResponse } from '#shared/api/ModuleResponse.js';
 export function handleServiceError(
 	caughtError: any,
 	contextMessage: string,
-	clientMessage: string = 'An internal server error occurred.'
+	clientMessage: string = 'An internal server error occurred.',
+	options: { suppress404?: boolean } = {}
 ): never {
+	// Check if it's a 404 error that we've been asked to suppress
+	if (options.suppress404 && caughtError instanceof ApiError && caughtError.status === 404) {
+		// If so, just re-throw the original error without logging.
+		// The client's interceptor will handle it gracefully.
+		throw caughtError;
+	}
 	// 1. Log the error immediately with its context, regardless of type.
 	// This ensures you always have visibility in your server logs.
 	console.error(

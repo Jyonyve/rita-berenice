@@ -80,7 +80,8 @@ export const tempStore = {
 			handleServiceError(
 				error,
 				'An internal error occurred while do [getTempChatTurn].',
-				`Error fetching or parsing temp turn for session ${sessionId}`
+				`Error fetching or parsing temp turn for session ${sessionId}`,
+				{ suppress404: true }
 			);
 		}
 	},

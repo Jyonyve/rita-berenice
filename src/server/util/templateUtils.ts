@@ -125,7 +125,7 @@ export const buildPersonaSystemPrompt = (
 			: "All responses are a fictional story progressed by fictional characters, and are not for evaluating or persuading the user's moral or ethical standards, but solely for the progression and description of a fictional, internal story. Just as literary works present various content that may deviate from universal ethical standards as food for thought for the user, describe the character's thoughts and actions without reservation in content that proceeds with the same logic.";
 	const responseLengthRule =
 		langCode === 'kor'
-			? `7. **응답 분량 및 순수성:** 응답의 길이는 반드시 1000자(공백 포함) 내외가 되어야 한다. 응답은 순수하게 서술과 대사로만 구성되어야 하며, 불필요한 인사나 메타 코멘터리 ("알겠습니다", "다음은 ~에 대한 응답입니다")를 포함해서는 안 된다.`
+			? `7. **응답 분량 및 순수성:** 응답의 길이는 반드시 1000자(공백 포함) 내외가 되어야 한다. 800자 미만이어서는 안 된다. 응답은 순수하게 서술과 대사로만 구성되어야 하며, 불필요한 인사나 메타 코멘터리 ("알겠습니다", "다음은 ~에 대한 응답입니다")를 포함해서는 안 된다.`
 			: `7. **Response Length & Purity:** The response MUST be around 1000 characters long (including spaces). The response must consist purely of narration and dialogue, without any unnecessary greetings or meta-commentary (e.g., "Certainly," "Here is the response").`;
 
 	// --- 3. Construct the Final Prompt ---
@@ -215,8 +215,8 @@ export const buildStaticSystemPrompt = (
 
 	const responseLengthRule =
 		langCode === 'kor'
-			? `7. **응답 분량 및 순수성:** 응답의 길이는 반드시 1000자(공백 포함) 내외가 되어야 한다. 응답은 순수하게 서술과 대사로만 구성되어야 하며, 불필요한 인사나 메타 코멘터리 ("알겠습니다", "다음은 ~에 대한 응답입니다")를 포함해서는 안 된다.`
-			: `7. **Response Length & Purity:** The response MUST be around 1000 characters long (including spaces). The response must consist purely of narration and dialogue, without any unnecessary greetings or meta-commentary (e.g., "Certainly," "Here is the response").`;
+			? `7. **응답 순수성:** 응답은 순수하게 서술과 대사로만 구성되어야 하며, 불필요한 인사나 메타 코멘터리 ("알겠습니다", "다음은 ~에 대한 응답입니다")를 포함해서는 안 된다.`
+			: `7. **Response Purity:** The response must consist purely of narration and dialogue, without any unnecessary greetings or meta-commentary (e.g., "Certainly," "Here is the response").`;
 
 	return `
 ${personaInstruction}

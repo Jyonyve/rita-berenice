@@ -1,13 +1,13 @@
 export const ALPHANUMERIC_ALPHABET =
 	'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' as const;
 export const BASE_IMAGE_DIR = '/src/client/asset/character';
-export const ABORT_TIMEOUT = 60 as const; // 30 seconds
+export const ABORT_TIMEOUT = 300 as const; ///300초
 export const DEFAULT_RECAP_INTERVAL: number = 3 as const;
 export const DEFAULT_RELATIONSHIP_RECAP_INTERVAL = 5 as const;
 export const DEFAULT_RECENT_TURN_COUNT: number = 10 as const;
 export const DEFAULT_LOADING_TURN_COUNT: number = 5 as const;
 export const DEFAULT_LOADING_BATCH_TURN_COUNT: number = 20 as const;
-export const RECENT_CHAT_TURN: number = 5 as const;
+export const RECENT_CHAT_TURN: number = 3 as const;
 export const MAX_LLM_RETRIES = 2;
 export const REQUEST_CHARACTER_LIMIT = 1000 as const;
 export const RESPONSE_CHARACTER_LIMIT = 1000 as const;

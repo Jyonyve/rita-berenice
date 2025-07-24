@@ -6,7 +6,6 @@ import { ChatTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { useScrollEffect } from '../../hook/useScrollEffect.js';
 import ChatLogRow, { ChatLogRowProps } from './ChatLogRow.jsx';
 import { ScrollGlow } from '../../layout/index.js';
-import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
 
 interface ChatLogProps {
 	allTurns: (ChatTurn | TempChatTurn)[];
