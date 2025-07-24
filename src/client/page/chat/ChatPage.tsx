@@ -11,7 +11,7 @@ import { ChatTurnCdo, TempChatTurn, TempChatTurnCdo } from '#shared/domain/chat/
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { parseEntriesToText, parseTextToEntries } from '#shared/util/chatParseUtils.js';
 import { Box, Grid, useMediaQuery, useTheme } from '@mui/material';
-import { useOrchestrationApi, useTempChatApi } from '../../hook/api/index.js';
+import { useOrchestrationApi, useTempChatApi, useSessionApi } from '../../hook/api/index.js';
 import { useChatState } from '../../hook/state/useChatState.js';
 import { GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
 import { containerSpacing } from '../../style/index.js';
@@ -32,6 +32,7 @@ export const ChatPage: FC<{
 }> = ({ characterInfo, profileInfo, sessionId, userId }) => {
 	const { receiveBotResponse, finalizeChatTurn } = useOrchestrationApi();
 	const { saveTempChatTurn, getTempChatTurn } = useTempChatApi();
+	const { updateSessionOnNewMessage } = useSessionApi();
 	const theme = useTheme();
 	const { showError } = useErrorDialog();
 
@@ -87,6 +88,7 @@ export const ChatPage: FC<{
 	const [botEditInput, setBotEditInput] = useState('');
 	const [aiModelInfo, setAiModelInfo] = useState<AiModelInfo>(DEFAULT_CHAT_MODEL_FREE);
 	const [focusedTurnIndex, setFocusedTurnIndex] = useState(-1);
+	const [isScene, setIsScene] = useState(false);
 
 	const allTurns = tempChatTurn ? [...chatTurns, tempChatTurn] : chatTurns;
 
@@ -97,6 +99,13 @@ export const ChatPage: FC<{
 			setCurrentEmotion(emotion);
 		},
 		[setCurrentEmotion]
+	);
+
+	const handleScene = useCallback(
+		(event: ChangeEvent<HTMLInputElement>, checked: boolean) => {
+			setIsScene(checked);
+		},
+		[setIsScene]
 	);
 
 	useEffect(() => {
@@ -171,6 +180,7 @@ export const ChatPage: FC<{
 				profileInfo,
 				aiModelInfo,
 				recentChatTurnString,
+				isScene,
 			});
 		})();
 
@@ -187,6 +197,10 @@ export const ChatPage: FC<{
 				changeTempChatTurn(newTempTurnResult);
 				setFocusedTurnIndex(chatTurns.length); // The index of the new temp turn
 				setUserInput('');
+				updateSessionOnNewMessage.mutateAsync({
+					sessionId,
+					latestCharMessage: parseEntriesToText(newTempTurnResult.chatTurnSets[0].response.entries),
+				});
 			}
 		} catch (err: any) {
 			console.error('Send Message Error:', err);
@@ -237,6 +251,7 @@ export const ChatPage: FC<{
 				profileInfo,
 				aiModelInfo,
 				recentChatTurnString,
+				isScene,
 			});
 
 			if (result) {
@@ -244,6 +259,10 @@ export const ChatPage: FC<{
 				changeTempChatTurn(result);
 				setCurrentTempSetNo(newSetIndex);
 				setFocusedTurnIndex(chatTurns.length);
+				updateSessionOnNewMessage.mutateAsync({
+					sessionId,
+					latestCharMessage: parseEntriesToText(result.chatTurnSets[newSetIndex].response.entries),
+				});
 			}
 		} catch (err: any) {
 			console.error('Regenerate Error:', err);
@@ -325,6 +344,8 @@ export const ChatPage: FC<{
 		onSend: handleSendMessage,
 		modelName: aiModelInfo.model,
 		onAiModel: handleAiModel,
+		isScene,
+		onScene: handleScene,
 	};
 
 	// --- RENDER ---

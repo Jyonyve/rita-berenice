@@ -39,7 +39,7 @@ export const personaEngine = {
 		profileInfo: ProfileInfo,
 		userInput: string,
 		aiModelInfo: AiModelInfo,
-		options?: { signal?: AbortSignal }
+		options?: { signal?: AbortSignal; isScene?: boolean }
 	): Promise<PersonaResponse> {
 		console.log(
 			`[personaEngine] Generating response for user ${profileInfo.name} in lang: ${recalledMemories.langCode}...`
@@ -51,7 +51,12 @@ export const personaEngine = {
 		// --- 1. Assemble Prompt Components ---
 
 		// 1a. Static System Prompt (Core Rules & Persona)
-		const staticSystemPrompt = buildStaticSystemPrompt(characterInfo, profileInfo, langCode);
+		const staticSystemPrompt = buildStaticSystemPrompt(
+			characterInfo,
+			profileInfo,
+			langCode,
+			options?.isScene
+		);
 
 		// 1b. Long-Term Memory Prompt (RAG Content)
 		// CORRECTION: Pass all necessary arguments for complete formatting.

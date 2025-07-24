@@ -41,12 +41,14 @@ export const useOrchestrationApiMock = () => {
 			profileInfo,
 			aiModelInfo,
 			recentChatTurnString,
+			isScene,
 		}: {
 			tempChatTurnCdo: TempChatTurnCdo;
 			characterInfo: CharacterInfo;
 			profileInfo: ProfileInfo;
 			aiModelInfo: AiModelInfo;
 			recentChatTurnString: string;
+			isScene?: boolean;
 		}): Promise<TempChatTurn> => {
 			console.log('[MOCK] receiveBotResponse called with:', {
 				tempChatTurnCdo,
@@ -54,6 +56,7 @@ export const useOrchestrationApiMock = () => {
 				profileInfo,
 				aiModelInfo,
 				recentChatTurnString,
+				isScene,
 			});
 			// Return a mock TempChatTurn object; customize as needed
 			return Promise.resolve({} as TempChatTurn);

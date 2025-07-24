@@ -47,6 +47,7 @@ export const useOrchestrationApi = () => {
 			profileInfo: ProfileInfo;
 			aiModelInfo: AiModelInfo;
 			recentChatTurnString: string;
+			isScene?: boolean;
 		} // Variables type
 	>({
 		mutationFn: async ({
@@ -55,6 +56,7 @@ export const useOrchestrationApi = () => {
 			profileInfo,
 			aiModelInfo,
 			recentChatTurnString,
+			isScene,
 		}) => {
 			const url = genApiUrl(MODULE_NAME, 'receiveBotResponse');
 			const response = await apiClient.post<TempChatTurn>(url, {
@@ -63,6 +65,7 @@ export const useOrchestrationApi = () => {
 				profileInfo,
 				aiModelInfo,
 				recentChatTurnString,
+				isScene,
 			});
 			return response.data;
 		},

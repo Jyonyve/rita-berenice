@@ -1,8 +1,8 @@
 // src/client/component/page/chat/UserInput.tsx
 
 import { LANG_KEYS } from '#shared/config/langConstants.js';
-import { Box, CircularProgress, TextField, useTheme } from '@mui/material';
-import React, { ChangeEventHandler, FC } from 'react';
+import { Box, CircularProgress, Switch, TextField, useTheme } from '@mui/material';
+import React, { ChangeEvent, ChangeEventHandler, FC } from 'react';
 import { GlassBox, GlassButton } from '../../layout/glass/index.js';
 import { useToast } from '../../provider/ToastProvider.jsx';
 import { getLangAlertText } from '../../util/translateUtils.js';
@@ -19,6 +19,8 @@ interface UserInputProps {
 	onSend: () => void;
 	modelName: AllModelNames;
 	onAiModel: (modelName: AllModelNames) => void;
+	isScene: boolean;
+	onScene: (event: ChangeEvent<HTMLInputElement>, checked: boolean) => void;
 }
 
 export const UserInput: FC<UserInputProps> = ({
@@ -30,6 +32,8 @@ export const UserInput: FC<UserInputProps> = ({
 	onSend,
 	modelName,
 	onAiModel,
+	isScene,
+	onScene,
 }) => {
 	const { addToast } = useToast();
 	const theme = useTheme();
@@ -82,7 +86,17 @@ export const UserInput: FC<UserInputProps> = ({
 			</Box>
 			{/* Row 2: Model Selector and Send Button */}
 			<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginX: 1 }}>
-				<AiModelSelector modelName={modelName} onAiModel={onAiModel} />
+				<Box>
+					<AiModelSelector modelName={modelName} onAiModel={onAiModel} />
+					<Switch
+						sx={{ pl: 1 }}
+						checked={!!isScene}
+						onChange={onScene}
+						color="default"
+						size="small"
+						aria-label="toggle-scene"
+					/>
+				</Box>
 				<GlassButton
 					variant="contained"
 					colorVariant="secondary"

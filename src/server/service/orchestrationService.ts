@@ -35,7 +35,8 @@ export const receiveBotResponse = async (
 	characterInfo: CharacterInfo,
 	profileInfo: ProfileInfo,
 	aiModelInfo: AiModelInfo,
-	recentChatTurnString: string
+	recentChatTurnString: string,
+	isScene?: boolean
 ): Promise<TempChatTurn> => {
 	// --- 1. START TIMER ---
 	console.time(timerLabel(tempChatTurnCdo.sequence));
@@ -68,7 +69,7 @@ export const receiveBotResponse = async (
 			profileInfo,
 			aiModelInfo,
 			recentChatTurnString,
-			{ signal: controller.signal }
+			{ signal: controller.signal, isScene }
 		);
 		console.timeLog(timerLabel(tempTurn.sequence), 'LLM RESPONSE FINISHED.');
 		// 3. 최종 상태 저장
@@ -213,7 +214,7 @@ async function _generateAndAppendResponse(
 	profileInfo: ProfileInfo,
 	aiModelInfo: AiModelInfo,
 	recentChatTurnString: string,
-	options: { signal?: AbortSignal }
+	options: { signal?: AbortSignal; isScene?: boolean }
 ): Promise<TempChatTurn> {
 	// 1. Recall relevant memories for context.
 	let recalledMemories: MemoryResponse;
