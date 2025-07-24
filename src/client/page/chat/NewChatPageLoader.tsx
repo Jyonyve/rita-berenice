@@ -15,6 +15,9 @@ import {
 } from '../../hook/api/index.js';
 import { useAuth } from '../../provider/AuthProvider.jsx';
 import { routeConstants } from '../../routeConstants.js';
+import { GlassCircularProgress } from '../../layout/glass/index.js';
+import { getLangText } from '../../util/translateUtils.js';
+import { LANG_KEYS } from '#shared/config/langConstants.js';
 
 export function NewChatPageLoader() {
 	const navigate = useNavigate();
@@ -150,8 +153,8 @@ export function NewChatPageLoader() {
 				<Typography color="error">{error}</Typography>
 			) : (
 				<>
-					<CircularProgress />
-					<Typography sx={{ mt: 2 }}>Creating new session...</Typography>
+					<GlassCircularProgress />
+					<Typography mt={2}>{getLangText(LANG_KEYS.CREATING_SESSION)}</Typography>
 				</>
 			)}
 		</Box>

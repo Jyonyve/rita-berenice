@@ -3,7 +3,7 @@
 import { LANG_KEYS } from '#shared/config/langConstants.js';
 import { Box, CircularProgress, Switch, TextField, useTheme } from '@mui/material';
 import React, { ChangeEvent, ChangeEventHandler, FC } from 'react';
-import { GlassBox, GlassButton } from '../../layout/glass/index.js';
+import { GlassBox, GlassButton, GlassCircularProgress } from '../../layout/glass/index.js';
 import { useToast } from '../../provider/ToastProvider.jsx';
 import { getLangAlertText } from '../../util/translateUtils.js';
 import { AiModelSelector } from './AiModelSelector.jsx';
@@ -103,7 +103,7 @@ export const UserInput: FC<UserInputProps> = ({
 					onClick={handleSend}
 					disabled={isDisabled || !value.trim()}
 				>
-					{isProcessing ? <CircularProgress size={24} color="inherit" /> : 'Send'}
+					{isProcessing ? <GlassCircularProgress colorVariant="silver" /> : 'Send'}
 				</GlassButton>
 			</Box>
 		</Box>

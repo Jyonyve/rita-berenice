@@ -25,6 +25,9 @@ import { useAuth } from '../../provider/AuthProvider.jsx';
 import { HeaderContextType } from '../../layout/RootLayout.jsx';
 import { getDefaultImage, getImageForEmotion } from '../../util/portraitUtils.js';
 import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
+import { GlassCircularProgress } from '../../layout/glass/index.js';
+import { getLangText } from '../../util/translateUtils.js';
+import { LANG_KEYS } from '#shared/config/langConstants.js';
 
 // Create Emotion Context for ChatPage communication
 interface EmotionContextType {
@@ -138,9 +141,7 @@ export function ChatPageLoader() {
 
 	// Handle error states
 	if (isCharacterError || isProfileError || isTurnsError) {
-		return (
-			<Typography color="error">Failed to load essential chat data. Please try again.</Typography>
-		);
+		return <Typography color="error">{getLangText(LANG_KEYS.FAILED_LOAD_CHAT)}</Typography>;
 	}
 
 	// Show loading spinner
@@ -154,7 +155,7 @@ export function ChatPageLoader() {
 	) {
 		return (
 			<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-				<CircularProgress />
+				<GlassCircularProgress />
 			</Box>
 		);
 	}

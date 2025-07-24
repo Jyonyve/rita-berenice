@@ -2,6 +2,9 @@
 import { CircularProgress, Container, Typography } from '@mui/material';
 import { useCharacterApi } from '../../hook/api/index.js';
 import { CharacterListPage } from './CharacterListPage.jsx';
+import { GlassCircularProgress } from '../../layout/glass/index.js';
+import { getLangText } from '../../util/translateUtils.js';
+import { LANG_KEYS } from '#shared/config/langConstants.js';
 
 export function CharacterListPageLoader() {
 	const { data: characterRes, isLoading } = useCharacterApi().getAllCharacters();
@@ -12,8 +15,8 @@ export function CharacterListPageLoader() {
 			<Container
 				sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}
 			>
-				<CircularProgress />
-				<Typography sx={{ ml: 2 }}>Loading characters...</Typography>
+				<GlassCircularProgress colorVariant="silver" />
+				<Typography sx={{ ml: 2 }}>{getLangText(LANG_KEYS.LOADING_CHARACTERS)}</Typography>
 			</Container>
 		);
 	}

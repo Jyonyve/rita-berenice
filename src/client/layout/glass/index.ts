@@ -9,3 +9,4 @@ export * from './GlassPortrait.jsx';
 export * from './GlassSelect.jsx';
 export * from './GlassMenuItem.jsx';
 export * from './GlassPortraitSlider.jsx';
+export * from './GlassCircularProgress.jsx';

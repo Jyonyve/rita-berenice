@@ -18,8 +18,13 @@ export const LANG_KEYS = {
 	MALE: 'MALE',
 	FEMALE: 'FEMALE',
 	OTHER: 'OTHER',
+	ERROR: 'ERROR',
 	CHARACTERS: 'CHARACTERS',
 	LOGOUT: 'LOGOUT',
+	LOADING_CHARACTERS: 'LOADING_CHARACTERS',
+	LOADING_SESSIONS: 'LOADING_SESSIONS',
+	FAILED_LOAD_CHAT: 'FAILED_LOAD_CHAT',
+	CREATING_SESSION: 'CREATING_SESSION',
 } as const;
 export type LangKey = keyof typeof LANG_KEYS;
 
@@ -35,11 +40,19 @@ export const langConstants: LangRecord = {
 	MALE: { kor: '남성', eng: 'Male' },
 	FEMALE: { kor: '여성', eng: 'Female' },
 	OTHER: { kor: '기타', eng: 'Other' },
+	ERROR: { kor: '에러', eng: 'Error' },
 	CHARACTERS: { kor: '캐릭터', eng: 'Characters' },
 	LOGOUT: { kor: '로그아웃', eng: 'Logout' },
+	LOADING_CHARACTERS: { kor: '캐릭터를 불러오는 중입니다...', eng: 'Loading characters...' },
+	LOADING_SESSIONS: { kor: '지난 이야기를 불러오는 중입니다...', eng: 'Loading sessions...' },
+	CREATING_SESSION: { kor: '새 이야기를 시작하는 중입니다...', eng: 'Creating new session...' },
+	FAILED_LOAD_CHAT: {
+		kor: '채팅을 불러오는 데 실패했습니다. 다시 시도해 주세요.',
+		eng: 'Failed to load essential chat data. Please try again.',
+	},
 };
 
-export const alertConstants: LangRecord = {
+export const alertToastConstants: LangRecord = {
 	CREATE_NEW_PROFILE: {
 		kor: '대화에 참여할 프로필을 생성해 주세요.',
 		eng: 'Please create a profile before starting a session.',

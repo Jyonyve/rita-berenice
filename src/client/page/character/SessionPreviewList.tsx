@@ -9,7 +9,9 @@ import {
 } from '@mui/material';
 import React, { FC, Fragment } from 'react'; // Import Fragment
 import { useSessionApi } from '../../hook/api/index.js';
-import { notFoundMessage } from '../../util/translateUtils.js';
+import { getLangText, notFoundMessage } from '../../util/translateUtils.js';
+import { GlassCircularProgress } from '../../layout/glass/index.js';
+import { LANG_KEYS } from '#shared/config/langConstants.js';
 
 export const SessionPreviewList: FC<{
 	userId: string;
@@ -24,8 +26,9 @@ export const SessionPreviewList: FC<{
 
 	if (isLoading) {
 		return (
-			<ListItem>
-				<CircularProgress size={24} />
+			<ListItem sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+				<GlassCircularProgress colorVariant="silver" />
+				<Typography mt={2}>{getLangText(LANG_KEYS.LOADING_SESSIONS)}</Typography>
 			</ListItem>
 		);
 	}
@@ -35,7 +38,7 @@ export const SessionPreviewList: FC<{
 				<ListItemText
 					primary={
 						<Typography variant="body2" color="error">
-							Error: {error.message}
+							{`${getLangText(LANG_KEYS.ERROR)}: ${error.message}`}
 						</Typography>
 					}
 				/>

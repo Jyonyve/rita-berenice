@@ -5,7 +5,7 @@ import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import { ChatTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { useScrollEffect } from '../../hook/useScrollEffect.js';
 import ChatLogRow, { ChatLogRowProps } from './ChatLogRow.jsx';
-import { ScrollGlow } from '../../layout/index.js';
+import { GlassCircularProgress, ScrollGlow } from '../../layout/index.js';
 
 interface ChatLogProps {
 	allTurns: (ChatTurn | TempChatTurn)[];
@@ -80,7 +80,7 @@ export const ChatLog: FC<ChatLogProps> = memo(
 		if (isLoadingChat && allTurns.length === 0) {
 			return (
 				<Box display="flex" justifyContent="center" alignItems="center" height="100%">
-					<CircularProgress />
+					<GlassCircularProgress colorVariant="silver" />
 				</Box>
 			);
 		}

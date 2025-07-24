@@ -1,7 +1,7 @@
 // Create a new file: src/shared/util/translateUtils.ts
 
 import {
-	alertConstants,
+	alertToastConstants,
 	DEFAULT_LANG,
 	LangCode,
 	langConstants,
@@ -36,7 +36,7 @@ export const getLangText = (key: LangKey, lang: LangCode = DEFAULT_LANG): string
  * @returns The localized string.
  */
 export const getLangAlertText = (key: LangKey, lang: LangCode = DEFAULT_LANG): string => {
-	const record = alertConstants[key];
+	const record = alertToastConstants[key];
 
 	if (!record) {
 		console.warn(`Language constant not found for key: ${key}`);

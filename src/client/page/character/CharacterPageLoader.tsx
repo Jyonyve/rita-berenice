@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router';
 import { useCharacterApi } from '../../hook/index.js';
 import { useAuth } from '../../provider/index.js';
 import CharacterPage from './CharacterPage.jsx';
+import { GlassCircularProgress } from '../../layout/glass/index.js';
 
 export function CharacterPageLoader() {
 	const navigate = useNavigate();
@@ -26,8 +27,8 @@ export function CharacterPageLoader() {
 			<Container
 				sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}
 			>
-				<CircularProgress />
-				<Typography sx={{ ml: 2 }}>Loading characters...</Typography>
+				<GlassCircularProgress colorVariant="silver" />
+				{/* <Typography mt={2}>Loading characters...</Typography> */}
 			</Container>
 		);
 	}
