@@ -203,24 +203,25 @@ export const chromaDbClient = {
 
 	getRecords: async (
 		collection: Collection,
-		whereClause?: Where,
+		where?: Where,
+		whereDocument?: WhereDocument,
 		limit?: number
 	): Promise<ChromaResponse> => {
 		try {
 			console.log(
-				`[ChromaClient.queryRecords] filter: ${JSON.stringify(whereClause)}, limit: ${limit}`
+				`[ChromaClient.queryRecords] filter: ${JSON.stringify(where)}, document: ${JSON.stringify(whereDocument)}, limit: ${limit}`
 			);
 			const MAX = await collection.count(); // Ensure the collection is initialized
 			const results = await collection.get({
 				include: [IncludeEnum.documents, IncludeEnum.metadatas],
-				where: whereClause,
+				where: where,
 				limit: limit ?? MAX,
 			});
 			return _returnResponse(results);
 		} catch (error) {
 			console.error(`[ChromaClient.queryRecords] Failed to query records:`, error);
 			throw new Error(
-				`ChromaDB get failed for where ${JSON.stringify(whereClause)}: ${(error as Error).message}`
+				`ChromaDB get failed for where ${JSON.stringify(where)}: ${(error as Error).message}`
 			);
 		}
 	},
@@ -309,7 +310,7 @@ export const chromaDbClient = {
 	 * @param collection The ChromaDB Collection object.
 	 * @param ids An array of record IDs to delete.
 	 */
-	deleteRecordsByIds: async (collection: Collection, ids: string[]): Promise<void> => {
+	deleteRecords: async (collection: Collection, ids: string[]): Promise<void> => {
 		if (!ids || ids.length === 0) {
 			console.log('[ChromaClient.deleteRecordsByIds] No IDs provided to delete.');
 			return;

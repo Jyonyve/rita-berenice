@@ -6,7 +6,7 @@ import { chatStore } from '#server/store/chatStore.js';
 import { ChatResponse } from '#shared/api/ModuleResponse.js';
 import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { buildChatTurnId, buildMessageId } from '#shared/util/buildIdUtils.js';
-import { flatChatTurnToDoc } from '#server/util/documentUtils.js';
+import { chatTurnToDocument } from '#shared/src/shared/util/documentUtils.js';
 import { chatTurnToMetadata } from '#shared/util/dbConvertUtils.js';
 import { Metadata } from 'chromadb';
 
@@ -68,7 +68,7 @@ function generateUpdatedIds(oldTurn: ChatTurn, newSessionId: string): ChatTurn {
  * @returns A new ChatResponse with the updated turns.
  */
 function patchChatTurns(chatResponse: ChatResponse, newSessionId?: string): ChatResponse {
-	const patchedChatTurns = chatResponse.chatTurns.map((turn) => {
+	const patchedChatTurns = chatResponse.displayTurns.map((turn) => {
 		let updatedTurn = {
 			...turn,
 			request: { ...turn.request, emotion: turn.userEmotion.primary },
@@ -84,8 +84,8 @@ function patchChatTurns(chatResponse: ChatResponse, newSessionId?: string): Chat
 
 	return {
 		...chatResponse,
-		chatTurns: patchedChatTurns,
-		chatTurn: patchedChatTurns[patchedChatTurns.length - 1] ?? chatResponse.chatTurn,
+		displayTurns: patchedChatTurns,
+		displayTurn: patchedChatTurns[patchedChatTurns.length - 1] ?? chatResponse.displayTurn,
 	};
 }
 
@@ -111,20 +111,20 @@ const migrateSession = async (oldSessionId: string, newSessionId: string) => {
 	console.log(`🔄 Migrating session from ${oldSessionId} to ${newSessionId}...`);
 	try {
 		const chatResponse = await chatStore.getAllChatTurns(oldSessionId);
-		if (!chatResponse || !chatResponse.chatTurns?.length) {
+		if (!chatResponse || !chatResponse.displayTurns?.length) {
 			console.error(`❌ No chat turns found for session ID: ${oldSessionId}`);
 			return;
 		}
-		console.log(`   Found ${chatResponse.chatTurns.length} turns to migrate.`);
+		console.log(`   Found ${chatResponse.displayTurns.length} turns to migrate.`);
 
-		const patchedTurns = patchChatTurns(chatResponse, newSessionId).chatTurns;
+		const patchedTurns = patchChatTurns(chatResponse, newSessionId).displayTurns;
 
 		console.log(`   📦 Batch upserting turns to new session...`);
 		await batchUpsertChatTurns(patchedTurns);
 
 		console.log(`   🗑️ Batch deleting old turns...`);
 		const collection = await chatStore._getChatCollection();
-		const oldIds = chatResponse.chatTurns.map((t) => t.chatTurnId);
+		const oldIds = chatResponse.displayTurns.map((t) => t.chatTurnId);
 		const idBatches = chunkArray(oldIds, BATCH_SIZE);
 
 		for (const [i, batch] of idBatches.entries()) {
@@ -146,13 +146,13 @@ const patchEmotionsInPlace = async (sessionId: string) => {
 	console.log(`🎨 Patching emotions for session: ${sessionId}...`);
 	try {
 		const chatResponse = await chatStore.getAllChatTurns(sessionId);
-		if (!chatResponse || !chatResponse.chatTurns?.length) {
+		if (!chatResponse || !chatResponse.displayTurns?.length) {
 			console.error(`❌ No chat turns found for session ID: ${sessionId}`);
 			return;
 		}
-		console.log(`   Found ${chatResponse.chatTurns.length} turns to patch.`);
+		console.log(`   Found ${chatResponse.displayTurns.length} turns to patch.`);
 
-		const patchedTurns = patchChatTurns(chatResponse).chatTurns;
+		const patchedTurns = patchChatTurns(chatResponse).displayTurns;
 		await batchUpsertChatTurns(patchedTurns);
 		console.log(`🎉 Success! All emotions updated for session: ${sessionId}`);
 	} catch (error) {

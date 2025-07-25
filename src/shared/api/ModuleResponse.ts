@@ -2,7 +2,7 @@ import { HistoryInfo, LoreInfo } from '../domain/lore/LoreInterfaces.js';
 import { LangCode } from '../config/langConstants.js';
 import { EmotionValue } from '../config/emotionWordsMapper.js';
 import { CharacterInfo } from '../domain/character/CharacterInterfaces.js';
-import { ChatTurn, TempChatTurn } from '../domain/chat/ChatInterfaces.js';
+import { ChatTurn, TempChatTurn, DisplayTurn } from '../domain/chat/ChatInterfaces.js';
 import { RecapInfo } from '../domain/recap/RecapInterfaces.js';
 import { TermInfo } from '../domain/term/TermInterfaces.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
@@ -45,7 +45,7 @@ export type ProfileResponse = ProfileChromaResponse;
 // Chat
 interface ChatChromaResponse extends ChromaResponse {
 	chatTurns: ChatTurn[];
-	chatTurn: ChatTurn;
+	displayTurns: DisplayTurn[];
 }
 export type ChatResponse = ChatChromaResponse;
 

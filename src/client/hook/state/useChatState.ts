@@ -71,8 +71,8 @@ export const useChatState = (sessionId: string) => {
 			return;
 		}
 
-		if (apiResponse?.chatTurns) {
-			const sortedApiTurns = _sortTurns(apiResponse.chatTurns);
+		if (apiResponse?.displayTurns) {
+			const sortedApiTurns = _sortTurns(apiResponse.displayTurns);
 			// Update state and cache only if the server data is different from what's currently shown.
 			// This prevents unnecessary re-renders.
 			if (JSON.stringify(sortedApiTurns) !== JSON.stringify(chatTurns)) {

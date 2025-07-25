@@ -64,7 +64,7 @@ async function duplicateChatSession(oldSessionId: string, newSessionId: string) 
 	}
 
 	try {
-		const { chatTurns } = await chatStore.getAllChatTurns(oldSessionId);
+		const { displayTurns: chatTurns } = await chatStore.getAllChatTurns(oldSessionId);
 		if (!chatTurns || chatTurns.length === 0) {
 			console.warn(`⚠️ No chat turns found for source session ID: ${oldSessionId}.`);
 			return;

@@ -25,7 +25,7 @@ export const useChatApiMock = () => {
 	 */
 	const getChatTurnBySequence = (sessionId: string, sequence: number) => {
 		const turn =
-			mockMondayChat?.chatTurns?.find((t) => t.sessionId === sessionId && t.sequence === sequence) ||
+			mockMondayChat?.displayTurns?.find((t) => t.sessionId === sessionId && t.sequence === sequence) ||
 			null;
 		return {
 			data: turn

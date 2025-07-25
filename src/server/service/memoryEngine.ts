@@ -24,74 +24,72 @@ import { llmService } from './llmService.js';
 import { AiModelInfo, DEFAULT_CHAT_MODEL_FREE } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { ragQueryService } from './ragQueryService.js';
 import { WhereDocument } from 'chromadb';
+import { createChatTurnMetadataSchema } from '#server/util/schemaUtils.js';
+import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 
-// --- 2. Corrected and Renamed Metadata Creation Helper ---
 /**
- * Safely merges the original ChatTurn with the LLM enrichment data and then
- * uses the existing utility to convert it to the final ChatTurnMetadata format for storage.
- * @param turn The original ChatTurn object.
- * @param enrichment The parsed JSON object from the LLM.
- * @returns A valid ChatTurnMetadata object.
+ * @private
+ * Safely merges a ChatTurn with LLM-generated enrichment data.
+ * This function now populates the consistent `...List` properties.
  */
 function _extractChatTurnMetadataInfoFromLlm(
 	turn: ChatTurn,
 	enrichment: Record<string, any>
 ): ChatTurn {
-	// Create a temporary ChatTurn object with rich types (arrays, objects)
-	const tempEnrichedTurn: ChatTurn = {
+	return {
 		...turn,
 		summary: enrichment.summary || '',
-		keywords: Array.isArray(enrichment.keywords) ? enrichment.keywords : [],
-		topics: Array.isArray(enrichment.topics) ? enrichment.topics : [],
-		entities: Array.isArray(enrichment.entities) ? enrichment.entities : [],
+		keywordList: Array.isArray(enrichment.keywordList) ? enrichment.keywordList : [],
+		topicList: Array.isArray(enrichment.topicList) ? enrichment.topicList : [],
+		entityList: Array.isArray(enrichment.entityList) ? enrichment.entityList : [],
+		actionList: Array.isArray(enrichment.actionList) ? enrichment.actionList : [],
+		flagList: Array.isArray(enrichment.flagList) ? enrichment.flagList : [],
+		relationshipShiftList: Array.isArray(enrichment.relationshipShiftList)
+			? enrichment.relationshipShiftList
+			: [],
 		userEmotion: {
 			primary: enrichment.userEmotion?.primary || 'neutral',
 			intensity: enrichment.userEmotion?.intensity ?? 0.5,
-			nuances: Array.isArray(enrichment.userEmotion?.nuances) ? enrichment.userEmotion.nuances : [],
+			nuanceList: Array.isArray(enrichment.userEmotion?.nuanceList)
+				? enrichment.userEmotion.nuanceList
+				: [],
 		},
 		characterEmotion: {
 			primary: enrichment.characterEmotion?.primary || 'neutral',
 			intensity: enrichment.characterEmotion?.intensity ?? 0.5,
-			nuances: Array.isArray(enrichment.characterEmotion?.nuances)
-				? enrichment.characterEmotion.nuances
+			nuanceList: Array.isArray(enrichment.characterEmotion?.nuanceList)
+				? enrichment.characterEmotion.nuanceList
 				: [],
 		},
 		dialogueAct: enrichment.dialogueAct || 'N/A',
-		actions: Array.isArray(enrichment.actions) ? enrichment.actions : [],
-		relationshipShifts: Array.isArray(enrichment.relationshipShifts)
-			? enrichment.relationshipShifts
-			: [],
-		flags: Array.isArray(enrichment.flags) ? enrichment.flags : [],
 		memoryChunk: enrichment.memoryChunk || '',
-		loreReferences: Array.isArray(enrichment.loreReferences) ? enrichment.loreReferences : [],
-		historyReferences: Array.isArray(enrichment.historyReferences)
-			? enrichment.historyReferences
+		loreReferenceList: Array.isArray(enrichment.loreReferenceList)
+			? enrichment.loreReferenceList
+			: [],
+		historyReferenceList: Array.isArray(enrichment.historyReferenceList)
+			? enrichment.historyReferenceList
 			: [],
 	};
-
-	// Use your existing, trusted utility to serialize the rich object into DB-compatible metadata
-	return tempEnrichedTurn;
 }
 
+/**
+ * @private
+ * Formats a recap into a concise string for inclusion in a prompt.
+ */
 function _formatRecapForPrompt(recap: RecapInfo): string {
-	const flags =
-		recap.flagsArray.length > 0 ? ` [FLAGS: ${convertArrayToString(recap.flagsArray)}]` : '';
-	return `[Recap from turns ${recap.turnStart}-${recap.turnEnd}]${flags} Summary: ${recap.content}...`; // Use a snippet of the content as a summary
+	const flags = recap.flagList.length > 0 ? ` [FLAGS: ${convertArrayToString(recap.flagList)}]` : '';
+	return `[Recap from turns ${recap.turnStart}-${recap.turnEnd}]${flags} Summary: ${recap.content}...`;
 }
 
 export const memoryEngine = {
 	/**
 	 * Gathers all relevant context (memories) needed to generate a coherent, in-character response.
-	 * This is the primary "recall" step using a multi-tiered memory approach.
-	 * @param sessionId The current session ID.
-	 * @param userInput The text from the user's latest prompt for semantic search.
-	 * @returns A MemoryRecallPayload object containing various forms of context.
 	 */
 	async recallRelevantMemories(
 		sessionId: string,
 		userInput: string,
 		userId: string,
-		recentChatTurns: string,
+		recentChatTurns: ChatTurn[],
 		aiModelInfo: AiModelInfo
 	): Promise<MemoryResponse> {
 		const { characterId } = parseSessionId(sessionId);
@@ -109,10 +107,9 @@ export const memoryEngine = {
 
 			let documentFilter: WhereDocument | undefined = undefined;
 			const quotedTextMatch = userInput.match(/"(.*?)"/);
-			if (quotedTextMatch && quotedTextMatch[1]) {
+			if (quotedTextMatch?.[1]) {
 				documentFilter = { $contains: quotedTextMatch[1] };
 			}
-
 			const [
 				longTermChatRes,
 				relevantLoreRes,
@@ -155,6 +152,12 @@ export const memoryEngine = {
 				),
 			]);
 
+			const rerankedLongTerm = reRankByRecency<ChatTurn>(longTermChatRes);
+
+			const factualRecapSummary = relevantFactualRecapsRes.map(_formatRecapForPrompt).join('\n') || '';
+			const relationshipRecapSummary =
+				relevantRelationshipRecapsRes.map(_formatRecapForPrompt).join('\n') || '';
+
 			console.log('[DEBUG] longTermChatRes:', JSON.stringify(longTermChatRes, null, 2));
 			console.log('[DEBUG] relevantLoreRes:', JSON.stringify(relevantLoreRes, null, 2));
 			console.log('[DEBUG] relevantHistoryRes:', JSON.stringify(relevantHistoryRes, null, 2));
@@ -167,23 +170,12 @@ export const memoryEngine = {
 				JSON.stringify(relevantRelationshipRecapsRes, null, 2)
 			);
 
-			const shortTermHistory: ChatTurn[] = JSON.parse(recentChatTurns) ?? [];
-			const rerankedLongTerm = reRankByRecency<ChatTurn>(longTermChatRes);
-			// Construct a concise, token-friendly summary of the recalled recaps
-			const factualRecapSummary = relevantFactualRecapsRes?.recapInfos
-				.map(_formatRecapForPrompt)
-				.join('\n');
-
-			const relationshipRecapSummary = relevantRelationshipRecapsRes?.recapInfos
-				.map(_formatRecapForPrompt)
-				.join('\n');
-
 			return {
 				langCode,
-				shortTermHistory,
+				shortTermHistory: recentChatTurns,
 				longTermHistory: rerankedLongTerm.contents?.slice(0, FINAL_MEMORY_LIMIT) || [],
-				relevantLore: relevantLoreRes?.loreInfos || [],
-				relevantHistory: relevantHistoryRes?.historyInfos || [],
+				relevantLore: relevantLoreRes || [],
+				relevantHistory: relevantHistoryRes || [],
 				factualRecapSummary,
 				relationshipRecapSummary,
 			};
@@ -201,35 +193,34 @@ export const memoryEngine = {
 	 * This process includes term standardization using the session glossary.
 	 */
 	async enrichChatTurnViaLlm(turn: ChatTurn): Promise<ChatTurn> {
-		const { sessionId } = turn;
+		const { sessionId, userId } = turn;
 		const { characterId } = parseSessionId(sessionId);
 
 		try {
-			// 1. Extract NER terms from the conversation text
-			const textForNer = [
-				parseEntriesToText(turn.request.entries),
-				parseEntriesToText(turn.response.entries),
-			].join('\n');
-			const extractedKpns = await llmService.extractProperNouns(textForNer, turn.userId);
+			// 1. Extract named entities to ensure they are in the glossary.
+			const textForNer = `${parseEntriesToText(turn.request.entries)}\n${parseEntriesToText(turn.response.entries)}`;
+			const extractedKpns = await llmService.extractProperNouns(textForNer, userId);
 
-			// 2. Ensure terms are in the glossary and get the guidance map
-			const termGuidanceMap = await termStore.ensureAndGetTermsForPrompt(
-				sessionId,
-				turn.userId,
-				extractedKpns
-			);
-
-			// 3. Fetch context (lore, history, user/char info)
-			const [profileInfo, charInfo, loreRes, historyRes] = await Promise.all([
+			// 2. Fetch all necessary context for the enrichment prompt.
+			const [profileInfo, charInfo, loreRes, historyRes, termGuidanceMap] = await Promise.all([
 				profileStore.getProfileBySessionId(sessionId),
 				characterStore.getCharacter(characterId),
 				loreStore.getLores(characterId),
 				loreStore.getHistories(characterId),
+				termStore.ensureAndGetTermsForPrompt(sessionId, userId, extractedKpns),
 			]);
+
 			const loreIds = loreRes.loreInfos.map((lore) => lore.loreId);
 			const historyIds = historyRes.historyInfos.map((history) => history.historyId);
 
-			// 4. Build the guided prompt for the LLM
+			const zodSchema = createChatTurnMetadataSchema(
+				profileInfo.profileInfo.name,
+				charInfo.characterInfo.name,
+				loreIds,
+				historyIds
+			);
+
+			// 3. Build the prompt and invoke the LLM with a defined schema.
 			const prompt = buildChatTurnMetadataPrompt(
 				profileInfo.profileInfo,
 				turn.request,
@@ -238,25 +229,27 @@ export const memoryEngine = {
 				termGuidanceMap
 			);
 
-			// 5. Call the LLM and robustly parse the JSON response
-			const llmResponse = await llmService.invokeLlm(
-				[
-					{ role: 'system', content: 'You are a helpful assistant.' },
-					{ role: 'user', content: prompt },
-				],
-				DEFAULT_CHAT_MODEL_FREE,
-				turn.userId
-			);
-			const enrichment = parseLlmJsonResponse<Record<string, any>>(llmResponse);
+			const messages: ChatCompletionMessageParam[] = [
+				{
+					role: 'system',
+					content:
+						'You are a helpful assistant that analyzes conversation turns and provides structured metadata in JSON format.',
+				},
+				{ role: 'user', content: prompt },
+			];
 
-			// 6. Create the final metadata object using your utilityd
-			return _extractChatTurnMetadataInfoFromLlm(turn, enrichment);
-		} catch (error) {
-			handleServiceError(
-				error,
-				'An internal error occurred while do [extractChatTurnMetadataInfoFromLlm].',
-				`Failed to enrich chat turn metadata for chatTurn ${turn.chatTurnId}:`
+			const enrichment = await llmService.invokeLlm(
+				messages,
+				DEFAULT_CHAT_MODEL_FREE,
+				userId,
+				{},
+				zodSchema
 			);
+
+			// 4. Create the final rich ChatTurn object.
+			return _extractChatTurnMetadataInfoFromLlm(turn, JSON.parse(enrichment));
+		} catch (error) {
+			handleServiceError(error, `Failed to enrich metadata for chatTurn ${turn.chatTurnId}`);
 		}
 	},
 };

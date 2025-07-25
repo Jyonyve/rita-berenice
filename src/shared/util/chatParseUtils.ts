@@ -5,6 +5,7 @@ import {
 	ChatMessageType,
 	ChatRoleType,
 	ChatTurn,
+	ChatTurnMetadata,
 } from '../domain/chat/ChatInterfaces.js';
 import { DEFAULT_EMOTION } from '../config/emotionWordsMapper.js';
 import { buildCharacterId } from '#shared/util/buildIdUtils.js';
@@ -56,7 +57,7 @@ export const parseEntriesToText = (entries: ChatEntry[]): string => {
 		.join('\n');
 };
 
-export const parseChatTurnToMetadata = (turn: ChatTurn): any => {
+export const parseChatTurnToMetadata = (turn: ChatTurn): ChatTurnMetadata => {
 	const jsonStringifyOrEmpty = (obj: any): string => {
 		try {
 			return obj && Array.isArray(obj) ? JSON.stringify(obj) : '[]';
@@ -70,38 +71,32 @@ export const parseChatTurnToMetadata = (turn: ChatTurn): any => {
 		sessionId: turn.sessionId,
 		sequence: turn.sequence,
 		chatTurnId: turn.chatTurnId,
-		requestMessageId: turn.requestMessageId,
-		responseMessageId: turn.responseMessageId,
 		createdAt: turn.createdAt,
 		updatedAt: turn.updatedAt,
 		type: turn.type,
 		characterId: turn.characterId,
+		userId: turn.userId,
+		profileId: turn.profileId,
+		requestJson: JSON.stringify(turn.request),
+		responseJson: JSON.stringify(turn.response),
 
 		// Enriched metadata (flattened for ChromaDB)
 		summary: turn.summary || 'N/A',
-		keywords: convertArrayToString(turn.keywords),
-		topics: convertArrayToString(turn.topics),
-		entities: convertArrayToString(turn.entities),
 
 		// Flattened emotion objects
-		userEmotionPrimary: turn.userEmotion?.primary || 'neutral',
+		userEmotionPrimary: turn.userEmotion?.primary || DEFAULT_EMOTION,
 		userEmotionIntensity: turn.userEmotion?.intensity || 0.5,
-		userEmotionNuances: convertArrayToString(turn.userEmotion?.nuances || []),
 
-		characterEmotionPrimary: turn.characterEmotion?.primary || 'neutral',
+		characterEmotionPrimary: turn.characterEmotion?.primary || DEFAULT_EMOTION,
 		characterEmotionIntensity: turn.characterEmotion?.intensity || 0.5,
-		characterEmotionNuances: convertArrayToString(turn.characterEmotion?.nuances || []),
 
 		// Other fields
 		dialogueAct: turn.dialogueAct || 'N/A',
-		actions: convertArrayToString(turn.actions),
-		relationshipShifts: convertArrayToString(turn.relationshipShifts),
-		flags: convertArrayToString(turn.flags),
 		memoryChunk: turn.memoryChunk || 'N/A',
 
 		// Complex objects as JSON strings
-		loreReferences: jsonStringifyOrEmpty(turn.loreReferences),
-		historyReferences: jsonStringifyOrEmpty(turn.historyReferences),
+		loreReferenceList: jsonStringifyOrEmpty(turn.loreReferenceList),
+		historyReferenceList: jsonStringifyOrEmpty(turn.historyReferenceList),
 	};
 };
 
@@ -127,6 +122,7 @@ export const buildChatMessage = (
 		createdAt: '',
 		updatedAt: '',
 		type: 'message',
+		model: '',
 	};
 };
 

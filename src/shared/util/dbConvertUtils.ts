@@ -5,191 +5,26 @@ import {
 	LoreInfo,
 	HistoryMetadata,
 	HistoryInfo,
+	LoreIndexMetadata,
+	LoreIndexContentType,
 } from '../domain/lore/LoreInterfaces.js';
 import { convertArrayToString, convertStringToArray } from './chatParseUtils.js';
-import { ChatTurnMetadata, ChatTurn, ChatMessage } from '../domain/chat/ChatInterfaces.js';
-import { buildChatTurnId, buildProfileId } from './buildIdUtils.js';
-import { DEFAULT_EMOTION } from '../config/emotionWordsMapper.js';
-
-import { Metadata } from '../api/ModuleResponse.js';
+import {
+	ChatTurnMetadata,
+	ChatTurn,
+	ChatMessage,
+	ChatIndexMetadata,
+	ChatIndexContentType,
+	DisplayTurn,
+} from '../domain/chat/ChatInterfaces.js';
+import { buildProfileId } from './buildIdUtils.js';
 import { CharacterInfo, CharacterMetadata } from '../domain/character/CharacterInterfaces.js';
-import { RecapInfo, RecapMetadata } from '../domain/recap/RecapInterfaces.js';
+import { RecapInfo, RecapMetadata, RecapIndexMetadata } from '../domain/recap/RecapInterfaces.js';
 import { ProfileInfo, ProfileMetadata } from '../domain/profile/ProfileInterfaces.js';
 import { UserInfo, UserMetadata } from '../domain/user/UserInterfaces.js';
 import { SessionMetadata } from '../domain/session/SessionInterfaces.js';
 import { SessionInfo } from '#shared/domain/session/SessionInterfaces.js';
-
-// --- LORE HELPERS ---
-
-export const loreToMetadata = (loreInfo: LoreInfo): LoreMetadata => {
-	// Combine owner and side characters for the allAffected field
-	const allAffectedCharacters = [
-		...loreInfo.ownerCharacterIdArray,
-		...loreInfo.sideCharacterIdArray,
-	];
-	const uniqueAllAffected = [...new Set(allAffectedCharacters)]; // Remove duplicates
-
-	return {
-		// Base metadata fields (from BaseMetadataType)
-		characterId: loreInfo.characterId,
-		userId: loreInfo.userId,
-		type: loreInfo.type,
-		createdAt: loreInfo.createdAt,
-		updatedAt: loreInfo.updatedAt,
-		sequence: loreInfo.sequence,
-
-		// Stringify arrays from BaseMetadataType
-		keywords: loreInfo.keywords,
-		topics: loreInfo.topics,
-		entities: loreInfo.entities,
-
-		// Lore-specific fields
-		loreId: loreInfo.loreId,
-		category: loreInfo.category,
-		source: loreInfo.source,
-		summary: loreInfo.summary,
-		title: loreInfo.title,
-		generatedTitle: loreInfo.generatedTitle,
-		englishId: loreInfo.englishId, // kebab-case version of the title summary
-
-		// Stringify character arrays
-		ownerCharacterIds: convertArrayToString(loreInfo.ownerCharacterIdArray),
-		sideCharacterIds: convertArrayToString(loreInfo.sideCharacterIdArray),
-		allAffectedCharacterIds: convertArrayToString(uniqueAllAffected),
-	};
-};
-
-export const metadataToLore = (metadata: LoreMetadata, content: string): LoreInfo => {
-	return {
-		// Base metadata fields (from BaseMetadataType)
-		characterId: metadata.characterId,
-		userId: metadata.userId,
-		type: metadata.type,
-		createdAt: metadata.createdAt,
-		updatedAt: metadata.updatedAt,
-		sequence: metadata.sequence,
-
-		// Parse arrays from BaseMetadataType strings
-		keywords: metadata.keywords,
-		topics: metadata.topics,
-		entities: metadata.entities,
-
-		// Lore-specific fields
-		loreId: metadata.loreId,
-		category: metadata.category,
-		source: metadata.source,
-		summary: metadata.summary,
-		title: metadata.title,
-		generatedTitle: metadata.generatedTitle,
-		englishId: metadata.englishId, // kebab-case version of the title summary
-
-		// Content
-		content,
-
-		// Parse character arrays
-		ownerCharacterIdArray: convertStringToArray(metadata.ownerCharacterIds),
-		sideCharacterIdArray: convertStringToArray(metadata.sideCharacterIds),
-		allAffectedCharacterIdArray: convertStringToArray(metadata.allAffectedCharacterIds),
-	};
-};
-
-// --- HISTORY HELPERS ---
-
-export const historyToMetadata = (historyInfo: HistoryInfo): HistoryMetadata => {
-	// Combine owner and side characters for the allAffected field
-	const allAffectedCharacters = [
-		...historyInfo.ownerCharacterIdArray,
-		...historyInfo.sideCharacterIdArray,
-	];
-	const uniqueAllAffected = [...new Set(allAffectedCharacters)]; // Remove duplicates
-
-	return {
-		// Base metadata fields (from BaseMetadataType)
-		characterId: historyInfo.characterId,
-		userId: historyInfo.userId,
-		type: historyInfo.type,
-		createdAt: historyInfo.createdAt,
-		updatedAt: historyInfo.updatedAt,
-		sequence: historyInfo.sequence,
-
-		// Stringify arrays from BaseMetadataType
-		keywords: Array.isArray(historyInfo.keywords)
-			? convertArrayToString(historyInfo.keywords)
-			: historyInfo.keywords,
-		topics: Array.isArray(historyInfo.topics)
-			? convertArrayToString(historyInfo.topics)
-			: historyInfo.topics,
-		entities: Array.isArray(historyInfo.entities)
-			? convertArrayToString(historyInfo.entities)
-			: historyInfo.entities,
-
-		// History-specific fields
-		summary: historyInfo.summary,
-		historyId: historyInfo.historyId,
-		title: historyInfo.title,
-		generatedTitle: historyInfo.generatedTitle,
-		englishId: historyInfo.englishId, // kebab-case version of the title summary
-		category: historyInfo.category, // ✅ Added missing category field
-
-		// Stringify character arrays
-		ownerCharacterIds: convertArrayToString(historyInfo.ownerCharacterIdArray),
-		sideCharacterIds: convertArrayToString(historyInfo.sideCharacterIdArray),
-		allAffectedCharacterIds: convertArrayToString(uniqueAllAffected),
-
-		// Flatten temporal objects
-		periodLabel: historyInfo.periodLabel,
-		periodConfidence: historyInfo.periodConfidence,
-		eventDateValue: historyInfo.eventDateValue,
-		eventDateType: historyInfo.eventDateType,
-		eventDateConfidence: historyInfo.eventDateConfidence,
-
-		// Stringify complex objects
-		relatedEvents: JSON.stringify(historyInfo.relatedEventsArray),
-	};
-};
-
-export const metadataToHistory = (metadata: HistoryMetadata, content: string): HistoryInfo => {
-	return {
-		// Base metadata fields (from BaseMetadataType)
-		characterId: metadata.characterId,
-		userId: metadata.userId,
-		type: metadata.type,
-		createdAt: metadata.createdAt,
-		updatedAt: metadata.updatedAt,
-		sequence: metadata.sequence,
-
-		// Parse arrays from BaseMetadataType strings
-		keywords: metadata.keywords,
-		topics: metadata.topics,
-		entities: metadata.entities,
-
-		// History-specific fields
-		summary: metadata.summary,
-		historyId: metadata.historyId,
-		title: metadata.title,
-		generatedTitle: metadata.generatedTitle,
-		englishId: metadata.englishId, // kebab-case version of the title summary
-		category: metadata.category, // ✅ Added missing category field
-
-		// Temporal information (flattened fields from metadata)
-		periodLabel: metadata.periodLabel,
-		periodConfidence: metadata.periodConfidence,
-		eventDateValue: metadata.eventDateValue,
-		eventDateType: metadata.eventDateType,
-		eventDateConfidence: metadata.eventDateConfidence,
-
-		// Content
-		content,
-
-		// Parse character arrays
-		ownerCharacterIdArray: convertStringToArray(metadata.ownerCharacterIds),
-		sideCharacterIdArray: convertStringToArray(metadata.sideCharacterIds),
-		allAffectedCharacterIdArray: convertStringToArray(metadata.allAffectedCharacterIds),
-
-		// Parse relationships
-		relatedEventsArray: metadata.relatedEvents ? JSON.parse(metadata.relatedEvents) : [],
-	};
-};
+import { Reference, RelatedEvent } from '../domain/BaseTypes.js';
 
 export const metadataToCharacter = (
 	metadata: CharacterMetadata,
@@ -217,14 +52,6 @@ export const metadataToSession = (
 
 // --- UTILITY HELPERS ---
 
-export const addCharacterId = (existingIds: string, newCharacterId: string): string => {
-	const currentIds = convertStringToArray(existingIds);
-	if (!currentIds.includes(newCharacterId)) {
-		currentIds.push(newCharacterId);
-	}
-	return convertArrayToString(currentIds);
-};
-
 export const removeCharacterFromLore = (
 	currentCharacterIds: string,
 	characterIdToRemove: string
@@ -235,120 +62,233 @@ export const removeCharacterFromLore = (
 
 // --- CHAT TURN HELPERS ---
 
+/**
+ * Converts a rich ChatTurn object into the lean metadata format for storing the primary document in ChromaDB.
+ * This function no longer handles stringifying arrays for indexed fields. That logic is now in the store layer.
+ */
 export const chatTurnToMetadata = (chatTurn: ChatTurn): ChatTurnMetadata => {
 	return {
-		// Base metadata fields (from BaseMetadata)
+		// Core metadata fields
+		type: chatTurn.type,
+		chatTurnId: chatTurn.chatTurnId,
 		sessionId: chatTurn.sessionId,
 		characterId: chatTurn.characterId,
 		userId: chatTurn.userId,
-		profileId: buildProfileId(chatTurn.sessionId, chatTurn.userId),
-		type: chatTurn.type,
+		profileId: chatTurn.profileId,
+		sequence: chatTurn.sequence,
 		createdAt: chatTurn.createdAt,
 		updatedAt: chatTurn.updatedAt,
-		sequence: chatTurn.sequence,
 
-		// Chat turn specific fields
-		chatTurnId: chatTurn.chatTurnId,
-		requestMessageId: chatTurn.requestMessageId,
-		responseMessageId: chatTurn.responseMessageId,
+		// Stringified source data for reconstruction
+		requestJson: JSON.stringify(chatTurn.request),
+		responseJson: JSON.stringify(chatTurn.response),
 
-		// LLM-generated enrichment (stringify arrays and flatten objects)
+		// Key LLM-generated fields remain on the main document
 		summary: chatTurn.summary,
+		memoryChunk: chatTurn.memoryChunk,
+		dialogueAct: chatTurn.dialogueAct,
 
-		// Arrays stored as comma-separated strings
-		keywords: convertArrayToString(chatTurn.keywords),
-		topics: convertArrayToString(chatTurn.topics),
-		entities: convertArrayToString(chatTurn.entities),
-
-		// Flatten emotion objects to primitives
+		// Flattened emotion objects
 		userEmotionPrimary: chatTurn.userEmotion.primary,
 		userEmotionIntensity: chatTurn.userEmotion.intensity,
-		userEmotionNuances: convertArrayToString(chatTurn.userEmotion.nuances),
 		characterEmotionPrimary: chatTurn.characterEmotion.primary,
 		characterEmotionIntensity: chatTurn.characterEmotion.intensity,
-		characterEmotionNuances: convertArrayToString(chatTurn.characterEmotion.nuances),
 
-		// Other arrays as strings
-		dialogueAct: chatTurn.dialogueAct,
-		actions: convertArrayToString(chatTurn.actions),
-		relationshipShifts: convertArrayToString(chatTurn.relationshipShifts),
-		flags: convertArrayToString(chatTurn.flags),
-		memoryChunk: chatTurn.memoryChunk,
-
-		// Complex objects as JSON strings
-		loreReferences: JSON.stringify(chatTurn.loreReferences),
-		historyReferences: JSON.stringify(chatTurn.historyReferences),
+		// Post-retrieval context is still stringified
+		loreReferenceList: JSON.stringify(chatTurn.loreReferenceList),
+		historyReferenceList: JSON.stringify(chatTurn.historyReferenceList),
 	};
 };
 
+/**
+ * Reconstructs a rich ChatTurn object from its database representation.
+ * It now reconstructs ALL indexed arrays (keywords, topics, flags, actions, etc.)
+ * from the payload of search index records.
+ */
 export const metadataToChatTurn = (
-	metadata: Metadata,
-	request: ChatMessage,
-	response: ChatMessage
+	metadata: ChatTurnMetadata,
+	indexRecords: ChatIndexMetadata[] = []
 ): ChatTurn => {
+	// --- Reconstruct the original message objects ---
+	const request: ChatMessage = JSON.parse(metadata.requestJson);
+	const response: ChatMessage = JSON.parse(metadata.responseJson);
+
+	// Helper to filter index records by a specific type and extract their values
+	const getValuesFromIndex = (contentType: ChatIndexContentType): string[] => {
+		return indexRecords
+			.filter((record) => record.contentType === contentType)
+			.map((record) => record.value);
+	};
+
 	return {
-		// Base metadata fields (from BaseMetadata)
-		sessionId: metadata.sessionId as string,
-		characterId: metadata.characterId as string,
-		userId: metadata.userId as string,
-		profileId: buildProfileId(metadata.sessionId as string, metadata.userId as string),
-		type: 'turn',
-		createdAt: metadata.createdAt as string,
-		updatedAt: metadata.updatedAt as string,
-		sequence: metadata.sequence as number,
+		// Map all fields from the primary metadata object
+		...metadata,
 
-		// Chat turn specific fields
-		chatTurnId:
-			(metadata.chatTurnId as string) ||
-			buildChatTurnId(metadata.sessionId as string, metadata.sequence as number),
-		requestMessageId: metadata.requestMessageId as string,
-		responseMessageId: metadata.responseMessageId as string,
+		// Reconstruct arrays for ALL indexed types
+		keywordList: getValuesFromIndex('KEYWORD'),
+		topicList: getValuesFromIndex('TOPIC'),
+		entityList: getValuesFromIndex('ENTITY'),
+		actionList: getValuesFromIndex('ACTION'),
+		flagList: getValuesFromIndex('FLAG'),
+		relationshipShiftList: getValuesFromIndex('RELATIONSHIP_SHIFT'),
 
-		// LLM-generated enrichment (parse strings to rich objects)
-		summary: (metadata.summary as string) || 'N/A',
-
-		// Parse arrays from comma-separated strings
-		keywords: convertStringToArray(metadata.keywords as string),
-		topics: convertStringToArray(metadata.topics as string),
-		entities: convertStringToArray(metadata.entities as string),
-
-		// Reconstruct emotion objects from flattened primitives
+		// Reconstruct complex emotion objects
 		userEmotion: {
-			primary: (metadata.userEmotionPrimary as string) || DEFAULT_EMOTION,
-			intensity: (metadata.userEmotionIntensity as number) || 0.5,
-			nuances: convertStringToArray(metadata.userEmotionNuances as string),
+			primary: metadata.userEmotionPrimary,
+			intensity: metadata.userEmotionIntensity,
+			nuanceList: getValuesFromIndex('USER_EMOTION_NUANCE'),
 		},
 		characterEmotion: {
-			primary: (metadata.characterEmotionPrimary as string) || DEFAULT_EMOTION,
-			intensity: (metadata.characterEmotionIntensity as number) || 0.5,
-			nuances: convertStringToArray(metadata.characterEmotionNuances as string),
+			primary: metadata.characterEmotionPrimary,
+			intensity: metadata.characterEmotionIntensity,
+			nuanceList: getValuesFromIndex('CHARACTER_EMOTION_NUANCE'),
 		},
 
-		// Parse other arrays from strings
-		dialogueAct: (metadata.dialogueAct as string) || 'N/A',
-		actions: convertStringToArray(metadata.actions as string),
-		relationshipShifts: convertStringToArray(metadata.relationshipShifts as string),
-		flags: convertStringToArray(metadata.flags as string),
-		memoryChunk: (metadata.memoryChunk as string) || 'N/A',
-
-		// Parse complex objects from JSON strings
-		loreReferences: metadata.loreReferences ? JSON.parse(metadata.loreReferences as string) : [],
-		historyReferences: metadata.historyReferences
-			? JSON.parse(metadata.historyReferences as string)
+		// Parse post-retrieval context
+		loreReferenceList: metadata.loreReferenceList ? JSON.parse(metadata.loreReferenceList) : [],
+		historyReferenceList: metadata.historyReferenceList
+			? JSON.parse(metadata.historyReferenceList)
 			: [],
 
-		// Full message objects
+		// Attach the perfectly reconstructed message objects
 		request,
 		response,
+	};
+};
+
+/**
+ * Reconstructs a rich ChatTurn object from its database representation.
+ * It now reconstructs ALL indexed arrays (keywords, topics, flags, actions, etc.)
+ * from the payload of search index records.
+ */
+export const metadataToDisplayTurn = (metadata: ChatTurnMetadata): DisplayTurn => {
+	// --- Reconstruct the original message objects ---
+	const request: ChatMessage = JSON.parse(metadata.requestJson);
+	const response: ChatMessage = JSON.parse(metadata.responseJson);
+
+	return { ...metadata, request, response };
+};
+
+// --- LORE & HISTORY HELPERS ---
+
+/**
+ * Converts a rich LoreInfo object into the lean metadata format for ChromaDB.
+ */
+export const loreToMetadata = (loreInfo: LoreInfo): LoreMetadata => {
+	return {
+		type: loreInfo.type,
+		loreId: loreInfo.loreId,
+		characterId: loreInfo.characterId,
+		userId: loreInfo.userId,
+		profileId: loreInfo.profileId,
+		createdAt: loreInfo.createdAt,
+		updatedAt: loreInfo.updatedAt,
+		title: loreInfo.title,
+		generatedTitle: loreInfo.generatedTitle,
+		englishId: loreInfo.englishId,
+		category: loreInfo.category,
+		source: loreInfo.source,
+		summary: loreInfo.summary,
+	};
+};
+
+/**
+ * Reconstructs a rich LoreInfo object from its primary metadata and its search index records.
+ * @param metadata The core LoreMetadata from the main document.
+ * @param content The document's content string.
+ * @param indexRecords An array of ContentSearchIndexMetadata records associated with this lore.
+ */
+export const metadataToLore = (
+	metadata: LoreMetadata,
+	content: string,
+	indexRecords: LoreIndexMetadata[] = []
+): LoreInfo => {
+	const getValuesFromIndex = (contentType: LoreIndexContentType): string[] => {
+		return indexRecords
+			.filter((record) => record.contentType === contentType && record.contentId === metadata.loreId)
+			.map((record) => record.value);
+	};
+
+	const affectedCharacters = getValuesFromIndex('AFFECTED_CHARACTER');
+	return {
+		...metadata,
+		content,
+		sideCharacterIdList: affectedCharacters.filter((id) => id !== metadata.characterId),
+		allAffectedCharacterIdList: [...new Set([metadata.characterId, ...affectedCharacters])],
+		keywordList: getValuesFromIndex('KEYWORD'),
+		topicList: getValuesFromIndex('TOPIC'),
+	};
+};
+
+/**
+ * Converts a rich HistoryInfo object into the lean metadata format for ChromaDB.
+ */
+export const historyToMetadata = (historyInfo: HistoryInfo): HistoryMetadata => {
+	return {
+		type: historyInfo.type,
+		historyId: historyInfo.historyId,
+		characterId: historyInfo.characterId,
+		userId: historyInfo.userId,
+		profileId: historyInfo.profileId,
+		createdAt: historyInfo.createdAt,
+		updatedAt: historyInfo.updatedAt,
+		title: historyInfo.title,
+		generatedTitle: historyInfo.generatedTitle,
+		englishId: historyInfo.englishId,
+		category: historyInfo.category,
+		summary: historyInfo.summary,
+		periodLabel: historyInfo.periodLabel,
+		eventDateValue: historyInfo.eventDateValue,
+		eventDateType: historyInfo.eventDateType,
+	};
+};
+
+/**
+ * Reconstructs a rich HistoryInfo object from its primary metadata and its search index records.
+ * @param metadata The core HistoryMetadata from the main document.
+ * @param content The document's content string.
+ * @param indexRecords An array of ContentSearchIndexMetadata records associated with this history.
+ */
+export const metadataToHistory = (
+	metadata: HistoryMetadata,
+	content: string,
+	indexRecords: LoreIndexMetadata[] = []
+): HistoryInfo => {
+	const getValuesFromIndex = (contentType: LoreIndexContentType): string[] => {
+		return indexRecords
+			.filter(
+				(record) => record.contentType === contentType && record.contentId === metadata.historyId
+			)
+			.map((record) => record.value);
+	};
+
+	const affectedCharacters = getValuesFromIndex('AFFECTED_CHARACTER');
+	const relatedEvents: RelatedEvent[] = getValuesFromIndex('RELATED_EVENT')
+		.map((value) => {
+			try {
+				return JSON.parse(value) as RelatedEvent;
+			} catch {
+				return null;
+			}
+		})
+		.filter((event): event is RelatedEvent => event !== null);
+
+	return {
+		...metadata,
+		content,
+		sideCharacterIdList: affectedCharacters.filter((id) => id !== metadata.characterId),
+		allAffectedCharacterIdList: [...new Set([metadata.characterId, ...affectedCharacters])],
+		relatedEventList: relatedEvents,
+		keywordList: getValuesFromIndex('KEYWORD'),
 	};
 };
 
 // --- UTILITY HELPERS ---
 
 export const addLoreReference = (
-	existingReferences: Array<{ id: string; relevance: number }>,
-	newReference: { id: string; relevance: number }
-): Array<{ id: string; relevance: number }> => {
+	existingReferences: Reference[],
+	newReference: Reference
+): Reference[] => {
 	// Check if reference already exists
 	const existingIndex = existingReferences.findIndex((ref) => ref.id === newReference.id);
 
@@ -364,24 +304,24 @@ export const addLoreReference = (
 };
 
 export const removeLoreReference = (
-	existingReferences: Array<{ id: string; relevance: number }>,
+	existingReferences: Reference[],
 	referenceIdToRemove: string
-): Array<{ id: string; relevance: number }> => {
+): Reference[] => {
 	return existingReferences.filter((ref) => ref.id !== referenceIdToRemove);
 };
 
 export const addHistoryReference = (
-	existingReferences: Array<{ id: string; relevance: number }>,
-	newReference: { id: string; relevance: number }
-): Array<{ id: string; relevance: number }> => {
+	existingReferences: Reference[],
+	newReference: Reference
+): Reference[] => {
 	// Same logic as lore references
 	return addLoreReference(existingReferences, newReference);
 };
 
 export const removeHistoryReference = (
-	existingReferences: Array<{ id: string; relevance: number }>,
+	existingReferences: Reference[],
 	referenceIdToRemove: string
-): Array<{ id: string; relevance: number }> => {
+): Reference[] => {
 	return removeLoreReference(existingReferences, referenceIdToRemove);
 };
 
@@ -413,111 +353,69 @@ export const removeEmotionNuance = (
 	return { ...emotion, nuances: emotion.nuances.filter((nuance) => nuance !== nuanceToRemove) };
 };
 
+// --- RECAP HELPERS ---
+
 /**
- * Converts a rich RecapInfo object into a flat RecapMetadata object
- * suitable for storage in ChromaDB. It serializes complex array fields into strings.
- *
- * @param recapInfo The rich RecapInfo object used in the application.
- * @returns A RecapMetadata object with arrays converted to strings.
+ * Converts a rich RecapInfo object into the lean metadata format for storing the primary document in ChromaDB.
+ * This function no longer handles stringifying the `flagsArray`. That logic is now in the store layer,
+ * which is responsible for creating the individual search index records.
  */
 export const recapToMetadata = (recapInfo: RecapInfo): RecapMetadata => {
 	return {
-		// --- Base metadata fields (from BaseMetadataType) ---
+		// Core metadata fields
+		type: recapInfo.type,
+		recapId: recapInfo.recapId,
 		sessionId: recapInfo.sessionId,
 		characterId: recapInfo.characterId,
 		userId: recapInfo.userId,
 		profileId: buildProfileId(recapInfo.sessionId, recapInfo.userId),
-		type: recapInfo.type, // 'recap' or 'relationship'
 		createdAt: recapInfo.createdAt,
 		updatedAt: recapInfo.updatedAt,
-		sequence: recapInfo.sequence,
 
-		// --- Recap-specific fields ---
-		recapId: recapInfo.recapId,
+		// Recap-specific fields
 		turnStart: recapInfo.turnStart,
 		turnEnd: recapInfo.turnEnd,
 		model: recapInfo.model,
 
-		// --- Serialized fields for storage ---
-		// These fields from BaseMetadataType are assumed to be strings already in RecapInfo,
-		// but if they were arrays, you would convert them here.
-		// For now, we'll assume they are passed through as-is based on your example.
-		keywords: recapInfo.keywords,
-		topics: recapInfo.topics,
-		entities: recapInfo.entities,
-
-		// Serialize complex arrays into JSON strings
-		loreReferences: JSON.stringify(recapInfo.loreReferencesArray),
-		historyReferences: JSON.stringify(recapInfo.historyReferencesArray),
-
-		// Convert simple string array to a comma-separated string
-		flags: convertArrayToString(recapInfo.flagsArray),
+		// Post-retrieval context is still stringified as it's not search-critical
+		loreReferenceList: JSON.stringify(recapInfo.loreReferenceList),
+		historyReferenceList: JSON.stringify(recapInfo.historyReferenceList),
 	};
 };
 
 /**
- * Converts a flat RecapMetadata object (from ChromaDB) and its content
- * back into a rich RecapInfo object for use in the application. It deserializes
- * string fields back into their corresponding array types.
+ * Reconstructs a rich RecapInfo object from its primary metadata and a payload of its search index records.
+ * The service layer is responsible for fetching both the main recap document and its associated index entries.
  *
- * @param metadata The RecapMetadata object retrieved from ChromaDB.
- * @param content The recap content string, typically from the 'document' field in ChromaDB.
- * @returns A rich RecapInfo object with arrays restored.
+ * @param metadata The core RecapMetadata from the main document.
+ * @param content The recap's content string.
+ * @param indexRecords An array of RecapSearchIndexMetadata records associated with this recap.
  */
-export const metadataToRecap = (metadata: RecapMetadata, content: string): RecapInfo => {
-	// Safely parse JSON string fields, providing a default empty array on failure
-	let loreReferencesArray: Array<{ id: string; relevance: number }> = [];
-	try {
-		const parsed = JSON.parse(metadata.loreReferences);
-		if (Array.isArray(parsed)) {
-			loreReferencesArray = parsed;
-		}
-	} catch {
-		console.warn(`[metadataToRecap] Failed to parse loreReferences for recapId: ${metadata.recapId}`);
-		// loreReferencesArray is already defaulted to []
-	}
-
-	let historyReferencesArray: Array<{ id: string; relevance: number }> = [];
-	try {
-		const parsed = JSON.parse(metadata.historyReferences);
-		if (Array.isArray(parsed)) {
-			historyReferencesArray = parsed;
-		}
-	} catch {
-		console.warn(
-			`[metadataToRecap] Failed to parse historyReferences for recapId: ${metadata.recapId}`
-		);
-		// historyReferencesArray is already defaulted to []
-	}
+export const metadataToRecap = (
+	metadata: RecapMetadata,
+	content: string,
+	indexRecords: RecapIndexMetadata[] = []
+): RecapInfo => {
+	const getFlagsFromIndex = (): string[] => {
+		return indexRecords
+			.filter((record) => record.contentType === 'RECAP_FLAG' && record.recapId === metadata.recapId)
+			.map((record) => record.value);
+	};
 
 	return {
-		// --- Base metadata fields ---
-		sessionId: metadata.sessionId,
-		characterId: metadata.characterId,
-		userId: metadata.userId,
-		profileId: buildProfileId(metadata.sessionId, metadata.userId),
-		type: metadata.type,
+		// Map all fields from the primary metadata object
+		...metadata,
 
-		// --- Recap-specific fields ---
-		recapId: metadata.recapId,
-		turnStart: metadata.turnStart,
-		turnEnd: metadata.turnEnd,
-		model: metadata.model,
+		// Attach the content
+		content,
 
-		// --- Content ---
-		content: content,
+		// Reconstruct the flags array from the provided index records
+		flagList: getFlagsFromIndex(),
 
-		// --- Pass-through string fields ---
-		keywords: metadata.keywords,
-		topics: metadata.topics,
-		entities: metadata.entities,
-		createdAt: metadata.createdAt,
-		updatedAt: metadata.updatedAt,
-		sequence: metadata.sequence,
-
-		// --- Deserialized array fields ---
-		loreReferencesArray: loreReferencesArray,
-		historyReferencesArray: historyReferencesArray,
-		flagsArray: convertStringToArray(metadata.flags),
+		// Parse post-retrieval context from JSON strings
+		loreReferenceList: metadata.loreReferenceList ? JSON.parse(metadata.loreReferenceList) : [],
+		historyReferenceList: metadata.historyReferenceList
+			? JSON.parse(metadata.historyReferenceList)
+			: [],
 	};
 };

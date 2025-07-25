@@ -26,22 +26,11 @@ export const inflateChatMessageDoc = (document: string) => {
 	return parseTextToEntries(document);
 };
 
-export const flatChatTurnToDoc = (chatTurn: ChatTurn): string => {
-	const document = { request: chatTurn.request, response: chatTurn.response };
-	return JSON.stringify(document).trim();
-};
+export const chatTurnToDocument = (chatTurn: ChatTurn): string => {
+	const userText = parseEntriesToText(chatTurn.request.entries);
+	const charText = parseEntriesToText(chatTurn.response.entries);
 
-export const inflateChatTurnDoc = (document: string) => {
-	const parsed = JSON.parse(document);
-	const request: ChatMessage = parsed.request;
-	const response: ChatMessage = parsed.response;
-
-	// Ensure the request and response are valid ChatMessage objects
-	if (!request || !response) {
-		throw new Error('Invalid document format for ChatTurn');
-	}
-
-	return { request, response };
+	return `User (${chatTurn.request.showName}): "${userText}"\nCharacter (${chatTurn.response.showName}): "${charText}"`;
 };
 
 export const flatCharacterToDoc = (character: CharacterInfo) => {
@@ -71,15 +60,8 @@ export const inflateProfileDoc = (document: string): { description: string } => 
 	return { description: parsed.description };
 };
 
-export const flatLoreOrHistoryToDoc = (lore: LoreInfo | HistoryInfo) => {
-	const { content, title, summary } = lore;
-	const document = { title, content, summary };
-	return JSON.stringify(document).trim();
-};
-
-export const inflateLoreOrHistoryDoc = (document: string): { title: string; content: string } => {
-	const parsed = JSON.parse(document);
-	return { title: parsed.title, content: parsed.content };
+export const loreOrHistoryToDocument = (lore: LoreInfo | HistoryInfo): string => {
+	return `Title: ${lore.title}\nSummary: ${lore.summary}\n\n${lore.content}`;
 };
 
 export const flatTermToDoc = (lore: TermInfo) => {
@@ -95,15 +77,8 @@ export const inflateTermDoc = (
 	return { koreanTerm: parsed.koreanTerm, englishTerm: parsed.englishTerm, termId: parsed.termId };
 };
 
-export const flatRecapToDoc = (recap: RecapInfo) => {
-	const document = { content: recap.content };
-	return JSON.stringify(document).trim();
-};
-
-export const inflateRecapDoc = (document: string): { content: string } => {
-	console.log(document);
-	const parsed = JSON.parse(document);
-	return { content: parsed.content };
+export const recapToDocument = (recap: RecapInfo) => {
+	return recap.content;
 };
 
 export const flatUserToDoc = (user: UserInfo) => {

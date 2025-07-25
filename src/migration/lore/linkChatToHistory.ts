@@ -407,8 +407,8 @@ async function linkChatToHistory() {
 					);
 
 					// Skip if already has history references
-					// const existingRefs = chatTurnMetadata.historyReferences
-					// 	? JSON.parse(chatTurnMetadata.historyReferences)
+					// const existingRefs = chatTurnMetadata.historyReferenceList
+					// 	? JSON.parse(chatTurnMetadata.historyReferenceList)
 					// 	: [];
 					// if (existingRefs.length > 0) {
 					// 	console.log(`  ⏭️ Already has ${existingRefs.length} history references, skipping`);
@@ -445,7 +445,7 @@ async function linkChatToHistory() {
 							`  🎯 Found ${topMatches.length} relevant history events (Best score: ${topMatches[0].score.toFixed(3)}, Type: ${topMatches[0].matchType})`
 						);
 
-						const historyReferences = topMatches.map((match) => ({
+						const historyReferenceList = topMatches.map((match) => ({
 							id: match.historyId,
 							relevance: Math.round(match.score * 100) / 100,
 						}));
@@ -458,7 +458,7 @@ async function linkChatToHistory() {
 						);
 						const updatedChatTurn: ChatTurnMetadata = {
 							...chatTurnMetadata,
-							historyReferences: JSON.stringify(historyReferences),
+							historyReferenceList: JSON.stringify(historyReferenceList),
 							updatedAt: new Date().toISOString(),
 						};
 						await chatCollection.upsert({
@@ -467,8 +467,8 @@ async function linkChatToHistory() {
 							metadatas: [updatedChatTurn as any],
 						});
 						progress.updatedChatTurns++;
-						progress.totalReferencesAdded += historyReferences.length;
-						console.log(`  ✅ Updated with ${historyReferences.length} history references`);
+						progress.totalReferencesAdded += historyReferenceList.length;
+						console.log(`  ✅ Updated with ${historyReferenceList.length} history references`);
 					} else {
 						console.log(
 							`  📝 No relevant history events found (threshold: ${OVERALL_SIMILARITY_THRESHOLD})`

@@ -9,7 +9,7 @@ import { ChromaResponse, Term, TermResponse } from '#shared/api/ModuleResponse.j
 
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
-import { flatTermToDoc, inflateTermDoc } from '../util/documentUtils.js';
+import { flatTermToDoc, inflateTermDoc } from '../../shared/util/documentUtils.ts';
 import { isTermInfo } from '#shared/util/typeGuardUtils.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import { llmService } from '../service/llmService.js';

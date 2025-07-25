@@ -134,8 +134,8 @@ export const finalizeChatTurn = async (chatTurnCdo: ChatTurnCdo): Promise<ChatTu
 			relationshipShifts: [],
 			flags: [],
 			memoryChunk: '',
-			loreReferences: [],
-			historyReferences: [],
+			loreReferenceList: [],
+			historyReferenceList: [],
 			requestMessageId: '',
 			responseMessageId: '',
 		};

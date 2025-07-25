@@ -20,7 +20,7 @@ async function cleanupTurnsBySequence(
 		`🎯 Targeting records with sequence numbers from ${minSequence}${maxSequence !== undefined ? ` to ${maxSequence}` : ' upwards'}.`
 	);
 
-	const { chatTurns } = await chatStore.getAllChatTurns(sessionId);
+	const { displayTurns: chatTurns } = await chatStore.getAllChatTurns(sessionId);
 	if (!chatTurns || chatTurns.length === 0) {
 		console.log('✅ No turns found for this session. Nothing to do.');
 		return;
@@ -44,7 +44,7 @@ async function cleanupTurnsBySequence(
 
 	try {
 		const collection = await chromaDbClient.getChatCollection();
-		await chromaDbClient.deleteRecordsByIds(collection, idsToDelete);
+		await chromaDbClient.deleteRecords(collection, idsToDelete);
 		console.log(`✅ Successfully deleted ${idsToDelete.length} records.`);
 	} catch (error) {
 		console.error('💥 Failed to delete records from the database:', error);

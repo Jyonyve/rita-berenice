@@ -44,9 +44,8 @@ export const createPersonaResponseSchema = (
  *
  * @param charEng - The English name of the character.
  * @param userEng - The English name of the user.
- * @param allEmotionKeywordsList - A list of valid primary emotions for validation.
- * @param existingLoreIds - A list of valid lore IDs for the 'loreReferences' field.
- * @param existingHistoryIds - A list of valid history IDs for the 'historyReferences' field.
+ * @param existingLoreIds - A list of valid lore IDs for the 'loreReferenceList' field.
+ * @param existingHistoryIds - A list of valid history IDs for the 'historyReferenceList' field.
  */
 export const createChatTurnMetadataSchema = (
 	charEng: string,
@@ -110,12 +109,12 @@ export const createChatTurnMetadataSchema = (
 			.describe(
 				`Observable actions taken by entities. Example: ['${charEng}_draws_sword', '${userEng}_offers_potion']`
 			),
-		loreReferences: z
+		loreReferenceList: z
 			.array(z.object({ id: z.string(), relevance: z.number().min(0.0).max(1.0) }))
 			.describe(
 				`A list of lore IDs relevant to this turn from this list: [${existingLoreIds.join(', ')}]`
 			),
-		historyReferences: z
+		historyReferenceList: z
 			.array(z.object({ id: z.string(), relevance: z.number().min(0.0).max(1.0) }))
 			.describe(
 				`A list of history IDs relevant to this turn from this list: [${existingHistoryIds.join(', ')}]`
@@ -275,12 +274,12 @@ export const createFactualRecapSchema = (
 			.describe(
 				"An array of fact-specific flags, e.g., ['new_lore_revealed', 'character_background_disclosed', 'plot_advancement']"
 			),
-		loreReferences: z
+		loreReferenceList: z
 			.array(z.object({ id: z.string(), relevance: z.number().min(0.0).max(1.0) }))
 			.describe(
 				`A list of relevant lore IDs, selected ONLY from this list: [${existingLoreIds.join(', ')}]`
 			),
-		historyReferences: z
+		historyReferenceList: z
 			.array(z.object({ id: z.string(), relevance: z.number().min(0.0).max(1.0) }))
 			.describe(
 				`A list of relevant history IDs, selected ONLY from this list: [${existingHistoryIds.join(', ')}]`
@@ -326,12 +325,12 @@ export const createRelationshipRecapSchema = (
 			.describe(
 				"An array of relationship-specific flags, e.g., ['trust_increased', 'romantic_tension', 'conflict_resolved', 'emotional_breakthrough']"
 			),
-		loreReferences: z
+		loreReferenceList: z
 			.array(z.object({ id: z.string(), relevance: z.number().min(0.0).max(1.0) }))
 			.describe(
 				`A list of relevant lore IDs that influenced the relationship, selected ONLY from this list: [${existingLoreIds.join(', ')}]`
 			),
-		historyReferences: z
+		historyReferenceList: z
 			.array(z.object({ id: z.string(), relevance: z.number().min(0.0).max(1.0) }))
 			.describe(
 				`A list of relevant history IDs that influenced the relationship, selected ONLY from this list: [${existingHistoryIds.join(', ')}]`

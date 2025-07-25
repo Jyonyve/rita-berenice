@@ -1,273 +1,239 @@
-// src/server/services/recapStore.ts
+// src/server/store/recapStore.ts
 
-import { Collection, Metadata, Where, WhereDocument } from 'chromadb';
-
-import { chatStore } from './chatStore.js';
+import { Collection, Where, WhereDocument } from 'chromadb';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
 import { chromaDbClient } from '../db/chromaDbClient.js';
-import { ChromaResponse, RecapResponse } from '#shared/api/ModuleResponse.js';
-import { flatRecapToDoc, inflateRecapDoc } from '../util/documentUtils.js';
-import { metadataToRecap } from '#shared/util/dbConvertUtils.js';
-import { RecapMetadata, RecapInfo } from '#shared/domain/recap/RecapInterfaces.js';
-import { convertArrayToString, parseSessionId } from '#shared/util/chatParseUtils.js';
+import { RecapResponse } from '#shared/api/ModuleResponse.js';
+import { recapToDocument } from '#shared/util/documentUtils.ts';
+import { recapToMetadata, metadataToRecap } from '#shared/util/dbConvertUtils.js';
 import {
-	buildProfileId,
-	buildRecapId,
-	buildRelationshipRecapId,
-} from '../../shared/util/buildIdUtils.js';
+	RecapInfo,
+	RecapMetadata,
+	RecapIndexMetadata,
+	RecapIndexContentType,
+} from '#shared/domain/recap/RecapInterfaces.js';
+import { buildRecapIndexId } from '#shared/util/buildIdUtils.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
-import { isAndWhere } from '../util/queryUtils.js';
 
 // Destructure chromaDbClient methods
-const { getRecapCollection, upsertRecord, getRecordById, queryRecords, getRecords } =
-	chromaDbClient;
+const {
+	getRecapCollection,
+	upsertRecord,
+	upsertRecords,
+	getRecords,
+	queryRecords,
+	deleteRecordById,
+} = chromaDbClient;
 const collectionType = COLLECTIONS.RECAP;
 
 export const recapStore = {
-	// Cache for recap collection
 	_recapCollection: null as Collection | null,
 
-	_getCollection: async (): Promise<Collection> => {
-		if (recapStore._recapCollection) {
-			return recapStore._recapCollection;
+	async _getCollection(): Promise<Collection> {
+		if (this._recapCollection) {
+			return this._recapCollection;
 		}
 		const collection = await getRecapCollection();
-		recapStore._recapCollection = collection;
+		this._recapCollection = collection;
 		return collection;
 	},
 
-	_constuctRecap: (results: ChromaResponse): RecapResponse => {
-		const { ids, documents, metadatas } = results;
-		const recapInfos = ids.map((id, index) => {
-			const metadata = metadatas[index];
-			const document = documents[index];
-			const inflatedDoc = inflateRecapDoc(document!);
-			const recapInfo = metadataToRecap(metadata! as unknown as RecapMetadata, inflatedDoc.content);
-			return recapInfo;
-		});
-		return {
-			ids,
-			documents,
-			metadatas,
-			recapInfos,
-			recapInfo: recapInfos[0] || null,
-			recapContents: (recapInfos || []).map((r) => r.content),
-			recapContent: recapInfos[0]?.content || '',
+	/**
+	 * @private
+	 * Creates or updates the denormalized search index records for a given Recap.
+	 */
+	async _updateSearchIndexForRecap(recap: RecapInfo): Promise<void> {
+		const collection = await this._getCollection();
+		const recapId = recap.recapId;
+
+		// 1. Atomically delete all existing index entries for this recap.
+		await deleteRecordById(collection, recapId);
+
+		const newIndexRecords: { id: string; metadata: RecapIndexMetadata }[] = [];
+		const baseMetadata = {
+			type: recap.type,
+			recapId: recapId,
+			sessionId: recap.sessionId,
+			characterId: recap.characterId,
 		};
-	},
 
-	/**
-	 * Store a factual recap with unified metadata structure
-	 */
-	storeFactualRecap: async (recapInfo: RecapInfo): Promise<void> => {
-		if (!recapInfo.content || recapInfo.content.trim() === '') {
-			console.warn(`[RecapService] Received empty recap content. Skipping factual recap.`);
-			return;
-		}
+		// Helper to create index records for flags
+		const createIndexRecords = (list: string[], contentType: RecapIndexContentType) => {
+			for (const value of list) {
+				newIndexRecords.push({
+					id: buildRecapIndexId(recapId, contentType),
+					metadata: { ...baseMetadata, contentType, value },
+				});
+			}
+		};
 
-		const { sessionId, turnStart, turnEnd, model } = recapInfo;
-		const characterId = parseSessionId(sessionId).characterId;
+		// 2. Create new index records for every flag.
+		createIndexRecords(recap.flagList, 'RECAP_FLAG');
 
-		console.log(
-			`[RecapService] Storing factual recap for session ${sessionId}, turns ${turnStart}-${turnEnd}`
-		);
-
-		try {
-			const now = new Date().toISOString();
-			const recapMetadata: RecapMetadata = {
-				// Base metadata fields (unified)
-				sessionId,
-				characterId,
-				userId: recapInfo.userId,
-				profileId: buildProfileId(sessionId, recapInfo.userId),
-				type: METADATA_TYPES.RECAP,
-				createdAt: now,
-				updatedAt: now,
-				keywords: recapInfo.keywords,
-				topics: recapInfo.topics,
-				entities: recapInfo.entities,
-				sequence: recapInfo.turnEnd, // Use end as the sequence
-
-				// Recap-specific fields (flattened)
-				recapId: recapInfo.recapId || buildRecapId(sessionId, turnStart, turnEnd),
-				turnStart,
-				turnEnd,
-				model,
-				loreReferences: JSON.stringify(recapInfo.loreReferencesArray),
-				historyReferences: JSON.stringify(recapInfo.historyReferencesArray),
-				flags: convertArrayToString(recapInfo.flagsArray),
-			};
-
-			const collection = await recapStore._getCollection();
-			const documentForEmbedding = JSON.stringify({ content: recapInfo.content });
-			// const documentForEmbedding = flatRecapToDoc(recapInfo);
-
-			await upsertRecord(collection, recapMetadata.recapId, documentForEmbedding, recapMetadata);
-
-			console.log(`[RecapService] Successfully stored factual recap for session ${sessionId}`);
-		} catch (error) {
-			handleServiceError(
-				error,
-				`[RecapService] Internal error storing factual recap, session ${sessionId}`,
-				`Failed to store factual recap for session ${sessionId}`
+		// 3. Batch upsert the new index records.
+		if (newIndexRecords.length > 0) {
+			await upsertRecords(
+				collection,
+				newIndexRecords.map((r) => r.id),
+				[], // Documents not needed for index entries
+				newIndexRecords.map((r) => r.metadata)
 			);
 		}
 	},
 
 	/**
-	 * Store a relationship recap (no LLM generation, just storage)
+	 * @private
+	 * Reconstructs rich RecapInfo objects from primary documents and their index records.
 	 */
-	storeRelationshipRecap: async (recapInfo: RecapInfo): Promise<void> => {
+	_constructFullRecaps(
+		recapMetadatas: RecapMetadata[],
+		recapDocuments: (string | null)[],
+		allIndexRecords: RecapIndexMetadata[]
+	): RecapInfo[] {
+		return recapMetadatas.map((metadata, i) => {
+			const relatedIndexRecords = allIndexRecords.filter(
+				(record) => record.recapId === metadata.recapId
+			);
+			return metadataToRecap(metadata, recapDocuments[i] || '', relatedIndexRecords);
+		});
+	},
+
+	/**
+	 * Stores a recap and updates its search index.
+	 * This is the single, authoritative method for saving a recap.
+	 */
+	async storeRecap(recapInfo: RecapInfo): Promise<void> {
 		if (!recapInfo.content || recapInfo.content.trim() === '') {
-			console.warn(`[RecapService] Received empty recap content. Skipping relationship recap.`);
+			console.warn(
+				`[RecapStore] Received empty content. Skipping recap for session ${recapInfo.sessionId}.`
+			);
 			return;
 		}
-		const { sessionId, turnStart, turnEnd, model } = recapInfo;
-		const characterId = parseSessionId(sessionId).characterId;
-
-		console.log(
-			`[RecapService] Storing relationship recap for session ${sessionId}, turns ${turnStart}-${turnEnd}`
-		);
 
 		try {
-			const now = new Date().toISOString();
-			const recapMetadata: RecapMetadata = {
-				// Base metadata fields (unified)
-				sessionId,
-				characterId,
-				userId: recapInfo.userId,
-				profileId: buildProfileId(sessionId, recapInfo.userId),
-				type: METADATA_TYPES.RECAP,
-				createdAt: now,
-				updatedAt: now,
-				keywords: recapInfo.keywords,
-				topics: recapInfo.topics,
-				entities: recapInfo.entities,
-				sequence: recapInfo.turnEnd, // Use end as the sequence
+			const collection = await this._getCollection();
+			const metadata = recapToMetadata(recapInfo);
+			const document = recapToDocument(recapInfo);
 
-				// Recap-specific fields (flattened)
-				recapId: buildRelationshipRecapId(sessionId, turnStart, turnEnd),
-				turnStart,
-				turnEnd,
-				model,
-				loreReferences: JSON.stringify(recapInfo.loreReferencesArray),
-				historyReferences: JSON.stringify(recapInfo.historyReferencesArray),
-				flags: convertArrayToString(recapInfo.flagsArray),
-			};
-			const collection = await recapStore._getCollection();
-			const documentForEmbedding = flatRecapToDoc(recapInfo);
-
-			await upsertRecord(collection, recapMetadata.recapId, documentForEmbedding, recapMetadata);
-
-			console.log(`[RecapService] Successfully stored relationship recap for session ${sessionId}`);
+			await upsertRecord(collection, metadata.recapId, document, metadata);
+			await this._updateSearchIndexForRecap(recapInfo);
 		} catch (error) {
-			handleServiceError(
-				error,
-				`[RecapService] Internal error storing relationship recap, session ${sessionId}`,
-				`Failed to store relationship recap for session ${sessionId}`
-			);
+			handleServiceError(error, `Failed to store recap ${recapInfo.recapId}`);
 		}
 	},
 
-	getRecap: async (recapId: string): Promise<RecapResponse> => {
-		const collection = await recapStore._getCollection();
-		try {
-			const rawResult = await getRecordById(collection, recapId);
-			const results = validateChromaResponse(rawResult, 'getOne', collectionType);
-			return recapStore._constuctRecap(results);
-		} catch (error) {
-			handleServiceError(
-				error,
-				'An internal error occurred while do [getRecap].',
-				`Failed to get profile with ID ${recapId}:`
-			);
-		}
-	},
-
-	getRecapsBySessionId: async (
+	/**
+	 * Retrieves all recaps for a given session, reconstructing the full rich objects.
+	 */
+	async getRecapsBySessionId(
 		sessionId: string,
 		type: typeof METADATA_TYPES.RECAP | typeof METADATA_TYPES.RELATIONSHIP
-	): Promise<RecapResponse> => {
-		const collection = await recapStore._getCollection();
+	): Promise<RecapInfo[]> {
 		try {
-			const where: Where = { $and: [{ type: { $eq: type } }, { sessionId: { $eq: sessionId } }] };
-			const rawResults = await getRecords(collection, where);
-			const results = validateChromaResponse(rawResults, 'getList', collectionType);
-			return recapStore._constuctRecap(results);
-		} catch (error) {
-			handleServiceError(
-				error,
-				'An internal error occurred while do [getRecapsBySessionId].',
-				`Failed to get recaps with ID ${sessionId}:`
+			const collection = await recapStore._getCollection();
+
+			// 1. Fetch primary RECAP documents
+			const recapResults = await getRecords(collection, {
+				$and: [{ type: { $eq: type } }, { sessionId: { $eq: sessionId } }],
+			});
+			const { metadatas: recapMetadatas, documents: recapDocuments } = validateChromaResponse(
+				recapResults,
+				'getList',
+				collectionType
 			);
+
+			if (recapMetadatas.length === 0) {
+				return [];
+			}
+
+			// 2. Fetch all associated search index records
+			const recapIds = recapMetadatas
+				.map((m) => (m || {}).recapId)
+				.filter((id): id is string => typeof id === 'string');
+			const indexResults = await getRecords(collection, { recapId: { $in: recapIds } });
+			const allIndexResult = validateChromaResponse(indexResults, 'getList', collectionType);
+
+			// 3. Reconstruct the full rich objects
+			return recapStore._constructFullRecaps(
+				recapMetadatas as unknown as RecapMetadata[],
+				recapDocuments,
+				allIndexResult.metadatas as unknown as RecapIndexMetadata[]
+			);
+		} catch (error) {
+			handleServiceError(error, `Failed to get recaps for session ${sessionId}`);
 		}
 	},
 
-	queryRecaps: async (
+	/**
+	 * [For Backend RAG] Performs a hybrid semantic/metadata search for Recaps.
+	 */
+	async queryRecaps(
 		sessionId: string,
 		queryTexts: string[],
 		type: typeof METADATA_TYPES.RECAP | typeof METADATA_TYPES.RELATIONSHIP,
-		where?: Where,
+		whereFilter?: Where, // This filter is for the INDEX records
 		whereDocument?: WhereDocument,
 		limit?: number
-	): Promise<RecapResponse> => {
+	): Promise<RecapInfo[]> {
 		try {
-			const collection = await chatStore._getChatCollection();
+			const collection = await recapStore._getCollection();
+			let recapIdsToSearch: string[] | undefined = undefined;
 
-			const conditions: Where[] = [{ sessionId: { $eq: sessionId } }, { type: { $eq: type } }];
-			if (where && isAndWhere(where)) {
-				conditions.push(...where.$and);
+			// Step 1: Pre-filter using the index to get relevant recap IDs.
+			if (whereFilter && Object.keys(whereFilter).length > 0) {
+				const indexResults = await getRecords(collection, whereFilter);
+				const validatedIndexes = validateChromaResponse(indexResults, 'getList', collectionType);
+				recapIdsToSearch = [
+					...new Set(
+						validatedIndexes.metadatas.map((m) => (m as unknown as RecapIndexMetadata).recapId)
+					),
+				];
+
+				if (recapIdsToSearch.length === 0) {
+					return [];
+				}
 			}
-			const whereClause: Where = { $and: conditions };
 
-			const rawResults = await queryRecords(collection, queryTexts, whereClause, whereDocument, limit);
+			// Step 2: Perform semantic search on the pre-filtered set of primary documents.
+			const queryConditions: Where[] = [{ type: { $eq: type } }, { sessionId: { $eq: sessionId } }];
+			if (recapIdsToSearch) {
+				queryConditions.push({ recapId: { $in: recapIdsToSearch } });
+			}
+			const queryWhere: Where = { $and: queryConditions };
 
-			const results = rawResults.map((raw) => validateChromaResponse(raw, 'getList', collectionType));
+			const queryResults = await queryRecords(
+				collection,
+				queryTexts,
+				queryWhere,
+				whereDocument,
+				limit
+			);
+			const validatedQueryResults = queryResults.map((r) =>
+				validateChromaResponse(r, 'getList', collectionType)
+			);
+			const recapMetadatas = validatedQueryResults.flatMap((r) => r.metadatas);
+			const recapDocuments = validatedQueryResults.flatMap((r) => r.documents);
 
-			// Collect all results
-			const allRecapInfos: RecapInfo[] = [];
-			const allIds: string[] = [];
-			const allDocuments: (string | null)[] = [];
-			const allMetadatas: (Metadata | null)[] = [];
+			if (recapMetadatas.length === 0) {
+				return [];
+			}
 
-			results.forEach((result) => {
-				const { ids, documents, metadatas, recapInfos } = recapStore._constuctRecap(result);
-				allRecapInfos.push(...recapInfos);
-				allIds.push(...ids);
-				allDocuments.push(...documents);
-				allMetadatas.push(...metadatas);
-			});
+			// Step 3: Fetch all index records for the final set of recaps.
+			const finalRecapIds = recapMetadatas
+				.map((m) => m?.recapId)
+				.filter((id): id is string => typeof id === 'string');
+			const finalIndexResults = await getRecords(collection, { recapId: { $in: finalRecapIds } });
+			const allIndexRecords = validateChromaResponse(finalIndexResults, 'getList', collectionType);
 
-			// Return a single ChatResponse with all results merged
-			return {
-				ids: allIds,
-				documents: allDocuments,
-				metadatas: allMetadatas,
-				recapInfos: allRecapInfos,
-				recapInfo: allRecapInfos[0] || null,
-				recapContents: allRecapInfos.flatMap((r) => r.content),
-				recapContent: allRecapInfos[0]?.content || '',
-			};
+			// Step 4: Reconstruct the full rich objects.
+			return recapStore._constructFullRecaps(
+				recapMetadatas as unknown as RecapMetadata[],
+				recapDocuments,
+				allIndexRecords as unknown as RecapIndexMetadata[]
+			);
 		} catch (error) {
-			console.error(`Failed to query chat log for session ${sessionId}:`, error);
-			return {
-				ids: [],
-				documents: [],
-				metadatas: [],
-				recapInfos: [],
-				recapInfo: {} as RecapInfo,
-				recapContents: [],
-				recapContent: '',
-			};
+			handleServiceError(error, `Failed to query recaps for session ${sessionId}`);
 		}
-	},
-
-	/**
-	 * Clear collection cache
-	 */
-	clearCollectionCache: (): void => {
-		console.log('[RecapService] Clearing cached recap collection.');
-		recapStore._recapCollection = null;
 	},
 };

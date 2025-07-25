@@ -28,7 +28,7 @@ async function deleteChatSession(sessionId: string) {
 
 	try {
 		// 1. Fetch all turns for the session to identify what to delete.
-		const { chatTurns } = await chatStore.getAllChatTurns(sessionId);
+		const { displayTurns: chatTurns } = await chatStore.getAllChatTurns(sessionId);
 
 		if (!chatTurns || chatTurns.length === 0) {
 			console.log(`✅ No chat turns found for session "${sessionId}". Nothing to delete.`);
@@ -54,7 +54,7 @@ async function deleteChatSession(sessionId: string) {
 
 		for (const [i, batch] of idBatches.entries()) {
 			console.log(`      -> Deleting batch ${i + 1}/${idBatches.length} (${batch.length} records)...`);
-			await chromaDbClient.deleteRecordsByIds(collection, batch);
+			await chromaDbClient.deleteRecords(collection, batch);
 		}
 
 		console.log(`✅ Successfully deleted all data for session: ${sessionId}`);

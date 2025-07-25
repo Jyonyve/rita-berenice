@@ -1,6 +1,9 @@
 import { ALPHANUMERIC_ALPHABET } from '#shared/config/constants.js';
-import { ChatMessageType } from '#shared/domain/chat/ChatInterfaces.js';
+import { ChatIndexContentType, ChatMessageType } from '#shared/domain/chat/ChatInterfaces.js';
 import { customAlphabet } from 'nanoid';
+import { _nanoid } from 'zod/v4/core';
+import { LoreIndexContentType } from '../domain/lore/LoreInterfaces.js';
+import { RecapIndexContentType } from '../domain/recap/RecapInterfaces.js';
 
 /* gen uuid (shortened)*/
 const _genNanoId = (length: number) => customAlphabet(ALPHANUMERIC_ALPHABET, length)();
@@ -59,6 +62,24 @@ export const buildMessageId = (
 
 export const buildChatTurnId = (sessionId: string, sequence: number): string => {
 	return `${sessionId}_${sequence}_${SUFFIX.TURN}`;
+};
+
+export const buildChatTurnIndexId = (
+	chatTurnId: string,
+	contentType: ChatIndexContentType
+): string => {
+	return `${chatTurnId}_${contentType}_${_genNanoId(8)}`;
+};
+
+export const buildLoreIndexId = (chatTurnId: string, contentType: LoreIndexContentType): string => {
+	return `${chatTurnId}_${contentType}_${_genNanoId(8)}`;
+};
+
+export const buildRecapIndexId = (
+	chatTurnId: string,
+	contentType: RecapIndexContentType
+): string => {
+	return `${chatTurnId}_${contentType}_${_genNanoId(8)}`;
 };
 
 export const buildTempChatTurnId = (sessionId: string, sequence: number): string => {

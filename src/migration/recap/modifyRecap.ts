@@ -7,7 +7,7 @@ import { buildRecapDocId, buildRecapId } from '#shared/util/buildIdUtils.js';
 import { metadataToRecap, recapToMetadata } from '#shared/util/dbConvertUtils.js';
 import { RecapInfo, RecapMetadata } from '#shared/domain/recap/RecapInterfaces.js';
 import { Metadata } from 'chromadb';
-import { flatRecapToDoc, inflateRecapDoc, recapStore } from '#server/index.js';
+import { recapToDocument, inflateRecapDoc, recapStore } from '#server/index.js';
 import { c } from 'node_modules/vite/dist/node/moduleRunnerTransport.d-DJ_mE5sf.js';
 
 const BATCH_SIZE = 50; // Process records in batches to avoid overwhelming the database
@@ -105,7 +105,7 @@ async function modifyRecapIds() {
 		const deleteBatches = chunkArray(idsToDelete, BATCH_SIZE);
 		for (const [index, batch] of deleteBatches.entries()) {
 			console.log(`      -> Deleting batch ${index + 1}/${deleteBatches.length}...`);
-			await chromaDbClient.deleteRecordsByIds(recapCollection, batch);
+			await chromaDbClient.deleteRecords(recapCollection, batch);
 		}
 
 		console.log(`\n🎉 Success! Corrected the IDs for ${recordsToUpsert.length} recap records.`);

@@ -133,9 +133,9 @@ export function ChatPageLoader() {
 	} = useChatApi().getAllChatTurns(sessionId);
 
 	useEffect(() => {
-		if (allTurnsRes?.chatTurns && allTurnsRes.chatTurns.length > 0) {
-			console.log(`Priming IndexedDB with ${allTurnsRes.chatTurns.length} chat turns...`);
-			saveMessagesToCache(allTurnsRes.chatTurns);
+		if (allTurnsRes?.displayTurns && allTurnsRes.displayTurns.length > 0) {
+			console.log(`Priming IndexedDB with ${allTurnsRes.displayTurns.length} chat turns...`);
+			saveMessagesToCache(allTurnsRes.displayTurns);
 		}
 	}, [allTurnsRes]);
 

@@ -105,8 +105,8 @@ const getDefaultEnrichedMetadata = () => ({
 	relationshipShifts: [],
 	dialogueAct: 'N/A',
 	actions: [],
-	loreReferences: [],
-	historyReferences: [],
+	loreReferenceList: [],
+	historyReferenceList: [],
 	flags: [],
 	memoryChunk: 'N/A',
 });
@@ -299,7 +299,7 @@ async function initChatFromLogFiles() {
 			`      Found ${existingLoreIds.length} lore and ${existingHistoryIds.length} history documents.`
 		);
 
-		const { chatTurns: existingTurnsInDB } = await chatStore.getAllChatTurns(TARGET_SESSION_ID);
+		const { displayTurns: existingTurnsInDB } = await chatStore.getAllChatTurns(TARGET_SESSION_ID);
 		const latestSequenceInDB =
 			existingTurnsInDB.length > 0 ? Math.max(...existingTurnsInDB.map((t) => t.sequence)) : -1;
 		console.log(

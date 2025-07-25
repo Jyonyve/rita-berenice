@@ -64,7 +64,7 @@ const extractJsonFromMarkdown = (response: string): any => {
 
 const getSessionChatTurns = async (sessionId: string): Promise<ChatTurn[]> => {
 	const chatRes = await chatStore.getAllChatTurns(sessionId);
-	return chatRes.chatTurns.sort((a, b) => a.sequence - b.sequence);
+	return chatRes.displayTurns.sort((a, b) => a.sequence - b.sequence);
 };
 const createBatches = <T>(items: T[], batchSize: number): T[][] => {
 	const batches: T[][] = [];
@@ -275,8 +275,8 @@ const main = async () => {
 				topics: parsedRecap.topics?.join(',') || '',
 				entities: parsedRecap.entities?.join(',') || '',
 				flagsArray: parsedRecap.flags || [],
-				loreReferencesArray: parsedRecap.loreReferences || [],
-				historyReferencesArray: parsedRecap.historyReferences || [],
+				loreReferenceListArray: parsedRecap.loreReferenceList || [],
+				historyReferenceListArray: parsedRecap.historyReferenceList || [],
 				createdAt: new Date().toISOString(),
 				updatedAt: new Date().toISOString(),
 				sequence: batchIdx + 1,

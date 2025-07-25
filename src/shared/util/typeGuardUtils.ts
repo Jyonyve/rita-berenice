@@ -73,8 +73,8 @@ export const createBasicChatTurn = (cdo: ChatTurnCdo): ChatTurn => {
 		relationshipShifts: [],
 		dialogueAct: 'N/A',
 		actions: [],
-		loreReferences: [],
-		historyReferences: [],
+		loreReferenceList: [],
+		historyReferenceList: [],
 		flags: [],
 		memoryChunk: 'N/A',
 	};

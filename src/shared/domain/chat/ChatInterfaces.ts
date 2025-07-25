@@ -1,35 +1,12 @@
 import { METADATA_TYPES, MetadataType } from '#shared/config/constants.js';
 import { allEmotionKeywordsList, EmotionValue } from '../../config/emotionWordsMapper.js';
 import { DefaultAiRole } from '../aimodel/AiInfoTypes.js';
+import { Reference } from '../BaseTypes.js';
 
 export type ChatRoleType = DefaultAiRole;
 export type ChatEntry = { type: 'dialogue' | 'action'; prompt: string };
 export type ChatMessageType = 'request' | 'response';
 export type ChatMessageSet = { request: ChatMessage; response: ChatMessage; setNo: number };
-
-// --- UNIFIED BASE METADATA ---
-interface ChatBaseMetadata {
-	// Core identification (consistent across all types)
-	sessionId: string;
-	characterId: string; // Added to all for consistency
-	userId: string;
-	profileId: string;
-	type: MetadataType;
-
-	// Timestamps (consistent format)
-	createdAt: string; // ISO 8601 format
-	updatedAt: string; // ISO 8601 format
-
-	// Content categorization (unified approach)
-	keywords: string;
-	topics: string;
-	entities: string;
-
-	// Sequence/ordering (where applicable)
-	sequence: number;
-}
-
-export type ChatBaseMetadataType = ChatBaseMetadata;
 
 export interface ChatMessageMetadata {
 	sessionId: string;
@@ -42,87 +19,106 @@ export interface ChatMessageMetadata {
 	updatedAt: string; // ISO 8601 format
 	emotion: EmotionValue;
 	type: typeof METADATA_TYPES.MESSAGE;
+	model: string;
 }
 
 export interface ChatMessage extends ChatMessageMetadata {
 	entries: ChatEntry[];
-	model?: string;
 }
 
-// src/shared/domain/ChatInterfaces.ts
+/**
+ * Defines the possible values for the 'contentType' of a search index record.
+ * This specifies what kind of attribute the index entry represents.
+ */
+export type ChatIndexContentType =
+	| 'KEYWORD'
+	| 'TOPIC'
+	| 'ENTITY'
+	| 'ACTION'
+	| 'FLAG'
+	| 'RELATIONSHIP_SHIFT'
+	| 'USER_EMOTION_NUANCE'
+	| 'CHARACTER_EMOTION_NUANCE';
 
-// This is what gets stored in ChromaDB (all primitives)
-export interface ChatTurnMetadata extends ChatBaseMetadata {
-	chatTurnId: string;
-	requestMessageId: string;
-	responseMessageId: string;
+// --- 1. The Primary Document Metadata ---
+/**
+ * The final, lean metadata structure for a primary ChatTurn document.
+ * It contains NO array-like data intended for searching.
+ */
+export interface ChatTurnMetadata {
 	type: typeof METADATA_TYPES.TURN;
+	chatTurnId: string;
 
-	// LLM-generated enrichment (ChromaDB-compatible - all primitives)
+	// Core identifiers and timestamps
+	sessionId: string;
+	characterId: string;
+	userId: string;
+	profileId: string;
+	sequence: number;
+	createdAt: string;
+	updatedAt: string;
+
+	// The original message objects for perfect reconstruction
+	requestJson: string;
+	responseJson: string;
+
+	// Key LLM-generated fields
 	summary: string;
+	memoryChunk: string;
+	dialogueAct: string;
 
-	// Arrays stored as comma-separated strings
-	keywords: string; // "keyword1,keyword2,keyword3"
-	topics: string; // "topic1,topic2,topic3"
-	entities: string; // "character:Tarion,location:Forest"
-
-	// Emotion objects flattened to primitives
+	// Flattened primary emotion data and nuances
 	userEmotionPrimary: string;
 	userEmotionIntensity: number;
-	userEmotionNuances: string; // "frustrated,curious"
 	characterEmotionPrimary: string;
 	characterEmotionIntensity: number;
-	characterEmotionNuances: string; // "defensive,hurt"
 
-	// Other fields as strings
-	dialogueAct: string;
-	actions: string; // "action1,action2"
-	relationshipShifts: string; // "Tarion-User:trust_increased"
-	flags: string; // "flag1,flag2,flag3"
-	memoryChunk: string;
-
-	// Complex objects as JSON strings
-	loreReferences: string; // JSON.stringify([{id, relevance}])
-	historyReferences: string; // JSON.stringify([{id, relevance}])
+	// Post-retrieval context (not used for searching)
+	loreReferenceList: string;
+	historyReferenceList: string;
 }
 
-// This is what your application works with (rich objects)
-// In your ChatInterfaces.ts, update the ChatTurn interface:
+// --- 2. The Search Index Metadata ---
+/**
+ * The single, unified metadata structure for all search index records.
+ */
+export interface ChatIndexMetadata {
+	type: typeof METADATA_TYPES.TURN;
+	contentType: ChatIndexContentType;
+	chatTurnId: string;
+	value: string;
+	sessionId: string;
+	characterId: string;
+	originalCreatedAt: string;
+}
 
+// --- 3. The Application-Level Rich Object ---
+// This interface remains unchanged. It's the rich object your application code works with.
+// The service layer is responsible for fetching the ChatTurnMetadata and then, if needed,
+// its associated search index entries to reconstruct these arrays.
 export interface ChatTurn
 	extends Omit<
 		ChatTurnMetadata,
-		| 'keywords'
-		| 'topics'
-		| 'entities'
-		| 'userEmotionPrimary'
-		| 'userEmotionIntensity'
-		| 'userEmotionNuances'
-		| 'characterEmotionPrimary'
-		| 'characterEmotionIntensity'
-		| 'characterEmotionNuances'
-		| 'actions'
-		| 'relationshipShifts'
-		| 'flags'
-		| 'loreReferences'
-		| 'historyReferences'
+		'loreReferenceList' | 'historyReferenceList' | 'requestJson' | 'responseJson'
 	> {
-	// Rich metadata for application use
-	keywords: string[];
-	topics: string[];
-	entities: string[];
-	userEmotion: { primary: string; intensity: number; nuances: string[] };
-	characterEmotion: { primary: string; intensity: number; nuances: string[] };
-	actions: string[];
-	relationshipShifts: string[];
-	flags: string[];
-	loreReferences: Array<{ id: string; relevance: number }>;
-	historyReferences: Array<{ id: string; relevance: number }>;
+	keywordList: string[];
+	topicList: string[];
+	entityList: string[];
+	actionList: string[];
+	flagList: string[];
+	relationshipShiftList: string[];
 
-	// Full message objects
+	userEmotion: { primary: string; intensity: number; nuanceList: string[] };
+	characterEmotion: { primary: string; intensity: number; nuanceList: string[] };
+
+	loreReferenceList: Reference[];
+	historyReferenceList: Reference[];
+
 	request: ChatMessage;
 	response: ChatMessage;
 }
+
+// Other interfaces like ChatMessage, ChatMessageSet, etc., remain the same.
 
 export type ChatTurnCdo = Pick<
 	ChatTurn,
@@ -162,3 +158,16 @@ export interface TempChatTurn extends TempChatTurnMetadata {
 export type TempChatTurnCdo = Pick<TempChatTurn, 'sessionId' | 'sequence' | 'userId'> & {
 	userInput: string;
 };
+
+export interface DisplayTurn {
+	chatTurnId: string;
+	sessionId: string;
+	characterId: string;
+	userId: string;
+	profileId: string;
+	sequence: number;
+	createdAt: string;
+	updatedAt: string;
+	request: ChatMessage;
+	response: ChatMessage;
+}

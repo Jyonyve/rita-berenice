@@ -1,80 +1,101 @@
 // src/shared/domain/lore/LoreInterfaces.ts
+
 import { METADATA_TYPES } from '#shared/config/constants.js';
-import { ChatBaseMetadataType } from '../chat/ChatInterfaces.js';
+import { RelatedEvent } from '../BaseTypes.js';
 
-// --- LORE METADATA (ChromaDB-compatible) ---
-export interface LoreMetadata extends Omit<ChatBaseMetadataType, 'sessionId' | 'profileId'> {
-	loreId: string;
+export type EventDateType =
+	| 'absolute_date'
+	| 'estimated_year'
+	| 'relative_to_event'
+	| 'era_defined';
+
+export type LoreIndexContentType = 'AFFECTED_CHARACTER' | 'KEYWORD' | 'TOPIC' | 'RELATED_EVENT';
+
+// --- A. THE PRIMARY DOCUMENT INTERFACES ---
+
+/**
+ * Metadata for a primary LORE document stored in ChromaDB.
+ * This document contains the main content for semantic search.
+ */
+export interface LoreMetadata {
 	type: typeof METADATA_TYPES.LORE;
-	category: string;
-	source: string; // ✅ Added missing source field
-	summary: string;
-	title: string;
-	generatedTitle: string; // Auto-generated title based on content
-	englishId: string; // kebab-case version of the title summary
-
-	// Character ownership and involvement (flattened for ChromaDB)
-	ownerCharacterIds: string; // "tarion_original,tarion_spinoff" - who owns this story
-	sideCharacterIds: string; // "kassar_original,kassar_spinoff,prince_vargas" - who appears in the story
-	allAffectedCharacterIds: string; // Combined for easy querying: "tarion_original,tarion_spinoff,kassar_original,kassar_spinoff"
-}
-
-export interface LoreInfo
-	extends Omit<LoreMetadata, 'ownerCharacterIds' | 'sideCharacterIds' | 'allAffectedCharacterIds'> {
-	content: string;
-
-	// Rich arrays for application use (parsed from ChromaDB strings)
-	ownerCharacterIdArray: string[]; // ["tarion_original", "tarion_spinoff"]
-	sideCharacterIdArray: string[]; // ["kassar_original", "kassar_spinoff"]
-	allAffectedCharacterIdArray: string[]; // Combined array for convenience
-}
-
-// --- HISTORY METADATA (ChromaDB-compatible - all primitives) ---
-export interface HistoryMetadata extends Omit<ChatBaseMetadataType, 'sessionId' | 'profileId'> {
-	historyId: string;
-	type: typeof METADATA_TYPES.HISTORY;
+	loreId: string;
+	characterId: string;
+	userId: string;
+	profileId: string;
+	createdAt: string;
+	updatedAt: string;
 	title: string;
 	generatedTitle: string;
-	englishId: string; // kebab-case version of the title summary
-	category: string; // ✅ Added category field for consistency
+	englishId: string;
+	category: string;
+	source: string;
 	summary: string;
+}
 
-	// Character ownership and involvement (flattened for ChromaDB)
-	ownerCharacterIds: string; // "tarion_original,tarion_spinoff" - whose memory/perspective this is
-	sideCharacterIds: string; // "kassar_original,kassar_spinoff" - who else is involved
-	allAffectedCharacterIds: string; // Combined for easy querying
-
-	// Temporal information (flattened for ChromaDB)
+/**
+ * Metadata for a primary HISTORY document stored in ChromaDB.
+ * This document contains the main content for semantic search.
+ */
+export interface HistoryMetadata {
+	type: typeof METADATA_TYPES.HISTORY;
+	historyId: string;
+	characterId: string;
+	userId: string;
+	profileId: string;
+	createdAt: string;
+	updatedAt: string;
+	title: string;
+	generatedTitle: string;
+	englishId: string;
+	category: string;
+	summary: string;
 	periodLabel: string;
-	periodConfidence: number; // 0.0 to 1.0
 	eventDateValue: string;
-	eventDateType: 'absolute_date' | 'estimated_year' | 'relative_to_event' | 'era_defined';
-	eventDateConfidence: number;
-
-	// Relationships (stringified for ChromaDB)
-	relatedEvents: string; // JSON.stringify(Array<{id, relationship, description}>)
+	eventDateType: EventDateType;
 }
 
-export interface HistoryInfo
-	extends Omit<
-		HistoryMetadata,
-		'relatedEvents' | 'ownerCharacterIds' | 'sideCharacterIds' | 'allAffectedCharacterIds'
-	> {
+// --- B. THE UNIFIED SEARCH INDEX INTERFACE ---
+
+/**
+ * A single, unified metadata structure for all denormalized search index entries.
+ * These records are lightweight and designed for fast, precise filtering.
+ */
+export interface LoreIndexMetadata {
+	// The type of the parent document (LORE or HISTORY)
+	type: typeof METADATA_TYPES.LORE | typeof METADATA_TYPES.HISTORY;
+
+	// What kind of attribute this index entry represents
+	contentType: LoreIndexContentType;
+
+	// Foreign key to the parent document
+	contentId: string;
+
+	// The indexed value
+	value: string;
+
+	// The primary owner's ID for broad filtering
+	characterId: string;
+}
+
+// --- C. THE RICH, APPLICATION-LEVEL INTERFACES ---
+
+/**
+ * The rich object your application works with for Lore.
+ * The service layer is responsible for reconstructing the arrays from the search index.
+ */
+export interface LoreInfo extends LoreMetadata {
 	content: string;
-
-	// Rich objects for application use (parsed from flattened fields)
-	ownerCharacterIdArray: string[]; // ["tarion_original", "tarion_spinoff"]
-	sideCharacterIdArray: string[]; // ["kassar_original", "kassar_spinoff"]
-	allAffectedCharacterIdArray: string[]; // Combined array
-
-	// Parsed relationships
-	relatedEventsArray: Array<{
-		id: string;
-		relationship: 'precedes' | 'succeeds' | 'concurrent_with' | 'caused_by' | 'results_in';
-		description: string;
-	}>;
+	sideCharacterIdList: string[];
+	allAffectedCharacterIdList: string[];
+	keywordList: string[];
+	topicList: string[];
 }
 
-// --- CDO TYPES ---
-export type HistoryCdo = Pick<HistoryInfo, 'content' | 'title' | 'userId' | 'characterId'>;
-export type LoreCdo = Pick<LoreInfo, 'content' | 'userId' | 'characterId'>;
+export interface HistoryInfo extends HistoryMetadata {
+	content: string;
+	sideCharacterIdList: string[];
+	allAffectedCharacterIdList: string[];
+	relatedEventList: RelatedEvent[];
+	keywordList: string[];
+}

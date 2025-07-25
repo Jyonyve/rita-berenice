@@ -4,29 +4,33 @@ import { chromaDbClient } from '../db/chromaDbClient.js';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
 import {
+	ChatIndexContentType,
+	ChatIndexMetadata,
 	ChatMessage,
 	ChatMessageMetadata,
 	ChatMessageType,
 	ChatTurn,
 	ChatTurnMetadata,
+	DisplayTurn,
 	TempChatTurn,
 	TempChatTurnMetadata,
 } from '#shared/domain/chat/ChatInterfaces.js';
-import {
-	buildChatTurnId,
-	buildMessageId,
-	buildTempChatTurnId,
-} from '../../shared/util/buildIdUtils.js';
-import {
-	flatChatMessageToDoc,
-	flatChatTurnToDoc,
-	inflateChatTurnDoc,
-} from '../util/documentUtils.js';
+import { flatChatMessageToDoc, chatTurnToDocument } from '#shared/util/documentUtils.ts';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
-import { chatTurnToMetadata, metadataToChatTurn } from '#shared/util/dbConvertUtils.js';
-import { ChatResponse, ChromaResponse, TempChatResponse } from '#shared/api/ModuleResponse.js';
+import {
+	chatTurnToMetadata,
+	metadataToChatTurn,
+	metadataToDisplayTurn,
+} from '#shared/util/dbConvertUtils.js';
+import { ChatResponse } from '#shared/api/ModuleResponse.js';
 import { parseTextToEntries } from '#shared/util/chatParseUtils.js';
 import { isAndWhere } from '../util/queryUtils.js';
+import { c } from 'node_modules/vite/dist/node/moduleRunnerTransport.d-DJ_mE5sf.js';
+import {
+	buildChatTurnIndexId,
+	buildChatTurnId,
+	buildMessageId,
+} from '#shared/util/buildIdUtils.js';
 
 // Destructure outside the object
 const {
@@ -37,8 +41,17 @@ const {
 	getRecords,
 	queryRecords,
 	deleteRecordById,
+	deleteRecords,
 } = chromaDbClient;
 const collectionType = COLLECTIONS.CHAT;
+
+const emptyChatResponse = (): ChatResponse => ({
+	ids: [],
+	documents: [],
+	metadatas: [],
+	chatTurns: [],
+	displayTurns: [],
+});
 
 export const chatStore = {
 	// Cache for session collections
@@ -54,7 +67,7 @@ export const chatStore = {
 
 	// Store request (public for non-regen editing)
 	_storeRequest: async (request: ChatMessage): Promise<ChatMessage> => {
-		const { entries, model, ...requestMetadata } = request;
+		const { entries, ...requestMetadata } = request;
 		const { sessionId, sequence, messageId } = requestMetadata;
 		const now = new Date().toISOString();
 		const updatedMetadata: ChatMessageMetadata = {
@@ -63,13 +76,14 @@ export const chatStore = {
 			createdAt: request.createdAt || now,
 			updatedAt: now,
 			type: METADATA_TYPES.MESSAGE,
+			model: 'none',
 		};
 
 		const collection = await chatStore._getChatCollection();
 		try {
 			const documentForEmbedding = flatChatMessageToDoc(request.entries);
 			await upsertRecord(collection, updatedMetadata.messageId, documentForEmbedding, updatedMetadata);
-			return { entries, model, ...updatedMetadata };
+			return { entries, ...updatedMetadata };
 		} catch (error) {
 			handleServiceError(
 				error,
@@ -90,13 +104,14 @@ export const chatStore = {
 			createdAt: response.createdAt || now,
 			updatedAt: now,
 			type: METADATA_TYPES.MESSAGE,
+			model: model || 'none',
 		};
 		try {
 			const collection = await chatStore._getChatCollection();
 
 			const documentForEmbedding = flatChatMessageToDoc(response.entries);
 			await upsertRecord(collection, updatedMetadata.messageId, documentForEmbedding, updatedMetadata);
-			return { entries, model, ...updatedMetadata };
+			return { entries, ...updatedMetadata };
 		} catch (error) {
 			handleServiceError(
 				error,
@@ -105,70 +120,173 @@ export const chatStore = {
 			);
 		}
 	},
-
-	// store fixed chat turn as json string
-	_storeFullChatTurn: async (chatTurn: ChatTurn): Promise<void> => {
+	/**
+	 * @private
+	 * Reconstructs rich ChatTurn objects from primary documents and their associated index records.
+	 */
+	_constructChatTurnIndexes: async (chatTurnIds: string[]): Promise<Metadata[]> => {
 		const collection = await chatStore._getChatCollection();
-		const updatedMetadata: ChatTurnMetadata = chatTurnToMetadata(chatTurn);
-		const documentForEmbedding = flatChatTurnToDoc(chatTurn);
-
-		await upsertRecord(collection, updatedMetadata.chatTurnId, documentForEmbedding, updatedMetadata);
+		const rawIndexResults = await getRecords(collection, { chatTurnId: { $in: chatTurnIds } });
+		const indexResults = validateChromaResponse(rawIndexResults, 'getList', collectionType);
+		return indexResults.metadatas.filter((m) => !!m);
 	},
 
-	_constuctChatTurn: (results: ChromaResponse): ChatResponse => {
-		const { ids, documents, metadatas } = results;
-		const chatTurns = ids.map((id, index) => {
-			const metadata = metadatas[index];
-			const document = documents[index];
-			const inflatedDoc = inflateChatTurnDoc(document!);
-			const chatTurn = metadataToChatTurn(metadata!, inflatedDoc.request, inflatedDoc.response);
-			return chatTurn;
+	/**
+	 * @private
+	 * Reconstructs rich ChatTurn objects from primary documents and their associated index records.
+	 */
+	_constructFullChatTurns(
+		turnMetadatas: (Metadata | null)[],
+		allIndexRecords: (Metadata | null)[]
+	): ChatTurn[] {
+		return (turnMetadatas as unknown as ChatTurnMetadata[]).map((metadata) => {
+			// Find all index records that belong to chatStore specific turn
+			const relatedIndexRecords = (allIndexRecords as unknown as ChatIndexMetadata[]).filter(
+				(record) => record.chatTurnId === metadata.chatTurnId
+			);
+			// Use the utility to "inflate" the rich object
+			return metadataToChatTurn(metadata, relatedIndexRecords);
 		});
-		return { ids, documents, metadatas, chatTurns, chatTurn: chatTurns[0] || null };
 	},
 
-	_constructTempChatTurn: (results: ChromaResponse): TempChatResponse => {
-		const { ids, documents, metadatas } = results;
-
-		const tempChatTurns = documents
-			.map((doc, index) => {
-				if (typeof doc === 'string') {
-					try {
-						// The entire TempChatTurn is stored as a JSON string in the document.
-						return JSON.parse(doc) as TempChatTurn;
-					} catch (e) {
-						console.error(`Failed to parse TempChatTurn document for ID ${ids[index]}:`, e);
-						return null;
-					}
-				}
-				return null;
-			})
-			.filter((turn): turn is TempChatTurn => turn !== null);
-
-		return { ids, documents, metadatas, tempChatTurns, tempChatTurn: tempChatTurns[0] ?? null };
+	/**
+	 * @private
+	 * Reconstructs rich ChatTurn objects from primary documents and their associated index records.
+	 */
+	_constructDisplayChatTurns(turnMetadatas: (Metadata | null)[]): DisplayTurn[] {
+		return (turnMetadatas as unknown as ChatTurnMetadata[]).map((metadata) => {
+			// Find all index records that belong to chatStore specific turn
+			// Use the utility to "inflate" the rich object
+			return metadataToDisplayTurn(metadata);
+		});
 	},
 
-	// Chat Turn Operations
-	storeChatTurn: async (chatTurn: ChatTurn): Promise<string> => {
-		const { sessionId, request, response, ...currentChatTurn } = chatTurn;
+	/**
+	 * @private
+	 * Creates or updates the denormalized search index records for a given ChatTurn.
+	 * This is the core of the indexed search strategy.
+	 */
+	async _updateSearchIndexForTurn(turn: ChatTurn): Promise<void> {
+		const collection = await chatStore._getChatCollection();
+
+		// 1. Delete all existing index entries for chatStore turn to prevent duplicates on update.
+		await deleteRecordById(collection, turn.chatTurnId);
+
+		const newIndexRecords: { id: string; metadata: ChatIndexMetadata }[] = [];
+		const baseMetadata = {
+			type: METADATA_TYPES.TURN,
+			chatTurnId: turn.chatTurnId,
+			sessionId: turn.sessionId,
+			characterId: turn.characterId,
+			originalCreatedAt: turn.createdAt,
+		};
+
+		// Helper to create index records for a given list and content type
+		const createIndexRecords = (list: string[], contentType: ChatIndexContentType) => {
+			for (const value of list) {
+				newIndexRecords.push({
+					id: buildChatTurnIndexId(turn.chatTurnId, contentType),
+					metadata: { ...baseMetadata, contentType, value },
+				});
+			}
+		};
+
+		// 2. Create new index records for every filterable attribute
+		createIndexRecords(turn.keywordList, 'KEYWORD');
+		createIndexRecords(turn.topicList, 'TOPIC');
+		createIndexRecords(turn.entityList, 'ENTITY');
+		createIndexRecords(turn.actionList, 'ACTION');
+		createIndexRecords(turn.flagList, 'FLAG');
+		createIndexRecords(turn.relationshipShiftList, 'RELATIONSHIP_SHIFT');
+		createIndexRecords(turn.userEmotion.nuanceList, 'USER_EMOTION_NUANCE');
+		createIndexRecords(turn.characterEmotion.nuanceList, 'CHARACTER_EMOTION_NUANCE');
+
+		// 3. Batch upsert the new index records
+		if (newIndexRecords.length > 0) {
+			await upsertRecords(
+				collection,
+				newIndexRecords.map((r) => r.id),
+				[], // Documents are not needed for index entries
+				newIndexRecords.map((r) => r.metadata)
+			);
+		}
+	},
+
+	/**
+	 * Stores a fully enriched chat turn and updates its search index.
+	 * This is the single, authoritative method for saving a finalized turn.
+	 */
+	async storeChatTurn(turn: ChatTurn): Promise<void> {
 		try {
-			const updatedRequest = await chatStore._storeRequest(request);
-			const updatedResponse = await chatStore._storeResponse(response);
-			const updatedChatTurn = {
-				...currentChatTurn,
-				sessionId,
-				request: updatedRequest,
-				response: updatedResponse,
-			};
-			// Store the full turn as JSON only when it's fixed
-			await chatStore._storeFullChatTurn(updatedChatTurn);
-			return JSON.stringify(updatedChatTurn);
+			const collection = await chatStore._getChatCollection();
+
+			// 1. Prepare and store the primary TURN document
+			const metadata = chatTurnToMetadata(turn);
+			const document = chatTurnToDocument(turn);
+			await upsertRecord(collection, metadata.chatTurnId, document, metadata);
+
+			// 2. Update the denormalized search index for chatStore turn
+			await chatStore._updateSearchIndexForTurn(turn);
 		} catch (error) {
 			handleServiceError(
 				error,
-				'An internal error occurred while do [storeChatTurn].',
-				`Failed to store chat turn for session ${sessionId}:`
+				'An internal error occurred while doing [storeChatTurn].',
+				`Failed to store chat turn ${turn.chatTurnId} for session ${turn.sessionId}:`
 			);
+		}
+	},
+
+	/**
+	 * [Optimized for Client] Fetches a lean list of chat turns for UI display.
+	 * This method is fast as it only retrieves the primary documents without their indexes.
+	 */
+	async getChatHistoryForDisplay(sessionId: string): Promise<ChatResponse> {
+		try {
+			const collection = await chatStore._getChatCollection();
+			const where: Where = {
+				$and: [{ type: { $eq: METADATA_TYPES.TURN } }, { sessionId: { $eq: sessionId } }],
+			};
+			const results = await getRecords(collection, where);
+			const validatedResults = validateChromaResponse(results, 'getList', collectionType);
+
+			const displayTurns = validatedResults.metadatas.map((metadata) =>
+				metadataToDisplayTurn(metadata as unknown as ChatTurnMetadata)
+			);
+
+			return { ...emptyChatResponse(), displayTurns };
+		} catch (error) {
+			handleServiceError(error, `Failed to get display history for session ${sessionId}`);
+		}
+	},
+
+	/**
+	 * [For Backend RAG] Fetches full, rich ChatTurn objects for a session.
+	 * This is a "heavy" operation intended for deep memory searches.
+	 */
+	async getAllChatTurns(sessionId: string): Promise<ChatResponse> {
+		try {
+			const collection = await chatStore._getChatCollection();
+
+			// 1. Fetch primary TURN documents
+			const rawTurnResults = await getRecords(collection, {
+				$and: [{ type: { $eq: METADATA_TYPES.TURN } }, { sessionId: { $eq: sessionId } }],
+			});
+			const result = validateChromaResponse(rawTurnResults, 'getList', collectionType);
+			const turnMetadatas = result.metadatas.filter((m) => !!m);
+			if (turnMetadatas.length === 0) {
+				return emptyChatResponse();
+			}
+
+			// 2. Fetch all associated search index records for these turns
+			const turnIds: string[] = turnMetadatas
+				.map((m) => m?.chatTurnId)
+				.filter((id): id is string => typeof id === 'string');
+			const indexMetadatas = await chatStore._constructChatTurnIndexes(turnIds);
+			// 3. Reconstruct the full, rich objects
+			const chatTurns = chatStore._constructFullChatTurns(turnMetadatas, indexMetadatas);
+			return { ...result, chatTurns, displayTurns: [] };
+		} catch (error) {
+			handleServiceError(error, 'Error in getAllChatTurns', `Session: ${sessionId}`);
 		}
 	},
 
@@ -186,7 +304,7 @@ export const chatStore = {
 
 		const recordsToUpsert = chatTurns.map((turn) => {
 			const metadata = chatTurnToMetadata(turn);
-			const document = flatChatTurnToDoc(turn);
+			const document = chatTurnToDocument(turn);
 			return { id: metadata.chatTurnId, document, metadata };
 		});
 
@@ -258,50 +376,77 @@ export const chatStore = {
 		limit?: number
 	): Promise<ChatResponse> => {
 		try {
+			let turnIdsToFetch: string[] = [];
 			const collection = await chatStore._getChatCollection();
-			const conditions: Where[] = [
-				{ sessionId: { $eq: sessionId } },
-				{ type: { $eq: METADATA_TYPES.TURN } },
-			];
-			if (where && isAndWhere(where)) {
-				conditions.push(...where.$and);
+			// Step 1: Pre-filter based on metadata to get relevant turn IDs
+			if (where && Object.keys(where).length > 0) {
+				const indexResults = await getRecords(collection, where);
+				const validatedIndexes = validateChromaResponse(indexResults, 'getList', collectionType);
+				turnIdsToFetch = [
+					...new Set(
+						validatedIndexes.metadatas.map((m) => (m as unknown as ChatIndexMetadata).chatTurnId)
+					),
+				];
+
+				if (turnIdsToFetch.length === 0) {
+					return emptyChatResponse();
+				}
 			}
-			const whereClause: Where = { $and: conditions };
 
-			const rawResults = await queryRecords(collection, queryTexts, whereClause, whereDocument, limit);
+			// Step 2: Perform semantic search on the pre-filtered set
+			// CORRECTED: Programmatically build the conditions to avoid TypeScript errors.
+			const conditions: Where[] = [
+				{ type: { $eq: METADATA_TYPES.TURN } },
+				{ sessionId: { $eq: sessionId } },
+			];
+			if (turnIdsToFetch) {
+				conditions.push({ chatTurnId: { $in: turnIdsToFetch } });
+			}
+			const queryWhere: Where = { $and: conditions };
 
-			const results = rawResults.map((raw) => validateChromaResponse(raw, 'getList', collectionType));
-
+			const queryResults = await queryRecords(
+				collection,
+				queryTexts,
+				queryWhere,
+				whereDocument,
+				limit
+			);
+			const result = queryResults.map((r) => validateChromaResponse(r, 'getList', collectionType));
+			const turnIds = result.flatMap((r) => r.ids);
+			const turnMetadatas = result.flatMap((r) => r.metadatas);
+			const turnDocuments = result.flatMap((r) => r.documents);
 			// Collect all results
-			const allChatTurns: ChatTurn[] = [];
-			const allIds: string[] = [];
-			const allDocuments: (string | null)[] = [];
-			const allMetadatas: (Metadata | null)[] = [];
+			if (turnMetadatas.length === 0) {
+				return emptyChatResponse();
+			}
 
-			results.forEach((result) => {
-				const { ids, documents, metadatas, chatTurns } = chatStore._constuctChatTurn(result);
-				allChatTurns.push(...chatTurns);
-				allIds.push(...ids);
-				allDocuments.push(...documents);
-				allMetadatas.push(...metadatas);
-			});
+			// Step 3: Fetch all index records for the final set of turns
+			const chatTurnIds: string[] = turnMetadatas
+				.map((m) => m?.chatTurnId)
+				.filter((id): id is string => typeof id === 'string');
 
-			// Return a single ChatResponse with all results merged
+			const indexMetadatas = await chatStore._constructChatTurnIndexes(chatTurnIds);
+
+			// Step 4: Reconstruct the full rich objects
+			const chatTurns = chatStore._constructFullChatTurns(turnMetadatas, indexMetadatas);
 			return {
-				ids: allIds,
-				documents: allDocuments,
-				metadatas: allMetadatas,
-				chatTurns: allChatTurns,
-				chatTurn: allChatTurns[0],
+				ids: turnIds,
+				metadatas: turnMetadatas,
+				documents: turnDocuments,
+				chatTurns,
+				displayTurns: [],
 			};
 		} catch (error) {
 			console.error(`Failed to query chat log for session ${sessionId}:`, error);
-			return { ids: [], documents: [], metadatas: [], chatTurns: [], chatTurn: {} as ChatTurn };
+			return emptyChatResponse();
 		}
 	},
 
 	/** Loads multiple FIXED turns  */
-	getChatTurns: async (sessionId: string, beforeSequence: number): Promise<ChatResponse> => {
+	getDisplayTurnsBeforeSequence: async (
+		sessionId: string,
+		beforeSequence: number
+	): Promise<ChatResponse> => {
 		const collection = await chatStore._getChatCollection();
 		const where: Where = {
 			$and: [
@@ -313,7 +458,9 @@ export const chatStore = {
 		try {
 			const rawResults = await getRecords(collection, where);
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
-			return chatStore._constuctChatTurn(results);
+			const displayTurns = chatStore._constructDisplayChatTurns(results.metadatas);
+
+			return { ...results, chatTurns: [], displayTurns };
 		} catch (error) {
 			handleServiceError(
 				error,
@@ -323,33 +470,15 @@ export const chatStore = {
 		}
 	},
 
-	/** Loads multiple FIXED turns  */
-	getAllChatTurns: async (sessionId: string): Promise<ChatResponse> => {
-		const collection = await chatStore._getChatCollection();
-		const where: Where = {
-			$and: [{ type: { $eq: METADATA_TYPES.TURN } }, { sessionId: { $eq: sessionId } }],
-		};
-		try {
-			const rawResults = await getRecords(collection, where);
-			const results = validateChromaResponse(rawResults, 'getList', collectionType);
-			return chatStore._constuctChatTurn(results);
-		} catch (error) {
-			handleServiceError(
-				error,
-				'An internal error occurred while do [getAllChatTurns].',
-				`Failed to load chat turns for session ${sessionId}:`
-			);
-		}
-	},
-
 	/** Gets a single FIXED turn by sequence */
-	getChatTurnBySequence: async (sessionId: string, sequence: number): Promise<ChatResponse> => {
+	getChatTurnBySequence: async (sessionId: string, sequence: number): Promise<ChatTurn> => {
 		const collection = await chatStore._getChatCollection();
 		const turnId = buildChatTurnId(sessionId, sequence);
 		try {
 			const rawResult = await getRecordById(collection, turnId);
 			const results = validateChromaResponse(rawResult, 'getOne', collectionType);
-			return chatStore._constuctChatTurn(results);
+			const indexMetadatas = await chatStore._constructChatTurnIndexes([results.ids[0]]);
+			return chatStore._constructFullChatTurns(results.metadatas, indexMetadatas)[0];
 		} catch (error) {
 			handleServiceError(
 				error,
