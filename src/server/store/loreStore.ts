@@ -85,7 +85,7 @@ export const loreStore = {
 		validateServiceId(characterId, collectionType);
 		const collection = await loreStore._getCollection();
 		const where: Where = {
-			$and: [{ type: { $eq: METADATA_TYPES.LORE } }, { characterId: { $eq: characterId } }],
+			$and: [{ type: { $eq: METADATA_TYPES.LORE } }, { ownerCharacterIds: { $in: [characterId] } }],
 		};
 
 		try {
@@ -138,7 +138,7 @@ export const loreStore = {
 		// Build the final where clause by combining mandatory filters with optional, AI-generated ones.
 		const baseConditions: Where[] = [
 			{ type: { $eq: METADATA_TYPES.LORE } },
-			{ characterId: { $eq: characterId } },
+			{ ownerCharacterIds: { $in: [characterId] } },
 		];
 
 		// If an external filter is provided, add it to the conditions.

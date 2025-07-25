@@ -1,8 +1,8 @@
 // scripts/chat/initChat.ts
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { ChromaClient, Collection } from 'chromadb';
 import { fileURLToPath } from 'node:url';
+import { z } from 'zod';
 import { ChatMessage, ChatTurn, MigChatMessage } from '#shared/domain/chat/ChatInterfaces.js';
 import {
 	buildCharacterId,
@@ -11,33 +11,33 @@ import {
 	buildSessionId,
 	buildProfileId,
 } from '#shared/util/index.js';
-import {
-	parseChatTurnToMetadata,
-	parseSessionId,
-	parseTextToEntries,
-} from '#shared/util/chatParseUtils.js';
+import { parseSessionId, parseTextToEntries } from '#shared/util/chatParseUtils.js';
 import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
-import { validEmotions } from '#shared/config/emotionWordsMapper.js';
+import { EmotionValue, validEmotions } from '#shared/config/emotionWordsMapper.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
 import { chatStore } from '#server/store/chatStore.js';
 import { buildChatTurnMetadataPrompt } from '#server/util/templateUtils.js';
 import { mapTerms, termStore } from '#server/index.js';
+import { createChatTurnMetadataSchema } from '#server/util/schemaUtils.js';
+import { loreStore } from '#server/store/loreStore.js';
+import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
+import { ChatGroq } from '@langchain/groq';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // --- Configuration ---
 const CRAWLER_RESULT_DIR = path.join(__dirname, 'result');
-const EMOTION_DEFAULT = 'default';
+const EMOTION_DEFAULT: EmotionValue = 'neutral';
 const MAX_LLM_RETRIES = 3;
 const USER_ID = process.env.USER_ID || '6b335673-c837-43f9-a1c7-0b92c90edefb';
-
-const ENRICHMENT_MODEL = 'gemini-2.0-flash-001'; // Fast model for metadata extraction
-
-// ✅ Add Progress Tracking Configuration
+const ENRICHMENT_MODEL = 'gemini-1.5-flash-latest'; // Fast model for metadata extraction
 const PROGRESS_DIR = path.join(__dirname, 'progress');
 const PROGRESS_FILE_PREFIX = 'initchat-progress';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
+// --- Progress Tracking Interfaces and Functions ---
 interface InitChatProgress {
 	sessionId: string;
 	totalTurnsInLogFile: number;
@@ -61,9 +61,7 @@ const loadInitProgress = async (sessionId: string): Promise<InitChatProgress | n
 		const data = await fs.readFile(progressFile, 'utf-8');
 		return JSON.parse(data);
 	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-			return null;
-		}
+		if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
 		console.warn(`Warning: Could not load progress file for ${sessionId}:`, error);
 		return null;
 	}
@@ -97,184 +95,6 @@ const createInitialProgress = (
 	};
 };
 
-// --- LLM and Data Processing Functions (Unchanged) ---
-// ... (extractJsonFromMarkdown, generateEnrichedMetadataLLM, getDefaultEnrichedMetadata, enrichChatTurnWithMetadata, processAndUpsertTurn functions remain the same as in your file) ...
-// NOTE: For brevity, the unchanged helper functions are omitted here. Please keep them in your actual file.
-/**
- * Best-of-both-worlds function.
- * Extracts a JSON object from a string that may be wrapped in Markdown code blocks or have surrounding text.
- */
-const extractJsonSafely = (text: string) => {
-	let jsonString = text.trim();
-
-	// 1. Try to find a Markdown code block first.
-	// Handles `````` or ``````
-	const markdownMatch = jsonString.match(/``````/);
-	if (markdownMatch && markdownMatch[1]) {
-		jsonString = markdownMatch[1];
-	} else {
-		// 2. If no code block, find the main JSON object using a greedy regex.
-		// This is robust against surrounding text.
-		const braceMatch = jsonString.match(/{[\s\S]*}/);
-		if (braceMatch && braceMatch[0]) {
-			jsonString = braceMatch[0];
-		}
-	}
-
-	// 3. Finally, validate if the extracted string is valid JSON.
-	try {
-		JSON.parse(jsonString);
-		return JSON.parse(jsonString); // Return the clean, valid JSON string.
-	} catch (error) {
-		console.error('JSON extraction failed. Raw text snippet:', text.substring(0, 500));
-		return {}; // On failure, return null for explicit error handling.
-	}
-};
-
-let firstGeminiDone = false;
-let secondGeminiDone = false; // Track if Groq fallback was used
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
-
-const generateEnrichedMetadataLLM = async (prompt: string, attempt = 1): Promise<string> => {
-	// 이미 Groq 사용했다면 Gemini 재시도 금지
-	if (secondGeminiDone) {
-		console.warn(`    ✅ Already fell back to Groq. Skipping Gemini.`);
-		return callGroqFallback(prompt); // 최종 결과
-	}
-
-	console.log(`    📞 Calling Gemini API (Attempt ${attempt}/${MAX_LLM_RETRIES})...`);
-
-	try {
-		const response = await fetch(
-			`https://generativelanguage.googleapis.com/v1beta/models/${ENRICHMENT_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-			{
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					contents: [{ parts: [{ text: prompt }] }],
-					generationConfig: { temperature: 0.3, maxOutputTokens: 1536 },
-				}),
-			}
-		);
-
-		if (!response.ok) {
-			const errorBody = await response.text();
-			console.warn(
-				`    ⚠️ Gemini API non-OK response (Status ${response.status}): ${response.statusText}. Body: ${errorBody.substring(0, 200)}`
-			);
-
-			if (response.status === 429) {
-				if (!firstGeminiDone) {
-					console.warn(`    🚫 Gemini rate limited (429). Switching to second...`);
-					firstGeminiDone = true;
-					return generateEnrichedMetadataLLM(prompt, attempt + 1);
-				}
-				console.warn(`    🚫 Gemini rate limited (429). Switching to Groq...`);
-				return callGroqFallback(prompt);
-			}
-
-			if (attempt < MAX_LLM_RETRIES) {
-				const backoffTime = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
-				console.warn(`    ↪️ Retrying Gemini in ${backoffTime / 1000}s...`);
-				await new Promise((resolve) => setTimeout(resolve, backoffTime));
-				return generateEnrichedMetadataLLM(prompt, attempt + 1);
-			}
-
-			throw new Error(
-				`Gemini API Error: ${response.status} ${response.statusText} after ${attempt} attempts.`
-			);
-		}
-
-		const data = await response.json();
-		const candidate = data.candidates?.[0];
-		const content = candidate?.content?.parts?.[0]?.text || '';
-
-		if (
-			candidate?.finishReason &&
-			candidate.finishReason !== 'STOP' &&
-			candidate.finishReason !== 'MAX_TOKENS'
-		) {
-			console.warn(`    ⚠️ Gemini API finishReason: ${candidate.finishReason}.`);
-			if (candidate.finishReason === 'SAFETY')
-				throw new Error('Gemini API: Content blocked due to safety settings.');
-		}
-
-		if (!content) {
-			console.warn('    ⚠️ Empty content from Gemini API:', JSON.stringify(data).substring(0, 500));
-			throw new Error('Empty response content from Gemini API');
-		}
-
-		console.log(`    🗣️ Gemini API response received (length: ${content.length}).`);
-		return content;
-	} catch (error) {
-		console.error(
-			`    💥 Gemini LLM Error (Attempt ${attempt}/${MAX_LLM_RETRIES}):`,
-			error instanceof Error ? error.message : String(error)
-		);
-
-		if (attempt >= MAX_LLM_RETRIES) {
-			console.warn(`    🚨 Gemini failed after ${MAX_LLM_RETRIES} attempts. Switching to Groq...`);
-			return generateEnrichedMetadataLLM(prompt, 1); // fallbackUsed = true
-		}
-
-		const backoffTime = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
-		console.warn(`    ↪️ Retrying Gemini in ${backoffTime / 1000}s...`);
-		await new Promise((resolve) => setTimeout(resolve, backoffTime));
-		return generateEnrichedMetadataLLM(prompt, attempt + 1);
-	}
-};
-const callGroqFallback = async (prompt: string, attempt = 1): Promise<string> => {
-	if (!GROQ_API_KEY) throw new Error('GROQ_API_KEY environment variable is required.');
-	console.log(`    🔁 Fallback: Calling Groq (LLaMA3 70B), attempt ${attempt}`);
-	if (!secondGeminiDone) {
-		secondGeminiDone = true; // Set flag to prevent further Gemini calls
-	}
-
-	const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${GROQ_API_KEY}` },
-		body: JSON.stringify({
-			model: 'llama3-70b-8192',
-			messages: [
-				{ role: 'system', content: 'You are a helpful assistant.' },
-				{ role: 'user', content: prompt },
-			],
-			temperature: 0.3,
-			max_tokens: 1536,
-		}),
-	});
-
-	if (res.status === 429) {
-		const errorJson = await res.json();
-		const match = errorJson?.error?.message?.match(/try again in ([\d.]+)s/i);
-		const waitMs = match ? parseFloat(match[1]) * 1000 : 25000;
-
-		console.warn(`    ⏳ Groq rate limited. Waiting ${waitMs / 1000}s before retrying...`);
-
-		if (attempt >= 2) throw new Error(`Groq API rate limit (429) after retry.`);
-
-		await new Promise((resolve) => setTimeout(resolve, waitMs));
-		return callGroqFallback(prompt, attempt + 1); // retry once
-	}
-
-	if (!res.ok) {
-		const errorText = await res.text();
-		throw new Error(`Groq API Error ${res.status}: ${errorText}`);
-	}
-
-	const json = await res.json();
-	const content = json.choices?.[0]?.message?.content;
-
-	if (!content) {
-		console.warn('    ⚠️ Empty content from Groq API:', JSON.stringify(json).substring(0, 500));
-		throw new Error('Empty response content from Groq API');
-	}
-
-	console.log(`    🗣️ Groq API response received (length: ${content.length}).`);
-	return content;
-};
-
 const getDefaultEnrichedMetadata = () => ({
 	summary: 'N/A',
 	keywords: [],
@@ -290,85 +110,111 @@ const getDefaultEnrichedMetadata = () => ({
 	flags: [],
 	memoryChunk: 'N/A',
 });
+
 const enrichChatTurnWithMetadata = async (
 	basicTurn: ChatTurn,
 	termGuidanceMap: Map<string, string>,
-	existingLoreIds: string[] = [],
-	existingHistoryIds: string[] = []
+	existingLoreIds: string[],
+	existingHistoryIds: string[]
 ): Promise<ChatTurn> => {
+	// --- Create the dynamic Zod schema using your existing factory ---
+	const chatTurnSchema = createChatTurnMetadataSchema(
+		basicTurn.request.showName,
+		basicTurn.response.showName,
+		existingLoreIds,
+		existingHistoryIds
+	);
+
+	// --- Create the prompt for the LLM ---
 	const prompt = buildChatTurnMetadataPrompt(
 		{ showName: basicTurn.request.showName, name: 'yonyve', gender: 'female' },
 		basicTurn.request,
 		{ showName: basicTurn.response.showName, name: 'tarion', gender: 'male' },
 		basicTurn.response,
-		existingLoreIds,
-		existingHistoryIds,
 		termGuidanceMap
 	);
-	const llmResponse = await generateEnrichedMetadataLLM(prompt);
-	const parsedLlmJson = extractJsonSafely(llmResponse);
-	const defaults = getDefaultEnrichedMetadata();
-	function defineEmotion(emotion: string, primary: string) {
-		return primary && emotion === 'default' ? primary : emotion;
+
+	let enrichedData: z.infer<typeof chatTurnSchema>;
+
+	try {
+		// --- Attempt to use Gemini first ---
+		console.log(`      📞 Calling Gemini via LangChain with schema enforcement...`);
+		const geminiClient = new ChatGoogleGenerativeAI({
+			apiKey: process.env.GEMINI_API_KEY,
+			model: 'gemini-1.5-flash-latest',
+			temperature: 0.3,
+			maxOutputTokens: 2048,
+		});
+
+		const structuredGemini = geminiClient.withStructuredOutput(chatTurnSchema);
+		enrichedData = await structuredGemini.invoke(prompt);
+	} catch (geminiError) {
+		console.error(`      💥 Gemini (LangChain) failed:`, geminiError);
+		console.log(`      🔁 Falling back to Groq...`);
+
+		// --- Fallback to Groq on Gemini failure ---
+		const groqClient = new ChatGroq({
+			apiKey: process.env.GROQ_API_KEY,
+			model: 'llama3-70b-8192',
+			temperature: 0.3,
+			maxTokens: 2048,
+		});
+
+		const structuredGroq = groqClient.withStructuredOutput(chatTurnSchema);
+		enrichedData = await structuredGroq.invoke(prompt);
 	}
+
+	// --- The rest of the function now uses the guaranteed clean data ---
+	const defineEmotion = (originalEmotion: string, newPrimaryEmotion: string): EmotionValue => {
+		return originalEmotion && originalEmotion !== 'neutral'
+			? (originalEmotion as EmotionValue)
+			: (newPrimaryEmotion as EmotionValue);
+	};
+
 	return {
 		...basicTurn,
 		request: {
 			...basicTurn.request,
-			emotion: defineEmotion(basicTurn.request.emotion, parsedLlmJson.userEmotion?.primary),
+			emotion: defineEmotion(basicTurn.request.emotion, enrichedData.userEmotion.primary),
 		},
 		response: {
 			...basicTurn.response,
-			emotion: defineEmotion(basicTurn.response.emotion, parsedLlmJson.characterEmotion?.primary),
+			emotion: defineEmotion(basicTurn.response.emotion, enrichedData.characterEmotion.primary),
 		},
-		summary: parsedLlmJson.summary || defaults.summary,
-		keywords: parsedLlmJson.keywords || defaults.keywords,
-		topics: parsedLlmJson.topics || defaults.topics,
-		entities: parsedLlmJson.entities || defaults.entities,
-		userEmotion: {
-			primary: parsedLlmJson.userEmotion?.primary || defaults.userEmotion.primary,
-			intensity: parsedLlmJson.userEmotion?.intensity || defaults.userEmotion.intensity,
-			nuances: parsedLlmJson.userEmotion?.nuances || defaults.userEmotion.nuances,
-		},
-		characterEmotion: {
-			primary: parsedLlmJson.characterEmotion?.primary || defaults.characterEmotion.primary,
-			intensity: parsedLlmJson.characterEmotion?.intensity || defaults.characterEmotion.intensity,
-			nuances: parsedLlmJson.characterEmotion?.nuances || defaults.characterEmotion.nuances,
-		},
-		relationshipShifts: parsedLlmJson.relationshipShifts || defaults.relationshipShifts,
-		dialogueAct: parsedLlmJson.dialogueAct || defaults.dialogueAct,
-		actions: parsedLlmJson.actions || defaults.actions,
-		loreReferences: parsedLlmJson.loreReferences || defaults.loreReferences,
-		historyReferences: parsedLlmJson.historyReferences || defaults.historyReferences,
-		flags: parsedLlmJson.flags || defaults.flags,
-		memoryChunk: parsedLlmJson.memoryChunk || defaults.memoryChunk,
+		// Directly spread the validated data
+		...enrichedData,
 		characterId: basicTurn.characterId || parseSessionId(basicTurn.sessionId).characterId,
 		updatedAt: new Date().toISOString(),
 	};
 };
+
 async function processAndUpsertTurn(
 	turnToProcess: ChatTurn,
 	progress: InitChatProgress,
 	termGuidanceMap: Map<string, string>,
+	existingLoreIds: string[],
+	existingHistoryIds: string[],
 	currentIndex: number,
 	batchTotal: number
 ) {
 	let enrichedTurnResult: ChatTurn;
-	let wasEnrichedSuccessfully = false;
-
 	try {
 		console.log(
-			`    🧠 [Batch ${currentIndex + 1}/${batchTotal}] Enriching turn with sequence: ${
-				turnToProcess.sequence
-			}...`
+			`      🧠 [Batch ${currentIndex + 1}/${batchTotal}] Enriching turn with sequence: ${turnToProcess.sequence}...`
 		);
-		enrichedTurnResult = await enrichChatTurnWithMetadata(turnToProcess, termGuidanceMap);
-		wasEnrichedSuccessfully = true;
+		enrichedTurnResult = await enrichChatTurnWithMetadata(
+			turnToProcess,
+			termGuidanceMap,
+			existingLoreIds,
+			existingHistoryIds
+		);
 		progress.successfullyEnrichedTurnsCount++;
 	} catch (enrichmentError) {
 		const errorMessage =
 			enrichmentError instanceof Error ? enrichmentError.message : String(enrichmentError);
-		console.error(`    ❌ LLM Enrichment failed for turn ${turnToProcess.sequence}: ${errorMessage}`);
+		console.error(
+			`      ❌ LLM Enrichment failed for turn ${turnToProcess.sequence}: ${errorMessage}`
+		);
 		progress.errors.push({
 			sequence: turnToProcess.sequence,
 			error: `Enrichment failed: ${errorMessage}`,
@@ -380,24 +226,19 @@ async function processAndUpsertTurn(
 			characterId: turnToProcess.characterId || parseSessionId(turnToProcess.sessionId).characterId,
 			updatedAt: new Date().toISOString(),
 		};
-		console.warn(`    ↪️ Using default (rich) metadata for turn ${turnToProcess.sequence}.`);
+		console.warn(`      ↪️ Using default (rich) metadata for turn ${turnToProcess.sequence}.`);
 		progress.fallbackSavedTurnsCount++;
 	}
-
 	try {
 		await chatStore._storeFullChatTurn(enrichedTurnResult);
 		progress.lastProcessedSequence = enrichedTurnResult.sequence;
 		console.log(
-			`    ✅ [Batch ${
-				currentIndex + 1
-			}/${batchTotal}] Turn ${enrichedTurnResult.sequence} saved. Total processed for session: ${
-				Number(progress.lastProcessedSequence) + 1
-			}/${progress.totalTurnsInLogFile}`
+			`      ✅ [Batch ${currentIndex + 1}/${batchTotal}] Turn ${enrichedTurnResult.sequence} saved.`
 		);
 	} catch (dbError) {
 		const dbErrorMessage = dbError instanceof Error ? dbError.message : String(dbError);
 		console.error(
-			`    💥 CRITICAL DB Error saving turn ${enrichedTurnResult.sequence}: ${dbErrorMessage}`
+			`      💥 CRITICAL DB Error saving turn ${enrichedTurnResult.sequence}: ${dbErrorMessage}`
 		);
 		progress.errors.push({
 			sequence: enrichedTurnResult.sequence,
@@ -409,7 +250,6 @@ async function processAndUpsertTurn(
 		throw new Error(`CRITICAL DB Error for turn ${enrichedTurnResult.sequence}: ${dbErrorMessage}`);
 	}
 }
-// ---
 
 async function initChatFromLogFiles() {
 	console.log(`🚀 Starting chat initialization script...`);
@@ -417,51 +257,60 @@ async function initChatFromLogFiles() {
 		console.error('🚨 GEMINI_API_KEY or GROQ_API_KEY is not set in environment variables. Aborting.');
 		process.exit(1);
 	}
-
 	console.log(`Ensuring connection to ChromaDB...`);
 	await chatStore._getChatCollection();
 	console.log(`Collection "${COLLECTIONS.CHAT}" is ready.`);
-
 	const allLogFiles = (await fs.readdir(CRAWLER_RESULT_DIR)).filter((file) =>
 		file.endsWith('.json')
 	);
 	console.log(`Found ${allLogFiles.length} log files to process.`);
-
 	const cliSessionId = process.argv[2];
 
 	for (const logFile of allLogFiles) {
 		const fileNameParts = path.basename(logFile, '.json').split('_');
 		if (fileNameParts.length < 2) {
-			console.warn(`  ⚠️ Invalid log file name: "${logFile}". Skipping.`);
+			console.warn(`      ⚠️ Invalid log file name: "${logFile}". Skipping.`);
 			continue;
 		}
 		const characterNameFromFile = fileNameParts[0];
-		const characterId = buildCharacterId(characterNameFromFile, fileNameParts[1]);
+		const characterId = cliSessionId
+			? parseSessionId(cliSessionId).characterId
+			: buildCharacterId(characterNameFromFile, fileNameParts[1]);
 		const TARGET_SESSION_ID = cliSessionId || buildSessionId(characterId);
 
-		if (cliSessionId) {
-			console.log(`\n📝 Using provided Session ID: "${cliSessionId}" for log file: "${logFile}"...`);
-		} else {
-			console.log(
-				`\n📝 Processing log file: "${logFile}" for generated session ID: "${TARGET_SESSION_ID}"...`
-			);
-		}
+		console.log(
+			cliSessionId
+				? `\n📝 Using provided Session ID: "${cliSessionId}" for log file: "${logFile}"...`
+				: `\n📝 Processing log file: "${logFile}" for generated session ID: "${TARGET_SESSION_ID}"...`
+		);
 
-		// --- The rest of the logic remains the same ---
-		console.log(`  📚 Fetching glossary terms for session ${TARGET_SESSION_ID}...`);
+		console.log(`      📚 Fetching glossary terms for session ${TARGET_SESSION_ID}...`);
 		const termResponse = await termStore.getTermsBySessionId(TARGET_SESSION_ID);
 		const termGuidanceMap = mapTerms(termResponse.terms);
+
+		console.log(`      Fetching existing lore and history for character ${characterId}...`);
+		const [loreRes, historyRes] = await Promise.all([
+			loreStore.getLores(characterId),
+			loreStore.getHistories(characterId),
+		]);
+		const existingLoreIds = loreRes.loreInfos.map((lore) => lore.loreId);
+		const existingHistoryIds = historyRes.historyInfos.map((history) => history.historyId);
+		console.log(
+			`      Found ${existingLoreIds.length} lore and ${existingHistoryIds.length} history documents.`
+		);
+
 		const { chatTurns: existingTurnsInDB } = await chatStore.getAllChatTurns(TARGET_SESSION_ID);
 		const latestSequenceInDB =
 			existingTurnsInDB.length > 0 ? Math.max(...existingTurnsInDB.map((t) => t.sequence)) : -1;
 		console.log(
-			`  🔍 DB Check: Found ${existingTurnsInDB.length} turns. Latest sequence is ${latestSequenceInDB}.`
+			`      🔍 DB Check: Found ${existingTurnsInDB.length} turns. Latest sequence is ${latestSequenceInDB}.`
 		);
 
 		const fileContent = await fs.readFile(path.join(CRAWLER_RESULT_DIR, logFile), 'utf-8');
 		const crawledLogs: MigChatMessage[] = JSON.parse(fileContent);
 		const basicTurnsFromLog: ChatTurn[] = [];
 		const turnsMap = new Map<string, { user?: MigChatMessage; bot?: MigChatMessage }>();
+
 		crawledLogs.forEach((log) => {
 			const turnUuid = log.uuid || `${log.createdAt}_${log.role}`;
 			const turnData = turnsMap.get(turnUuid) || {};
@@ -469,17 +318,18 @@ async function initChatFromLogFiles() {
 			else turnData.bot = log;
 			turnsMap.set(turnUuid, turnData);
 		});
+
 		const sortedUuids = Array.from(turnsMap.keys()).sort(
 			(a, b) =>
 				Date.parse(turnsMap.get(a)?.user?.createdAt || '0') -
 				Date.parse(turnsMap.get(b)?.user?.createdAt || '0')
 		);
+
 		for (const uuid of sortedUuids) {
 			const turnPair = turnsMap.get(uuid);
 			if (turnPair?.user && turnPair?.bot) {
 				const [userLog, botLog] = [turnPair.user, turnPair.bot];
 				const currentSequence = userLog.index;
-
 				if (currentSequence === undefined) continue;
 
 				const requestMessage: ChatMessage = {
@@ -501,7 +351,9 @@ async function initChatFromLogFiles() {
 					messageType: 'response',
 					entries: parseTextToEntries(botLog.content),
 					emotion:
-						botLog.emotion && validEmotions.has(botLog.emotion) ? botLog.emotion : EMOTION_DEFAULT,
+						botLog.emotion && validEmotions.has(botLog.emotion)
+							? (botLog.emotion as EmotionValue)
+							: EMOTION_DEFAULT,
 					createdAt: botLog.createdAt,
 					updatedAt: botLog.updatedAt || botLog.createdAt,
 					model: botLog.model,
@@ -529,7 +381,7 @@ async function initChatFromLogFiles() {
 				basicTurnsFromLog.push(basicTurn);
 			} else {
 				console.warn(
-					`  Incomplete turn data for UUID "${uuid}" in session "${TARGET_SESSION_ID}". Skipping.`
+					`      Incomplete turn data for UUID "${uuid}" in session "${TARGET_SESSION_ID}". Skipping.`
 				);
 			}
 		}
@@ -547,31 +399,33 @@ async function initChatFromLogFiles() {
 			.sort((a, b) => a.sequence - b.sequence);
 
 		if (turnsToProcessThisRun.length === 0) {
-			console.log(`  ✅ Session is up-to-date according to DB. No new turns to process.`);
-			progress.status = 'completed'; // Mark as completed in the log
+			console.log(`      ✅ Session is up-to-date according to DB. No new turns to process.`);
+			progress.status = 'completed';
 			await saveInitProgress(progress);
 			continue;
 		}
 
 		console.log(
-			`  📊 Found ${turnsToProcessThisRun.length} new turns to process, starting from sequence ${nextSequenceToProcess}.`
-		);
-		progress.status = 'in_progress';
-		await saveInitProgress(progress);
-
-		console.log(
-			`  📊 Found ${turnsToProcessThisRun.length} new turns to process, starting from sequence ${nextSequenceToProcess}.`
+			`      📊 Found ${turnsToProcessThisRun.length} new turns to process, starting from sequence ${nextSequenceToProcess}.`
 		);
 		progress.status = 'in_progress';
 		await saveInitProgress(progress);
 
 		for (const [i, turn] of turnsToProcessThisRun.entries()) {
 			try {
-				await processAndUpsertTurn(turn, progress, termGuidanceMap, i, turnsToProcessThisRun.length);
+				await processAndUpsertTurn(
+					turn,
+					progress,
+					termGuidanceMap,
+					existingLoreIds,
+					existingHistoryIds,
+					i,
+					turnsToProcessThisRun.length
+				);
 				await saveInitProgress(progress);
 			} catch (turnProcessingError) {
 				console.error(
-					`  🛑 Halting processing for session "${TARGET_SESSION_ID}" due to critical error.`
+					`      🛑 Halting processing for session "${TARGET_SESSION_ID}" due to critical error.`
 				);
 				progress.status = 'failed';
 				await saveInitProgress(progress);

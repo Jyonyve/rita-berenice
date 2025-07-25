@@ -14,7 +14,7 @@ if (!apiKey) {
 
 const embedFnOpenAi = new OpenAIEmbeddingFunction({ apiKey, modelName: 'text-embedding-3-small' });
 
-const CHROMA_HOST = process.env.CHROMA_HOST || 'chromadb-flyio.fly.dev';
+const CHROMA_HOST = process.env.CHROMA_HOST;
 const CHROMA_PORT = Number(process.env.CHROMA_PORT) || 443;
 const CHROMA_SSL = true; // Your URL starts with https://
 const chromaClient = new ChromaClient({ host: CHROMA_HOST, port: CHROMA_PORT, ssl: CHROMA_SSL });

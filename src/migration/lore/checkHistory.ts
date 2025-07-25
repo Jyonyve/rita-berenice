@@ -5,11 +5,11 @@ import { HistoryMetadata } from '../../shared/domain/lore/LoreInterfaces.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
 import { loreStore } from '#server/index.js';
 
-const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev';
+// const CHROMA_URL = process.env.CHROMA_HOST;
 const TARGET_COLLECTION_NAME = COLLECTIONS.LORE;
 
 async function checkAllHistories() {
-	console.log(`Connecting to ChromaDB at: ${CHROMA_URL}`);
+	// console.log(`Connecting to ChromaDB at: ${CHROMA_URL}`);
 	try {
 		console.log(`Accessing collection "${TARGET_COLLECTION_NAME}"...`);
 		const collection: Collection = await loreStore._getCollection();
@@ -31,20 +31,22 @@ async function checkAllHistories() {
 			results.metadatas.forEach((metadata, index) => {
 				const typed = metadata;
 				console.log(`History ${index + 1}:`);
-				console.log(`  ID: ${typed?.historyId}`);
-				console.log(`  Title: ${typed?.title}`);
-				console.log(`  Generated Title: ${typed?.generatedTitle}`);
-				console.log(`  EnglishId: ${typed?.englishId}`);
-				console.log(`  Owner Characters: ${typed?.ownerCharacterIds}`);
-				console.log(`  Side Characters: ${typed?.sideCharacterIds}`);
-				console.log(`  Period: ${typed?.periodLabel} (${typed?.periodConfidence})`);
+				console.log(`  historyId: ${typed?.historyId}`);
+				console.log(`  title: ${typed?.title}`);
+				console.log(`  generatedTitle: ${typed?.generatedTitle}`);
+				console.log(`  englishId: ${typed?.englishId}`);
+				console.log(`  ownerCharacterIds: ${typed?.ownerCharacterIds}`);
+				console.log(`  sideCharacterIds: ${typed?.sideCharacterIds}`);
 				console.log(
-					`  Event Date: ${typed?.eventDateValue} (${typed?.eventDateType}, ${typed?.eventDateConfidence})`
+					`  periodLabel: ${typed?.periodLabel} periodConfidence :(${typed?.periodConfidence})`
 				);
-				console.log(`  Category: ${typed?.category}`);
+				console.log(
+					`  eventDateValue: ${typed?.eventDateValue} eventDateType: (${typed?.eventDateType}, eventDateConfidence: ${typed?.eventDateConfidence})`
+				);
+				console.log(`  category: ${typed?.category}`);
 				console.log('---');
 			});
-			console.log(`Total history documents: ${results.ids.length}`);
+			console.log(`Total history entities: ${results.ids.length}`);
 		}
 	} catch (error) {
 		console.error('Error checking all histories:', error);

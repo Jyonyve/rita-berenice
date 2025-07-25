@@ -16,7 +16,7 @@ import { chatStore, COLLECTIONS, loreStore } from '#server/index.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const CHROMA_URL = process.env.CHROMA_API_URL || 'https://chromadb-flyio.fly.dev';
+const CHROMA_URL = process.env.CHROMA_HOST;
 // --- Threshold Configuration ---
 const OVERALL_SIMILARITY_THRESHOLD = 0.25; // Main threshold for a turn-history pair to be considered relevant
 const INDIVIDUAL_TERM_MATCH_MIN_SCORE = 60; // Min score (0-100) for a keyword/entity/topic pair to count as a match

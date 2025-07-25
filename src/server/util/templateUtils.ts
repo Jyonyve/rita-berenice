@@ -423,7 +423,6 @@ Analyze the following single turn of conversation between ${userKor} (English: $
 *   **Character (${charKor}/${charEng}, Initial Emotion: ${charResponse.emotion}, Model: ${charResponse.model || 'N/A'}):** ${charResponseContent}
 
 **Analysis Guidelines:**
-${termGuidanceInstruction}
 - All metadata fields MUST be in English.
 - Use English names (${charEng}, ${userEng}) in entities and relationships.
 - For references, use the unique loreId or historyId, not the englishId.
@@ -443,7 +442,6 @@ ${userKor}(영어명: ${userEng}, ${userGender} 사용자)과 ${charKor}(영어�
 ${termGuidanceInstruction}
 - entities와 relationships에서 영어 이름 사용 (${charEng}, ${userEng}).
 - 모든 메타데이터 필드는 영어로만 작성해야 한다.
-- 참조에는 고유한 loreId/historyId를 사용해야 한다 (englishId가 아님).
 - 대화 내용을 바탕으로 모든 필드에 적절한 값을 제공해야 한다.
 `;
 	return basePrompt.trim();
