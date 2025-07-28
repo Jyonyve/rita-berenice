@@ -12,6 +12,7 @@ export const MAX_LLM_RETRIES = 2;
 export const REQUEST_CHARACTER_LIMIT = 1000 as const;
 export const RESPONSE_CHARACTER_LIMIT = 1000 as const;
 
+export const NA = 'N/A' as const;
 export const APPNAME = 'Rita-Berenice' as const;
 export const APPNAME_LOWERCASE = APPNAME.toLowerCase();
 

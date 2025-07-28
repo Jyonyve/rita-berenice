@@ -10,7 +10,7 @@ import {
 import { ChromaResponse, ProfileResponse } from '#shared/api/ModuleResponse.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import { buildProfileId } from '../../shared/util/buildIdUtils.js';
-import { flatProfileToDoc, inflateProfileDoc } from '../../shared/util/documentUtils.ts';
+import { flatProfileToDoc, inflateProfileDoc } from '../../shared/util/documentUtils.js';
 import { metadataToProfile } from '#shared/util/dbConvertUtils.js';
 import { createBasicProfileInfo, isProfileInfo } from '#shared/util/typeGuardUtils.js';
 
@@ -93,7 +93,7 @@ export const profileStore = {
 				$and: [{ type: { $eq: METADATA_TYPES.PROFILE } }, { sessionId: { $eq: sessionId } }],
 			};
 
-			const rawResults = await getRecords(collection, where, 1);
+			const rawResults = await getRecords(collection, where, undefined, 1);
 			const results = validateChromaResponse(rawResults, 'getOne', collectionType);
 			return profileStore._constructProfile(results);
 		} catch (error) {

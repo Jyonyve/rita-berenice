@@ -13,8 +13,8 @@ import {
 } from '#shared/util/index.js';
 import { parseSessionId, parseTextToEntries } from '#shared/util/chatParseUtils.js';
 import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
-import { EmotionValue, validEmotions } from '#shared/config/emotionWordsMapper.js';
-import { METADATA_TYPES } from '#shared/config/constants.js';
+import { DEFAULT_EMOTION, EmotionValue, validEmotions } from '#shared/config/emotionWordsMapper.js';
+import { METADATA_TYPES, NA } from '#shared/config/constants.js';
 import { chatStore } from '#server/store/chatStore.js';
 import { buildChatTurnMetadataPrompt } from '#server/util/templateUtils.js';
 import { mapTerms, termStore } from '#server/index.js';
@@ -28,10 +28,8 @@ const __dirname = path.dirname(__filename);
 
 // --- Configuration ---
 const CRAWLER_RESULT_DIR = path.join(__dirname, 'result');
-const EMOTION_DEFAULT: EmotionValue = 'neutral';
 const MAX_LLM_RETRIES = 3;
 const USER_ID = process.env.USER_ID || '6b335673-c837-43f9-a1c7-0b92c90edefb';
-const ENRICHMENT_MODEL = 'gemini-1.5-flash-latest'; // Fast model for metadata extraction
 const PROGRESS_DIR = path.join(__dirname, 'progress');
 const PROGRESS_FILE_PREFIX = 'initchat-progress';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -96,19 +94,19 @@ const createInitialProgress = (
 };
 
 const getDefaultEnrichedMetadata = () => ({
-	summary: 'N/A',
+	summary: NA,
 	keywords: [],
 	topics: [],
 	entities: [],
-	userEmotion: { primary: 'neutral', intensity: 0.5, nuances: [] },
-	characterEmotion: { primary: 'neutral', intensity: 0.5, nuances: [] },
+	userEmotion: { primary: DEFAULT_EMOTION, intensity: 0.5, nuanceList: [] },
+	characterEmotion: { primary: DEFAULT_EMOTION, intensity: 0.5, nuanceList: [] },
 	relationshipShifts: [],
-	dialogueAct: 'N/A',
+	dialogueAct: NA,
 	actions: [],
 	loreReferenceList: [],
 	historyReferenceList: [],
 	flags: [],
-	memoryChunk: 'N/A',
+	memoryChunk: NA,
 });
 
 const enrichChatTurnWithMetadata = async (
@@ -166,7 +164,7 @@ const enrichChatTurnWithMetadata = async (
 
 	// --- The rest of the function now uses the guaranteed clean data ---
 	const defineEmotion = (originalEmotion: string, newPrimaryEmotion: string): EmotionValue => {
-		return originalEmotion && originalEmotion !== 'neutral'
+		return originalEmotion && originalEmotion !== 'default'
 			? (originalEmotion as EmotionValue)
 			: (newPrimaryEmotion as EmotionValue);
 	};
@@ -181,8 +179,23 @@ const enrichChatTurnWithMetadata = async (
 			...basicTurn.response,
 			emotion: defineEmotion(basicTurn.response.emotion, enrichedData.characterEmotion.primary),
 		},
-		// Directly spread the validated data
-		...enrichedData,
+		// Spread the validated, structured data onto the turn object
+		summary: enrichedData.summary,
+		memoryChunk: enrichedData.memoryChunk,
+		dialogueAct: enrichedData.dialogueAct,
+		keywordList: enrichedData.keywords, // Renamed for clarity
+		topicList: enrichedData.topics, // Renamed for clarity
+		entityList: enrichedData.entities, // Renamed for clarity
+		actionList: enrichedData.actions, // Renamed for clarity
+		flagList: enrichedData.flags, // Renamed for clarity
+		relationshipShiftList: enrichedData.relationshipShifts,
+		userEmotion: { ...enrichedData.userEmotion, nuanceList: enrichedData.userEmotion.nuanceList },
+		characterEmotion: {
+			...enrichedData.characterEmotion,
+			nuanceList: enrichedData.characterEmotion.nuanceList,
+		},
+		loreReferenceList: enrichedData.loreReferenceList,
+		historyReferenceList: enrichedData.historyReferenceList,
 		characterId: basicTurn.characterId || parseSessionId(basicTurn.sessionId).characterId,
 		updatedAt: new Date().toISOString(),
 	};
@@ -197,12 +210,12 @@ async function processAndUpsertTurn(
 	currentIndex: number,
 	batchTotal: number
 ) {
-	let enrichedTurnResult: ChatTurn;
+	let enrichedTurn: ChatTurn;
 	try {
 		console.log(
-			`      🧠 [Batch ${currentIndex + 1}/${batchTotal}] Enriching turn with sequence: ${turnToProcess.sequence}...`
+			`       🧠 [Batch ${currentIndex + 1}/${batchTotal}] Enriching turn seq: ${turnToProcess.sequence}...`
 		);
-		enrichedTurnResult = await enrichChatTurnWithMetadata(
+		enrichedTurn = await enrichChatTurnWithMetadata(
 			turnToProcess,
 			termGuidanceMap,
 			existingLoreIds,
@@ -213,53 +226,56 @@ async function processAndUpsertTurn(
 		const errorMessage =
 			enrichmentError instanceof Error ? enrichmentError.message : String(enrichmentError);
 		console.error(
-			`      ❌ LLM Enrichment failed for turn ${turnToProcess.sequence}: ${errorMessage}`
+			`       ❌ LLM Enrichment failed for turn ${turnToProcess.sequence}: ${errorMessage}`
 		);
 		progress.errors.push({
 			sequence: turnToProcess.sequence,
 			error: `Enrichment failed: ${errorMessage}`,
 			timestamp: new Date().toISOString(),
 		});
-		enrichedTurnResult = {
+		enrichedTurn = {
 			...turnToProcess,
 			...getDefaultEnrichedMetadata(),
 			characterId: turnToProcess.characterId || parseSessionId(turnToProcess.sessionId).characterId,
 			updatedAt: new Date().toISOString(),
 		};
-		console.warn(`      ↪️ Using default (rich) metadata for turn ${turnToProcess.sequence}.`);
+		console.warn(`       ↪️ Using default (rich) metadata for turn ${turnToProcess.sequence}.`);
 		progress.fallbackSavedTurnsCount++;
 	}
 	try {
-		await chatStore._storeFullChatTurn(enrichedTurnResult);
-		progress.lastProcessedSequence = enrichedTurnResult.sequence;
+		await chatStore.storeChatTurn(enrichedTurn);
+
+		progress.lastProcessedSequence = enrichedTurn.sequence;
 		console.log(
-			`      ✅ [Batch ${currentIndex + 1}/${batchTotal}] Turn ${enrichedTurnResult.sequence} saved.`
+			`       ✅ [Batch ${currentIndex + 1}/${batchTotal}] Turn ${enrichedTurn.sequence} and its indexes saved.`
 		);
 	} catch (dbError) {
 		const dbErrorMessage = dbError instanceof Error ? dbError.message : String(dbError);
 		console.error(
-			`      💥 CRITICAL DB Error saving turn ${enrichedTurnResult.sequence}: ${dbErrorMessage}`
+			`       💥 CRITICAL DB Error saving turn ${enrichedTurn.sequence}: ${dbErrorMessage}`
 		);
 		progress.errors.push({
-			sequence: enrichedTurnResult.sequence,
+			sequence: enrichedTurn.sequence,
 			error: `DB Upsert failed: ${dbErrorMessage}`,
 			timestamp: new Date().toISOString(),
 		});
 		progress.status = 'failed';
 		await saveInitProgress(progress);
-		throw new Error(`CRITICAL DB Error for turn ${enrichedTurnResult.sequence}: ${dbErrorMessage}`);
+		throw new Error(`CRITICAL DB Error for turn ${enrichedTurn.sequence}: ${dbErrorMessage}`);
 	}
 }
 
 async function initChatFromLogFiles() {
 	console.log(`🚀 Starting chat initialization script...`);
 	if (!GEMINI_API_KEY || !GROQ_API_KEY) {
-		console.error('🚨 GEMINI_API_KEY or GROQ_API_KEY is not set in environment variables. Aborting.');
+		console.error('🚨 API keys not set. Aborting.');
 		process.exit(1);
 	}
 	console.log(`Ensuring connection to ChromaDB...`);
+	// Correctly check only for the collection managed by chatStore
 	await chatStore._getChatCollection();
 	console.log(`Collection "${COLLECTIONS.CHAT}" is ready.`);
+
 	const allLogFiles = (await fs.readdir(CRAWLER_RESULT_DIR)).filter((file) =>
 		file.endsWith('.json')
 	);
@@ -299,11 +315,12 @@ async function initChatFromLogFiles() {
 			`      Found ${existingLoreIds.length} lore and ${existingHistoryIds.length} history documents.`
 		);
 
-		const { displayTurns: existingTurnsInDB } = await chatStore.getAllChatTurns(TARGET_SESSION_ID);
+		const { displayTurns: existingTurnsInDB } =
+			await chatStore.getChatHistoryForDisplay(TARGET_SESSION_ID);
 		const latestSequenceInDB =
 			existingTurnsInDB.length > 0 ? Math.max(...existingTurnsInDB.map((t) => t.sequence)) : -1;
 		console.log(
-			`      🔍 DB Check: Found ${existingTurnsInDB.length} turns. Latest sequence is ${latestSequenceInDB}.`
+			`     🔍 DB Check: Found ${existingTurnsInDB.length} turns. Latest sequence is ${latestSequenceInDB}.`
 		);
 
 		const fileContent = await fs.readFile(path.join(CRAWLER_RESULT_DIR, logFile), 'utf-8');
@@ -337,13 +354,14 @@ async function initChatFromLogFiles() {
 					messageId: buildMessageId(TARGET_SESSION_ID, currentSequence, 'request'),
 					messageType: 'request',
 					entries: parseTextToEntries(userLog.content),
-					emotion: EMOTION_DEFAULT,
+					emotion: DEFAULT_EMOTION,
 					createdAt: userLog.createdAt,
 					updatedAt: userLog.updatedAt || userLog.createdAt,
 					showName: userLog.showName || '요니브',
 					type: METADATA_TYPES.MESSAGE,
 					sessionId: TARGET_SESSION_ID,
 					sequence: currentSequence,
+					model: 'none',
 				};
 				const responseMessage: ChatMessage = {
 					role: 'assistant',
@@ -353,10 +371,10 @@ async function initChatFromLogFiles() {
 					emotion:
 						botLog.emotion && validEmotions.has(botLog.emotion)
 							? (botLog.emotion as EmotionValue)
-							: EMOTION_DEFAULT,
+							: DEFAULT_EMOTION,
 					createdAt: botLog.createdAt,
 					updatedAt: botLog.updatedAt || botLog.createdAt,
-					model: botLog.model,
+					model: botLog.model || 'none',
 					sessionId: TARGET_SESSION_ID,
 					showName: botLog.showName,
 					type: METADATA_TYPES.MESSAGE,
@@ -371,12 +389,16 @@ async function initChatFromLogFiles() {
 					response: responseMessage,
 					chatTurnId: buildChatTurnId(TARGET_SESSION_ID, currentSequence),
 					type: METADATA_TYPES.TURN,
-					requestMessageId: requestMessage.messageId,
-					responseMessageId: responseMessage.messageId,
 					createdAt: userLog.createdAt,
 					characterId,
 					updatedAt: new Date().toISOString(),
 					...getDefaultEnrichedMetadata(),
+					keywordList: [],
+					topicList: [],
+					entityList: [],
+					actionList: [],
+					flagList: [],
+					relationshipShiftList: [],
 				};
 				basicTurnsFromLog.push(basicTurn);
 			} else {

@@ -9,7 +9,7 @@ import { ChromaResponse, Term, TermResponse } from '#shared/api/ModuleResponse.j
 
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
-import { flatTermToDoc, inflateTermDoc } from '../../shared/util/documentUtils.ts';
+import { flatTermToDoc, inflateTermDoc } from '../../shared/util/documentUtils.js';
 import { isTermInfo } from '#shared/util/typeGuardUtils.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import { llmService } from '../service/llmService.js';
@@ -181,7 +181,7 @@ export const termStore = {
 			],
 		};
 		try {
-			const rawResults = await chromaDbClient.getRecords(collection, where, 1); // Expecting one or none
+			const rawResults = await chromaDbClient.getRecords(collection, where, undefined, 1); // Expecting one or none
 			const results = validateChromaResponse(rawResults, 'getOne', collectionType); // Adapt validation if needed
 			return termStore._constuctTermInfo(results);
 		} catch (error: any) {

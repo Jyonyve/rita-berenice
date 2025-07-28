@@ -5,7 +5,7 @@ import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
 import { chromaDbClient } from '../db/chromaDbClient.js';
 import { RecapResponse } from '#shared/api/ModuleResponse.js';
-import { recapToDocument } from '#shared/util/documentUtils.ts';
+import { recapToDocument } from '#shared/util/documentUtils.js';
 import { recapToMetadata, metadataToRecap } from '#shared/util/dbConvertUtils.js';
 import {
 	RecapInfo,
@@ -31,11 +31,11 @@ export const recapStore = {
 	_recapCollection: null as Collection | null,
 
 	async _getCollection(): Promise<Collection> {
-		if (this._recapCollection) {
-			return this._recapCollection;
+		if (recapStore._recapCollection) {
+			return recapStore._recapCollection;
 		}
 		const collection = await getRecapCollection();
-		this._recapCollection = collection;
+		recapStore._recapCollection = collection;
 		return collection;
 	},
 
@@ -44,7 +44,7 @@ export const recapStore = {
 	 * Creates or updates the denormalized search index records for a given Recap.
 	 */
 	async _updateSearchIndexForRecap(recap: RecapInfo): Promise<void> {
-		const collection = await this._getCollection();
+		const collection = await recapStore._getCollection();
 		const recapId = recap.recapId;
 
 		// 1. Atomically delete all existing index entries for this recap.
@@ -112,12 +112,12 @@ export const recapStore = {
 		}
 
 		try {
-			const collection = await this._getCollection();
+			const collection = await recapStore._getCollection();
 			const metadata = recapToMetadata(recapInfo);
 			const document = recapToDocument(recapInfo);
 
 			await upsertRecord(collection, metadata.recapId, document, metadata);
-			await this._updateSearchIndexForRecap(recapInfo);
+			await recapStore._updateSearchIndexForRecap(recapInfo);
 		} catch (error) {
 			handleServiceError(error, `Failed to store recap ${recapInfo.recapId}`);
 		}

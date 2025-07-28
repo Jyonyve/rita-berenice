@@ -8,9 +8,10 @@ import {
 	buildProfileId,
 } from './buildIdUtils.js';
 import { ChatTurn, ChatTurnCdo } from '../domain/chat/ChatInterfaces.js';
-import { c } from 'node_modules/vite/dist/node/moduleRunnerTransport.d-DJ_mE5sf.js';
 import { parseSessionId } from './chatParseUtils.js';
 import { HistoryCdo, HistoryInfo, LoreCdo, LoreInfo } from '../domain/lore/LoreInterfaces.js';
+import { NA } from '../config/constants.js';
+import { DEFAULT_EMOTION } from '../config/emotionWordsMapper.js';
 
 //type guard
 export function isTermInfo(term: TermCdo | TermInfo): term is TermInfo {
@@ -60,23 +61,21 @@ export const createBasicChatTurn = (cdo: ChatTurnCdo): ChatTurn => {
 		updatedAt: now,
 		chatTurnId,
 		profileId,
-		requestMessageId: '',
-		responseMessageId: '',
 		type: 'turn',
 		characterId,
-		summary: 'N/A',
-		keywords: [],
-		topics: [],
-		entities: [],
-		userEmotion: { primary: 'neutral', intensity: 0.5, nuances: [] },
-		characterEmotion: { primary: 'neutral', intensity: 0.5, nuances: [] },
-		relationshipShifts: [],
-		dialogueAct: 'N/A',
-		actions: [],
+		summary: '',
+		keywordList: [],
+		topicList: [],
+		entityList: [],
+		userEmotion: { primary: DEFAULT_EMOTION, intensity: 0.5, nuanceList: [] },
+		characterEmotion: { primary: DEFAULT_EMOTION, intensity: 0.5, nuanceList: [] },
+		dialogueAct: NA,
+		actionList: [],
+		relationshipShiftList: [],
+		flagList: [],
+		memoryChunk: '',
 		loreReferenceList: [],
 		historyReferenceList: [],
-		flags: [],
-		memoryChunk: 'N/A',
 	};
 };
 
@@ -84,10 +83,6 @@ export const createBasicHistory = (cdo: HistoryCdo): HistoryInfo => {
 	const now = new Date().toISOString();
 	return {
 		content: cdo.content,
-		ownerCharacterIdArray: [],
-		sideCharacterIdArray: [],
-		allAffectedCharacterIdArray: [],
-		relatedEventsArray: [],
 		createdAt: now,
 		updatedAt: now,
 		title: cdo.title,
@@ -99,14 +94,13 @@ export const createBasicHistory = (cdo: HistoryCdo): HistoryInfo => {
 		category: 'character_history',
 		summary: '',
 		periodLabel: 'Unknown',
-		periodConfidence: 0.5,
 		eventDateValue: 'Unknown',
 		eventDateType: 'relative_to_event',
-		eventDateConfidence: 0.5,
 		characterId: cdo.characterId,
-		keywords: '',
-		topics: '',
-		entities: '',
-		sequence: 0,
+		sideCharacterIdList: [],
+		allAffectedCharacterIdList: [],
+		relatedEventList: [],
+		keywordList: [],
+		profileId: '',
 	};
 };

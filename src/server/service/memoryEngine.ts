@@ -1,6 +1,6 @@
 // src/server/services/memoryEngine.ts
 
-import { METADATA_TYPES } from '#shared/config/constants.js';
+import { METADATA_TYPES, NA } from '#shared/config/constants.js';
 
 import { buildChatTurnMetadataPrompt } from '../util/templateUtils.js';
 import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
@@ -61,7 +61,7 @@ function _extractChatTurnMetadataInfoFromLlm(
 				? enrichment.characterEmotion.nuanceList
 				: [],
 		},
-		dialogueAct: enrichment.dialogueAct || 'N/A',
+		dialogueAct: enrichment.dialogueAct || NA,
 		memoryChunk: enrichment.memoryChunk || '',
 		loreReferenceList: Array.isArray(enrichment.loreReferenceList)
 			? enrichment.loreReferenceList

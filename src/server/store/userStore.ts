@@ -5,7 +5,7 @@ import { METADATA_TYPES } from '#shared/config/constants.js';
 import { UserInfo, UserMetadata } from '#shared/domain/user/UserInterfaces.js';
 import { ChromaResponse, UserResponse } from '#shared/api/ModuleResponse.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
-import { flatUserToDoc, inflateUserDoc } from '../../shared/util/documentUtils.ts';
+import { flatUserToDoc, inflateUserDoc } from '../../shared/util/documentUtils.js';
 import { metadataToUser } from '#shared/util/dbConvertUtils.js';
 
 const { getUserCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
@@ -78,7 +78,7 @@ export const userStore = {
 			$and: [{ type: { $eq: METADATA_TYPES.USER } }, { contact: { $eq: contact } }],
 		};
 		try {
-			const rawResults = await getRecords(collection, where, 1);
+			const rawResults = await getRecords(collection, where, undefined, 1);
 			const results = validateChromaResponse(rawResults, 'getOne', collectionType);
 			return userStore._constructUser(results);
 		} catch (error) {
@@ -96,7 +96,7 @@ export const userStore = {
 			$and: [{ type: { $eq: METADATA_TYPES.USER } }, { email: { $eq: email } }],
 		};
 		try {
-			const rawResults = await getRecords(collection, where, 1);
+			const rawResults = await getRecords(collection, where, undefined, 1);
 			const results = validateChromaResponse(rawResults, 'getOne', collectionType);
 			return userStore._constructUser(results);
 		} catch (error) {

@@ -5,7 +5,7 @@ import { METADATA_TYPES } from '#shared/config/constants.js';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { chromaDbClient } from '../db/chromaDbClient.js';
 import { ChromaResponse, HistoryResponse, LoreResponse } from '#shared/api/ModuleResponse.js';
-import { loreOrHistoryToDocument } from '../../shared/util/documentUtils.ts';
+import { loreOrHistoryToDocument } from '../../shared/util/documentUtils.js';
 import {
 	HistoryInfo,
 	HistoryMetadata,
@@ -222,6 +222,67 @@ export const loreStore = {
 		}
 	},
 
+	/**
+	 * Retrieves a single, fully reconstructed Lore object by its ID.
+	 * @param loreId The unique identifier for the lore.
+	 * @returns A LoreResponse containing the single lore object.
+	 */
+	async getLore(loreId: string): Promise<LoreResponse> {
+		try {
+			const collection = await loreStore._getCollection();
+
+			// 1. Fetch the primary LORE document by its unique ID.
+			const rawLoreResult = await getRecordById(collection, loreId);
+			const primaryLoreResult = validateChromaResponse(rawLoreResult, 'getOne', collectionType);
+
+			// If no document is found, return the empty response immediately.
+			if (primaryLoreResult.ids.length === 0) {
+				console.warn(`[getLore] No lore document found with ID: ${loreId}`);
+				return emptyLoreRes;
+			}
+
+			const loreMetadata = primaryLoreResult.metadatas?.[0] || {};
+			const loreDocument = primaryLoreResult.documents[0] || '';
+
+			// 2. Fetch all associated LORE_INDEX records for this specific loreId.
+			const indexWhereClause: Where = {
+				$and: [
+					{ type: { $eq: METADATA_TYPES.LORE } },
+					{ contentId: { $eq: loreId } }, // Direct match, more efficient than $in
+				],
+			};
+			const rawIndexResults = await getRecords(collection, indexWhereClause);
+			const indexResults = validateChromaResponse(rawIndexResults, 'getList', collectionType);
+			const indexMetadatas = (indexResults.metadatas || []) as unknown as LoreIndexMetadata[];
+
+			// 3. Reconstruct the single, rich Lore object.
+			const loreInfo: LoreInfo = metadataToLore(
+				loreMetadata as unknown as LoreMetadata,
+				loreDocument,
+				indexMetadatas
+			);
+
+			// 4. Return the response object populated with the single lore.
+			return {
+				ids: [loreInfo.loreId],
+				metadatas: [loreMetadata],
+				documents: [loreDocument], // Or include index documents if needed
+				loreInfos: [loreInfo],
+				loreInfo: loreInfo,
+				loreContent: loreInfo.content,
+				loreContents: [loreInfo.content],
+			};
+		} catch (error) {
+			// Handle other potential errors.
+			handleServiceError(
+				error,
+				'An internal error occurred in [getLore].',
+				`Failed to get lore for ID ${loreId}`,
+				{ suppress404: true }
+			);
+		}
+	},
+
 	// --- HISTORY OPERATIONS ---
 
 	async storeHistory(historyInfo: HistoryInfo): Promise<void> {
@@ -290,6 +351,66 @@ export const loreStore = {
 			};
 		} catch (error) {
 			handleServiceError(error, `Failed to get histories for character ${characterId}`);
+		}
+	},
+	/**
+	 * Retrieves a single, fully reconstructed Lore object by its ID.
+	 * @param historyId The unique identifier for the lore.
+	 * @returns A LoreResponse containing the single lore object.
+	 */
+	async getHistory(historyId: string): Promise<HistoryResponse> {
+		try {
+			const collection = await loreStore._getCollection();
+
+			// 1. Fetch the primary LORE document by its unique ID.
+			const rawHisResult = await getRecordById(collection, historyId);
+			const primaryHisResult = validateChromaResponse(rawHisResult, 'getOne', collectionType);
+
+			// If no document is found, return the empty response immediately.
+			if (primaryHisResult.ids.length === 0) {
+				console.warn(`[getLore] No lore document found with ID: ${historyId}`);
+				return emptyHisRes;
+			}
+
+			const hisMetadata = primaryHisResult.metadatas?.[0] || {};
+			const hisDocument = primaryHisResult.documents[0] || '';
+
+			// 2. Fetch all associated LORE_INDEX records for this specific loreId.
+			const indexWhereClause: Where = {
+				$and: [
+					{ type: { $eq: METADATA_TYPES.HISTORY } },
+					{ contentId: { $eq: historyId } }, // Direct match, more efficient than $in
+				],
+			};
+			const rawIndexResults = await getRecords(collection, indexWhereClause);
+			const indexResults = validateChromaResponse(rawIndexResults, 'getList', collectionType);
+			const indexMetadatas = (indexResults.metadatas || []) as unknown as LoreIndexMetadata[];
+
+			// 3. Reconstruct the single, rich Lore object.
+			const historyInfo: HistoryInfo = metadataToHistory(
+				hisMetadata as unknown as HistoryMetadata,
+				hisDocument,
+				indexMetadatas
+			);
+
+			// 4. Return the response object populated with the single lore.
+			return {
+				ids: [historyInfo.historyId],
+				metadatas: [hisMetadata],
+				documents: [hisDocument], // Or include index documents if needed
+				historyInfos: [historyInfo],
+				historyInfo: historyInfo,
+				historyContent: historyInfo.content,
+				historyContents: [historyInfo.content],
+			};
+		} catch (error) {
+			// Handle other potential errors.
+			handleServiceError(
+				error,
+				'An internal error occurred in [getLore].',
+				`Failed to get lore for ID ${historyId}`,
+				{ suppress404: true }
+			);
 		}
 	},
 

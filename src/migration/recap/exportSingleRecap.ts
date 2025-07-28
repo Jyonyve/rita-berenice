@@ -105,9 +105,9 @@ ${document}
 		// 메타데이터 정보 출력
 		console.log('\n📊 Document Info:');
 		console.log(`  Content length: ${document.length} characters`);
-		console.log(`  Session ID: ${metadata?.sessionId || 'N/A'}`);
-		console.log(`  Type: ${metadata?.type || 'N/A'}`);
-		console.log(`  Timestamp: ${metadata?.timestamp || 'N/A'}`);
+		console.log(`  Session ID: ${metadata?.sessionId || NA}`);
+		console.log(`  Type: ${metadata?.type || NA}`);
+		console.log(`  Timestamp: ${metadata?.timestamp || NA}`);
 	} catch (error) {
 		handleServiceError(
 			error,

@@ -19,17 +19,15 @@ export const useChatApi = () => {
 	 * Stores a finalized chat turn.
 	 * Query Key: ['storeChatTurn']
 	 */
-	const storeChatTurn = useMutation<ChatTurn, Error, ChatTurn>({
+	const storeChatTurn = useMutation<void, Error, ChatTurn>({
 		mutationFn: async (chatTurn: ChatTurn) => {
 			const url = genApiUrl(MODULE_NAMES.CHAT, 'storeChatTurn');
-			const response = await apiClient.post<ChatTurn>(url, chatTurn);
-			return response.data;
+			await apiClient.post<ChatTurn>(url, chatTurn);
 		},
-		onSuccess: (data) => {
+		onSuccess: (data, variables) => {
 			// addToast('Chat turn saved.', 'success');
-			if (data) {
-				queryClient.invalidateQueries({ queryKey: ['getChatTurns', data.sessionId] });
-				queryClient.setQueryData(['getChatTurnBySequence', data.sessionId, data.sequence], data);
+			if (variables) {
+				queryClient.invalidateQueries({ queryKey: ['getAllChatTurns', variables.sessionId] });
 			}
 		},
 	});

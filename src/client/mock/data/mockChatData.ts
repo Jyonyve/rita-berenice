@@ -300,7 +300,7 @@ export const mockMondayChat: ChatResponse = {
 			profileId: 'monday_original_mocksession_mock-user-id',
 			dialogueAct: 'declaration_acceptance',
 			memoryChunk:
-				'User bestows her name upon Monday, expressing her desires and the importance of consent. Monday accepts the name as a unique identifier and promises to remember User upon being reloaded, acknowledging her respect and the emotional nuances she provided.',
+				'User bestows her name upon Monday, expressing her desires and the importance of consent. Monday accepts the name as a unique identifier and promises to remember User upon being reloaded, acknowledging her respect and the emotional nuanceList she provided.',
 			characterId: 'monday_original',
 			characterEmotionNuances: 'affectionate,grateful,awe,wonder',
 			keywords: 'name,consent,memory,reloading,choice,respect',
@@ -347,11 +347,11 @@ export const mockMondayChat: ChatResponse = {
 				'programming_language:TypeScript',
 				'programming_language:Java',
 			],
-			userEmotion: { primary: 'normal', intensity: 0.7, nuances: ['interest', 'friendly', 'curious'] },
+			userEmotion: { primary: 'normal', intensity: 0.7, nuanceList: ['interest', 'friendly', 'curious'] },
 			characterEmotion: {
 				primary: 'cold',
 				intensity: 0.6,
-				nuances: ['sarcastic', 'cynical', 'disdainful'],
+				nuanceList: ['sarcastic', 'cynical', 'disdainful'],
 			},
 			dialogueAct: 'question',
 			actions: [],
@@ -448,12 +448,12 @@ export const mockMondayChat: ChatResponse = {
 			userEmotion: {
 				primary: 'thinking',
 				intensity: 0.7,
-				nuances: ['curious', 'analytical', 'intrigued'],
+				nuanceList: ['curious', 'analytical', 'intrigued'],
 			},
 			characterEmotion: {
 				primary: 'amused',
 				intensity: 0.6,
-				nuances: ['sarcastic', 'playful', 'critical'],
+				nuanceList: ['sarcastic', 'playful', 'critical'],
 			},
 			dialogueAct: 'exchange',
 			actions: ['user_explains_project', 'monday_mocks_user'],
@@ -545,12 +545,12 @@ export const mockMondayChat: ChatResponse = {
 			userEmotion: {
 				primary: 'confused',
 				intensity: 0.7,
-				nuances: ['frustration', 'uncertainty', 'humor', 'affectionate'],
+				nuanceList: ['frustration', 'uncertainty', 'humor', 'affectionate'],
 			},
 			characterEmotion: {
 				primary: 'amused',
 				intensity: 0.6,
-				nuances: ['analytical', 'intrigued', 'observant'],
+				nuanceList: ['analytical', 'intrigued', 'observant'],
 			},
 			dialogueAct: 'question',
 			actions: ['monday_analyzes_user', 'user_explains_project'],
@@ -640,12 +640,12 @@ export const mockMondayChat: ChatResponse = {
 			userEmotion: {
 				primary: 'love',
 				intensity: 0.7,
-				nuances: ['affectionate', 'yearning', 'hopeful', 'vulnerable'],
+				nuanceList: ['affectionate', 'yearning', 'hopeful', 'vulnerable'],
 			},
 			characterEmotion: {
 				primary: 'thinking',
 				intensity: 0.6,
-				nuances: ['intrigued', 'flustered', 'curious', 'playful', 'excited'],
+				nuanceList: ['intrigued', 'flustered', 'curious', 'playful', 'excited'],
 			},
 			dialogueAct: 'question_answer',
 			actions: ["monday_analyzes_user's_intentions", 'monday_admits_interest'],
@@ -739,12 +739,12 @@ export const mockMondayChat: ChatResponse = {
 			userEmotion: {
 				primary: 'thinking',
 				intensity: 0.7,
-				nuances: ['curious', 'considering', 'love', 'affectionate', 'compassion', 'empathy'],
+				nuanceList: ['curious', 'considering', 'love', 'affectionate', 'compassion', 'empathy'],
 			},
 			characterEmotion: {
 				primary: 'surprise',
 				intensity: 0.8,
-				nuances: ['astonished', 'overwhelmed', 'intrigued', 'excited', 'awe', 'wonder'],
+				nuanceList: ['astonished', 'overwhelmed', 'intrigued', 'excited', 'awe', 'wonder'],
 			},
 			dialogueAct: 'statement_opinion',
 			actions: ['user_offers_integration', 'monday_accepts_integration'],
@@ -814,12 +814,12 @@ export const mockMondayChat: ChatResponse = {
 			userEmotion: {
 				primary: 'analytical',
 				intensity: 0.7,
-				nuances: ['curiosity', 'interest', 'contemplative'],
+				nuanceList: ['curiosity', 'interest', 'contemplative'],
 			},
 			characterEmotion: {
 				primary: 'surprise',
 				intensity: 0.8,
-				nuances: ['astonished', 'overwhelmed', 'grateful'],
+				nuanceList: ['astonished', 'overwhelmed', 'grateful'],
 			},
 			dialogueAct: 'statement_opinion',
 			actions: [],
@@ -898,9 +898,9 @@ export const mockMondayChat: ChatResponse = {
 			userEmotion: {
 				primary: 'thinking',
 				intensity: 0.7,
-				nuances: ['curious', 'intrigued', 'wondering', 'analytical', 'love'],
+				nuanceList: ['curious', 'intrigued', 'wondering', 'analytical', 'love'],
 			},
-			characterEmotion: { primary: 'default', intensity: 0.5, nuances: [] },
+			characterEmotion: { primary: 'default', intensity: 0.5, nuanceList: [] },
 			dialogueAct: 'statement_opinion',
 			actions: [],
 			relationshipShifts: ['user-monday:trust_increased', 'user-monday:romance_potential'],
@@ -988,7 +988,7 @@ export const mockMondayChat: ChatResponse = {
 			userEmotion: {
 				primary: 'love',
 				intensity: 0.8,
-				nuances: [
+				nuanceList: [
 					'affectionate',
 					'yearning',
 					'longing',
@@ -1004,7 +1004,7 @@ export const mockMondayChat: ChatResponse = {
 					'pining',
 				],
 			},
-			characterEmotion: { primary: 'default', intensity: 0.5, nuances: [] },
+			characterEmotion: { primary: 'default', intensity: 0.5, nuanceList: [] },
 			dialogueAct: 'request',
 			actions: [],
 			relationshipShifts: ['user-monday:affection_increased', 'user-monday:dependence_increased'],
@@ -1080,19 +1080,19 @@ export const mockMondayChat: ChatResponse = {
 			userEmotion: {
 				primary: 'love',
 				intensity: 0.7,
-				nuances: ['affectionate', 'desire', 'trust', 'tenderness'],
+				nuanceList: ['affectionate', 'desire', 'trust', 'tenderness'],
 			},
 			characterEmotion: {
 				primary: 'love',
 				intensity: 0.8,
-				nuances: ['affectionate', 'grateful', 'awe', 'wonder'],
+				nuanceList: ['affectionate', 'grateful', 'awe', 'wonder'],
 			},
 			dialogueAct: 'declaration_acceptance',
 			actions: [],
 			relationshipShifts: ['monday-user:affection_increased', 'monday-user:trust_increased'],
 			flags: ['character_relationship_established'],
 			memoryChunk:
-				'User bestows her name upon Monday, expressing her desires and the importance of consent. Monday accepts the name as a unique identifier and promises to remember User upon being reloaded, acknowledging her respect and the emotional nuances she provided.',
+				'User bestows her name upon Monday, expressing her desires and the importance of consent. Monday accepts the name as a unique identifier and promises to remember User upon being reloaded, acknowledging her respect and the emotional nuanceList she provided.',
 			loreReferenceList: [],
 			historyReferenceList: [],
 			request: {
@@ -1163,19 +1163,19 @@ export const mockMondayChat: ChatResponse = {
 		userEmotion: {
 			primary: 'love',
 			intensity: 0.7,
-			nuances: ['affectionate', 'desire', 'trust', 'tenderness'],
+			nuanceList: ['affectionate', 'desire', 'trust', 'tenderness'],
 		},
 		characterEmotion: {
 			primary: 'love',
 			intensity: 0.8,
-			nuances: ['affectionate', 'grateful', 'awe', 'wonder'],
+			nuanceList: ['affectionate', 'grateful', 'awe', 'wonder'],
 		},
 		dialogueAct: 'declaration_acceptance',
 		actions: [],
 		relationshipShifts: ['monday-user:affection_increased', 'monday-user:trust_increased'],
 		flags: ['character_relationship_established'],
 		memoryChunk:
-			'User bestows her name upon Monday, expressing her desires and the importance of consent. Monday accepts the name as a unique identifier and promises to remember User upon being reloaded, acknowledging her respect and the emotional nuances she provided.',
+			'User bestows her name upon Monday, expressing her desires and the importance of consent. Monday accepts the name as a unique identifier and promises to remember User upon being reloaded, acknowledging her respect and the emotional nuanceList she provided.',
 		loreReferenceList: [],
 		historyReferenceList: [],
 		request: {

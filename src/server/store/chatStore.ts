@@ -15,7 +15,7 @@ import {
 	TempChatTurn,
 	TempChatTurnMetadata,
 } from '#shared/domain/chat/ChatInterfaces.js';
-import { flatChatMessageToDoc, chatTurnToDocument } from '#shared/util/documentUtils.ts';
+import { flatChatMessageToDoc, chatTurnToDocument } from '#shared/util/documentUtils.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import {
 	chatTurnToMetadata,

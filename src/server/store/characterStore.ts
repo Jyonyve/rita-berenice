@@ -4,7 +4,7 @@ import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
 import { chromaDbClient } from '../db/chromaDbClient.js';
 import { CharacterResponse, ChromaResponse } from '#shared/api/ModuleResponse.js';
-import { flatCharacterToDoc, inflateCharacterDoc } from '../../shared/util/documentUtils.ts';
+import { flatCharacterToDoc, inflateCharacterDoc } from '../../shared/util/documentUtils.js';
 import { validateChromaResponse, handleServiceError } from '../util/serviceHelpers.js';
 import { metadataToCharacter } from '#shared/util/dbConvertUtils.js';
 import {
@@ -103,10 +103,7 @@ export const characterStore = {
 		}
 	},
 
-	getCharactersByShowName: async (
-		showName: string,
-		limit: number = -1
-	): Promise<CharacterResponse> => {
+	getCharactersByShowName: async (showName: string): Promise<CharacterResponse> => {
 		const collection = await characterStore._getCollection();
 		const where: Where = {
 			$and: [
@@ -115,7 +112,7 @@ export const characterStore = {
 			],
 		};
 		try {
-			const rawResults = await getRecords(collection, where, limit);
+			const rawResults = await getRecords(collection, where);
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 
 			return characterStore._constructCharacter(results);

@@ -79,7 +79,7 @@ export const createChatTurnMetadataSchema = (
 				.min(0.0)
 				.max(1.0)
 				.describe('The intensity of the primary emotion, from 0.0 to 1.0.'),
-			nuances: z
+			nuanceList: z
 				.array(z.string())
 				.describe("An array of specific emotion words, e.g., ['frustration', 'curiosity']"),
 		}),
@@ -92,7 +92,7 @@ export const createChatTurnMetadataSchema = (
 				.min(0.0)
 				.max(1.0)
 				.describe('The intensity of the primary emotion, from 0.0 to 1.0.'),
-			nuances: z
+			nuanceList: z
 				.array(z.string())
 				.describe("An array of specific emotion words, e.g., ['defensive', 'sadness']"),
 		}),

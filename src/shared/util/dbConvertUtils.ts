@@ -326,9 +326,9 @@ export const removeHistoryReference = (
 };
 
 export const updateEmotionIntensity = (
-	emotion: { primary: string; intensity: number; nuances: string[] },
+	emotion: { primary: string; intensity: number; nuanceList: string[] },
 	newIntensity: number
-): { primary: string; intensity: number; nuances: string[] } => {
+): { primary: string; intensity: number; nuanceList: string[] } => {
 	return {
 		...emotion,
 		intensity: Math.max(0, Math.min(1, newIntensity)), // Clamp between 0 and 1
@@ -336,21 +336,21 @@ export const updateEmotionIntensity = (
 };
 
 export const addEmotionNuance = (
-	emotion: { primary: string; intensity: number; nuances: string[] },
+	emotion: { primary: string; intensity: number; nuanceList: string[] },
 	newNuance: string
-): { primary: string; intensity: number; nuances: string[] } => {
-	if (emotion.nuances.includes(newNuance)) {
+): { primary: string; intensity: number; nuanceList: string[] } => {
+	if (emotion.nuanceList.includes(newNuance)) {
 		return emotion; // Already exists
 	}
 
-	return { ...emotion, nuances: [...emotion.nuances, newNuance] };
+	return { ...emotion, nuanceList: [...emotion.nuanceList, newNuance] };
 };
 
 export const removeEmotionNuance = (
-	emotion: { primary: string; intensity: number; nuances: string[] },
+	emotion: { primary: string; intensity: number; nuanceList: string[] },
 	nuanceToRemove: string
-): { primary: string; intensity: number; nuances: string[] } => {
-	return { ...emotion, nuances: emotion.nuances.filter((nuance) => nuance !== nuanceToRemove) };
+): { primary: string; intensity: number; nuanceList: string[] } => {
+	return { ...emotion, nuanceList: emotion.nuanceList.filter((nuance) => nuance !== nuanceToRemove) };
 };
 
 // --- RECAP HELPERS ---

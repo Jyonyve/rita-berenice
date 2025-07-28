@@ -7,6 +7,7 @@ import { HistoryInfo, LoreInfo } from '#shared/domain/lore/LoreInterfaces.js';
 import { MemoryResponse } from '#shared/api/ModuleResponse.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { LangCode } from '#shared/config/langConstants.js';
+import { NA } from '#shared/config/constants.js';
 
 const REALATIONSHIP_CHARACTERS_LIMIT: number = 3000 as const;
 const FACTUAL_CHARACTERS_LIMIT: number = 1500 as const;
@@ -420,7 +421,7 @@ Analyze the following single turn of conversation between ${userKor} (English: $
 *   **Session ID:** ${userRequest.sessionId}
 *   **Turn Sequence:** ${userRequest.sequence}
 *   **User (${userKor}/${userEng}, Initial Emotion: ${userRequest.emotion}):** ${userRequestContent}
-*   **Character (${charKor}/${charEng}, Initial Emotion: ${charResponse.emotion}, Model: ${charResponse.model || 'N/A'}):** ${charResponseContent}
+*   **Character (${charKor}/${charEng}, Initial Emotion: ${charResponse.emotion}, Model: ${charResponse.model || NA}):** ${charResponseContent}
 
 **Analysis Guidelines:**
 - All metadata fields MUST be in English.
@@ -436,7 +437,7 @@ ${userKor}(영어명: ${userEng}, ${userGender} 사용자)과 ${charKor}(영어�
 *   **세션 ID:** ${userRequest.sessionId}
 *   **턴 순서:** ${userRequest.sequence}
 *   **사용자 (${userKor}/${userEng}, 초기 감정: ${userRequest.emotion}):** ${userRequestContent}
-*   **캐릭터 (${charKor}/${charEng}, 초기 감정: ${charResponse.emotion}, 모델: ${charResponse.model || 'N/A'}):** ${charResponseContent}
+*   **캐릭터 (${charKor}/${charEng}, 초기 감정: ${charResponse.emotion}, 모델: ${charResponse.model || NA}):** ${charResponseContent}
 
 **중요 지침:**
 ${termGuidanceInstruction}
@@ -847,7 +848,7 @@ ${content}
 **Contextual Information:**
 - Available Character IDs: ${availableCharacterIds.join(', ')}
 - Existing History Entries:
-${existingHistoryEntries.map((h) => `- "${h.originalTitle}" (ID: ${h.historyId})`).join('\n') || 'N/A'}
+${existingHistoryEntries.map((h) => `- "${h.originalTitle}" (ID: ${h.historyId})`).join('\n') || NA}
 
 **Instructions:**
 - Analyze the event content to generate the required metadata.

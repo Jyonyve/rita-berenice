@@ -1,6 +1,6 @@
 // src/server/services/orchestrationService.ts (Updated)
 
-import { ABORT_TIMEOUT, METADATA_TYPES } from '#shared/config/constants.js';
+import { ABORT_TIMEOUT, METADATA_TYPES, NA } from '#shared/config/constants.js';
 import {
 	ChatMessageSet,
 	ChatTurn,
@@ -21,6 +21,7 @@ import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { tempStore } from '../store/tempStore.js';
 import { MemoryResponse, PersonaResponse } from '#shared/api/ModuleResponse.js';
 import { detectLanguage } from '../util/languageUtils.js';
+import { createBasicChatTurn } from '#shared/util/typeGuardUtils.js';
 
 const timerLabel = (sequence: number) => `RESPONSE_GENERATION: Turn ${sequence}`;
 
@@ -110,35 +111,7 @@ export const finalizeChatTurn = async (chatTurnCdo: ChatTurnCdo): Promise<ChatTu
 		// 1. Enrich the chat turn metadata using the memoryEngine's existing logic
 		//    The enrichChatTurnMetadataViaLlm expects a full ChatTurn, so we build one from the Cdo.
 		//    Note: You might need to add characterId to ChatTurnCdo if enrichChatTurnMetadataViaLlm uses it.
-		const basicChatTurn: ChatTurn = {
-			characterId: parseSessionId(sessionId).characterId,
-			userId: chatTurnCdo.userId,
-			profileId: buildProfileId(chatTurnCdo.sessionId, chatTurnCdo.userId),
-			request: chatTurnCdo.request,
-			response: chatTurnCdo.response,
-			sessionId: chatTurnCdo.sessionId,
-			sequence: chatTurnCdo.sequence,
-			chatTurnId: '', // Assuming chatStore or a shared util has this
-			type: METADATA_TYPES.TURN, // Mark as fixed turn
-			createdAt: '',
-			updatedAt: '',
-			// These will be filled by enrichment or remain empty if not enriched for this field
-			summary: '',
-			keywords: [],
-			topics: [],
-			entities: [],
-			userEmotion: { primary: 'neutral', intensity: 0.5, nuances: [] },
-			characterEmotion: { primary: 'neutral', intensity: 0.5, nuances: [] },
-			dialogueAct: 'N/A',
-			actions: [],
-			relationshipShifts: [],
-			flags: [],
-			memoryChunk: '',
-			loreReferenceList: [],
-			historyReferenceList: [],
-			requestMessageId: '',
-			responseMessageId: '',
-		};
+		const basicChatTurn: ChatTurn = createBasicChatTurn(chatTurnCdo);
 
 		const enrichedChatTurn = await memoryEngine.enrichChatTurnViaLlm(basicChatTurn);
 
@@ -218,12 +191,13 @@ async function _generateAndAppendResponse(
 ): Promise<TempChatTurn> {
 	// 1. Recall relevant memories for context.
 	let recalledMemories: MemoryResponse;
+	const recentChatTurn: ChatTurn[] = JSON.parse(recentChatTurnString);
 	try {
 		recalledMemories = await memoryEngine.recallRelevantMemories(
 			tempTurn.sessionId,
 			userInput,
 			tempTurn.userId,
-			recentChatTurnString,
+			recentChatTurn,
 			aiModelInfo
 		);
 		// --- 2. LOG CHECKPOINT 2 ---
@@ -233,7 +207,7 @@ async function _generateAndAppendResponse(
 			console.warn(`[Orchestrator] No memories found for session. Proceeding with empty context.`);
 			recalledMemories = {
 				langCode: detectLanguage(userInput),
-				shortTermHistory: JSON.parse(recentChatTurnString) ?? [],
+				shortTermHistory: recentChatTurn ?? [],
 				longTermHistory: [],
 				relevantLore: [],
 				relevantHistory: [],

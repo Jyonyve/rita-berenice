@@ -9,6 +9,7 @@ import {
 } from '../domain/chat/ChatInterfaces.js';
 import { DEFAULT_EMOTION } from '../config/emotionWordsMapper.js';
 import { buildCharacterId } from '#shared/util/buildIdUtils.js';
+import { NA } from '../config/constants.js';
 
 export const convertStringToArray = (input: string): string[] => {
 	if (!input || typeof input !== 'string') {
@@ -81,7 +82,7 @@ export const parseChatTurnToMetadata = (turn: ChatTurn): ChatTurnMetadata => {
 		responseJson: JSON.stringify(turn.response),
 
 		// Enriched metadata (flattened for ChromaDB)
-		summary: turn.summary || 'N/A',
+		summary: turn.summary || NA,
 
 		// Flattened emotion objects
 		userEmotionPrimary: turn.userEmotion?.primary || DEFAULT_EMOTION,
@@ -91,8 +92,8 @@ export const parseChatTurnToMetadata = (turn: ChatTurn): ChatTurnMetadata => {
 		characterEmotionIntensity: turn.characterEmotion?.intensity || 0.5,
 
 		// Other fields
-		dialogueAct: turn.dialogueAct || 'N/A',
-		memoryChunk: turn.memoryChunk || 'N/A',
+		dialogueAct: turn.dialogueAct || NA,
+		memoryChunk: turn.memoryChunk || NA,
 
 		// Complex objects as JSON strings
 		loreReferenceList: jsonStringifyOrEmpty(turn.loreReferenceList),

@@ -99,3 +99,7 @@ export interface HistoryInfo extends HistoryMetadata {
 	relatedEventList: RelatedEvent[];
 	keywordList: string[];
 }
+
+// --- CDO TYPES ---
+export type HistoryCdo = Pick<HistoryInfo, 'content' | 'title' | 'userId' | 'characterId'>;
+export type LoreCdo = Pick<LoreInfo, 'content' | 'userId' | 'characterId'>;

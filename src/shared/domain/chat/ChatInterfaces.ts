@@ -67,7 +67,7 @@ export interface ChatTurnMetadata {
 	memoryChunk: string;
 	dialogueAct: string;
 
-	// Flattened primary emotion data and nuances
+	// Flattened primary emotion data and nuanceList
 	userEmotionPrimary: string;
 	userEmotionIntensity: number;
 	characterEmotionPrimary: string;
@@ -99,7 +99,14 @@ export interface ChatIndexMetadata {
 export interface ChatTurn
 	extends Omit<
 		ChatTurnMetadata,
-		'loreReferenceList' | 'historyReferenceList' | 'requestJson' | 'responseJson'
+		| 'loreReferenceList'
+		| 'historyReferenceList'
+		| 'requestJson'
+		| 'responseJson'
+		| 'userEmotionPrimary'
+		| 'userEmotionIntensity'
+		| 'characterEmotionPrimary'
+		| 'characterEmotionIntensity'
 	> {
 	keywordList: string[];
 	topicList: string[];

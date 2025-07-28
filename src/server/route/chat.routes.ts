@@ -41,8 +41,8 @@ router.post(
 				`API HIT: POST ${path} for sessionId: ${req.body.sessionId}, sequence: ${req.body.sequence}`
 			);
 
-			const storedTurnString = await chatStore.storeChatTurn(req.body);
-			res.status(201).json(storedTurnString);
+			await chatStore.storeChatTurn(req.body);
+			res.status(201).json();
 		}
 	)
 );
@@ -61,48 +61,48 @@ router.get(
 	})
 );
 
-/**
- * GET /api/chat/get-chat-turns/:sessionId
- * Retrieves previous chat turns for a session, used for loading history.
- * @param {string} sessionId - The session ID to fetch turns for.
- * @query {number} beforeSequence - Fetches turns with a sequence number less than this value.
- * @returns {ChatResponse} An object containing the list of chat turns.
- */
-router.get(
-	genRoutePattern('getChatTurns', ['sessionId']),
-	asyncHandler(async (req: Request, res: Response<ChatResponse>): Promise<void> => {
-		const { sessionId } = req.params;
-		validateServiceId(sessionId, collectionType);
+// /**
+//  * GET /api/chat/get-chat-turns/:sessionId
+//  * Retrieves previous chat turns for a session, used for loading history.
+//  * @param {string} sessionId - The session ID to fetch turns for.
+//  * @query {number} beforeSequence - Fetches turns with a sequence number less than this value.
+//  * @returns {ChatResponse} An object containing the list of chat turns.
+//  */
+// router.get(
+// 	genRoutePattern('getChatTurns', ['sessionId']),
+// 	asyncHandler(async (req: Request, res: Response<ChatResponse>): Promise<void> => {
+// 		const { sessionId } = req.params;
+// 		validateServiceId(sessionId, collectionType);
 
-		const queryRequiredField = 'beforeSequence';
-		validateRequestData(
-			req.query,
-			'query',
-			[queryRequiredField],
-			[validateSequenceRule(queryRequiredField)]
-		);
+// 		const queryRequiredField = 'beforeSequence';
+// 		validateRequestData(
+// 			req.query,
+// 			'query',
+// 			[queryRequiredField],
+// 			[validateSequenceRule(queryRequiredField)]
+// 		);
 
-		const beforeSequence = parseInt(req.query[queryRequiredField] as string, 10);
-		const path = genRoutePattern('getChatTurns', ['sessionId']);
-		console.log(
-			`API HIT: GET ${path.replace(':sessionId', sessionId)}?beforeSequence=${beforeSequence}`
-		);
+// 		const beforeSequence = parseInt(req.query[queryRequiredField] as string, 10);
+// 		const path = genRoutePattern('getChatTurns', ['sessionId']);
+// 		console.log(
+// 			`API HIT: GET ${path.replace(':sessionId', sessionId)}?beforeSequence=${beforeSequence}`
+// 		);
 
-		const response = await chatStore.getChatTurns(sessionId, beforeSequence);
-		res.status(200).json(response);
-	})
-);
+// 		const response = await chatStore.getChatTurns(sessionId, beforeSequence);
+// 		res.status(200).json(response);
+// 	})
+// );
 
 /**
  * GET /api/chat/get-chat-turn-by-sequence/:sessionId/:sequence
  * Retrieves a single, specific chat turn by its sequence number.
  * @param {string} sessionId - The session ID of the turn.
  * @param {number} sequence - The sequence number of the turn.
- * @returns {ChatResponse} An object containing the single chat turn.
+ * @returns {ChatTurn} An object containing the single chat turn.
  */
 router.get(
 	genRoutePattern('getChatTurnBySequence', ['sessionId', 'sequence']),
-	asyncHandler(async (req: Request, res: Response<ChatResponse>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<ChatTurn>): Promise<void> => {
 		const { sessionId, sequence: sequenceParam } = req.params;
 		validateServiceId(sessionId, collectionType);
 		validateRequestData(req.params, 'params', ['sequence'], [validateSequenceRule('sequence')]);

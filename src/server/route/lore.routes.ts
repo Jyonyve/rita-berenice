@@ -87,7 +87,7 @@ router.post(
  */
 router.post(
 	genRoutePattern('queryLores'),
-	asyncHandler(async (req: Request, res: Response<LoreResponse>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<LoreInfo[]>): Promise<void> => {
 		const requiredFields = ['characterId', 'queryTexts'];
 		validateRequestData(req.body, 'body', requiredFields);
 
@@ -159,7 +159,7 @@ router.post(
  */
 router.post(
 	genRoutePattern('queryHistories'),
-	asyncHandler(async (req: Request, res: Response<HistoryResponse>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<HistoryInfo[]>): Promise<void> => {
 		const requiredFields = ['characterId', 'queryTexts'];
 		validateRequestData(req.body, 'body', requiredFields);
 

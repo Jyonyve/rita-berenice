@@ -9,7 +9,7 @@ import { HistoryInfo } from '../../shared/domain/lore/LoreInterfaces.js';
 import { COLLECTIONS } from '../../server/db/ChromaInterfaces.js';
 import { historyToMetadata } from '../../shared/util/dbConvertUtils.js';
 import { buildHistoryId } from '../../shared/util/buildIdUtils.js';
-import { loreOrHistoryToDocument } from '../../shared/util/documentUtils.ts';
+import { loreOrHistoryToDocument } from '../../shared/util/documentUtils.js';
 import { buildHistoryMetadataPrompt } from '../../server/util/templateUtils.js';
 import e from 'express';
 import { METADATA_TYPES } from '#shared/config/constants.js';
