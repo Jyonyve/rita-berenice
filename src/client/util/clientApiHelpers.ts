@@ -38,7 +38,7 @@ export function setupApiClient(
 			if (error?.response?.status === 404 && originalRequest._suppress404Error) {
 				// By rejecting the promise directly here, we bypass the logging and toasting logic below,
 				// allowing the calling code (e.g., React Query's `retry` function) to handle it silently.
-				return Promise.reject(error);
+				return Promise.resolve({ data: null });
 			}
 
 			// Handle 401 Unauthorized for session refresh

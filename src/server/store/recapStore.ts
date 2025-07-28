@@ -50,9 +50,9 @@ export const recapStore = {
 		// 1. Atomically delete all existing index entries for this recap.
 		await deleteRecordById(collection, recapId);
 
-		const newIndexRecords: { id: string; metadata: RecapIndexMetadata }[] = [];
+		const newIndexRecords: { id: string; metadata: RecapIndexMetadata; document: string }[] = [];
 		const baseMetadata = {
-			type: recap.type,
+			type: METADATA_TYPES.INDEX,
 			recapId: recapId,
 			sessionId: recap.sessionId,
 			characterId: recap.characterId,
@@ -64,6 +64,7 @@ export const recapStore = {
 				newIndexRecords.push({
 					id: buildRecapIndexId(recapId, contentType),
 					metadata: { ...baseMetadata, contentType, value },
+					document: value,
 				});
 			}
 		};
@@ -76,7 +77,7 @@ export const recapStore = {
 			await upsertRecords(
 				collection,
 				newIndexRecords.map((r) => r.id),
-				[], // Documents not needed for index entries
+				newIndexRecords.map((r) => r.document),
 				newIndexRecords.map((r) => r.metadata)
 			);
 		}

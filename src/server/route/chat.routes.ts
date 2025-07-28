@@ -61,37 +61,24 @@ router.get(
 	})
 );
 
-// /**
-//  * GET /api/chat/get-chat-turns/:sessionId
-//  * Retrieves previous chat turns for a session, used for loading history.
-//  * @param {string} sessionId - The session ID to fetch turns for.
-//  * @query {number} beforeSequence - Fetches turns with a sequence number less than this value.
-//  * @returns {ChatResponse} An object containing the list of chat turns.
-//  */
-// router.get(
-// 	genRoutePattern('getChatTurns', ['sessionId']),
-// 	asyncHandler(async (req: Request, res: Response<ChatResponse>): Promise<void> => {
-// 		const { sessionId } = req.params;
-// 		validateServiceId(sessionId, collectionType);
+/**
+ * GET /api/chat/get-chat-turns/:sessionId
+ * Retrieves previous chat turns for a session, used for loading history.
+ * @param {string} sessionId - The session ID to fetch turns for.
+ * @returns {ChatResponse} An object containing the list of chat turns.
+ */
+router.get(
+	genRoutePattern('getChatHistoryForDisplay', ['sessionId']),
+	asyncHandler(async (req: Request, res: Response<ChatResponse>): Promise<void> => {
+		const { sessionId } = req.params;
+		validateServiceId(sessionId, collectionType);
+		const path = genRoutePattern('getChatHistoryForDisplay', ['sessionId']);
+		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
 
-// 		const queryRequiredField = 'beforeSequence';
-// 		validateRequestData(
-// 			req.query,
-// 			'query',
-// 			[queryRequiredField],
-// 			[validateSequenceRule(queryRequiredField)]
-// 		);
-
-// 		const beforeSequence = parseInt(req.query[queryRequiredField] as string, 10);
-// 		const path = genRoutePattern('getChatTurns', ['sessionId']);
-// 		console.log(
-// 			`API HIT: GET ${path.replace(':sessionId', sessionId)}?beforeSequence=${beforeSequence}`
-// 		);
-
-// 		const response = await chatStore.getChatTurns(sessionId, beforeSequence);
-// 		res.status(200).json(response);
-// 	})
-// );
+		const response = await chatStore.getChatHistoryForDisplay(sessionId);
+		res.status(200).json(response);
+	})
+);
 
 /**
  * GET /api/chat/get-chat-turn-by-sequence/:sessionId/:sequence

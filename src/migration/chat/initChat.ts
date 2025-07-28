@@ -14,7 +14,7 @@ import {
 import { parseSessionId, parseTextToEntries } from '#shared/util/chatParseUtils.js';
 import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
 import { DEFAULT_EMOTION, EmotionValue, validEmotions } from '#shared/config/emotionWordsMapper.js';
-import { METADATA_TYPES, NA } from '#shared/config/constants.js';
+import { APPNAME, METADATA_TYPES, NA } from '#shared/config/constants.js';
 import { chatStore } from '#server/store/chatStore.js';
 import { buildChatTurnMetadataPrompt } from '#server/util/templateUtils.js';
 import { mapTerms, termStore } from '#server/index.js';
@@ -22,6 +22,7 @@ import { createChatTurnMetadataSchema } from '#server/util/schemaUtils.js';
 import { loreStore } from '#server/store/loreStore.js';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { ChatGroq } from '@langchain/groq';
+import { ChatOpenAI } from '@langchain/openai';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,6 +35,7 @@ const PROGRESS_DIR = path.join(__dirname, 'progress');
 const PROGRESS_FILE_PREFIX = 'initchat-progress';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
 // --- Progress Tracking Interfaces and Functions ---
 interface InitChatProgress {
@@ -115,15 +117,12 @@ const enrichChatTurnWithMetadata = async (
 	existingLoreIds: string[],
 	existingHistoryIds: string[]
 ): Promise<ChatTurn> => {
-	// --- Create the dynamic Zod schema using your existing factory ---
 	const chatTurnSchema = createChatTurnMetadataSchema(
 		basicTurn.request.showName,
 		basicTurn.response.showName,
 		existingLoreIds,
 		existingHistoryIds
 	);
-
-	// --- Create the prompt for the LLM ---
 	const prompt = buildChatTurnMetadataPrompt(
 		{ showName: basicTurn.request.showName, name: 'yonyve', gender: 'female' },
 		basicTurn.request,
@@ -131,38 +130,59 @@ const enrichChatTurnWithMetadata = async (
 		basicTurn.response,
 		termGuidanceMap
 	);
-
 	let enrichedData: z.infer<typeof chatTurnSchema>;
 
 	try {
-		// --- Attempt to use Gemini first ---
-		console.log(`      📞 Calling Gemini via LangChain with schema enforcement...`);
-		const geminiClient = new ChatGoogleGenerativeAI({
-			apiKey: process.env.GEMINI_API_KEY,
-			model: 'gemini-1.5-flash-latest',
-			temperature: 0.3,
-			maxOutputTokens: 2048,
-		});
-
-		const structuredGemini = geminiClient.withStructuredOutput(chatTurnSchema);
-		enrichedData = await structuredGemini.invoke(prompt);
-	} catch (geminiError) {
-		console.error(`      💥 Gemini (LangChain) failed:`, geminiError);
-		console.log(`      🔁 Falling back to Groq...`);
-
-		// --- Fallback to Groq on Gemini failure ---
-		const groqClient = new ChatGroq({
-			apiKey: process.env.GROQ_API_KEY,
-			model: 'llama3-70b-8192',
+		// --- 1. Attempt to use OpenRouter first ---
+		console.log(
+			`       📞 Calling OpenRouter (google/gemini-2.5-flash-lite) with schema enforcement...`
+		);
+		const openRouterClient = new ChatOpenAI({
+			apiKey: OPENROUTER_API_KEY,
+			model: 'google/gemini-2.5-flash-lite',
 			temperature: 0.3,
 			maxTokens: 2048,
+			configuration: {
+				baseURL: 'https://openrouter.ai/api/v1',
+				defaultHeaders: {
+					'HTTP-Referer': 'https://github.com/Jyonyve/rita-berenice',
+					'X-Title': APPNAME,
+				},
+			},
 		});
+		const structuredOpenRouter = openRouterClient.withStructuredOutput(chatTurnSchema);
+		enrichedData = await structuredOpenRouter.invoke(prompt);
+	} catch (openRouterError) {
+		console.error(`       💥 OpenRouter failed:`, openRouterError);
+		console.log(`       🔁 Falling back to direct Gemini...`);
 
-		const structuredGroq = groqClient.withStructuredOutput(chatTurnSchema);
-		enrichedData = await structuredGroq.invoke(prompt);
+		try {
+			// --- 2. Fallback to direct Google Gemini ---
+			const geminiClient = new ChatGoogleGenerativeAI({
+				apiKey: GEMINI_API_KEY,
+				model: 'gemini-2.0-flash',
+				temperature: 0.3,
+				maxOutputTokens: 2048,
+			});
+			const structuredGemini = geminiClient.withStructuredOutput(chatTurnSchema);
+			enrichedData = await structuredGemini.invoke(prompt);
+		} catch (geminiError) {
+			console.error(`       💥 Direct Gemini also failed:`, geminiError);
+			console.log(`       🔁 Falling back to Groq...`);
+
+			// --- 3. Final fallback to Groq ---
+			const groqClient = new ChatGroq({
+				apiKey: GROQ_API_KEY,
+				model: 'llama3-70b-8192',
+				temperature: 0.3,
+				maxTokens: 2048,
+			});
+			const structuredGroq = groqClient.withStructuredOutput(chatTurnSchema);
+			enrichedData = await structuredGroq.invoke(prompt);
+		}
 	}
 
-	// --- The rest of the function now uses the guaranteed clean data ---
+	// --- Data mapping (unchanged) ---
 	const defineEmotion = (originalEmotion: string, newPrimaryEmotion: string): EmotionValue => {
 		return originalEmotion && originalEmotion !== 'default'
 			? (originalEmotion as EmotionValue)
@@ -179,16 +199,15 @@ const enrichChatTurnWithMetadata = async (
 			...basicTurn.response,
 			emotion: defineEmotion(basicTurn.response.emotion, enrichedData.characterEmotion.primary),
 		},
-		// Spread the validated, structured data onto the turn object
 		summary: enrichedData.summary,
 		memoryChunk: enrichedData.memoryChunk,
 		dialogueAct: enrichedData.dialogueAct,
-		keywordList: enrichedData.keywords, // Renamed for clarity
-		topicList: enrichedData.topics, // Renamed for clarity
-		entityList: enrichedData.entities, // Renamed for clarity
-		actionList: enrichedData.actions, // Renamed for clarity
-		flagList: enrichedData.flags, // Renamed for clarity
-		relationshipShiftList: enrichedData.relationshipShifts,
+		keywordList: enrichedData.keywordList,
+		topicList: enrichedData.topicList,
+		entityList: enrichedData.entityList,
+		actionList: enrichedData.actionList,
+		flagList: enrichedData.flagList,
+		relationshipShiftList: enrichedData.relationshipShiftList,
 		userEmotion: { ...enrichedData.userEmotion, nuanceList: enrichedData.userEmotion.nuanceList },
 		characterEmotion: {
 			...enrichedData.characterEmotion,

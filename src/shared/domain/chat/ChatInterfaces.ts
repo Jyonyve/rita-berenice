@@ -83,7 +83,7 @@ export interface ChatTurnMetadata {
  * The single, unified metadata structure for all search index records.
  */
 export interface ChatIndexMetadata {
-	type: typeof METADATA_TYPES.TURN;
+	type: typeof METADATA_TYPES.INDEX;
 	contentType: ChatIndexContentType;
 	chatTurnId: string;
 	value: string;

@@ -1,9 +1,10 @@
 // Save this file as scripts/initSession.ts
 
 import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
-import { chromaDbClient, flatSessionToDoc, sessionStore } from '#server/index.js';
+import { chromaDbClient, sessionStore } from '#server/index.js';
 import { SessionInfo, SessionMetadata } from '#shared/domain/index.js';
 import { buildProfileId, METADATA_TYPES } from '#shared/index.js';
+import { flatSessionToDoc } from '#shared/util/documentUtils.js';
 
 const userId = '6b335673-c837-43f9-a1c7-0b92c90edefb';
 const getTarionOriginalSessionTemplate = (sessionId: string): SessionInfo => {
@@ -63,9 +64,9 @@ async function initSession() {
 		// Step 1: GET the collection directly.
 		console.log(`Getting collection "${COLLECTIONS.SESSION}"...`);
 		const collection = await chromaDbClient.getSessionCollection();
-		// const sessionInfo = getTarionOriginalSessionTemplate();
+		const sessionInfo = getMondaySessionTemplate('monday_original_gKBOnr26');
 		// const sessionInfo = getTarionSpinoffSessionTemplate();
-		const sessionInfo = getTarionOriginalSessionTemplate('tarion_original_dw2xVb8s');
+		// const sessionInfo = getTarionOriginalSessionTemplate('tarion_original_dw2xVb8s');
 
 		// Step 4: Prepare the record for ChromaDB.
 		// The document is the text to be embedded for semantic search.

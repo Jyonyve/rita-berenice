@@ -16,7 +16,7 @@
 		"prod": "pnpm run build && pnpm run start",
 		"init:char": "tsx --env-file .env ./src/migration/character/initCharacter.ts",
 		"check:char": "tsx --env-file .env ./src/migration/character/checkCharacter.ts",
-		"crawl:chat": "tsx ./src/migration/chat/crawlChat.ts",
+		"crawl": "tsx ./src/migration/chat/crawlChat.ts",
 		"valid:chat": "tsx ./src/migration/chat/validateChat.ts",
 		"init:chat": "tsx --env-file .env ./src/migration/chat/initChat.ts",
 		"check:chat": "tsx --env-file .env ./src/migration/chat/checkChat.ts",

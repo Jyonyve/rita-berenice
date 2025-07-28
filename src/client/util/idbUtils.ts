@@ -1,7 +1,7 @@
 // src/client/util/idbUtils.ts
 
 import { openDB, IDBPDatabase } from 'idb';
-import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { ChatTurn, DisplayTurn } from '#shared/domain/chat/ChatInterfaces.js';
 
 const DB_NAME = 'ChatTurnDB';
 const STORE_NAME = 'messages';
@@ -50,7 +50,7 @@ export const getCachedMessages = async (
 };
 
 // No change needed here, as the keyPath is set on the object
-export const saveMessagesToCache = async (messages: ChatTurn[]) => {
+export const saveMessagesToCache = async (messages: DisplayTurn[]) => {
 	const db = await initDB();
 	const tx = db.transaction(STORE_NAME, 'readwrite');
 	for (const msg of messages) {
@@ -60,7 +60,9 @@ export const saveMessagesToCache = async (messages: ChatTurn[]) => {
 };
 
 // This function is now session-specific
-export const loadAllCachedMessagesForSession = async (sessionId: string): Promise<ChatTurn[]> => {
+export const loadAllCachedMessagesForSession = async (
+	sessionId: string
+): Promise<DisplayTurn[]> => {
 	const db = await initDB();
 	const tx = db.transaction(STORE_NAME, 'readonly');
 	const index = tx.store.index('by-session');

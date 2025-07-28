@@ -1,4 +1,4 @@
-import { ChatTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { DisplayTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { FC } from 'react';
 import { FixedTurnDisplay } from './FixedTurnDisplay.jsx';
 import { TempTurnDisplay } from './TempTurnDisplay.jsx';
@@ -6,7 +6,7 @@ import { TempTurnDisplay } from './TempTurnDisplay.jsx';
 // The props interface is now much simpler.
 // It receives the specific 'turn' to render, not the whole list.
 export interface ChatLogRowProps {
-	turn: ChatTurn | TempChatTurn;
+	turn: DisplayTurn | TempChatTurn;
 	isTemp: boolean; // Flag to determine which component to render
 	isProcessing: boolean;
 	currentTempSetNo: number;
@@ -53,7 +53,7 @@ const ChatLogRow: FC<ChatLogRowProps> = ({
 
 	// Otherwise, it's a fixed historical turn.
 	//TODO add onEdit
-	return <FixedTurnDisplay turn={turn as ChatTurn} />;
+	return <FixedTurnDisplay turn={turn as DisplayTurn} />;
 };
 
 export default ChatLogRow;

@@ -13,8 +13,8 @@ async function checkSeededData(sessionId: string) {
 		console.log(`Accessing collection "${TARGET_COLLECTION_NAME}" for session ID: ${sessionId}...`);
 
 		const result = await chatStore.getAllChatTurns(sessionId);
-		console.log(`✅ Found ${result.displayTurns.length} chat turns for the session.`);
-		console.log(result.displayTurns.reverse().slice(0, 3));
+		console.log(`✅ Found ${result.chatTurns.length} chat turns for the session.`);
+		console.log(result.chatTurns.reverse().slice(0, 3));
 	} catch (error) {
 		// Handle cases where the collection or data might not exist
 		if (error instanceof Error && error.message.includes('does not exist')) {

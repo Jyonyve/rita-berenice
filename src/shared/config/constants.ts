@@ -53,6 +53,7 @@ export const METADATA_TYPES = {
 	DOCUMENT: 'document',
 	TERM: 'term',
 	USER: 'user',
+	INDEX: 'index',
 } as const;
 
 export type MetadataType = (typeof METADATA_TYPES)[keyof typeof METADATA_TYPES];

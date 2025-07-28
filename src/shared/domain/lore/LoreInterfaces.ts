@@ -63,7 +63,7 @@ export interface HistoryMetadata {
  */
 export interface LoreIndexMetadata {
 	// The type of the parent document (LORE or HISTORY)
-	type: typeof METADATA_TYPES.LORE | typeof METADATA_TYPES.HISTORY;
+	type: typeof METADATA_TYPES.INDEX;
 
 	// What kind of attribute this index entry represents
 	contentType: LoreIndexContentType;

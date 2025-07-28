@@ -34,7 +34,7 @@ export interface RecapMetadata {
  */
 export interface RecapIndexMetadata {
 	// The type of the parent document
-	type: typeof METADATA_TYPES.RECAP | typeof METADATA_TYPES.RELATIONSHIP;
+	type: typeof METADATA_TYPES.INDEX;
 
 	// What kind of attribute this index entry represents
 	contentType: RecapIndexContentType;
@@ -57,9 +57,10 @@ export interface RecapIndexMetadata {
  * and then querying the index for all RECAP_FLAG records matching the recapId
  * to reconstruct the flagsArray.
  */
-export interface RecapInfo extends Omit<RecapMetadata, 'loreReferenceList' | 'historyReferenceList'> {
-    content: string;
-    flagList: string[];
-    loreReferenceList: Reference[];
-    historyReferenceList: Reference[];
+export interface RecapInfo
+	extends Omit<RecapMetadata, 'loreReferenceList' | 'historyReferenceList'> {
+	content: string;
+	flagList: string[];
+	loreReferenceList: Reference[];
+	historyReferenceList: Reference[];
 }

@@ -160,21 +160,34 @@ export const chatStore = {
 			return metadataToDisplayTurn(metadata);
 		});
 	},
-
 	/**
 	 * @private
 	 * Creates or updates the denormalized search index records for a given ChatTurn.
-	 * This is the core of the indexed search strategy.
+	 * This is the core of the indexed search strategy for faceted filtering.
 	 */
 	async _updateSearchIndexForTurn(turn: ChatTurn): Promise<void> {
 		const collection = await chatStore._getChatCollection();
 
-		// 1. Delete all existing index entries for chatStore turn to prevent duplicates on update.
-		await deleteRecordById(collection, turn.chatTurnId);
+		// --- 1. Correctly delete all EXISTING INDEX entries for this turn ---
+		// We must query for all documents with the correct type and chatTurnId, then delete them.
+		try {
+			const oldIndexWhere: Where = {
+				$and: [{ type: { $eq: METADATA_TYPES.INDEX } }, { chatTurnId: { $eq: turn.chatTurnId } }],
+			};
+			await collection.delete({ where: oldIndexWhere });
+		} catch (error) {
+			// It's safe to ignore errors here if no old indexes were found.
+			console.warn(
+				`[store] Could not delete old indexes for turn ${turn.sequence}, they may not have existed.`
+			);
+		}
 
-		const newIndexRecords: { id: string; metadata: ChatIndexMetadata }[] = [];
+		// --- 2. Create new index records with UNIQUE IDs and document content ---
+		const newIndexRecords: { id: string; document: string; metadata: ChatIndexMetadata }[] = [];
+
 		const baseMetadata = {
-			type: METADATA_TYPES.TURN,
+			// Index records must have their own type to distinguish them from the primary turn document.
+			type: METADATA_TYPES.INDEX,
 			chatTurnId: turn.chatTurnId,
 			sessionId: turn.sessionId,
 			characterId: turn.characterId,
@@ -183,15 +196,22 @@ export const chatStore = {
 
 		// Helper to create index records for a given list and content type
 		const createIndexRecords = (list: string[], contentType: ChatIndexContentType) => {
+			if (!list || list.length === 0) return; // Skip empty lists
+
 			for (const value of list) {
+				if (!value || value.trim() === '') continue; // Skip empty or whitespace-only values
+
 				newIndexRecords.push({
+					// ID must be unique. Combining turnId, type, and value is a robust strategy.
 					id: buildChatTurnIndexId(turn.chatTurnId, contentType),
+					// The value itself is the best content to embed for the search.
+					document: value,
 					metadata: { ...baseMetadata, contentType, value },
 				});
 			}
 		};
 
-		// 2. Create new index records for every filterable attribute
+		// Create new index records for every filterable attribute
 		createIndexRecords(turn.keywordList, 'KEYWORD');
 		createIndexRecords(turn.topicList, 'TOPIC');
 		createIndexRecords(turn.entityList, 'ENTITY');
@@ -201,14 +221,25 @@ export const chatStore = {
 		createIndexRecords(turn.userEmotion.nuanceList, 'USER_EMOTION_NUANCE');
 		createIndexRecords(turn.characterEmotion.nuanceList, 'CHARACTER_EMOTION_NUANCE');
 
-		// 3. Batch upsert the new index records
+		// --- 3. Batch upsert the new index records only if there are any ---
 		if (newIndexRecords.length > 0) {
-			await upsertRecords(
-				collection,
-				newIndexRecords.map((r) => r.id),
-				[], // Documents are not needed for index entries
-				newIndexRecords.map((r) => r.metadata)
-			);
+			try {
+				await upsertRecords(
+					collection,
+					newIndexRecords.map((r) => r.id),
+					// This is the critical fix: provide the documents for embedding.
+					newIndexRecords.map((r) => r.document),
+					newIndexRecords.map((r) => r.metadata)
+				);
+			} catch (error) {
+				handleServiceError(
+					error,
+					'An internal error occurred in [_updateSearchIndexForTurn].',
+					`Failed to upsert search indexes for turn ${turn.chatTurnId}`
+				);
+			}
+		} else {
+			console.log(`[store] No new indexable content found for turn ${turn.sequence}.`);
 		}
 	},
 

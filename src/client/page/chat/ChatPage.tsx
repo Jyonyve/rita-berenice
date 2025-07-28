@@ -37,7 +37,7 @@ export const ChatPage: FC<{
 	const { showError } = useErrorDialog();
 
 	// Get emotion context from Loader
-	const { currentEmotion, setCurrentEmotion, imageUrl } = useEmotionContext();
+	const { setCurrentEmotion, imageUrl } = useEmotionContext();
 
 	// Responsive detection
 	const isSmallScreen = useMediaQuery(theme.breakpoints.down('md'));
@@ -112,19 +112,20 @@ export const ChatPage: FC<{
 		if (focusedTurnIndex < 0 || focusedTurnIndex >= allTurns.length) return;
 
 		const focusedTurn = allTurns[focusedTurnIndex];
-		let emotion = DEFAULT_EMOTION;
-
-		if (focusedTurn) {
+		if (!focusedTurn) {
+			handleCharacterImage(DEFAULT_EMOTION);
+		} else if (focusedTurn) {
 			if ('setCount' in focusedTurn) {
 				// It's a TempChatTurn
-				emotion = focusedTurn.chatTurnSets[currentTempSetNo]?.response?.emotion || DEFAULT_EMOTION;
+				const emotion =
+					focusedTurn.chatTurnSets[currentTempSetNo]?.response?.emotion || DEFAULT_EMOTION;
+				handleCharacterImage(emotion);
 			} else {
 				// It's a finalized ChatTurn
-				emotion = focusedTurn.response?.emotion || DEFAULT_EMOTION;
+				const emotion = focusedTurn.response?.emotion || DEFAULT_EMOTION;
+				handleCharacterImage(emotion);
 			}
 		}
-
-		handleCharacterImage(emotion);
 	}, [focusedTurnIndex, currentTempSetNo, allTurns, handleCharacterImage]);
 
 	const handleAiModel = useCallback(
@@ -278,7 +279,6 @@ export const ChatPage: FC<{
 		changeTempChatTurn,
 		characterInfo,
 		profileInfo,
-		handleCharacterImage,
 		getRecentTurnsForMemory,
 		currentTempSetNo,
 		chatTurns.length,

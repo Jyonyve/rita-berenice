@@ -1,12 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
-import { ChatTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { DisplayTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { loadAllCachedMessagesForSession, saveMessagesToCache } from '../../util/idbUtils.js';
 import { useChatApi, useTempChatApi } from '../api/index.js';
 import { RECENT_CHAT_TURN } from '#shared/config/constants.js';
 
 export const useChatState = (sessionId: string) => {
 	// --- STATE MANAGEMENT ---
-	const [chatTurns, setChatTurns] = useState<ChatTurn[]>([]);
+	const [chatTurns, setChatTurns] = useState<DisplayTurn[]>([]);
 	const [isCacheLoading, setIsCacheLoading] = useState(true);
 	const [clientError, setClientError] = useState<string>();
 	const [tempChatTurn, setTempChatTurn] = useState<TempChatTurn>();
@@ -19,11 +19,11 @@ export const useChatState = (sessionId: string) => {
 		isLoading: isApiLoading,
 		isError: isApiError,
 		error: apiError,
-	} = useChatApi().getAllChatTurns(sessionId);
+	} = useChatApi().getChatHistoryForDisplay(sessionId);
 
 	// --- UTILITY FUNCTIONS ---
 	const _sortTurns = useCallback(
-		(turns: ChatTurn[]) => turns.sort((a, b) => a.sequence - b.sequence),
+		(turns: DisplayTurn[]) => turns.sort((a, b) => a.sequence - b.sequence),
 		[]
 	);
 
@@ -85,7 +85,7 @@ export const useChatState = (sessionId: string) => {
 	// --- STATE UPDATERS & GETTERS ---
 
 	const addChatTurn = useCallback(
-		async (turn: ChatTurn) => {
+		async (turn: DisplayTurn) => {
 			setChatTurns((prev) => _sortTurns([...prev, turn]));
 			await saveMessagesToCache([turn]);
 		},
@@ -93,7 +93,7 @@ export const useChatState = (sessionId: string) => {
 	);
 
 	const addChatTurns = useCallback(
-		async (newTurns: ChatTurn[]) => {
+		async (newTurns: DisplayTurn[]) => {
 			if (newTurns.length === 0) return;
 			setChatTurns((prevTurns) => {
 				const existingSequences = new Set(prevTurns.map((t) => t.sequence));
@@ -119,7 +119,7 @@ export const useChatState = (sessionId: string) => {
 		return seq === -1 ? 0 : ++seq;
 	}, [getCurrentSequence]);
 
-	const getRecentTurnsForMemory = useCallback((): ChatTurn[] => {
+	const getRecentTurnsForMemory = useCallback((): DisplayTurn[] => {
 		return chatTurns.slice(-RECENT_CHAT_TURN);
 	}, [chatTurns]);
 

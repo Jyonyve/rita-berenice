@@ -77,6 +77,7 @@ export function NewChatPageLoader() {
 						updatedAt: now,
 						emotion: DEFAULT_EMOTION,
 						type: 'message',
+						model: 'none',
 					};
 					const response: ChatMessage = {
 						entries: parseTextToEntries(characterRes.characterInfo.firstMessage),
@@ -90,6 +91,7 @@ export function NewChatPageLoader() {
 						updatedAt: now,
 						emotion: DEFAULT_EMOTION, // Or a specific first emotion from characterInfo
 						type: 'message',
+						model: 'none',
 					};
 					const firstTurn: TempChatTurn = {
 						userId,

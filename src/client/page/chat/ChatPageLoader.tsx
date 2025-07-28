@@ -130,7 +130,7 @@ export function ChatPageLoader() {
 		data: allTurnsRes,
 		isLoading: isLoadingTurns,
 		isError: isTurnsError,
-	} = useChatApi().getAllChatTurns(sessionId);
+	} = useChatApi().getChatHistoryForDisplay(sessionId);
 
 	useEffect(() => {
 		if (allTurnsRes?.displayTurns && allTurnsRes.displayTurns.length > 0) {

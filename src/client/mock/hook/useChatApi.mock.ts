@@ -23,19 +23,18 @@ export const useChatApiMock = () => {
 	 * Mocks fetching a single chat turn by sequence.
 	 * Returns the first turn as a fallback, or null if not found.
 	 */
-	const getChatTurnBySequence = (sessionId: string, sequence: number) => {
-		const turn =
-			mockMondayChat?.displayTurns?.find((t) => t.sessionId === sessionId && t.sequence === sequence) ||
-			null;
+	const getChatHistoryForDisplay = (sessionId: string) => {
+		const turn = mockMondayChat?.displayTurns?.find((t) => t.sessionId === sessionId) || null;
 		return {
 			data: turn
 				? {
-						ids: [mockMondayChat.ids[sequence]],
-						documents: [mockMondayChat.documents[sequence]],
-						metadatas: [mockMondayChat.metadatas[sequence]],
-						chatTurns: [turn],
+						ids: [mockMondayChat.ids],
+						documents: [mockMondayChat.documents],
+						metadatas: [mockMondayChat.metadatas],
+						chatTurns: [],
+						displayTurns: mockMondayChat.displayTurns,
 					}
-				: { ids: [], documents: [], metadatas: [], chatTurns: [] },
+				: { ids: [], documents: [], metadatas: [], chatTurns: [], displayTurns: [] },
 			isLoading: false,
 			isError: false,
 			error: null,
@@ -73,5 +72,5 @@ export const useChatApiMock = () => {
 		error: null,
 	};
 
-	return { storeChatTurn, getAllChatTurns, getChatTurnBySequence, queryChatTurns };
+	return { storeChatTurn, getAllChatTurns, getChatHistoryForDisplay, queryChatTurns };
 };

@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { allEmotionKeywordsList } from '#shared/config/emotionWordsMapper.js';
+import { curatedEmotionKeywords } from '#shared/config/emotionWordsMapper.js';
 
 type NonEmptyArray<T> = [T, ...T[]];
-const emotionList = allEmotionKeywordsList as NonEmptyArray<string>;
+const emotionList = curatedEmotionKeywords as NonEmptyArray<string>;
 /**
  * Creates a Zod schema for validating the persona response from the LLM.
  *
@@ -59,21 +59,25 @@ export const createChatTurnMetadataSchema = (
 			.describe(
 				`A concise summary of the turn in max 50 words. Example: 'User asks about ${charEng}'s past, and ${charEng} evades.'`
 			),
-		keywords: z
+		keywordList: z
 			.array(z.string())
 			.describe("An array of general keywords, e.g., ['conversation', 'past', 'evasion']"),
-		topics: z
+		topicList: z
 			.array(z.string())
 			.describe(
 				"An array of broader themes in snake_case, e.g., ['character_background', 'trust_issues']"
 			),
-		entities: z
+		entityList: z
 			.array(z.string())
 			.describe(
 				`An array of entities mentioned, formatted as 'type:name'. Example: ['character:${charEng}', 'character:${userEng}', 'location:DarkForest']`
 			),
 		userEmotion: z.object({
-			primary: z.enum(emotionList).describe('The primary emotion of the user from the provided list.'),
+			primary: z
+				.string()
+				.describe(
+					`The primary emotion of ${userEng}. MUST be one of the following: [${emotionList.join(', ')}]`
+				),
 			intensity: z
 				.number()
 				.min(0.0)
@@ -85,8 +89,10 @@ export const createChatTurnMetadataSchema = (
 		}),
 		characterEmotion: z.object({
 			primary: z
-				.enum(emotionList)
-				.describe('The primary emotion of the character from the provided list.'),
+				.string()
+				.describe(
+					`The primary emotion of ${charEng}. MUST be one of the following: [${emotionList.join(', ')}]`
+				),
 			intensity: z
 				.number()
 				.min(0.0)
@@ -96,7 +102,7 @@ export const createChatTurnMetadataSchema = (
 				.array(z.string())
 				.describe("An array of specific emotion words, e.g., ['defensive', 'sadness']"),
 		}),
-		relationshipShifts: z
+		relationshipShiftList: z
 			.array(z.string())
 			.describe(
 				`Describes a dynamic change between two entities. Example: ['${charEng}-${userEng}:trust_increased']`
@@ -104,7 +110,7 @@ export const createChatTurnMetadataSchema = (
 		dialogueAct: z
 			.string()
 			.describe("The conversational act, e.g., 'question', 'answer', 'revelation', 'evasion'"),
-		actions: z
+		actionList: z
 			.array(z.string())
 			.describe(
 				`Observable actions taken by entities. Example: ['${charEng}_draws_sword', '${userEng}_offers_potion']`
@@ -119,7 +125,7 @@ export const createChatTurnMetadataSchema = (
 			.describe(
 				`A list of history IDs relevant to this turn from this list: [${existingHistoryIds.join(', ')}]`
 			),
-		flags: z
+		flagList: z
 			.array(z.string())
 			.describe(
 				"An array of flags for significant events, e.g., ['new_lore_revealed', 'major_plot_point']"

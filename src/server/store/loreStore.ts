@@ -81,9 +81,9 @@ export const loreStore = {
 		// 1. Atomically delete all existing index entries for loreStore content.
 		await deleteRecordById(collection, contentId);
 
-		const newIndexRecords: { id: string; metadata: LoreIndexMetadata }[] = [];
+		const newIndexRecords: { id: string; metadata: LoreIndexMetadata; document: string }[] = [];
 		const baseMetadata = {
-			type: contentInfo.type,
+			type: METADATA_TYPES.INDEX,
 			contentId: contentId,
 			characterId: contentInfo.characterId,
 		};
@@ -93,6 +93,7 @@ export const loreStore = {
 				newIndexRecords.push({
 					id: buildLoreIndexId(contentId, contentType),
 					metadata: { ...baseMetadata, contentType, value },
+					document: value,
 				});
 			}
 		};
@@ -114,7 +115,7 @@ export const loreStore = {
 			await upsertRecords(
 				collection,
 				newIndexRecords.map((r) => r.id),
-				[], // Documents not needed for index entries
+				newIndexRecords.map((r) => r.document),
 				newIndexRecords.map((r) => r.metadata)
 			);
 		}
@@ -174,12 +175,12 @@ export const loreStore = {
 	async getLores(characterId: string): Promise<LoreResponse> {
 		try {
 			const collection = await loreStore._getCollection();
+			const where: Where = {
+				$and: [{ type: { $eq: METADATA_TYPES.LORE } }, { characterId: { $eq: characterId } }],
+			};
 
 			// 1. Fetch all primary LORE documents for the character
-			const loreResults = await getRecords(collection, {
-				type: { $eq: METADATA_TYPES.LORE },
-				characterId: { $eq: characterId },
-			});
+			const loreResults = await getRecords(collection, where);
 			const loreResult = validateChromaResponse(loreResults, 'getList', collectionType);
 
 			if (loreResult.metadatas.length === 0) {
@@ -301,12 +302,12 @@ export const loreStore = {
 	async getHistories(characterId: string): Promise<HistoryResponse> {
 		try {
 			const collection = await loreStore._getCollection();
+			const where: Where = {
+				$and: [{ type: { $eq: METADATA_TYPES.HISTORY } }, { characterId: { $eq: characterId } }],
+			};
 
 			// 1. Fetch primary HISTORY documents
-			const historyResults = await getRecords(collection, {
-				type: { $eq: METADATA_TYPES.HISTORY },
-				characterId: { $eq: characterId },
-			});
+			const historyResults = await getRecords(collection, where);
 
 			const historyResult = validateChromaResponse(historyResults, 'getList', collectionType);
 
@@ -446,7 +447,6 @@ export const loreStore = {
 			// Step 2: Perform semantic search on the pre-filtered set of primary documents.
 			const queryConditions: Where[] = [
 				{ type: { $eq: METADATA_TYPES.LORE } },
-				// This ensures we only search within the context of the main character
 				{ characterId: { $eq: characterId } },
 			];
 			if (contentIdsToSearch) {

@@ -72,20 +72,17 @@ async function initProfile() {
 
 		// Upsert sample profiles with a specific userId and unique sessionIds
 		console.log(`Upserting profiles...`);
-		console.log(
-			await profileStore.storeProfile(getMondayUserProfileTemplate(userId, 'monday_original_dS0RZ96F'))
-		);
-		console.log(
-			await profileStore.storeProfile(getMondayUserProfileTemplate(userId, 'monday_original_7IkTAY0Y'))
-		);
-		// console.log(
-		// 	await profileStore.storeProfile(getTarionOriginalProfileTemplate(userId, tarion_original))
-		// );
-		// console.log(
-		// 	await profileStore.storeProfile(getTarionSpinoffProfileTemplate(userId, tarion_spinoff))
-		// );
+		(console.log(
+			await profileStore.storeProfile(getMondayUserProfileTemplate(userId, 'monday_original_gKBOnr26'))
+		),
+			// console.log(
+			// 	await profileStore.storeProfile(getTarionOriginalProfileTemplate(userId, tarion_original))
+			// );
+			// console.log(
+			// 	await profileStore.storeProfile(getTarionSpinoffProfileTemplate(userId, tarion_spinoff))
+			// );
 
-		console.log(`✅ Successfully seeded profiles.`);
+			console.log(`✅ Successfully seeded profiles.`));
 		process.exit(0);
 	} catch (error: any) {
 		// Step 3: If getting the collection fails, exit with a helpful error.
