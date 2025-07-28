@@ -217,6 +217,8 @@ export const metadataToLore = (
 		allAffectedCharacterIdList: [...new Set([metadata.characterId, ...affectedCharacters])],
 		keywordList: getValuesFromIndex('KEYWORD'),
 		topicList: getValuesFromIndex('TOPIC'),
+		entityList: getValuesFromIndex('ENTITY'),
+		type: 'lore',
 	};
 };
 
@@ -280,6 +282,8 @@ export const metadataToHistory = (
 		allAffectedCharacterIdList: [...new Set([metadata.characterId, ...affectedCharacters])],
 		relatedEventList: relatedEvents,
 		keywordList: getValuesFromIndex('KEYWORD'),
+		topicList: getValuesFromIndex('TOPIC'),
+		entityList: getValuesFromIndex('ENTITY'),
 	};
 };
 
@@ -350,7 +354,10 @@ export const removeEmotionNuance = (
 	emotion: { primary: string; intensity: number; nuanceList: string[] },
 	nuanceToRemove: string
 ): { primary: string; intensity: number; nuanceList: string[] } => {
-	return { ...emotion, nuanceList: emotion.nuanceList.filter((nuance) => nuance !== nuanceToRemove) };
+	return {
+		...emotion,
+		nuanceList: emotion.nuanceList.filter((nuance) => nuance !== nuanceToRemove),
+	};
 };
 
 // --- RECAP HELPERS ---

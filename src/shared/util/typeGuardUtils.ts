@@ -102,5 +102,7 @@ export const createBasicHistory = (cdo: HistoryCdo): HistoryInfo => {
 		relatedEventList: [],
 		keywordList: [],
 		profileId: '',
+		topicList: [],
+		entityList: [],
 	};
 };

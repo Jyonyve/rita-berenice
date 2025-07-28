@@ -35,6 +35,7 @@
 		"recap:relationship": "tsx --env-file .env ./src/migration/recap/recapRelationship.ts",
 		"export:recap": "tsx ./src/migration/recap/exportSingleRecap.ts",
 		"init:his": "tsx --env-file .env ./src/migration/lore/initHistory.ts",
+		"dupe:his": "tsx --env-file .env ./src/migration/lore/duplicateHistory.ts",
 		"check:his": "tsx --env-file .env ./src/migration/lore/checkHistory.ts",
 		"link:chat": "tsx ./src/migration/lore/linkChatToHistory.ts",
 		"extract:lore": "tsx --env-file .env ./src/migration/source/htmlParserCheerio.ts",

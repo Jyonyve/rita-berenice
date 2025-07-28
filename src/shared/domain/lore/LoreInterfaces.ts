@@ -8,19 +8,18 @@ export type EventDateType =
 	| 'estimated_year'
 	| 'relative_to_event'
 	| 'era_defined';
+export type LoreIndexContentType =
+	| 'AFFECTED_CHARACTER'
+	| 'KEYWORD'
+	| 'TOPIC'
+	| 'ENTITY'
+	| 'RELATED_EVENT';
 
-export type LoreIndexContentType = 'AFFECTED_CHARACTER' | 'KEYWORD' | 'TOPIC' | 'RELATED_EVENT';
-
-// --- A. THE PRIMARY DOCUMENT INTERFACES ---
-
-/**
- * Metadata for a primary LORE document stored in ChromaDB.
- * This document contains the main content for semantic search.
- */
+// --- A. PRIMARY DOCUMENT METADATA ---
 export interface LoreMetadata {
 	type: typeof METADATA_TYPES.LORE;
 	loreId: string;
-	characterId: string;
+	characterId: string; // The primary owner
 	userId: string;
 	profileId: string;
 	createdAt: string;
@@ -33,14 +32,10 @@ export interface LoreMetadata {
 	summary: string;
 }
 
-/**
- * Metadata for a primary HISTORY document stored in ChromaDB.
- * This document contains the main content for semantic search.
- */
 export interface HistoryMetadata {
 	type: typeof METADATA_TYPES.HISTORY;
 	historyId: string;
-	characterId: string;
+	characterId: string; // The primary owner
 	userId: string;
 	profileId: string;
 	createdAt: string;
@@ -55,41 +50,23 @@ export interface HistoryMetadata {
 	eventDateType: EventDateType;
 }
 
-// --- B. THE UNIFIED SEARCH INDEX INTERFACE ---
-
-/**
- * A single, unified metadata structure for all denormalized search index entries.
- * These records are lightweight and designed for fast, precise filtering.
- */
+// --- B. UNIFIED SEARCH INDEX METADATA ---
 export interface LoreIndexMetadata {
-	// The type of the parent document (LORE or HISTORY)
 	type: typeof METADATA_TYPES.INDEX;
-
-	// What kind of attribute this index entry represents
 	contentType: LoreIndexContentType;
-
-	// Foreign key to the parent document
-	contentId: string;
-
-	// The indexed value
+	contentId: string; // Foreign key to Lore or History document
 	value: string;
-
-	// The primary owner's ID for broad filtering
 	characterId: string;
 }
 
-// --- C. THE RICH, APPLICATION-LEVEL INTERFACES ---
-
-/**
- * The rich object your application works with for Lore.
- * The service layer is responsible for reconstructing the arrays from the search index.
- */
+// --- C. RICH APPLICATION-LEVEL INTERFACES ---
 export interface LoreInfo extends LoreMetadata {
 	content: string;
 	sideCharacterIdList: string[];
 	allAffectedCharacterIdList: string[];
 	keywordList: string[];
 	topicList: string[];
+	entityList: string[]; // Added for consistency
 }
 
 export interface HistoryInfo extends HistoryMetadata {
@@ -98,6 +75,8 @@ export interface HistoryInfo extends HistoryMetadata {
 	allAffectedCharacterIdList: string[];
 	relatedEventList: RelatedEvent[];
 	keywordList: string[];
+	topicList: string[]; // Added for consistency
+	entityList: string[]; // Added for consistency
 }
 
 // --- CDO TYPES ---

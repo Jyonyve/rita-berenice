@@ -15,7 +15,6 @@ const TARGET_HISTORY_IDS = [
 const SOURCE_CHARACTER_ID = 'tarion_original';
 
 // The new values you want to set.
-const NEW_USER_ID = 'sunfish';
 const SPINOFF_CHARACTER_ID = 'tarion_spinoff';
 
 /**
@@ -46,23 +45,7 @@ async function duplicateHistoryEntries() {
 		console.log(`   -> ✅ Found ${sourceHistories.length} target history entries.`);
 
 		// --- Step 2: UPDATE the original records with the new userId ---
-		console.log(
-			`\n2. Updating userId for ${sourceHistories.length} original records to '${NEW_USER_ID}'...`
-		);
 
-		for (const originalHistory of sourceHistories) {
-			// Create a new object with the updated userId.
-			const updatedOriginalHistory: HistoryInfo = {
-				...originalHistory,
-				userId: NEW_USER_ID,
-				updatedAt: new Date().toISOString(), // It's good practice to update the timestamp.
-			};
-
-			// Use storeHistory, which performs an upsert. Since the historyId is the same,
-			// this will overwrite the existing record with the updated data.
-			await loreStore.storeHistory(updatedOriginalHistory);
-			console.log(`   -> ✅ Updated: ${originalHistory.historyId}`);
-		}
 		// --- Step 3: CREATE new records for the spinoff character ---
 		console.log(
 			`\n3. Creating ${sourceHistories.length} new records for character: '${SPINOFF_CHARACTER_ID}'...`
@@ -72,14 +55,12 @@ async function duplicateHistoryEntries() {
 			// Create a new record based on the original, but with multiple changes.
 			const newSpinoffHistory: HistoryInfo = {
 				...originalHistory, // Start with the original's data
-				userId: NEW_USER_ID,
 				characterId: SPINOFF_CHARACTER_ID,
 
 				// IMPORTANT: Generate a new, unique historyId for the new record.
-				historyId: buildHistoryId(originalHistory.englishId),
+				historyId: buildHistoryId(originalHistory.characterId, originalHistory.englishId),
 
 				// Also update character arrays to only reference the new character.
-				ownerCharacterIdArray: [SPINOFF_CHARACTER_ID],
 				// allAffectedCharacterIdArray: [SPINOFF_CHARACTER_ID],
 
 				// Reset timestamps for the new creation.

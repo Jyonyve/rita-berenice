@@ -16,42 +16,13 @@ async function checkAllHistories() {
 		console.log(`Collection "${TARGET_COLLECTION_NAME}" accessed.`);
 
 		console.log(`Querying for ALL history documents (type: HISTORY)...`);
-		const whereClause: Where = { type: { $eq: METADATA_TYPES.HISTORY } };
 
-		const results = await collection.get({
-			where: whereClause,
-			include: [IncludeEnum.documents, IncludeEnum.metadatas],
-		});
-
-		if (!results || results.ids.length === 0) {
-			console.log(`No history documents found in collection "${TARGET_COLLECTION_NAME}".`);
-		} else {
-			console.log(`Found ${results.ids.length} history documents:`);
-			console.log('---');
-			results.metadatas.forEach((metadata, index) => {
-				const typed = metadata;
-				console.log(`History ${index + 1}:`);
-				console.log(`  historyId: ${typed?.historyId}`);
-				console.log(`  title: ${typed?.title}`);
-				console.log(`  generatedTitle: ${typed?.generatedTitle}`);
-				console.log(`  englishId: ${typed?.englishId}`);
-				console.log(`  ownerCharacterIds: ${typed?.ownerCharacterIds}`);
-				console.log(`  sideCharacterIds: ${typed?.sideCharacterIds}`);
-				console.log(
-					`  periodLabel: ${typed?.periodLabel} periodConfidence :(${typed?.periodConfidence})`
-				);
-				console.log(
-					`  eventDateValue: ${typed?.eventDateValue} eventDateType: (${typed?.eventDateType}, eventDateConfidence: ${typed?.eventDateConfidence})`
-				);
-				console.log(`  category: ${typed?.category}`);
-				console.log('---');
-			});
-			console.log(`Total history entities: ${results.ids.length}`);
-		}
+		const result = await collection.get();
+		console.log(result);
 	} catch (error) {
 		console.error('Error checking all histories:', error);
 		process.exit(1);
 	}
 }
-
+const characterId = process.argv[2];
 checkAllHistories();

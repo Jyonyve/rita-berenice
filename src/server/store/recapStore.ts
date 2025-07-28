@@ -41,38 +41,43 @@ export const recapStore = {
 
 	/**
 	 * @private
-	 * Creates or updates the denormalized search index records for a given Recap.
+	 * Manages the denormalized search index records for a given Recap.
 	 */
 	async _updateSearchIndexForRecap(recap: RecapInfo): Promise<void> {
 		const collection = await recapStore._getCollection();
-		const recapId = recap.recapId;
 
-		// 1. Atomically delete all existing index entries for this recap.
-		await deleteRecordById(collection, recapId);
+		// --- 1. CRITICAL FIX: Atomically delete all EXISTING INDEX entries for this recap ---
+		const oldIndexWhere: Where = {
+			$and: [{ type: { $eq: METADATA_TYPES.INDEX } }, { recapId: { $eq: recap.recapId } }],
+		};
+		await collection.delete({ where: oldIndexWhere });
 
+		// --- 2. Create new index records with UNIQUE IDs ---
 		const newIndexRecords: { id: string; metadata: RecapIndexMetadata; document: string }[] = [];
 		const baseMetadata = {
 			type: METADATA_TYPES.INDEX,
-			recapId: recapId,
+			recapId: recap.recapId,
 			sessionId: recap.sessionId,
 			characterId: recap.characterId,
 		};
 
-		// Helper to create index records for flags
 		const createIndexRecords = (list: string[], contentType: RecapIndexContentType) => {
+			if (!list || list.length === 0) return;
 			for (const value of list) {
+				if (!value || value.trim() === '') continue;
 				newIndexRecords.push({
-					id: buildRecapIndexId(recapId, contentType),
+					// --- CRITICAL FIX: Ensure ID is unique by including the value ---
+					id: buildRecapIndexId(recap.recapId, contentType),
 					metadata: { ...baseMetadata, contentType, value },
-					document: value,
+					document: value, // The flag/value itself is the content to be embedded
 				});
 			}
 		};
 
-		// 2. Create new index records for every flag.
+		// Create index records for all filterable attributes
 		createIndexRecords(recap.flagList, 'RECAP_FLAG');
 
-		// 3. Batch upsert the new index records.
+		// --- 3. Batch upsert the new index records ---
 		if (newIndexRecords.length > 0) {
 			await upsertRecords(
 				collection,
@@ -114,10 +119,15 @@ export const recapStore = {
 
 		try {
 			const collection = await recapStore._getCollection();
+			// 1. Convert the rich object to the flat metadata for the primary document.
 			const metadata = recapToMetadata(recapInfo);
+			// 2. Prepare the document content for embedding.
 			const document = recapToDocument(recapInfo);
 
-			await upsertRecord(collection, metadata.recapId, document, metadata);
+			// 3. Upsert the primary RECAP document.
+			await upsertRecords(collection, [metadata.recapId], [document], [metadata]);
+
+			// 4. Update its denormalized search indexes.
 			await recapStore._updateSearchIndexForRecap(recapInfo);
 		} catch (error) {
 			handleServiceError(error, `Failed to store recap ${recapInfo.recapId}`);
@@ -134,35 +144,35 @@ export const recapStore = {
 		try {
 			const collection = await recapStore._getCollection();
 
-			// 1. Fetch primary RECAP documents
-			const recapResults = await getRecords(collection, {
+			// 1. Fetch primary RECAP/RELATIONSHIP documents
+			const primaryResults = await getRecords(collection, {
 				$and: [{ type: { $eq: type } }, { sessionId: { $eq: sessionId } }],
 			});
-			const { metadatas: recapMetadatas, documents: recapDocuments } = validateChromaResponse(
-				recapResults,
-				'getList',
-				collectionType
-			);
-
-			if (recapMetadatas.length === 0) {
-				return [];
-			}
+			const primaryDocs = validateChromaResponse(primaryResults, 'getList', collectionType);
+			if (primaryDocs.ids.length === 0) return [];
 
 			// 2. Fetch all associated search index records
-			const recapIds = recapMetadatas
-				.map((m) => (m || {}).recapId)
-				.filter((id): id is string => typeof id === 'string');
-			const indexResults = await getRecords(collection, { recapId: { $in: recapIds } });
-			const allIndexResult = validateChromaResponse(indexResults, 'getList', collectionType);
+			const recapIds = primaryDocs.ids;
+			const indexWhere: Where = {
+				$and: [{ type: { $eq: METADATA_TYPES.INDEX } }, { recapId: { $in: recapIds } }],
+			};
+			const indexResults = await getRecords(collection, indexWhere);
+			const allIndexRecords = validateChromaResponse(indexResults, 'getList', collectionType);
 
 			// 3. Reconstruct the full rich objects
-			return recapStore._constructFullRecaps(
-				recapMetadatas as unknown as RecapMetadata[],
-				recapDocuments,
-				allIndexResult.metadatas as unknown as RecapIndexMetadata[]
-			);
+			return primaryDocs.metadatas.map((metadata, i) => {
+				const relatedIndexMetadatas = allIndexRecords.metadatas.filter(
+					(record) => !!record && record.recapId === (metadata as unknown as RecapMetadata).recapId
+				);
+				return metadataToRecap(
+					metadata as unknown as RecapMetadata,
+					primaryDocs.documents[i] || '',
+					relatedIndexMetadatas as unknown as RecapIndexMetadata[]
+				);
+			});
 		} catch (error) {
 			handleServiceError(error, `Failed to get recaps for session ${sessionId}`);
+			return [];
 		}
 	},
 

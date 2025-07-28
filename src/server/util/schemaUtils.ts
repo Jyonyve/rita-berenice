@@ -136,101 +136,108 @@ export const createChatTurnMetadataSchema = (
 	});
 
 /**
- * Creates a Zod schema for validating the structured metadata of a Lore entry.
- * The descriptions provide context to the LLM for more accurate generation.
+ * Creates a comprehensive Zod schema for validating all metadata of a LORE entry.
+ * Aligns directly with the LoreInfo interface.
  */
-export const createLoreMetadataSchema = () =>
-	z.object({
-		summary: z
-			.string()
-			.describe(
-				"A single, concise sentence stating the core atomic fact. This is the most important field. Example: 'Tarion is the strongest man in the Vargas Empire.'"
-			),
+export const createLoreMetadataSchema = (availableCharacterIds: string[]) => {
+	return z.object({
+		// Core Identification
 		generatedEnglishTitle: z
 			.string()
-			.describe("A descriptive English title for this fact, e.g., 'Tarion's Strength Ranking'"),
-		englishId: z.string().describe("A 2-3 word kebab-case ID, e.g., 'tarion-strength-fact'"),
-		keywords: z
+			.describe('A concise, descriptive title in English for the lore entry.'),
+		englishId: z
+			.string()
+			.describe("A URL-safe, snake_case version of the English title, e.g., 'the_sword_of_eldoria'."),
+		summary: z.string().describe('A one-paragraph summary of the lore, explaining its significance.'),
+		category: z
+			.string()
+			.describe("A category for the lore, e.g., 'Mythology', 'Item', 'Concept', 'Organization'."),
+		source: z
+			.string()
+			.describe("Where this lore originates from, e.g., 'Ancient Texts', 'Character Dialogue'."),
+
+		// Character Involvement
+		sideCharacterIdList: z
 			.array(z.string())
 			.describe(
-				"An array of lowercase keywords related to the fact, e.g., ['strength', 'ranking', 'empire']"
+				`Other characters significantly related to this lore. MUST be chosen from: [${availableCharacterIds.join(', ')}]`
 			),
-		topics: z
+
+		// Searchable Indexable Lists
+		keywordList: z.array(z.string()).describe('An array of 3-5 specific keywords for search.'),
+		topicList: z.array(z.string()).describe('An array of 1-3 broader themes or topics.'),
+		entityList: z
 			.array(z.string())
-			.describe(
-				"An array of broader themes in snake_case, e.g., ['character_attribute', 'world_building']"
-			),
-		entities: z
-			.array(z.string())
-			.describe(
-				"An array of entities mentioned, formatted as 'type:name', e.g., ['character:Tarion', 'location:vargas_empire']"
-			),
+			.describe('An array of named entities mentioned (people, places, items).'),
 	});
+};
 
 /**
- * Creates a Zod schema for validating the structured timeline metadata of a History entry.
- *
- * @param existingEventTitles - A list of existing event titles to guide the LLM's temporal relation choices.
+ * Creates a comprehensive Zod schema for validating all metadata of a HISTORY entry.
+ * Aligns directly with the HistoryInfo interface.
  */
-export const createHistoryTimelineSchema = (existingEventTitles: string[]) => {
-	// Define the possible types for temporal relations for strict validation.
-	const temporalRelationTypes = z.enum([
-		'PRECEDES',
-		'SUCCEEDS',
-		'CONCURRENT_WITH',
-		'OVERLAPS_WITH',
-		'CAUSED_BY',
-		'RESULTS_IN',
-	]);
-
-	// Define the possible types for the estimated event date.
-	const dateTypes = z.enum([
-		'absolute_date',
-		'estimated_year',
-		'relative_to_birth',
-		'era_specific',
-		'descriptive_period',
-	]);
+export const createHistoryMetadataSchema = (
+	availableCharacterIds: string[],
+	existingHistoryEntries: { originalTitle: string; historyId: string }[]
+) => {
+	const existingEventTitles = existingHistoryEntries.map((h) => h.originalTitle);
 
 	return z.object({
+		// Core Identification
+		generatedEnglishTitle: z
+			.string()
+			.describe('A concise, descriptive title in English for the event.'),
+		englishId: z
+			.string()
+			.describe(
+				"A URL-safe, snake_case version of the English title, e.g., 'the_battle_of_blackwater'."
+			),
+		summary: z
+			.string()
+			.describe('A one-paragraph summary of the event, capturing the key actions and outcomes.'),
+		category: z
+			.string()
+			.describe(
+				"A category for the event, e.g., 'Character Origin', 'Major Conflict', 'Political Event'."
+			),
+
+		// Character Involvement
+		sideCharacterIdList: z
+			.array(z.string())
+			.describe(
+				`Other characters involved in the event. MUST be chosen from: [${availableCharacterIds.join(', ')}]`
+			),
+
+		// Timeline Information
 		period: z.object({
 			label: z
 				.string()
-				.describe("A descriptive label for the life period, e.g., 'Childhood', 'Reign', 'Exile'"),
+				.describe("A descriptive label for the life period, e.g., 'Childhood', 'Reign', 'Exile'."),
 			confidence: z
 				.number()
 				.min(0.0)
 				.max(1.0)
 				.describe('Confidence in the period label from 0.0 to 1.0.'),
-			rationale: z.string().describe('A one-sentence justification for the chosen period label.'),
 		}),
-		estimatedEventDate: z.object({
-			value: z
-				.string()
-				.describe("The estimated date value, e.g., 'YYYY-MM-DD', 'Age 15', 'During the Great War'"),
-			type: dateTypes.describe('The type of date being provided.'),
-			confidence: z
-				.number()
-				.min(0.0)
-				.max(1.0)
-				.describe('Confidence in the date estimation from 0.0 to 1.0.'),
+		eventDate: z.object({
+			value: z.string().describe("The estimated date value, e.g., 'YYYY-MM-DD', 'Age 15'."),
+			type: z
+				.enum(['absolute_date', 'estimated_year', 'relative_to_event', 'era_defined'])
+				.describe('The type of date being provided.'),
+			confidence: z.number().min(0.0).max(1.0).describe('Confidence in the date estimation.'),
 		}),
-		keyThemes: z
-			.array(z.string())
-			.describe(
-				"An array of 2-3 core themes reflecting the event's impact or the character's emotional arc."
-			),
-		keywords: z
-			.array(z.string())
-			.describe(
-				'An array of 3-5 general keywords for search, including names, places, and key objects.'
-			),
-		temporalRelations: z
+		// Correctly named to match the HistoryInfo interface
+		relatedEventList: z
 			.array(
 				z.object({
-					type: temporalRelationTypes.describe(
-						'The type of relationship between this event and another.'
-					),
+					type: z.enum([
+						'PRECEDES',
+						'SUCCEEDS',
+						'CONCURRENT_WITH',
+						'OVERLAPS_WITH',
+						'CAUSED_BY',
+						'RESULTS_IN',
+					]),
 					relatedEventTitle: z
 						.string()
 						.describe(
@@ -239,9 +246,14 @@ export const createHistoryTimelineSchema = (existingEventTitles: string[]) => {
 					description: z.string().optional().describe('An optional brief description of the relation.'),
 				})
 			)
-			.describe(
-				'An array of relationships to other events, or an empty array if no clear relations exist.'
-			),
+			.describe('An array of relationships to other events, or an empty array if none exist.'),
+
+		// Searchable Indexable Lists
+		keywordList: z.array(z.string()).describe('An array of 3-5 specific keywords for search.'),
+		topicList: z.array(z.string()).describe('An array of 1-3 broader themes.'),
+		entityList: z
+			.array(z.string())
+			.describe('An array of named entities mentioned (people, places, events).'),
 	});
 };
 

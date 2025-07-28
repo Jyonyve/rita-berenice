@@ -7,6 +7,7 @@ import { RecapIndexContentType } from '../domain/recap/RecapInterfaces.js';
 
 /* gen uuid (shortened)*/
 const _genNanoId = (length: number) => customAlphabet(ALPHANUMERIC_ALPHABET, length)();
+const convertContentType = (contentType: string) => contentType.toLowerCase().replaceAll('_', '-');
 
 /* ID suffix */
 export const SUFFIX = {
@@ -37,14 +38,14 @@ export const buildProfileId = (sessionId: string, userId: string) => {
 	return `${sessionId}_${userId}`;
 };
 
-export const buildLoreId = (englishId: string) => {
+export const buildLoreId = (characterId: string, englishId: string) => {
 	// englishId is the kebab-case summary of the lore title
-	return `${englishId}_${_genNanoId(8)}_${SUFFIX.LORE}`;
+	return `${characterId}_${englishId}_${SUFFIX.LORE}`;
 };
 
-export const buildHistoryId = (englishId: string) => {
+export const buildHistoryId = (characterId: string, englishId: string) => {
 	// englishId is the kebab-case summary of the history title
-	return `${englishId}_${_genNanoId(8)}_${SUFFIX.HISTORY}`;
+	return `${characterId}_${englishId}_${SUFFIX.HISTORY}`;
 };
 
 /* chat id */
@@ -68,18 +69,18 @@ export const buildChatTurnIndexId = (
 	chatTurnId: string,
 	contentType: ChatIndexContentType
 ): string => {
-	return `${chatTurnId}_${contentType}_${_genNanoId(8)}`;
+	return `${chatTurnId}_${convertContentType(contentType)}_${_genNanoId(4)}`;
 };
 
-export const buildLoreIndexId = (chatTurnId: string, contentType: LoreIndexContentType): string => {
-	return `${chatTurnId}_${contentType}_${_genNanoId(8)}`;
+export const buildLoreIndexId = (contentId: string, contentType: LoreIndexContentType): string => {
+	return `${contentId}_${convertContentType(contentType)}_${_genNanoId(4)}`;
 };
 
 export const buildRecapIndexId = (
 	chatTurnId: string,
 	contentType: RecapIndexContentType
 ): string => {
-	return `${chatTurnId}_${contentType}_${_genNanoId(8)}`;
+	return `${chatTurnId}_${convertContentType(contentType)}_${_genNanoId(4)}`;
 };
 
 export const buildTempChatTurnId = (sessionId: string, sequence: number): string => {
@@ -87,7 +88,7 @@ export const buildTempChatTurnId = (sessionId: string, sequence: number): string
 };
 
 export const buildRecapId = (sessionId: string, turnStart: number, turnEnd: number): string => {
-	return `${sessionId}_${turnStart}to${turnEnd}_${SUFFIX.RECAP}`;
+	return `${sessionId}_${turnStart}_${turnEnd}_${SUFFIX.RECAP}`;
 };
 
 export const buildTermId = (sessionId: string): string => {
