@@ -1,89 +1,35 @@
 // Save this file as scripts/initSession.ts
 
 import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
-import { chromaDbClient, flatSessionToDoc, sessionStore, termStore } from '#server/index.js';
+import { chromaDbClient, sessionStore, termStore } from '#server/index.js';
 import { SessionInfo, SessionMetadata, TermCdo } from '#shared/domain/index.js';
 import { buildProfileId, buildTermId, METADATA_TYPES } from '#shared/index.js';
 
-const tarion_original = 'tarion_original_ueDVsINn';
-const tarion_spinoff = 'tarion_spinoff_sw1MLtIj';
-const userId = '6b335673-c837-43f9-a1c7-0b92c90edefb';
-
-const originalTerms: TermCdo[] = [
-	{
-		koreanTerm: '바르가스',
-		initialTerm: 'Vargas',
-		sessionId: tarion_original,
-		termId: buildTermId(tarion_original),
-	},
-	{
-		koreanTerm: '엘리시아',
-		initialTerm: 'Elysia',
-		sessionId: tarion_original,
-		termId: buildTermId(tarion_original),
-	},
-	{
-		koreanTerm: '알데바란',
-		initialTerm: 'Aldebaraan',
-		sessionId: tarion_original,
-		termId: buildTermId(tarion_original),
-	},
-	{
-		koreanTerm: '알리스터',
-		initialTerm: 'Alastair',
-		sessionId: tarion_original,
-		termId: buildTermId(tarion_original),
-	},
-	{
-		koreanTerm: '아리온',
-		initialTerm: 'Aarion',
-		sessionId: tarion_original,
-		termId: buildTermId(tarion_original),
-	},
-	{
-		koreanTerm: '카사르',
-		initialTerm: 'Kassar',
-		sessionId: tarion_original,
-		termId: buildTermId(tarion_original),
-	},
+export const getOriginalTerms = (sessionId: string): TermCdo[] => [
+	{ koreanTerm: '타리온', initialTerm: 'Tarion', sessionId, termId: buildTermId(sessionId) },
+	{ koreanTerm: '라이델', initialTerm: 'Rydell', sessionId, termId: buildTermId(sessionId) },
+	{ koreanTerm: '요니브', initialTerm: 'Yonyve', sessionId, termId: buildTermId(sessionId) },
+	{ koreanTerm: '엘리시오스', initialTerm: 'Elysios', sessionId, termId: buildTermId(sessionId) },
+	{ koreanTerm: '바르가스', initialTerm: 'Vargas', sessionId, termId: buildTermId(sessionId) },
+	{ koreanTerm: '엘리시아', initialTerm: 'Elysia', sessionId, termId: buildTermId(sessionId) },
+	{ koreanTerm: '알데바란', initialTerm: 'Aldebaraan', sessionId, termId: buildTermId(sessionId) },
+	{ koreanTerm: '알리스터', initialTerm: 'Alastair', sessionId, termId: buildTermId(sessionId) },
+	{ koreanTerm: '앨리', initialTerm: 'Ally', sessionId, termId: buildTermId(sessionId) },
+	{ koreanTerm: '아리온', initialTerm: 'Aarion', sessionId, termId: buildTermId(sessionId) },
+	{ koreanTerm: '카사르', initialTerm: 'Kassar', sessionId, termId: buildTermId(sessionId) },
 ];
-const spinoffTerms: TermCdo[] = [
-	{
-		koreanTerm: '바르가스',
-		initialTerm: 'Vargas',
-		sessionId: tarion_spinoff,
-		termId: buildTermId(tarion_spinoff),
-	},
-	{
-		koreanTerm: '엘리시아',
-		initialTerm: 'Elysia',
-		sessionId: tarion_spinoff,
-		termId: buildTermId(tarion_spinoff),
-	},
-	{
-		koreanTerm: '알데바란',
-		initialTerm: 'Aldebaraan',
-		sessionId: tarion_spinoff,
-		termId: buildTermId(tarion_spinoff),
-	},
-	{
-		koreanTerm: '알리스터',
-		initialTerm: 'Alastair',
-		sessionId: tarion_spinoff,
-		termId: buildTermId(tarion_spinoff),
-	},
-	{
-		koreanTerm: '아리온',
-		initialTerm: 'Aarion',
-		sessionId: tarion_spinoff,
-		termId: buildTermId(tarion_spinoff),
-	},
-	{
-		koreanTerm: '카사르',
-		initialTerm: 'Kassar',
-		sessionId: tarion_spinoff,
-		termId: buildTermId(tarion_spinoff),
-	},
+export const getSpinoffTerms = (sessionId: string): TermCdo[] => [
+	{ koreanTerm: '타리온', initialTerm: 'Tarion', sessionId, termId: buildTermId(sessionId) },
+	{ koreanTerm: '라이델', initialTerm: 'Rydell', sessionId, termId: buildTermId(sessionId) },
+	{ koreanTerm: '요니브', initialTerm: 'Yonyve', sessionId, termId: buildTermId(sessionId) },
+	{ koreanTerm: '엘리시오스', initialTerm: 'Elysios', sessionId, termId: buildTermId(sessionId) },
+	{ koreanTerm: '바르가스', initialTerm: 'Vargas', sessionId, termId: buildTermId(sessionId) },
+	{ koreanTerm: '엘리시아', initialTerm: 'Elysia', sessionId, termId: buildTermId(sessionId) },
+	{ koreanTerm: '알데바란', initialTerm: 'Aldebaraan', sessionId, termId: buildTermId(sessionId) },
+	{ koreanTerm: '알리스터', initialTerm: 'Alastair', sessionId, termId: buildTermId(sessionId) },
+	{ koreanTerm: '앨리', initialTerm: 'Ally', sessionId, termId: buildTermId(sessionId) },
+	{ koreanTerm: '아리온', initialTerm: 'Aarion', sessionId, termId: buildTermId(sessionId) },
+	{ koreanTerm: '카사르', initialTerm: 'Kassar', sessionId, termId: buildTermId(sessionId) },
 ];
 
 // --- Main Seeding Logic ---
@@ -92,8 +38,8 @@ async function initTerm() {
 		// Step 1: GET the collection directly.
 		console.log(`Getting collection "${COLLECTIONS.TERM}"...`);
 
-		await termStore.storeTerms(originalTerms);
-		await termStore.storeTerms(spinoffTerms);
+		await termStore.storeTerms(getOriginalTerms(sessionId));
+		await termStore.storeTerms(getSpinoffTerms(sessionId));
 
 		console.log(`✅ Successfully seeded initial term.`);
 		process.exit(0);
@@ -103,6 +49,7 @@ async function initTerm() {
 		process.exit(1);
 	}
 }
+const sessionId = process.argv[2];
 
 // --- Run the script ---
 initTerm();

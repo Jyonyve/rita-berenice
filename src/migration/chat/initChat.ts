@@ -10,6 +10,7 @@ import {
 	buildMessageId,
 	buildSessionId,
 	buildProfileId,
+	flatSessionToDoc,
 } from '#shared/util/index.js';
 import { parseSessionId, parseTextToEntries } from '#shared/util/chatParseUtils.js';
 import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
@@ -17,13 +18,32 @@ import { DEFAULT_EMOTION, EmotionValue, validEmotions } from '#shared/config/emo
 import { APPNAME, METADATA_TYPES, NA } from '#shared/config/constants.js';
 import { chatStore } from '#server/store/chatStore.js';
 import { buildChatTurnMetadataPrompt } from '#server/util/templateUtils.js';
-import { mapHistoryContexts, mapLoreContexts, mapTerms, termStore } from '#server/index.js';
+import {
+	mapHistoryContexts,
+	mapLoreContexts,
+	mapTerms,
+	profileStore,
+	sessionStore,
+	termStore,
+} from '#server/index.js';
 import { createChatTurnMetadataSchema } from '#server/util/schemaUtils.js';
 import { loreStore } from '#server/store/loreStore.js';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { ChatGroq } from '@langchain/groq';
 import { ChatOpenAI } from '@langchain/openai';
-import { HistoryContext, LoreContext } from '#shared/domain/index.js';
+import {
+	HistoryContext,
+	LoreContext,
+	ProfileCdo,
+	SessionInfo,
+	SessionMetadata,
+} from '#shared/domain/index.js';
+import { getOriginalTerms } from '../term/initTerm.ts';
+import { chromaDbClient } from '#server/db/chromaDbClient.js';
+import {
+	getTarionOriginalProfileTemplate,
+	getTarionSpinoffProfileTemplate,
+} from '../profile/initProfile.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -50,6 +70,7 @@ interface InitChatProgress {
 	status: 'in_progress' | 'completed' | 'failed';
 	errors: Array<{ sequence: number; error: string; timestamp: string }>;
 }
+const { upsertRecord } = chromaDbClient;
 
 const getProgressFilePath = (sessionId: string): string => {
 	return path.join(PROGRESS_DIR, `${PROGRESS_FILE_PREFIX}-${sessionId}.json`);
@@ -314,7 +335,62 @@ async function initChatFromLogFiles() {
 		const characterId = cliSessionId
 			? parseSessionId(cliSessionId).characterId
 			: buildCharacterId(characterNameFromFile, fileNameParts[1]);
+
 		const TARGET_SESSION_ID = cliSessionId || buildSessionId(characterId);
+
+		const fileContent = await fs.readFile(path.join(CRAWLER_RESULT_DIR, logFile), 'utf-8');
+		const crawledLogs: MigChatMessage[] = JSON.parse(fileContent);
+
+		if (crawledLogs.length === 0) {
+			console.warn(`       ⚠️ Log file "${logFile}" is empty. Skipping.`);
+			continue;
+		}
+
+		if (!cliSessionId) {
+			// init session
+			const firstMessage = crawledLogs[0];
+			const lastMessage = crawledLogs[crawledLogs.length - 1];
+			const collection = await chromaDbClient.getSessionCollection();
+			const sessionInfo: SessionInfo = {
+				sessionId: TARGET_SESSION_ID,
+				userId: USER_ID,
+				profileId: buildProfileId(TARGET_SESSION_ID, USER_ID),
+				characterId,
+				title: `${lastMessage.showName} x ${firstMessage.showName}`,
+				createdAt: firstMessage.createdAt,
+				updatedAt: lastMessage.createdAt,
+				messageCount: crawledLogs.length,
+				status: 'active',
+				type: METADATA_TYPES.SESSION,
+				lastCharMessage: lastMessage.content,
+			};
+			const document = flatSessionToDoc(sessionInfo);
+			const metadata: SessionMetadata = {
+				sessionId: sessionInfo.sessionId,
+				userId: sessionInfo.userId,
+				profileId: sessionInfo.profileId,
+				characterId: sessionInfo.characterId,
+				title: sessionInfo.title,
+				createdAt: sessionInfo.createdAt,
+				updatedAt: sessionInfo.updatedAt,
+				messageCount: sessionInfo.messageCount,
+				status: sessionInfo.status,
+				type: sessionInfo.type,
+			};
+
+			// Step 5: Upsert the record directly into the collection.
+			console.log(`Upserting session with predefined ID: ${sessionInfo.sessionId}...`);
+			await chromaDbClient.upsertRecord(collection, sessionInfo.sessionId, document, metadata);
+
+			// init term
+			await termStore.storeTerms(getOriginalTerms(TARGET_SESSION_ID));
+			// init profile
+			await profileStore.storeProfile(
+				fileNameParts[1] === 'original'
+					? getTarionOriginalProfileTemplate(USER_ID, TARGET_SESSION_ID)
+					: getTarionSpinoffProfileTemplate(USER_ID, TARGET_SESSION_ID)
+			);
+		}
 
 		console.log(
 			cliSessionId
@@ -346,8 +422,6 @@ async function initChatFromLogFiles() {
 			`     🔍 DB Check: Found ${existingTurnsInDB.length} turns. Latest sequence is ${latestSequenceInDB}.`
 		);
 
-		const fileContent = await fs.readFile(path.join(CRAWLER_RESULT_DIR, logFile), 'utf-8');
-		const crawledLogs: MigChatMessage[] = JSON.parse(fileContent);
 		const basicTurnsFromLog: ChatTurn[] = [];
 		const turnsMap = new Map<string, { user?: MigChatMessage; bot?: MigChatMessage }>();
 
