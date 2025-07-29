@@ -234,6 +234,28 @@ export const loreStore = {
 		}
 	},
 
+	/**
+	 * Deletes a lore document and all its associated index entries.
+	 * @param loreId The unique identifier of the lore to delete.
+	 */
+	deleteLore: async (loreId: string): Promise<void> => {
+		try {
+			const collection = await loreStore._getCollection();
+			console.log(`[LoreStore] Deleting lore and all associated indexes for loreId: ${loreId}`);
+
+			// This where clause targets both the primary LORE document (via its unique `loreId` field)
+			// and all its associated INDEX documents (via the `contentId` field).
+			const whereFilter: Where = {
+				$or: [{ loreId: { $eq: loreId } }, { contentId: { $eq: loreId } }],
+			};
+
+			await deleteRecords(collection, undefined, whereFilter);
+			console.log(`[LoreStore] Successfully deleted lore and indexes for loreId: ${loreId}`);
+		} catch (error) {
+			handleServiceError(error, `Failed to delete lore ${loreId}`);
+		}
+	},
+
 	// --- HISTORY OPERATIONS (Corrected and aligned with Lore) ---
 
 	storeHistory: async (historyInfo: HistoryInfo): Promise<void> => {
@@ -409,6 +431,30 @@ export const loreStore = {
 			};
 		} catch (error) {
 			handleServiceError(error, `Failed to get histories for character ${characterId}`);
+		}
+	},
+
+	/**
+	 * Deletes a history document and all its associated index entries.
+	 * @param historyId The unique identifier of the history to delete.
+	 */
+	deleteHistory: async (historyId: string): Promise<void> => {
+		try {
+			const collection = await loreStore._getCollection();
+			console.log(
+				`[LoreStore] Deleting history and all associated indexes for historyId: ${historyId}`
+			);
+
+			// This where clause targets both the primary HISTORY document (via its unique `historyId` field)
+			// and all its associated INDEX documents (via the `contentId` field).
+			const whereFilter: Where = {
+				$or: [{ historyId: { $eq: historyId } }, { contentId: { $eq: historyId } }],
+			};
+
+			await deleteRecords(collection, undefined, whereFilter);
+			console.log(`[LoreStore] Successfully deleted history and indexes for historyId: ${historyId}`);
+		} catch (error) {
+			handleServiceError(error, `Failed to delete history ${historyId}`);
 		}
 	},
 

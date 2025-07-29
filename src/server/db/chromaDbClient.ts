@@ -306,15 +306,30 @@ export const chromaDbClient = {
 	},
 
 	/**
-	 * Deletes multiple records from a collection in a single batch operation.
+	 * Deletes multiple records from a collection using IDs and/or a where filter.
+	 * At least one of 'ids' or 'where' must be provided.
 	 * @param collection The ChromaDB Collection object.
-	 * @param ids An array of record IDs to delete.
+	 * @param ids An optional array of record IDs to delete.
+	 * @param where An optional where filter object to specify which records to delete.
 	 */
-	deleteRecords: async (collection: Collection, ids: string[]): Promise<void> => {
-		if (!ids || ids.length === 0) {
-			console.log('[ChromaClient.deleteRecordsByIds] No IDs provided to delete.');
+	deleteRecords: async (collection: Collection, ids?: string[], where?: Where): Promise<void> => {
+		// 1. Guard clause: Ensure at least one deletion criterion is provided.
+		if ((!ids || ids.length === 0) && !where) {
+			console.warn('[ChromaClient.deleteRecords] No IDs or where filter provided. Nothing to delete.');
 			return;
 		}
-		return await collection.delete({ ids });
+
+		// 2. Build the options object for the native .delete() method.
+		const deleteOptions: { ids?: string[]; where?: Where } = {};
+		if (ids && ids.length > 0) {
+			deleteOptions.ids = ids;
+		}
+		if (where) {
+			deleteOptions.where = where;
+		}
+
+		// 3. Call the native delete method with the constructed options.
+		console.log('[ChromaClient.deleteRecords] Deleting with options:', deleteOptions);
+		return await collection.delete(deleteOptions);
 	},
 };
