@@ -41,9 +41,11 @@ import {
 import { getOriginalTerms } from '../term/initTerm.ts';
 import { chromaDbClient } from '#server/db/chromaDbClient.js';
 import {
+	getMondayUserProfileTemplate,
 	getTarionOriginalProfileTemplate,
 	getTarionSpinoffProfileTemplate,
 } from '../profile/initProfile.ts';
+import { encoding_for_model } from 'tiktoken';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -70,7 +72,18 @@ interface InitChatProgress {
 	status: 'in_progress' | 'completed' | 'failed';
 	errors: Array<{ sequence: number; error: string; timestamp: string }>;
 }
-const { upsertRecord } = chromaDbClient;
+
+const encoding = encoding_for_model('gpt-4');
+function getMaxOutputTokens(prompt: string, maxTotalTokens = 4096, minOutputTokens = 512): number {
+	// Count tokens in prompt using tiktoken encoder
+	const promptTokenCount = encoding.encode(prompt).length;
+
+	// Reserve tokens for output = maxTotalTokens - prompt tokens
+	const availableTokens = maxTotalTokens - promptTokenCount;
+
+	// Clamp to reasonable bounds
+	return Math.min(Math.max(availableTokens, minOutputTokens), maxTotalTokens);
+}
 
 const getProgressFilePath = (sessionId: string): string => {
 	return path.join(PROGRESS_DIR, `${PROGRESS_FILE_PREFIX}-${sessionId}.json`);
@@ -146,14 +159,25 @@ const enrichChatTurnWithMetadata = async (
 		historyContexts.map((history) => history.historyId)
 	);
 	const prompt = buildChatTurnMetadataPrompt(
-		{ showName: basicTurn.request.showName, name: 'yonyve', gender: 'female' },
+		{
+			showName: basicTurn.request.showName,
+			name: basicTurn.characterId.includes('tarion') ? 'yonyve' : 'jyonyve',
+			gender: 'female',
+		},
 		basicTurn.request,
-		{ showName: basicTurn.response.showName, name: 'tarion', gender: 'male' },
+		{
+			showName: basicTurn.response.showName,
+			name: basicTurn.characterId.includes('tarion') ? 'tarion' : 'monday',
+			gender: 'male',
+		},
 		basicTurn.response,
 		loreContexts,
 		historyContexts,
 		termGuidanceMap
 	);
+	const MAX_TOTAL_TOKENS = 4096; // Customize as needed
+	const minOutputTokens = 512;
+	const maxTokens = getMaxOutputTokens(prompt, MAX_TOTAL_TOKENS, minOutputTokens);
 	let enrichedData: z.infer<typeof chatTurnSchema>;
 
 	try {
@@ -165,7 +189,7 @@ const enrichChatTurnWithMetadata = async (
 			apiKey: OPENROUTER_API_KEY,
 			model: 'google/gemini-2.5-flash-lite',
 			temperature: 0.3,
-			maxTokens: 2048,
+			maxTokens,
 			configuration: {
 				baseURL: 'https://openrouter.ai/api/v1',
 				defaultHeaders: {
@@ -186,7 +210,7 @@ const enrichChatTurnWithMetadata = async (
 				apiKey: GEMINI_API_KEY,
 				model: 'gemini-2.0-flash',
 				temperature: 0.3,
-				maxOutputTokens: 2048,
+				maxOutputTokens: maxTokens,
 			});
 			const structuredGemini = geminiClient.withStructuredOutput(chatTurnSchema);
 			enrichedData = await structuredGemini.invoke(prompt);
@@ -199,7 +223,7 @@ const enrichChatTurnWithMetadata = async (
 				apiKey: GROQ_API_KEY,
 				model: 'llama3-70b-8192',
 				temperature: 0.3,
-				maxTokens: 2048,
+				maxTokens: maxTokens,
 			});
 			const structuredGroq = groqClient.withStructuredOutput(chatTurnSchema);
 			enrichedData = await structuredGroq.invoke(prompt);
@@ -383,13 +407,18 @@ async function initChatFromLogFiles() {
 			await chromaDbClient.upsertRecord(collection, sessionInfo.sessionId, document, metadata);
 
 			// init term
-			await termStore.storeTerms(getOriginalTerms(TARGET_SESSION_ID));
+			if (characterNameFromFile === 'tarion') {
+				await profileStore.storeProfile(
+					fileNameParts[1] === 'original'
+						? getTarionOriginalProfileTemplate(USER_ID, TARGET_SESSION_ID)
+						: getTarionSpinoffProfileTemplate(USER_ID, TARGET_SESSION_ID)
+				);
+				await termStore.storeTerms(getOriginalTerms(TARGET_SESSION_ID));
+			} else {
+				await profileStore.storeProfile(getMondayUserProfileTemplate(USER_ID, TARGET_SESSION_ID));
+			}
+
 			// init profile
-			await profileStore.storeProfile(
-				fileNameParts[1] === 'original'
-					? getTarionOriginalProfileTemplate(USER_ID, TARGET_SESSION_ID)
-					: getTarionSpinoffProfileTemplate(USER_ID, TARGET_SESSION_ID)
-			);
 		}
 
 		console.log(

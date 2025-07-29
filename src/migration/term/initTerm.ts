@@ -52,4 +52,4 @@ async function initTerm() {
 const sessionId = process.argv[2];
 
 // --- Run the script ---
-initTerm();
+// initTerm();

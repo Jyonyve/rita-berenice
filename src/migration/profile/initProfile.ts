@@ -95,4 +95,4 @@ async function initProfile() {
 }
 
 // --- Run the script ---
-initProfile();
+// initProfile();

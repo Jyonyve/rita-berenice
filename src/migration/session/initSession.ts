@@ -102,4 +102,4 @@ async function initSession() {
 }
 
 // --- Run the script ---
-initSession();
+// initSession();
