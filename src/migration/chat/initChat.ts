@@ -73,16 +73,13 @@ interface InitChatProgress {
 	errors: Array<{ sequence: number; error: string; timestamp: string }>;
 }
 
-const encoding = encoding_for_model('gpt-4');
-function getMaxOutputTokens(prompt: string, maxTotalTokens = 4096, minOutputTokens = 512): number {
-	// Count tokens in prompt using tiktoken encoder
-	const promptTokenCount = encoding.encode(prompt).length;
+const tokenizer = encoding_for_model('gpt-4');
 
-	// Reserve tokens for output = maxTotalTokens - prompt tokens
-	const availableTokens = maxTotalTokens - promptTokenCount;
-
-	// Clamp to reasonable bounds
-	return Math.min(Math.max(availableTokens, minOutputTokens), maxTotalTokens);
+// Helper function to calculate dynamic max tokens
+function getDynamicMaxTokens(prompt: string, totalTokenLimit = 4096, minOutput = 1024): number {
+	const promptTokens = tokenizer.encode(prompt).length;
+	const availableForOutput = totalTokenLimit - promptTokens;
+	return Math.max(minOutput, availableForOutput);
 }
 
 const getProgressFilePath = (sessionId: string): string => {
@@ -175,9 +172,8 @@ const enrichChatTurnWithMetadata = async (
 		historyContexts,
 		termGuidanceMap
 	);
-	const MAX_TOTAL_TOKENS = 4096; // Customize as needed
-	const minOutputTokens = 512;
-	const maxTokens = getMaxOutputTokens(prompt, MAX_TOTAL_TOKENS, minOutputTokens);
+
+	const maxTokens = getDynamicMaxTokens(prompt, 8192, 2048);
 	let enrichedData: z.infer<typeof chatTurnSchema>;
 
 	try {

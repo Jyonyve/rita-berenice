@@ -1,0 +1,47 @@
+{
+  "sessionId": "monday_original_wnp11hCU",
+  "totalTurnsInLogFile": 9,
+  "lastProcessedSequence": "8",
+  "successfullyEnrichedTurnsCount": 1,
+  "fallbackSavedTurnsCount": 7,
+  "startedAt": "2025-07-29T04:17:41.700Z",
+  "lastUpdatedAt": "2025-07-29T04:51:19.424Z",
+  "status": "completed",
+  "errors": [
+    {
+      "sequence": "2",
+      "error": "Enrichment failed: Transforms cannot be represented in JSON Schema",
+      "timestamp": "2025-07-29T04:51:13.271Z"
+    },
+    {
+      "sequence": "3",
+      "error": "Enrichment failed: Transforms cannot be represented in JSON Schema",
+      "timestamp": "2025-07-29T04:51:14.315Z"
+    },
+    {
+      "sequence": "4",
+      "error": "Enrichment failed: Transforms cannot be represented in JSON Schema",
+      "timestamp": "2025-07-29T04:51:15.343Z"
+    },
+    {
+      "sequence": "5",
+      "error": "Enrichment failed: Transforms cannot be represented in JSON Schema",
+      "timestamp": "2025-07-29T04:51:15.964Z"
+    },
+    {
+      "sequence": "6",
+      "error": "Enrichment failed: Transforms cannot be represented in JSON Schema",
+      "timestamp": "2025-07-29T04:51:16.902Z"
+    },
+    {
+      "sequence": "7",
+      "error": "Enrichment failed: Transforms cannot be represented in JSON Schema",
+      "timestamp": "2025-07-29T04:51:17.858Z"
+    },
+    {
+      "sequence": "8",
+      "error": "Enrichment failed: Transforms cannot be represented in JSON Schema",
+      "timestamp": "2025-07-29T04:51:18.470Z"
+    }
+  ]
+}

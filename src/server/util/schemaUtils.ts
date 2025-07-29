@@ -56,18 +56,18 @@ export const createChatTurnMetadataSchema = (
 	// --- Conditional logic for the Lore Reference field ---
 	const loreReferenceSchema =
 		existingLoreIds.length > 0
-			? // IF there are valid IDs, the LLM must choose from them.
-				z.array(
+			? z.array(
 					z.object({
 						id: z.enum(existingLoreIds as [string, ...string[]]),
-						relevance: z.number().min(0.0).max(1.0),
+						relevance: z.number().min(0).max(1),
 					})
 				)
-			: // ELSE, the LLM MUST return an empty array.
-				z
+			: z
 					.array(z.any())
 					.max(0)
 					.describe('There are no lore items available to reference, so this must be an empty array.');
+
+	const loreReferenceList = loreReferenceSchema.transform((val) => (Array.isArray(val) ? val : []));
 
 	// --- Conditional logic for the History Reference field ---
 	const historyReferenceSchema =
@@ -86,6 +86,10 @@ export const createChatTurnMetadataSchema = (
 					.describe(
 						'There are no history events available to reference, so this must be an empty array.'
 					);
+
+	const historyReferenceList = historyReferenceSchema.transform((val) =>
+		Array.isArray(val) ? val : []
+	);
 
 	return z.object({
 		summary: z
@@ -149,10 +153,10 @@ export const createChatTurnMetadataSchema = (
 			.describe(
 				`Observable actions taken by entities. Example: ['${charEng}_draws_sword', '${userEng}_offers_potion']`
 			),
-		loreReferenceList: loreReferenceSchema.describe(
+		loreReferenceList: loreReferenceList.describe(
 			`A list of lore items relevant to this turn. You MUST choose the 'id' from the 'loreId' in the <AvailableLore> catalog provided in the main prompt.`
 		),
-		historyReferenceList: historyReferenceSchema.describe(
+		historyReferenceList: historyReferenceList.describe(
 			`A list of history events relevant to this turn. You MUST choose the 'id' from the 'historyId' in the <AvailableHistory> catalog provided in the main prompt.`
 		),
 		flagList: z
