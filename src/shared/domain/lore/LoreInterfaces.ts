@@ -26,7 +26,6 @@ export interface LoreMetadata {
 	updatedAt: string;
 	title: string;
 	generatedTitle: string;
-	englishId: string;
 	category: string;
 	source: string;
 	summary: string;
@@ -42,7 +41,6 @@ export interface HistoryMetadata {
 	updatedAt: string;
 	title: string;
 	generatedTitle: string;
-	englishId: string;
 	category: string;
 	summary: string;
 	periodLabel: string;
@@ -82,3 +80,30 @@ export interface HistoryInfo extends HistoryMetadata {
 // --- CDO TYPES ---
 export type HistoryCdo = Pick<HistoryInfo, 'content' | 'title' | 'userId' | 'characterId'>;
 export type LoreCdo = Pick<LoreInfo, 'content' | 'userId' | 'characterId'>;
+
+//---- context object ----
+
+// For your history context
+export interface HistoryContext {
+	historyId: string; // The ID to be returned
+	title: string; // The human-readable title
+	summary: string; // A concise summary of the event
+	category: string; // The event's classification
+	periodLabel: string; // The life period this event belongs to
+	keywordList: string[]; // Specific search terms
+	topicList: string[]; // Broader thematic concepts
+	entityList: string[]; // Specific named people, places, things
+	allAffectedCharacterIdList: string[];
+}
+
+// A similar one for Lore
+export interface LoreContext {
+	loreId: string;
+	title: string;
+	summary: string;
+	category: string;
+	keywordList: string[];
+	topicList: string[];
+	entityList: string[];
+	allAffectedCharacterIdList: string[];
+}

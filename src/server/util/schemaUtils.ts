@@ -52,8 +52,42 @@ export const createChatTurnMetadataSchema = (
 	userEng: string,
 	existingLoreIds: string[],
 	existingHistoryIds: string[]
-) =>
-	z.object({
+) => {
+	// --- Conditional logic for the Lore Reference field ---
+	const loreReferenceSchema =
+		existingLoreIds.length > 0
+			? // IF there are valid IDs, the LLM must choose from them.
+				z.array(
+					z.object({
+						id: z.enum(existingLoreIds as [string, ...string[]]),
+						relevance: z.number().min(0.0).max(1.0),
+					})
+				)
+			: // ELSE, the LLM MUST return an empty array.
+				z
+					.array(z.any())
+					.max(0)
+					.describe('There are no lore items available to reference, so this must be an empty array.');
+
+	// --- Conditional logic for the History Reference field ---
+	const historyReferenceSchema =
+		existingHistoryIds.length > 0
+			? // IF there are valid IDs, enforce them.
+				z.array(
+					z.object({
+						id: z.enum(existingHistoryIds as [string, ...string[]]),
+						relevance: z.number().min(0.0).max(1.0),
+					})
+				)
+			: // ELSE, enforce an empty array.
+				z
+					.array(z.any())
+					.max(0)
+					.describe(
+						'There are no history events available to reference, so this must be an empty array.'
+					);
+
+	return z.object({
 		summary: z
 			.string()
 			.describe(
@@ -115,16 +149,12 @@ export const createChatTurnMetadataSchema = (
 			.describe(
 				`Observable actions taken by entities. Example: ['${charEng}_draws_sword', '${userEng}_offers_potion']`
 			),
-		loreReferenceList: z
-			.array(z.object({ id: z.string(), relevance: z.number().min(0.0).max(1.0) }))
-			.describe(
-				`A list of lore IDs relevant to this turn from this list: [${existingLoreIds.join(', ')}]`
-			),
-		historyReferenceList: z
-			.array(z.object({ id: z.string(), relevance: z.number().min(0.0).max(1.0) }))
-			.describe(
-				`A list of history IDs relevant to this turn from this list: [${existingHistoryIds.join(', ')}]`
-			),
+		loreReferenceList: loreReferenceSchema.describe(
+			`A list of lore items relevant to this turn. You MUST choose the 'id' from the 'loreId' in the <AvailableLore> catalog provided in the main prompt.`
+		),
+		historyReferenceList: historyReferenceSchema.describe(
+			`A list of history events relevant to this turn. You MUST choose the 'id' from the 'historyId' in the <AvailableHistory> catalog provided in the main prompt.`
+		),
 		flagList: z
 			.array(z.string())
 			.describe(
@@ -134,6 +164,7 @@ export const createChatTurnMetadataSchema = (
 			.string()
 			.describe('A self-contained summary of this turn (max 100 words) for future RAG retrieval.'),
 	});
+};
 
 /**
  * Creates a comprehensive Zod schema for validating all metadata of a LORE entry.
@@ -145,9 +176,6 @@ export const createLoreMetadataSchema = (availableCharacterIds: string[]) => {
 		generatedEnglishTitle: z
 			.string()
 			.describe('A concise, descriptive title in English for the lore entry.'),
-		englishId: z
-			.string()
-			.describe("A URL-safe, snake_case version of the English title, e.g., 'the_sword_of_eldoria'."),
 		summary: z.string().describe('A one-paragraph summary of the lore, explaining its significance.'),
 		category: z
 			.string()
@@ -187,11 +215,6 @@ export const createHistoryMetadataSchema = (
 		generatedEnglishTitle: z
 			.string()
 			.describe('A concise, descriptive title in English for the event.'),
-		englishId: z
-			.string()
-			.describe(
-				"A URL-safe, snake_case version of the English title, e.g., 'the_battle_of_blackwater'."
-			),
 		summary: z
 			.string()
 			.describe('A one-paragraph summary of the event, capturing the key actions and outcomes.'),

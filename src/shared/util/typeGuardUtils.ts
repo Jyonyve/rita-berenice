@@ -90,7 +90,6 @@ export const createBasicHistory = (cdo: HistoryCdo): HistoryInfo => {
 		historyId: '',
 		type: 'history',
 		generatedTitle: '',
-		englishId: '',
 		category: 'character_history',
 		summary: '',
 		periodLabel: 'Unknown',

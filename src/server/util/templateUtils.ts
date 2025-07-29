@@ -3,7 +3,12 @@
 import { BasicBeingInfo, CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { ChatMessage, ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { convertArrayToString, parseEntriesToText } from '#shared/util/chatParseUtils.js';
-import { HistoryInfo, LoreInfo } from '#shared/domain/lore/LoreInterfaces.js';
+import {
+	HistoryContext,
+	HistoryInfo,
+	LoreContext,
+	LoreInfo,
+} from '#shared/domain/lore/LoreInterfaces.js';
 import { MemoryResponse } from '#shared/api/ModuleResponse.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { LangCode } from '#shared/config/langConstants.js';
@@ -387,7 +392,10 @@ export const buildChatTurnMetadataPrompt = (
 	userRequest: ChatMessage,
 	charInfo: BasicBeingInfo,
 	charResponse: ChatMessage,
+	loreContexts: LoreContext[],
+	historyContexts: HistoryContext[],
 	termGuidanceMap?: Map<string, string>,
+
 	eng?: boolean
 ): string => {
 	const userRequestContent = parseEntriesToText(userRequest.entries);
@@ -395,6 +403,9 @@ export const buildChatTurnMetadataPrompt = (
 
 	const { showName: userKor, name: userEng, gender: userGender } = profileInfo;
 	const { showName: charKor, name: charEng, gender: charGender } = charInfo;
+
+	const loreCatalogString = JSON.stringify(loreContexts, null, 2);
+	const historyCatalogString = JSON.stringify(historyContexts, null, 2);
 
 	// --- Dynamically generate the terminology guidance section ---
 	let termGuidanceInstruction = '';
@@ -422,6 +433,18 @@ Analyze the following single turn of conversation between ${userKor} (English: $
 *   **Turn Sequence:** ${userRequest.sequence}
 *   **User (${userKor}/${userEng}, Initial Emotion: ${userRequest.emotion}):** ${userRequestContent}
 *   **Character (${charKor}/${charEng}, Initial Emotion: ${charResponse.emotion}, Model: ${charResponse.model || NA}):** ${charResponseContent}
+
+**Reference Catalog (CRITICAL):**
+Use this catalog to identify relevant lore or history. For the 'loreReferenceList' and 'historyReferenceList' fields, you MUST use the 'loreId' or 'historyId' from this catalog.
+
+<AvailableLore>
+${loreCatalogString}
+</AvailableLore>
+
+<AvailableHistory>
+${historyCatalogString}
+</AvailableHistory>
+
 
 **Analysis Guidelines:**
 - All metadata fields MUST be in English.

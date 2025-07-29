@@ -173,7 +173,7 @@ async function initHistoryFromFiles() {
 
 				const now = new Date().toISOString();
 				const primaryCharacterId = characterId; // Assign a primary owner
-				const historyId = buildHistoryId(primaryCharacterId, enrichedMetadata.englishId);
+				const historyId = buildHistoryId(primaryCharacterId, enrichedMetadata.period.label);
 
 				// --- This mapping is now clean and directly aligned with HistoryInfo ---
 				const historyInfo: HistoryInfo = {
@@ -185,7 +185,6 @@ async function initHistoryFromFiles() {
 					createdAt: now,
 					updatedAt: now,
 					historyId,
-					englishId: enrichedMetadata.englishId,
 					title: data.title,
 					content: data.content.trim(),
 

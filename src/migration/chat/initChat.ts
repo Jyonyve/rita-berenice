@@ -17,12 +17,13 @@ import { DEFAULT_EMOTION, EmotionValue, validEmotions } from '#shared/config/emo
 import { APPNAME, METADATA_TYPES, NA } from '#shared/config/constants.js';
 import { chatStore } from '#server/store/chatStore.js';
 import { buildChatTurnMetadataPrompt } from '#server/util/templateUtils.js';
-import { mapTerms, termStore } from '#server/index.js';
+import { mapHistoryContexts, mapLoreContexts, mapTerms, termStore } from '#server/index.js';
 import { createChatTurnMetadataSchema } from '#server/util/schemaUtils.js';
 import { loreStore } from '#server/store/loreStore.js';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { ChatGroq } from '@langchain/groq';
 import { ChatOpenAI } from '@langchain/openai';
+import { HistoryContext, LoreContext } from '#shared/domain/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -114,20 +115,22 @@ const getDefaultEnrichedMetadata = () => ({
 const enrichChatTurnWithMetadata = async (
 	basicTurn: ChatTurn,
 	termGuidanceMap: Map<string, string>,
-	existingLoreIds: string[],
-	existingHistoryIds: string[]
+	loreContexts: LoreContext[],
+	historyContexts: HistoryContext[]
 ): Promise<ChatTurn> => {
 	const chatTurnSchema = createChatTurnMetadataSchema(
 		basicTurn.request.showName,
 		basicTurn.response.showName,
-		existingLoreIds,
-		existingHistoryIds
+		loreContexts.map((lore) => lore.loreId),
+		historyContexts.map((history) => history.historyId)
 	);
 	const prompt = buildChatTurnMetadataPrompt(
 		{ showName: basicTurn.request.showName, name: 'yonyve', gender: 'female' },
 		basicTurn.request,
 		{ showName: basicTurn.response.showName, name: 'tarion', gender: 'male' },
 		basicTurn.response,
+		loreContexts,
+		historyContexts,
 		termGuidanceMap
 	);
 	let enrichedData: z.infer<typeof chatTurnSchema>;
@@ -224,8 +227,8 @@ async function processAndUpsertTurn(
 	turnToProcess: ChatTurn,
 	progress: InitChatProgress,
 	termGuidanceMap: Map<string, string>,
-	existingLoreIds: string[],
-	existingHistoryIds: string[],
+	loreContexts: LoreContext[],
+	historyContexts: HistoryContext[],
 	currentIndex: number,
 	batchTotal: number
 ) {
@@ -237,8 +240,8 @@ async function processAndUpsertTurn(
 		enrichedTurn = await enrichChatTurnWithMetadata(
 			turnToProcess,
 			termGuidanceMap,
-			existingLoreIds,
-			existingHistoryIds
+			loreContexts,
+			historyContexts
 		);
 		progress.successfullyEnrichedTurnsCount++;
 	} catch (enrichmentError) {
@@ -328,10 +331,11 @@ async function initChatFromLogFiles() {
 			loreStore.getLores(characterId),
 			loreStore.getHistories(characterId),
 		]);
-		const existingLoreIds = loreRes.loreInfos.map((lore) => lore.loreId);
-		const existingHistoryIds = historyRes.historyInfos.map((history) => history.historyId);
+
+		const loreContexts = mapLoreContexts(loreRes.loreInfos);
+		const historyContexts = mapHistoryContexts(historyRes.historyInfos);
 		console.log(
-			`      Found ${existingLoreIds.length} lore and ${existingHistoryIds.length} history documents.`
+			`      Found ${loreContexts.length} lore and ${historyContexts.length} history documents.`
 		);
 
 		const { displayTurns: existingTurnsInDB } =
@@ -458,8 +462,8 @@ async function initChatFromLogFiles() {
 					turn,
 					progress,
 					termGuidanceMap,
-					existingLoreIds,
-					existingHistoryIds,
+					loreContexts,
+					historyContexts,
 					i,
 					turnsToProcessThisRun.length
 				);

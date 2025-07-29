@@ -3,6 +3,7 @@ import { ChatCompletion } from 'openai/resources/index.mjs';
 import { LlmResponseParseError } from './serviceHelpers.js';
 import { ChromaResponse } from '#shared/api/ModuleResponse.js';
 import { DefaultAiRole } from '#shared/domain/aimodel/index.js';
+import { HistoryContext, HistoryInfo, LoreContext, LoreInfo } from '#shared/domain/lore/index.js';
 
 export function isDirectOpenAIClient(llm: any): llm is OpenAI {
 	// Check for a unique property or method of the OpenAI client instance
@@ -121,3 +122,35 @@ export function reRankByRecency<T extends { updatedAt: string }>(
 export const buildChatCompletion = (role: DefaultAiRole, content: string, name?: string) => {
 	return { role, content, name };
 };
+
+// CORRECT mapping for Histories
+export const mapHistoryContexts = (historyInfos: HistoryInfo[]): HistoryContext[] =>
+	historyInfos.map((history) => {
+		return {
+			// --- Explicitly list only the fields you need ---
+			historyId: history.historyId,
+			title: history.title,
+			summary: history.summary,
+			category: history.category,
+			periodLabel: history.periodLabel,
+			keywordList: history.keywordList,
+			topicList: history.topicList,
+			entityList: history.entityList,
+			allAffectedCharacterIdList: history.allAffectedCharacterIdList,
+		};
+	});
+
+// CORRECT mapping for Lore
+export const mapLoreContexts = (loreInfos: LoreInfo[]): LoreContext[] =>
+	loreInfos.map((lore) => {
+		return {
+			loreId: lore.loreId,
+			title: lore.title,
+			summary: lore.summary,
+			category: lore.category,
+			keywordList: lore.keywordList,
+			topicList: lore.topicList,
+			entityList: lore.entityList,
+			allAffectedCharacterIdList: lore.allAffectedCharacterIdList,
+		};
+	});

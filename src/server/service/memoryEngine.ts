@@ -19,7 +19,7 @@ import { profileStore } from '../store/profileStore.js';
 import { termStore } from '../store/termStore.js';
 import { detectLanguage } from '../util/languageUtils.js';
 import { handleServiceError } from '../util/serviceHelpers.js';
-import { parseLlmJsonResponse, reRankByRecency } from '../util/llmUtils.js';
+import { mapLoreContexts, reRankByRecency, mapHistoryContexts } from '../util/llmUtils.js';
 import { llmService } from './llmService.js';
 import { AiModelInfo, DEFAULT_CHAT_MODEL_FREE } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { ragQueryService } from './ragQueryService.js';
@@ -210,14 +210,14 @@ export const memoryEngine = {
 				termStore.ensureAndGetTermsForPrompt(sessionId, userId, extractedKpns),
 			]);
 
-			const loreIds = loreRes.loreInfos.map((lore) => lore.loreId);
-			const historyIds = historyRes.historyInfos.map((history) => history.historyId);
+			const loreContexts = mapLoreContexts(loreRes.loreInfos);
+			const historyContexts = mapHistoryContexts(historyRes.historyInfos);
 
 			const zodSchema = createChatTurnMetadataSchema(
 				profileInfo.profileInfo.name,
 				charInfo.characterInfo.name,
-				loreIds,
-				historyIds
+				loreContexts.map((l) => l.loreId),
+				historyContexts.map((h) => h.historyId)
 			);
 
 			// 3. Build the prompt and invoke the LLM with a defined schema.
@@ -226,6 +226,8 @@ export const memoryEngine = {
 				turn.request,
 				charInfo.characterInfo,
 				turn.response,
+				loreContexts,
+				historyContexts,
 				termGuidanceMap
 			);
 

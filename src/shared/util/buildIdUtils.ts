@@ -7,7 +7,9 @@ import { RecapIndexContentType } from '../domain/recap/RecapInterfaces.js';
 
 /* gen uuid (shortened)*/
 const _genNanoId = (length: number) => customAlphabet(ALPHANUMERIC_ALPHABET, length)();
-const convertContentType = (contentType: string) => contentType.toLowerCase().replaceAll('_', '-');
+const sanitizeIdInput = (input: string): string => {
+	return input.toLowerCase().replace(/[\s_]+/g, '-');
+};
 
 /* ID suffix */
 export const SUFFIX = {
@@ -38,14 +40,12 @@ export const buildProfileId = (sessionId: string, userId: string) => {
 	return `${sessionId}_${userId}`;
 };
 
-export const buildLoreId = (characterId: string, englishId: string) => {
-	// englishId is the kebab-case summary of the lore title
-	return `${characterId}_${englishId}_${SUFFIX.LORE}`;
+export const buildLoreId = (characterId: string, category: string) => {
+	return `${characterId}_${sanitizeIdInput(category)}_${_genNanoId(4)}_${SUFFIX.LORE}`;
 };
 
-export const buildHistoryId = (characterId: string, englishId: string) => {
-	// englishId is the kebab-case summary of the history title
-	return `${characterId}_${englishId}_${SUFFIX.HISTORY}`;
+export const buildHistoryId = (characterId: string, periodLabel: string) => {
+	return `${characterId}_${sanitizeIdInput(periodLabel)}_${_genNanoId(4)}_${SUFFIX.HISTORY}`;
 };
 
 /* chat id */
@@ -69,18 +69,18 @@ export const buildChatTurnIndexId = (
 	chatTurnId: string,
 	contentType: ChatIndexContentType
 ): string => {
-	return `${chatTurnId}_${convertContentType(contentType)}_${_genNanoId(4)}`;
+	return `${chatTurnId}_${sanitizeIdInput(contentType)}_${_genNanoId(4)}`;
 };
 
 export const buildLoreIndexId = (contentId: string, contentType: LoreIndexContentType): string => {
-	return `${contentId}_${convertContentType(contentType)}_${_genNanoId(4)}`;
+	return `${contentId}_${sanitizeIdInput(contentType)}_${_genNanoId(4)}`;
 };
 
 export const buildRecapIndexId = (
 	chatTurnId: string,
 	contentType: RecapIndexContentType
 ): string => {
-	return `${chatTurnId}_${convertContentType(contentType)}_${_genNanoId(4)}`;
+	return `${chatTurnId}_${sanitizeIdInput(contentType)}_${_genNanoId(4)}`;
 };
 
 export const buildTempChatTurnId = (sessionId: string, sequence: number): string => {
