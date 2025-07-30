@@ -39,57 +39,31 @@ export const createPersonaResponseSchema = (
 	});
 
 /**
- * Creates a Zod schema for validating the structured metadata of a ChatTurn.
- * This schema replaces manual JSON instructions in the prompt.
+ * Creates a Zod schema for validating ChatTurn metadata.
+ * Dynamically adapts based on available lore and history contexts.
+ * Compatible with LangChain's .withStructuredOutput() (no transforms).
  *
  * @param charEng - The English name of the character.
  * @param userEng - The English name of the user.
- * @param existingLoreIds - A list of valid lore IDs for the 'loreReferenceList' field.
- * @param existingHistoryIds - A list of valid history IDs for the 'historyReferenceList' field.
+ * @param existingLoreIds - Array of valid lore IDs (empty if none available).
+ * @param existingHistoryIds - Array of valid history IDs (empty if none available).
  */
-export const createChatTurnMetadataSchema = (
-	charEng: string,
-	userEng: string,
-	existingLoreIds: string[],
-	existingHistoryIds: string[]
-) => {
-	// --- Conditional logic for the Lore Reference field ---
-	const loreReferenceSchema =
-		existingLoreIds.length > 0
-			? z.array(
-					z.object({
-						id: z.enum(existingLoreIds as [string, ...string[]]),
-						relevance: z.number().min(0).max(1),
-					})
-				)
-			: z
-					.array(z.any())
-					.max(0)
-					.describe('There are no lore items available to reference, so this must be an empty array.');
-
-	const loreReferenceList = loreReferenceSchema.transform((val) => (Array.isArray(val) ? val : []));
-
-	// --- Conditional logic for the History Reference field ---
-	const historyReferenceSchema =
-		existingHistoryIds.length > 0
-			? // IF there are valid IDs, enforce them.
-				z.array(
-					z.object({
-						id: z.enum(existingHistoryIds as [string, ...string[]]),
-						relevance: z.number().min(0.0).max(1.0),
-					})
-				)
-			: // ELSE, enforce an empty array.
-				z
-					.array(z.any())
-					.max(0)
-					.describe(
-						'There are no history events available to reference, so this must be an empty array.'
-					);
-
-	const historyReferenceList = historyReferenceSchema.transform((val) =>
-		Array.isArray(val) ? val : []
-	);
+export const createChatTurnMetadataSchema = (charEng: string, userEng: string) => {
+	// Helper to create reference schema based on available IDs
+	const createReferenceSchema = (ids: string[], itemType: string) => {
+		if (ids.length > 0) {
+			// State: IDs exist - enforce enum validation
+			return z.array(
+				z.object({ id: z.enum(ids as [string, ...string[]]), relevance: z.number().min(0.0).max(1.0) })
+			);
+		} else {
+			// State: No IDs - enforce empty array
+			return z
+				.array(z.any())
+				.max(0)
+				.describe(`No ${itemType} items are available to reference, so this must be an empty array.`);
+		}
+	};
 
 	return z.object({
 		summary: z
@@ -97,19 +71,23 @@ export const createChatTurnMetadataSchema = (
 			.describe(
 				`A concise summary of the turn in max 50 words. Example: 'User asks about ${charEng}'s past, and ${charEng} evades.'`
 			),
+
 		keywordList: z
 			.array(z.string())
 			.describe("An array of general keywords, e.g., ['conversation', 'past', 'evasion']"),
+
 		topicList: z
 			.array(z.string())
 			.describe(
 				"An array of broader themes in snake_case, e.g., ['character_background', 'trust_issues']"
 			),
+
 		entityList: z
 			.array(z.string())
 			.describe(
 				`An array of entities mentioned, formatted as 'type:name'. Example: ['character:${charEng}', 'character:${userEng}', 'location:DarkForest']`
 			),
+
 		userEmotion: z.object({
 			primary: z
 				.string()
@@ -125,6 +103,7 @@ export const createChatTurnMetadataSchema = (
 				.array(z.string())
 				.describe("An array of specific emotion words, e.g., ['frustration', 'curiosity']"),
 		}),
+
 		characterEmotion: z.object({
 			primary: z
 				.string()
@@ -140,30 +119,40 @@ export const createChatTurnMetadataSchema = (
 				.array(z.string())
 				.describe("An array of specific emotion words, e.g., ['defensive', 'sadness']"),
 		}),
+
 		relationshipShiftList: z
 			.array(z.string())
 			.describe(
 				`Describes a dynamic change between two entities. Example: ['${charEng}-${userEng}:trust_increased']`
 			),
+
 		dialogueAct: z
 			.string()
 			.describe("The conversational act, e.g., 'question', 'answer', 'revelation', 'evasion'"),
+
 		actionList: z
 			.array(z.string())
 			.describe(
 				`Observable actions taken by entities. Example: ['${charEng}_draws_sword', '${userEng}_offers_potion']`
 			),
-		loreReferenceList: loreReferenceList.describe(
-			`A list of lore items relevant to this turn. You MUST choose the 'id' from the 'loreId' in the <AvailableLore> catalog provided in the main prompt.`
-		),
-		historyReferenceList: historyReferenceList.describe(
-			`A list of history events relevant to this turn. You MUST choose the 'id' from the 'historyId' in the <AvailableHistory> catalog provided in the main prompt.`
-		),
+		loreReferenceList: z
+			.array(z.object({ id: z.string(), relevance: z.number().min(0.0).max(1.0) }))
+			.describe(
+				`A list of lore items relevant to this turn. You MUST choose the 'id' from the 'loreId' in the <AvailableLore> catalog provided in the main prompt. Return empty array [] if none available.`
+			),
+
+		historyReferenceList: z
+			.array(z.object({ id: z.string(), relevance: z.number().min(0.0).max(1.0) }))
+			.describe(
+				`A list of lore items relevant to this turn. You MUST choose the 'id' from the 'loreId' in the <AvailableLore> catalog provided in the main prompt. Return empty array [] if none available.`
+			),
+
 		flagList: z
 			.array(z.string())
 			.describe(
 				"An array of flags for significant events, e.g., ['new_lore_revealed', 'major_plot_point']"
 			),
+
 		memoryChunk: z
 			.string()
 			.describe('A self-contained summary of this turn (max 100 words) for future RAG retrieval.'),

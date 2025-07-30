@@ -19,6 +19,21 @@ const CHROMA_PORT = Number(process.env.CHROMA_PORT) || 443;
 const CHROMA_SSL = true; // Your URL starts with https://
 const chromaClient = new ChromaClient({ host: CHROMA_HOST, port: CHROMA_PORT, ssl: CHROMA_SSL });
 
+// Retry wrapper
+const withRetry = async <T>(fn: () => Promise<T>, retries = 3, delay = 1500): Promise<T> => {
+	let lastError: unknown;
+	for (let i = 0; i < retries; i++) {
+		try {
+			return await fn();
+		} catch (err) {
+			lastError = err;
+			console.warn(`[ChromaRetry] Attempt ${i + 1} failed: ${(err as Error).message}`);
+			await new Promise((res) => setTimeout(res, delay));
+		}
+	}
+	throw lastError;
+};
+
 /**
  * A centralized Map to cache all singleton Collection objects.
  * This avoids repetitive caching logic for each collection type.
@@ -35,33 +50,29 @@ const _collectionCache: Map<string, Collection> = new Map();
  * @returns A Promise that resolves to the ChromaDB Collection object.
  */
 const _getOrCreateSingletonCollection = async (collectionName: string): Promise<Collection> => {
-	// 1. Return from cache if the collection object is already available.
 	if (_collectionCache.has(collectionName)) {
-		// This log is now for a true cache hit, making it accurate.
 		console.log(`[ChromaClient] Cache HIT for collection: ${collectionName}`);
 		return _collectionCache.get(collectionName)!;
 	}
 
-	// 2. On a cache miss, get or create the collection from ChromaDB.
 	console.log(`[ChromaClient] Cache MISS for ${collectionName}. Fetching or creating from DB...`);
 	try {
 		console.log(`[ChromaClient] Attempting to GET collection: ${collectionName}`);
-		const collection = await chromaClient.getCollection({
-			name: collectionName,
-			embeddingFunction: embedFnOpenAi,
-		});
+		const collection = await withRetry(() =>
+			chromaClient.getCollection({ name: collectionName, embeddingFunction: embedFnOpenAi })
+		);
 		_collectionCache.set(collectionName, collection);
 		console.log(`[ChromaClient] Cache HIT for existing collection: ${collectionName}`);
 		return collection;
 	} catch (error) {
-		// Error means the collection does not exist, so we create it.
-		// This is the new "get-or-create" pattern.
-		console.log(`[ChromaClient] Collection ${collectionName} not found. Creating...`);
-		const collection = await chromaClient.createCollection({
-			name: collectionName,
-			embeddingFunction: embedFnOpenAi,
-			metadata: { name: collectionName, created: new Date().toString() },
-		});
+		console.log(`[ChromaClient] Collection ${collectionName} not found or fetch failed. Creating...`);
+		const collection = await withRetry(() =>
+			chromaClient.createCollection({
+				name: collectionName,
+				embeddingFunction: embedFnOpenAi,
+				metadata: { name: collectionName, created: new Date().toString() },
+			})
+		);
 		_collectionCache.set(collectionName, collection);
 		console.log(`[ChromaClient] Collection ${collectionName} created and cached.`);
 		return collection;

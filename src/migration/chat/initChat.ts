@@ -28,9 +28,7 @@ import {
 } from '#server/index.js';
 import { createChatTurnMetadataSchema } from '#server/util/schemaUtils.js';
 import { loreStore } from '#server/store/loreStore.js';
-import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { ChatGroq } from '@langchain/groq';
-import { ChatOpenAI } from '@langchain/openai';
 import {
 	HistoryContext,
 	LoreContext,
@@ -46,6 +44,8 @@ import {
 	getTarionSpinoffProfileTemplate,
 } from '../profile/initProfile.ts';
 import { encoding_for_model } from 'tiktoken';
+import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
+import { ChatOpenAI } from '@langchain/openai';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -76,7 +76,7 @@ interface InitChatProgress {
 const tokenizer = encoding_for_model('gpt-4');
 
 // Helper function to calculate dynamic max tokens
-function getDynamicMaxTokens(prompt: string, totalTokenLimit = 4096, minOutput = 1024): number {
+function getDynamicMaxTokens(prompt: string, totalTokenLimit = 8192, minOutput = 2048): number {
 	const promptTokens = tokenizer.encode(prompt).length;
 	const availableForOutput = totalTokenLimit - promptTokens;
 	return Math.max(minOutput, availableForOutput);
@@ -143,6 +143,52 @@ const getDefaultEnrichedMetadata = () => ({
 	memoryChunk: NA,
 });
 
+function correctLLMResponse(
+	rawResponse: any,
+	loreContexts: LoreContext[],
+	historyContexts: HistoryContext[]
+): any {
+	const existingLoreIds = loreContexts.map((l) => l.loreId);
+	const existingHistoryIds = historyContexts.map((h) => h.historyId);
+
+	// STUBBORN RULE 1: If no lore/history exists, force empty arrays
+	if (existingLoreIds.length === 0) {
+		console.log(`🔧 Application override: Forcing empty loreReferenceList (no lore available)`);
+		rawResponse.loreReferenceList = [];
+	} else {
+		// Filter out invalid IDs that the LLM hallucinated
+		const validLoreRefs =
+			rawResponse.loreReferenceList?.filter((ref: any) => existingLoreIds.includes(ref.id)) || [];
+
+		if (validLoreRefs.length !== rawResponse.loreReferenceList?.length) {
+			console.log(`🔧 Application override: Filtered invalid lore references`);
+			rawResponse.loreReferenceList = validLoreRefs;
+		}
+	}
+
+	if (existingHistoryIds.length === 0) {
+		console.log(`🔧 Application override: Forcing empty historyReferenceList (no history available)`);
+		rawResponse.historyReferenceList = [];
+	} else {
+		const validHistoryRefs =
+			rawResponse.historyReferenceList?.filter((ref: any) => existingHistoryIds.includes(ref.id)) ||
+			[];
+
+		if (validHistoryRefs.length !== rawResponse.historyReferenceList?.length) {
+			console.log(`🔧 Application override: Filtered invalid history references`);
+			rawResponse.historyReferenceList = validHistoryRefs;
+		}
+	}
+
+	// STUBBORN RULE 2: Validate and correct other fields as needed
+	if (!Array.isArray(rawResponse.keywordList)) {
+		console.log(`🔧 Application override: Fixing non-array keywordList`);
+		rawResponse.keywordList = [];
+	}
+
+	return rawResponse;
+}
+
 const enrichChatTurnWithMetadata = async (
 	basicTurn: ChatTurn,
 	termGuidanceMap: Map<string, string>,
@@ -151,10 +197,9 @@ const enrichChatTurnWithMetadata = async (
 ): Promise<ChatTurn> => {
 	const chatTurnSchema = createChatTurnMetadataSchema(
 		basicTurn.request.showName,
-		basicTurn.response.showName,
-		loreContexts.map((lore) => lore.loreId),
-		historyContexts.map((history) => history.historyId)
+		basicTurn.response.showName
 	);
+
 	const prompt = buildChatTurnMetadataPrompt(
 		{
 			showName: basicTurn.request.showName,
@@ -173,7 +218,7 @@ const enrichChatTurnWithMetadata = async (
 		termGuidanceMap
 	);
 
-	const maxTokens = getDynamicMaxTokens(prompt, 8192, 2048);
+	const maxTokens = getDynamicMaxTokens(prompt);
 	let enrichedData: z.infer<typeof chatTurnSchema>;
 
 	try {
@@ -194,8 +239,8 @@ const enrichChatTurnWithMetadata = async (
 				},
 			},
 		});
-		const structuredOpenRouter = openRouterClient.withStructuredOutput(chatTurnSchema);
-		enrichedData = await structuredOpenRouter.invoke(prompt);
+		const structuredClient = openRouterClient.withStructuredOutput(chatTurnSchema);
+		enrichedData = await structuredClient.invoke(prompt);
 	} catch (openRouterError) {
 		console.error(`       💥 OpenRouter failed:`, openRouterError);
 		console.log(`       🔁 Falling back to direct Gemini...`);
@@ -232,33 +277,37 @@ const enrichChatTurnWithMetadata = async (
 			? (originalEmotion as EmotionValue)
 			: (newPrimaryEmotion as EmotionValue);
 	};
+	const correctedResponse = correctLLMResponse(enrichedData, loreContexts, historyContexts);
 
 	return {
 		...basicTurn,
 		request: {
 			...basicTurn.request,
-			emotion: defineEmotion(basicTurn.request.emotion, enrichedData.userEmotion.primary),
+			emotion: defineEmotion(basicTurn.request.emotion, correctedResponse.userEmotion.primary),
 		},
 		response: {
 			...basicTurn.response,
-			emotion: defineEmotion(basicTurn.response.emotion, enrichedData.characterEmotion.primary),
+			emotion: defineEmotion(basicTurn.response.emotion, correctedResponse.characterEmotion.primary),
 		},
-		summary: enrichedData.summary,
-		memoryChunk: enrichedData.memoryChunk,
-		dialogueAct: enrichedData.dialogueAct,
-		keywordList: enrichedData.keywordList,
-		topicList: enrichedData.topicList,
-		entityList: enrichedData.entityList,
-		actionList: enrichedData.actionList,
-		flagList: enrichedData.flagList,
-		relationshipShiftList: enrichedData.relationshipShiftList,
-		userEmotion: { ...enrichedData.userEmotion, nuanceList: enrichedData.userEmotion.nuanceList },
+		summary: correctedResponse.summary,
+		memoryChunk: correctedResponse.memoryChunk,
+		dialogueAct: correctedResponse.dialogueAct,
+		keywordList: correctedResponse.keywordList,
+		topicList: correctedResponse.topicList,
+		entityList: correctedResponse.entityList,
+		actionList: correctedResponse.actionList,
+		flagList: correctedResponse.flagList,
+		relationshipShiftList: correctedResponse.relationshipShiftList,
+		userEmotion: {
+			...correctedResponse.userEmotion,
+			nuanceList: correctedResponse.userEmotion.nuanceList,
+		},
 		characterEmotion: {
-			...enrichedData.characterEmotion,
-			nuanceList: enrichedData.characterEmotion.nuanceList,
+			...correctedResponse.characterEmotion,
+			nuanceList: correctedResponse.characterEmotion.nuanceList,
 		},
-		loreReferenceList: enrichedData.loreReferenceList,
-		historyReferenceList: enrichedData.historyReferenceList,
+		loreReferenceList: correctedResponse.loreReferenceList,
+		historyReferenceList: correctedResponse.historyReferenceList,
 		characterId: basicTurn.characterId || parseSessionId(basicTurn.sessionId).characterId,
 		updatedAt: new Date().toISOString(),
 	};
