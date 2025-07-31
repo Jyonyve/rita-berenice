@@ -10,6 +10,7 @@
 		"build:server": "tsc --project tsconfig.server.json && tsc-alias -p tsconfig.server.json",
 		"build:static": "vite build --mode static --outDir dist/static",
 		"build": "pnpm run build:client && pnpm run build:server",
+		"proxy:chromadb": "fly proxy 8000:8000 -a chromadb-flyio",
 		"start": "cross-env NODE_ENV=production node --env-file .env.production dist/server/server.js",
 		"preview": "cross-env NODE_ENV=development node --env-file .env.development dist/server/server.js",
 		"preview:static": "vite preview --mode static --outDir dist/static",
