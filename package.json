@@ -1,7 +1,7 @@
 {
 	"name": "rita-berenice",
 	"homepage": "https://jyonyve.github.io/rita-berenice",
-	"version": "1.5.0",
+	"version": "1.6.0",
 	"type": "module",
 	"scripts": {
 		"clean": "rimraf dist && rimraf node_modules",
