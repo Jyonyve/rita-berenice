@@ -122,7 +122,7 @@ export const ChatLog: FC<ChatLogProps> = memo(
 							...rest,
 						};
 						return (
-							<Box sx={{ py: 2, px: 1 }}>
+							<Box sx={{ py: 1, px: 1 }}>
 								<ChatLogRow {...rowProps} />
 							</Box>
 						);

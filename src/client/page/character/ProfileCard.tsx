@@ -14,7 +14,7 @@ import {
 	Select,
 	Stack,
 	TextField,
-	Typography
+	Typography,
 } from '@mui/material';
 import { FC, useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -50,6 +50,11 @@ const modalStyle = {
 	backdropFilter: 'blur(12px)',
 	WebkitBackdropFilter: 'blur(12px)',
 	border: '1px solid rgba(255,255,255,0.22)',
+	'&::-webkit-scrollbar': {
+		display: 'none', // Hide scrollbar for Chrome, Safari, and Edge
+	},
+	scrollbarWidth: 'none', // Hide scrollbar for Firefox
+	msOverflowStyle: 'none', // Hide scrollbar for Internet Explorer
 };
 
 export const ProfileCard: FC<{ userId: string; onSubmit: (profileData: ProfileCdo) => void }> = ({

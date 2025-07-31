@@ -10,10 +10,15 @@ export function CharacterListPageLoader() {
 	const { data: characterRes, isLoading } = useCharacterApi().getAllCharacters();
 
 	if (isLoading) {
-		// Use a more descriptive loading state, maybe centered
 		return (
 			<Container
-				sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}
+				sx={{
+					display: 'flex',
+					flexDirection: 'column', // <-- Add this line
+					justifyContent: 'center',
+					alignItems: 'center',
+					height: '80vh',
+				}}
 			>
 				<GlassCircularProgress colorVariant="silver" />
 				<Typography sx={{ mt: 2 }}>{getLangText(LANG_KEYS.LOADING_CHARACTERS)}</Typography>

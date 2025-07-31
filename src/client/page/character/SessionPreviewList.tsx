@@ -1,17 +1,10 @@
-import {
-	Box,
-	CircularProgress,
-	Divider,
-	ListItem,
-	ListItemButton,
-	ListItemText,
-	Typography,
-} from '@mui/material';
+import { Box, Divider, ListItem, ListItemButton, ListItemText, Typography } from '@mui/material';
 import React, { FC, Fragment } from 'react'; // Import Fragment
 import { useSessionApi } from '../../hook/api/index.js';
 import { getLangText, notFoundMessage } from '../../util/translateUtils.js';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
+import { formatTimestamp } from '../../util/styleUtils.jsx';
 
 export const SessionPreviewList: FC<{
 	userId: string;
@@ -27,8 +20,17 @@ export const SessionPreviewList: FC<{
 	if (isLoading) {
 		return (
 			<ListItem sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-				<GlassCircularProgress colorVariant="silver" />
-				<Typography mt={2}>{getLangText(LANG_KEYS.LOADING_SESSIONS)}</Typography>
+				<Box
+					sx={{
+						display: 'flex',
+						flexDirection: 'column', // <-- Add this line
+						justifyContent: 'center',
+						alignItems: 'center',
+					}}
+				>
+					<GlassCircularProgress colorVariant="silver" />
+					<Typography mt={2}>{getLangText(LANG_KEYS.LOADING_SESSIONS)}</Typography>
+				</Box>
 			</ListItem>
 		);
 	}
@@ -90,7 +92,7 @@ export const SessionPreviewList: FC<{
 												color="text.secondary"
 												sx={{ flexShrink: 0, textOverflow: 'ellipsis' }}
 											>
-												{info.updatedAt}
+												{formatTimestamp(info.updatedAt)}
 											</Typography>
 										</Box>
 										{/* --- ROW 2: Message Snippet --- */}

@@ -462,8 +462,6 @@ async function initChatFromLogFiles() {
 			} else {
 				await profileStore.storeProfile(getMondayUserProfileTemplate(USER_ID, TARGET_SESSION_ID));
 			}
-
-			// init profile
 		}
 
 		console.log(

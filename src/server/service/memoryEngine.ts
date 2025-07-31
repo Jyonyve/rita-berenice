@@ -215,9 +215,7 @@ export const memoryEngine = {
 
 			const zodSchema = createChatTurnMetadataSchema(
 				profileInfo.profileInfo.name,
-				charInfo.characterInfo.name,
-				loreContexts.map((l) => l.loreId),
-				historyContexts.map((h) => h.historyId)
+				charInfo.characterInfo.name
 			);
 
 			// 3. Build the prompt and invoke the LLM with a defined schema.

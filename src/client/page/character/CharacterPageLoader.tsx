@@ -25,7 +25,13 @@ export function CharacterPageLoader() {
 		// Use a more descriptive loading state, maybe centered
 		return (
 			<Container
-				sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}
+				sx={{
+					display: 'flex',
+					flexDirection: 'column', // <-- Add this line
+					justifyContent: 'center',
+					alignItems: 'center',
+					height: '80vh',
+				}}
 			>
 				<GlassCircularProgress colorVariant="silver" />
 				{/* <Typography mt={2}>Loading characters...</Typography> */}

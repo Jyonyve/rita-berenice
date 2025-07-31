@@ -41,6 +41,7 @@
 		"extract:lore": "tsx --env-file .env ./src/migration/source/htmlParserCheerio.ts",
 		"mock": "tsx ./src/client/mock/mockGenerator.ts",
 		"drop": "tsx --env-file .env ./src/migration/dropCollection.ts",
+		"collection": "tsx --env-file .env ./src/migration/checkCollection.ts",
 		"temp": "tsx --env-file .env ./scripts/patchResponseEmotionToPrimaryFile.ts"
 	},
 	"dependencies": {
@@ -53,6 +54,7 @@
 		"@mui/system": "^7.2.0",
 		"@tanstack/react-query": "^5.83.0",
 		"axios": "^1.11.0",
+		"date-fns": "^4.1.0",
 		"idb": "^8.0.3",
 		"nanoid": "^5.1.5",
 		"react": "^19.1.0",

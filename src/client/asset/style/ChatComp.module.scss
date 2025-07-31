@@ -12,9 +12,11 @@
 .userDialogue {
 	composes: messageEntry;
 	font-weight: bold;
-	color: #3580ae; /* CHANGED: Darker shade of SteelBlue #3c71aa */
+	color: #0b8bda; /* CHANGED: Darker shade of SteelBlue #3c71aa */
 	background-color: transparent;
 	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.15);
+	padding-bottom: 1em;
+	padding-top: 1em;
 }
 
 .userAction {
@@ -33,6 +35,8 @@
 	color: #bbbbbb; /* CHANGED: Brighter shade of gray */
 	background-color: transparent;
 	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+	padding-bottom: 1em;
+	padding-top: 1em;
 }
 
 .assistantAction {

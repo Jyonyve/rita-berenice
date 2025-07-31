@@ -38,8 +38,6 @@ function generateDuplicateTurn(oldTurn: ChatTurn, newSessionId: string): ChatTur
 		...oldTurn,
 		sessionId: newSessionId,
 		chatTurnId: newChatTurnId,
-		requestMessageId: newRequestMessageId,
-		responseMessageId: newResponseMessageId,
 		request: { ...oldTurn.request, sessionId: newSessionId, messageId: newRequestMessageId },
 		response: { ...oldTurn.response, sessionId: newSessionId, messageId: newResponseMessageId },
 	};
@@ -64,7 +62,7 @@ async function duplicateChatSession(oldSessionId: string, newSessionId: string) 
 	}
 
 	try {
-		const { displayTurns: chatTurns } = await chatStore.getAllChatTurns(oldSessionId);
+		const { chatTurns } = await chatStore.getAllChatTurns(oldSessionId);
 		if (!chatTurns || chatTurns.length === 0) {
 			console.warn(`⚠️ No chat turns found for source session ID: ${oldSessionId}.`);
 			return;

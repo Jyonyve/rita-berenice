@@ -154,8 +154,16 @@ export function ChatPageLoader() {
 		!profileRes?.profileInfo
 	) {
 		return (
-			<Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-				<GlassCircularProgress colorVariant="gold" />
+			<Box
+				sx={{
+					display: 'flex',
+					justifyContent: 'center',
+					alignItems: 'center',
+					height: '80vh',
+					flexDirection: 'column', // <-- Add this line
+				}}
+			>
+				<GlassCircularProgress colorVariant="silver" />
 				<Typography sx={{ mt: 2 }}>{getLangText(LANG_KEYS.LOADING_CHAT)}</Typography>
 			</Box>
 		);

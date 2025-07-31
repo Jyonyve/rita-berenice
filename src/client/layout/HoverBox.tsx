@@ -15,7 +15,7 @@ export const HoverBox: FC<HoverBoxProps> = ({ children, hover = false, ...rest }
 	const childrenWithGlow = Children.map(children, (child) => {
 		if (isValidElement(child)) {
 			// Clones the child (e.g., GlassPortrait) and passes the state as 'hover'.
-			return cloneElement(child as React.ReactElement<any>, { hover });
+			return cloneElement(child as React.ReactElement<any>, { hover: hover ? true : undefined });
 		}
 		return child;
 	});

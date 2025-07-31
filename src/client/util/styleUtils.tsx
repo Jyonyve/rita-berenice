@@ -1,4 +1,5 @@
 import { Fragment, useState } from 'react';
+import { format } from 'date-fns';
 import {
 	Dialog,
 	DialogActions,
@@ -84,3 +85,8 @@ export const styleEntryFont = (role: ChatRoleType, type: 'dialogue' | 'action'):
 };
 
 export const commonStyle = styles;
+
+export const formatTimestamp = (isoString: string, formatString?: string) => {
+	const date = new Date(isoString);
+	return format(date, formatString || 'yyyy-MM-dd HH:mm:ss');
+};

@@ -26,6 +26,7 @@ export const LANG_KEYS = {
 	LOADING_SESSIONS: 'LOADING_SESSIONS',
 	FAILED_LOAD_CHAT: 'FAILED_LOAD_CHAT',
 	CREATING_SESSION: 'CREATING_SESSION',
+	GEN_RESPONSE: 'GEN_RESPONSE',
 } as const;
 export type LangKey = keyof typeof LANG_KEYS;
 
@@ -52,6 +53,7 @@ export const langConstants: LangRecord = {
 		eng: 'Failed to load essential chat data. Please try again.',
 	},
 	LOADING_CHAT: { kor: '채팅을 불러오는 중입니다...', eng: 'Loading chat...' },
+	GEN_RESPONSE: { kor: '답변을 받아오는 중입니다...', eng: 'Generating response...' },
 };
 
 export const alertToastConstants: LangRecord = {

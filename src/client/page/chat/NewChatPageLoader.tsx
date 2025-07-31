@@ -154,10 +154,18 @@ export function NewChatPageLoader() {
 			{error ? (
 				<Typography color="error">{error}</Typography>
 			) : (
-				<>
-					<GlassCircularProgress />
+				<Box
+					sx={{
+						display: 'flex',
+						justifyContent: 'center',
+						alignItems: 'center',
+						height: '80vh',
+						flexDirection: 'column', // <-- Add this line
+					}}
+				>
+					<GlassCircularProgress colorVariant="silver" />
 					<Typography mt={2}>{getLangText(LANG_KEYS.CREATING_SESSION)}</Typography>
-				</>
+				</Box>
 			)}
 		</Box>
 	);

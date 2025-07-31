@@ -14,6 +14,8 @@ import { commonStyle, styleEntryFont } from '../../util/styleUtils.jsx';
 import { REQUEST_CHARACTER_LIMIT, RESPONSE_CHARACTER_LIMIT } from '#shared/config/constants.js';
 import { GlassBox } from '../../layout/glass/GlassBox.jsx';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
+import { getLangText } from '../../util/translateUtils.ts';
+import { LANG_KEYS } from '#shared/config/langConstants.js';
 
 /**
  * Props for the TempTurnDisplay component.
@@ -158,7 +160,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 							))
 						) : (
 							<Typography sx={{ fontStyle: 'italic', color: 'gray' }}>
-								<GlassCircularProgress size={12} sx={{ mr: 1 }} /> Generating response...
+								<GlassCircularProgress size={12} sx={{ mr: 1 }} /> {getLangText(LANG_KEYS.GEN_RESPONSE)}
 							</Typography>
 						)}
 					</Box>

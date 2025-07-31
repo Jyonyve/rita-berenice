@@ -64,30 +64,25 @@ async function initSession() {
 		// Step 1: GET the collection directly.
 		console.log(`Getting collection "${COLLECTIONS.SESSION}"...`);
 		const collection = await chromaDbClient.getSessionCollection();
-		const sessionInfo = getMondaySessionTemplate('monday_original_gKBOnr26');
-		// const sessionInfo = getTarionSpinoffSessionTemplate();
-		// const sessionInfo = getTarionOriginalSessionTemplate('tarion_original_dw2xVb8s');
+		const monday = getMondaySessionTemplate('monday_original_1sYD76a4');
+		const original = getTarionOriginalSessionTemplate('tarion_original_cWRM1T3x');
+		const spinoff = getTarionSpinoffSessionTemplate('tarion_spinoff_9gsTh0LA');
 
 		// Step 4: Prepare the record for ChromaDB.
 		// The document is the text to be embedded for semantic search.
 		// The metadata holds all the filterable data.
-		const document = flatSessionToDoc(sessionInfo);
-		const metadata: SessionMetadata = {
-			sessionId: sessionInfo.sessionId,
-			userId: sessionInfo.userId,
-			profileId: sessionInfo.profileId,
-			characterId: sessionInfo.characterId,
-			title: sessionInfo.title,
-			createdAt: sessionInfo.createdAt,
-			updatedAt: sessionInfo.updatedAt,
-			messageCount: sessionInfo.messageCount,
-			status: sessionInfo.status,
-			type: sessionInfo.type,
-		};
+		const mdocument = flatSessionToDoc(monday);
+		const { lastCharMessage: ml, ...mmeta } = monday;
+		const odocument = flatSessionToDoc(original);
+		const { lastCharMessage: ol, ...ometa } = original;
+		const sdocument = flatSessionToDoc(monday);
+		const { lastCharMessage: sl, ...smeta } = spinoff;
 
 		// Step 5: Upsert the record directly into the collection.
-		console.log(`Upserting session with predefined ID: ${sessionInfo.sessionId}...`);
-		await chromaDbClient.upsertRecord(collection, sessionInfo.sessionId, document, metadata);
+		console.log(`Upserting session with predefined ID: ${monday.sessionId}...`);
+		await chromaDbClient.upsertRecord(collection, monday.sessionId, mdocument, mmeta);
+		await chromaDbClient.upsertRecord(collection, original.sessionId, odocument, ometa);
+		await chromaDbClient.upsertRecord(collection, spinoff.sessionId, sdocument, smeta);
 
 		console.log(`✅ Successfully seeded initial session.`);
 		process.exit(0);
@@ -102,4 +97,4 @@ async function initSession() {
 }
 
 // --- Run the script ---
-// initSession();
+initSession();

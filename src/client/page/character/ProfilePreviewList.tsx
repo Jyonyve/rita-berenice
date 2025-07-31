@@ -63,6 +63,7 @@ export const ProfilePreviewList: FC<{
 				<Fragment key={profile.profileId}>
 					<ListItem disablePadding>
 						<ListItemButton
+							sx={{ py: 0.5 }}
 							selected={profile.profileId === selectedProfileId}
 							onClick={() => onClickProfile(profile.profileId)} // Set highlight on single click
 							onDoubleClick={() => onDoubleClickProfile(profile)} // Copy data on double click

@@ -18,7 +18,7 @@ export const FixedTurnDisplay: FC<FixedTurnDisplayProps> = ({ turn }) => {
 				{/* Added a container for the request */}
 				{turn.request.entries.map((entry, idx) => (
 					<Typography
-						sx={{ whiteSpace: 'pre-line' }}
+						sx={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}
 						key={`req-${turn.sequence}-${idx}`}
 						className={styleEntryFont('user', entry.type)}
 					>
@@ -32,7 +32,7 @@ export const FixedTurnDisplay: FC<FixedTurnDisplayProps> = ({ turn }) => {
 				{/* Added a container for the response */}
 				{turn.response.entries.map((entry, idx) => (
 					<Typography
-						sx={{ whiteSpace: 'pre-line' }}
+						sx={{ whiteSpace: 'pre-line', lineHeight: 1.6 }}
 						key={`res-${turn.sequence}-${idx}`}
 						className={styleEntryFont('assistant', entry.type)}
 					>
