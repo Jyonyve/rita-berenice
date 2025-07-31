@@ -1,6 +1,6 @@
 # .github/workflows/fly-deploy.yml
 
-name: Fly Deploy
+name: Fly Deploy Rita-Berenice
 
 on:
  push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
  deploy:
-  name: Deploy app
+  name: Fly Deploy Rita-Berenice
   runs-on: ubuntu-latest
   concurrency: deploy-group # Optional: Ensures only one deployment runs at a time
   steps:

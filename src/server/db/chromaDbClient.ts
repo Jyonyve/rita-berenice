@@ -13,12 +13,20 @@ if (!apiKey) {
 }
 
 const embedFnOpenAi = new OpenAIEmbeddingFunction({ apiKey, modelName: 'text-embedding-3-small' });
+const host = process.env.CHROMA_HOST;
+const port = process.env.CHROMA_PORT;
+const ssl = process.env.CHROMA_SSL === 'true';
 
-const CHROMA_HOST = process.env.CHROMA_HOST;
-const CHROMA_PORT = Number(process.env.CHROMA_PORT) || 443;
-const CHROMA_SSL = true; // Your URL starts with https://
-const chromaClient = new ChromaClient({ host: CHROMA_HOST, port: CHROMA_PORT, ssl: CHROMA_SSL });
-
+if (!host || !port || process.env.CHROMA_SSL === undefined) {
+	throw new Error(
+		'ChromaDB environment variables (CHROMA_HOST, CHROMA_PORT, CHROMA_SSL) must be set.'
+	);
+}
+const chromaClient = new ChromaClient({
+	host,
+	port: parseInt(port, 10), // Ensure port is a number
+	ssl,
+});
 // Retry wrapper
 const withRetry = async <T>(fn: () => Promise<T>, retries = 3, delay = 1500): Promise<T> => {
 	let lastError: unknown;
