@@ -25,7 +25,6 @@ import {
 import { ChatResponse } from '#shared/api/ModuleResponse.js';
 import { parseTextToEntries } from '#shared/util/chatParseUtils.js';
 import { isAndWhere } from '../util/queryUtils.js';
-import { c } from 'node_modules/vite/dist/node/moduleRunnerTransport.d-DJ_mE5sf.js';
 import {
 	buildChatTurnIndexId,
 	buildChatTurnId,

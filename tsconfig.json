@@ -16,12 +16,10 @@
 		"useDefineForClassFields": true,
 		"baseUrl": ".",
 		"paths": {
-			"#client/*": ["src/client/*"],
 			"#shared/*": ["src/shared/*"],
 			"#server/*": ["src/server/*"]
-		},
-		"types": ["vite/client"]
+		}
 	},
-	"include": ["src/**/*", "vite.config.ts", "src/**/*.d.ts", "src/types.d.ts"],
-	"exclude": ["node_modules", "dist", ".vite_cache"]
+	"include": ["src/**/*", "src/**/*.d.ts", "src/types.d.ts"],
+	"exclude": ["node_modules", "dist"]
 }

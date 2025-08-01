@@ -36,7 +36,7 @@ import {
 	SessionInfo,
 	SessionMetadata,
 } from '#shared/domain/index.js';
-import { getOriginalTerms } from '../term/initTerm.ts';
+import { getOriginalTerms } from '../term/initTerm.js';
 import { chromaDbClient } from '#server/db/chromaDbClient.js';
 import {
 	getMondayUserProfileTemplate,
