@@ -1,20 +1,24 @@
-app = "chromadb-flyio"
-primary_region = "sin"
+app = 'rita-berenice'
+primary_region = 'sin'
 
 [build]
-image = "chromadb/chroma:1.0.15"
+  dockerfile = 'Dockerfile'
 
-[env]
-CHROMA_SERVER_HOST = "::"
-CHROMA_SERVER_HTTP_PORT = "8000"
-IS_PERSISTENT = "TRUE"
-PERSIST_DIRECTORY = "/data"
+[build.args]
+  VITE_APP_DOMAIN = "https://rita-berenice.fly.dev"
+  VITE_API_DOMAIN = "https://rita-berenice.fly.dev"
+  VITE_SUPERTOKENS_DOMAIN = "https://st-dev-f9ec6d80-57af-11f0-a145-0bca7824da16.aws.supertokens.io"
+  VITE_APP_ENV = "production"
 
-[[mounts]]
-destination = "/data"
-source = "chromadb_data"
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
 
 [[vm]]
-cpu_kind = "shared"
-cpus = 1
-memory = "1gb"
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 1024
