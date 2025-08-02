@@ -1,23 +1,21 @@
-# fly.toml for the rita-berenice application
-
 app = 'rita-berenice'
-primary_region = 'sin' # Or your preferred region
+primary_region = 'sin'
 
 [build]
   dockerfile = 'Dockerfile'
-  args = {
-    VITE_APP_DOMAIN = "https://rita-berenice.fly.dev",
-    VITE_API_DOMAIN = "https://rita-berenice.fly.dev", 
-    VITE_SUPERTOKENS_DOMAIN = "https://your-production-supertokens-domain",
-    VITE_APP_ENV = "production"
-  }
+
+[build.args]
+  VITE_APP_DOMAIN = "https://rita-berenice.fly.dev"
+  VITE_API_DOMAIN = "https://rita-berenice.fly.dev"
+  VITE_SUPERTOKENS_DOMAIN = "https://st-dev-f9ec6d80-57af-11f0-a145-0bca7824da16.aws.supertokens.io"
+  VITE_APP_ENV = "production"
 
 [http_service]
   internal_port = 3000
   force_https = true
   auto_stop_machines = true
   auto_start_machines = true
-  min_machines_running = 0 # Set to 1 for production if you want it always on
+  min_machines_running = 0
   processes = ['app']
 
 [[vm]]
