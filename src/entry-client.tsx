@@ -39,6 +39,15 @@ const mockUser: User = {
 };
 
 const isStatic = import.meta.env.VITE_APP_MODE === 'static';
+// In your server.ts or entry-client.tsx
+console.log('Environment Check:', {
+	CHROMA_HOST: process.env.CHROMA_HOST ? 'Set ✓' : 'Missing ✗',
+	VITE_APP_DOMAIN:
+		import.meta.env?.VITE_APP_DOMAIN || process.env.VITE_APP_DOMAIN ? 'Set ✓' : 'Missing ✗',
+	VITE_API_DOMAIN:
+		import.meta.env?.VITE_API_DOMAIN || process.env.VITE_API_DOMAIN ? 'Set ✓' : 'Missing ✗',
+	// Don't log actual secret values
+});
 
 if (isStatic) {
 	SuperTokens.init({
