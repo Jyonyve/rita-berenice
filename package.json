@@ -7,7 +7,7 @@
 		"clean": "rimraf dist && rimraf node_modules",
 		"dev": "tsx --env-file .env.development ./src/server/server.ts",
 		"build:client": "vite build --outDir dist/client",
-		"build:server": "tsc --project tsconfig.server.json && tsc-alias -p tsconfig.server.json",
+		"build:server": "vite build --ssr src/entry-server.tsx --outDir dist/server && tsc --project tsconfig.server.json && tsc-alias -p tsconfig.server.json",
 		"build:static": "vite build --mode static --outDir dist/static",
 		"build": "pnpm run build:client && pnpm run build:server",
 		"proxy": "fly proxy 8000:8000 -a chromadb-flyio",

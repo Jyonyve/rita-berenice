@@ -121,9 +121,9 @@ async function createServer() {
 	app.use(errorHandler());
 
 	// --- SSR Catch-all Handler ---
-	app.get('/{*splat}', async (req: Request, res: Response, next: NextFunction) => {
+	app.get('*', async (req: Request, res: Response, next: NextFunction) => {
 		// Skip SSR for API routes
-		if (req.originalUrl.startsWith(API_PATH)) {
+		if (req.originalUrl.startsWith(`/${API_PATH}`) || req.originalUrl.startsWith(`/${AUTH_PATH}`)) {
 			return next();
 		}
 		// Optional: Skip potential static files (basic check)
@@ -150,7 +150,6 @@ async function createServer() {
 		}
 
 		console.log(`Attempting SSR for: ${req.originalUrl}`);
-		const url = req.originalUrl;
 
 		try {
 			let template: string;
@@ -158,26 +157,22 @@ async function createServer() {
 			let render: (url: string) => { html: string; emotionStyleTags: string };
 
 			if (!isProduction && vite) {
-				// == DEVELOPMENT ==
+				// DEVELOPMENT
 				template = await fs.readFile(templateDevHtmlFile, 'utf-8');
-				// Apply Vite HTML transforms (injects HMR client, plugins, etc.)
-				template = await vite.transformIndexHtml(url, template);
-				// Load server entry via Vite for HMR
-				const serverEntry = await vite.ssrLoadModule('/src/entry-server.jsx');
+				template = await vite.transformIndexHtml(req.originalUrl, template);
+				const serverEntry = await vite.ssrLoadModule('/src/entry-server.tsx');
 				render = serverEntry.render;
 			} else {
-				// == PRODUCTION ==
-				// In production, read the built index.html as it might contain link/script tags added by the build
+				// PRODUCTION
 				template = await fs.readFile(templateProdHtmlBuilt, 'utf-8');
 				const serverEntryPath = resolve('dist/server/entry-server.js');
 				const serverEntry = await import(serverEntryPath);
 				render = serverEntry.render;
-				// ssrManifest logic could be added here if needed for preloading
 			}
 
 			// --- Render the React application ---
 			// Call the render function from entry-server (NO Helmet context needed now)
-			const { html: appHtml, emotionStyleTags } = render(url); // Get HTML and Emotion styles
+			const { html: appHtml, emotionStyleTags } = render(req.originalUrl);
 
 			// --- Inject rendered content into the HTML template ---
 			// Replace placeholders with actual content

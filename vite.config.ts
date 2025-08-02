@@ -37,6 +37,7 @@ export default defineConfig(({ mode }) => {
 				'@emotion/styled',
 				'@emotion/cache',
 				'@emotion/server',
+				'react-router',
 				// Review Langchain if issues arise
 			],
 			target: 'node',
@@ -57,6 +58,10 @@ export default defineConfig(({ mode }) => {
 			target: 'es2022',
 			chunkSizeWarningLimit: 1000,
 			rollupOptions: {
+				input: {
+					main: './index.html', // Client entry
+					server: './src/entry-server.tsx', // Server entry - THIS WAS MISSING
+				},
 				external: [
 					CHROMADB,
 					'ollama',
