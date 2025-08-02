@@ -41,22 +41,12 @@ const AUTH_PATH = 'auth';
 const BASE_API = `/${API_PATH}`;
 
 // --- Helper Function to Resolve Project Root ---
-const resolve = (p: string) => path.resolve(__dirname, p);
-function unless(middleware: RequestHandler, ...excludedPaths: RegExp[]): RequestHandler {
-	return function (req, res, next) {
-		if (excludedPaths.some((regex) => regex.test(req.path))) {
-			return next();
-		}
-		return middleware(req, res, next);
-	};
-}
+const resolve = (p: string) =>
+	isProduction ? path.resolve(__dirname, '../..', p) : path.resolve(__dirname, p);
 
 // --- Template HTML paths ---
 const templateDevHtmlFile = path.resolve(__dirname, '../../index.html');
 const templateProdHtmlBuilt = path.resolve(__dirname, '../client/index.html');
-// --- SSR Manifest path (Production ONLY) ---
-// Optional: for production preload hints, less critical for basic SSR
-// const ssrManifestProd = resolve('dist/client/ssr-manifest.json');
 
 async function createServer() {
 	const app = express();
