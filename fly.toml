@@ -4,8 +4,13 @@ app = 'rita-berenice'
 primary_region = 'sin' # Or your preferred region
 
 [build]
-  # This line is crucial: it tells Fly.io to use your Dockerfile
   dockerfile = 'Dockerfile'
+  args = {
+    VITE_APP_DOMAIN = "https://rita-berenice.fly.dev",
+    VITE_API_DOMAIN = "https://rita-berenice.fly.dev", 
+    VITE_SUPERTOKENS_DOMAIN = "https://your-production-supertokens-domain",
+    VITE_APP_ENV = "production"
+  }
 
 [http_service]
   internal_port = 3000

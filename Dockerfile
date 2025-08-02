@@ -8,13 +8,26 @@ FROM base AS deps
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
-# Stage 3: Build the application
+# Stage 3: Build the application WITH build args
 FROM deps AS builder
 COPY . .
+
+# Accept build-time arguments
+ARG VITE_APP_DOMAIN
+ARG VITE_API_DOMAIN  
+ARG VITE_SUPERTOKENS_DOMAIN
+ARG VITE_APP_ENV
+
+# Set as environment variables for the build
+ENV VITE_APP_DOMAIN=$VITE_APP_DOMAIN
+ENV VITE_API_DOMAIN=$VITE_API_DOMAIN
+ENV VITE_SUPERTOKENS_DOMAIN=$VITE_SUPERTOKENS_DOMAIN
+ENV VITE_APP_ENV=$VITE_APP_ENV
+
 # Build both client and server
 RUN pnpm run build
 
-# Stage 4: Production image (CORRECTED)
+# Stage 4: Production image
 FROM base AS production
 ENV NODE_ENV=production
 
@@ -22,11 +35,11 @@ ENV NODE_ENV=production
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
 RUN pnpm install --prod --frozen-lockfile
 
-# Copy the compiled server code
+# Copy the compiled server and client code
 COPY --from=builder /app/dist ./dist
 
-# Expose the port the app runs on
+# Expose the port
 EXPOSE 3000
 
-# Command to run the application
+# Start the server
 CMD ["node", "dist/server/server.js"]
