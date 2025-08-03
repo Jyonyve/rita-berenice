@@ -15,7 +15,6 @@ import supertokens from 'supertokens-node';
 import Session from 'supertokens-node/recipe/session';
 import EmailPassword from 'supertokens-node/recipe/emailpassword';
 import { middleware, errorHandler } from 'supertokens-node/framework/express';
-import { verifySession } from 'supertokens-node/recipe/session/framework/express';
 import cors from 'cors';
 import sirv from 'sirv';
 import { MODULE_NAMES, APPNAME } from '#shared/config/constants.js';
@@ -121,9 +120,9 @@ async function createServer() {
 	app.use(errorHandler());
 
 	// --- SSR Catch-all Handler ---
-	app.get('*', async (req: Request, res: Response, next: NextFunction) => {
+	app.get('/{*splat}', async (req: Request, res: Response, next: NextFunction) => {
 		// Skip SSR for API routes
-		if (req.originalUrl.startsWith(`/${API_PATH}`) || req.originalUrl.startsWith(`/${AUTH_PATH}`)) {
+		if (req.originalUrl.startsWith(`${API_PATH}`) || req.originalUrl.startsWith(`${AUTH_PATH}`)) {
 			return next();
 		}
 		// Optional: Skip potential static files (basic check)

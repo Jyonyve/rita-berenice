@@ -12,7 +12,6 @@ primary_region = 'sin'
   CHROMA_HOST = "chromadb-flyio.internal"
   CHROMA_PORT = "8000"
   CHROMA_SSL = "false"
-  CHROMA_SERVER_CORS_ALLOW_ORIGINS = "https://rita-berenice.fly.dev"
 
 [http_service]
   internal_port = 3000

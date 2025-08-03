@@ -21,6 +21,8 @@ if (!host || !port || process.env.CHROMA_SSL === undefined) {
 	throw new Error(
 		'ChromaDB environment variables (CHROMA_HOST, CHROMA_PORT, CHROMA_SSL) must be set.'
 	);
+} else {
+	console.log(`host: ${host}, port: ${port}, ssl:${ssl}`);
 }
 const chromaClient = new ChromaClient({
 	host,
@@ -28,7 +30,7 @@ const chromaClient = new ChromaClient({
 	ssl,
 });
 // Retry wrapper
-const withRetry = async <T>(fn: () => Promise<T>, retries = 3, delay = 1500): Promise<T> => {
+const withRetry = async <T>(fn: () => Promise<T>, retries = 2, delay = 1500): Promise<T> => {
 	let lastError: unknown;
 	for (let i = 0; i < retries; i++) {
 		try {
