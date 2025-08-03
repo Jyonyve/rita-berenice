@@ -9,6 +9,10 @@ primary_region = 'sin'
   VITE_API_DOMAIN = "https://rita-berenice.fly.dev"
   VITE_SUPERTOKENS_DOMAIN = "https://st-dev-f9ec6d80-57af-11f0-a145-0bca7824da16.aws.supertokens.io"
   VITE_APP_ENV = "production"
+  CHROMA_HOST = "chromadb-flyio.internal"
+  CHROMA_PORT = "8000"
+  CHROMA_SSL = "false"
+  CHROMA_SERVER_CORS_ALLOW_ORIGINS = "https://rita-berenice.fly.dev"
 
 [http_service]
   internal_port = 3000
