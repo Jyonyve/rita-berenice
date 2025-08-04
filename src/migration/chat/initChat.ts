@@ -325,7 +325,9 @@ async function processAndUpsertTurn(
 	let enrichedTurn: ChatTurn;
 	try {
 		console.log(
-			`       🧠 [Batch ${currentIndex + 1}/${batchTotal}] Enriching turn seq: ${turnToProcess.sequence}...`
+			`       🧠 [Batch ${currentIndex + 1}/${batchTotal}] Enriching turn seq: ${
+				turnToProcess.sequence
+			}...`
 		);
 		enrichedTurn = await enrichChatTurnWithMetadata(
 			turnToProcess,
@@ -359,7 +361,9 @@ async function processAndUpsertTurn(
 
 		progress.lastProcessedSequence = enrichedTurn.sequence;
 		console.log(
-			`       ✅ [Batch ${currentIndex + 1}/${batchTotal}] Turn ${enrichedTurn.sequence} and its indexes saved.`
+			`       ✅ [Batch ${currentIndex + 1}/${batchTotal}] Turn ${
+				enrichedTurn.sequence
+			} and its indexes saved.`
 		);
 	} catch (dbError) {
 		const dbErrorMessage = dbError instanceof Error ? dbError.message : String(dbError);
@@ -415,42 +419,42 @@ async function initChatFromLogFiles() {
 			continue;
 		}
 
+		// update session
+		const firstMessage = crawledLogs[0];
+		const lastMessage = crawledLogs[crawledLogs.length - 1];
+		const collection = await chromaDbClient.getSessionCollection();
+		const sessionInfo: SessionInfo = {
+			sessionId: TARGET_SESSION_ID,
+			userId: USER_ID,
+			profileId: buildProfileId(TARGET_SESSION_ID, USER_ID),
+			characterId,
+			title: `${lastMessage.showName} x ${firstMessage.showName}`,
+			createdAt: firstMessage.createdAt,
+			updatedAt: lastMessage.createdAt,
+			messageCount: crawledLogs.length,
+			status: 'active',
+			type: METADATA_TYPES.SESSION,
+			lastCharMessage: lastMessage.content,
+		};
+		const document = flatSessionToDoc(sessionInfo);
+		const metadata: SessionMetadata = {
+			sessionId: sessionInfo.sessionId,
+			userId: sessionInfo.userId,
+			profileId: sessionInfo.profileId,
+			characterId: sessionInfo.characterId,
+			title: sessionInfo.title,
+			createdAt: sessionInfo.createdAt,
+			updatedAt: sessionInfo.updatedAt,
+			messageCount: sessionInfo.messageCount,
+			status: sessionInfo.status,
+			type: sessionInfo.type,
+		};
+
+		// Step 5: Upsert the record directly into the collection.
+		console.log(`Upserting session with predefined ID: ${sessionInfo.sessionId}...`);
+		await chromaDbClient.upsertRecord(collection, sessionInfo.sessionId, document, metadata);
+
 		if (!cliSessionId) {
-			// init session
-			const firstMessage = crawledLogs[0];
-			const lastMessage = crawledLogs[crawledLogs.length - 1];
-			const collection = await chromaDbClient.getSessionCollection();
-			const sessionInfo: SessionInfo = {
-				sessionId: TARGET_SESSION_ID,
-				userId: USER_ID,
-				profileId: buildProfileId(TARGET_SESSION_ID, USER_ID),
-				characterId,
-				title: `${lastMessage.showName} x ${firstMessage.showName}`,
-				createdAt: firstMessage.createdAt,
-				updatedAt: lastMessage.createdAt,
-				messageCount: crawledLogs.length,
-				status: 'active',
-				type: METADATA_TYPES.SESSION,
-				lastCharMessage: lastMessage.content,
-			};
-			const document = flatSessionToDoc(sessionInfo);
-			const metadata: SessionMetadata = {
-				sessionId: sessionInfo.sessionId,
-				userId: sessionInfo.userId,
-				profileId: sessionInfo.profileId,
-				characterId: sessionInfo.characterId,
-				title: sessionInfo.title,
-				createdAt: sessionInfo.createdAt,
-				updatedAt: sessionInfo.updatedAt,
-				messageCount: sessionInfo.messageCount,
-				status: sessionInfo.status,
-				type: sessionInfo.type,
-			};
-
-			// Step 5: Upsert the record directly into the collection.
-			console.log(`Upserting session with predefined ID: ${sessionInfo.sessionId}...`);
-			await chromaDbClient.upsertRecord(collection, sessionInfo.sessionId, document, metadata);
-
 			// init term
 			if (characterNameFromFile === 'tarion') {
 				await profileStore.storeProfile(
@@ -486,8 +490,9 @@ async function initChatFromLogFiles() {
 			`      Found ${loreContexts.length} lore and ${historyContexts.length} history documents.`
 		);
 
-		const { displayTurns: existingTurnsInDB } =
-			await chatStore.getChatHistoryForDisplay(TARGET_SESSION_ID);
+		const { displayTurns: existingTurnsInDB } = await chatStore.getChatHistoryForDisplay(
+			TARGET_SESSION_ID
+		);
 		const latestSequenceInDB =
 			existingTurnsInDB.length > 0 ? Math.max(...existingTurnsInDB.map((t) => t.sequence)) : -1;
 		console.log(
@@ -628,7 +633,9 @@ async function initChatFromLogFiles() {
 			if (progress.lastProcessedSequence + 1 >= progress.totalTurnsInLogFile) {
 				progress.status = 'completed';
 				console.log(
-					`🎉 Session "${TARGET_SESSION_ID}" fully completed! Processed ${progress.lastProcessedSequence + 1} turns.`
+					`🎉 Session "${TARGET_SESSION_ID}" fully completed! Processed ${
+						progress.lastProcessedSequence + 1
+					} turns.`
 				);
 			} else {
 				console.log(

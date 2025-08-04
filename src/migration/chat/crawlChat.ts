@@ -63,6 +63,9 @@ const CHARACTERS = [
 				createdAt: '2025-03-14T06:20:08.300Z',
 				updatedAt: '2025-03-14T06:20:08.300Z',
 				uuid: '6a63a628-497a-40e8-bfb7-8476236d29ce',
+				name: 'yonyve',
+				showName: '요니브',
+				emotion: 'default',
 			},
 			{
 				role: 'assistant',
@@ -136,7 +139,9 @@ async function fetchChatLogsFromBrowser(
 ): Promise<RofanChatLog[]> {
 	const characterName = (payload as any).characterNameForLog || 'Unknown Character';
 	console.log(
-		`   Fetching logs for ${characterName} - Offset: ${(payload as any).offset}, Limit: ${(payload as any).limit}`
+		`   Fetching logs for ${characterName} - Offset: ${(payload as any).offset}, Limit: ${
+			(payload as any).limit
+		}`
 	);
 	try {
 		const response = await page.evaluate(
@@ -149,7 +154,10 @@ async function fetchChatLogsFromBrowser(
 				if (!res.ok) {
 					const errorText = await res.text();
 					console.error(
-						`API request to ${url} failed with status ${res.status}. Response: ${errorText.substring(0, 500)}`
+						`API request to ${url} failed with status ${res.status}. Response: ${errorText.substring(
+							0,
+							500
+						)}`
 					);
 					throw new Error(`API request failed: ${res.status} - ${errorText.substring(0, 100)}`);
 				}
@@ -305,9 +313,9 @@ MANUAL LOGIN REQUIRED:
 				const sanitizedCharacterName = character.name.replace(/[^a-z0-9_.-]/gi, '_').toLowerCase();
 				const filePath = path.join(
 					resultDir,
-					`${sanitizedCharacterName}_${localTimezoneHelper(
-						new Date().toISOString()
-					)}_${allMessages.length}.json`
+					`${sanitizedCharacterName}_${localTimezoneHelper(new Date().toISOString())}_${
+						allMessages.length
+					}.json`
 				);
 				try {
 					await fs.writeFile(filePath, JSON.stringify(allMessages, null, 2), 'utf8');

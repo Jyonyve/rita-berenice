@@ -21,14 +21,27 @@ if (!host || !port || process.env.CHROMA_SSL === undefined) {
 	throw new Error(
 		'ChromaDB environment variables (CHROMA_HOST, CHROMA_PORT, CHROMA_SSL) must be set.'
 	);
+} else {
+	console.log(`host: ${host}, port: ${port}, ssl:${ssl}`);
 }
 const chromaClient = new ChromaClient({
 	host,
 	port: parseInt(port, 10), // Ensure port is a number
 	ssl,
 });
+
+const logJsonPreview = (obj: any, length: number = 100): string => {
+	if (obj === null || typeof obj === 'undefined') {
+		return 'N/A'; // Or 'undefined'/'null' based on your preference
+	}
+	const str = JSON.stringify(obj);
+	if (str.length <= length) {
+		return str;
+	}
+	return `${str.substring(0, length)}...`;
+};
 // Retry wrapper
-const withRetry = async <T>(fn: () => Promise<T>, retries = 3, delay = 1500): Promise<T> => {
+const withRetry = async <T>(fn: () => Promise<T>, retries = 1, delay = 1500): Promise<T> => {
 	let lastError: unknown;
 	for (let i = 0; i < retries; i++) {
 		try {
@@ -228,7 +241,7 @@ export const chromaDbClient = {
 	): Promise<ChromaResponse> => {
 		try {
 			console.log(
-				`[ChromaClient.queryRecords] filter: ${JSON.stringify(where).slice(0, 10)}, document: ${JSON.stringify(whereDocument).slice(0, 10)}, limit: ${limit}`
+				`[ChromaClient.queryRecords] filter: ${logJsonPreview(where)}, document: ${logJsonPreview(whereDocument)}, limit: ${limit}`
 			);
 			const MAX = await collection.count(); // Ensure the collection is initialized
 			const results = await collection.get({
@@ -254,7 +267,7 @@ export const chromaDbClient = {
 	): Promise<ChromaResponse[]> => {
 		try {
 			console.log(
-				`[ChromaClient.queryRecords] Querying with text: "${queryTexts.join('\n').slice(0, 50)}...",\n filter: ${JSON.stringify(where)}, ${JSON.stringify(whereDocument)},\n limit: ${limit}`
+				`[ChromaClient.queryRecords] Querying with text: "${queryTexts.join('\n')}...",\n filter: ${logJsonPreview(where)}, ${logJsonPreview(whereDocument)},\n limit: ${limit}`
 			);
 			const MAX = await collection.count(); // Ensure the collection is initialized
 			const results = await collection.query({
@@ -277,9 +290,7 @@ export const chromaDbClient = {
 				.filter((r): r is ChromaResponse => r !== null);
 		} catch (error) {
 			console.error(`[ChromaClient.queryRecords] Failed to query records:`, error);
-			throw new Error(
-				`ChromaDB get failed for queryText ${queryTexts.slice(0, 3)}: ${(error as Error).message}`
-			);
+			throw new Error(`ChromaDB get failed for queryText ${queryTexts}: ${(error as Error).message}`);
 		}
 	},
 
