@@ -25,6 +25,7 @@ import {
 import { ChatResponse } from '#shared/api/ModuleResponse.js';
 import { parseTextToEntries } from '#shared/util/chatParseUtils.js';
 import { isAndWhere } from '../util/queryUtils.js';
+import { c } from 'node_modules/vite/dist/node/moduleRunnerTransport.d-DJ_mE5sf.js';
 import {
 	buildChatTurnIndexId,
 	buildChatTurnId,
@@ -243,7 +244,7 @@ export const chatStore = {
 	/**
 	 * [Optimized for Client] Fetches a lean list of chat turns for UI display.
 	 */
-	getChatHistoryForDisplay: async (sessionId: string): Promise<ChatResponse> => {
+	getAllDisplayTurns: async (sessionId: string): Promise<ChatResponse> => {
 		try {
 			const collection = await chatStore._getChatCollection();
 			const where: Where = {
@@ -299,11 +300,9 @@ export const chatStore = {
 			handleServiceError(error, 'Error in getAllChatTurns', `Session: ${sessionId}`);
 		}
 	},
-	/**
-	 * Stores multiple chat turns in a single bulk operation.
-	 * Ideal for data migration or batch processing.
-	 * @param chatTurns An array of ChatTurn objects to store.
-	 */
+
+	// In src/server/store/chatStore.ts
+
 	storeChatTurns: async (chatTurns: ChatTurn[]): Promise<void> => {
 		if (!chatTurns || chatTurns.length === 0) {
 			return;
@@ -311,6 +310,7 @@ export const chatStore = {
 
 		const collection = await chatStore._getChatCollection();
 
+		// Prepare the primary TURN documents for a single bulk upsert
 		const recordsToUpsert = chatTurns.map((turn) => {
 			const metadata = chatTurnToMetadata(turn);
 			const document = chatTurnToDocument(turn);
@@ -318,18 +318,27 @@ export const chatStore = {
 		});
 
 		try {
+			// --- Step 1: Store the primary TURN documents in a single batch ---
 			await upsertRecords(
 				collection,
 				recordsToUpsert.map((r) => r.id),
 				recordsToUpsert.map((r) => r.document),
 				recordsToUpsert.map((r) => r.metadata)
 			);
-			console.log(`[chatStore] Successfully stored ${chatTurns.length} chat turns in bulk.`);
+			console.log(`[chatStore] Successfully stored ${chatTurns.length} primary chat turns.`);
+
+			// --- Step 2: Sequentially update the search index for EACH turn ---
+			console.log(`[chatStore] Now updating search indexes for ${chatTurns.length} turns...`);
+			for (const turn of chatTurns) {
+				// This ensures each turn's keywords, topics, etc., are correctly indexed.
+				await chatStore._updateSearchIndexForTurn(turn);
+			}
+			console.log(`[chatStore] Successfully updated all search indexes.`);
 		} catch (error) {
 			handleServiceError(
 				error,
-				'An internal error occurred while doing [storeChatTurns].',
-				`Failed to bulk store ${chatTurns.length} chat turns.`
+				'An internal error occurred during [storeChatTurns].',
+				`Failed to bulk store and index ${chatTurns.length} chat turns.`
 			);
 		}
 	},

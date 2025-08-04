@@ -41,8 +41,6 @@ async function deleteChatSession(sessionId: string) {
 		const idsToDelete: string[] = [];
 		chatTurns.forEach((turn) => {
 			idsToDelete.push(turn.chatTurnId);
-			idsToDelete.push(turn.requestMessageId);
-			idsToDelete.push(turn.responseMessageId);
 		});
 
 		const uniqueIdsToDelete = [...new Set(idsToDelete)];
