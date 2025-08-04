@@ -68,14 +68,14 @@ router.get(
  * @returns {ChatResponse} An object containing the list of chat turns.
  */
 router.get(
-	genRoutePattern('getChatHistoryForDisplay', ['sessionId']),
+	genRoutePattern('getAllDisplayTurns', ['sessionId']),
 	asyncHandler(async (req: Request, res: Response<ChatResponse>): Promise<void> => {
 		const { sessionId } = req.params;
 		validateServiceId(sessionId, collectionType);
-		const path = genRoutePattern('getChatHistoryForDisplay', ['sessionId']);
+		const path = genRoutePattern('getAllDisplayTurns', ['sessionId']);
 		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
 
-		const response = await chatStore.getChatHistoryForDisplay(sessionId);
+		const response = await chatStore.getAllDisplayTurns(sessionId);
 		res.status(200).json(response);
 	})
 );

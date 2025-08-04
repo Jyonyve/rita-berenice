@@ -244,7 +244,7 @@ export const chatStore = {
 	/**
 	 * [Optimized for Client] Fetches a lean list of chat turns for UI display.
 	 */
-	getChatHistoryForDisplay: async (sessionId: string): Promise<ChatResponse> => {
+	getAllDisplayTurns: async (sessionId: string): Promise<ChatResponse> => {
 		try {
 			const collection = await chatStore._getChatCollection();
 			const where: Where = {

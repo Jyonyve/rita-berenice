@@ -84,13 +84,18 @@ export const SessionPreviewList: FC<{
 												width: '100%',
 											}}
 										>
-											<Typography variant="subtitle2" sx={{ overflow: 'hidden', whiteSpace: 'nowrap', pr: 2 }}>
+											<Typography variant="subtitle2" sx={{ flexShrink: 0, pr: 2 }}>
 												{info.title}
 											</Typography>
 											<Typography
 												variant="body2"
 												color="text.secondary"
-												sx={{ flexShrink: 0, textOverflow: 'ellipsis' }}
+												sx={{
+													whiteSpace: 'nowrap',
+													overflow: 'hidden',
+													textOverflow: 'ellipsis',
+													textAlign: 'right',
+												}}
 											>
 												{formatTimestamp(info.updatedAt)}
 											</Typography>

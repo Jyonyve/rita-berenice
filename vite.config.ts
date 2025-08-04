@@ -46,7 +46,7 @@ export default defineConfig(({ mode }) => {
 			react({ jsxImportSource: '@emotion/react', babel: { plugins: ['@emotion/babel-plugin'] } }),
 			// Configure nodePolyfills to exclude 'crypto'
 			nodePolyfills({
-				exclude: ['crypto'],
+				exclude: ['crypto', 'stream'],
 				// Keep other options if needed
 				globals: { Buffer: true, global: true, process: true },
 				protocolImports: true,

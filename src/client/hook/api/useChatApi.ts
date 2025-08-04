@@ -35,13 +35,13 @@ export const useChatApi = () => {
 	/**
 	 * Fetches all chat turns for history loading.
 	 * Uses useQuery because the API returns all data at once.
-	 * Query Key: ['getChatHistoryForDisplay']
+	 * Query Key: ['getAllDisplayTurns']
 	 */
-	const getChatHistoryForDisplay = (sessionId: string) =>
+	const getAllDisplayTurns = (sessionId: string) =>
 		useQuery<ChatResponse, Error>({
-			queryKey: ['getChatHistoryForDisplay', sessionId], // The query key now reflects the method name
+			queryKey: ['getAllDisplayTurns', sessionId], // The query key now reflects the method name
 			queryFn: async () => {
-				const url = genApiUrl(MODULE_NAMES.CHAT, 'getChatHistoryForDisplay', [sessionId]);
+				const url = genApiUrl(MODULE_NAMES.CHAT, 'getAllDisplayTurns', [sessionId]);
 				// No `beforeSequence` param if the API fetches all data at once
 				const response = await apiClient.get<ChatResponse>(url);
 				return response.data;
@@ -82,5 +82,5 @@ export const useChatApi = () => {
 		},
 	});
 
-	return { storeChatTurn, getChatHistoryForDisplay, getChatTurnBySequence, queryChatTurns };
+	return { storeChatTurn, getAllDisplayTurns, getChatTurnBySequence, queryChatTurns };
 };

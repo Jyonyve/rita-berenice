@@ -1,54 +1,35 @@
-# Stage 1: Base image with Node.js 22 LTS
+# Stage 1: Base image
 FROM node:22-slim AS base
 WORKDIR /app
 RUN npm install -g pnpm
 
-# Stage 2: Install all dependencies for the build
+# Stage 2: Install dependencies
 FROM base AS deps
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
-# Stage 3: Build the application WITH build args
+# Stage 3: Build the application
+# It will automatically receive build-time secrets set with --stage build
 FROM deps AS builder
 COPY . .
-
-# Accept build-time arguments
-ARG VITE_APP_DOMAIN
-ARG VITE_API_DOMAIN  
-ARG VITE_SUPERTOKENS_DOMAIN
-ARG VITE_APP_ENV
-ARG CHROMA_HOST
-ARG CHROMA_PORT
-ARG CHROMA_SSL
-
-# Set as environment variables for the build
-ENV VITE_APP_DOMAIN=$VITE_APP_DOMAIN
-ENV VITE_API_DOMAIN=$VITE_API_DOMAIN
-ENV VITE_SUPERTOKENS_DOMAIN=$VITE_SUPERTOKENS_DOMAIN
-ENV VITE_APP_ENV=$VITE_APP_ENV
-ENV CHROMA_HOST=$CHROMA_HOST
-ENV CHROMA_PORT=$CHROMA_PORT
-ENV CHROMA_SSL=$CHROMA_SSL
-
-# Build both client and server
+# The build-time secrets (VITE_*) are injected by Fly.io here
 RUN pnpm run build
 
 # Stage 4: Production image
+# This stage ONLY contains what's needed to RUN the app.
 FROM base AS production
 ENV NODE_ENV=production
-ENV CHROMA_HOST=$CHROMA_HOST
-ENV CHROMA_PORT=$CHROMA_PORT
-ENV CHROMA_SSL=$CHROMA_SSL
 
-# Copy package files and install ONLY production dependencies
+# Copy production dependencies manifest
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
+# Install ONLY production dependencies
 RUN pnpm install --prod --frozen-lockfile
 
 # Copy the compiled server and client code
 COPY --from=builder /app/dist ./dist
 
-# Expose the port
 EXPOSE 3000
 
-# Start the server
+# The runtime secrets (CHROMA_*) are automatically injected by Fly.io here
+# when the container starts.
 CMD ["node", "dist/server/server.js"]

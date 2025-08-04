@@ -19,7 +19,7 @@ export const useChatState = (sessionId: string) => {
 		isLoading: isApiLoading,
 		isError: isApiError,
 		error: apiError,
-	} = useChatApi().getChatHistoryForDisplay(sessionId);
+	} = useChatApi().getAllDisplayTurns(sessionId);
 
 	// --- UTILITY FUNCTIONS ---
 	const _sortTurns = useCallback(

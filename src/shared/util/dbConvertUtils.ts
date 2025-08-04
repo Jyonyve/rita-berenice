@@ -166,7 +166,18 @@ export const metadataToDisplayTurn = (metadata: ChatTurnMetadata): DisplayTurn =
 	const request: ChatMessage = JSON.parse(metadata.requestJson);
 	const response: ChatMessage = JSON.parse(metadata.responseJson);
 
-	return { ...metadata, request, response };
+	return {
+		chatTurnId: metadata.chatTurnId,
+		sessionId: metadata.sessionId,
+		characterId: metadata.characterId,
+		userId: metadata.userId,
+		profileId: metadata.profileId,
+		sequence: metadata.sequence,
+		createdAt: metadata.createdAt,
+		updatedAt: metadata.updatedAt,
+		request,
+		response,
+	};
 };
 
 // --- LORE & HISTORY HELPERS ---

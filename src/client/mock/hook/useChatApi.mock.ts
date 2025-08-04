@@ -23,7 +23,7 @@ export const useChatApiMock = () => {
 	 * Mocks fetching a single chat turn by sequence.
 	 * Returns the first turn as a fallback, or null if not found.
 	 */
-	const getChatHistoryForDisplay = (sessionId: string) => {
+	const getAllDisplayTurns = (sessionId: string) => {
 		const turn = mockMondayChat?.displayTurns?.find((t) => t.sessionId === sessionId) || null;
 		return {
 			data: turn
@@ -72,5 +72,5 @@ export const useChatApiMock = () => {
 		error: null,
 	};
 
-	return { storeChatTurn, getAllChatTurns, getChatHistoryForDisplay, queryChatTurns };
+	return { storeChatTurn, getAllChatTurns, getAllDisplayTurns, queryChatTurns };
 };
