@@ -12,7 +12,19 @@ RUN pnpm install --frozen-lockfile
 # It will automatically receive build-time secrets set with --stage build
 FROM deps AS builder
 COPY . .
-# The build-time secrets (VITE_*) are injected by Fly.io here
+
+# Use ARG to receive build-time variables from fly.toml
+ARG VITE_API_DOMAIN
+ARG VITE_APP_DOMAIN
+ARG VITE_SUPERTOKENS_DOMAIN
+ARG VITE_APP_ENV
+
+# Set them as ENV for the 'pnpm run build' command
+ENV VITE_API_DOMAIN=$VITE_API_DOMAIN
+ENV VITE_APP_DOMAIN=$VITE_APP_DOMAIN
+ENV VITE_SUPERTOKENS_DOMAIN=$VITE_SUPERTOKENS_DOMAIN
+ENV VITE_APP_ENV=$VITE_APP_ENV
+
 RUN pnpm run build
 
 # Stage 4: Production image
