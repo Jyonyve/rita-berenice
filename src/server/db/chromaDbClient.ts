@@ -251,7 +251,7 @@ export const chromaDbClient = {
 			});
 			return _returnResponse(results);
 		} catch (error) {
-			console.error(`[ChromaClient.queryRecords] Failed to query records:`, error);
+			console.error(`[ChromaClient.getRecords] Failed to query records:`, error);
 			throw new Error(
 				`ChromaDB get failed for where ${JSON.stringify(where)}: ${(error as Error).message}`
 			);

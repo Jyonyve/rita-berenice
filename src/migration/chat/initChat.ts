@@ -490,9 +490,7 @@ async function initChatFromLogFiles() {
 			`      Found ${loreContexts.length} lore and ${historyContexts.length} history documents.`
 		);
 
-		const { displayTurns: existingTurnsInDB } = await chatStore.getChatHistoryForDisplay(
-			TARGET_SESSION_ID
-		);
+		const { displayTurns: existingTurnsInDB } = await chatStore.getAllDisplayTurns(TARGET_SESSION_ID);
 		const latestSequenceInDB =
 			existingTurnsInDB.length > 0 ? Math.max(...existingTurnsInDB.map((t) => t.sequence)) : -1;
 		console.log(

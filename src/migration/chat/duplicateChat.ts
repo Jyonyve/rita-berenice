@@ -39,70 +39,66 @@ function generateDuplicateTurn(oldTurn: ChatTurn, newSessionId: string): ChatTur
 		response: { ...oldTurn.response, sessionId: newSessionId, messageId: newResponseMessageId },
 	};
 }
-
 // ===================================================================================
-// CORE LOGIC: FULL DUPLICATION AND INCREMENTAL SYNC
+// CORE LOGIC (Using the optimized store functions)
 // ===================================================================================
 
-/**
- * Fetches all chat turns from an existing session and duplicates them into a new session.
- */
 async function duplicateChatSession(oldSessionId: string, newSessionId: string) {
 	console.log(`🚀 Starting full duplication process...`);
 	console.log(`   Source:      ${oldSessionId}`);
 	console.log(`   Destination: ${newSessionId}`);
 
 	try {
+		// --- KEY CHANGE: This now calls the OPTIMIZED getAllChatTurns ---
 		const { chatTurns } = await chatStore.getAllChatTurns(oldSessionId);
+
 		if (!chatTurns || chatTurns.length === 0) {
-			console.warn(`⚠️ No chat turns found for source session ID: ${oldSessionId}.`);
+			console.warn(`⚠️ No chat turns found for source session ID.`);
 			return;
 		}
-		console.log(`   Found ${chatTurns.length} turns to duplicate.`);
+
+		console.log(`   Found ${chatTurns.length} turns for a deep copy.`);
 		const duplicatedTurns = chatTurns.map((turn) => generateDuplicateTurn(turn, newSessionId));
 		const turnBatches = chunkArray(duplicatedTurns, BATCH_SIZE);
 
-		console.log(`   📦 Processing in ${turnBatches.length} batches of up to ${BATCH_SIZE}.`);
+		console.log(`   📦 Processing in ${turnBatches.length} batches...`);
 		for (let i = 0; i < turnBatches.length; i++) {
 			const batch = turnBatches[i];
 			console.log(`     -> Storing batch ${i + 1}/${turnBatches.length} (${batch.length} turns)...`);
+
+			// --- KEY CHANGE: This now calls the CORRECTED storeChatTurns ---
 			await chatStore.storeChatTurns(batch);
 		}
+
 		console.log(
 			`✅ Success! Duplicated ${duplicatedTurns.length} turns to new session ${newSessionId}.`
 		);
 	} catch (error) {
-		console.error(`💥 An error occurred during the duplication process:`, error);
+		console.error(`💥 An error occurred during duplication:`, error);
 	}
 }
 
-/**
- * Incrementally synchronizes new chat turns from an original session to a duplicated session.
- */
 async function syncNewTurnsOnly(originalSessionId: string, duplicatedSessionId: string) {
 	console.log(`🔄 Starting incremental sync...`);
 	console.log(`   Source:      ${originalSessionId}`);
 	console.log(`   Destination: ${duplicatedSessionId}`);
 
 	try {
+		// --- KEY CHANGE: Both calls are now to the OPTIMIZED getAllChatTurns ---
 		const [originalResponse, duplicatedResponse] = await Promise.all([
 			chatStore.getAllChatTurns(originalSessionId),
 			chatStore.getAllChatTurns(duplicatedSessionId),
 		]);
 
-		const originalTurns = originalResponse.chatTurns;
-		if (!originalTurns || originalTurns.length === 0) {
-			console.warn(`⚠️ No chat turns found for source session ID. Nothing to sync.`);
-			return;
-		}
-
+		const originalTurns = originalResponse.chatTurns || [];
 		const lastSyncedSequence = (duplicatedResponse.chatTurns || []).reduce(
 			(max, turn) => Math.max(max, turn.sequence),
 			-1
 		);
-		console.log(`   Last synced sequence in destination is ${lastSyncedSequence}.`);
 
+		console.log(`   Last synced sequence is ${lastSyncedSequence}.`);
 		const newTurnsToSync = originalTurns.filter((turn) => turn.sequence > lastSyncedSequence);
+
 		if (newTurnsToSync.length === 0) {
 			console.log('✅ Destination is already up-to-date.');
 			return;
@@ -118,11 +114,14 @@ async function syncNewTurnsOnly(originalSessionId: string, duplicatedSessionId: 
 		for (let i = 0; i < turnBatches.length; i++) {
 			const batch = turnBatches[i];
 			console.log(`     -> Storing batch ${i + 1}/${turnBatches.length} (${batch.length} turns)...`);
+
+			// --- KEY CHANGE: This also uses the CORRECTED storeChatTurns ---
 			await chatStore.storeChatTurns(batch);
 		}
+
 		console.log(`✅ Success! Synced ${newTurnsToSync.length} new turns to ${duplicatedSessionId}.`);
 	} catch (error) {
-		console.error(`💥 An error occurred during the incremental sync process:`, error);
+		console.error(`💥 An error occurred during incremental sync:`, error);
 	}
 }
 
