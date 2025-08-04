@@ -12,7 +12,7 @@ import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 
 import { chatStore } from '../store/chatStore.js';
 import { buildProfileId, buildTempChatTurnId } from '../../shared/util/buildIdUtils.js';
-import { ApiError, handleServiceError } from '../util/serviceHelpers.js';
+import { handleServiceError } from '../util/serviceHelpers.js';
 import { memoryEngine } from './memoryEngine.js';
 import { personaEngine } from './personaEngine.js';
 import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';
@@ -22,6 +22,7 @@ import { tempStore } from '../store/tempStore.js';
 import { MemoryResponse, PersonaResponse } from '#shared/api/ModuleResponse.js';
 import { detectLanguage } from '../util/languageUtils.js';
 import { createBasicChatTurn } from '#shared/util/typeGuardUtils.js';
+import { ApiError } from '#shared/domain/error/errors.js';
 
 const timerLabel = (sequence: number) => `RESPONSE_GENERATION: Turn ${sequence}`;
 

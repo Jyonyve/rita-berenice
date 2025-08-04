@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url'; // Use import.meta.url for ES modules
 import { builtinModules } from 'node:module'; // Correct import for ES modules
-import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import svgr from 'vite-plugin-svgr';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
@@ -45,12 +44,6 @@ export default defineConfig(({ mode }) => {
 		plugins: [
 			react({ jsxImportSource: '@emotion/react', babel: { plugins: ['@emotion/babel-plugin'] } }),
 			// Configure nodePolyfills to exclude 'crypto'
-			nodePolyfills({
-				exclude: ['crypto', 'stream'],
-				// Keep other options if needed
-				globals: { Buffer: true, global: true, process: true },
-				protocolImports: true,
-			}),
 			tsconfigPaths(),
 			svgr(),
 		],

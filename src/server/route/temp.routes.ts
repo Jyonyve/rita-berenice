@@ -12,7 +12,7 @@ import {
 } from '../util/routeHelpers.js';
 import { TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { TempChatResponse } from '#shared/api/ModuleResponse.js';
-import { ApiError } from '../util/serviceHelpers.js';
+import { ApiError } from '#shared/domain/error/errors.js';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.TEMP; // For validating sessionId if it were used as a serviceId elsewhere

@@ -1,9 +1,9 @@
 import OpenAI from 'openai';
 import { ChatCompletion } from 'openai/resources/index.mjs';
-import { LlmResponseParseError } from './serviceHelpers.js';
 import { ChromaResponse } from '#shared/api/ModuleResponse.js';
 import { DefaultAiRole } from '#shared/domain/aimodel/index.js';
 import { HistoryContext, HistoryInfo, LoreContext, LoreInfo } from '#shared/domain/lore/index.js';
+import { LlmResponseParseError } from '#shared/domain/error/errors.js';
 
 export function isDirectOpenAIClient(llm: any): llm is OpenAI {
 	// Check for a unique property or method of the OpenAI client instance

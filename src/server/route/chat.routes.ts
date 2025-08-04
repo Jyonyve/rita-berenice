@@ -3,7 +3,6 @@
 import express, { type Request, type Response } from 'express';
 
 import { Where, WhereDocument } from 'chromadb';
-import { ApiError } from '#server/util/serviceHelpers.js';
 import { chatStore } from '../store/chatStore.js';
 import { genRoutePattern } from '#shared/util/apiHelpers.js';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
@@ -15,6 +14,7 @@ import {
 	validateServiceId,
 } from '../util/routeHelpers.js';
 import { ChatResponse } from '#shared/api/ModuleResponse.js';
+import { ApiError } from '#shared/domain/error/errors.js';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.CHAT;

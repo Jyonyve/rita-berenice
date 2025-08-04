@@ -28,8 +28,8 @@ import termRoutes from './route/term.routes.js';
 import personaRoutes from './route/persona.routes.js';
 import orchestrationRoutes from './route/orchestration.routes.js';
 import { ApiErrorResponse } from '#shared/api/ModuleResponse.js';
-import { ApiError } from './util/serviceHelpers.js';
 import sessionRoutes from './route/session.routes.js';
+import { ApiError } from '#shared/domain/error/errors.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url)); // src/server
 const isProduction = process.env.NODE_ENV === 'production';

@@ -1,6 +1,6 @@
-import { ApiError } from '#server/util/serviceHelpers.js';
 import Session from 'supertokens-web-js/recipe/session/index.js';
 import axios from 'axios';
+import { ApiError } from '#shared/domain/error/errors.js';
 
 // API 클라이언트 인스턴스 생성
 export const apiClient = axios.create({

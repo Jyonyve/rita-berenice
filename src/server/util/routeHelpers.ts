@@ -1,8 +1,8 @@
 // File: server/util/routeHelpers.ts
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import { ApiError } from './serviceHelpers.js';
 import { CollectionType } from '../db/ChromaInterfaces.js';
 import { convertArrayToString } from '#shared/util/chatParseUtils.js';
+import { ApiError } from '#shared/domain/error/errors.js';
 
 /** Router part */
 export type CustomValidationRule = {

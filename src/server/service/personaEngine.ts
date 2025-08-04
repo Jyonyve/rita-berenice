@@ -5,20 +5,15 @@ import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import {
 	buildJsonCorrectionPrompt,
 	buildLongTermMemoryPrompt,
-	buildPersonaSystemPrompt,
 	buildStaticSystemPrompt,
 } from '../util/templateUtils.js';
-import { handleServiceError, LlmResponseParseError } from '../util/serviceHelpers.js';
+
 import { buildChatCompletion, parseLlmJsonResponse } from '../util/llmUtils.js';
 import { MemoryResponse, PersonaResponse } from '#shared/api/ModuleResponse.js';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
-import { ChatMessage, ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { llmService } from './llmService.js';
-import {
-	AiModelInfo,
-	DEFAULT_MODEL_GOOGLEAI,
-	DefaultAiRole,
-} from '#shared/domain/aimodel/AiInfoTypes.js';
+import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { parseEntriesToText } from '#shared/util/chatParseUtils.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { correctAiModelInfo } from '#shared/config/supportAiModelInfo.js';
