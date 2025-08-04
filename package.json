@@ -34,7 +34,9 @@
 		"extract:lore": "tsx --env-file .env ./src/migration/source/htmlParserCheerio.ts",
 		"drop": "tsx --env-file .env ./src/migration/dropCollection.ts",
 		"collection": "tsx --env-file .env ./src/migration/checkCollection.ts",
-		"temp": "tsx --env-file .env ./scripts/patchResponseEmotionToPrimaryFile.ts"
+		"delete": "tsx --env-file .env ./scripts/deleteUser.ts",
+		"verify": "tsx --env-file .env ./scripts/verifyUser.ts",
+		"temp": "tsx --env-file .env ./scripts/migUser.ts"
 	},
 	"dependencies": {
 		"@langchain/anthropic": "^0.3.25",
@@ -43,7 +45,7 @@
 		"@langchain/google-genai": "^0.2.16",
 		"@langchain/groq": "^0.2.3",
 		"@langchain/openai": "^0.6.3",
-		"@chroma-core/openai":"^0.1.7",
+		"@chroma-core/openai": "^0.1.7",
 		"cheerio": "^1.1.2",
 		"chromadb": "^3.0.10",
 		"date-fns": "^4.1.0",
