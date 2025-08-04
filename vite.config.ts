@@ -1,23 +1,20 @@
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url'; // Use import.meta.url for ES modules
-import { builtinModules } from 'node:module'; // Correct import for ES modules
+import { fileURLToPath } from 'node:url';
+import { builtinModules } from 'node:module';
+import { nodePolyfills } from 'vite-plugin-node-polyfills'; // <-- ADD THIS BACK
 import svgr from 'vite-plugin-svgr';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
-// Helper to get __dirname equivalent in ES modules
+// Helper constants remain the same
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 const CHROMADB = 'chromadb' as const;
 const nodeBuiltinModules = builtinModules.map((m) => `node:${m}`);
 const allBuiltinModules = [...new Set([...builtinModules, ...nodeBuiltinModules])];
 
 export default defineConfig(({ mode }) => {
-	// Conditionally set the base path.
-	// For 'build' (GitHub Pages), set it to your repository name.
-	// For 'serve' (local dev), it remains at the root '/'.
 	const isStaticBuild = mode === 'static';
 
 	return {
@@ -25,7 +22,8 @@ export default defineConfig(({ mode }) => {
 		base: isStaticBuild ? '/rita-berenice/' : '/',
 		cacheDir: '.vite_cache',
 		define: { 'process.env.APP_ENV': JSON.stringify(process.env.APP_ENV) },
-		// SSR specific options
+
+		// SSR specific options - This section is CORRECT and remains unchanged.
 		ssr: {
 			external: [CHROMADB, ...allBuiltinModules, 'fsevents'],
 			noExternal: [
@@ -37,31 +35,32 @@ export default defineConfig(({ mode }) => {
 				'@emotion/cache',
 				'@emotion/server',
 				'react-router',
-				// Review Langchain if issues arise
 			],
 			target: 'node',
 		},
+
 		plugins: [
 			react({ jsxImportSource: '@emotion/react', babel: { plugins: ['@emotion/babel-plugin'] } }),
-			// Configure nodePolyfills to exclude 'crypto'
+
+			// ADD THIS PLUGIN BACK. It is essential for fixing the client-side error.
+			nodePolyfills(),
+
 			tsconfigPaths(),
 			svgr(),
 		],
+
 		build: {
 			target: 'es2022',
 			chunkSizeWarningLimit: 1000,
 			rollupOptions: {
-				input: {
-					main: './index.html', // Client entry
-					server: './src/entry-server.tsx', // Server entry - THIS WAS MISSING
-				},
+				input: { main: './index.html', server: './src/entry-server.tsx' },
+				// THIS IS THE CRITICAL CHANGE:
+				// We remove the server-specific externals from this general build section.
+				// The `ssr.external` option already handles the server build correctly.
+				// This allows the polyfill plugin to work on the client build.
 				external: [
-					CHROMADB,
-					'ollama',
-					...allBuiltinModules,
+					'ollama', // Keep other server-only externals here if needed
 					'fsevents',
-					/^node:.*/,
-					/^@chroma-core\/.*/,
 				],
 				output: {
 					manualChunks(id) {
@@ -69,21 +68,18 @@ export default defineConfig(({ mode }) => {
 							return 'react-vendor';
 						if (id.includes('node_modules/@mui/') || id.includes('node_modules/@emotion/'))
 							return 'mui-vendor';
-						if (id.includes('node_modules/onnxruntime-web')) return 'transformers'; // Keep if needed
-						if (id.includes('@langchain/')) return 'langchain'; // Keep if needed
+						if (id.includes('node_modules/onnxruntime-web')) return 'transformers';
+						if (id.includes('@langchain/')) return 'langchain';
 					},
 				},
 			},
-			sourcemap: true, // Enable source maps for easier debugging
+			sourcemap: true,
 		},
+
+		// optimizeDeps and esbuild remain the same
 		optimizeDeps: {
 			include: ['@emotion/react', '@emotion/styled', '@emotion/cache'],
-			exclude: [
-				CHROMADB,
-				'ollama',
-				'whatwg-fetch', // Keep native deps excluded
-				// Ensure sirv is NOT excluded if used in server.ts
-			],
+			exclude: [CHROMADB, 'ollama', 'whatwg-fetch'],
 		},
 		esbuild: {
 			logOverride: { 'this-is-undefined-in-esm': 'silent', 'commonjs-variable-in-esm': 'silent' },
