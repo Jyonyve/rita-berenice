@@ -12,7 +12,7 @@ async function checkSeededData(sessionId: string) {
 	try {
 		console.log(`Accessing collection "${TARGET_COLLECTION_NAME}" for session ID: ${sessionId}...`);
 		const collection = chromaDbClient.getTempChatCollection();
-		const result = await (await collection).get({});
+		const result = await (await collection).get();
 		console.log(`✅ Found ${result.ids.length} chat turns for the session.`);
 		console.log(result);
 	} catch (error) {

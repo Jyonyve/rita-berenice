@@ -261,43 +261,57 @@ export const chatStore = {
 		}
 	},
 
+	// In src/server/store/chatStore.ts
+
 	/**
-	 * [For Backend RAG] Fetches full, rich ChatTurn objects for a session.
+	 * [OPTIMIZED for Deep Copy & RAG] Fetches full, rich ChatTurn objects for a session.
+	 * This version uses a single, efficient query to avoid the N+1 problem.
 	 */
 	getAllChatTurns: async (sessionId: string): Promise<ChatResponse> => {
 		try {
 			const collection = await chatStore._getChatCollection();
 
-			// 1. Fetch primary TURN documents
-			const turnResults = await getRecords(collection, {
-				$and: [{ type: { $eq: METADATA_TYPES.TURN } }, { sessionId: { $eq: sessionId } }],
+			// 1. Fetch ALL documents (TURN and INDEX) for the session in ONE go.
+			const allDocsResponse = await getRecords(collection, { sessionId: { $eq: sessionId } });
+
+			const allDocs = validateChromaResponse(allDocsResponse, 'getList', collectionType);
+			if (allDocs.ids.length === 0) return emptyChatResponse();
+
+			// 2. Partition the results into primary turns and index records in memory (very fast).
+			const primaryTurnDocs: {
+				ids: string[];
+				documents: (string | null)[];
+				metadatas: (Metadata | null)[];
+			} = { ids: [], documents: [], metadatas: [] };
+			const allIndexRecords: Metadata[] = [];
+
+			allDocs.metadatas.forEach((metadata, i) => {
+				if (metadata) {
+					if (metadata.type === METADATA_TYPES.TURN) {
+						primaryTurnDocs.ids.push(allDocs.ids[i]);
+						primaryTurnDocs.documents.push(allDocs.documents[i]);
+						primaryTurnDocs.metadatas.push(metadata);
+					} else if (metadata.type === METADATA_TYPES.INDEX) {
+						allIndexRecords.push(metadata);
+					}
+				}
 			});
-			const primaryTurnDocs = validateChromaResponse(turnResults, 'getList', collectionType);
+
 			if (primaryTurnDocs.ids.length === 0) return emptyChatResponse();
 
-			// 2. Fetch all associated search index records
-			const turnIds = primaryTurnDocs.ids;
-			const indexWhere: Where = {
-				$and: [{ type: { $eq: METADATA_TYPES.INDEX } }, { chatTurnId: { $in: turnIds } }],
+			// 3. Reconstruct the full, rich objects using the partitioned data.
+			const chatTurns = chatStore._constructFullChatTurns(primaryTurnDocs.metadatas, allIndexRecords);
+
+			// Return the complete ChatResponse object.
+			return {
+				ids: primaryTurnDocs.ids,
+				documents: primaryTurnDocs.documents,
+				metadatas: primaryTurnDocs.metadatas,
+				chatTurns,
+				displayTurns: [],
 			};
-			const indexResults = await getRecords(collection, indexWhere);
-			const allIndexRecords = validateChromaResponse(indexResults, 'getList', collectionType);
-
-			// 3. Reconstruct the full, rich objects
-			const chatTurns = primaryTurnDocs.metadatas.map((metadata) => {
-				const relatedIndexRecords = allIndexRecords.metadatas.filter(
-					(record) =>
-						!!record && record.chatTurnId === (metadata as unknown as ChatTurnMetadata).chatTurnId
-				);
-				return metadataToChatTurn(
-					metadata as unknown as ChatTurnMetadata,
-					relatedIndexRecords as unknown as ChatIndexMetadata[]
-				);
-			});
-
-			return { ...primaryTurnDocs, chatTurns, displayTurns: [] };
 		} catch (error) {
-			handleServiceError(error, 'Error in getAllChatTurns', `Session: ${sessionId}`);
+			handleServiceError(error, 'Error in optimized getAllChatTurns', `Session: ${sessionId}`);
 		}
 	},
 
@@ -307,10 +321,7 @@ export const chatStore = {
 		if (!chatTurns || chatTurns.length === 0) {
 			return;
 		}
-
 		const collection = await chatStore._getChatCollection();
-
-		// Prepare the primary TURN documents for a single bulk upsert
 		const recordsToUpsert = chatTurns.map((turn) => {
 			const metadata = chatTurnToMetadata(turn);
 			const document = chatTurnToDocument(turn);
@@ -318,27 +329,26 @@ export const chatStore = {
 		});
 
 		try {
-			// --- Step 1: Store the primary TURN documents in a single batch ---
+			// Step 1: Store primary TURN documents
 			await upsertRecords(
 				collection,
 				recordsToUpsert.map((r) => r.id),
 				recordsToUpsert.map((r) => r.document),
 				recordsToUpsert.map((r) => r.metadata)
 			);
-			console.log(`[chatStore] Successfully stored ${chatTurns.length} primary chat turns.`);
+			console.log(`[chatStore] Successfully stored ${chatTurns.length} primary turns.`);
 
-			// --- Step 2: Sequentially update the search index for EACH turn ---
-			console.log(`[chatStore] Now updating search indexes for ${chatTurns.length} turns...`);
+			// Step 2: Update the search index for EACH turn
+			console.log(`[chatStore] Now updating indexes for ${chatTurns.length} turns...`);
 			for (const turn of chatTurns) {
-				// This ensures each turn's keywords, topics, etc., are correctly indexed.
 				await chatStore._updateSearchIndexForTurn(turn);
 			}
 			console.log(`[chatStore] Successfully updated all search indexes.`);
 		} catch (error) {
 			handleServiceError(
 				error,
-				'An internal error occurred during [storeChatTurns].',
-				`Failed to bulk store and index ${chatTurns.length} chat turns.`
+				'Error during bulk store and index',
+				`Failed for ${chatTurns.length} turns.`
 			);
 		}
 	},

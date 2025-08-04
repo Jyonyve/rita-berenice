@@ -44,7 +44,8 @@ async function cleanupTurnsBySequence(
 
 	try {
 		const collection = await chromaDbClient.getChatCollection();
-		await chromaDbClient.deleteRecords(collection, idsToDelete);
+		console.log(await collection.get({ ids: idsToDelete.slice(0, 3) }));
+		// await chromaDbClient.deleteRecords(collection, idsToDelete);
 		console.log(`✅ Successfully deleted ${idsToDelete.length} records.`);
 	} catch (error) {
 		console.error('💥 Failed to delete records from the database:', error);
