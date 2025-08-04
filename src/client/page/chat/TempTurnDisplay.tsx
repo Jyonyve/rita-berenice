@@ -128,7 +128,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 						onChange={(e) => onEditTempTurnText(e.target.value, false)}
 						disabled={isProcessing}
 						slotProps={{
-							htmlInput: { maxLength: REQUEST_CHARACTER_LIMIT },
+							htmlInput: { maxLength: parseEntriesToText(currentSet.response.entries).length + 100 },
 							input: { sx: { fontSize: theme.typography.body2.fontSize } },
 						}}
 						error={isUserTextOverflow} // Use the built-in error prop
