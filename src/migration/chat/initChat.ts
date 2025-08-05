@@ -23,19 +23,12 @@ import {
 	mapLoreContexts,
 	mapTerms,
 	profileStore,
-	sessionStore,
 	termStore,
 } from '#server/index.js';
 import { createChatTurnMetadataSchema } from '#server/util/schemaUtils.js';
 import { loreStore } from '#server/store/loreStore.js';
 import { ChatGroq } from '@langchain/groq';
-import {
-	HistoryContext,
-	LoreContext,
-	ProfileCdo,
-	SessionInfo,
-	SessionMetadata,
-} from '#shared/domain/index.js';
+import { HistoryContext, LoreContext, SessionInfo, SessionMetadata } from '#shared/domain/index.js';
 import { getOriginalTerms } from '../term/initTerm.js';
 import { chromaDbClient } from '#server/db/chromaDbClient.js';
 import {
@@ -46,14 +39,14 @@ import {
 import { encoding_for_model } from 'tiktoken';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { ChatOpenAI } from '@langchain/openai';
+import { USER_ID } from '../userId.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // --- Configuration ---
 const CRAWLER_RESULT_DIR = path.join(__dirname, 'result');
-const MAX_LLM_RETRIES = 3;
-const USER_ID = process.env.USER_ID || '6b335673-c837-43f9-a1c7-0b92c90edefb';
+const BACKUP_DIR = path.join(__dirname, 'backup');
 const PROGRESS_DIR = path.join(__dirname, 'progress');
 const PROGRESS_FILE_PREFIX = 'initchat-progress';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -126,6 +119,22 @@ const createInitialProgress = (
 		errors: [],
 	};
 };
+
+async function appendTurnToBackupFile(enrichedTurn: ChatTurn): Promise<void> {
+	try {
+		await fs.mkdir(BACKUP_DIR, { recursive: true });
+		const { sessionId, sequence } = enrichedTurn;
+		// The filename is now just the session ID with a .jsonl extension
+		const filename = `${sessionId}.jsonl`;
+		const filepath = path.join(BACKUP_DIR, filename);
+		// Append the turn as a single line of JSON, followed by a newline
+		const jsonLine = JSON.stringify(enrichedTurn) + '\n';
+		await fs.appendFile(filepath, jsonLine);
+		console.log(`     💾 Appended turn ${sequence} to backup: ${filename}`);
+	} catch (error) {
+		console.error(`     ⚠️ Failed to save backup for turn ${enrichedTurn.sequence}:`, error);
+	}
+}
 
 const getDefaultEnrichedMetadata = () => ({
 	summary: NA,
@@ -234,7 +243,7 @@ const enrichChatTurnWithMetadata = async (
 			configuration: {
 				baseURL: 'https://openrouter.ai/api/v1',
 				defaultHeaders: {
-					'HTTP-Referer': 'https://github.com/Jyonyve/rita-berenice',
+					'HTTP-Referer': 'https://rita-berenice.fly.dev',
 					'X-Title': APPNAME,
 				},
 			},
@@ -357,6 +366,7 @@ async function processAndUpsertTurn(
 		progress.fallbackSavedTurnsCount++;
 	}
 	try {
+		await appendTurnToBackupFile(enrichedTurn);
 		await chatStore.storeChatTurn(enrichedTurn);
 
 		progress.lastProcessedSequence = enrichedTurn.sequence;

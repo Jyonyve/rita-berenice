@@ -25,7 +25,6 @@ import {
 import { ChatResponse } from '#shared/api/ModuleResponse.js';
 import { parseTextToEntries } from '#shared/util/chatParseUtils.js';
 import { isAndWhere } from '../util/queryUtils.js';
-import { c } from 'node_modules/vite/dist/node/moduleRunnerTransport.d-DJ_mE5sf.js';
 import {
 	buildChatTurnIndexId,
 	buildChatTurnId,
@@ -66,60 +65,60 @@ export const chatStore = {
 	},
 
 	// Store request (public for non-regen editing)
-	_storeRequest: async (request: ChatMessage): Promise<ChatMessage> => {
-		const { entries, ...requestMetadata } = request;
-		const { sessionId, sequence, messageId } = requestMetadata;
-		const now = new Date().toISOString();
-		const updatedMetadata: ChatMessageMetadata = {
-			...requestMetadata,
-			messageId: messageId || buildMessageId(sessionId, sequence, 'request'),
-			createdAt: request.createdAt || now,
-			updatedAt: now,
-			type: METADATA_TYPES.MESSAGE,
-			model: 'none',
-		};
+	// _storeRequest: async (request: ChatMessage): Promise<ChatMessage> => {
+	// 	const { entries, ...requestMetadata } = request;
+	// 	const { sessionId, sequence, messageId } = requestMetadata;
+	// 	const now = new Date().toISOString();
+	// 	const updatedMetadata: ChatMessageMetadata = {
+	// 		...requestMetadata,
+	// 		messageId: messageId || buildMessageId(sessionId, sequence, 'request'),
+	// 		createdAt: request.createdAt || now,
+	// 		updatedAt: now,
+	// 		type: METADATA_TYPES.MESSAGE,
+	// 		model: 'none',
+	// 	};
 
-		const collection = await chatStore._getChatCollection();
-		try {
-			const documentForEmbedding = flatChatMessageToDoc(request.entries);
-			await upsertRecord(collection, updatedMetadata.messageId, documentForEmbedding, updatedMetadata);
-			return { entries, ...updatedMetadata };
-		} catch (error) {
-			handleServiceError(
-				error,
-				'An internal error occurred while do [storeRequest].',
-				`Failed to store request message for session ${sessionId}:`
-			);
-		}
-	},
+	// 	const collection = await chatStore._getChatCollection();
+	// 	try {
+	// 		const documentForEmbedding = flatChatMessageToDoc(request.entries);
+	// 		await upsertRecord(collection, updatedMetadata.messageId, documentForEmbedding, updatedMetadata);
+	// 		return { entries, ...updatedMetadata };
+	// 	} catch (error) {
+	// 		handleServiceError(
+	// 			error,
+	// 			'An internal error occurred while do [storeRequest].',
+	// 			`Failed to store request message for session ${sessionId}:`
+	// 		);
+	// 	}
+	// },
 
-	// Store response (public for non-regen editing)
-	_storeResponse: async (response: ChatMessage): Promise<ChatMessage> => {
-		const { entries, model, ...responseMetadata } = response;
-		const { sessionId, sequence, messageId } = responseMetadata;
-		const now = new Date().toISOString();
-		const updatedMetadata: ChatMessageMetadata = {
-			...responseMetadata,
-			messageId: messageId || buildMessageId(sessionId, sequence, 'response'),
-			createdAt: response.createdAt || now,
-			updatedAt: now,
-			type: METADATA_TYPES.MESSAGE,
-			model: model || 'none',
-		};
-		try {
-			const collection = await chatStore._getChatCollection();
+	// // Store response (public for non-regen editing)
+	// _storeResponse: async (response: ChatMessage): Promise<ChatMessage> => {
+	// 	const { entries, model, ...responseMetadata } = response;
+	// 	const { sessionId, sequence, messageId } = responseMetadata;
+	// 	const now = new Date().toISOString();
+	// 	const updatedMetadata: ChatMessageMetadata = {
+	// 		...responseMetadata,
+	// 		messageId: messageId || buildMessageId(sessionId, sequence, 'response'),
+	// 		createdAt: response.createdAt || now,
+	// 		updatedAt: now,
+	// 		type: METADATA_TYPES.MESSAGE,
+	// 		model: model || 'none',
+	// 	};
+	// 	try {
+	// 		const collection = await chatStore._getChatCollection();
 
-			const documentForEmbedding = flatChatMessageToDoc(response.entries);
-			await upsertRecord(collection, updatedMetadata.messageId, documentForEmbedding, updatedMetadata);
-			return { entries, ...updatedMetadata };
-		} catch (error) {
-			handleServiceError(
-				error,
-				'An internal error occurred while do [storeResponse].',
-				`Failed to store response message for session ${sessionId}:`
-			);
-		}
-	},
+	// 		const documentForEmbedding = flatChatMessageToDoc(response.entries);
+	// 		await upsertRecord(collection, updatedMetadata.messageId, documentForEmbedding, updatedMetadata);
+	// 		return { entries, ...updatedMetadata };
+	// 	} catch (error) {
+	// 		handleServiceError(
+	// 			error,
+	// 			'An internal error occurred while do [storeResponse].',
+	// 			`Failed to store response message for session ${sessionId}:`
+	// 		);
+	// 	}
+	// },
 	/**
 	 * @private
 	 * Reconstructs rich ChatTurn objects from primary documents and their associated index records.

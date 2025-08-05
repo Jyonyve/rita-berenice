@@ -18,6 +18,7 @@
 		"purge:chat": "tsx --env-file .env ./src/migration/chat/pergeChat.ts",
 		"clean:chat": "tsx --env-file .env ./src/migration/chat/cleanUpNewTurns.ts",
 		"dupe:chat": "tsx --env-file .env ./src/migration/chat/duplicateChat.ts",
+		"delete:mess": "tsx --env-file .env ./src/migration/chat/removeMessage.ts",
 		"patch:emotion": "tsx --env-file .env ./src/migration/chat/patchEmotion.ts",
 		"check:temp": "tsx --env-file .env ./src/migration/chat/checkTempChat.ts",
 		"init:prof": "tsx --env-file .env ./src/migration/profile/initProfile.ts",
@@ -38,7 +39,8 @@
 		"collection": "tsx --env-file .env ./src/migration/checkCollection.ts",
 		"delete": "tsx --env-file .env ./scripts/deleteUser.ts",
 		"verify": "tsx --env-file .env ./scripts/verifyUser.ts",
-		"temp": "tsx --env-file .env ./scripts/migUser.ts"
+		"temp": "tsx --env-file .env ./scripts/migUser.ts",
+		"mig": "tsx --env-file .env ./src/migration/migDB.ts"
 	},
 	"dependencies": {
 		"@langchain/anthropic": "^0.3.25",

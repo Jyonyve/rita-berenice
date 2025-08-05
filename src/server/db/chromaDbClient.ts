@@ -13,11 +13,12 @@ if (!apiKey) {
 }
 
 const embedFnOpenAi = new OpenAIEmbeddingFunction({ apiKey, modelName: 'text-embedding-3-small' });
-const host = process.env.CHROMA_HOST;
-const port = process.env.CHROMA_PORT;
-const ssl = process.env.CHROMA_SSL === 'true';
+const host =
+	process.env.APP_ENV === 'development' ? 'chromadb-flyio.fly.dev' : 'rita-berenice.fly.dev';
+const port = 443;
+const ssl = true;
 
-if (!host || !port || process.env.CHROMA_SSL === undefined) {
+if (!host || !port) {
 	throw new Error(
 		'ChromaDB environment variables (CHROMA_HOST, CHROMA_PORT, CHROMA_SSL) must be set.'
 	);
@@ -26,7 +27,7 @@ if (!host || !port || process.env.CHROMA_SSL === undefined) {
 }
 const chromaClient = new ChromaClient({
 	host,
-	port: parseInt(port, 10), // Ensure port is a number
+	port, // Ensure port is a number
 	ssl,
 });
 
@@ -210,7 +211,9 @@ export const chromaDbClient = {
 		const whereFilter: Where = { type: { $eq: type } }; // For just type
 
 		console.log(
-			`[ChromaClient.getDocumentsByMetadata] Fetching documents with filter: ${JSON.stringify(whereFilter)}`
+			`[ChromaClient.getDocumentsByMetadata] Fetching documents with filter: ${JSON.stringify(
+				whereFilter
+			)}`
 		);
 
 		try {
@@ -241,7 +244,9 @@ export const chromaDbClient = {
 	): Promise<ChromaResponse> => {
 		try {
 			console.log(
-				`[ChromaClient.getRecords] filter: ${logJsonPreview(where)}, document: ${logJsonPreview(whereDocument)}, limit: ${limit}`
+				`[ChromaClient.getRecords] filter: ${logJsonPreview(where)}, document: ${logJsonPreview(
+					whereDocument
+				)}, limit: ${limit}`
 			);
 			const MAX = await collection.count(); // Ensure the collection is initialized
 			const results = await collection.get({
@@ -267,7 +272,9 @@ export const chromaDbClient = {
 	): Promise<ChromaResponse[]> => {
 		try {
 			console.log(
-				`[ChromaClient.queryRecords] Querying with text: "${queryTexts.join('\n')}...",\n filter: ${logJsonPreview(where)}, ${logJsonPreview(whereDocument)},\n limit: ${limit}`
+				`[ChromaClient.queryRecords] Querying with text: "${queryTexts.join(
+					'\n'
+				)}...",\n filter: ${logJsonPreview(where)}, ${logJsonPreview(whereDocument)},\n limit: ${limit}`
 			);
 			const MAX = await collection.count(); // Ensure the collection is initialized
 			const results = await collection.query({
