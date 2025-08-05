@@ -10,7 +10,6 @@ import React, {
 	useRef,
 } from 'react';
 import { useSessionContext } from 'supertokens-auth-react/recipe/session/index.js';
-import { useMockAuthStore } from '../mock/index.js';
 
 // --- Define the shape of our unified context ---
 interface AuthContextType {
@@ -23,8 +22,6 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const mockUserId = 'mock-user-id';
-const isStatic = import.meta.env.VITE_APP_MODE === 'static';
 
 // --- Create the single, intelligent provider ---
 export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
@@ -32,13 +29,11 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 	const session = useSessionContext();
 
 	// 2. Get the mock session state from our external store (only in static mode)
-	const { isLoggedIn: isMockLoggedIn } = useMockAuthStore(isStatic);
 
 	// 3. Unify the session state into single variables
-	const isSessionLoading = isStatic ? false : session.loading;
-	const isLoggedIn = isStatic ? isMockLoggedIn : !session.loading && session.doesSessionExist;
-	const userId =
-		!session.loading && session.doesSessionExist ? session.userId : isLoggedIn ? mockUserId : '';
+	const isSessionLoading = session.loading;
+	const isLoggedIn = !session.loading && session.doesSessionExist;
+	const userId = !session.loading && session.doesSessionExist ? session.userId : '';
 
 	// 4. Manage the modal state
 	const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
