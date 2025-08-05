@@ -241,7 +241,7 @@ export const chromaDbClient = {
 	): Promise<ChromaResponse> => {
 		try {
 			console.log(
-				`[ChromaClient.queryRecords] filter: ${logJsonPreview(where)}, document: ${logJsonPreview(whereDocument)}, limit: ${limit}`
+				`[ChromaClient.getRecords] filter: ${logJsonPreview(where)}, document: ${logJsonPreview(whereDocument)}, limit: ${limit}`
 			);
 			const MAX = await collection.count(); // Ensure the collection is initialized
 			const results = await collection.get({
@@ -251,7 +251,7 @@ export const chromaDbClient = {
 			});
 			return _returnResponse(results);
 		} catch (error) {
-			console.error(`[ChromaClient.queryRecords] Failed to query records:`, error);
+			console.error(`[ChromaClient.getRecords] Failed to query records:`, error);
 			throw new Error(
 				`ChromaDB get failed for where ${JSON.stringify(where)}: ${(error as Error).message}`
 			);
