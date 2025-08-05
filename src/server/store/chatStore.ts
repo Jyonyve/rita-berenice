@@ -17,7 +17,7 @@ import {
 } from '#shared/domain/chat/ChatInterfaces.js';
 import { flatChatMessageToDoc, chatTurnToDocument } from '#shared/util/documentUtils.js';
 import { ApiError } from '#shared/domain/error/errors.js';
-import {  handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
+import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import {
 	chatTurnToMetadata,
 	metadataToChatTurn,
@@ -325,6 +325,7 @@ export const chatStore = {
 	/**
 	 * [OPTIMIZED for Deep Copy & RAG] Fetches full, rich ChatTurn objects for a session.
 	 * This version uses a single, efficient query to avoid the N+1 problem.
+	 * NOTE: it querys lots of data, db crashes at scale 1. if want to use this method upgrade db or give some limits.
 	 */
 	getAllChatTurns: async (sessionId: string): Promise<ChatResponse> => {
 		try {
