@@ -17,6 +17,7 @@
 		"patch:chat": "tsx --env-file .env ./src/migration/chat/patchChat.ts",
 		"clean:chat": "tsx --env-file .env ./src/migration/chat/cleanUpNewTurns.ts",
 		"dupe:chat": "tsx --env-file .env ./src/migration/chat/duplicateChat.ts",
+		"patch:emotion": "tsx --env-file .env ./src/migration/chat/patchEmotion.ts",
 		"check:temp": "tsx --env-file .env ./src/migration/chat/checkTempChat.ts",
 		"init:prof": "tsx --env-file .env ./src/migration/profile/initProfile.ts",
 		"check:prof": "tsx --env-file .env ./src/migration/profile/checkProfile.ts",

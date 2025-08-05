@@ -2,6 +2,7 @@
 
 import { chatStore } from '#server/store/chatStore.js';
 import { chromaDbClient } from '#server/db/chromaDbClient.js';
+import { buildChatTurnId } from '#shared/index.js';
 
 const BATCH_SIZE = 100; // Process deletions in batches for performance and stability
 
@@ -62,6 +63,27 @@ async function deleteChatSession(sessionId: string) {
 	}
 }
 
+async function deleteChatSessionBySequence(sessionId: string) {
+	console.log(`🚀 Starting deletion process for session ID: ${sessionId}`);
+
+	try {
+		// for (let i = 574; i < 632; i++) {
+		// 	console.log(`index: ${i} start.`);
+		// 	await chatStore._deleteChatTurn(buildChatTurnId(sessionId, i));
+		// 	console.log(`index: ${i} FINISH.`);
+		// }
+
+		console.log(`index: ${574} start.`);
+		await chatStore._deleteChatTurn(buildChatTurnId(sessionId, 574));
+		console.log(`index: ${574} FINISH.`);
+
+		console.log(`✅ Successfully deleted all data for session: ${sessionId}`);
+	} catch (error) {
+		console.error(`💥 An error occurred while deleting session ${sessionId}:`, error);
+		process.exit(1);
+	}
+}
+
 // --- Script Execution ---
 const sessionIdToDelete = process.argv[2];
 
@@ -71,7 +93,12 @@ if (!sessionIdToDelete) {
 	process.exit(1);
 }
 
-deleteChatSession(sessionIdToDelete).catch((err) => {
+// deleteChatSession(sessionIdToDelete).catch((err) => {
+// 	console.error('FATAL ERROR:', err);
+// 	process.exit(1);
+// });
+
+deleteChatSessionBySequence(sessionIdToDelete).catch((err) => {
 	console.error('FATAL ERROR:', err);
 	process.exit(1);
 });

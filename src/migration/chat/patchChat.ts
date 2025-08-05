@@ -6,9 +6,6 @@ import { chatStore } from '#server/store/chatStore.js';
 import { ChatResponse } from '#shared/api/ModuleResponse.js';
 import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { buildChatTurnId, buildMessageId } from '#shared/util/buildIdUtils.js';
-import { chatTurnToDocument } from '#shared/src/shared/util/documentUtils.js';
-import { chatTurnToMetadata } from '#shared/util/dbConvertUtils.js';
-import { Metadata } from 'chromadb';
 
 // Configuration
 const BATCH_SIZE = 50; // A safe batch size to avoid token limits
@@ -44,20 +41,8 @@ function generateUpdatedIds(oldTurn: ChatTurn, newSessionId: string): ChatTurn {
 		...oldTurn,
 		sessionId: newSessionId,
 		chatTurnId: newChatTurnId,
-		requestMessageId: newRequestMessageId,
-		responseMessageId: newResponseMessageId,
-		request: {
-			...oldTurn.request,
-			sessionId: newSessionId,
-			messageId: newRequestMessageId,
-			emotion: oldTurn.userEmotion.primary,
-		},
-		response: {
-			...oldTurn.response,
-			sessionId: newSessionId,
-			messageId: newResponseMessageId,
-			emotion: oldTurn.characterEmotion.primary,
-		},
+		request: { ...oldTurn.request, sessionId: newSessionId, messageId: newRequestMessageId },
+		response: { ...oldTurn.response, sessionId: newSessionId, messageId: newResponseMessageId },
 	};
 }
 
@@ -69,11 +54,7 @@ function generateUpdatedIds(oldTurn: ChatTurn, newSessionId: string): ChatTurn {
  */
 function patchChatTurns(chatResponse: ChatResponse, newSessionId?: string): ChatResponse {
 	const patchedChatTurns = chatResponse.displayTurns.map((turn) => {
-		let updatedTurn = {
-			...turn,
-			request: { ...turn.request, emotion: turn.userEmotion.primary },
-			response: { ...turn.response, emotion: turn.characterEmotion.primary },
-		};
+		let updatedTurn = { ...turn, request: { ...turn.request }, response: { ...turn.response } };
 
 		if (newSessionId && newSessionId !== turn.sessionId) {
 			updatedTurn = generateUpdatedIds(updatedTurn, newSessionId);

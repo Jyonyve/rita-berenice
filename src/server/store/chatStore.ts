@@ -16,7 +16,7 @@ import {
 	TempChatTurnMetadata,
 } from '#shared/domain/chat/ChatInterfaces.js';
 import { flatChatMessageToDoc, chatTurnToDocument } from '#shared/util/documentUtils.js';
-import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
+import { ApiError, handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import {
 	chatTurnToMetadata,
 	metadataToChatTurn,
@@ -261,7 +261,66 @@ export const chatStore = {
 		}
 	},
 
-	// In src/server/store/chatStore.ts
+	/**
+	 * [OPTIMIZED] Fetches a single, full ChatTurn object by its ID.
+	 * This retrieves the primary turn document and all its associated index records.
+	 * @param chatTurnId - The unique ID of the chat turn to fetch.
+	 * @returns A ChatResponse containing the single, fully reconstructed ChatTurn.
+	 */
+	getChatTurn: async (chatTurnId: string): Promise<ChatResponse> => {
+		try {
+			const collection = await chatStore._getChatCollection();
+
+			// 1. Fetch the primary turn document and all its index records in one go.
+			const turnAndIndexDocsResponse = await getRecords(collection, {
+				chatTurnId: { $eq: chatTurnId },
+			});
+
+			const allDocs = validateChromaResponse(turnAndIndexDocsResponse, 'getList', collectionType);
+			if (allDocs.ids.length === 0) {
+				throw new ApiError(404, `Chat turn with ID '${chatTurnId}' not found.`);
+			}
+
+			// 2. Partition the results into the primary turn and its index records.
+			let primaryTurnDoc: { id: string; document: string | null; metadata: Metadata | null } | null =
+				null;
+			const indexRecords: Metadata[] = [];
+
+			// Use a standard 'for' loop to avoid closure-related type inference issues.
+			for (let i = 0; i < allDocs.metadatas.length; i++) {
+				const metadata = allDocs.metadatas[i];
+				if (metadata) {
+					if (metadata.type === METADATA_TYPES.TURN) {
+						primaryTurnDoc = { id: allDocs.ids[i], document: allDocs.documents[i], metadata: metadata };
+					} else if (metadata.type === METADATA_TYPES.INDEX) {
+						indexRecords.push(metadata);
+					}
+				}
+			}
+
+			// Ensure the primary turn document was actually found. This guard now works reliably.
+			if (!primaryTurnDoc || !primaryTurnDoc.metadata) {
+				throw new ApiError(404, `Primary turn data for ID '${chatTurnId}' is missing or corrupt.`);
+			}
+
+			// 3. Reconstruct the single full, rich object.
+			const chatTurn = chatStore._constructFullChatTurns(
+				[primaryTurnDoc.metadata], // Pass metadata as an array
+				indexRecords
+			)[0]; // Get the first (and only) element
+
+			// 4. Return the complete ChatResponse object for the single turn.
+			return {
+				ids: [primaryTurnDoc.id],
+				documents: [primaryTurnDoc.document],
+				metadatas: [primaryTurnDoc.metadata],
+				chatTurns: [chatTurn], // Return as an array
+				displayTurns: [],
+			};
+		} catch (error) {
+			handleServiceError(error, 'Error in getChatTurn', `ChatTurnID: ${chatTurnId}`);
+		}
+	},
 
 	/**
 	 * [OPTIMIZED for Deep Copy & RAG] Fetches full, rich ChatTurn objects for a session.
@@ -516,9 +575,36 @@ export const chatStore = {
 		}
 	},
 
+	/**
+	 * Deletes a chat turn and all of its associated index records atomically.
+	 * This prevents orphaned index data.
+	 * @param chatTurnId The ID of the primary chat turn document to delete.
+	 */
 	_deleteChatTurn: async (chatTurnId: string): Promise<void> => {
-		const collection = await chatStore._getChatCollection();
-		await deleteRecordById(collection, chatTurnId);
+		try {
+			const collection = await chatStore._getChatCollection();
+
+			// --- Step 1: Delete all associated index records ---
+			// We target records that are of type INDEX and have a matching chatTurnId.
+			const indexWhere: Where = {
+				$and: [{ type: { $eq: METADATA_TYPES.INDEX } }, { chatTurnId: { $eq: chatTurnId } }],
+			};
+
+			// Use the plural `delete` method with a 'where' clause.
+			await deleteRecords(collection, undefined, indexWhere);
+			console.log(`[chatStore] Deleted index records for turn: ${chatTurnId}`);
+
+			// --- Step 2: Delete the primary chat turn document ---
+			// Now it's safe to delete the main document itself.
+			await deleteRecordById(collection, chatTurnId);
+			console.log(`[chatStore] Deleted primary turn document: ${chatTurnId}`);
+		} catch (error) {
+			handleServiceError(
+				error,
+				'An internal error occurred during [deleteChatTurn].',
+				`Failed to completely delete chat turn ${chatTurnId}`
+			);
+		}
 	},
 
 	// Method to clear the cache if needed (e.g., for testing or memory management)

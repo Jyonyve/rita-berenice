@@ -26,6 +26,7 @@ import { ragQueryService } from './ragQueryService.js';
 import { WhereDocument } from 'chromadb';
 import { createChatTurnMetadataSchema } from '#server/util/schemaUtils.js';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
+import { DEFAULT_EMOTION } from '#shared/index.js';
 
 /**
  * @private
@@ -48,14 +49,14 @@ function _extractChatTurnMetadataInfoFromLlm(
 			? enrichment.relationshipShiftList
 			: [],
 		userEmotion: {
-			primary: enrichment.userEmotion?.primary || 'neutral',
+			primary: enrichment.userEmotion?.primary || DEFAULT_EMOTION,
 			intensity: enrichment.userEmotion?.intensity ?? 0.5,
 			nuanceList: Array.isArray(enrichment.userEmotion?.nuanceList)
 				? enrichment.userEmotion.nuanceList
 				: [],
 		},
 		characterEmotion: {
-			primary: enrichment.characterEmotion?.primary || 'neutral',
+			primary: enrichment.characterEmotion?.primary || DEFAULT_EMOTION,
 			intensity: enrichment.characterEmotion?.intensity ?? 0.5,
 			nuanceList: Array.isArray(enrichment.characterEmotion?.nuanceList)
 				? enrichment.characterEmotion.nuanceList

@@ -8,7 +8,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { mockMondayChat } from '../src/client/mock/data/mockChatData';
+
 import { fileURLToPath } from 'url';
 
 // --- Adjust import path as needed ---
