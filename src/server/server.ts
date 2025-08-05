@@ -47,15 +47,18 @@ const resolve = (p: string) =>
 const templateDevHtmlFile = path.resolve(__dirname, '../../index.html');
 const templateProdHtmlBuilt = path.resolve(__dirname, '../client/index.html');
 
+const SUPERTOKENS_DOMAIN = process.env.SUPERTOKENS_DOMAIN;
+
 async function createServer() {
+	if (!SUPERTOKENS_DOMAIN) {
+		throw new Error('invalid supertokens login domain');
+	}
+
 	const app = express();
 
 	supertokens.init({
 		framework: 'express',
-		supertokens: {
-			connectionURI: process.env.VITE_SUPERTOKENS_DOMAIN || 'https://try.supertokens.com',
-			apiKey: process.env.SUPERTOKENS_API_KEY,
-		},
+		supertokens: { connectionURI: SUPERTOKENS_DOMAIN, apiKey: process.env.SUPERTOKENS_API_KEY },
 		appInfo: {
 			appName: APPNAME,
 			websiteDomain: process.env.VITE_APP_DOMAIN || 'http://localhost:3000',
