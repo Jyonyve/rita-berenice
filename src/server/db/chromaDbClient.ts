@@ -1,6 +1,6 @@
 // src/server/db/chromaDbClient.ts
 import { ChromaClient, Collection, IncludeEnum, Where, WhereDocument } from 'chromadb';
-import { COLLECTIONS } from './ChromaInterfaces.js';
+import { COLLECTIONS, CollectionType } from './ChromaInterfaces.js';
 import { MetadataType } from '#shared/config/constants.js';
 import { ChromaResponse } from '#shared/api/ModuleResponse.js';
 import { OpenAIEmbeddingFunction } from '@chroma-core/openai';
@@ -361,5 +361,9 @@ export const chromaDbClient = {
 		// 3. Call the native delete method with the constructed options.
 		console.log('[ChromaClient.deleteRecords] Deleting with options:', deleteOptions);
 		return await collection.delete(deleteOptions);
+	},
+
+	getOrCreateSingletonCollection: async (collection: CollectionType) => {
+		return _getOrCreateSingletonCollection(collection);
 	},
 };
