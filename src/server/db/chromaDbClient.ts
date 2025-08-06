@@ -14,7 +14,9 @@ if (!apiKey) {
 
 const embedFnOpenAi = new OpenAIEmbeddingFunction({ apiKey, modelName: 'text-embedding-3-small' });
 const host =
-	process.env.APP_ENV === 'development' ? 'chromadb-flyio.fly.dev' : 'rita-berenice.fly.dev';
+	process.env.APP_ENV === 'development'
+		? 'chromadb-flyio.fly.dev'
+		: 'rita-berenice-chromadb.fly.dev';
 const port = 443;
 const ssl = true;
 

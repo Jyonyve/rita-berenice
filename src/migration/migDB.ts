@@ -1,5 +1,9 @@
 import { OpenAIEmbeddingFunction } from '@chroma-core/openai';
-import { ChromaClient, Metadata } from 'chromadb';
+import { ChromaClient, Metadata, Where } from 'chromadb';
+import { buildProfileId, buildSessionId } from '#shared/util/buildIdUtils.js';
+import { flatProfileToDoc, flatSessionToDoc } from '#shared/util/documentUtils.js';
+import { SessionInfo, SessionMetadata } from '#shared/domain/session/SessionInterfaces.js';
+import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 
 // --- Configuration ---
 const apiKey = process.env.OPENAI_API_KEY;
@@ -13,84 +17,262 @@ const embedFnOpenAi = new OpenAIEmbeddingFunction({ apiKey, modelName: 'text-emb
 
 // Source DB: Your old Fly.io Chroma instance
 const SOURCE_CONFIG = { host: 'chromadb-flyio.fly.dev', port: 443, ssl: true };
-
 // Destination DB: Your new Fly.io Chroma instance
 const DESTINATION_CONFIG = { host: 'rita-berenice-chromadb.fly.dev', port: 443, ssl: true };
+// --- Configuration ---
+// The old development ID to find and replace.
+const USER_ID_OLD = '6b335673-c837-43f9-a1c7-0b92c90edefb';
+// The new production ID to replace it with.
+const USER_ID_NEW = 'dbce0624-7eb1-4e0f-85d2-d25333996992';
 
 // List of all collections to migrate
-const COLLECTIONS_TO_MIGRATE = ['character', 'chat', 'temp', 'recap', 'lore', 'user'];
+const COLLECTIONS_TO_MIGRATE = ['character', 'chat', 'temp', 'recap', 'lore', 'term'];
 const BATCH_SIZE = 100;
 
 // --- Script Logic ---
 
 async function migrateCollection(
-    sourceClient: ChromaClient,
-    destClient: ChromaClient,
-    collectionName: string
+	sourceClient: ChromaClient,
+	destClient: ChromaClient,
+	collectionName: string
 ): Promise<void> {
-    console.log(`\n--- Starting migration for collection: "${collectionName}" ---`);
-    try {
-        const sourceCollection = await sourceClient.getCollection({
-            name: collectionName,
-            embeddingFunction: embedFnOpenAi,
-        });
-        const destCollection = await destClient.getOrCreateCollection({
-            name: collectionName,
-            embeddingFunction: embedFnOpenAi,
-            metadata: { name: collectionName, created: new Date().toISOString() },
-        });
+	console.log(`\n--- Starting migration for collection: "${collectionName}" ---`);
+	try {
+		const sourceCollection = await sourceClient.getCollection({
+			name: collectionName,
+			embeddingFunction: embedFnOpenAi,
+		});
+		const destCollection = await destClient.getOrCreateCollection({
+			name: collectionName,
+			embeddingFunction: embedFnOpenAi,
+			metadata: { name: collectionName, created: new Date().toISOString() },
+		});
 
-        // First, get the total number of records to process
-        const totalRecords = await sourceCollection.count();
-        if (totalRecords === 0) {
-            console.log(`Collection "${collectionName}" is empty. Nothing to migrate.`);
-            return;
-        }
+		// First, get the total number of records to process
+		const totalRecords = await sourceCollection.count();
+		if (totalRecords === 0) {
+			console.log(`Collection "${collectionName}" is empty. Nothing to migrate.`);
+			return;
+		}
 
-        console.log(`Found ${totalRecords} total records in source collection "${collectionName}".`);
+		console.log(`Found ${totalRecords} total records in source collection "${collectionName}".`);
 
-        // Loop through the source collection using pagination
-        for (let offset = 0; offset < totalRecords; offset += BATCH_SIZE) {
-            console.log(`Fetching batch from source at offset ${offset}...`);
-            
-            // 1. Fetch one batch from the source using limit and offset
-            const batch = await sourceCollection.get({
-                limit: BATCH_SIZE,
-                offset: offset,
-                include: ['metadatas', 'documents']
-            });
+		// Loop through the source collection using pagination
+		for (let offset = 0; offset < totalRecords; offset += BATCH_SIZE) {
+			console.log(`Fetching batch from source at offset ${offset}...`);
 
-            if (!batch.ids || batch.ids.length === 0) {
-                // This condition prevents an infinite loop if something goes wrong
-                break;
-            }
+			// 1. Fetch one batch from the source using limit and offset
+			const batch = await sourceCollection.get({
+				limit: BATCH_SIZE,
+				offset: offset,
+				include: ['metadatas', 'documents'],
+			});
 
-            console.log(`Upserting batch ${Math.floor(offset / BATCH_SIZE) + 1} with ${batch.ids.length} records...`);
+			if (!batch.ids || batch.ids.length === 0) {
+				// This condition prevents an infinite loop if something goes wrong
+				break;
+			}
 
-            // 2. Upsert that same batch to the destination
-            await destCollection.upsert({
-                ids: batch.ids,
-                metadatas: batch.metadatas as Metadata[],
-                documents: batch.documents as string[],
-            });
-        }
+			console.log(
+				`Upserting batch ${Math.floor(offset / BATCH_SIZE) + 1} with ${batch.ids.length} records...`
+			);
 
-        console.log(`✅ Successfully migrated collection: "${collectionName}"`);
-    } catch (error) {
-        console.error(`❌ Failed to migrate collection "${collectionName}":`, error);
-    }
+			// 2. Upsert that same batch to the destination
+			await destCollection.upsert({
+				ids: batch.ids,
+				metadatas: batch.metadatas as Metadata[],
+				documents: batch.documents as string[],
+			});
+		}
+
+		console.log(`✅ Successfully migrated collection: "${collectionName}"`);
+	} catch (error) {
+		console.error(`❌ Failed to migrate collection "${collectionName}":`, error);
+	}
 }
 
-async function main() {
-    console.log('Initializing ChromaDB clients...');
-    const sourceClient = new ChromaClient(SOURCE_CONFIG);
-    const destClient = new ChromaClient(DESTINATION_CONFIG);
+async function migrateUserAndProfileIds(client: ChromaClient, collectionName: string) {
+	console.log(`🚀 Starting User ID migration from ${USER_ID_OLD} to ${USER_ID_NEW}`);
 
-    console.log('Starting full database migration...');
-    for (const collectionName of COLLECTIONS_TO_MIGRATE) {
-        await migrateCollection(sourceClient, destClient, collectionName);
-    }
-    console.log('\n🚀 Full migration process complete.');
+	try {
+		console.log(`\n--- Processing collection: "${collectionName}" ---`);
+		const collection = await client.getCollection({ name: collectionName });
+
+		// This filter efficiently fetches only the records we need to change.
+		const whereFilter: Where = { userId: { $eq: USER_ID_OLD } };
+		let totalUpdated = 0;
+
+		while (true) {
+			// 1. Get a batch of records matching the old user ID.
+			const recordsToMigrate = await collection.get({
+				where: whereFilter,
+				limit: BATCH_SIZE,
+				include: ['metadatas', 'documents'],
+			});
+
+			if (recordsToMigrate.ids.length === 0) {
+				// No more records with the old ID are found in this collection.
+				break;
+			}
+
+			console.log(`   Found a batch of ${recordsToMigrate.ids.length} records to migrate...`);
+
+			const newIds: string[] = [];
+			const newMetadatas: any[] = [];
+
+			for (let i = 0; i < recordsToMigrate.ids.length; i++) {
+				const oldId = recordsToMigrate.ids[i];
+				const oldMetadata = recordsToMigrate.metadatas[i];
+
+				// 2. Create the new, updated versions of the IDs and metadata.
+				// This handles composite keys that include the user ID.
+				const newId = oldId.includes(USER_ID_OLD) ? oldId.replace(USER_ID_OLD, USER_ID_NEW) : oldId;
+				newIds.push(newId);
+
+				const newMetadata = { ...oldMetadata };
+				newMetadata.userId = USER_ID_NEW;
+
+				if (typeof newMetadata.profileId === 'string' && newMetadata.profileId.includes(USER_ID_OLD)) {
+					newMetadata.profileId = newMetadata.profileId.replace(USER_ID_OLD, USER_ID_NEW);
+				}
+				if (typeof newMetadata.sessionId === 'string' && newMetadata.sessionId.includes(USER_ID_OLD)) {
+					newMetadata.sessionId = newMetadata.sessionId.replace(USER_ID_OLD, USER_ID_NEW);
+				}
+				newMetadatas.push(newMetadata);
+			}
+
+			// 3. Add the new records with the updated information.
+			await collection.add({
+				ids: newIds,
+				metadatas: newMetadatas,
+				documents: recordsToMigrate.documents as string[],
+			});
+
+			// 4. Delete the old records now that the new ones are safely stored.
+			await collection.delete({ ids: recordsToMigrate.ids });
+
+			console.log(`   ✅ Batch of ${recordsToMigrate.ids.length} records successfully migrated.`);
+			totalUpdated += recordsToMigrate.ids.length;
+		}
+
+		if (totalUpdated > 0) {
+			console.log(
+				`--- Finished collection "${collectionName}". Total records migrated: ${totalUpdated} ---`
+			);
+		} else {
+			console.log(`--- No records with old user ID found in collection "${collectionName}". ---`);
+		}
+	} catch (error) {
+		console.error(`❌ Failed to migrate collection "${collectionName}":`, error);
+	}
+
+	console.log('\n🎉 Full User ID migration process complete.');
+}
+
+async function migrateSessionAndProfileData(sourceClient: ChromaClient, destClient: ChromaClient) {
+	console.log(`🚀 Starting Session and Profile migration from ${USER_ID_OLD} to ${USER_ID_NEW}`);
+
+	try {
+		// --- 1. Migrate Profile Collection ---
+		console.log('\n--- Processing collection: "profile" ---');
+		const sourceProfileCollection = await sourceClient.getCollection({
+			name: 'profile',
+			embeddingFunction: embedFnOpenAi,
+		});
+		const destProfileCollection = await destClient.getOrCreateCollection({
+			name: 'profile',
+			embeddingFunction: embedFnOpenAi,
+			metadata: { name: 'profile', created: new Date().toISOString() },
+		});
+		const oldProfiles = await sourceProfileCollection.get({
+			where: { userId: { $eq: USER_ID_OLD } },
+		});
+
+		if (oldProfiles.ids.length > 0) {
+			const newProfileInfos: ProfileInfo[] = oldProfiles.metadatas.map((meta: any) => ({
+				...meta,
+				userId: USER_ID_NEW,
+				profileId: buildProfileId(meta.sessionId, USER_ID_NEW), // Generate new profileId
+			}));
+
+			await destProfileCollection.upsert({
+				ids: newProfileInfos.map((p) => p.profileId),
+				metadatas: newProfileInfos.map((p) => {
+					const { description, ...metadata } = p;
+					return metadata;
+				}),
+				documents: newProfileInfos.map((p) => flatProfileToDoc(p)),
+			});
+			console.log(`   ✅ Migrated ${newProfileInfos.length} profile records.`);
+		} else {
+			console.log('   No profile records found for the old user ID.');
+		}
+
+		// --- 2. Migrate Session Collection ---
+		console.log('\n--- Processing collection: "session" ---');
+		const sourceSessionCollection = await sourceClient.getCollection({
+			name: 'session',
+			embeddingFunction: embedFnOpenAi,
+		});
+		const destSessionCollection = await destClient.getOrCreateCollection({
+			name: 'session',
+			embeddingFunction: embedFnOpenAi,
+			metadata: { name: 'session', created: new Date().toISOString() },
+		});
+		const oldSessions = await sourceSessionCollection.get({
+			where: { userId: { $eq: USER_ID_OLD } },
+		});
+
+		if (oldSessions.ids.length > 0) {
+			const newSessionInfos: SessionInfo[] = oldSessions.metadatas.map((meta: any) => ({
+				...meta,
+				userId: USER_ID_NEW,
+				profileId: buildProfileId(meta.sessionId, USER_ID_NEW), // Generate corresponding new profileId
+			}));
+
+			await destSessionCollection.upsert({
+				ids: newSessionInfos.map((s) => s.sessionId),
+				metadatas: newSessionInfos.map((sessionInfo) => {
+					return {
+						sessionId: sessionInfo.sessionId,
+						userId: sessionInfo.userId,
+						profileId: sessionInfo.profileId,
+						characterId: sessionInfo.characterId,
+						title: sessionInfo.title,
+						createdAt: sessionInfo.createdAt,
+						updatedAt: sessionInfo.updatedAt,
+						messageCount: sessionInfo.messageCount,
+						status: sessionInfo.status,
+						type: sessionInfo.type,
+					};
+				}),
+				documents: newSessionInfos.map((s) => flatSessionToDoc(s)),
+			});
+			console.log(`   ✅ Migrated ${newSessionInfos.length} session records.`);
+		} else {
+			console.log('   No session records found for the old user ID.');
+		}
+	} catch (error) {
+		console.error('❌ An error occurred during the migration:', error);
+	}
+
+	console.log('\n🎉 Session and Profile migration complete.');
+}
+
+//// main ////
+
+async function main() {
+	console.log('Initializing ChromaDB clients...');
+	const sourceClient = new ChromaClient(SOURCE_CONFIG);
+	const destClient = new ChromaClient(DESTINATION_CONFIG);
+
+	console.log('Starting full database migration...');
+	await migrateSessionAndProfileData(sourceClient, destClient);
+	// for (const collectionName of COLLECTIONS_TO_MIGRATE) {
+	// 	await migrateCollection(sourceClient, destClient, collectionName);
+	// 	await migrateUserAndProfileIds(destClient, collectionName);
+	// }
+	console.log('\n🚀 Full migration process complete.');
 }
 
 main().catch(console.error);
