@@ -5,7 +5,7 @@ import { Typography, Box, CircularProgress, Grid, Theme } from '@mui/material';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { useNavigate } from 'react-router';
 import { GlassCard, GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
-import { HoverBox, RomanticTitle } from '../../layout/index.js';
+import { RomanticTitle, useHoverState } from '../../layout/index.js';
 import { containerSpacing } from '../../style/index.js';
 import { getDefaultImage } from '../../util/portraitUtils.js';
 
@@ -41,7 +41,7 @@ const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterIn
 			onClick={handleCharacterPage}
 			contentProps={{ sx: contentSx }}
 		>
-			<HoverBox sx={{ width: '100%', display: 'flex', mb: 1 }}>
+			<Box sx={{ width: '100%', display: 'flex', mb: 1 }}>
 				{defaultImage ? (
 					<GlassPortrait imageUrl={defaultImage} />
 				) : (
@@ -49,8 +49,8 @@ const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterIn
 						No Image
 					</Typography>
 				)}
-			</HoverBox>
-			<HoverBox sx={{ mt: 'auto' }}>
+			</Box>
+			<Box sx={{ mt: 'auto' }}>
 				<RomanticTitle
 					noGlow // Disable the title's own hover effect
 					variant="h6"
@@ -62,7 +62,7 @@ const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterIn
 				<Typography variant="body2" noWrap>
 					{characterInfo.title}
 				</Typography>
-			</HoverBox>
+			</Box>
 		</GlassCard>
 	);
 };

@@ -1,17 +1,29 @@
-import createCache from '@emotion/cache';
+// src/shared/config/createEmotionCache.ts
 
-export const createEmotionCache = () => {
+import createCache, { EmotionCache } from '@emotion/cache';
+
+// This simple check determines if the code is running in a browser.
+const isBrowser = typeof document !== 'undefined';
+
+/**
+ * Creates an Emotion cache that is safe for Server-Side Rendering (SSR).
+ * On the client, it uses the designated insertion point in the <head>.
+ * On the server, it creates a plain cache, as there is no 'document'.
+ * @returns {EmotionCache} A configured Emotion cache instance.
+ */
+export function createEmotionCache(): EmotionCache {
 	let insertionPoint: HTMLElement | undefined;
 
-	if (typeof document !== 'undefined') {
-		// Only assign if the element is actually an HTMLElement
-		const emotionInsertionPoint = document.querySelector('meta[name="emotion-insertion-point"]');
-		if (emotionInsertionPoint && emotionInsertionPoint instanceof HTMLElement) {
-			insertionPoint = emotionInsertionPoint;
-		}
-		// If not found or not HTMLElement, insertionPoint remains undefined
+	if (isBrowser) {
+		// On the client, we find the meta tag you have in your index.html.
+		const emotionInsertionPoint = document.querySelector<HTMLMetaElement>(
+			'meta[name="emotion-insertion-point"]'
+		);
+		// The '??' operator provides a fallback to undefined if the element isn't found.
+		insertionPoint = emotionInsertionPoint ?? undefined;
 	}
 
-	// Use key: 'mui' for MUI SSR compatibility!
-	return createCache({ key: 'mui', insertionPoint }); // console error는  dev에서만 나는것
-};
+	// On the server, `insertionPoint` will be undefined, which is correct.
+	// On the client, it will be the DOM element, which is also correct.
+	return createCache({ key: 'mui', insertionPoint });
+}

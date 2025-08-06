@@ -21,6 +21,7 @@ SuperTokens.init({
 		websiteBasePath: `/${routeConstants.AUTH}`,
 	},
 	style: superTokenUiStyle,
+	enableDebugLogs: false,
 	recipeList: [EmailPassword.init(), Session.init()],
 });
 

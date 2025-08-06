@@ -6,6 +6,7 @@ import { TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { genApiUrl } from '#shared/util/apiHelpers.js';
 import { ChatResponse, TempChatResponse } from '#shared/api/ModuleResponse.js';
+import { ApiError } from '#shared/domain/error/errors.js';
 
 /**
  * A client-side hook for interacting with the CHAT and TEMP_CHAT API endpoints.
@@ -41,7 +42,14 @@ export const useTempChatApi = () => {
 				return response.data;
 			},
 			enabled: !isHistoryLoading && !!sessionId && sequence >= 0, // Only run if both are available
-			retry: (failureCount, error) => (error.name === '404' ? false : failureCount < 1),
+			retry: (failureCount, error) => {
+				// First, check if the error is an instance of ApiError.
+				if (error instanceof ApiError && error.status === 404) {
+					return false; // Do not retry on a 404
+				}
+				// For all other errors, or if it's not an ApiError, allow one retry.
+				return failureCount < 1;
+			},
 		});
 
 	return { saveTempChatTurn, getTempChatTurn };
