@@ -1,5 +1,6 @@
 import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
 import { chatStore } from '#server/index.js';
+import { METADATA_TYPES } from '#shared/index.js';
 
 // --- Configuration ---
 const TARGET_COLLECTION_NAME = COLLECTIONS.CHAT;
@@ -11,9 +12,17 @@ const TARGET_COLLECTION_NAME = COLLECTIONS.CHAT;
 async function checkSeededData(sessionId: string) {
 	try {
 		console.log(`Accessing collection "${TARGET_COLLECTION_NAME}" for session ID: ${sessionId}...`);
-		const result = await chatStore.getAllDisplayTurns(sessionId);
-		console.log(`✅ Found ${result.displayTurns.length} chat turns for the session.`);
-		console.log(result.displayTurns.reverse().slice(0, 3));
+		const collection = await chatStore._getChatCollection();
+
+		const count = await collection.count();
+		console.log(`whole records count: ${count}`);
+		// const result = await chatStore.getAllDisplayTurns(sessionId);
+		const result = await collection.get({
+			// where: { $and: [{ type: { $eq: METADATA_TYPES.TURN } }, { sessionId: { $eq: sessionId } }] },
+			where: { type: { $eq: METADATA_TYPES.TURN } },
+		});
+		console.log(`✅ Found ${result.ids.length} chat turns for the session.`);
+		console.log(result.metadatas.reverse().slice(0, 3));
 	} catch (error) {
 		// Handle cases where the collection or data might not exist
 		if (error instanceof Error && error.message.includes('does not exist')) {

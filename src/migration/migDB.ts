@@ -4,6 +4,8 @@ import { buildProfileId, buildSessionId } from '#shared/util/buildIdUtils.js';
 import { flatProfileToDoc, flatSessionToDoc } from '#shared/util/documentUtils.js';
 import { SessionInfo, SessionMetadata } from '#shared/domain/session/SessionInterfaces.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { COLLECTIONS } from '../server/index.ts';
+import { METADATA_TYPES } from '../shared/index.ts';
 
 // --- Configuration ---
 const apiKey = process.env.OPENAI_API_KEY;
@@ -88,6 +90,79 @@ async function migrateCollection(
 		console.log(`✅ Successfully migrated collection: "${collectionName}"`);
 	} catch (error) {
 		console.error(`❌ Failed to migrate collection "${collectionName}":`, error);
+	}
+}
+
+async function migrateMissingTurns(sourceClient: ChromaClient, destClient: ChromaClient) {
+	console.log(`🚀 Starting migration of missing 'TURN' records...`);
+
+	const COLLECTION_NAME = COLLECTIONS.CHAT;
+	try {
+		console.log(`\n--- Accessing collection: "${COLLECTION_NAME}" ---`);
+		const sourceCollection = await sourceClient.getCollection({
+			name: COLLECTION_NAME,
+			embeddingFunction: embedFnOpenAi,
+		});
+		const destCollection = await destClient.getOrCreateCollection({
+			name: COLLECTION_NAME,
+			embeddingFunction: embedFnOpenAi,
+		});
+
+		// Filter for TURN records belonging to the OLD user ID from the source.
+		const whereFilter: Where = {
+			$and: [{ type: { $eq: METADATA_TYPES.TURN } }, { userId: { $eq: USER_ID_OLD } }],
+		};
+
+		const recordsToCount = await sourceCollection.get({ where: whereFilter, include: [] });
+		const totalTurnsToUpdate = recordsToCount.ids.length;
+
+		if (totalTurnsToUpdate === 0) {
+			console.log("✅ No 'TURN' records found for the old user ID in the source DB. Nothing to do.");
+			return;
+		}
+
+		console.log(`   Found ${totalTurnsToUpdate} 'TURN' records to migrate.`);
+
+		for (let offset = 0; offset < totalTurnsToUpdate; offset += BATCH_SIZE) {
+			console.log(`   Fetching batch from SOURCE DB starting at offset ${offset}...`);
+
+			// *** CORRECTED: Get data from the sourceCollection ***
+			const batchToMigrate = await sourceCollection.get({
+				where: whereFilter,
+				limit: BATCH_SIZE,
+				offset: offset,
+				include: ['metadatas', 'documents'],
+			});
+
+			if (batchToMigrate.ids.length === 0) break;
+
+			const updatedMetadatas: any[] = [];
+
+			// Transform the metadata for the new user ID.
+			for (const oldMeta of batchToMigrate.metadatas) {
+				if (!oldMeta) continue;
+				updatedMetadatas.push({
+					...oldMeta,
+					userId: USER_ID_NEW,
+					profileId: buildProfileId(oldMeta.sessionId as string, USER_ID_NEW),
+				});
+			}
+
+			console.log(`   Upserting batch of ${batchToMigrate.ids.length} records to DESTINATION DB...`);
+
+			// *** CORRECTED: Upsert the modified data into the destCollection ***
+			await destCollection.upsert({
+				ids: batchToMigrate.ids,
+				metadatas: updatedMetadatas,
+				documents: batchToMigrate.documents as string[],
+			});
+
+			console.log(`   ✅ Batch successfully migrated.`);
+		}
+
+		console.log(`\n🎉 Successfully migrated ${totalTurnsToUpdate} 'TURN' records.`);
+	} catch (error) {
+		console.error('❌ An error occurred during the update process:', error);
 	}
 }
 
@@ -267,7 +342,8 @@ async function main() {
 	const destClient = new ChromaClient(DESTINATION_CONFIG);
 
 	console.log('Starting full database migration...');
-	await migrateSessionAndProfileData(sourceClient, destClient);
+	await migrateMissingTurns(sourceClient, destClient);
+	// await migrateSessionAndProfileData(sourceClient, destClient);
 	// for (const collectionName of COLLECTIONS_TO_MIGRATE) {
 	// 	await migrateCollection(sourceClient, destClient, collectionName);
 	// 	await migrateUserAndProfileIds(destClient, collectionName);

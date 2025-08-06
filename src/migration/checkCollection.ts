@@ -5,7 +5,7 @@ import { ChromaClient, Collection } from 'chromadb';
 
 // --- Configuration ---
 const CHROMA_HOST = process.env.CHROMA_HOST;
-const CHROMA_PORT = Number(process.env.CHROMA_PORT) || 443;
+const CHROMA_PORT = 443;
 const CHROMA_SSL = true;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const TARGET_COLLECTION_NAME = process.argv[2];

@@ -375,4 +375,9 @@ export const chromaDbClient = {
 	getOrCreateSingletonCollection: async (collection: CollectionType) => {
 		return _getOrCreateSingletonCollection(collection);
 	},
+
+	countOption: async (collection: Collection, where: Where): Promise<number> => {
+		const result = await collection.get({ where: where, include: [] });
+		return result.ids.length;
+	},
 };
