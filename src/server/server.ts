@@ -33,7 +33,8 @@ import { ApiError } from '#shared/domain/error/errors.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url)); // src/server
 const isProduction = process.env.NODE_ENV === 'production';
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
+const host = process.env.HOST || '0.0.0.0';
 const BASE = process.env.BASE || '/'; // Base path for the app
 const API_PATH = 'api';
 const AUTH_PATH = 'auth';
@@ -226,11 +227,10 @@ async function createServer() {
 		res.status(apiErrorResponse.code).json(apiErrorResponse);
 	});
 
-	// --- Start HTTP Server ---
-	app.listen(PORT, () => {
+	app.listen(PORT, host, () => {
 		console.log(`Server started successfully.`);
 		console.log(`Mode: ${isProduction ? 'Production' : 'Development'}`);
-		console.log(`Listening on: http://localhost:${PORT}${BASE}`);
+		console.log(`Listening on http://${host}:${PORT}${BASE}`);
 	});
 }
 
