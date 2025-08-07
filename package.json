@@ -12,6 +12,7 @@
 		"crawl": "tsx ./src/migration/chat/crawlChat.ts",
 		"valid:chat": "tsx ./src/migration/chat/validateChat.ts",
 		"init:chat": "tsx --env-file .env ./src/migration/chat/initChat.ts",
+		"import:chat": "tsx --env-file .env ./src/migration/chat/importNewChat.ts",
 		"check:chat": "tsx --env-file .env ./src/migration/chat/checkChat.ts",
 		"delete:chat": "tsx --env-file .env ./src/migration/chat/deleteChat.ts",
 		"purge:chat": "tsx --env-file .env ./src/migration/chat/pergeChat.ts",
