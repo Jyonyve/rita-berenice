@@ -22,7 +22,7 @@ import {
 	isDirectOpenAIClient,
 	parseLlmJsonResponse, // Assuming this is your preferred robust parser from llmUtils.js
 } from '../util/llmUtils.js';
-import { convertMessageContentToString } from '#shared/util/chatParseUtils.js';
+import { convertMessageContentToString } from '#shared/util/parseUtils.js';
 import { buildNerPrompt, buildTermTranslationPrompt } from '../util/templateUtils.js';
 import z from 'zod';
 

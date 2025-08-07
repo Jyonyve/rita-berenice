@@ -12,7 +12,7 @@ import {
 	useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { parseSessionId } from '#shared/util/chatParseUtils.js';
+import { parseSessionId } from '#shared/util/parseUtils.js';
 import {
 	useChatApi,
 	useCharacterApi,

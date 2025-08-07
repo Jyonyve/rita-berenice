@@ -10,6 +10,7 @@ import {
 import { DEFAULT_EMOTION } from '../config/emotionWordsMapper.js';
 import { buildCharacterId } from '#shared/util/buildIdUtils.js';
 import { NA } from '../config/constants.js';
+import zlib from 'zlib';
 
 export const convertStringToArray = (input: string): string[] => {
 	if (!input || typeof input !== 'string') {

@@ -3,11 +3,17 @@
 import express, { type Request, type Response } from 'express';
 
 import { loreStore } from '../store/loreStore.js'; // Assuming store is at this path
-import { genRoutePattern } from '#shared/util/apiHelpers.js';
+
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
-import { asyncHandler, validateRequestData, validateServiceId } from '../util/routeHelpers.js';
-import { HistoryResponse, LoreResponse } from '#shared/api/ModuleResponse.js';
+import {
+	asyncHandler,
+	compressData,
+	genRoutePattern,
+	validateRequestData,
+	validateServiceId,
+} from '../util/routeHelpers.js';
 import { HistoryInfo, LoreInfo } from '#shared/domain/lore/LoreInterfaces.js';
+import { Payload } from '#shared/util/apiHelpers.js';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.LORE;
@@ -22,7 +28,7 @@ const collectionType = COLLECTIONS.LORE;
  */
 router.get(
 	genRoutePattern('getLores', ['characterId']),
-	asyncHandler(async (req: Request, res: Response<LoreResponse>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
 		const { characterId } = req.params;
 		validateServiceId(characterId, collectionType);
 
@@ -30,7 +36,8 @@ router.get(
 		console.log(`API HIT: GET ${path.replace(':characterId', characterId)}`);
 
 		const response = await loreStore.getLores(characterId);
-		res.status(200).json(response);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
 	})
 );
 
@@ -42,7 +49,7 @@ router.get(
  */
 router.get(
 	genRoutePattern('getLore', ['loreId']),
-	asyncHandler(async (req: Request, res: Response<LoreResponse>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
 		const { loreId } = req.params;
 		validateServiceId(loreId, collectionType);
 
@@ -50,7 +57,8 @@ router.get(
 		console.log(`API HIT: GET ${path.replace(':loreId', loreId)}`);
 
 		const response = await loreStore.getLore(loreId);
-		res.status(200).json(response);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
 	})
 );
 
@@ -87,7 +95,7 @@ router.post(
  */
 router.post(
 	genRoutePattern('queryLores'),
-	asyncHandler(async (req: Request, res: Response<LoreInfo[]>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
 		const requiredFields = ['characterId', 'queryTexts'];
 		validateRequestData(req.body, 'body', requiredFields);
 
@@ -98,7 +106,8 @@ router.post(
 		console.log(`API HIT: POST ${path} for character ${characterId}`);
 
 		const response = await loreStore.queryLores(characterId, queryTexts, options);
-		res.status(200).json(response);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
 	})
 );
 
@@ -112,7 +121,7 @@ router.post(
  */
 router.get(
 	genRoutePattern('getHistories', ['characterId']),
-	asyncHandler(async (req: Request, res: Response<HistoryResponse>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
 		const { characterId } = req.params;
 		validateServiceId(characterId, collectionType);
 
@@ -120,7 +129,8 @@ router.get(
 		console.log(`API HIT: GET ${path.replace(':characterId', characterId)}`);
 
 		const response = await loreStore.getHistories(characterId);
-		res.status(200).json(response);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
 	})
 );
 
@@ -157,7 +167,7 @@ router.post(
  */
 router.post(
 	genRoutePattern('queryHistories'),
-	asyncHandler(async (req: Request, res: Response<HistoryInfo[]>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
 		const requiredFields = ['characterId', 'queryTexts'];
 		validateRequestData(req.body, 'body', requiredFields);
 
@@ -168,7 +178,8 @@ router.post(
 		console.log(`API HIT: POST ${path} for character ${characterId}`);
 
 		const response = await loreStore.queryHistories(characterId, queryTexts, options);
-		res.status(200).json(response);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
 	})
 );
 

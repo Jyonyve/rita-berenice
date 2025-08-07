@@ -2,19 +2,20 @@
 
 import express, { type Request, type Response } from 'express';
 
-import { Where, WhereDocument } from 'chromadb';
+import { Where } from 'chromadb';
 import { chatStore } from '../store/chatStore.js';
-import { genRoutePattern } from '#shared/util/apiHelpers.js';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
-import { ChatMessage, ChatMessageType, ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import {
 	asyncHandler,
+	compressData,
+	genRoutePattern,
 	validateRequestData,
 	validateSequenceRule,
 	validateServiceId,
 } from '../util/routeHelpers.js';
 import { ChatResponse } from '#shared/api/ModuleResponse.js';
-import { ApiError } from '#shared/domain/error/errors.js';
+import { Payload } from '#shared/util/apiHelpers.js';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.CHAT;
@@ -31,7 +32,7 @@ const collectionType = COLLECTIONS.CHAT;
 router.post(
 	genRoutePattern('storeChatTurn'),
 	asyncHandler(
-		async (req: Request<object, string, ChatTurn>, res: Response<string>): Promise<void> => {
+		async (req: Request<object, string, ChatTurn>, res: Response<void>): Promise<void> => {
 			validateServiceId(req.body.sessionId, collectionType);
 			const requiredFields: (keyof ChatTurn)[] = ['sessionId', 'sequence', 'request', 'response'];
 			validateRequestData(req.body, 'body', requiredFields);
@@ -49,7 +50,7 @@ router.post(
 
 router.get(
 	genRoutePattern('getAllChatTurns', ['sessionId']),
-	asyncHandler(async (req: Request, res: Response<ChatResponse>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
 		const { sessionId } = req.params;
 		validateServiceId(sessionId, collectionType);
 		validateRequestData(req.params, 'params', ['sessionId']);
@@ -57,7 +58,8 @@ router.get(
 		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
 
 		const response = await chatStore.getAllChatTurns(sessionId);
-		res.status(200).json(response);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
 	})
 );
 
@@ -69,14 +71,15 @@ router.get(
  */
 router.get(
 	genRoutePattern('getAllDisplayTurns', ['sessionId']),
-	asyncHandler(async (req: Request, res: Response<ChatResponse>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
 		const { sessionId } = req.params;
 		validateServiceId(sessionId, collectionType);
 		const path = genRoutePattern('getAllDisplayTurns', ['sessionId']);
 		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
 
 		const response = await chatStore.getAllDisplayTurns(sessionId);
-		res.status(200).json(response);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
 	})
 );
 
@@ -89,7 +92,7 @@ router.get(
  */
 router.get(
 	genRoutePattern('getChatTurnBySequence', ['sessionId', 'sequence']),
-	asyncHandler(async (req: Request, res: Response<ChatTurn>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
 		const { sessionId, sequence: sequenceParam } = req.params;
 		validateServiceId(sessionId, collectionType);
 		validateRequestData(req.params, 'params', ['sequence'], [validateSequenceRule('sequence')]);
@@ -100,69 +103,10 @@ router.get(
 			`API HIT: GET ${path.replace(':sessionId', sessionId).replace(':sequence', sequenceParam)}`
 		);
 
-		const chatResponse = await chatStore.getChatTurnBySequence(sessionId, sequence);
-		res.status(200).json(chatResponse);
+		const response = await chatStore.getChatTurnBySequence(sessionId, sequence);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
 	})
-);
-
-/**
- * PUT /api/chat/update-request-message
- * Updates a single request message within a chat turn. Useful for editing user prompts after the fact.
- * @param {ChatMessage} req.body - The ChatMessage object for the request to update. Must have messageType: 'request'.
- * @returns {ChatMessage} The updated ChatMessage object.
- */
-router.put(
-	genRoutePattern('updateRequestMessage'),
-	asyncHandler(
-		async (
-			req: Request<object, ChatMessage, ChatMessage>,
-			res: Response<ChatMessage>
-		): Promise<void> => {
-			const { sessionId, sequence, messageType } = req.body;
-			validateServiceId(sessionId, collectionType);
-			validateRequestData(req.body, 'body', ['sessionId', 'sequence', 'entries', 'messageType']);
-
-			if (messageType !== 'request') {
-				throw new ApiError(400, "Invalid messageType for this endpoint, must be 'request'.");
-			}
-
-			const path = genRoutePattern('updateRequestMessage');
-			console.log(`API HIT: PUT ${path} for session ${sessionId}, sequence ${sequence}`);
-
-			const updatedMessage = await chatStore._storeRequest(req.body);
-			res.status(200).json(updatedMessage);
-		}
-	)
-);
-
-/**
- * PUT /api/chat/update-response-message
- * Updates a single response message within a chat turn.
- * @param {ChatMessage} req.body - The ChatMessage object for the response to update. Must have messageType: 'response'.
- * @returns {ChatMessage} The updated ChatMessage object.
- */
-router.put(
-	genRoutePattern('updateResponseMessage'),
-	asyncHandler(
-		async (
-			req: Request<object, ChatMessage, ChatMessage>,
-			res: Response<ChatMessage>
-		): Promise<void> => {
-			const { sessionId, sequence, messageType } = req.body;
-			validateServiceId(sessionId, collectionType);
-			validateRequestData(req.body, 'body', ['sessionId', 'sequence', 'entries', 'messageType']);
-
-			if (messageType !== 'response') {
-				throw new ApiError(400, "Invalid messageType for this endpoint, must be 'response'.");
-			}
-
-			const path = genRoutePattern('updateResponseMessage');
-			console.log(`API HIT: PUT ${path} for session ${sessionId}, sequence ${sequence}`);
-
-			const updatedMessage = await chatStore._storeResponse(req.body);
-			res.status(200).json(updatedMessage);
-		}
-	)
 );
 
 // --- Query Operations ---
@@ -182,7 +126,7 @@ router.post(
 				ChatResponse,
 				{ sessionId: string; queryTexts: string[]; where?: Where; limit?: number }
 			>,
-			res: Response<ChatResponse>
+			res: Response<Payload>
 		): Promise<void> => {
 			const { sessionId, queryTexts, where, limit } = req.body;
 			validateServiceId(sessionId, collectionType);
@@ -191,54 +135,55 @@ router.post(
 			const path = genRoutePattern('queryChatTurns');
 			console.log(`API HIT: POST ${path} for session ${sessionId}`);
 
-			const results = await chatStore.queryChatTurns(sessionId, queryTexts, where, undefined, limit);
-			res.status(200).json(results);
+			const response = await chatStore.queryChatTurns(sessionId, queryTexts, where, undefined, limit);
+			const payload = compressData(response);
+			res.status(200).json({ payload });
 		}
 	)
 );
 
-/**
- * POST /api/chat/query-chat-messages
- * Performs a semantic search over individual messages (request or response) within a session.
- * @param {object} req.body - Contains sessionId, queryTexts, messageType, and optional filters.
- * @returns {string[]} An array of JSON strings, each representing a matching ChatMessage.
- */
-router.post(
-	genRoutePattern('queryChatMessages'),
-	asyncHandler(
-		async (
-			req: Request<
-				object,
-				string[],
-				{
-					sessionId: string;
-					queryTexts: string[];
-					messageType: ChatMessageType;
-					where?: Where;
-					whereDocument?: WhereDocument;
-					limit?: number;
-				}
-			>,
-			res: Response<string[]>
-		): Promise<void> => {
-			const { sessionId, queryTexts, messageType, where, whereDocument, limit } = req.body;
-			validateServiceId(sessionId, collectionType);
-			validateRequestData(req.body, 'body', ['sessionId', 'queryTexts', 'messageType']);
+// /**
+//  * POST /api/chat/query-chat-messages
+//  * Performs a semantic search over individual messages (request or response) within a session.
+//  * @param {object} req.body - Contains sessionId, queryTexts, messageType, and optional filters.
+//  * @returns {string[]} An array of JSON strings, each representing a matching ChatMessage.
+//  */
+// router.post(
+// 	genRoutePattern('queryChatMessages'),
+// 	asyncHandler(
+// 		async (
+// 			req: Request<
+// 				object,
+// 				string[],
+// 				{
+// 					sessionId: string;
+// 					queryTexts: string[];
+// 					messageType: ChatMessageType;
+// 					where?: Where;
+// 					whereDocument?: WhereDocument;
+// 					limit?: number;
+// 				}
+// 			>,
+// 			res: Response<string[]>
+// 		): Promise<void> => {
+// 			const { sessionId, queryTexts, messageType, where, whereDocument, limit } = req.body;
+// 			validateServiceId(sessionId, collectionType);
+// 			validateRequestData(req.body, 'body', ['sessionId', 'queryTexts', 'messageType']);
 
-			const path = genRoutePattern('queryChatMessages');
-			console.log(`API HIT: POST ${path} for session ${sessionId}`);
+// 			const path = genRoutePattern('queryChatMessages');
+// 			console.log(`API HIT: POST ${path} for session ${sessionId}`);
 
-			const results = await chatStore.queryChatMessages(
-				sessionId,
-				queryTexts,
-				messageType,
-				where,
-				whereDocument,
-				limit
-			);
-			res.status(200).json(results);
-		}
-	)
-);
+// 			const results = await chatStore.queryChatMessages(
+// 				sessionId,
+// 				queryTexts,
+// 				messageType,
+// 				where,
+// 				whereDocument,
+// 				limit
+// 			);
+// 			res.status(200).json(results);
+// 		}
+// 	)
+// );
 
 export default router;

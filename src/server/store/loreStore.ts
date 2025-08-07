@@ -469,7 +469,7 @@ export const loreStore = {
 		whereFilter?: Where, // This filter is for the INDEX records
 		whereDocument?: WhereDocument,
 		limit?: number
-	): Promise<LoreInfo[]> {
+	): Promise<LoreResponse> {
 		try {
 			const collection = await loreStore._getCollection();
 			let contentIdsToSearch: string[] | undefined = undefined;
@@ -483,7 +483,7 @@ export const loreStore = {
 				];
 
 				if (contentIdsToSearch.length === 0) {
-					return [];
+					return emptyLoreRes;
 				}
 			}
 
@@ -511,7 +511,7 @@ export const loreStore = {
 			const loreDocuments = validatedQueryResults.flatMap((r) => r.documents);
 
 			if (loreMetadatas.length === 0) {
-				return [];
+				return emptyLoreRes;
 			}
 
 			// Step 3: Fetch all index records for the final set of lores to enable full reconstruction.
@@ -522,7 +522,7 @@ export const loreStore = {
 			const allIndexResult = validateChromaResponse(finalIndexResults, 'getList', collectionType);
 
 			// Step 4: Reconstruct the full rich objects.
-			return loreMetadatas.map((metadata, i) => {
+			const loreInfos = loreMetadatas.map((metadata, i) => {
 				const relatedIndexMetadatas = allIndexResult.metadatas.filter(
 					(record): record is Metadata => !!record && record.contentId === metadata?.loreId
 				);
@@ -532,6 +532,16 @@ export const loreStore = {
 					relatedIndexMetadatas as unknown as LoreIndexMetadata[]
 				);
 			});
+
+			return {
+				ids: finalContentIds,
+				metadatas: loreMetadatas,
+				documents: loreDocuments,
+				loreInfo: loreInfos[0],
+				loreContent: loreInfos[0].content,
+				loreInfos,
+				loreContents: loreInfos.map((r) => r.content),
+			};
 		} catch (error) {
 			handleServiceError(error, `Failed to query lores for character ${characterId}`);
 		}
@@ -546,7 +556,7 @@ export const loreStore = {
 		whereFilter?: Where, // This filter is for the INDEX records
 		whereDocument?: WhereDocument,
 		limit?: number
-	): Promise<HistoryInfo[]> {
+	): Promise<HistoryResponse> {
 		try {
 			const collection = await loreStore._getCollection();
 			let contentIdsToSearch: string[] | undefined = undefined;
@@ -562,7 +572,7 @@ export const loreStore = {
 				];
 
 				if (contentIdsToSearch.length === 0) {
-					return [];
+					return emptyHisRes;
 				}
 			}
 
@@ -590,7 +600,7 @@ export const loreStore = {
 			const historyDocuments = validatedQueryResults.flatMap((r) => r.documents);
 
 			if (historyMetadatas.length === 0) {
-				return [];
+				return emptyHisRes;
 			}
 
 			// Step 3: Fetch all index records for the final set of histories.
@@ -601,7 +611,7 @@ export const loreStore = {
 			const allIndexResult = validateChromaResponse(finalIndexResults, 'getList', collectionType);
 
 			// Step 4: Reconstruct the full rich objects.
-			return historyMetadatas.map((metadata, i) => {
+			const historyInfos = historyMetadatas.map((metadata, i) => {
 				const relatedIndexRecords = allIndexResult.metadatas.filter(
 					(record): record is Metadata => !!record && record.contentId === metadata?.historyId
 				);
@@ -611,6 +621,16 @@ export const loreStore = {
 					relatedIndexRecords as unknown as LoreIndexMetadata[]
 				);
 			});
+
+			return {
+				ids: finalContentIds,
+				metadatas: historyMetadatas,
+				documents: historyDocuments,
+				historyInfo: historyInfos[0],
+				historyContent: historyInfos[0].content,
+				historyInfos,
+				historyContents: historyInfos.map((r) => r.content),
+			};
 		} catch (error) {
 			handleServiceError(error, `Failed to query histories for character ${characterId}`);
 		}

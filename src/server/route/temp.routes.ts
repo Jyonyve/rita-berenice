@@ -2,10 +2,12 @@
 import express, { type Request, type Response } from 'express';
 
 import { tempStore } from '../store/tempStore.js';
-import { genRoutePattern } from '#shared/util/apiHelpers.js';
+import { Payload } from '#shared/util/apiHelpers.js';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import {
 	asyncHandler,
+	compressData,
+	genRoutePattern,
 	validateRequestData,
 	validateSequenceRule,
 	validateServiceId,
@@ -53,7 +55,7 @@ router.post(
  */
 router.get(
 	genRoutePattern('getTempChatTurn', ['sessionId', 'sequence']),
-	asyncHandler(async (req: Request, res: Response<TempChatResponse>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
 		const { sessionId, sequence: sequenceParam } = req.params;
 		validateServiceId(sessionId, collectionType);
 		validateRequestData(req.params, 'params', ['sequence'], [validateSequenceRule('sequence')]);
@@ -65,7 +67,8 @@ router.get(
 		);
 
 		const response = await tempStore.getTempChatTurn(sessionId, sequence);
-		res.status(200).json(response);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
 	})
 );
 
@@ -80,7 +83,7 @@ router.get(
 router.get(
 	// The path will be something like: /api/temp/get-last-temp-turns-for-sessions
 	genRoutePattern('getLastTempTurnsForSessions'),
-	asyncHandler(async (req: Request, res: Response<TempChatResponse>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
 		// Validate that the sessionIds query parameter exists.
 		validateRequestData(req.query, 'query', ['sessionIds']);
 		const { sessionIds: sessionIdsQueryParam } = req.query;
@@ -96,8 +99,9 @@ router.get(
 		console.log(`API HIT: GET ${path} for ${sessionIds.length} sessions`);
 
 		// Call the new store function we created.
-		const results = await tempStore.getLastTempTurnsForSessions(sessionIds);
-		res.status(200).json(results);
+		const response = await tempStore.getLastTempTurnsForSessions(sessionIds);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
 	})
 );
 

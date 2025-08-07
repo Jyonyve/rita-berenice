@@ -8,7 +8,7 @@ import {
 	LoreIndexMetadata,
 	LoreIndexContentType,
 } from '../domain/lore/LoreInterfaces.js';
-import { convertArrayToString, convertStringToArray } from './chatParseUtils.js';
+import { convertArrayToString, convertStringToArray } from './parseUtils.js';
 import {
 	ChatTurnMetadata,
 	ChatTurn,

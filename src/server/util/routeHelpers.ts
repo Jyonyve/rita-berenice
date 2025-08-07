@@ -1,8 +1,10 @@
 // File: server/util/routeHelpers.ts
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { CollectionType } from '../db/ChromaInterfaces.js';
-import { convertArrayToString } from '#shared/util/chatParseUtils.js';
+import { convertArrayToString } from '#shared/util/parseUtils.js';
 import { ApiError } from '#shared/domain/error/errors.js';
+import { toKebabCase } from '#shared/util/apiHelpers.js';
+import zlib from 'zlib';
 
 /** Router part */
 export type CustomValidationRule = {
@@ -11,7 +13,7 @@ export type CustomValidationRule = {
 	status: number; // HTTP status for this validation error
 	errorMessage: string; // Developer-facing error message
 	clientMessage?: string; // Client-facing error message
-	details?: any; // Additional details for the error response
+	details?: any; // Additional details for the error responsed
 };
 
 export const asyncHandler = (
@@ -107,4 +109,38 @@ export const validateSequenceRule = (
 	};
 
 	return sequenceCustomValidationRule;
+};
+
+/**
+ * Generates an API URL pattern suitable for Express route definitions.
+ * Includes parameter placeholders like /:paramName based on the method name convention.
+ * Assumes parameters follow the method name in the URL structure.
+ *
+ * @param moduleName - The resource name (e.g., 'chroma', 'character', 'chat'). Should be singular.
+ * @param methodName - The operation being performed (e.g., 'storeChatTurn', 'getSummary').
+ * @param paramNames - Optional array of parameter names to append as placeholders (e.g., ['sessionId', 'sequence']).
+ * @returns The API route pattern string (e.g., '/api/chroma/store-chat-turn/:sessionId').
+ */
+export function genRoutePattern(
+	// moduleName is no longer part of the generated path string
+	methodName: string,
+	paramNames: string[] = []
+): string {
+	const kebabMethod = toKebabCase(methodName);
+	// Start the path directly with the method name, relative to the mount point
+	let path = `/${kebabMethod}`;
+
+	// Append parameter placeholders if any are specified
+	if (paramNames.length > 0) {
+		const paramPlaceholders = paramNames.map((name) => `:${name}`).join('/');
+		path += `/${paramPlaceholders}`;
+	}
+
+	return path;
+}
+
+export const compressData = (data: any): string => {
+	const jsonPayload = JSON.stringify(data);
+	const compressed = zlib.gzipSync(jsonPayload);
+	return compressed.toString('base64');
 };

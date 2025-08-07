@@ -3,7 +3,7 @@
 import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
 import { ChatMessage, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { buildMessageId } from '#shared/util/buildIdUtils.js';
-import { parseTextToEntries } from '#shared/util/chatParseUtils.js';
+import { parseTextToEntries } from '#shared/util/parseUtils.js';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';

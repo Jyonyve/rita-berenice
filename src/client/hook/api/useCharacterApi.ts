@@ -2,11 +2,11 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { apiClient } from '../../util/clientApiHelpers.js';
+import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { CharacterResponse } from '#shared/api/ModuleResponse.js';
-import { genApiUrl } from '#shared/util/apiHelpers.js';
 import { CharacterCdo, CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import { Payload } from '#shared/util/apiHelpers.js';
 
 export const useCharacterApi = () => {
 	const MODULE_NAME = MODULE_NAMES.CHARACTER;
@@ -21,8 +21,8 @@ export const useCharacterApi = () => {
 			queryKey: ['getAllCharacters'],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getAllCharacters');
-				const response = await apiClient.get<CharacterResponse>(url);
-				return response.data;
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<CharacterResponse>(response.data.payload);
 			},
 			enabled: true,
 		});
@@ -36,8 +36,8 @@ export const useCharacterApi = () => {
 			queryKey: ['getCharacter', characterId],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getCharacter', [characterId]);
-				const response = await apiClient.get<CharacterResponse>(url);
-				return response.data;
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<CharacterResponse>(response.data.payload);
 			},
 			enabled: !!characterId,
 		});
@@ -51,8 +51,8 @@ export const useCharacterApi = () => {
 			queryKey: ['getCharactersByShowName', showName],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getCharactersByShowName', [showName]);
-				const response = await apiClient.get<CharacterResponse>(url);
-				return response.data;
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<CharacterResponse>(response.data.payload);
 			},
 			enabled: !!showName,
 		});

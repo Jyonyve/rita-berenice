@@ -9,7 +9,7 @@ import {
 	convertArrayToString,
 	parseEntriesToText,
 	parseSessionId,
-} from '#shared/util/chatParseUtils.js';
+} from '#shared/util/parseUtils.js';
 import { MemoryResponse } from '#shared/api/ModuleResponse.js';
 import { recapStore } from '../store/recapStore.js';
 import { characterStore } from '../store/characterStore.js';
@@ -175,8 +175,8 @@ export const memoryEngine = {
 				langCode,
 				shortTermHistory: recentChatTurns,
 				longTermHistory: rerankedLongTerm.contents?.slice(0, FINAL_MEMORY_LIMIT) || [],
-				relevantLore: relevantLoreRes || [],
-				relevantHistory: relevantHistoryRes || [],
+				relevantLore: relevantLoreRes.loreInfos || [],
+				relevantHistory: relevantHistoryRes.historyInfos || [],
 				factualRecapSummary,
 				relationshipRecapSummary,
 			};

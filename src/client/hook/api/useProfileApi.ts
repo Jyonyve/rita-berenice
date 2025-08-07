@@ -1,10 +1,10 @@
 // src/client/hooks/useProfileApi.ts
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../util/clientApiHelpers.js';
+import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { ProfileCdo, ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
-import { genApiUrl } from '#shared/util/apiHelpers.js';
+import { Payload } from '#shared/util/apiHelpers.js';
 import { ProfileResponse } from '#shared/api/ModuleResponse.js';
 
 /**
@@ -41,8 +41,8 @@ export const useProfileApi = () => {
 			queryKey: ['getAllProfilesByUserId', userId],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getAllProfilesByUserId', [userId]);
-				const response = await apiClient.get<ProfileResponse>(url);
-				return response.data;
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<ProfileResponse>(response.data.payload);
 			},
 			// This query can run by default if needed on app load
 			enabled: !!userId, // Only run if userId is provided
@@ -56,8 +56,8 @@ export const useProfileApi = () => {
 			queryKey: ['getProfile', profileId],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getProfile', [profileId]);
-				const response = await apiClient.get<ProfileResponse>(url);
-				return response.data;
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<ProfileResponse>(response.data.payload);
 			},
 			enabled: !!profileId, // Only run if profileId is provided
 		});
@@ -71,18 +71,10 @@ export const useProfileApi = () => {
 			queryKey: ['getProfileBySessionId', sessionId],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getProfileBySessionId', [sessionId]);
-				const response = await apiClient.get<ProfileResponse>(url);
-				return response.data;
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<ProfileResponse>(response.data.payload);
 			},
 			enabled: !!sessionId,
-			retry: (failureCount, error) => {
-				// Don't retry if the error is a 404 Not Found
-				if (error.name === '404') {
-					return false;
-				}
-				// Otherwise, use default retry logic (e.g., 3 times)
-				return failureCount < 3;
-			},
 		});
 
 	/**
@@ -93,8 +85,8 @@ export const useProfileApi = () => {
 			queryKey: ['getProfilesByShowName', showName],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getProfilesByShowName', [showName]);
-				const response = await apiClient.get<ProfileResponse>(url);
-				return response.data;
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<ProfileResponse>(response.data.payload);
 			},
 			enabled: !!showName,
 		});

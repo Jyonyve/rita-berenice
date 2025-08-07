@@ -43,8 +43,12 @@ export default defineConfig(({ mode }) => {
 			react({ jsxImportSource: '@emotion/react', babel: { plugins: ['@emotion/babel-plugin'] } }),
 
 			// ADD THIS PLUGIN BACK. It is essential for fixing the client-side error.
-			nodePolyfills(),
-
+			nodePolyfills({
+				// We only need the Buffer polyfill.
+				include: ['buffer'],
+				// Make Buffer available globally so you don't have to import it everywhere.
+				globals: { Buffer: true },
+			}),
 			tsconfigPaths(),
 			svgr(),
 		],

@@ -24,7 +24,7 @@ import {
 	metadataToDisplayTurn,
 } from '#shared/util/dbConvertUtils.js';
 import { ChatResponse } from '#shared/api/ModuleResponse.js';
-import { parseTextToEntries } from '#shared/util/chatParseUtils.js';
+import { parseTextToEntries } from '#shared/util/parseUtils.js';
 import { isAndWhere } from '../util/queryUtils.js';
 import {
 	buildChatTurnIndexId,
@@ -414,47 +414,47 @@ export const chatStore = {
 	},
 
 	// Enhanced Query Operations
-	queryChatMessages: async (
-		sessionId: string,
-		queryTexts: string[],
-		messageType: ChatMessageType,
-		where?: Where,
-		whereDocumennt?: WhereDocument,
-		limit?: number
-	): Promise<string[]> => {
-		try {
-			const collection = await chatStore._getChatCollection();
+	// queryChatMessages: async (
+	// 	sessionId: string,
+	// 	queryTexts: string[],
+	// 	messageType: ChatMessageType,
+	// 	where?: Where,
+	// 	whereDocumennt?: WhereDocument,
+	// 	limit?: number
+	// ): Promise<string[]> => {
+	// 	try {
+	// 		const collection = await chatStore._getChatCollection();
 
-			const conditions: Where[] = [
-				{ sessionId: { $eq: sessionId } },
-				{ type: { $eq: METADATA_TYPES.MESSAGE } },
-				{ messageType: { $eq: messageType } },
-			];
-			if (where && isAndWhere(where)) {
-				conditions.push(...where.$and);
-			}
-			const whereClause: Where = { $and: conditions };
+	// 		const conditions: Where[] = [
+	// 			{ sessionId: { $eq: sessionId } },
+	// 			{ type: { $eq: METADATA_TYPES.MESSAGE } },
+	// 			{ messageType: { $eq: messageType } },
+	// 		];
+	// 		if (where && isAndWhere(where)) {
+	// 			conditions.push(...where.$and);
+	// 		}
+	// 		const whereClause: Where = { $and: conditions };
 
-			const rawResults = await queryRecords(
-				collection,
-				queryTexts,
-				whereClause,
-				whereDocumennt,
-				limit
-			);
-			const results = rawResults.map((raw) => validateChromaResponse(raw, 'getList', collectionType));
-			return results.flatMap((result) => {
-				const chatMessages = result.documents
-					.flatMap((doc) => (typeof doc === 'string' ? parseTextToEntries(doc) : []))
-					.filter((msg) => msg !== null);
+	// 		const rawResults = await queryRecords(
+	// 			collection,
+	// 			queryTexts,
+	// 			whereClause,
+	// 			whereDocumennt,
+	// 			limit
+	// 		);
+	// 		const results = rawResults.map((raw) => validateChromaResponse(raw, 'getList', collectionType));
+	// 		return results.flatMap((result) => {
+	// 			const chatMessages = result.documents
+	// 				.flatMap((doc) => (typeof doc === 'string' ? parseTextToEntries(doc) : []))
+	// 				.filter((msg) => msg !== null);
 
-				return chatMessages.map((msg) => JSON.stringify(msg));
-			});
-		} catch (error) {
-			console.error(`Failed to query chat log for session ${sessionId}:`, error);
-			return [];
-		}
-	},
+	// 			return chatMessages.map((msg) => JSON.stringify(msg));
+	// 		});
+	// 	} catch (error) {
+	// 		console.error(`Failed to query chat log for session ${sessionId}:`, error);
+	// 		return [];
+	// 	}
+	// },
 
 	queryChatTurns: async (
 		sessionId: string,
@@ -559,14 +559,16 @@ export const chatStore = {
 	},
 
 	/** Gets a single FIXED turn by sequence */
-	getChatTurnBySequence: async (sessionId: string, sequence: number): Promise<ChatTurn> => {
+	getChatTurnBySequence: async (sessionId: string, sequence: number): Promise<ChatResponse> => {
 		const collection = await chatStore._getChatCollection();
 		const turnId = buildChatTurnId(sessionId, sequence);
 		try {
 			const rawResult = await getRecordById(collection, turnId);
 			const results = validateChromaResponse(rawResult, 'getOne', collectionType);
-			const indexMetadatas = await chatStore._constructChatTurnIndexes([results.ids[0]]);
-			return chatStore._constructFullChatTurns(results.metadatas, indexMetadatas)[0];
+			const indexMetadatas = await chatStore._constructChatTurnIndexes(results.ids);
+			const chatTurns = chatStore._constructFullChatTurns(results.metadatas, indexMetadatas);
+
+			return { ...results, chatTurns, displayTurns: [] };
 		} catch (error) {
 			handleServiceError(
 				error,

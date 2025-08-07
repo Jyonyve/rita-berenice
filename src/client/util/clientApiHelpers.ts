@@ -1,6 +1,8 @@
 import Session from 'supertokens-web-js/recipe/session/index.js';
 import axios from 'axios';
 import { ApiError } from '#shared/domain/error/errors.js';
+import { toKebabCase } from '#shared/util/apiHelpers.js';
+import { gunzipSync } from 'zlib';
 
 // API 클라이언트 인스턴스 생성
 export const apiClient = axios.create({
@@ -14,8 +16,6 @@ export function setupApiClient(
 ) {
 	// 요청 인터셉터: 요청 로그 출력
 	apiClient.interceptors.request.use(async (config) => {
-		console.log('API 요청:', config.method?.toUpperCase(), config.url);
-
 		// First, check if a session exists. This is a cheap, non-network call.
 		if (await Session.doesSessionExist()) {
 			// Only if a session exists, get the token and attach it.
@@ -95,4 +95,65 @@ export const processApiError = (err: unknown): ApiError => {
 	}
 
 	return new ApiError(500, 'An unknown error occurred.');
+};
+
+/**
+ * Generates a concrete API URL path suitable for client-side API calls.
+ * Inserts actual parameter values into the path.
+ *
+ * @param moduleName - The resource name (e.g., 'chroma', 'character', 'chat'). Should be singular.
+ * @param methodName - The operation being performed (e.g., 'storeChatTurn', 'getSummary').
+ * @param paramValues - Optional array of parameter values to insert into the path (e.g., ['session123', 5]). Values are URI encoded.
+ * @returns The concrete API URL path string (e.g., '/api/chroma/store-chat-turn/session123'). Note: Base URL (domain) is added by apiClient.
+ */
+export function genApiUrl(
+	moduleName: string,
+	methodName: string,
+	paramValues: (string | number)[] = []
+): string {
+	const kebabMethod = toKebabCase(methodName);
+	let path = `/${moduleName}/${kebabMethod}`; // Base path
+
+	// Append encoded parameter values if any are provided
+	if (paramValues.length > 0) {
+		const encodedValues = paramValues.map((val) => encodeURIComponent(String(val))).join('/');
+		path += `/${encodedValues}`;
+	}
+
+	return path;
+}
+
+// src/client/util/compressionUtils.ts
+
+/**
+ * Decompresses a gzipped, Base64-encoded string using the browser's native DecompressionStream.
+ * This modern version uses Buffer.from() instead of the legacy atob() function.
+ */
+export const decompressData = async <T>(compressedBase64: string): Promise<T> => {
+	try {
+		// MODERN APPROACH: Use Buffer.from() to decode the Base64 string.
+		// This is the recommended, non-legacy way to handle Base64 data.
+		const compressedData = Buffer.from(compressedBase64, 'base64');
+
+		// Create a readable stream from the binary data.
+		// The Buffer object works seamlessly here as it is a Uint8Array.
+		const compressedStream = new ReadableStream({
+			start(controller) {
+				controller.enqueue(compressedData);
+				controller.close();
+			},
+		});
+
+		// Pipe the data through the native DecompressionStream for gzip.
+		const decompressionStream = compressedStream.pipeThrough(new DecompressionStream('gzip'));
+
+		// Read the decompressed stream and parse it as JSON.
+		const decompressedBlob = await new Response(decompressionStream).blob();
+		const decompressedText = await decompressedBlob.text();
+
+		return JSON.parse(decompressedText);
+	} catch (error) {
+		console.error('Client-side decompression failed:', error);
+		throw new Error('Failed to decompress data on the client.');
+	}
 };

@@ -2,10 +2,10 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../../provider/ToastProvider.jsx';
-import { apiClient } from '../../util/clientApiHelpers.js';
+import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { HistoryInfo, LoreInfo } from '#shared/domain/lore/LoreInterfaces.js';
-import { genApiUrl } from '#shared/util/apiHelpers.js';
+import { Payload } from '#shared/util/apiHelpers.js';
 import { HistoryResponse, LoreResponse } from '#shared/api/ModuleResponse.js';
 
 // For clarity in the query function signature
@@ -53,8 +53,8 @@ export const useLoreApi = () => {
 			queryKey: ['getLores', characterId], // Adjusted to include characterId in key
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getLores', [characterId]);
-				const response = await apiClient.get<LoreResponse>(url);
-				return response.data;
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<LoreResponse>(response.data.payload);
 			},
 			enabled: !!characterId,
 		});
@@ -68,8 +68,8 @@ export const useLoreApi = () => {
 			queryKey: ['getLore', loreId], // Adjusted to include loreId in key
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getLore', [loreId]);
-				const response = await apiClient.get<LoreResponse>(url);
-				return response.data;
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<LoreResponse>(response.data.payload);
 			},
 			enabled: !!loreId,
 		});
@@ -85,8 +85,8 @@ export const useLoreApi = () => {
 	>({
 		mutationFn: async ({ characterId, queryTexts, options }) => {
 			const url = genApiUrl(MODULE_NAME, 'queryLores');
-			const response = await apiClient.post<LoreResponse>(url, { characterId, queryTexts, options });
-			return response.data;
+			const response = await apiClient.post<Payload>(url, { characterId, queryTexts, options });
+			return decompressData<LoreResponse>(response.data.payload);
 		},
 	});
 
@@ -118,8 +118,8 @@ export const useLoreApi = () => {
 			queryKey: ['getHistories', characterId], // Adjusted to include characterId in key
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getHistories', [characterId]);
-				const response = await apiClient.get<HistoryResponse>(url);
-				return response.data;
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<HistoryResponse>(response.data.payload);
 			},
 			enabled: !!characterId,
 		});
@@ -135,12 +135,8 @@ export const useLoreApi = () => {
 	>({
 		mutationFn: async ({ characterId, queryTexts, options }) => {
 			const url = genApiUrl(MODULE_NAME, 'queryHistories');
-			const response = await apiClient.post<HistoryResponse>(url, {
-				characterId,
-				queryTexts,
-				options,
-			});
-			return response.data;
+			const response = await apiClient.post<Payload>(url, { characterId, queryTexts, options });
+			return decompressData<HistoryResponse>(response.data.payload);
 		},
 	});
 

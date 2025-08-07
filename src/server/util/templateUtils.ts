@@ -2,7 +2,7 @@
 
 import { BasicBeingInfo, CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { ChatMessage, ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
-import { convertArrayToString, parseEntriesToText } from '#shared/util/chatParseUtils.js';
+import { convertArrayToString, parseEntriesToText } from '#shared/util/parseUtils.js';
 import {
 	HistoryContext,
 	HistoryInfo,

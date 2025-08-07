@@ -1,10 +1,10 @@
 // src/client/hooks/useGlossaryApi.ts
 
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
-import { apiClient } from '../../util/clientApiHelpers.js';
+import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { TermCdo, TermInfo } from '#shared/domain/term/TermInterfaces.js';
-import { genApiUrl } from '#shared/util/apiHelpers.js';
+import { Payload } from '#shared/util/apiHelpers.js';
 import { TermResponse } from '#shared/api/ModuleResponse.js';
 
 /**
@@ -51,8 +51,8 @@ export const useTermApi = () => {
 			queryKey: ['getTermByKorean', sessionId, koreanTerm],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getTermByKorean', [sessionId, koreanTerm]);
-				const response = await apiClient.get<TermResponse>(url);
-				return response.data;
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<TermResponse>(response.data.payload);
 			},
 			enabled: !!sessionId && !!koreanTerm,
 			// Custom retry logic for 404 (not found is expected)
@@ -68,8 +68,8 @@ export const useTermApi = () => {
 			queryKey: ['getTermsBySessionId', sessionId],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getTermsBySessionId', [sessionId]);
-				const response = await apiClient.get<TermResponse>(url);
-				return response.data;
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<TermResponse>(response.data.payload);
 			},
 			enabled: !!sessionId,
 		});

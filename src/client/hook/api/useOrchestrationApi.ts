@@ -1,7 +1,7 @@
 // src/client/hooks/useOrchestrationApi.ts
 
 import { useMutation } from '@tanstack/react-query';
-import { apiClient } from '../../util/clientApiHelpers.js';
+import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import {
 	ChatTurn,
@@ -9,7 +9,7 @@ import {
 	TempChatTurn,
 	TempChatTurnCdo,
 } from '#shared/domain/chat/ChatInterfaces.js';
-import { genApiUrl } from '#shared/util/apiHelpers.js';
+import { Payload } from '#shared/util/apiHelpers.js';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
@@ -28,8 +28,8 @@ export const useOrchestrationApi = () => {
 	const finalizeChatTurn = useMutation<ChatTurn, Error, ChatTurnCdo>({
 		mutationFn: async (cdo: ChatTurnCdo) => {
 			const url = genApiUrl(MODULE_NAMES.ORCHESTRATION, 'finalizeChatTurn');
-			const response = await apiClient.post<ChatTurn>(url, cdo);
-			return response.data;
+			const response = await apiClient.post<Payload>(url, cdo);
+			return decompressData<ChatTurn>(response.data.payload);
 		},
 	});
 
@@ -59,7 +59,7 @@ export const useOrchestrationApi = () => {
 			isScene,
 		}) => {
 			const url = genApiUrl(MODULE_NAME, 'receiveBotResponse');
-			const response = await apiClient.post<TempChatTurn>(url, {
+			const response = await apiClient.post<Payload>(url, {
 				tempChatTurnCdo,
 				characterInfo,
 				profileInfo,
@@ -67,7 +67,7 @@ export const useOrchestrationApi = () => {
 				recentChatTurnString,
 				isScene,
 			});
-			return response.data;
+			return decompressData<TempChatTurn>(response.data.payload);
 		},
 	});
 

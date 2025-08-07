@@ -3,9 +3,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { SessionInfo } from '#shared/domain/session/SessionInterfaces.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
-import { genApiUrl } from '#shared/util/apiHelpers.js';
+import { Payload } from '#shared/util/apiHelpers.js';
 import { SessionResponse } from '#shared/api/ModuleResponse.js';
-import { apiClient } from '../../util/clientApiHelpers.js';
+import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
 
 /**
  * A client-side hook for interacting with the SESSION API endpoints.
@@ -45,8 +45,8 @@ export const useSessionApi = () => {
 			queryKey: ['getSessionsByUserId', userId],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getSessionsByUserId', [userId]);
-				const response = await apiClient.get<SessionResponse>(url);
-				return response.data;
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<SessionResponse>(response.data.payload);
 			},
 			enabled: !!userId,
 		});
@@ -60,8 +60,8 @@ export const useSessionApi = () => {
 			queryKey: ['getSessionsByUserIdAndCharacterId', userId, characterId],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getSessionsByUserIdAndCharacterId', [userId, characterId]);
-				const response = await apiClient.get<SessionResponse>(url);
-				return response.data;
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<SessionResponse>(response.data.payload);
 			},
 			enabled: !!userId && !!characterId,
 		});
@@ -75,8 +75,8 @@ export const useSessionApi = () => {
 			queryKey: ['getSession', sessionId],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getSession', [sessionId]);
-				const response = await apiClient.get<SessionResponse>(url);
-				return response.data;
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<SessionResponse>(response.data.payload);
 			},
 			enabled: !!sessionId, // The query will only run if a sessionId is provided.
 		});

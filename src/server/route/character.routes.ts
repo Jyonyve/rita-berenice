@@ -2,11 +2,17 @@
 
 import express, { type Request, type Response } from 'express';
 
-import { genRoutePattern } from '#shared/util/apiHelpers.js';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { characterStore } from '../store/characterStore.js';
-import { asyncHandler, validateRequestData, validateServiceId } from '../util/routeHelpers.js';
+import {
+	asyncHandler,
+	compressData,
+	genRoutePattern,
+	validateRequestData,
+	validateServiceId,
+} from '../util/routeHelpers.js';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import { Payload } from '#shared/util/apiHelpers.js';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.CHARACTER;
@@ -19,12 +25,13 @@ const collectionType = COLLECTIONS.CHARACTER;
  */
 router.get(
 	genRoutePattern('getAllCharacters'),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
 		const path = genRoutePattern('getAllCharacters');
 		console.log(`API HIT: GET ${path}`);
 
 		const response = await characterStore.getAllCharacters();
-		res.status(200).json(response);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
 	})
 );
 
@@ -38,7 +45,7 @@ router.get(
  */
 router.get(
 	genRoutePattern('getCharacter', ['characterId']),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
 		const { characterId } = req.params;
 		validateServiceId(characterId, collectionType);
 
@@ -46,7 +53,8 @@ router.get(
 		console.log(`API HIT: GET ${path.replace(':characterId', characterId)}`);
 
 		const response = await characterStore.getCharacter(characterId);
-		res.status(200).json(response);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
 	})
 );
 
@@ -60,7 +68,7 @@ router.get(
  */
 router.get(
 	genRoutePattern('getCharactersByShowName', ['showName']),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
 		validateRequestData(req.params, 'params', ['showName']);
 		const { showName } = req.params;
 
@@ -68,7 +76,8 @@ router.get(
 		console.log(`API HIT: GET ${path.replace(':showName', showName)}`);
 
 		const response = await characterStore.getCharactersByShowName(showName);
-		res.status(200).json(response);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
 	})
 );
 

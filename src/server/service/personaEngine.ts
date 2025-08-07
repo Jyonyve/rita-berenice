@@ -14,7 +14,7 @@ import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { llmService } from './llmService.js';
 import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';
-import { parseEntriesToText } from '#shared/util/chatParseUtils.js';
+import { parseEntriesToText } from '#shared/util/parseUtils.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { correctAiModelInfo } from '#shared/config/supportAiModelInfo.js';
 import { createPersonaResponseSchema } from '../util/schemaUtils.js';

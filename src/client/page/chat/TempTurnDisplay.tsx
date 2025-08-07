@@ -1,7 +1,7 @@
 // src/client/component/page/chat/TempTurnDisplay.tsx
 
 import { ChatMessageSet, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
-import { parseEntriesToText } from '#shared/util/chatParseUtils.js';
+import { parseEntriesToText } from '#shared/util/parseUtils.js';
 import CancelIcon from '@mui/icons-material/Cancel';
 import EditIcon from '@mui/icons-material/Edit';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
@@ -14,7 +14,7 @@ import { commonStyle, styleEntryFont } from '../../util/styleUtils.jsx';
 import { REQUEST_CHARACTER_LIMIT, RESPONSE_CHARACTER_LIMIT } from '#shared/config/constants.js';
 import { GlassBox } from '../../layout/glass/GlassBox.jsx';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
-import { getLangText } from '../../util/translateUtils.ts';
+import { getLangText } from '../../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
 
 /**

@@ -16,7 +16,7 @@ import { handleServiceError } from '../util/serviceHelpers.js';
 import { memoryEngine } from './memoryEngine.js';
 import { personaEngine } from './personaEngine.js';
 import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';
-import { buildChatMessage, parseSessionId } from '#shared/util/chatParseUtils.js';
+import { buildChatMessage, parseSessionId } from '#shared/util/parseUtils.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { tempStore } from '../store/tempStore.js';
 import { MemoryResponse, PersonaResponse } from '#shared/api/ModuleResponse.js';

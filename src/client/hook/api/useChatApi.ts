@@ -2,10 +2,10 @@
 
 import type { Where } from 'chromadb';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../util/clientApiHelpers.js';
+import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
 import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
-import { genApiUrl } from '#shared/util/apiHelpers.js';
+import { Payload } from '#shared/util/apiHelpers.js';
 import { ChatResponse } from '#shared/api/ModuleResponse.js';
 
 /**
@@ -43,8 +43,8 @@ export const useChatApi = () => {
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAMES.CHAT, 'getAllDisplayTurns', [sessionId]);
 				// No `beforeSequence` param if the API fetches all data at once
-				const response = await apiClient.get<ChatResponse>(url);
-				return response.data;
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<ChatResponse>(response.data.payload);
 			},
 			enabled: !!sessionId, // Only run the query if sessionId is available
 		});
@@ -58,8 +58,8 @@ export const useChatApi = () => {
 			queryKey: ['getChatTurnBySequence', sessionId, sequence], // The query key now reflects the method name
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAMES.CHAT, 'getChatTurnBySequence', [sessionId, sequence]);
-				const response = await apiClient.get<ChatResponse>(url);
-				return response.data;
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<ChatResponse>(response.data.payload);
 			},
 			enabled: !!sessionId && typeof sequence === 'number', // Only run if both are available
 		});
@@ -77,8 +77,8 @@ export const useChatApi = () => {
 	>({
 		mutationFn: async ({ sessionId, queryTexts, where }) => {
 			const url = genApiUrl(MODULE_NAMES.CHAT, 'queryChatTurns');
-			const response = await apiClient.post<ChatResponse>(url, { sessionId, queryTexts, where });
-			return response.data;
+			const response = await apiClient.post<Payload>(url, { sessionId, queryTexts, where });
+			return decompressData<ChatResponse>(response.data.payload);
 		},
 	});
 

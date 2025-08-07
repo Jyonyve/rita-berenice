@@ -1,5 +1,5 @@
 import { ChatEntry, ChatMessage, ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
-import { parseEntriesToText, parseTextToEntries } from '#shared/util/chatParseUtils.js';
+import { parseEntriesToText, parseTextToEntries } from '#shared/util/parseUtils.js';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { HistoryInfo, LoreInfo } from '#shared/domain/lore/LoreInterfaces.js';
 import { RecapInfo } from '#shared/domain/recap/RecapInterfaces.js';

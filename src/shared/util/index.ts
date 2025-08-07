@@ -1,4 +1,4 @@
-export * from './chatParseUtils.js';
+export * from './parseUtils.js';
 export * from './aiModelUtils.js';
 export * from './documentUtils.js';
 export * from './apiHelpers.js';

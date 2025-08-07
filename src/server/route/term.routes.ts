@@ -2,11 +2,16 @@
 import express, { type Request, type Response } from 'express';
 
 import { termStore } from '../store/termStore.js';
-import { genRoutePattern } from '#shared/util/apiHelpers.js';
+import { Payload } from '#shared/util/apiHelpers.js';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
-import { asyncHandler, validateRequestData, validateServiceId } from '../util/routeHelpers.js';
+import {
+	asyncHandler,
+	compressData,
+	genRoutePattern,
+	validateRequestData,
+	validateServiceId,
+} from '../util/routeHelpers.js';
 import { TermCdo, TermInfo } from '#shared/domain/term/TermInterfaces.js';
-import { TermResponse } from '#shared/api/ModuleResponse.js';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.TERM; // For validating sessionId if it were used as a serviceId elsewhere
@@ -48,7 +53,7 @@ router.post(
  */
 router.get(
 	genRoutePattern('getTermByKorean', ['sessionId', 'koreanTerm']),
-	asyncHandler(async (req: Request, res: Response<TermResponse>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
 		const { sessionId, koreanTerm } = req.params;
 		validateServiceId(sessionId, collectionType);
 		validateRequestData(req.params, 'params', ['koreanTerm']);
@@ -59,7 +64,8 @@ router.get(
 		);
 
 		const response = await termStore.getTermByKorean(sessionId, koreanTerm);
-		res.status(200).json(response);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
 	})
 );
 
@@ -71,7 +77,7 @@ router.get(
  */
 router.get(
 	genRoutePattern('getTermsBySessionId', ['sessionId']),
-	asyncHandler(async (req: Request, res: Response<TermResponse>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
 		const { sessionId } = req.params;
 		validateServiceId(sessionId, collectionType);
 
@@ -79,7 +85,8 @@ router.get(
 		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
 
 		const response = await termStore.getTermsBySessionId(sessionId);
-		res.status(200).json(response);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
 	})
 );
 
