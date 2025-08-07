@@ -126,31 +126,32 @@ export function genApiUrl(
 // src/client/util/compressionUtils.ts
 
 /**
- * Decompresses a gzipped, Base64-encoded string using the browser's native DecompressionStream.
- * This modern version uses Buffer.from() instead of the legacy atob() function.
+ * Decompresses a gzipped, Base64-encoded string using only native browser APIs.
+ * This is the most reliable method, avoiding all Node.js polyfill issues.
  */
 export const decompressData = async <T>(compressedBase64: string): Promise<T> => {
 	try {
-		// MODERN APPROACH: Use Buffer.from() to decode the Base64 string.
-		// This is the recommended, non-legacy way to handle Base64 data.
-		const compressedData = Buffer.from(compressedBase64, 'base64');
+		// Step 1: Decode the Base64 string into a byte stream (Uint8Array).
+		// This is the correct, modern way to handle this, despite the legacy name of `atob`.
+		const compressedBytes = Uint8Array.from(atob(compressedBase64), (c) => c.charCodeAt(0));
 
-		// Create a readable stream from the binary data.
-		// The Buffer object works seamlessly here as it is a Uint8Array.
+		// Step 2: Create a readable stream from the compressed data.
 		const compressedStream = new ReadableStream({
 			start(controller) {
-				controller.enqueue(compressedData);
+				controller.enqueue(compressedBytes);
 				controller.close();
 			},
 		});
 
-		// Pipe the data through the native DecompressionStream for gzip.
+		// Step 3: Pipe the data through the native DecompressionStream.
 		const decompressionStream = compressedStream.pipeThrough(new DecompressionStream('gzip'));
 
-		// Read the decompressed stream and parse it as JSON.
+		// Step 4: Use the Response API to easily read the entire decompressed stream.
+		// This is a robust way to handle the stream and get the final result.
 		const decompressedBlob = await new Response(decompressionStream).blob();
 		const decompressedText = await decompressedBlob.text();
 
+		// Step 5: Parse the resulting JSON text.
 		return JSON.parse(decompressedText);
 	} catch (error) {
 		console.error('Client-side decompression failed:', error);
