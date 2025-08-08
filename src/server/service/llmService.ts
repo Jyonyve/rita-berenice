@@ -16,6 +16,7 @@ import { MODEL_LIMITS_INFO } from '#shared/config/supportAiModelInfo.js';
 import { convertMessageContentToString } from '#shared/util/parseUtils.js';
 import { buildNerPrompt, buildTermTranslationPrompt } from '../util/templateUtils.js';
 import z from 'zod';
+import { logFlow } from '../util/jsonlLogger.js';
 
 // --- 저수준 유틸리티 함수 ---
 // 이 함수들은 데이터의 '내용'을 변경하지 않고, '형식'을 보장하는 역할만 합니다.
@@ -185,6 +186,8 @@ export const llmService = {
 			const llmClient = await llmService.createLlmInstance(aiModelInfo, userId);
 			const langChainMessages = convertToLangChainMessages(sanitizedMessages);
 
+			logFlow('llmService', 'invokeLlm', { langChainMessages });
+
 			// --- This is the core logic for flexible output ---
 			if (zodSchema) {
 				// If a schema is provided, use structured output.
@@ -195,12 +198,16 @@ export const llmService = {
 					signal: options?.signal,
 				});
 
+				logFlow('llmService', 'invokeLlm', { structuredOutput });
+
 				// The output is a guaranteed-to-be-valid JavaScript object.
 				return JSON.stringify(structuredOutput);
 			} else {
 				// If no schema is provided, perform a standard text invocation.
 				console.log(`[llmService] Invoking model with standard text output`);
 				const responseMessage = await llmClient.invoke(langChainMessages, { signal: options?.signal });
+
+				logFlow('llmService', 'invokeLlm', { responseMessage });
 
 				return convertMessageContentToString(responseMessage.content);
 			}
@@ -229,6 +236,8 @@ export const llmService = {
 		const messages: ChatCompletionMessageParam[] = [{ role: 'user', content: prompt }];
 		const translation = await llmService.invokeLlm(messages, aiModelInfo, userId);
 
+		logFlow('llmService', 'translateProperNoun', { translation });
+
 		// 번역 결과는 JSON이 아니므로, 일반 텍스트로 처리합니다.
 		return translation.replace(/["'.]/g, '').trim();
 	},
@@ -243,6 +252,8 @@ export const llmService = {
 		// MODIFIED: 'invokeLlm'에 맞게 messages 배열을 생성하여 전달합니다.
 		const messages: ChatCompletionMessageParam[] = [{ role: 'user', content: prompt }];
 		const jsonResponse = await llmService.invokeLlm(messages, aiModelInfo, userId);
+
+		logFlow('llmService', 'extractProperNouns', { jsonResponse });
 
 		try {
 			// invokeLlm은 이미 JSON 문자열을 반환하므로, 바로 파싱합니다.

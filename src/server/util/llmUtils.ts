@@ -4,6 +4,7 @@ import { ChromaResponse } from '#shared/api/ModuleResponse.js';
 import { DefaultAiRole } from '#shared/domain/aimodel/index.js';
 import { HistoryContext, HistoryInfo, LoreContext, LoreInfo } from '#shared/domain/lore/index.js';
 import { LlmResponseParseError } from '#shared/domain/error/errors.js';
+import { logFlow } from './jsonlLogger.js';
 
 export function isDirectOpenAIClient(llm: any): llm is OpenAI {
 	// Check for a unique property or method of the OpenAI client instance
@@ -68,6 +69,52 @@ export const parseLlmJsonResponse = <T>(
 		console.log(`[parseLlmJsonResponse] : ${llmResponse}`);
 		throw new LlmResponseParseError('MALFORMED_SYNTAX', callerContext, llmResponse);
 	}
+};
+
+// src/shared/util/textTransform.ts
+
+/**
+ * Transforms LLM response text by wrapping paragraphs with asterisks
+ * and removing double quotes from dialogues
+ * @param text - Raw text from LLM response
+ * @returns Formatted text with wrapped paragraphs and no quotes
+ */
+
+/**
+ * Transforms LLM response text by:
+ * 1. Wrapping all paragraphs with asterisks
+ * 2. Removing double quotes from dialogues
+ * 3. Cleaning up malformed asterisk-quote combinations (*" and *")
+ */
+export const transformLLMResponse = (text: string): string => {
+	logFlow('TextTransform', 'Starting text transformation', {
+		inputLength: text.length,
+		preview: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
+	});
+
+	// Step 1: Split text into paragraphs (separated by double newlines)
+	const paragraphs = text
+		.split('\n\n')
+		.map((p) => p.trim())
+		.filter((p) => p.length > 0);
+	// Step 2: Wrap each paragraph with asterisks
+	const wrappedParagraphs = paragraphs.map((para) => `*${para}*`);
+
+	// Step 3: Join back with double newlines
+	let result = wrappedParagraphs.join('\n\n');
+
+	// Step 4: Clean up malformed asterisk-quote combinations
+	// Remove *" and *" patterns that might have been created
+	result = result.replace(/\*"/g, ''); // Remove *"
+	result = result.replace(/"\*/g, '\n'); // Remove "*
+
+	logFlow('TextTransform', 'Text transformation completed', {
+		inputLength: text.length,
+		outputLength: result.length,
+		result,
+	});
+
+	return result;
 };
 
 /**

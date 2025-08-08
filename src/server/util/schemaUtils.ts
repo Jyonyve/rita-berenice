@@ -22,7 +22,6 @@ export const createPersonaResponseSchema = (
 			.string()
 			.describe(
 				`The character's response, narrated in the third person. It MUST be around 1000 characters long, more than 800 characters (including spaces). ` +
-					`Narrative actions or descriptions MUST be enclosed in asterisks (*). Spoken dialogue is plain text. ` +
 					`A line break (\\n) MUST be inserted when switching between narration and dialogue. ` +
 					`In Korean, these actions MUST end with '~다'. Refer to the user as '${userName}'. ` +
 					`Example: '${
@@ -50,20 +49,6 @@ export const createPersonaResponseSchema = (
  */
 export const createChatTurnMetadataSchema = (charEng: string, userEng: string) => {
 	// Helper to create reference schema based on available IDs
-	const createReferenceSchema = (ids: string[], itemType: string) => {
-		if (ids.length > 0) {
-			// State: IDs exist - enforce enum validation
-			return z.array(
-				z.object({ id: z.enum(ids as [string, ...string[]]), relevance: z.number().min(0.0).max(1.0) })
-			);
-		} else {
-			// State: No IDs - enforce empty array
-			return z
-				.array(z.any())
-				.max(0)
-				.describe(`No ${itemType} items are available to reference, so this must be an empty array.`);
-		}
-	};
 
 	return z.object({
 		summary: z

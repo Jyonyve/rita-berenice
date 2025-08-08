@@ -8,7 +8,11 @@ import {
 	buildStaticSystemPrompt,
 } from '../util/templateUtils.js';
 
-import { buildChatCompletion, parseLlmJsonResponse } from '../util/llmUtils.js';
+import {
+	buildChatCompletion,
+	parseLlmJsonResponse,
+	transformLLMResponse,
+} from '../util/llmUtils.js';
 import { MemoryResponse, PersonaResponse } from '#shared/api/ModuleResponse.js';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
@@ -17,6 +21,7 @@ import { AiModelInfo, DEFAULT_EXTRACTION_MODEL } from '#shared/domain/aimodel/Ai
 import { parseEntriesToText } from '#shared/util/parseUtils.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { createPersonaResponseSchema } from '../util/schemaUtils.js';
+import { logFlow } from '../util/jsonlLogger.js';
 
 export const personaEngine = {
 	/**
@@ -51,7 +56,6 @@ export const personaEngine = {
 			langCode,
 			options?.isScene
 		);
-
 		// 1b. Long-Term Memory Prompt (RAG Content)
 		// CORRECTION: Pass all necessary arguments for complete formatting.
 		const longTermMemoryContent = buildLongTermMemoryPrompt(recalledMemories, langCode);
@@ -76,8 +80,10 @@ export const personaEngine = {
 			buildChatCompletion('user', userInput, profileInfo.showName),
 		];
 
+		logFlow('personaEngine', 'generateResponse', { messages });
+
 		const personaSchema = createPersonaResponseSchema(charName, userName, langCode);
-		// console.log('[DEBUG] Final messages payload:', JSON.stringify(messages, null, 2));
+		logFlow('personaEngine', 'createPersonaResponseSchema', { personaSchema });
 
 		try {
 			// --- 3. LLM Service Call ---
@@ -88,6 +94,11 @@ export const personaEngine = {
 				options,
 				personaSchema
 			);
+
+			logFlow('personaEngine', 'rawLlmResponse', {
+				rawLlmResponse,
+				responseLength: rawLlmResponse.length,
+			});
 
 			return parseLlmJsonResponse<PersonaResponse>(
 				rawLlmResponse,
