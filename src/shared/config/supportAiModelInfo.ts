@@ -1,5 +1,5 @@
 // 1. Define the new 3-level structure for supporting AI info
-export const supportAiModelInfo: Record<string, Record<string, string[]>> = {
+export const SUPPORTED_MODEL_INFO: Record<string, Record<string, string[]>> = {
 	// local: { exaone: ['exaone-deep:2.4b'], google: ['gemma3:1b', 'gemma3:1b-Q6_K'] },
 	openrouter: {
 		anthropic: [
@@ -7,7 +7,7 @@ export const supportAiModelInfo: Record<string, Record<string, string[]>> = {
 			'anthropic/claude-3.7-sonnet',
 			'anthropic/claude-3.5-sonnet-20240620',
 		],
-		google: ['google/gemini-2.5-pro'],
+		google: ['google/gemini-2.5-pro', 'google/gemini-2.5-flash-lite'],
 		openai: ['openai/gpt-4o', 'openai/gpt-4.1', 'openai/gpt-5'],
 		deepseek: ['deepseek/deepseek-chat-v3-0324:free'],
 		mistralai: ['mistralai/mistral-small-3.2-24b-instruct:free'],
@@ -34,35 +34,84 @@ export const supportAiModelInfo: Record<string, Record<string, string[]>> = {
 	},
 } as const;
 
-export const MODEL_CONTEXT_WINDOWS: Record<string, number> = {
+export const MODEL_LIMITS_INFO: Record<
+	string,
+	{ contextWindow: number; maxOutputTokens: number; recommendedOutputTokens: number }
+> = {
 	// Anthropic Models (via OpenRouter)
-	'anthropic/claude-3.5-sonnet-20240620': 200_000,
-	'anthropic/claude-3-haiku-20240307': 200_000,
+	'anthropic/claude-3.5-sonnet-20240620': {
+		contextWindow: 200_000,
+		maxOutputTokens: 8_192,
+		recommendedOutputTokens: 4_096,
+	},
+	'anthropic/claude-3-haiku-20240307': {
+		contextWindow: 200_000,
+		maxOutputTokens: 4_096,
+		recommendedOutputTokens: 2_048,
+	},
 	// Aliases for user's config
-	'anthropic/claude-sonnet-4': 200_000,
-	'anthropic/claude-3.7-sonnet': 200_000,
-	'anthropic/claude-3.5-haiku': 200_000,
+	'anthropic/claude-sonnet-4': {
+		contextWindow: 200_000,
+		maxOutputTokens: 8_192,
+		recommendedOutputTokens: 4_096,
+	},
+	'anthropic/claude-3.7-sonnet': {
+		contextWindow: 200_000,
+		maxOutputTokens: 8_192,
+		recommendedOutputTokens: 4_096,
+	},
+	'anthropic/claude-3.5-haiku': {
+		contextWindow: 200_000,
+		maxOutputTokens: 4_096,
+		recommendedOutputTokens: 2_048,
+	},
 
 	// Google Models (via OpenRouter)
-	'google/gemini-2.5-pro': 1_048_576,
+	'google/gemini-2.5-pro': {
+		contextWindow: 1_048_576,
+		maxOutputTokens: 8_192,
+		recommendedOutputTokens: 4_096,
+	},
+	'google/gemini-2.5-flash-lite': {
+		contextWindow: 1_048_576,
+		maxOutputTokens: 8_192,
+		recommendedOutputTokens: 2_048,
+	},
 
 	// OpenAI Models (via OpenRouter)
-	'openai/gpt-4o': 128_000,
-	'openai/gpt-4.1': 1_047_576,
+	'openai/gpt-4o': {
+		contextWindow: 128_000,
+		maxOutputTokens: 16_384,
+		recommendedOutputTokens: 4_096,
+	},
+	'openai/gpt-4.1': {
+		contextWindow: 1_047_576,
+		maxOutputTokens: 16_384,
+		recommendedOutputTokens: 4_096,
+	},
+	'openai/gpt-5': {
+		contextWindow: 400_000,
+		maxOutputTokens: 16_384,
+		recommendedOutputTokens: 4_096,
+	},
+
 	// Other Models (via OpenRouter)
-	'deepseek/deepseek-chat-v3-0324:free': 32_000,
-	'mistralai/mistral-small-3.2-24b-instruct:free': 32_000,
+	'deepseek/deepseek-chat-v3-0324:free': {
+		contextWindow: 32_000,
+		maxOutputTokens: 4_096,
+		recommendedOutputTokens: 2_048,
+	},
+	'mistralai/mistral-small-3.2-24b-instruct:free': {
+		contextWindow: 32_000,
+		maxOutputTokens: 4_096,
+		recommendedOutputTokens: 2_048,
+	},
 };
 
 export const correctAiModelInfo: Record<string, Record<string, string[]>> = {
 	openrouter: {
 		anthropic: ['anthropic/claude-3.5-haiku'],
-		google: [
-			'google/gemma-3-4b-it:free',
-			'google/gemma-3-12b-it:free',
-			'google/gemma-3-4b-it',
-			'google/gemma-3-12b-it',
-		],
+		google: ['google/gemini-2.5-flash-lite'],
 		openai: ['openai/gpt-4o-mini'],
 		deepseek: ['deepseek/deepseek-chat-v3-0324:free'],
 		mistralai: ['mistralai/mistral-small-3.2-24b-instruct:free'],

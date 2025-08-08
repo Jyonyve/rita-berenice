@@ -20,7 +20,7 @@ import { getAiModelInfo, isValidAiModelInfo } from '#shared/util/aiModelUtils.js
 import {
 	AiModelInfo,
 	AllModelNames,
-	DEFAULT_CHAT_MODEL_FREE,
+	DEFAULT_EXTRACTION_MODEL,
 } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { useErrorDialog } from '../../util/styleUtils.jsx';
 
@@ -86,7 +86,7 @@ export const ChatPage: FC<{
 	const [pageError, setPageError] = useState<string>();
 	const [userEditInput, setUserEditInput] = useState('');
 	const [botEditInput, setBotEditInput] = useState('');
-	const [aiModelInfo, setAiModelInfo] = useState<AiModelInfo>(DEFAULT_CHAT_MODEL_FREE);
+	const [aiModelInfo, setAiModelInfo] = useState<AiModelInfo>(DEFAULT_EXTRACTION_MODEL);
 	const [focusedTurnIndex, setFocusedTurnIndex] = useState(-1);
 	const [isScene, setIsScene] = useState(false);
 

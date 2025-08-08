@@ -4,7 +4,11 @@ import { z } from 'zod';
 import { Where } from 'chromadb';
 import { llmService } from './llmService.js';
 import { correctAiModelInfo } from '#shared/config/supportAiModelInfo.js';
-import { AiModelInfo, DefaultAiRole } from '#shared/domain/aimodel/AiInfoTypes.js';
+import {
+	AiModelInfo,
+	DEFAULT_EXTRACTION_MODEL,
+	DefaultAiRole,
+} from '#shared/domain/aimodel/AiInfoTypes.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { RagFilterSchema } from '../util/schemaUtils.js';
 import { buildChatCompletion } from '../util/llmUtils.js';
@@ -35,28 +39,23 @@ export const ragQueryService = {
 	 */
 	async transformQuery(
 		userInput: string,
-		originalAiModelInfo: AiModelInfo,
 		userId: string,
 		langCode: 'kor' | 'eng' = 'kor'
 	): Promise<TransformedQuery> {
 		console.log('[ragQueryService] Transforming user query for enhanced retrieval...');
 
 		// --- Use the same logic as personaEngine to select a fast, cheap model ---
-		const cheapModelName =
-			correctAiModelInfo[originalAiModelInfo.platform][originalAiModelInfo.provider][0];
-		const transformationModelInfo: AiModelInfo = {
-			...originalAiModelInfo,
-			model: cheapModelName,
-			maxTokens: 800, // Query transformation should be short and fast
-		};
 
 		try {
 			// --- Run expansion and extraction in parallel for efficiency ---
 			const [expandedQueries, extractedData] = await Promise.all([
-				ragQueryService._expandQuery(userInput, transformationModelInfo, userId, langCode),
+				ragQueryService._expandQuery(userInput, DEFAULT_EXTRACTION_MODEL, userId, langCode),
 				// --- Step 2b: Rename this function for clarity ---
-				ragQueryService._extractStructuredData(userInput, transformationModelInfo, userId, langCode),
+				ragQueryService._extractStructuredData(userInput, DEFAULT_EXTRACTION_MODEL, userId, langCode),
 			]);
+
+			console.log(`[ragQueryService] expandedQueries : ${expandedQueries}`);
+			console.log(`[ragQueryService] extractedData : ${extractedData}`);
 
 			// --- Step 2c: Process the full output from the LLM ---
 			const metadataFilter = ragQueryService._buildChromaWhereClause(extractedData);
@@ -68,7 +67,10 @@ export const ragQueryService = {
 				criticalTerm, // Include the critical term in the final object
 			};
 
-			console.log('[ragQueryService] Query transformed successfully:', finalQuery);
+			console.log(`[ragQueryService] metadataFilter : ${metadataFilter}`);
+			console.log(`[ragQueryService] criticalTerm : ${criticalTerm}`);
+
+			console.log('[ragQueryService] Query transformed successfully');
 			return finalQuery;
 		} catch (error) {
 			console.error(error, 'Query transformation failed. Falling back to raw query.');
@@ -123,6 +125,7 @@ export const ragQueryService = {
 			RagFilterSchema
 		);
 
+		console.log;
 		return JSON.parse(response) as RagFilterData;
 	},
 

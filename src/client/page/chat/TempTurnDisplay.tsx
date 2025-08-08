@@ -73,7 +73,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 	const handleNextSet = () => changeTempSetNo(currentTempSetNo + 1);
 
 	const isUserTextOverflow = userEditInput.length > REQUEST_CHARACTER_LIMIT;
-	const isBotTextOverflow = botEditInput.length > RESPONSE_CHARACTER_LIMIT;
+	// const isBotTextOverflow = botEditInput.length > RESPONSE_CHARACTER_LIMIT;
 
 	return (
 		<Box
@@ -198,11 +198,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 							size="small"
 							onClick={handleSaveAndExitEdit}
 							disabled={
-								isProcessing ||
-								!userEditInput.trim() ||
-								!botEditInput.trim() ||
-								isUserTextOverflow ||
-								isBotTextOverflow
+								isProcessing || !userEditInput.trim() || !botEditInput.trim() || isUserTextOverflow
 							}
 							title="Save Changes"
 							color="secondary"

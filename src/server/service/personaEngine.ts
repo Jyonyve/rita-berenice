@@ -13,10 +13,9 @@ import { MemoryResponse, PersonaResponse } from '#shared/api/ModuleResponse.js';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { llmService } from './llmService.js';
-import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';
+import { AiModelInfo, DEFAULT_EXTRACTION_MODEL } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { parseEntriesToText } from '#shared/util/parseUtils.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
-import { correctAiModelInfo } from '#shared/config/supportAiModelInfo.js';
 import { createPersonaResponseSchema } from '../util/schemaUtils.js';
 
 export const personaEngine = {
@@ -108,15 +107,7 @@ export const personaEngine = {
 
 				// --- 3. Second Attempt: Corrective LLM Call ---
 				try {
-					const correctionModelName = correctAiModelInfo[aiModelInfo.platform][aiModelInfo.provider][0];
-
-					const correctionAiModelInfo: AiModelInfo = {
-						...aiModelInfo, // Inherit platform, temp, etc.
-						model: correctionModelName,
-						maxTokens: 1000, // Correction should be short
-					};
-
-					console.log(`[personaEngine] Invoking correction model: ${correctionModelName}`);
+					console.log(`[personaEngine] Invoking correction model: ${DEFAULT_EXTRACTION_MODEL}`);
 
 					const requiredSchema = '{"response": "string", "emotion": "string"}';
 					const correctionPrompt = buildJsonCorrectionPrompt(
@@ -135,7 +126,7 @@ export const personaEngine = {
 
 					const correctedLlmResponse = await llmService.invokeLlm(
 						correctionMessages,
-						correctionAiModelInfo,
+						DEFAULT_EXTRACTION_MODEL,
 						profileInfo.userId,
 						options
 					);

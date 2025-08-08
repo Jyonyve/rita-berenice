@@ -21,7 +21,7 @@ import { detectLanguage } from '../util/languageUtils.js';
 import { handleServiceError } from '../util/serviceHelpers.js';
 import { mapLoreContexts, reRankByRecency, mapHistoryContexts } from '../util/llmUtils.js';
 import { llmService } from './llmService.js';
-import { AiModelInfo, DEFAULT_CHAT_MODEL_FREE } from '#shared/domain/aimodel/AiInfoTypes.js';
+import { AiModelInfo, DEFAULT_EXTRACTION_MODEL } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { ragQueryService } from './ragQueryService.js';
 import { WhereDocument } from 'chromadb';
 import { createChatTurnMetadataSchema } from '#server/util/schemaUtils.js';
@@ -99,12 +99,7 @@ export const memoryEngine = {
 		const langCode = detectLanguage(userInput);
 
 		try {
-			const transformedQuery = await ragQueryService.transformQuery(
-				userInput,
-				aiModelInfo,
-				userId,
-				langCode
-			);
+			const transformedQuery = await ragQueryService.transformQuery(userInput, userId, langCode);
 
 			let documentFilter: WhereDocument | undefined = undefined;
 			const quotedTextMatch = userInput.match(/"(.*?)"/);
@@ -241,7 +236,7 @@ export const memoryEngine = {
 
 			const enrichment = await llmService.invokeLlm(
 				messages,
-				DEFAULT_CHAT_MODEL_FREE,
+				DEFAULT_EXTRACTION_MODEL,
 				userId,
 				{},
 				zodSchema

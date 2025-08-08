@@ -11,17 +11,8 @@ import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { BaseMessage, SystemMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
 
 import { credentialStore } from '../store/credentialStore.js';
-import {
-	AiModelInfo,
-	DEFAULT_CHAT_MODEL_FREE,
-	DEFAULT_MODEL_GOOGLEAI,
-} from '#shared/domain/aimodel/AiInfoTypes.js';
-import { MODEL_CONTEXT_WINDOWS } from '#shared/config/supportAiModelInfo.js';
-import { ChatRoleType } from '#shared/domain/chat/ChatInterfaces.js';
-import {
-	isDirectOpenAIClient,
-	parseLlmJsonResponse, // Assuming this is your preferred robust parser from llmUtils.js
-} from '../util/llmUtils.js';
+import { AiModelInfo, DEFAULT_EXTRACTION_MODEL } from '#shared/domain/aimodel/AiInfoTypes.js';
+import { MODEL_LIMITS_INFO } from '#shared/config/supportAiModelInfo.js';
 import { convertMessageContentToString } from '#shared/util/parseUtils.js';
 import { buildNerPrompt, buildTermTranslationPrompt } from '../util/templateUtils.js';
 import z from 'zod';
@@ -142,7 +133,7 @@ export const llmService = {
 		aiInfo: AiModelInfo
 	): Promise<void> => {
 		const { model } = aiInfo;
-		const maxTokens = MODEL_CONTEXT_WINDOWS[model];
+		const maxTokens = MODEL_LIMITS_INFO[model].maxOutputTokens;
 		if (!maxTokens) {
 			console.warn(
 				`[llmService.validateTokenCount] No context window size defined for ${model}. Skipping.`
@@ -231,7 +222,7 @@ export const llmService = {
 	 * Translates a proper noun using the default free chat model.
 	 */
 	translateProperNoun: async (koreanTerm: string, userId: string): Promise<string> => {
-		const aiModelInfo = DEFAULT_CHAT_MODEL_FREE;
+		const aiModelInfo = DEFAULT_EXTRACTION_MODEL;
 		const prompt = buildTermTranslationPrompt(koreanTerm);
 
 		// MODIFIED: 'invokeLlm'에 맞게 messages 배열을 생성하여 전달합니다.
@@ -246,7 +237,7 @@ export const llmService = {
 	 * Extracts proper nouns from text using the default Google AI model.
 	 */
 	extractProperNouns: async (textToAnalyze: string, userId: string): Promise<string[]> => {
-		const aiModelInfo = DEFAULT_MODEL_GOOGLEAI;
+		const aiModelInfo = DEFAULT_EXTRACTION_MODEL;
 		const prompt = buildNerPrompt(textToAnalyze);
 
 		// MODIFIED: 'invokeLlm'에 맞게 messages 배열을 생성하여 전달합니다.
