@@ -54,13 +54,17 @@ export const UserInput: FC<UserInputProps> = ({
 			onSend();
 		}
 	};
-	// Function to handle Enter key press for sending the message
+
 	const handleKeyDown = (event: React.KeyboardEvent) => {
-		if (event.key === 'Enter' && !event.shiftKey) {
-			event.preventDefault(); // Prevents adding a new line
-			if (!isDisabled && value.trim()) {
-				handleSend();
+		if (event.key === 'Enter') {
+			if (event.ctrlKey || event.metaKey) {
+				// Ctrl+Enter (Windows/Linux) or Cmd+Enter (Mac) sends message
+				event.preventDefault();
+				if (!isDisabled && value.trim()) {
+					handleSend();
+				}
 			}
+			// else: Allow default behavior (Enter adds new line)
 		}
 	};
 
@@ -118,7 +122,7 @@ export const UserInput: FC<UserInputProps> = ({
 					onClick={handleSend}
 					disabled={isDisabled || !value.trim()}
 				>
-					{isProcessing ? <GlassCircularProgress colorVariant="silver" /> : 'Send'}
+					{isProcessing ? <GlassCircularProgress size={12} colorVariant="silver" /> : 'Send'}
 				</GlassButton>
 			</Box>
 		</Box>
