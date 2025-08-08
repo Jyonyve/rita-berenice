@@ -957,6 +957,33 @@ ${requiredSchema}
 `.trim();
 };
 
+export const buildFilterCriteriaPrompt = (
+	userInput: string,
+	termGuidanceMap: Map<string, string>
+): string => {
+	let termGuidanceInstruction = '';
+	if (termGuidanceMap.size > 0) {
+		const rulesList = Array.from(termGuidanceMap.entries())
+			.map(
+				([korean, english]) =>
+					`  - For the Korean term "${korean}", you MUST use the English term: "${english}"`
+			)
+			.join('\n');
+
+		termGuidanceInstruction = `
+**Terminology Guidance (CRITICAL):**
+You MUST adhere to the following terminology rules when generating English metadata.
+${rulesList}
+`;
+	}
+
+	const prompt = `You are an expert data analyst. Analyze the following Korean user query and extract key information into a structured JSON object. ALL string values in the JSON output MUST be in English.
+${termGuidanceInstruction}
+**User Query:** "${userInput}"`;
+
+	return prompt;
+};
+
 export const enhanceNarrativePrompt = (userName: string, langCode: LangCode = 'kor') => {
 	return langCode === 'kor'
 		? `[서사 스타일 지시문]

@@ -122,7 +122,7 @@ export const UserInput: FC<UserInputProps> = ({
 					onClick={handleSend}
 					disabled={isDisabled || !value.trim()}
 				>
-					{isProcessing ? <GlassCircularProgress size={12} colorVariant="silver" /> : 'Send'}
+					{isProcessing ? <GlassCircularProgress size={22} colorVariant="silver" /> : 'Send'}
 				</GlassButton>
 			</Box>
 		</Box>

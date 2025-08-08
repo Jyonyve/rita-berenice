@@ -5,6 +5,8 @@ import { DefaultAiRole } from '#shared/domain/aimodel/index.js';
 import { HistoryContext, HistoryInfo, LoreContext, LoreInfo } from '#shared/domain/lore/index.js';
 import { LlmResponseParseError } from '#shared/domain/error/errors.js';
 import { logFlow } from './jsonlLogger.js';
+import { ChatEntry } from '#shared/domain/chat/ChatInterfaces.js';
+import { parseEntriesToText } from '#shared/util/parseUtils.js';
 
 export function isDirectOpenAIClient(llm: any): llm is OpenAI {
 	// Check for a unique property or method of the OpenAI client instance
@@ -71,50 +73,74 @@ export const parseLlmJsonResponse = <T>(
 	}
 };
 
-// src/shared/util/textTransform.ts
-
 /**
- * Transforms LLM response text by wrapping paragraphs with asterisks
- * and removing double quotes from dialogues
- * @param text - Raw text from LLM response
- * @returns Formatted text with wrapped paragraphs and no quotes
+ * Sanitizes and parses raw LLM response text into an array of structured ChatEntry objects.
+ * - It distinguishes between narration (action) and dialogue.
+ * - Consecutive lines of the same type are grouped into a single entry.
+ *
+ * @param text The raw string response from the LLM.
+ * @returns An array of ChatEntry objects.
  */
-
-/**
- * Transforms LLM response text by:
- * 1. Wrapping all paragraphs with asterisks
- * 2. Removing double quotes from dialogues
- * 3. Cleaning up malformed asterisk-quote combinations (*" and *")
- */
-export const transformLLMResponse = (text: string): string => {
-	logFlow('TextTransform', 'Starting text transformation', {
+export const sanitizeLlmResponse = (text: string): string => {
+	logFlow('TextTransform', 'Starting text parsing to ChatEntry[]', {
 		inputLength: text.length,
 		preview: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
 	});
 
-	// Step 1: Split text into paragraphs (separated by double newlines)
-	const paragraphs = text
-		.split('\n\n')
-		.map((p) => p.trim())
-		.filter((p) => p.length > 0);
-	// Step 2: Wrap each paragraph with asterisks
-	const wrappedParagraphs = paragraphs.map((para) => `*${para}*`);
+	if (!text || text.trim() === '') {
+		return '';
+	}
 
-	// Step 3: Join back with double newlines
-	let result = wrappedParagraphs.join('\n\n');
+	// Step 1: Split text into individual lines, trimming and removing empty lines.
+	const lines = text
+		.split('\n')
+		.map((line) => line.trim())
+		.filter((line) => line.length > 0);
 
-	// Step 4: Clean up malformed asterisk-quote combinations
-	// Remove *" and *" patterns that might have been created
-	result = result.replace(/\*"/g, ''); // Remove *"
-	result = result.replace(/"\*/g, '\n'); // Remove "*
-
-	logFlow('TextTransform', 'Text transformation completed', {
-		inputLength: text.length,
-		outputLength: result.length,
-		result,
+	// Step 2: Classify each line as 'dialogue' or 'action'.
+	const classifiedLines: ChatEntry[] = lines.map((line) => {
+		// Heuristic: A line is dialogue if it starts with a quote or common dialogue markers.
+		const isDialogue = line.startsWith('"');
+		// Clean the line by removing surrounding quotes for a clean prompt.
+		const prompt = isDialogue ? line.replace(/^"|"$/g, '').trim() : line;
+		const type = isDialogue ? 'dialogue' : 'action';
+		return { type, prompt };
 	});
 
-	return result;
+	// Step 3: Group consecutive lines of the same type into blocks.
+	if (classifiedLines.length === 0) {
+		return '';
+	}
+
+	const groupedBlocks: ChatEntry[] = [];
+	let currentBlock = { ...classifiedLines[0] };
+
+	for (let i = 1; i < classifiedLines.length; i++) {
+		const line = classifiedLines[i];
+		if (line.type === currentBlock.type) {
+			// If the line type is the same, append its content to the current block.
+			currentBlock.prompt += `\n${line.prompt}`;
+		} else {
+			// If the type changes, push the completed block and start a new one.
+			groupedBlocks.push(currentBlock);
+			currentBlock = { ...line };
+		}
+	}
+	// Add the last remaining block to the array.
+	groupedBlocks.push(currentBlock);
+
+	// Step 4: Convert each block into a ChatEntry object.
+	const chatEntries: ChatEntry[] = groupedBlocks.map((block) => ({
+		type: block.type,
+		prompt: block.prompt,
+	}));
+
+	logFlow('TextTransform', 'Text parsing completed', {
+		outputEntryCount: chatEntries.length,
+		result: chatEntries,
+	});
+
+	return parseEntriesToText(chatEntries);
 };
 
 /**

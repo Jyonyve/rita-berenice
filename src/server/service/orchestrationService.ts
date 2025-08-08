@@ -23,7 +23,7 @@ import { MemoryResponse, PersonaResponse } from '#shared/api/ModuleResponse.js';
 import { detectLanguage } from '../util/languageUtils.js';
 import { createBasicChatTurn } from '#shared/util/typeGuardUtils.js';
 import { ApiError } from '#shared/domain/error/errors.js';
-import { transformLLMResponse } from '../util/llmUtils.js';
+import { sanitizeLlmResponse as sanitizeLlmResponse } from '../util/llmUtils.js';
 
 const timerLabel = (sequence: number) => `RESPONSE_GENERATION: Turn ${sequence}`;
 
@@ -232,7 +232,7 @@ async function _generateAndAppendResponse(
 	);
 	console.timeLog(timerLabel(tempTurn.sequence), 'llm generate response finishing.');
 
-	const sanitizedResponse = transformLLMResponse(personaResponse.response);
+	const sanitizedResponse = sanitizeLlmResponse(personaResponse.response);
 	// 3. Create the new bot response message.
 	const request = buildChatMessage(
 		'user',

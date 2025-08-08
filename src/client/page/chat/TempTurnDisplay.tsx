@@ -214,7 +214,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 									size="small"
 									title="Previous Response"
 									onClick={handlePrevSet}
-									disabled={currentTempSetNo === 0 || isProcessing}
+									disabled={currentTempSetNo === 0}
 								>
 									<NavigateBeforeIcon sx={{ fontSize: '14px' }} />
 								</IconButton>
@@ -234,7 +234,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 									size="small"
 									title="Next Response"
 									onClick={handleNextSet}
-									disabled={currentTempSetNo === tempTurn.chatTurnSets.length - 1 || isProcessing}
+									disabled={currentTempSetNo === tempTurn.chatTurnSets.length - 1}
 								>
 									<NavigateNextIcon sx={{ fontSize: '14px' }} />
 								</IconButton>

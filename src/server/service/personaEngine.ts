@@ -11,7 +11,7 @@ import {
 import {
 	buildChatCompletion,
 	parseLlmJsonResponse,
-	transformLLMResponse,
+	sanitizeLlmResponse,
 } from '../util/llmUtils.js';
 import { MemoryResponse, PersonaResponse } from '#shared/api/ModuleResponse.js';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';

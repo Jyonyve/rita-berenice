@@ -20,6 +20,26 @@ import { logFlow } from '../util/jsonlLogger.js';
 
 // --- 저수준 유틸리티 함수 ---
 // 이 함수들은 데이터의 '내용'을 변경하지 않고, '형식'을 보장하는 역할만 합니다.
+const _extractJsonFromString = (text: string): string | null => {
+	if (!text) return null;
+
+	// Most reliable: find JSON within `````` markdown block
+	let match = text.match(/``````/);
+	if (match) return match[1];
+
+	// Next best: find any JSON object
+	match = text.match(/\{[\s\S]*\}/);
+	if (match) {
+		try {
+			// Verify it's valid JSON before returning
+			JSON.parse(match[0]);
+			return match[0];
+		} catch {
+			// It might be an incomplete object, so we continue
+		}
+	}
+	return null;
+};
 
 const normalizeMessageContent = (content: unknown): string => {
 	if (!content) return '';
@@ -178,7 +198,7 @@ export const llmService = {
 		aiModelInfo: AiModelInfo,
 		userId: string,
 		options?: { signal?: AbortSignal },
-		zodSchema?: z.ZodObject<any> // The optional schema parameter
+		zodSchema?: z.ZodObject<any>
 	): Promise<string> => {
 		try {
 			await llmService.validateTokenCount(messages, aiModelInfo);
@@ -188,39 +208,60 @@ export const llmService = {
 
 			logFlow('llmService', 'invokeLlm', { langChainMessages });
 
-			// --- This is the core logic for flexible output ---
 			if (zodSchema) {
-				// If a schema is provided, use structured output.
 				console.log(`[llmService] Invoking model with structured output (Zod schema)`);
-				const structuredLlm = llmClient.withStructuredOutput(zodSchema);
-
-				const structuredOutput = await structuredLlm.invoke(langChainMessages, {
-					signal: options?.signal,
+				const structuredLlm = llmClient.withStructuredOutput(zodSchema, {
+					name: 'json_output_tool', // Use a generic tool name
 				});
 
-				logFlow('llmService', 'invokeLlm', { structuredOutput });
+				try {
+					// --- ATTEMPT 1: Ideal case, direct structured invocation ---
+					const structuredOutput = await structuredLlm.invoke(langChainMessages, {
+						signal: options?.signal,
+					});
+					logFlow('llmService', 'invokeLlm.success', { structuredOutput });
+					return JSON.stringify(structuredOutput);
+				} catch (error: any) {
+					// --- ATTEMPT 2: Fallback, clean the raw output from the error ---
+					console.warn(
+						`[llmService] Initial structured output failed. Attempting to clean the response. Error: ${error.message}`
+					);
 
-				// The output is a guaranteed-to-be-valid JavaScript object.
-				return JSON.stringify(structuredOutput);
+					// The full, messy response is often in the error message
+					const rawOutput = error.message;
+					logFlow('llmService', 'invokeLlm.error', { rawOutput });
+					const cleanedJson = _extractJsonFromString(rawOutput);
+
+					if (cleanedJson) {
+						try {
+							// Final check: ensure the cleaned JSON matches the schema
+							zodSchema.parse(JSON.parse(cleanedJson));
+							console.log('[llmService] Successfully extracted and validated JSON from raw output.');
+							return cleanedJson;
+						} catch (validationError: any) {
+							console.error('[llmService] Extracted JSON failed Zod validation.', validationError.errors);
+							// If validation fails, we throw the more informative validation error
+							throw validationError;
+						}
+					}
+
+					// If we reach here, cleaning failed. Re-throw the original error.
+					throw error;
+				}
 			} else {
-				// If no schema is provided, perform a standard text invocation.
+				// Standard text invocation logic (unchanged)
 				console.log(`[llmService] Invoking model with standard text output`);
 				const responseMessage = await llmClient.invoke(langChainMessages, { signal: options?.signal });
-
 				logFlow('llmService', 'invokeLlm', { responseMessage });
-
 				return convertMessageContentToString(responseMessage.content);
 			}
 		} catch (error: any) {
-			if (error?.name === 'LlmResponseParseError') {
-				throw error;
-			}
-			// For all other unexpected errors, log them and wrap them in a generic Error.
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			console.error(
-				`[llmService.invokeLlm] A non-parsing error occurred for '${aiModelInfo.model}':`,
+				`[llmService.invokeLlm] A non-recoverable error occurred for '${aiModelInfo.model}':`,
 				errorMessage
 			);
+			// Wrap in a clear, final error message
 			throw new Error(`[llmService] LLM invocation failed: ${errorMessage}`);
 		}
 	},

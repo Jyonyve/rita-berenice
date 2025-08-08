@@ -23,12 +23,7 @@ export const createPersonaResponseSchema = (
 			.describe(
 				`The character's response, narrated in the third person. It MUST be around 1000 characters long, more than 800 characters (including spaces). ` +
 					`A line break (\\n) MUST be inserted when switching between narration and dialogue. ` +
-					`In Korean, these actions MUST end with '~다'. Refer to the user as '${userName}'. ` +
-					`Example: '${
-						langCode === 'kor'
-							? `${charName}이 바닥에 앉는다.\n"오늘 하루 길었네."\n그는 ${userName}을(를) 본다.`
-							: `${charName} sits on the floor.\n"A long day today."\nHe sees ${userName}.`
-					}'`
+					`In Korean, these actions MUST end with '~다'. Refer to the user as '${userName}'. `
 			),
 		emotion: z
 			.enum(emotionList)
