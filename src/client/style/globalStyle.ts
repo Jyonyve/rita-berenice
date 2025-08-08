@@ -45,6 +45,7 @@ export const getTheme = (mode: 'light' | 'dark') =>
 						// Apply padding here. This creates the permanent 16px gap that
 						// will always be visible around the scrolling .paper.
 						padding: theme.spacing(2),
+						[theme.breakpoints.down('md')]: { padding: 0 },
 
 						// Hide the scrollbar visuals on the main element itself
 						'&::-webkit-scrollbar': { display: 'none' },

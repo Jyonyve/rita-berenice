@@ -8,16 +8,20 @@ import {
 	buildStaticSystemPrompt,
 } from '../util/templateUtils.js';
 
-import { buildChatCompletion, parseLlmJsonResponse } from '../util/llmUtils.js';
+import {
+	buildChatCompletion,
+	parseLlmJsonResponse,
+	sanitizeLlmResponse,
+} from '../util/llmUtils.js';
 import { MemoryResponse, PersonaResponse } from '#shared/api/ModuleResponse.js';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { llmService } from './llmService.js';
-import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';
+import { AiModelInfo, DEFAULT_EXTRACTION_MODEL } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { parseEntriesToText } from '#shared/util/parseUtils.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
-import { correctAiModelInfo } from '#shared/config/supportAiModelInfo.js';
 import { createPersonaResponseSchema } from '../util/schemaUtils.js';
+import { logFlow } from '../util/jsonlLogger.js';
 
 export const personaEngine = {
 	/**
@@ -52,7 +56,6 @@ export const personaEngine = {
 			langCode,
 			options?.isScene
 		);
-
 		// 1b. Long-Term Memory Prompt (RAG Content)
 		// CORRECTION: Pass all necessary arguments for complete formatting.
 		const longTermMemoryContent = buildLongTermMemoryPrompt(recalledMemories, langCode);
@@ -77,8 +80,10 @@ export const personaEngine = {
 			buildChatCompletion('user', userInput, profileInfo.showName),
 		];
 
+		logFlow('personaEngine', 'generateResponse', { messages });
+
 		const personaSchema = createPersonaResponseSchema(charName, userName, langCode);
-		// console.log('[DEBUG] Final messages payload:', JSON.stringify(messages, null, 2));
+		logFlow('personaEngine', 'createPersonaResponseSchema', { personaSchema });
 
 		try {
 			// --- 3. LLM Service Call ---
@@ -89,6 +94,11 @@ export const personaEngine = {
 				options,
 				personaSchema
 			);
+
+			logFlow('personaEngine', 'rawLlmResponse', {
+				rawLlmResponse,
+				responseLength: rawLlmResponse.length,
+			});
 
 			return parseLlmJsonResponse<PersonaResponse>(
 				rawLlmResponse,
@@ -108,15 +118,7 @@ export const personaEngine = {
 
 				// --- 3. Second Attempt: Corrective LLM Call ---
 				try {
-					const correctionModelName = correctAiModelInfo[aiModelInfo.platform][aiModelInfo.provider][0];
-
-					const correctionAiModelInfo: AiModelInfo = {
-						...aiModelInfo, // Inherit platform, temp, etc.
-						model: correctionModelName,
-						maxTokens: 1000, // Correction should be short
-					};
-
-					console.log(`[personaEngine] Invoking correction model: ${correctionModelName}`);
+					console.log(`[personaEngine] Invoking correction model: ${DEFAULT_EXTRACTION_MODEL}`);
 
 					const requiredSchema = '{"response": "string", "emotion": "string"}';
 					const correctionPrompt = buildJsonCorrectionPrompt(
@@ -135,7 +137,7 @@ export const personaEngine = {
 
 					const correctedLlmResponse = await llmService.invokeLlm(
 						correctionMessages,
-						correctionAiModelInfo,
+						DEFAULT_EXTRACTION_MODEL,
 						profileInfo.userId,
 						options
 					);

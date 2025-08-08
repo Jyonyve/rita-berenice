@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,12 +16,11 @@ const allBuiltinModules = [...new Set([...builtinModules, ...nodeBuiltinModules]
 
 export default defineConfig(({ mode }) => {
 	const isStaticBuild = mode === 'static';
-
+	const env = loadEnv(mode, process.cwd(), '');
 	return {
 		root: '.',
 		base: isStaticBuild ? '/rita-berenice/' : '/',
 		cacheDir: '.vite_cache',
-		define: { 'process.env.APP_ENV': JSON.stringify(process.env.APP_ENV) },
 
 		// SSR specific options - This section is CORRECT and remains unchanged.
 		ssr: {
@@ -47,38 +46,102 @@ export default defineConfig(({ mode }) => {
 			tsconfigPaths(),
 			svgr(),
 		],
+		define: {
+			'import.meta.env.VITE_API_DOMAIN': JSON.stringify(
+				env.VITE_API_DOMAIN || 'http://localhost:3000'
+			),
+		},
 
+		// Fix server configuration to match your server.ts
+		server: {
+			host: '0.0.0.0', // Match your server.ts host setting
+			port: 3000,
+			strictPort: true,
+			// Add performance optimizations
+			hmr: {
+				port: 3001, // Use separate port for HMR
+			},
+			// Optimize middleware mode for SSR
+			middlewareMode: false,
+		},
+
+		// Keep preview config as is
+		preview: { host: '0.0.0.0', port: 3000, strictPort: true },
 		build: {
 			target: 'es2022',
-			chunkSizeWarningLimit: 1000,
+			chunkSizeWarningLimit: 1500, // Increase limit
 			rollupOptions: {
 				input: { main: './index.html', server: './src/entry-server.tsx' },
-				// THIS IS THE CRITICAL CHANGE:
-				// We remove the server-specific externals from this general build section.
-				// The `ssr.external` option already handles the server build correctly.
-				// This allows the polyfill plugin to work on the client build.
 				external: [
-					'ollama', // Keep other server-only externals here if needed
+					'ollama',
 					'fsevents',
+					'chromadb', // Add this for server build optimization
 				],
 				output: {
+					// Optimize chunk splitting for better performance
 					manualChunks(id) {
-						if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/'))
+						// React ecosystem
+						if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
 							return 'react-vendor';
-						if (id.includes('node_modules/@mui/') || id.includes('node_modules/@emotion/'))
+						}
+
+						// MUI and Emotion (large bundle)
+						if (id.includes('node_modules/@mui/') || id.includes('node_modules/@emotion/')) {
 							return 'mui-vendor';
-						if (id.includes('node_modules/onnxruntime-web')) return 'transformers';
-						if (id.includes('@langchain/')) return 'langchain';
+						}
+
+						// SuperTokens (separate chunk)
+						if (id.includes('supertokens')) {
+							return 'auth-vendor';
+						}
+
+						// AI/ML libraries
+						if (id.includes('onnxruntime') || id.includes('transformers')) {
+							return 'ai-vendor';
+						}
+
+						// LangChain
+						if (id.includes('@langchain/') || id.includes('langchain')) {
+							return 'langchain-vendor';
+						}
+
+						// Other large vendor libraries
+						if (id.includes('node_modules/')) {
+							return 'vendor';
+						}
+					},
+					// Add chunk optimization
+					chunkFileNames: (chunkInfo) => {
+						const facadeModuleId = chunkInfo.facadeModuleId
+							? chunkInfo.facadeModuleId.split('/').pop()
+							: 'chunk';
+						return `js/${facadeModuleId}-[hash].js`;
 					},
 				},
 			},
-			sourcemap: true,
+			sourcemap: process.env.NODE_ENV === 'development', // Only in dev
+			minify: 'esbuild', // Faster than terser
+			// Add build performance options
+			reportCompressedSize: false, // Skip gzip size calculation
+			write: true,
 		},
 
 		// optimizeDeps and esbuild remain the same
 		optimizeDeps: {
-			include: ['@emotion/react', '@emotion/styled', '@emotion/cache'],
-			exclude: [CHROMADB, 'ollama', 'whatwg-fetch'],
+			include: [
+				'@emotion/react',
+				'@emotion/styled',
+				'@emotion/cache',
+				'@mui/material',
+				'@mui/system',
+				'@mui/icons-material',
+				'react',
+				'react-dom',
+				'react-router',
+			],
+			exclude: ['chromadb', 'ollama', 'whatwg-fetch', 'fsevents'],
+			// Force optimize these deps
+			force: true,
 		},
 		esbuild: {
 			logOverride: { 'this-is-undefined-in-esm': 'silent', 'commonjs-variable-in-esm': 'silent' },

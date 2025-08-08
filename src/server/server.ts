@@ -86,17 +86,38 @@ async function createServer() {
 	let vite: ViteDevServer | undefined;
 	if (!isProduction) {
 		vite = await createViteServer({
-			server: { middlewareMode: true },
+			server: {
+				middlewareMode: true,
+				// Add performance optimizations
+				hmr: { port: 3001 },
+			},
 			appType: 'custom',
 			base: BASE,
-			root: path.resolve(__dirname, '../..'), // root .
+			root: path.resolve(__dirname, '../..'),
+			// Add SSR optimizations
+			optimizeDeps: {
+				// Pre-bundle during server start for SSR
+				force: true,
+			},
+			ssr: {
+				// Optimize SSR deps
+				noExternal: ['@mui/material', '@mui/system', '@emotion/react', '@emotion/styled'],
+			},
 		});
+
 		app.use(vite.middlewares);
 		console.log('Vite development server middleware attached.');
 	} else {
-		// --- Production Static Asset Serving ---
-		console.log(`Serving static files from ${resolve('dist/client')}`);
-		app.use(BASE, sirv(resolve('dist/client'), { dev: false, immutable: true, maxAge: 31536000 }));
+		// Production optimizations
+		const serveOptions = {
+			dev: false,
+			immutable: true,
+			maxAge: 31536000,
+			// Add compression
+			gzip: true,
+			brotli: true,
+		};
+		app.use(BASE, sirv(resolve('dist/client'), serveOptions));
 	}
 
 	// --- API Routes ---

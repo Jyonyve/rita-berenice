@@ -11,23 +11,35 @@ import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { BaseMessage, SystemMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
 
 import { credentialStore } from '../store/credentialStore.js';
-import {
-	AiModelInfo,
-	DEFAULT_CHAT_MODEL_FREE,
-	DEFAULT_MODEL_GOOGLEAI,
-} from '#shared/domain/aimodel/AiInfoTypes.js';
-import { MODEL_CONTEXT_WINDOWS } from '#shared/config/supportAiModelInfo.js';
-import { ChatRoleType } from '#shared/domain/chat/ChatInterfaces.js';
-import {
-	isDirectOpenAIClient,
-	parseLlmJsonResponse, // Assuming this is your preferred robust parser from llmUtils.js
-} from '../util/llmUtils.js';
+import { AiModelInfo, DEFAULT_EXTRACTION_MODEL } from '#shared/domain/aimodel/AiInfoTypes.js';
+import { MODEL_LIMITS_INFO } from '#shared/config/supportAiModelInfo.js';
 import { convertMessageContentToString } from '#shared/util/parseUtils.js';
 import { buildNerPrompt, buildTermTranslationPrompt } from '../util/templateUtils.js';
 import z from 'zod';
+import { logFlow } from '../util/jsonlLogger.js';
 
 // --- 저수준 유틸리티 함수 ---
 // 이 함수들은 데이터의 '내용'을 변경하지 않고, '형식'을 보장하는 역할만 합니다.
+const _extractJsonFromString = (text: string): string | null => {
+	if (!text) return null;
+
+	// Most reliable: find JSON within `````` markdown block
+	let match = text.match(/``````/);
+	if (match) return match[1];
+
+	// Next best: find any JSON object
+	match = text.match(/\{[\s\S]*\}/);
+	if (match) {
+		try {
+			// Verify it's valid JSON before returning
+			JSON.parse(match[0]);
+			return match[0];
+		} catch {
+			// It might be an incomplete object, so we continue
+		}
+	}
+	return null;
+};
 
 const normalizeMessageContent = (content: unknown): string => {
 	if (!content) return '';
@@ -142,7 +154,7 @@ export const llmService = {
 		aiInfo: AiModelInfo
 	): Promise<void> => {
 		const { model } = aiInfo;
-		const maxTokens = MODEL_CONTEXT_WINDOWS[model];
+		const maxTokens = MODEL_LIMITS_INFO[model].maxOutputTokens;
 		if (!maxTokens) {
 			console.warn(
 				`[llmService.validateTokenCount] No context window size defined for ${model}. Skipping.`
@@ -186,7 +198,7 @@ export const llmService = {
 		aiModelInfo: AiModelInfo,
 		userId: string,
 		options?: { signal?: AbortSignal },
-		zodSchema?: z.ZodObject<any> // The optional schema parameter
+		zodSchema?: z.ZodObject<any>
 	): Promise<string> => {
 		try {
 			await llmService.validateTokenCount(messages, aiModelInfo);
@@ -194,35 +206,62 @@ export const llmService = {
 			const llmClient = await llmService.createLlmInstance(aiModelInfo, userId);
 			const langChainMessages = convertToLangChainMessages(sanitizedMessages);
 
-			// --- This is the core logic for flexible output ---
-			if (zodSchema) {
-				// If a schema is provided, use structured output.
-				console.log(`[llmService] Invoking model with structured output (Zod schema)`);
-				const structuredLlm = llmClient.withStructuredOutput(zodSchema);
+			logFlow('llmService', 'invokeLlm', { langChainMessages });
 
-				const structuredOutput = await structuredLlm.invoke(langChainMessages, {
-					signal: options?.signal,
+			if (zodSchema) {
+				console.log(`[llmService] Invoking model with structured output (Zod schema)`);
+				const structuredLlm = llmClient.withStructuredOutput(zodSchema, {
+					name: 'json_output_tool', // Use a generic tool name
 				});
 
-				// The output is a guaranteed-to-be-valid JavaScript object.
-				return JSON.stringify(structuredOutput);
+				try {
+					// --- ATTEMPT 1: Ideal case, direct structured invocation ---
+					const structuredOutput = await structuredLlm.invoke(langChainMessages, {
+						signal: options?.signal,
+					});
+					logFlow('llmService', 'invokeLlm.success', { structuredOutput });
+					return JSON.stringify(structuredOutput);
+				} catch (error: any) {
+					// --- ATTEMPT 2: Fallback, clean the raw output from the error ---
+					console.warn(
+						`[llmService] Initial structured output failed. Attempting to clean the response. Error: ${error.message}`
+					);
+
+					// The full, messy response is often in the error message
+					const rawOutput = error.message;
+					logFlow('llmService', 'invokeLlm.error', { rawOutput });
+					const cleanedJson = _extractJsonFromString(rawOutput);
+
+					if (cleanedJson) {
+						try {
+							// Final check: ensure the cleaned JSON matches the schema
+							zodSchema.parse(JSON.parse(cleanedJson));
+							console.log('[llmService] Successfully extracted and validated JSON from raw output.');
+							return cleanedJson;
+						} catch (validationError: any) {
+							console.error('[llmService] Extracted JSON failed Zod validation.', validationError.errors);
+							// If validation fails, we throw the more informative validation error
+							throw validationError;
+						}
+					}
+
+					// If we reach here, cleaning failed. Re-throw the original error.
+					throw error;
+				}
 			} else {
-				// If no schema is provided, perform a standard text invocation.
+				// Standard text invocation logic (unchanged)
 				console.log(`[llmService] Invoking model with standard text output`);
 				const responseMessage = await llmClient.invoke(langChainMessages, { signal: options?.signal });
-
+				logFlow('llmService', 'invokeLlm', { responseMessage });
 				return convertMessageContentToString(responseMessage.content);
 			}
 		} catch (error: any) {
-			if (error?.name === 'LlmResponseParseError') {
-				throw error;
-			}
-			// For all other unexpected errors, log them and wrap them in a generic Error.
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			console.error(
-				`[llmService.invokeLlm] A non-parsing error occurred for '${aiModelInfo.model}':`,
+				`[llmService.invokeLlm] A non-recoverable error occurred for '${aiModelInfo.model}':`,
 				errorMessage
 			);
+			// Wrap in a clear, final error message
 			throw new Error(`[llmService] LLM invocation failed: ${errorMessage}`);
 		}
 	},
@@ -231,12 +270,14 @@ export const llmService = {
 	 * Translates a proper noun using the default free chat model.
 	 */
 	translateProperNoun: async (koreanTerm: string, userId: string): Promise<string> => {
-		const aiModelInfo = DEFAULT_CHAT_MODEL_FREE;
+		const aiModelInfo = DEFAULT_EXTRACTION_MODEL;
 		const prompt = buildTermTranslationPrompt(koreanTerm);
 
 		// MODIFIED: 'invokeLlm'에 맞게 messages 배열을 생성하여 전달합니다.
 		const messages: ChatCompletionMessageParam[] = [{ role: 'user', content: prompt }];
 		const translation = await llmService.invokeLlm(messages, aiModelInfo, userId);
+
+		logFlow('llmService', 'translateProperNoun', { translation });
 
 		// 번역 결과는 JSON이 아니므로, 일반 텍스트로 처리합니다.
 		return translation.replace(/["'.]/g, '').trim();
@@ -246,12 +287,14 @@ export const llmService = {
 	 * Extracts proper nouns from text using the default Google AI model.
 	 */
 	extractProperNouns: async (textToAnalyze: string, userId: string): Promise<string[]> => {
-		const aiModelInfo = DEFAULT_MODEL_GOOGLEAI;
+		const aiModelInfo = DEFAULT_EXTRACTION_MODEL;
 		const prompt = buildNerPrompt(textToAnalyze);
 
 		// MODIFIED: 'invokeLlm'에 맞게 messages 배열을 생성하여 전달합니다.
 		const messages: ChatCompletionMessageParam[] = [{ role: 'user', content: prompt }];
 		const jsonResponse = await llmService.invokeLlm(messages, aiModelInfo, userId);
+
+		logFlow('llmService', 'extractProperNouns', { jsonResponse });
 
 		try {
 			// invokeLlm은 이미 JSON 문자열을 반환하므로, 바로 파싱합니다.

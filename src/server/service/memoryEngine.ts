@@ -21,12 +21,13 @@ import { detectLanguage } from '../util/languageUtils.js';
 import { handleServiceError } from '../util/serviceHelpers.js';
 import { mapLoreContexts, reRankByRecency, mapHistoryContexts } from '../util/llmUtils.js';
 import { llmService } from './llmService.js';
-import { AiModelInfo, DEFAULT_CHAT_MODEL_FREE } from '#shared/domain/aimodel/AiInfoTypes.js';
+import { DEFAULT_EXTRACTION_MODEL } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { ragQueryService } from './ragQueryService.js';
 import { WhereDocument } from 'chromadb';
 import { createChatTurnMetadataSchema } from '#server/util/schemaUtils.js';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
+import { logFlow } from '../util/jsonlLogger.js';
 
 /**
  * @private
@@ -90,8 +91,7 @@ export const memoryEngine = {
 		sessionId: string,
 		userInput: string,
 		userId: string,
-		recentChatTurns: ChatTurn[],
-		aiModelInfo: AiModelInfo
+		recentChatTurns: ChatTurn[]
 	): Promise<MemoryResponse> {
 		const { characterId } = parseSessionId(sessionId);
 		const INITIAL_QUERY_LIMIT = 30;
@@ -99,12 +99,8 @@ export const memoryEngine = {
 		const langCode = detectLanguage(userInput);
 
 		try {
-			const transformedQuery = await ragQueryService.transformQuery(
-				userInput,
-				aiModelInfo,
-				userId,
-				langCode
-			);
+			const transformedQuery = await ragQueryService.transformQuery(userInput, userId, langCode);
+			logFlow('ragQueryService', 'API HIT: transformQuery', { transformedQuery });
 
 			let documentFilter: WhereDocument | undefined = undefined;
 			const quotedTextMatch = userInput.match(/"(.*?)"/);
@@ -121,34 +117,34 @@ export const memoryEngine = {
 				chatStore.queryChatTurns(
 					sessionId,
 					transformedQuery.queryTexts,
-					transformedQuery.metadataFilter,
+					transformedQuery.filterCriteria,
 					documentFilter,
 					INITIAL_QUERY_LIMIT
 				),
 				loreStore.queryLores(
 					characterId,
 					transformedQuery.queryTexts,
-					transformedQuery.metadataFilter,
+					transformedQuery.filterCriteria,
 					documentFilter
 				),
 				loreStore.queryHistories(
 					characterId,
 					transformedQuery.queryTexts,
-					transformedQuery.metadataFilter,
+					transformedQuery.filterCriteria,
 					documentFilter
 				),
 				recapStore.queryRecaps(
 					sessionId,
 					transformedQuery.queryTexts,
 					METADATA_TYPES.RECAP,
-					transformedQuery.metadataFilter,
+					transformedQuery.filterCriteria,
 					documentFilter
 				),
 				recapStore.queryRecaps(
 					sessionId,
 					transformedQuery.queryTexts,
 					METADATA_TYPES.RELATIONSHIP,
-					transformedQuery.metadataFilter,
+					transformedQuery.filterCriteria,
 					documentFilter
 				),
 			]);
@@ -159,17 +155,11 @@ export const memoryEngine = {
 			const relationshipRecapSummary =
 				relevantRelationshipRecapsRes.map(_formatRecapForPrompt).join('\n') || '';
 
-			console.log('[DEBUG] longTermChatRes:', JSON.stringify(longTermChatRes, null, 2));
-			console.log('[DEBUG] relevantLoreRes:', JSON.stringify(relevantLoreRes, null, 2));
-			console.log('[DEBUG] relevantHistoryRes:', JSON.stringify(relevantHistoryRes, null, 2));
-			console.log(
-				'[DEBUG] relevantFactualRecapsRes:',
-				JSON.stringify(relevantFactualRecapsRes, null, 2)
-			);
-			console.log(
-				'[DEBUG] relevantRelationshipRecapsRes:',
-				JSON.stringify(relevantRelationshipRecapsRes, null, 2)
-			);
+			logFlow('memoryEngine', 'API HIT: longTermChatRes', longTermChatRes);
+			logFlow('memoryEngine', 'API HIT: relevantLoreRes', relevantLoreRes.ids);
+			logFlow('memoryEngine', 'API HIT: relevantHistoryRes', relevantHistoryRes.ids);
+			logFlow('memoryEngine', 'API HIT: relevantFactualRecapsRes', relevantFactualRecapsRes);
+			logFlow('memoryEngine', 'API HIT: relevantRelationshipRecapsRes', relevantRelationshipRecapsRes);
 
 			return {
 				langCode,
@@ -239,13 +229,18 @@ export const memoryEngine = {
 				{ role: 'user', content: prompt },
 			];
 
+			logFlow('memoryEngine', 'API HIT: enrichChatTurnViaLlm.messages', messages);
+			logFlow('memoryEngine', 'API HIT: enrichChatTurnViaLlm.zodSchema', zodSchema);
+
 			const enrichment = await llmService.invokeLlm(
 				messages,
-				DEFAULT_CHAT_MODEL_FREE,
+				DEFAULT_EXTRACTION_MODEL,
 				userId,
 				{},
 				zodSchema
 			);
+
+			logFlow('memoryEngine', 'API HIT: enrichChatTurnViaLlm.enrichment', enrichment);
 
 			// 4. Create the final rich ChatTurn object.
 			return _extractChatTurnMetadataInfoFromLlm(turn, JSON.parse(enrichment));

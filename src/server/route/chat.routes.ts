@@ -111,36 +111,36 @@ router.get(
 
 // --- Query Operations ---
 
-/**
- * POST /api/chat/query-chat-turns
- * Performs a semantic search over finalized chat turns within a session.
- * @param {object} req.body - Contains sessionId, queryTexts, and optional filters.
- * @returns {ChatResponse} Search results containing matching chat turns.
- */
-router.post(
-	genRoutePattern('queryChatTurns'),
-	asyncHandler(
-		async (
-			req: Request<
-				object,
-				ChatResponse,
-				{ sessionId: string; queryTexts: string[]; where?: Where; limit?: number }
-			>,
-			res: Response<Payload>
-		): Promise<void> => {
-			const { sessionId, queryTexts, where, limit } = req.body;
-			validateServiceId(sessionId, collectionType);
-			validateRequestData(req.body, 'body', ['sessionId', 'queryTexts']);
+// /**
+//  * POST /api/chat/query-chat-turns
+//  * Performs a semantic search over finalized chat turns within a session.
+//  * @param {object} req.body - Contains sessionId, queryTexts, and optional filters.
+//  * @returns {ChatResponse} Search results containing matching chat turns.
+//  */
+// router.post(
+// 	genRoutePattern('queryChatTurns'),
+// 	asyncHandler(
+// 		async (
+// 			req: Request<
+// 				object,
+// 				ChatResponse,
+// 				{ sessionId: string; queryTexts: string[]; where?: Where; limit?: number }
+// 			>,
+// 			res: Response<Payload>
+// 		): Promise<void> => {
+// 			const { sessionId, queryTexts, where, limit } = req.body;
+// 			validateServiceId(sessionId, collectionType);
+// 			validateRequestData(req.body, 'body', ['sessionId', 'queryTexts']);
 
-			const path = genRoutePattern('queryChatTurns');
-			console.log(`API HIT: POST ${path} for session ${sessionId}`);
+// 			const path = genRoutePattern('queryChatTurns');
+// 			console.log(`API HIT: POST ${path} for session ${sessionId}`);
 
-			const response = await chatStore.queryChatTurns(sessionId, queryTexts, where, undefined, limit);
-			const payload = compressData(response);
-			res.status(200).json({ payload });
-		}
-	)
-);
+// 			const response = await chatStore.queryChatTurns(sessionId, queryTexts, where, undefined, limit);
+// 			const payload = compressData(response);
+// 			res.status(200).json({ payload });
+// 		}
+// 	)
+// );
 
 // /**
 //  * POST /api/chat/query-chat-messages

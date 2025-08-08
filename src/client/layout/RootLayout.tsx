@@ -15,6 +15,7 @@ import {
 	Dialog,
 	DialogContent,
 	useTheme,
+	useMediaQuery,
 } from '@mui/material';
 import { useColorMode } from '../provider/ColorModeProvider.jsx';
 import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpassword/prebuiltui.js';
@@ -87,24 +88,27 @@ const ImageModal: FC<ImageModalProps> = ({ open, onClose, imageUrl, characterId 
 		<Dialog
 			open={open}
 			onClose={onClose}
-			maxWidth="md"
 			fullWidth
 			slotProps={{
 				paper: {
 					sx: {
 						backgroundColor: 'rgba(0, 0, 0, 0.6)', // Semi-transparent background
 						boxShadow: 'none',
+						maxWidth: 'unset',
 						maxHeight: '90vh',
 						overflow: 'visible',
 						display: 'flex',
 						alignItems: 'center',
 						justifyContent: 'center',
+						p: 0,
 					},
 				},
 			}}
 		>
 			<DialogContent
 				sx={{
+					p: 0,
+					m: 0,
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'center',
@@ -128,8 +132,8 @@ const ImageModal: FC<ImageModalProps> = ({ open, onClose, imageUrl, characterId 
 				>
 					<GlassPortrait
 						imageUrl={imageUrl}
-						colorVariant="secondary"
 						alt={`${characterId} portrait`}
+						hover={false}
 						sx={{
 							width: '100%',
 							height: 'auto',
@@ -142,8 +146,8 @@ const ImageModal: FC<ImageModalProps> = ({ open, onClose, imageUrl, characterId 
 						onClick={onClose}
 						sx={{
 							position: 'absolute',
-							top: theme.spacing(1),
-							right: theme.spacing(1),
+							top: theme.spacing(0.5),
+							right: theme.spacing(0.5),
 							color: 'white',
 							transition: 'all 0.2s ease-in-out',
 						}}
@@ -166,6 +170,7 @@ export type HeaderContextType = (info?: HeaderInfo) => void;
 
 export function RootLayout() {
 	const { mode, toggleMode } = useColorMode();
+	const isSmallScreen = useMediaQuery((theme) => theme.breakpoints.down('md'));
 	const navigate = useNavigate();
 	const { isSessionLoading, isLoggedIn, isLoginModalOpen, openLoginModal, closeLoginModal } =
 		useAuth();
@@ -238,8 +243,15 @@ export function RootLayout() {
 		>
 			<CssBaseline />
 			<GlassAppBar sx={{ width: '100%', position: 'sticky' }} ref={headerRef}>
-				<Toolbar sx={{ justifyContent: 'space-between' }}>
-					<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+				<Toolbar
+					sx={(theme) => ({
+						justifyContent: 'space-between',
+						[theme.breakpoints.down('md')]: {
+							pr: 1, // bring left/right content closer
+						},
+					})}
+				>
+					<Box sx={{ display: 'flex', alignItems: 'center' }}>
 						{!headerInfo?.mobileImageUrl && (
 							<RomanticTitle
 								logo
@@ -247,7 +259,7 @@ export function RootLayout() {
 								component="div"
 								onClick={() => navigate('/')}
 								role="button"
-								sx={{ paddingRight: 1 }}
+								sx={{ paddingRight: 2 }}
 							>
 								{APPNAME}
 							</RomanticTitle>
@@ -267,7 +279,7 @@ export function RootLayout() {
 						)}
 					</Box>
 
-					<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+					<Box sx={{ display: 'flex', alignItems: 'center' }}>
 						{headerInfo && headerInfo.mobileImageUrl && (
 							<IconButton
 								onClick={handleImageModalOpen}
@@ -313,23 +325,29 @@ export function RootLayout() {
 									onClick={handleMenuClose}
 									transformOrigin={{ horizontal: 'right', vertical: 'top' }}
 									anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-									// Apply the permanent "hovered" glass style to the menu's background
+									disableAutoFocusItem={true} // <-- This prevents auto-focus on first item
 									slotProps={{
 										paper: {
 											className: 'hide-scrollbar',
 											sx: (theme) => {
 												const styleObject = theme.palette.mode === 'dark' ? glassEffect : glassEffectLight;
 												const { '&:hover': hoverStyles, ...baseStyles } = styleObject;
-												return { ...baseStyles, ...hoverStyles };
+
+												return {
+													...baseStyles,
+													// Apply hover styles only on non-mobile devices
+													[theme.breakpoints.up('md')]: { ...hoverStyles },
+												};
 											},
 										},
+										// Remove list padding on mobile
+										list: { sx: (theme) => ({ [theme.breakpoints.down('md')]: { padding: 0.5 } }) },
 									}}
 								>
 									<GlassMenuItem onClick={goCharacterListPage} colorVariant="silver">
 										{getLangText(LANG_KEYS.CHARACTERS)}
 									</GlassMenuItem>
 
-									{/* Custom glow using the colorVariant prop */}
 									<GlassMenuItem onClick={onLogout} colorVariant="silver">
 										{getLangText(LANG_KEYS.LOGOUT)}
 									</GlassMenuItem>
@@ -356,18 +374,20 @@ export function RootLayout() {
 			/>
 
 			{/* Footer */}
-			<GlassFooter
-				ref={footerRef}
-				sx={{ width: '100%', position: 'sticky', bottom: 0, zIndex: (theme) => theme.zIndex.appBar }}
-			>
-				<Container maxWidth="sm">
-					<Typography variant="body2" color="text.secondary" align="center">
-						{`Copyright © ${APPNAME} `}
-						{new Date().getFullYear()}
-						{'.'}
-					</Typography>
-				</Container>
-			</GlassFooter>
+			{!isSmallScreen && (
+				<GlassFooter
+					ref={footerRef}
+					sx={{ width: '100%', position: 'sticky', bottom: 0, zIndex: (theme) => theme.zIndex.appBar }}
+				>
+					<Container maxWidth="sm">
+						<Typography variant="body2" color="text.secondary" align="center">
+							{`Copyright © ${APPNAME} `}
+							{new Date().getFullYear()}
+							{'.'}
+						</Typography>
+					</Container>
+				</GlassFooter>
+			)}
 		</Box>
 	);
 }

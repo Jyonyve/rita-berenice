@@ -64,23 +64,28 @@ export const useChatApi = () => {
 			enabled: !!sessionId && typeof sequence === 'number', // Only run if both are available
 		});
 
-	/**
-	 * Performs a semantic search over finalized chat turns.
-	 * Uses useMutation because it's a POST request (search/query) and does not represent
-	 * a continuously available piece of data.
-	 * Query Key: ['queryChatTurns']
-	 */
-	const queryChatTurns = useMutation<
-		ChatResponse,
-		Error,
-		{ sessionId: string; queryTexts: string[]; where?: Where }
-	>({
-		mutationFn: async ({ sessionId, queryTexts, where }) => {
-			const url = genApiUrl(MODULE_NAMES.CHAT, 'queryChatTurns');
-			const response = await apiClient.post<Payload>(url, { sessionId, queryTexts, where });
-			return decompressData<ChatResponse>(response.data.payload);
-		},
-	});
+	// /**
+	//  * Performs a semantic search over finalized chat turns.
+	//  * Uses useMutation because it's a POST request (search/query) and does not represent
+	//  * a continuously available piece of data.
+	//  * Query Key: ['queryChatTurns']
+	//  */
+	// const queryChatTurns = useMutation<
+	// 	ChatResponse,
+	// 	Error,
+	// 	{ sessionId: string; queryTexts: string[]; where?: Where }
+	// >({
+	// 	mutationFn: async ({ sessionId, queryTexts, where }) => {
+	// 		const url = genApiUrl(MODULE_NAMES.CHAT, 'queryChatTurns');
+	// 		const response = await apiClient.post<Payload>(url, { sessionId, queryTexts, where });
+	// 		return decompressData<ChatResponse>(response.data.payload);
+	// 	},
+	// });
 
-	return { storeChatTurn, getAllDisplayTurns, getChatTurnBySequence, queryChatTurns };
+	return {
+		storeChatTurn,
+		getAllDisplayTurns,
+		getChatTurnBySequence,
+		// queryChatTurns
+	};
 };

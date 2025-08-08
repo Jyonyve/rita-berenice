@@ -23,6 +23,7 @@ import { MemoryResponse, PersonaResponse } from '#shared/api/ModuleResponse.js';
 import { detectLanguage } from '../util/languageUtils.js';
 import { createBasicChatTurn } from '#shared/util/typeGuardUtils.js';
 import { ApiError } from '#shared/domain/error/errors.js';
+import { sanitizeLlmResponse as sanitizeLlmResponse } from '../util/llmUtils.js';
 
 const timerLabel = (sequence: number) => `RESPONSE_GENERATION: Turn ${sequence}`;
 
@@ -198,8 +199,7 @@ async function _generateAndAppendResponse(
 			tempTurn.sessionId,
 			userInput,
 			tempTurn.userId,
-			recentChatTurn,
-			aiModelInfo
+			recentChatTurn
 		);
 		// --- 2. LOG CHECKPOINT 2 ---
 		console.timeLog(timerLabel(tempTurn.sequence), 'Memory recall finish. completed.');
@@ -232,6 +232,7 @@ async function _generateAndAppendResponse(
 	);
 	console.timeLog(timerLabel(tempTurn.sequence), 'llm generate response finishing.');
 
+	const sanitizedResponse = sanitizeLlmResponse(personaResponse.response);
 	// 3. Create the new bot response message.
 	const request = buildChatMessage(
 		'user',
@@ -244,7 +245,7 @@ async function _generateAndAppendResponse(
 		'assistant',
 		tempTurn.sequence,
 		characterInfo.showName,
-		personaResponse.response,
+		sanitizedResponse,
 		tempTurn.sessionId,
 		personaResponse.emotion
 	);

@@ -1,33 +1,54 @@
 // src/client/layout/glass/GlassMenuItem.tsx
 
 import { MenuItem, styled, alpha, MenuItemProps } from '@mui/material';
-// We assume a color utility exists, similar to the one for GlassButton
 import { getColor, ColorVariant } from '../../style/colors.js';
 
-// Define the custom props our component will accept, including colorVariant
+// Define the custom props our component will accept
 interface GlassMenuItemProps extends MenuItemProps {
 	colorVariant?: ColorVariant;
+	compact?: boolean;
 }
 
 /**
  * A styled MenuItem with a "glassy" outer glow on hover.
- * The glow color is controlled by the `colorVariant` prop, which
- * defaults to 'primary' for standard actions.
+ * The glow color is controlled by the `colorVariant` prop.
+ * The `compact` prop enables a tighter layout for mobile devices.
  */
 export const GlassMenuItem = styled(MenuItem, {
-	// Ensure the custom prop isn't passed down to the DOM
-	shouldForwardProp: (prop) => prop !== 'colorVariant',
-})<GlassMenuItemProps>(({ theme, colorVariant = 'primary' }) => {
-	// THE FIX: Get the glow color dynamically based on the colorVariant prop.
+	// Ensure custom props aren't passed down to the DOM
+	shouldForwardProp: (prop) => prop !== 'colorVariant' && prop !== 'compact',
+})<GlassMenuItemProps>(({ theme, colorVariant = 'primary', compact = false }) => {
+	// Get the glow color dynamically based on the colorVariant prop
 	const glowColor = getColor(theme, colorVariant);
 
 	return {
-		fontSize: '0.875rem',
+		// Base styling
+		fontSize: compact ? '0.875rem' : '0.9375rem',
 		borderRadius: theme.shape.borderRadius,
-		transition: 'box-shadow 0.2s ease-in-out',
+		transition: 'all 0.2s ease-in-out',
 		backgroundColor: 'transparent',
 
-		// The hover state now uses the dynamic glow color
+		// Responsive padding and sizing
+		paddingTop: compact ? theme.spacing(0.75) : theme.spacing(1),
+		paddingBottom: compact ? theme.spacing(0.75) : theme.spacing(1),
+		paddingLeft: compact ? theme.spacing(1.5) : theme.spacing(2),
+		paddingRight: compact ? theme.spacing(1.5) : theme.spacing(2),
+		minHeight: compact ? 'auto' : theme.spacing(5),
+
+		// Mobile-specific styling using breakpoints
+		[theme.breakpoints.down('md')]: {
+			fontSize: '0.875rem',
+			paddingTop: theme.spacing(0.75),
+			paddingBottom: theme.spacing(0.75),
+			paddingLeft: theme.spacing(1.5),
+			paddingRight: theme.spacing(1.5),
+			minHeight: 'auto',
+		},
+
+		// Hover state with dynamic glow color
 		'&:hover': { backgroundColor: 'transparent', boxShadow: `0 0 8px 2px ${alpha(glowColor, 0.6)}` },
+
+		// Focus state for accessibility
+		'&:focus': { backgroundColor: 'transparent', boxShadow: `0 0 6px 1px ${alpha(glowColor, 0.4)}` },
 	};
 });

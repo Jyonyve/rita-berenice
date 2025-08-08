@@ -32,8 +32,6 @@ export function setupApiClient(
 		(response) => response,
 		async (error) => {
 			const originalRequest = error.config as any;
-			console.log(error.response);
-			console.log(originalRequest);
 			// 1. The Suppression Override: This is the most important check.
 			// It runs before any other logic.
 			if (error?.response?.status === 404 && originalRequest._suppress404Error) {

@@ -73,7 +73,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 	const handleNextSet = () => changeTempSetNo(currentTempSetNo + 1);
 
 	const isUserTextOverflow = userEditInput.length > REQUEST_CHARACTER_LIMIT;
-	const isBotTextOverflow = botEditInput.length > RESPONSE_CHARACTER_LIMIT;
+	// const isBotTextOverflow = botEditInput.length > RESPONSE_CHARACTER_LIMIT;
 
 	return (
 		<Box
@@ -198,11 +198,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 							size="small"
 							onClick={handleSaveAndExitEdit}
 							disabled={
-								isProcessing ||
-								!userEditInput.trim() ||
-								!botEditInput.trim() ||
-								isUserTextOverflow ||
-								isBotTextOverflow
+								isProcessing || !userEditInput.trim() || !botEditInput.trim() || isUserTextOverflow
 							}
 							title="Save Changes"
 							color="secondary"
@@ -218,7 +214,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 									size="small"
 									title="Previous Response"
 									onClick={handlePrevSet}
-									disabled={currentTempSetNo === 0 || isProcessing}
+									disabled={currentTempSetNo === 0}
 								>
 									<NavigateBeforeIcon sx={{ fontSize: '14px' }} />
 								</IconButton>
@@ -238,7 +234,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 									size="small"
 									title="Next Response"
 									onClick={handleNextSet}
-									disabled={currentTempSetNo === tempTurn.chatTurnSets.length - 1 || isProcessing}
+									disabled={currentTempSetNo === tempTurn.chatTurnSets.length - 1}
 								>
 									<NavigateNextIcon sx={{ fontSize: '14px' }} />
 								</IconButton>

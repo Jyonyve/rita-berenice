@@ -74,21 +74,21 @@ export const useLoreApi = () => {
 			enabled: !!loreId,
 		});
 
-	/**
-	 * Performs a semantic search for lore entries.
-	 * Mutation key: 'queryLores' (as it's a POST request for search)
-	 */
-	const queryLores = useMutation<
-		LoreResponse,
-		Error,
-		{ characterId: string; queryTexts: string[]; options?: QueryOptions }
-	>({
-		mutationFn: async ({ characterId, queryTexts, options }) => {
-			const url = genApiUrl(MODULE_NAME, 'queryLores');
-			const response = await apiClient.post<Payload>(url, { characterId, queryTexts, options });
-			return decompressData<LoreResponse>(response.data.payload);
-		},
-	});
+	// /**
+	//  * Performs a semantic search for lore entries.
+	//  * Mutation key: 'queryLores' (as it's a POST request for search)
+	//  */
+	// const queryLores = useMutation<
+	// 	LoreResponse,
+	// 	Error,
+	// 	{ characterId: string; queryTexts: string[]; options?: QueryOptions }
+	// >({
+	// 	mutationFn: async ({ characterId, queryTexts, options }) => {
+	// 		const url = genApiUrl(MODULE_NAME, 'queryLores');
+	// 		const response = await apiClient.post<Payload>(url, { characterId, queryTexts, options });
+	// 		return decompressData<LoreResponse>(response.data.payload);
+	// 	},
+	// });
 
 	// --- HISTORY OPERATIONS ---
 
@@ -124,31 +124,31 @@ export const useLoreApi = () => {
 			enabled: !!characterId,
 		});
 
-	/**
-	 * Performs a semantic search for history entries.
-	 * Mutation key: 'queryHistories' (as it's a POST request for search)
-	 */
-	const queryHistories = useMutation<
-		HistoryResponse,
-		Error,
-		{ characterId: string; queryTexts: string[]; options?: { limit?: number } }
-	>({
-		mutationFn: async ({ characterId, queryTexts, options }) => {
-			const url = genApiUrl(MODULE_NAME, 'queryHistories');
-			const response = await apiClient.post<Payload>(url, { characterId, queryTexts, options });
-			return decompressData<HistoryResponse>(response.data.payload);
-		},
-	});
+	// /**
+	//  * Performs a semantic search for history entries.
+	//  * Mutation key: 'queryHistories' (as it's a POST request for search)
+	//  */
+	// const queryHistories = useMutation<
+	// 	HistoryResponse,
+	// 	Error,
+	// 	{ characterId: string; queryTexts: string[]; options?: { limit?: number } }
+	// >({
+	// 	mutationFn: async ({ characterId, queryTexts, options }) => {
+	// 		const url = genApiUrl(MODULE_NAME, 'queryHistories');
+	// 		const response = await apiClient.post<Payload>(url, { characterId, queryTexts, options });
+	// 		return decompressData<HistoryResponse>(response.data.payload);
+	// 	},
+	// });
 
 	return {
 		// Lore methods
 		storeLore,
 		getLores,
 		getLore,
-		queryLores,
+		// queryLores,
 		// History methods
 		storeHistory,
 		getHistories,
-		queryHistories,
+		// queryHistories,
 	};
 };

@@ -20,7 +20,7 @@ import { getAiModelInfo, isValidAiModelInfo } from '#shared/util/aiModelUtils.js
 import {
 	AiModelInfo,
 	AllModelNames,
-	DEFAULT_CHAT_MODEL_FREE,
+	DEFAULT_EXTRACTION_MODEL,
 } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { useErrorDialog } from '../../util/styleUtils.jsx';
 
@@ -86,7 +86,7 @@ export const ChatPage: FC<{
 	const [pageError, setPageError] = useState<string>();
 	const [userEditInput, setUserEditInput] = useState('');
 	const [botEditInput, setBotEditInput] = useState('');
-	const [aiModelInfo, setAiModelInfo] = useState<AiModelInfo>(DEFAULT_CHAT_MODEL_FREE);
+	const [aiModelInfo, setAiModelInfo] = useState<AiModelInfo>(DEFAULT_EXTRACTION_MODEL);
 	const [focusedTurnIndex, setFocusedTurnIndex] = useState(-1);
 	const [isScene, setIsScene] = useState(false);
 
@@ -393,10 +393,8 @@ export const ChatPage: FC<{
 							height: '100%',
 							position: 'relative',
 							zIndex: 10,
-							padding: theme.spacing(2), // Proper padding
-							gap: theme.spacing(2),
-							paddingTop: 'env(safe-area-inset-top)',
-							paddingBottom: 'env(safe-area-inset-bottom)',
+							// paddingTop: 'env(safe-area-inset-top)',
+							// paddingBottom: 'env(safe-area-inset-bottom)',
 						}}
 					>
 						{/* Mobile Chat */}
@@ -404,11 +402,8 @@ export const ChatPage: FC<{
 							sx={{
 								flexGrow: 1,
 								overflow: 'hidden',
-								borderRadius: theme.spacing(2),
 								backdropFilter: 'blur(2px)',
 								WebkitBackdropFilter: 'blur(2px)',
-								border: '1px solid rgba(255, 255, 255, 0.2)',
-								boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
 								WebkitOverflowScrolling: 'touch',
 								overscrollBehavior: 'contain',
 							}}
@@ -422,7 +417,7 @@ export const ChatPage: FC<{
 								flexShrink: 0,
 								backdropFilter: 'blur(10px)',
 								WebkitBackdropFilter: 'blur(10px)',
-								'& input': { fontSize: '16px' },
+								'& input': { fontSize: '16px' }, // avoid iOS zoom
 							}}
 						>
 							<UserInput {...userInputProps} />
@@ -434,14 +429,7 @@ export const ChatPage: FC<{
 				<GlassPaper
 					key="chat-page"
 					className="paper"
-					sx={{
-						position: 'relative',
-						zIndex: 3,
-						// FIXED: Remove overflow hidden - content should naturally fit
-						padding: theme.spacing(2), // Proper inner padding
-						display: 'flex',
-						flexDirection: 'column',
-					}}
+					sx={{ position: 'relative', zIndex: 3, display: 'flex', flexDirection: 'column' }}
 				>
 					<Grid
 						container

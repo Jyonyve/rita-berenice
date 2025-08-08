@@ -16,6 +16,7 @@ import {
 import { metadataToHistory, metadataToLore } from '#shared/util/dbConvertUtils.js';
 import { buildLoreIndexId } from '#shared/util/buildIdUtils.js';
 import { validateChromaResponse, handleServiceError } from '../util/serviceHelpers.js';
+import { FilterCriteria } from '../util/schemaUtils.js';
 
 // Destructure chromaDbClient methods
 const { getLoreCollection, upsertRecords, getRecords, getRecordById, queryRecords, deleteRecords } =
@@ -82,6 +83,44 @@ export const loreStore = {
 		} catch (error) {
 			handleServiceError(error, `Failed to store lore ${loreInfo.loreId}`);
 		}
+	},
+
+	/**
+	 * @private
+	 * Dynamically builds a ChromaDB 'where' clause to filter LORE/HISTORY index documents.
+	 */
+	_buildIndexWhereClause(characterId: string, criteria: FilterCriteria): Where | undefined {
+		const orConditions: Where[] = [];
+
+		const addConditions = (list: string[] | undefined, type: LoreIndexContentType) => {
+			if (!list || list.length === 0) return;
+			list.forEach((item) => {
+				orConditions.push({ $and: [{ contentType: { $eq: type } }, { value: { $eq: item } }] });
+			});
+		};
+
+		// Map criteria to index content types for Lore and History
+		addConditions(criteria.topics, 'TOPIC');
+		addConditions(criteria.keywords, 'KEYWORD');
+		addConditions(criteria.entities?.characters, 'AFFECTED_CHARACTER');
+		addConditions(criteria.entities?.locations, 'ENTITY');
+		addConditions(criteria.entities?.items, 'ENTITY');
+		if (criteria.period) {
+			addConditions([criteria.period], 'RELATED_EVENT'); // Assuming period might relate to an event
+		}
+
+		if (orConditions.length === 0) {
+			return undefined;
+		}
+
+		// The final clause should find any INDEX doc for the character that matches ANY of the criteria.
+		return {
+			$and: [
+				{ type: { $eq: METADATA_TYPES.INDEX } },
+				{ characterId: { $eq: characterId } },
+				{ $or: orConditions },
+			],
+		};
 	},
 
 	_updateSearchIndexForLore: async (loreInfo: LoreInfo): Promise<void> => {
@@ -459,14 +498,13 @@ export const loreStore = {
 	},
 
 	// --- QUERY OPERATIONS ---
-
 	/**
 	 * [For Backend RAG] Performs a hybrid semantic/metadata search for Lore entries.
 	 */
 	async queryLores(
-		characterId: string, // Primary character context
+		characterId: string,
 		queryTexts: string[],
-		whereFilter?: Where, // This filter is for the INDEX records
+		filterCriteria?: FilterCriteria, // Changed parameter
 		whereDocument?: WhereDocument,
 		limit?: number
 	): Promise<LoreResponse> {
@@ -475,15 +513,23 @@ export const loreStore = {
 			let contentIdsToSearch: string[] | undefined = undefined;
 
 			// Step 1: Pre-filter using the index to get relevant lore IDs.
-			if (whereFilter && Object.keys(whereFilter).length > 0) {
-				const indexResults = await getRecords(collection, whereFilter);
-				const validatedIndexes = validateChromaResponse(indexResults, 'getList', collectionType);
-				contentIdsToSearch = [
-					...new Set(validatedIndexes.metadatas.map((m) => (m as unknown as LoreMetadata).loreId)),
-				];
+			if (filterCriteria && Object.keys(filterCriteria).length > 0) {
+				const indexWhereFilter = loreStore._buildIndexWhereClause(characterId, filterCriteria);
 
-				if (contentIdsToSearch.length === 0) {
-					return emptyLoreRes;
+				if (indexWhereFilter) {
+					console.log('[loreStore] Querying LORE INDEX docs with:', JSON.stringify(indexWhereFilter));
+					const indexResults = await getRecords(collection, indexWhereFilter);
+					const validatedIndexes = validateChromaResponse(indexResults, 'getList', collectionType);
+					contentIdsToSearch = [
+						...new Set(
+							validatedIndexes.metadatas.map((m) => (m as unknown as LoreIndexMetadata).contentId)
+						),
+					];
+
+					if (contentIdsToSearch.length === 0) {
+						return emptyLoreRes;
+					}
+					console.log(`[loreStore] Pre-filtered to ${contentIdsToSearch.length} lores.`);
 				}
 			}
 
@@ -497,6 +543,7 @@ export const loreStore = {
 			}
 			const queryWhere: Where = { $and: queryConditions };
 
+			console.log('[loreStore] Querying LORE docs with:', JSON.stringify(queryWhere));
 			const queryResults = await queryRecords(
 				collection,
 				queryTexts,
@@ -504,6 +551,7 @@ export const loreStore = {
 				whereDocument,
 				limit
 			);
+
 			const validatedQueryResults = queryResults.map((r) =>
 				validateChromaResponse(r, 'getList', collectionType)
 			);
@@ -551,9 +599,9 @@ export const loreStore = {
 	 * [For Backend RAG] Performs a hybrid semantic/metadata search for History entries.
 	 */
 	async queryHistories(
-		characterId: string, // Primary character context
+		characterId: string,
 		queryTexts: string[],
-		whereFilter?: Where, // This filter is for the INDEX records
+		filterCriteria?: FilterCriteria, // Changed parameter
 		whereDocument?: WhereDocument,
 		limit?: number
 	): Promise<HistoryResponse> {
@@ -562,17 +610,22 @@ export const loreStore = {
 			let contentIdsToSearch: string[] | undefined = undefined;
 
 			// Step 1: Pre-filter using the index to get relevant history IDs.
-			if (whereFilter && Object.keys(whereFilter).length > 0) {
-				const indexResults = await getRecords(collection, whereFilter);
-				const validatedIndexes = validateChromaResponse(indexResults, 'getList', collectionType);
-				contentIdsToSearch = [
-					...new Set(
-						validatedIndexes.metadatas.map((m) => (m as unknown as LoreIndexMetadata).contentId)
-					),
-				];
+			if (filterCriteria && Object.keys(filterCriteria).length > 0) {
+				const indexWhereFilter = loreStore._buildIndexWhereClause(characterId, filterCriteria);
+				if (indexWhereFilter) {
+					console.log('[loreStore] Querying HISTORY INDEX docs with:', JSON.stringify(indexWhereFilter));
+					const indexResults = await getRecords(collection, indexWhereFilter);
+					const validatedIndexes = validateChromaResponse(indexResults, 'getList', collectionType);
+					contentIdsToSearch = [
+						...new Set(
+							validatedIndexes.metadatas.map((m) => (m as unknown as LoreIndexMetadata).contentId)
+						),
+					];
 
-				if (contentIdsToSearch.length === 0) {
-					return emptyHisRes;
+					if (contentIdsToSearch.length === 0) {
+						return emptyHisRes;
+					}
+					console.log(`[loreStore] Pre-filtered to ${contentIdsToSearch.length} histories.`);
 				}
 			}
 
@@ -586,6 +639,7 @@ export const loreStore = {
 			}
 			const queryWhere: Where = { $and: queryConditions };
 
+			console.log('[loreStore] Querying HISTORY docs with:', JSON.stringify(queryWhere));
 			const queryResults = await queryRecords(
 				collection,
 				queryTexts,
@@ -593,6 +647,7 @@ export const loreStore = {
 				whereDocument,
 				limit
 			);
+
 			const validatedQueryResults = queryResults.map((r) =>
 				validateChromaResponse(r, 'getList', collectionType)
 			);

@@ -267,7 +267,7 @@ export const chromaDbClient = {
 	): Promise<ChromaResponse[]> => {
 		try {
 			console.log(
-				`[ChromaClient.queryRecords] Querying with text: "${queryTexts.join('\n')}...",\n filter: ${logJsonPreview(where)}, ${logJsonPreview(whereDocument)},\n limit: ${limit}`
+				`[ChromaClient.queryRecords] Querying with text: "${queryTexts[0].substring(0, 10)}...",\n filter: ${logJsonPreview(where)}, ${logJsonPreview(whereDocument)},\n limit: ${limit}`
 			);
 			const MAX = await collection.count(); // Ensure the collection is initialized
 			const results = await collection.query({

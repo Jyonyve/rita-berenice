@@ -12,7 +12,7 @@
 		"build": "pnpm run build:client && pnpm run build:server",
 		"proxy": "fly proxy 8000:8000 -a chromadb-flyio",
 		"start": "node dist/server/server.js",
-		"preview": "cross-env NODE_ENV=development node --env-file .env.development dist/server/server.js",
+		"preview": "cross-env NODE_ENV=development HOST=0.0.0.0 node --env-file .env.development dist/server/server.js",
 		"preview:static": "vite preview --mode static --outDir dist/static",
 		"prod": "pnpm run build && pnpm run start"
 	},

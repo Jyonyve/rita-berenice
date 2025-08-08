@@ -4,6 +4,9 @@ import { ChromaResponse } from '#shared/api/ModuleResponse.js';
 import { DefaultAiRole } from '#shared/domain/aimodel/index.js';
 import { HistoryContext, HistoryInfo, LoreContext, LoreInfo } from '#shared/domain/lore/index.js';
 import { LlmResponseParseError } from '#shared/domain/error/errors.js';
+import { logFlow } from './jsonlLogger.js';
+import { ChatEntry } from '#shared/domain/chat/ChatInterfaces.js';
+import { parseEntriesToText } from '#shared/util/parseUtils.js';
 
 export function isDirectOpenAIClient(llm: any): llm is OpenAI {
 	// Check for a unique property or method of the OpenAI client instance
@@ -68,6 +71,76 @@ export const parseLlmJsonResponse = <T>(
 		console.log(`[parseLlmJsonResponse] : ${llmResponse}`);
 		throw new LlmResponseParseError('MALFORMED_SYNTAX', callerContext, llmResponse);
 	}
+};
+
+/**
+ * Sanitizes and parses raw LLM response text into an array of structured ChatEntry objects.
+ * - It distinguishes between narration (action) and dialogue.
+ * - Consecutive lines of the same type are grouped into a single entry.
+ *
+ * @param text The raw string response from the LLM.
+ * @returns An array of ChatEntry objects.
+ */
+export const sanitizeLlmResponse = (text: string): string => {
+	logFlow('TextTransform', 'Starting text parsing to ChatEntry[]', {
+		inputLength: text.length,
+		preview: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
+	});
+
+	if (!text || text.trim() === '') {
+		return '';
+	}
+
+	// Step 1: Split text into individual lines, trimming and removing empty lines.
+	const lines = text
+		.split('\n')
+		.map((line) => line.trim())
+		.filter((line) => line.length > 0);
+
+	// Step 2: Classify each line as 'dialogue' or 'action'.
+	const classifiedLines: ChatEntry[] = lines.map((line) => {
+		// Heuristic: A line is dialogue if it starts with a quote or common dialogue markers.
+		const isDialogue = line.startsWith('"');
+		// Clean the line by removing surrounding quotes for a clean prompt.
+		const prompt = isDialogue ? line.replace(/^"|"$/g, '').trim() : line;
+		const type = isDialogue ? 'dialogue' : 'action';
+		return { type, prompt };
+	});
+
+	// Step 3: Group consecutive lines of the same type into blocks.
+	if (classifiedLines.length === 0) {
+		return '';
+	}
+
+	const groupedBlocks: ChatEntry[] = [];
+	let currentBlock = { ...classifiedLines[0] };
+
+	for (let i = 1; i < classifiedLines.length; i++) {
+		const line = classifiedLines[i];
+		if (line.type === currentBlock.type) {
+			// If the line type is the same, append its content to the current block.
+			currentBlock.prompt += `\n${line.prompt}`;
+		} else {
+			// If the type changes, push the completed block and start a new one.
+			groupedBlocks.push(currentBlock);
+			currentBlock = { ...line };
+		}
+	}
+	// Add the last remaining block to the array.
+	groupedBlocks.push(currentBlock);
+
+	// Step 4: Convert each block into a ChatEntry object.
+	const chatEntries: ChatEntry[] = groupedBlocks.map((block) => ({
+		type: block.type,
+		prompt: block.prompt,
+	}));
+
+	logFlow('TextTransform', 'Text parsing completed', {
+		outputEntryCount: chatEntries.length,
+		result: chatEntries,
+	});
+
+	return parseEntriesToText(chatEntries);
 };
 
 /**
