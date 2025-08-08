@@ -65,8 +65,8 @@ export const UserInput: FC<UserInputProps> = ({
 	};
 
 	return (
-		<Box>
-			<Box margin={1}>
+		<Box margin={1}>
+			<Box>
 				<TextField
 					placeholder="Enter your message"
 					variant="outlined"
@@ -93,7 +93,14 @@ export const UserInput: FC<UserInputProps> = ({
 				/>
 			</Box>
 			{/* Row 2: Model Selector and Send Button */}
-			<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginX: 1 }}>
+			<Box
+				sx={{
+					display: 'flex',
+					justifyContent: 'space-between',
+					alignItems: 'center',
+					[theme.breakpoints.down('md')]: { pb: 1 },
+				}}
+			>
 				<Box sx={{ display: 'flex', alignItems: 'center' }}>
 					<AiModelSelector modelName={modelName} onAiModel={onAiModel} />
 					<AdultSwitch

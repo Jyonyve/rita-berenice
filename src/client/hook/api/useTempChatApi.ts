@@ -42,14 +42,7 @@ export const useTempChatApi = () => {
 				return decompressData<TempChatResponse>(response.data.payload);
 			},
 			enabled: !isHistoryLoading && !!sessionId && sequence >= 0, // Only run if both are available
-			retry: (failureCount, error) => {
-				// First, check if the error is an instance of ApiError.
-				if (error instanceof ApiError && error.status === 404) {
-					return false; // Do not retry on a 404
-				}
-				// For all other errors, or if it's not an ApiError, allow one retry.
-				return failureCount < 1;
-			},
+			retry: false,
 		});
 
 	return { saveTempChatTurn, getTempChatTurn };

@@ -19,16 +19,29 @@ export const GlassPortrait: FC<GlassPortraitProps> = (props) => {
 		fit = 'cover',
 		hover,
 		sx = {}, // sx is also destructured to be merged manually
+		onMouseEnter,
+		onMouseLeave,
 		...rest // All other valid BoxProps (like 'className') are in here
 	} = props;
 
+	const [isSelfHovering, setIsSelfHovering] = useState(false);
 	const hoverFromContext = useHoverState();
-	const isHovering = hover !== undefined ? hover : hoverFromContext;
+	const isHovering = hover !== undefined ? hover : hoverFromContext || isSelfHovering;
 
 	const theme = useTheme();
 	const glowColor = getColor(theme, colorVariant);
 	const imgRef = useRef<HTMLImageElement>(null);
 	const [glowSize, setGlowSize] = useState(18);
+
+	const handleMouseEnter = (event: React.MouseEvent<HTMLDivElement>) => {
+		setIsSelfHovering(true); // Internal logic
+		if (onMouseEnter) onMouseEnter(event); // Call handler from props if it exists
+	};
+
+	const handleMouseLeave = (event: React.MouseEvent<HTMLDivElement>) => {
+		setIsSelfHovering(false); // Internal logic
+		if (onMouseLeave) onMouseLeave(event); // Call handler from props if it exists
+	};
 
 	useEffect(() => {
 		function updateGlowSize() {
@@ -83,7 +96,7 @@ export const GlassPortrait: FC<GlassPortraitProps> = (props) => {
 	};
 
 	return (
-		<Box sx={containerSx} {...rest}>
+		<Box sx={containerSx} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} {...rest}>
 			<Box
 				component="img"
 				className="image-container"

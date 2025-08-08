@@ -8,7 +8,7 @@ export const supportAiModelInfo: Record<string, Record<string, string[]>> = {
 			'anthropic/claude-3.5-sonnet-20240620',
 		],
 		google: ['google/gemini-2.5-pro'],
-		openai: ['openai/gpt-4o', 'openai/gpt-4.1'],
+		openai: ['openai/gpt-4o', 'openai/gpt-4.1', 'openai/gpt-5'],
 		deepseek: ['deepseek/deepseek-chat-v3-0324:free'],
 		mistralai: ['mistralai/mistral-small-3.2-24b-instruct:free'],
 	},
@@ -22,13 +22,13 @@ export const supportAiModelInfo: Record<string, Record<string, string[]>> = {
 	// },
 	direct: {
 		// Mapping previous types to direct providers
-		openai: ['gpt-4o', 'gpt-4o-mini'], // Previously 'gpt'
+		openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-5'], // Previously 'gpt'
 		anthropic: ['claude-3.7-sonnet', 'claude-3.5-haiku'], // Previously 'claude'
 		google: [
 			'gemini-2.0-flash-001',
 			'gemini-2.0-flash-lite-001',
 			'gemini-2.5-pro-preview-05-06',
-			'gemini-2.5-flash-preview-04-17',
+			'gemini-2.5-flash-lite',
 			'gemini-2.0-flash-live-preview-04-09',
 		],
 	},
