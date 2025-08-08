@@ -31,6 +31,7 @@ import {
 	buildChatTurnId,
 	buildMessageId,
 } from '#shared/util/buildIdUtils.js';
+import { FilterCriteria } from '../util/schemaUtils.js';
 
 // Destructure outside the object
 const {
@@ -215,6 +216,45 @@ export const chatStore = {
 				newIndexRecords.map((r) => r.metadata)
 			);
 		}
+	},
+
+	/**
+	 * @private
+	 * Dynamically builds a ChromaDB 'where' clause to filter INDEX documents.
+	 */
+	_buildIndexWhereClause(sessionId: string, criteria: FilterCriteria): Where | undefined {
+		const orConditions: Where[] = [];
+
+		const addConditions = (list: string[] | undefined, type: ChatIndexContentType) => {
+			if (!list || list.length === 0) return;
+			list.forEach((item) => {
+				orConditions.push({
+					$and: [
+						{ type: { $eq: METADATA_TYPES.INDEX } },
+						{ contentType: { $eq: type } },
+						{ value: { $eq: item } },
+					],
+				});
+			});
+		};
+
+		// Map criteria to index content types
+		addConditions(criteria.topics, 'TOPIC');
+		addConditions(criteria.keywords, 'KEYWORD');
+		addConditions(criteria.entities?.characters, 'ENTITY'); // Assuming characters are stored as 'ENTITY' type
+		addConditions(criteria.entities?.locations, 'ENTITY'); // And locations too
+
+		if (criteria.emotion) {
+			addConditions([criteria.emotion], 'USER_EMOTION_NUANCE');
+			addConditions([criteria.emotion], 'CHARACTER_EMOTION_NUANCE');
+		}
+
+		if (orConditions.length === 0) {
+			return undefined;
+		}
+
+		// The final clause should find any INDEX doc for the session that matches ANY of the criteria.
+		return { $and: [{ sessionId: { $eq: sessionId } }, { $or: orConditions }] };
 	},
 
 	/**
@@ -459,39 +499,50 @@ export const chatStore = {
 	queryChatTurns: async (
 		sessionId: string,
 		queryTexts: string[],
-		where?: Where,
+		filterCriteria?: FilterCriteria,
 		whereDocument?: WhereDocument,
 		limit?: number
 	): Promise<ChatResponse> => {
 		try {
-			let turnIdsToFetch: string[] = [];
+			let turnIdsToSearch: string[] | undefined = undefined;
 			const collection = await chatStore._getChatCollection();
 			// Step 1: Pre-filter based on metadata to get relevant turn IDs
-			if (where && Object.keys(where).length > 0) {
-				const indexResults = await getRecords(collection, where);
-				const validatedIndexes = validateChromaResponse(indexResults, 'getList', collectionType);
-				turnIdsToFetch = [
-					...new Set(
-						validatedIndexes.metadatas.map((m) => (m as unknown as ChatIndexMetadata).chatTurnId)
-					),
-				];
+			if (filterCriteria && Object.keys(filterCriteria).length > 0) {
+				const indexWhereClause = chatStore._buildIndexWhereClause(sessionId, filterCriteria);
 
-				if (turnIdsToFetch.length === 0) {
-					return emptyChatResponse();
+				if (indexWhereClause) {
+					console.log('[chatStore] Querying INDEX docs with:', JSON.stringify(indexWhereClause));
+					const indexResults = await getRecords(collection, indexWhereClause);
+					const validatedIndexes = validateChromaResponse(indexResults, 'getList', collectionType);
+
+					// Collect unique turn IDs from the matching index records
+					const matchingTurnIds = [
+						...new Set(
+							validatedIndexes.metadatas.map((m) => (m as unknown as ChatIndexMetadata)?.chatTurnId)
+						),
+					];
+
+					if (matchingTurnIds.length === 0) {
+						console.log('[chatStore] No turns found matching metadata filter. Returning empty.');
+						return emptyChatResponse();
+					}
+					turnIdsToSearch = matchingTurnIds;
+					console.log(`[chatStore] Pre-filtered to ${turnIdsToSearch.length} turns.`);
 				}
 			}
 
-			// Step 2: Perform semantic search on the pre-filtered set
-			// CORRECTED: Programmatically build the conditions to avoid TypeScript errors.
-			const conditions: Where[] = [
-				{ type: { $eq: METADATA_TYPES.TURN } },
-				{ sessionId: { $eq: sessionId } },
-			];
-			if (turnIdsToFetch) {
-				conditions.push({ chatTurnId: { $in: turnIdsToFetch } });
-			}
-			const queryWhere: Where = { $and: conditions };
+			// --- Step 2: Perform vector search on TURN documents ---
+			// Build the final WHERE clause for the vector query.
+			const queryWhere: Where = {
+				$and: [{ type: { $eq: METADATA_TYPES.TURN } }, { sessionId: { $eq: sessionId } }],
+			};
 
+			// If we pre-filtered, add the $in condition to search only those turns.
+			if (turnIdsToSearch) {
+				queryWhere.$and?.push({ chatTurnId: { $in: turnIdsToSearch } });
+			}
+
+			console.log('[chatStore] Querying TURN docs with:', JSON.stringify(queryWhere));
 			const queryResults = await queryRecords(
 				collection,
 				queryTexts,

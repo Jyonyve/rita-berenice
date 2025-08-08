@@ -1,175 +1,120 @@
 // src/server/services/ragQueryService.ts
 
 import { z } from 'zod';
-import { Where } from 'chromadb';
 import { llmService } from './llmService.js';
-import { correctAiModelInfo } from '#shared/config/supportAiModelInfo.js';
-import {
-	AiModelInfo,
-	DEFAULT_EXTRACTION_MODEL,
-	DefaultAiRole,
-} from '#shared/domain/aimodel/AiInfoTypes.js';
-import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
-import { RagFilterSchema } from '../util/schemaUtils.js';
+import { termStore } from '../store/termStore.js';
+import { AiModelInfo, DEFAULT_EXTRACTION_MODEL } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { buildChatCompletion } from '../util/llmUtils.js';
+import { FilterCriteria, FilterCriteriaSchema } from '../util/schemaUtils.js';
+import { logFlow } from '../util/jsonlLogger.js';
 
-// Type alias for the structured data returned by the LLM
-type RagFilterData = z.infer<typeof RagFilterSchema>;
-
-// --- 2. Interface for the Service's Output ---
-// This is the object that will be passed to your memory retrieval logic.
+// The service output interface, returning query texts and structured filter criteria.
 export interface TransformedQuery {
 	queryTexts: string[];
-	metadataFilter?: Where;
-	criticalTerm?: string; // The newly identified critical term
+	filterCriteria?: FilterCriteria;
+	criticalTerm?: string;
 }
-
-// Helper to build ChatCompletion messages
 
 export const ragQueryService = {
 	/**
-	 * Transforms a raw user query into an optimized format for RAG retrieval.
-	 * It uses a cost-effective LLM to expand the query and extract metadata for filtering.
-	 *
-	 * @param userInput - The original query from the user.
-	 * @param profileInfo - The user's profile information.
-	 * @param originalAiModelInfo - The AI model info for the main response, used to select a corresponding cheap model.
-	 * @param langCode - The language code for generating prompts.
-	 * @returns A promise resolving to a TransformedQuery object.
+	 * Transforms a raw user query into an all-English set of search terms and structured
+	 * filter criteria for the RAG system.
 	 */
 	async transformQuery(
 		userInput: string,
+		sessionId: string,
 		userId: string,
 		langCode: 'kor' | 'eng' = 'kor'
 	): Promise<TransformedQuery> {
-		console.log('[ragQueryService] Transforming user query for enhanced retrieval...');
-
-		// --- Use the same logic as personaEngine to select a fast, cheap model ---
+		console.log('[ragQueryService] Transforming query with schema-aware extraction...');
+		if (langCode === 'eng') {
+			return { queryTexts: [userInput] };
+		}
 
 		try {
-			// --- Run expansion and extraction in parallel for efficiency ---
-			const [expandedQueries, extractedData] = await Promise.all([
-				ragQueryService._expandQuery(userInput, DEFAULT_EXTRACTION_MODEL, userId, langCode),
-				// --- Step 2b: Rename this function for clarity ---
-				ragQueryService._extractStructuredData(userInput, DEFAULT_EXTRACTION_MODEL, userId, langCode),
-			]);
+			const termRes = await termStore.getTermsBySessionId(sessionId);
+			const termGuidanceMap = new Map<string, string>();
+			termRes.terms.forEach((t) => termGuidanceMap.set(t.koreanTerm, t.englishTerm));
 
-			console.log(`[ragQueryService] expandedQueries : ${expandedQueries}`);
-			console.log(`[ragQueryService] extractedData : ${extractedData}`);
+			const extractedData = await ragQueryService._extractAndTranslateData(
+				userInput,
+				termGuidanceMap,
+				DEFAULT_EXTRACTION_MODEL,
+				userId
+			);
+			logFlow('ragQueryService', 'extractedData', extractedData);
 
-			// --- Step 2c: Process the full output from the LLM ---
-			const metadataFilter = ragQueryService._buildChromaWhereClause(extractedData);
-			const criticalTerm = extractedData.criticalTerm;
+			const expandedQueries = ragQueryService._expandQuery(extractedData);
+			logFlow('ragQueryService', 'expandedQueries', expandedQueries);
 
-			const finalQuery: TransformedQuery = {
+			return {
 				queryTexts: [userInput, ...expandedQueries],
-				metadataFilter,
-				criticalTerm, // Include the critical term in the final object
+				filterCriteria: extractedData,
+				criticalTerm: extractedData.criticalTerm,
 			};
-
-			console.log(`[ragQueryService] metadataFilter : ${metadataFilter}`);
-			console.log(`[ragQueryService] criticalTerm : ${criticalTerm}`);
-
-			console.log('[ragQueryService] Query transformed successfully');
-			return finalQuery;
 		} catch (error) {
 			console.error(error, 'Query transformation failed. Falling back to raw query.');
-			return { queryTexts: [userInput], metadataFilter: undefined };
+			return { queryTexts: [userInput] };
 		}
 	},
 
 	/**
 	 * @private
-	 * Expands a single user query into multiple, semantically related queries.
+	 * Uses an LLM guided by termStore to extract and translate query information.
 	 */
-	async _expandQuery(
+	async _extractAndTranslateData(
 		userInput: string,
+		termGuidanceMap: Map<string, string>,
 		modelInfo: AiModelInfo,
-		userId: string,
-		langCode: 'kor' | 'eng'
-	): Promise<string[]> {
-		const prompt =
-			langCode === 'kor'
-				? `당신은 유능한 검색 쿼리 전문가입니다. 사용자의 다음 질문을 바탕으로, 의미적으로 관련 있지만 표현이 다른 검색 쿼리 2개를 추가로 생성해 주세요. 각 쿼리는 줄바꿈으로 구분해 주세요. 다른 설명은 붙이지 마세요.\n\n사용자 질문: "${userInput}"`
-				: `You are an expert search query specialist. Based on the following user query, generate 2 additional, semantically related but differently phrased search queries. Separate each query with a newline. Do not add any other commentary.\n\nUser Query: "${userInput}"`;
+		userId: string
+	): Promise<FilterCriteria> {
+		let termGuidanceInstruction = '';
+		if (termGuidanceMap.size > 0) {
+			const rulesList = Array.from(termGuidanceMap.entries())
+				.map(
+					([korean, english]) =>
+						`  - For the Korean term "${korean}", you MUST use the English term: "${english}"`
+				)
+				.join('\n');
+
+			termGuidanceInstruction = `
+**Terminology Guidance (CRITICAL):**
+You MUST adhere to the following terminology rules when generating English metadata.
+${rulesList}
+`;
+		}
+
+		const prompt = `You are an expert data analyst. Analyze the following Korean user query and extract key information into a structured JSON object. ALL string values in the JSON output MUST be in English.
+${termGuidanceInstruction}
+**User Query:** "${userInput}"`;
 
 		const messages = [buildChatCompletion('user', prompt)];
-		const response = await llmService.invokeLlm(messages, modelInfo, userId);
 
-		// Split the response by newlines and filter out any empty strings
-		return response.split('\n').filter((q) => q.trim() !== '');
-	},
-
-	/**
-	 * @private
-	 * Extracts filterable metadata from the user query using a Zod schema.
-	 */
-	async _extractStructuredData(
-		userInput: string,
-		modelInfo: AiModelInfo,
-		userId: string,
-		langCode: 'kor' | 'eng'
-	): Promise<RagFilterData> {
-		// --- Step 2d: Update the prompt to ask for the critical term ---
-		const prompt =
-			langCode === 'kor'
-				? `당신은 텍스트에서 구조화된 데이터를 추출하는 전문가입니다. 다음 사용자 질문을 분석하여, 언급된 캐릭터 이름, 주제, 그리고 답변에 **반드시** 포함되어야 할 가장 중요한 핵심 단어(고유명사 또는 명사구) 하나를 JSON 형식으로 추출해 주세요. 핵심 단어가 없다면 해당 필드는 생략하세요.\n\n사용자 질문: "${userInput}"`
-				: `You are an expert at extracting structured data from text. Analyze the following user query and extract any mentioned character names, topics, and the single most important keyword (a proper noun or noun phrase) that MUST be included for an accurate answer. If no such critical term exists, omit the field. Respond in the required JSON format.\n\nUser Query: "${userInput}"`;
-
-		const messages = [buildChatCompletion('user', prompt)];
-		const response = await llmService.invokeLlm(
+		const jsonString = await llmService.invokeLlm(
 			messages,
 			modelInfo,
 			userId,
 			undefined,
-			RagFilterSchema
+			FilterCriteriaSchema
 		);
 
-		console.log;
-		return JSON.parse(response) as RagFilterData;
+		// --- RE-INSTATED AND CORRECTED ---
+		// Since invokeLlm returns a JSON string, we must parse it to get the object.
+		return JSON.parse(jsonString) as FilterCriteria;
 	},
 
 	/**
 	 * @private
-	 * Converts the extracted data object into a valid ChromaDB 'where' clause.
-	 * This version is corrected to only filter on metadata fields that support
-	 * exact matching, respecting the primitive-only constraint of ChromaDB metadata.
+	 * Generates expanded English queries from the extracted data. No LLM call is needed.
 	 */
-	_buildChromaWhereClause(data: RagFilterData): Where | undefined {
-		const andConditions: Where[] = [];
-
-		// Filter by character name (assuming a 'characterName' or similar field exists)
-		// This is a valid use case for a single-value metadata field.
-		if (data.entities?.characters && data.entities.characters.length > 0) {
-			// We can only reliably filter if one character is mentioned.
-			// Or, if your metadata schema has a 'characterNames' array, this could be `$in`.
-			// Sticking to the most robust single-value filter:
-			if (data.entities.characters.length === 1) {
-				andConditions.push({ characterName: { $eq: data.entities.characters[0] } });
-			}
+	_expandQuery(data: FilterCriteria): string[] {
+		const expanded = new Set<string>();
+		(data.topics || []).forEach((topic) => expanded.add(topic));
+		(data.keywords || []).forEach((keyword) => expanded.add(keyword));
+		(data.entities?.characters || []).forEach((c) => expanded.add(c));
+		if (data.criticalTerm) {
+			expanded.add(data.criticalTerm);
 		}
-
-		// Filter by emotion. This is a perfect use case for a single-value field.
-		if (data.emotion) {
-			// This creates a filter like: "find documents where the user's emotion OR the character's emotion matches".
-			andConditions.push({
-				$or: [
-					{ userEmotionPrimary: { $eq: data.emotion } },
-					{ characterEmotionPrimary: { $eq: data.emotion } },
-				],
-			});
-		}
-
-		// NOTE: We deliberately DO NOT filter on 'topics' or 'keywords' here.
-		// The vector search itself is the correct tool for matching those concepts.
-		// Attempting to filter them from a comma-separated string in a metadata
-		// 'where' clause is not supported and would be unreliable.
-
-		if (andConditions.length === 0) {
-			return undefined;
-		}
-
-		// Wrap all valid conditions in a single $and for a precise search
-		return andConditions.length === 1 ? andConditions[0] : { $and: andConditions };
+		return Array.from(expanded);
 	},
 };

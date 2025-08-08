@@ -26,8 +26,8 @@ export const createPersonaResponseSchema = (
 					`In Korean, these actions MUST end with '~다'. Refer to the user as '${userName}'. ` +
 					`Example: '${
 						langCode === 'kor'
-							? `*${charName}이 바닥에 앉는다.*\n오늘 하루 길었네.\n*그는 ${userName}을(를) 본다.*`
-							: `*${charName} sits on the floor.*\nA long day today.\n*He sees ${userName}.*`
+							? `${charName}이 바닥에 앉는다.\n"오늘 하루 길었네."\n그는 ${userName}을(를) 본다.`
+							: `${charName} sits on the floor.\n"A long day today."\nHe sees ${userName}.`
 					}'`
 			),
 		emotion: z
@@ -402,3 +402,24 @@ export const RagFilterSchema = z.object({
 			'The single most important noun or proper noun from the query that MUST be present in any relevant document. If no single term is overwhelmingly critical, this should be omitted.'
 		),
 });
+
+export const FilterCriteriaSchema = z.object({
+	entities: z
+		.object({
+			characters: z.array(z.string()).optional().describe('List of character names in English.'),
+			locations: z.array(z.string()).optional().describe('List of location names in English.'),
+			items: z.array(z.string()).optional().describe('List of item names in English.'),
+		})
+		.optional(),
+	emotion: z.string().optional().describe("User's dominant emotion in English."),
+	topics: z.array(z.string()).optional().describe('List of topics in English.'),
+	keywords: z.array(z.string()).optional().describe('List of keywords in English.'),
+	criticalTerm: z.string().optional().describe('A single, critical English search term.'),
+	period: z
+		.string()
+		.optional()
+		.describe("The relevant time period, in English (e.g., 'Childhood', 'Reign')."),
+});
+
+// This is the data structure that will be passed to chatStore
+export type FilterCriteria = z.infer<typeof FilterCriteriaSchema>;

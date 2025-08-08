@@ -15,6 +15,7 @@ import {
 } from '#shared/domain/recap/RecapInterfaces.js';
 import { buildRecapIndexId } from '#shared/util/buildIdUtils.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
+import { FilterCriteria } from '../util/schemaUtils.js';
 
 // Destructure chromaDbClient methods
 const {
@@ -37,6 +38,40 @@ export const recapStore = {
 		const collection = await getRecapCollection();
 		recapStore._recapCollection = collection;
 		return collection;
+	},
+
+	/**
+	 * @private
+	 * Dynamically builds a ChromaDB 'where' clause to filter RECAP index documents.
+	 */
+	_buildIndexWhereClause(sessionId: string, criteria: FilterCriteria): Where | undefined {
+		const orConditions: Where[] = [];
+
+		// For recaps, the most relevant filter is likely emotion or specific keywords/flags.
+		// We'll map the extracted criteria to the 'RECAP_FLAG' content type.
+		const recapFlags = [...(criteria.keywords || []), ...(criteria.topics || [])];
+		if (criteria.emotion) {
+			recapFlags.push(criteria.emotion);
+		}
+
+		if (recapFlags.length > 0) {
+			recapFlags.forEach((flag) => {
+				orConditions.push({ $and: [{ contentType: { $eq: 'RECAP_FLAG' } }, { value: { $eq: flag } }] });
+			});
+		}
+
+		if (orConditions.length === 0) {
+			return undefined;
+		}
+
+		// The final clause finds any INDEX doc for the session that matches ANY of the flags.
+		return {
+			$and: [
+				{ type: { $eq: METADATA_TYPES.INDEX } },
+				{ sessionId: { $eq: sessionId } },
+				{ $or: orConditions },
+			],
+		};
 	},
 
 	/**
@@ -183,7 +218,7 @@ export const recapStore = {
 		sessionId: string,
 		queryTexts: string[],
 		type: typeof METADATA_TYPES.RECAP | typeof METADATA_TYPES.RELATIONSHIP,
-		whereFilter?: Where, // This filter is for the INDEX records
+		filterCriteria?: FilterCriteria, // Changed parameter
 		whereDocument?: WhereDocument,
 		limit?: number
 	): Promise<RecapInfo[]> {
@@ -192,17 +227,22 @@ export const recapStore = {
 			let recapIdsToSearch: string[] | undefined = undefined;
 
 			// Step 1: Pre-filter using the index to get relevant recap IDs.
-			if (whereFilter && Object.keys(whereFilter).length > 0) {
-				const indexResults = await getRecords(collection, whereFilter);
-				const validatedIndexes = validateChromaResponse(indexResults, 'getList', collectionType);
-				recapIdsToSearch = [
-					...new Set(
-						validatedIndexes.metadatas.map((m) => (m as unknown as RecapIndexMetadata).recapId)
-					),
-				];
+			if (filterCriteria && Object.keys(filterCriteria).length > 0) {
+				const indexWhereFilter = recapStore._buildIndexWhereClause(sessionId, filterCriteria);
+				if (indexWhereFilter) {
+					console.log('[recapStore] Querying RECAP INDEX docs with:', JSON.stringify(indexWhereFilter));
+					const indexResults = await getRecords(collection, indexWhereFilter);
+					const validatedIndexes = validateChromaResponse(indexResults, 'getList', collectionType);
+					recapIdsToSearch = [
+						...new Set(
+							validatedIndexes.metadatas.map((m) => (m as unknown as RecapIndexMetadata).recapId)
+						),
+					];
 
-				if (recapIdsToSearch.length === 0) {
-					return [];
+					if (recapIdsToSearch.length === 0) {
+						return [];
+					}
+					console.log(`[recapStore] Pre-filtered to ${recapIdsToSearch.length} recaps.`);
 				}
 			}
 
@@ -213,6 +253,7 @@ export const recapStore = {
 			}
 			const queryWhere: Where = { $and: queryConditions };
 
+			console.log('[recapStore] Querying RECAP docs with:', JSON.stringify(queryWhere));
 			const queryResults = await queryRecords(
 				collection,
 				queryTexts,
@@ -220,6 +261,7 @@ export const recapStore = {
 				whereDocument,
 				limit
 			);
+
 			const validatedQueryResults = queryResults.map((r) =>
 				validateChromaResponse(r, 'getList', collectionType)
 			);

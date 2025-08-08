@@ -87,29 +87,29 @@ router.post(
 	)
 );
 
-/**
- * POST /api/lore/query-lores
- * Performs a semantic search for lore entries for a character, with optional filters.
- * @param {object} req.body - Contains characterId, queryTexts, and optional filters.
- * @returns {LoreResponse} Search results containing matching lore entries.
- */
-router.post(
-	genRoutePattern('queryLores'),
-	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
-		const requiredFields = ['characterId', 'queryTexts'];
-		validateRequestData(req.body, 'body', requiredFields);
+// /**
+//  * POST /api/lore/query-lores
+//  * Performs a semantic search for lore entries for a character, with optional filters.
+//  * @param {object} req.body - Contains characterId, queryTexts, and optional filters.
+//  * @returns {LoreResponse} Search results containing matching lore entries.
+//  */
+// router.post(
+// 	genRoutePattern('queryLores'),
+// 	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+// 		const requiredFields = ['characterId', 'queryTexts'];
+// 		validateRequestData(req.body, 'body', requiredFields);
 
-		const { characterId, queryTexts, options } = req.body;
-		validateServiceId(characterId, collectionType);
+// 		const { characterId, queryTexts, options } = req.body;
+// 		validateServiceId(characterId, collectionType);
 
-		const path = genRoutePattern('queryLores');
-		console.log(`API HIT: POST ${path} for character ${characterId}`);
+// 		const path = genRoutePattern('queryLores');
+// 		console.log(`API HIT: POST ${path} for character ${characterId}`);
 
-		const response = await loreStore.queryLores(characterId, queryTexts, options);
-		const payload = compressData(response);
-		res.status(200).json({ payload });
-	})
-);
+// 		const response = await loreStore.queryLores(characterId, queryTexts, options);
+// 		const payload = compressData(response);
+// 		res.status(200).json({ payload });
+// 	})
+// );
 
 // --- HISTORY ROUTES ---
 
@@ -159,28 +159,28 @@ router.post(
 	)
 );
 
-/**
- * POST /api/lore/query-histories
- * Performs a semantic search for history entries for a character.
- * @param {object} req.body - Contains characterId and queryTexts.
- * @returns {HistoryResponse} Search results containing matching history entries.
- */
-router.post(
-	genRoutePattern('queryHistories'),
-	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
-		const requiredFields = ['characterId', 'queryTexts'];
-		validateRequestData(req.body, 'body', requiredFields);
+// /**
+//  * POST /api/lore/query-histories
+//  * Performs a semantic search for history entries for a character.
+//  * @param {object} req.body - Contains characterId and queryTexts.
+//  * @returns {HistoryResponse} Search results containing matching history entries.
+//  */
+// router.post(
+// 	genRoutePattern('queryHistories'),
+// 	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+// 		const requiredFields = ['characterId', 'queryTexts'];
+// 		validateRequestData(req.body, 'body', requiredFields);
 
-		const { characterId, queryTexts, options } = req.body;
-		validateServiceId(characterId, collectionType);
+// 		const { characterId, queryTexts, options } = req.body;
+// 		validateServiceId(characterId, collectionType);
 
-		const path = genRoutePattern('queryHistories');
-		console.log(`API HIT: POST ${path} for character ${characterId}`);
+// 		const path = genRoutePattern('queryHistories');
+// 		console.log(`API HIT: POST ${path} for character ${characterId}`);
 
-		const response = await loreStore.queryHistories(characterId, queryTexts, options);
-		const payload = compressData(response);
-		res.status(200).json({ payload });
-	})
-);
+// 		const response = await loreStore.queryHistories(characterId, queryTexts, options);
+// 		const payload = compressData(response);
+// 		res.status(200).json({ payload });
+// 	})
+// );
 
 export default router;

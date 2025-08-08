@@ -117,34 +117,34 @@ export const memoryEngine = {
 				chatStore.queryChatTurns(
 					sessionId,
 					transformedQuery.queryTexts,
-					transformedQuery.metadataFilter,
+					transformedQuery.filterCriteria,
 					documentFilter,
 					INITIAL_QUERY_LIMIT
 				),
 				loreStore.queryLores(
 					characterId,
 					transformedQuery.queryTexts,
-					transformedQuery.metadataFilter,
+					transformedQuery.filterCriteria,
 					documentFilter
 				),
 				loreStore.queryHistories(
 					characterId,
 					transformedQuery.queryTexts,
-					transformedQuery.metadataFilter,
+					transformedQuery.filterCriteria,
 					documentFilter
 				),
 				recapStore.queryRecaps(
 					sessionId,
 					transformedQuery.queryTexts,
 					METADATA_TYPES.RECAP,
-					transformedQuery.metadataFilter,
+					transformedQuery.filterCriteria,
 					documentFilter
 				),
 				recapStore.queryRecaps(
 					sessionId,
 					transformedQuery.queryTexts,
 					METADATA_TYPES.RELATIONSHIP,
-					transformedQuery.metadataFilter,
+					transformedQuery.filterCriteria,
 					documentFilter
 				),
 			]);
