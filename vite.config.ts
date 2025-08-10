@@ -16,6 +16,7 @@ const allBuiltinModules = [...new Set([...builtinModules, ...nodeBuiltinModules]
 
 export default defineConfig(({ mode }) => {
 	const isStaticBuild = mode === 'static';
+	const isProduction = mode === 'production';
 	const env = loadEnv(mode, process.cwd(), '');
 	return {
 		root: '.',
@@ -42,7 +43,7 @@ export default defineConfig(({ mode }) => {
 			react({ jsxImportSource: '@emotion/react', babel: { plugins: ['@emotion/babel-plugin'] } }),
 
 			// ADD THIS PLUGIN BACK. It is essential for fixing the client-side error.
-			nodePolyfills(),
+			nodePolyfills({ protocolImports: true }),
 			tsconfigPaths(),
 			svgr(),
 		],
@@ -57,56 +58,34 @@ export default defineConfig(({ mode }) => {
 			host: '0.0.0.0', // Match your server.ts host setting
 			port: 3000,
 			strictPort: true,
-			// Add performance optimizations
-			hmr: {
-				port: 3001, // Use separate port for HMR
-			},
-			// Optimize middleware mode for SSR
-			middlewareMode: false,
 		},
 
 		// Keep preview config as is
 		preview: { host: '0.0.0.0', port: 3000, strictPort: true },
 		build: {
 			target: 'es2022',
+			sourcemap: !isProduction,
+			minify: 'esbuild',
 			chunkSizeWarningLimit: 1500, // Increase limit
 			rollupOptions: {
 				input: { main: './index.html', server: './src/entry-server.tsx' },
-				external: [
-					'ollama',
-					'fsevents',
-					'chromadb', // Add this for server build optimization
-				],
 				output: {
 					// Optimize chunk splitting for better performance
 					manualChunks(id) {
-						// React ecosystem
-						if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
-							return 'react-vendor';
-						}
-
-						// MUI and Emotion (large bundle)
-						if (id.includes('node_modules/@mui/') || id.includes('node_modules/@emotion/')) {
-							return 'mui-vendor';
-						}
-
-						// SuperTokens (separate chunk)
-						if (id.includes('supertokens')) {
-							return 'auth-vendor';
-						}
-
-						// AI/ML libraries
-						if (id.includes('onnxruntime') || id.includes('transformers')) {
-							return 'ai-vendor';
-						}
-
-						// LangChain
-						if (id.includes('@langchain/') || id.includes('langchain')) {
-							return 'langchain-vendor';
-						}
-
-						// Other large vendor libraries
-						if (id.includes('node_modules/')) {
+						if (id.includes('node_modules')) {
+							if (id.includes('@mui') || id.includes('@emotion')) {
+								return 'vendor-mui';
+							}
+							if (id.includes('react')) {
+								return 'vendor-react';
+							}
+							if (id.includes('supertokens')) {
+								return 'vendor-auth';
+							}
+							if (id.includes('langchain')) {
+								return 'vendor-langchain';
+							}
+							// All other node_modules into a generic vendor chunk
 							return 'vendor';
 						}
 					},
@@ -119,9 +98,6 @@ export default defineConfig(({ mode }) => {
 					},
 				},
 			},
-			sourcemap: process.env.NODE_ENV === 'development', // Only in dev
-			minify: 'esbuild', // Faster than terser
-			// Add build performance options
 			reportCompressedSize: false, // Skip gzip size calculation
 			write: true,
 		},
@@ -143,10 +119,6 @@ export default defineConfig(({ mode }) => {
 			// Force optimize these deps
 			force: true,
 		},
-		esbuild: {
-			logOverride: { 'this-is-undefined-in-esm': 'silent', 'commonjs-variable-in-esm': 'silent' },
-			logLevel: 'error',
-			target: 'es2020',
-		},
+		esbuild: { target: 'es2022', logOverride: { 'this-is-undefined-in-esm': 'silent' } },
 	};
 });
