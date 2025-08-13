@@ -1,6 +1,5 @@
 export * from './parseUtils.js';
 export * from './aiModelUtils.js';
-export * from './documentUtils.js';
 export * from './apiHelpers.js';
 export * from './typeGuardUtils.js';
 export * from './dbConvertUtils.js';

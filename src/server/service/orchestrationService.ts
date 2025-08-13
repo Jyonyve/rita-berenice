@@ -16,7 +16,7 @@ import { handleServiceError } from '../util/serviceHelpers.js';
 import { memoryEngine } from './memoryEngine.js';
 import { personaEngine } from './personaEngine.js';
 import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';
-import { buildChatMessage, parseSessionId } from '#shared/util/parseUtils.js';
+
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { tempStore } from '../store/tempStore.js';
 import { MemoryResponse, PersonaResponse } from '#shared/api/ModuleResponse.js';
@@ -24,6 +24,7 @@ import { detectLanguage } from '../util/languageUtils.js';
 import { createBasicChatTurn } from '#shared/util/typeGuardUtils.js';
 import { ApiError } from '#shared/domain/error/errors.js';
 import { sanitizeLlmResponse as sanitizeLlmResponse } from '../util/llmUtils.js';
+import { buildChatMessage } from '../util/chatParseUtils.js';
 
 const timerLabel = (sequence: number) => `RESPONSE_GENERATION: Turn ${sequence}`;
 
@@ -179,7 +180,7 @@ const _getOrCreateTempTurn = async (
 
 /**
  * [HELPER] Generates a new AI response and adds it to the temp turn's options.
- * This is the core business logic for a single response generation.
+ * This is the core business logic for a single response generation.F
  * @private
  */
 async function _generateAndAppendResponse(
@@ -193,13 +194,15 @@ async function _generateAndAppendResponse(
 ): Promise<TempChatTurn> {
 	// 1. Recall relevant memories for context.
 	let recalledMemories: MemoryResponse;
+	const langCode = detectLanguage(userInput);
 	const recentChatTurn: ChatTurn[] = JSON.parse(recentChatTurnString);
 	try {
 		recalledMemories = await memoryEngine.recallRelevantMemories(
 			tempTurn.sessionId,
 			userInput,
 			tempTurn.userId,
-			recentChatTurn
+			recentChatTurn,
+			langCode
 		);
 		// --- 2. LOG CHECKPOINT 2 ---
 		console.timeLog(timerLabel(tempTurn.sequence), 'Memory recall finish. completed.');
@@ -207,7 +210,7 @@ async function _generateAndAppendResponse(
 		if (error instanceof ApiError && error.status === 404) {
 			console.warn(`[Orchestrator] No memories found for session. Proceeding with empty context.`);
 			recalledMemories = {
-				langCode: detectLanguage(userInput),
+				langCode,
 				shortTermHistory: recentChatTurn ?? [],
 				longTermHistory: [],
 				relevantLore: [],

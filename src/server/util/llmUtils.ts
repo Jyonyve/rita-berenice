@@ -3,10 +3,9 @@ import { ChatCompletion } from 'openai/resources/index.mjs';
 import { ChromaResponse } from '#shared/api/ModuleResponse.js';
 import { DefaultAiRole } from '#shared/domain/aimodel/index.js';
 import { HistoryContext, HistoryInfo, LoreContext, LoreInfo } from '#shared/domain/lore/index.js';
-import { LlmResponseParseError } from '#shared/domain/error/errors.js';
 import { logFlow } from './jsonlLogger.js';
-import { ChatEntry } from '#shared/domain/chat/ChatInterfaces.js';
-import { parseEntriesToText } from '#shared/util/parseUtils.js';
+import { ChatEntry, ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { parseEntriesToConversation } from './chatParseUtils.js';
 
 export function isDirectOpenAIClient(llm: any): llm is OpenAI {
 	// Check for a unique property or method of the OpenAI client instance
@@ -19,58 +18,6 @@ export const extractValidOpenAiContent = (response: ChatCompletion): string => {
 	if (!response?.choices?.length) return '';
 	const validChoice = response.choices.find((choice) => choice?.message?.content != null);
 	return validChoice?.message?.content || '';
-};
-
-/**
- * Safely extracts a JSON object from a raw LLM string response, which might be
- * wrapped in markdown code blocks (e.g., ``````).
- *
- * This function is generic and can be typed by the caller to ensure the parsed
- * object matches an expected interface.
- *
- * @param llmResponse The raw string response from the LLM.
- * @param callerContext A string to identify the calling function for better error logging.
- * @returns A parsed object of type T, or null if parsing fails.
- */
-
-/**
- * Safely extracts a JSON object from a raw LLM string response.
- * Throws a specific, catchable error if the response is empty, malformed,
- * or cannot be parsed.
- *
- * @param llmResponse The raw string response from the LLM.
- * @param callerContext A string to identify the calling function for better error logging.
- * @returns A parsed object of type T.
- * @throws {LlmResponseParseError} If parsing fails at any stage.
- */
-
-export const parseLlmJsonResponse = <T>(
-	llmResponse: string,
-	callerContext: string = 'LLM Parser'
-): T => {
-	if (!llmResponse) {
-		throw new LlmResponseParseError('NOT_FOUND', callerContext, 'Empty or null response.');
-	}
-
-	const JSON_REGEX = /``````/;
-	let extractedJson = '';
-
-	const match = llmResponse.match(JSON_REGEX);
-	if (match && match[1]) {
-		extractedJson = match[1];
-	} else if (llmResponse.trim().startsWith('{')) {
-		extractedJson = llmResponse;
-	} else {
-		throw new LlmResponseParseError('NOT_FOUND', callerContext, llmResponse);
-	}
-
-	try {
-		return JSON.parse(extractedJson) as T;
-	} catch (error: any) {
-		// Pass the specific JSON.parse error message for the corrective prompt
-		console.log(`[parseLlmJsonResponse] : ${llmResponse}`);
-		throw new LlmResponseParseError('MALFORMED_SYNTAX', callerContext, llmResponse);
-	}
 };
 
 /**
@@ -140,18 +87,53 @@ export const sanitizeLlmResponse = (text: string): string => {
 		result: chatEntries,
 	});
 
-	return parseEntriesToText(chatEntries);
+	return parseEntriesToConversation(chatEntries);
+};
+
+/**
+ * Boosts relevance scores for items containing the critical term.
+ * @param results Array of ChatTurn, LoreInfo, or HistoryInfo objects
+ * @param criticalTerm The most important search term extracted from user input
+ * @returns The same array with relevance boost scores applied and sorted by relevance
+ */
+export const boostByCriticalTerm = <T extends ChatTurn | LoreInfo | HistoryInfo>(
+	results: T[],
+	criticalTerm: string | undefined
+): T[] => {
+	if (!criticalTerm || results.length === 0) return results;
+
+	return results
+		.map((item) => {
+			// Check if the critical term appears in the item's searchable fields
+			const itemText = JSON.stringify(item).toLowerCase();
+			const hasCriticalTerm = itemText.includes(criticalTerm.toLowerCase());
+
+			return {
+				...item,
+				_relevanceBoost: hasCriticalTerm ? 1.5 : 1.0, // 50% boost if critical term found
+			} as T & { _relevanceBoost: number };
+		})
+		.sort((a, b) => {
+			const aBoost = (a as any)._relevanceBoost || 1;
+			const bBoost = (b as any)._relevanceBoost || 1;
+			return bBoost - aBoost;
+		})
+		.map(({ _relevanceBoost, ...item }) => item as unknown as T); // Remove the temporary boost property
 };
 
 /**
  * Re-ranks ChromaDB results based on a combination of semantic distance and recency.
  * @param response The raw response from a ChromaDB query.
  * @param decayRate A factor controlling how quickly older items lose relevance (e.g., 0.1).
+ * @param semanticWeight Weight for semantic similarity (default: 0.7)
+ * @param recencyWeight Weight for recency (default: 0.3)
  * @returns The same ChromaResponse object, but with its contents sorted by the new combined score.
  */
 export function reRankByRecency<T extends { updatedAt: string }>(
-	response: ChromaResponse & { contents?: T[] }, // Assuming a generic response with a content array
-	decayRate: number = 0.05
+	response: ChromaResponse & { contents?: T[] },
+	decayRate: number = 0.05,
+	semanticWeight: number = 0.7,
+	recencyWeight: number = 0.3
 ): ChromaResponse & { contents?: T[] } {
 	if (!response.documents || !response.distances || !response.contents) {
 		return response; // Not enough data to rank
@@ -169,8 +151,8 @@ export function reRankByRecency<T extends { updatedAt: string }>(
 			// 2. Calculate recency score using exponential decay
 			const recencyScore = Math.exp(-decayRate * ageInDays);
 
-			// 3. Combine the scores. Adjust weighting as needed.
-			const combinedScore = semanticScore * 0.7 + recencyScore * 0.3;
+			// 3. Combine the scores with configurable weights
+			const combinedScore = semanticScore * semanticWeight + recencyScore * recencyWeight;
 
 			return {
 				id: response.ids[index],

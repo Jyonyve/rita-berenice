@@ -15,7 +15,7 @@ import {
 	TempChatTurn,
 	TempChatTurnMetadata,
 } from '#shared/domain/chat/ChatInterfaces.js';
-import { flatChatMessageToDoc, chatTurnToDocument } from '#shared/util/documentUtils.js';
+import { flatChatMessageToDoc, chatTurnToDocument } from '#server/util/documentUtils.js';
 import { ApiError } from '#shared/domain/error/errors.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import {
@@ -24,8 +24,6 @@ import {
 	metadataToDisplayTurn,
 } from '#shared/util/dbConvertUtils.js';
 import { ChatResponse } from '#shared/api/ModuleResponse.js';
-import { parseTextToEntries } from '#shared/util/parseUtils.js';
-import { isAndWhere } from '../util/queryUtils.js';
 import {
 	buildChatTurnIndexId,
 	buildChatTurnId,

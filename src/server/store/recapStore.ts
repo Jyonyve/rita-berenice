@@ -5,7 +5,6 @@ import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
 import { chromaDbClient } from '../db/chromaDbClient.js';
 import { RecapResponse } from '#shared/api/ModuleResponse.js';
-import { recapToDocument } from '#shared/util/documentUtils.js';
 import { recapToMetadata, metadataToRecap } from '#shared/util/dbConvertUtils.js';
 import {
 	RecapInfo,
@@ -16,6 +15,7 @@ import {
 import { buildRecapIndexId } from '#shared/util/buildIdUtils.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import { FilterCriteria } from '../util/schemaUtils.js';
+import { recapToDocument } from '../util/documentUtils.js';
 
 // Destructure chromaDbClient methods
 const {

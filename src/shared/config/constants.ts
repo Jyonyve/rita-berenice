@@ -1,7 +1,7 @@
 export const ALPHANUMERIC_ALPHABET =
 	'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' as const;
 export const BASE_IMAGE_DIR = '/src/client/asset/character';
-export const ABORT_TIMEOUT = 300 as const; ///300초
+export const ABORT_TIMEOUT = 600 as const; ///300초
 export const DEFAULT_RECAP_INTERVAL: number = 3 as const;
 export const DEFAULT_RELATIONSHIP_RECAP_INTERVAL = 5 as const;
 export const DEFAULT_RECENT_TURN_COUNT: number = 10 as const;

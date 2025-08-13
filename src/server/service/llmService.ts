@@ -2,11 +2,9 @@
 
 import { get_encoding, Tiktoken } from 'tiktoken';
 import { BaseChatModel } from '@langchain/core/language_models/chat_models';
-import { ChatOpenAI } from '@langchain/openai';
-import { ChatAnthropic } from '@langchain/anthropic';
-import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
-import OpenAI from 'openai';
 
+import util from 'util';
+import { JsonOutputParser, StructuredOutputParser } from '@langchain/core/output_parsers';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { BaseMessage, SystemMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
 
@@ -15,8 +13,13 @@ import { AiModelInfo, DEFAULT_EXTRACTION_MODEL } from '#shared/domain/aimodel/Ai
 import { MODEL_LIMITS_INFO } from '#shared/config/supportAiModelInfo.js';
 import { convertMessageContentToString } from '#shared/util/parseUtils.js';
 import { buildNerPrompt, buildTermTranslationPrompt } from '../util/templateUtils.js';
-import z from 'zod';
+import z, { ZodObject } from 'zod';
 import { logFlow } from '../util/jsonlLogger.js';
+
+import { ChatAnthropic } from '@langchain/anthropic';
+import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
+import { ChatOpenAI } from '@langchain/openai';
+import { buildChatCompletion } from '../util/llmUtils.js';
 
 // --- 저수준 유틸리티 함수 ---
 // 이 함수들은 데이터의 '내용'을 변경하지 않고, '형식'을 보장하는 역할만 합니다.
@@ -49,21 +52,6 @@ const normalizeMessageContent = (content: unknown): string => {
 	return '';
 };
 
-const reconstructMessagesForApi = (messages: any[]): ChatCompletionMessageParam[] => {
-	if (!Array.isArray(messages)) {
-		throw new Error('[llmService] Validation Failed: messages must be an array.');
-	}
-	const reconstructed: ChatCompletionMessageParam[] = [];
-	for (const msg of messages) {
-		if (typeof msg !== 'object' || msg === null || !msg.role) {
-			console.warn('[llmService] Skipping invalid message entry:', msg);
-			continue;
-		}
-		reconstructed.push({ role: msg.role, content: normalizeMessageContent(msg.content) });
-	}
-	return reconstructed;
-};
-
 const convertToLangChainMessages = (messages: ChatCompletionMessageParam[]): BaseMessage[] => {
 	return messages.map((msg) => {
 		switch (msg.role) {
@@ -88,7 +76,7 @@ export const llmService = {
 	/**
 	 * LLM 클라이언트 인스턴스를 생성합니다.
 	 */
-	createLlmInstance: async (aiInfo: AiModelInfo, userId: string): Promise<BaseChatModel> => {
+	createLlmInstance: async (aiInfo: AiModelInfo, userId: string) => {
 		const { platform, provider, model, temperature, maxTokens } = aiInfo;
 		const userApiKeys = await credentialStore.getUserApiKeys(userId);
 
@@ -148,6 +136,7 @@ export const llmService = {
 
 	/**
 	 * Calculates and validates the token count for a request against the model's limit.
+	 * This version correctly throws an error on failure to halt execution.
 	 */
 	validateTokenCount: async (
 		messages: ChatCompletionMessageParam[],
@@ -155,12 +144,14 @@ export const llmService = {
 	): Promise<void> => {
 		const { model } = aiInfo;
 		const maxTokens = MODEL_LIMITS_INFO[model].maxOutputTokens;
+
 		if (!maxTokens) {
 			console.warn(
 				`[llmService.validateTokenCount] No context window size defined for ${model}. Skipping.`
 			);
 			return;
 		}
+
 		try {
 			const encoding: Tiktoken = get_encoding('cl100k_base');
 			const textToEncode = messages
@@ -168,101 +159,90 @@ export const llmService = {
 				.join('\n');
 			const tokenCount = encoding.encode(textToEncode).length;
 			encoding.free();
+
 			console.log(
 				`[llmService.validateTokenCount] Model: ${model}, Tokens: ${tokenCount}, Max: ${maxTokens}`
 			);
+
 			if (tokenCount >= maxTokens) {
-				throw new Error(
-					`[llmService] Request exceeds token limit for ${model}. Tokens: ${tokenCount}, Limit: ${maxTokens}.`
-				);
+				throw new Error(`Request exceeds token limit. Tokens: ${tokenCount}, Limit: ${maxTokens}.`);
 			}
-		} catch (error) {
-			console.error('[llmService.validateTokenCount] Failed to count tokens with tiktoken:', error);
+		} catch (error: any) {
+			console.error(
+				'[llmService.validateTokenCount] A critical error occurred during token validation:',
+				error.message
+			);
+			// **FIX**: Re-throw the error to stop the invokeLlm process immediately.
+			throw new Error(`Token validation failed: ${error.message}`);
 		}
 	},
 
 	/**
-	 * A generic LLM invocation function that supports optional structured output.
-	 * If a Zod schema is provided, it enforces a JSON response. Otherwise, it
-	 * returns a standard text response.
-	 *
-	 * @param messages - The array of messages for the LLM.
-	 * @param aiModelInfo - The configuration for the selected AI model.
-	 * @param userId - The ID of the user making the request.
-	 * @param options - Optional parameters like an AbortSignal.
-	 * @param zodSchema - An optional Zod schema to enforce structured JSON output.
-	 * @returns A promise that resolves to a string, either plain text or a JSON string.
+	 * A hybrid LLM invocation function that uses the best strategy for each model type.
 	 */
 	invokeLlm: async (
 		messages: ChatCompletionMessageParam[],
 		aiModelInfo: AiModelInfo,
 		userId: string,
 		options?: { signal?: AbortSignal },
-		zodSchema?: z.ZodObject<any>
+		zodSchema?: ZodObject
 	): Promise<string> => {
+		const useStructuredOutput = zodSchema && aiModelInfo.provider === 'google';
+
 		try {
-			await llmService.validateTokenCount(messages, aiModelInfo);
-			const sanitizedMessages = reconstructMessagesForApi(messages);
 			const llmClient = await llmService.createLlmInstance(aiModelInfo, userId);
-			const langChainMessages = convertToLangChainMessages(sanitizedMessages);
+			const langChainMessages = convertToLangChainMessages(messages);
 
-			logFlow('llmService', 'invokeLlm', { langChainMessages });
-
-			if (zodSchema) {
-				console.log(`[llmService] Invoking model with structured output (Zod schema)`);
+			if (useStructuredOutput) {
+				// --- STRATEGY 1: For Strict Models (Gemini) ---
+				console.log(
+					`[llmService] Using withStructuredOutput for compliant model: ${aiModelInfo.model}`
+				);
 				const structuredLlm = llmClient.withStructuredOutput(zodSchema, {
-					name: 'json_output_tool', // Use a generic tool name
+					name: 'json_output_tool',
+					includeRaw: true,
 				});
+				const result = await structuredLlm.invoke(langChainMessages, { signal: options?.signal });
 
-				try {
-					// --- ATTEMPT 1: Ideal case, direct structured invocation ---
-					const structuredOutput = await structuredLlm.invoke(langChainMessages, {
-						signal: options?.signal,
-					});
-					logFlow('llmService', 'invokeLlm.success', { structuredOutput });
-					return JSON.stringify(structuredOutput);
-				} catch (error: any) {
-					// --- ATTEMPT 2: Fallback, clean the raw output from the error ---
-					console.warn(
-						`[llmService] Initial structured output failed. Attempting to clean the response. Error: ${error.message}`
-					);
-
-					// The full, messy response is often in the error message
-					const rawOutput = error.message;
-					logFlow('llmService', 'invokeLlm.error', { rawOutput });
-					const cleanedJson = _extractJsonFromString(rawOutput);
-
-					if (cleanedJson) {
-						try {
-							// Final check: ensure the cleaned JSON matches the schema
-							zodSchema.parse(JSON.parse(cleanedJson));
-							console.log('[llmService] Successfully extracted and validated JSON from raw output.');
-							return cleanedJson;
-						} catch (validationError: any) {
-							console.error('[llmService] Extracted JSON failed Zod validation.', validationError.errors);
-							// If validation fails, we throw the more informative validation error
-							throw validationError;
-						}
-					}
-
-					// If we reach here, cleaning failed. Re-throw the original error.
-					throw error;
+				if (result.parsed) {
+					return JSON.stringify(result.parsed);
+				} else {
+					const raw: AIMessage = result.raw;
+					console.warn('[llmService] Compliant model failed parsing. Falling back to raw text.');
+					return convertMessageContentToString(JSON.stringify(raw.tool_calls?.[0].args));
 				}
 			} else {
-				// Standard text invocation logic (unchanged)
-				console.log(`[llmService] Invoking model with standard text output`);
+				// --- STRATEGY 2: Manual Handling for Creative Models (Claude/GPT) ---
+				console.log(`[llmService] Using manual parsing for creative model: ${aiModelInfo.model}`);
+
+				let langChainMessages = convertToLangChainMessages(messages);
+
+				if (zodSchema) {
+					const parser = StructuredOutputParser.fromZodSchema(zodSchema as any);
+					const formatInstructions = parser.getFormatInstructions();
+					const guideParam = convertToLangChainMessages([
+						buildChatCompletion('system', formatInstructions),
+					]);
+					langChainMessages = [...guideParam, ...langChainMessages];
+				}
+
 				const responseMessage = await llmClient.invoke(langChainMessages, { signal: options?.signal });
-				logFlow('llmService', 'invokeLlm', { responseMessage });
-				return convertMessageContentToString(responseMessage.content);
+				const rawOutput = convertMessageContentToString(responseMessage.content);
+
+				// Attempt to parse. personaEngine will handle the failure.
+				try {
+					JSON.parse(rawOutput);
+					return rawOutput; // Return the valid JSON string
+				} catch {
+					return rawOutput; // Return the invalid raw text for correction
+				}
 			}
 		} catch (error: any) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
 			console.error(
-				`[llmService.invokeLlm] A non-recoverable error occurred for '${aiModelInfo.model}':`,
-				errorMessage
+				`[llmService.invokeLlm] A critical, non-recoverable error occurred:`,
+				error.message
 			);
-			// Wrap in a clear, final error message
-			throw new Error(`[llmService] LLM invocation failed: ${errorMessage}`);
+			throw new Error(`[llmService] LLM invocation failed: ${error.message}`);
 		}
 	},
 

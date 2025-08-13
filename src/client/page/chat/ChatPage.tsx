@@ -9,7 +9,6 @@ import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { ChatTurnCdo, TempChatTurn, TempChatTurnCdo } from '#shared/domain/chat/ChatInterfaces.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
-import { parseEntriesToText, parseTextToEntries } from '#shared/util/parseUtils.js';
 import { Box, Grid, useMediaQuery, useTheme } from '@mui/material';
 import { useOrchestrationApi, useTempChatApi, useSessionApi } from '../../hook/api/index.js';
 import { useChatState } from '../../hook/state/useChatState.js';
@@ -23,6 +22,7 @@ import {
 	DEFAULT_EXTRACTION_MODEL,
 } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { useErrorDialog } from '../../util/styleUtils.jsx';
+import { parseEntriesToText, parseTextToEntries } from '../../util/chatParseUtils.js';
 
 export const ChatPage: FC<{
 	characterInfo: CharacterInfo;

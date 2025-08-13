@@ -8,7 +8,7 @@ import { ChromaResponse, SessionResponse } from '#shared/api/ModuleResponse.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import { buildSessionId } from '../../shared/util/buildIdUtils.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
-import { flatSessionToDoc, inflateSessionDoc } from '../../shared/util/documentUtils.js';
+import { flatSessionToDoc, inflateSessionDoc } from '../util/documentUtils.js';
 import { metadataToSession } from '#shared/util/dbConvertUtils.js';
 
 // Destructure chromaDbClient methods

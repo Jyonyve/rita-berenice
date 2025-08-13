@@ -25,12 +25,10 @@ export const ragQueryService = {
 		userInput: string,
 		sessionId: string,
 		userId: string,
-		langCode: 'kor' | 'eng' = 'kor'
+		userName: string,
+		charName: string
 	): Promise<TransformedQuery> {
 		console.log('[ragQueryService] Transforming query with schema-aware extraction...');
-		if (langCode === 'eng') {
-			return { queryTexts: [userInput] };
-		}
 
 		try {
 			const termRes = await termStore.getTermsBySessionId(sessionId);
@@ -41,7 +39,9 @@ export const ragQueryService = {
 				userInput,
 				termGuidanceMap,
 				DEFAULT_EXTRACTION_MODEL,
-				userId
+				userId,
+				userName,
+				charName
 			);
 			logFlow('ragQueryService', 'extractedData', extractedData);
 
@@ -67,9 +67,11 @@ export const ragQueryService = {
 		userInput: string,
 		termGuidanceMap: Map<string, string>,
 		modelInfo: AiModelInfo,
-		userId: string
+		userId: string,
+		userName: string,
+		charName: string
 	): Promise<FilterCriteria> {
-		const prompt = buildFilterCriteriaPrompt(userInput, termGuidanceMap);
+		const prompt = buildFilterCriteriaPrompt(userInput, termGuidanceMap, userName, charName);
 		const messages = [buildChatCompletion('user', prompt)];
 
 		const jsonString = await llmService.invokeLlm(
