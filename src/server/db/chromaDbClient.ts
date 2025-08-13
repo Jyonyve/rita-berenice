@@ -4,15 +4,33 @@ import { COLLECTIONS } from './ChromaInterfaces.js';
 import { MetadataType } from '#shared/config/constants.js';
 import { ChromaResponse } from '#shared/api/ModuleResponse.js';
 import { OpenAIEmbeddingFunction } from '@chroma-core/openai';
+import { CohereEmbeddingFunction } from '@chroma-core/cohere';
 
-const apiKey = process.env.OPENAI_API_KEY;
-if (!apiKey) {
+const openAiApiKey = process.env.OPENAI_API_KEY;
+const cohereApiKey = process.env.COHERE_API_KEY;
+if (!cohereApiKey || !openAiApiKey) {
 	// This check is important. It will cause the server to crash on startup
 	// if the secret is not set, which is good practice (fail fast).
-	throw new Error('FATAL: OPENAI_API_KEY secret is not set in the environment.');
+	throw new Error('FATAL: COHERE_API_KEY secret is not set in the environment.');
 }
 
-const embedFnOpenAi = new OpenAIEmbeddingFunction({ apiKey, modelName: 'text-embedding-3-small' });
+const embedFnOpenAi = new OpenAIEmbeddingFunction({
+	apiKey: openAiApiKey,
+	modelName: 'text-embedding-3-small',
+});
+const embedFnCohere = new CohereEmbeddingFunction({
+	apiKey: cohereApiKey,
+	modelName: 'embed-v4.0', // Latest version
+	inputType: 'search_document',
+});
+const chooseEmbeddingFunction = () => {
+	if (cohereApiKey) {
+		console.log('[ChromaClient] Using Cohere embedding function');
+		return embedFnCohere;
+	}
+	console.log('[ChromaClient] Falling back to OpenAI embedding function');
+	return embedFnOpenAi;
+};
 const host = process.env.CHROMA_HOST;
 const port = process.env.CHROMA_PORT;
 const ssl = process.env.CHROMA_SSL === 'true';
@@ -80,7 +98,10 @@ const _getOrCreateSingletonCollection = async (collectionName: string): Promise<
 	try {
 		console.log(`[ChromaClient] Attempting to GET collection: ${collectionName}`);
 		const collection = await withRetry(() =>
-			chromaClient.getCollection({ name: collectionName, embeddingFunction: embedFnOpenAi })
+			chromaClient.getCollection({
+				name: collectionName,
+				embeddingFunction: chooseEmbeddingFunction(),
+			})
 		);
 		_collectionCache.set(collectionName, collection);
 		console.log(`[ChromaClient] Cache HIT for existing collection: ${collectionName}`);
@@ -90,7 +111,7 @@ const _getOrCreateSingletonCollection = async (collectionName: string): Promise<
 		const collection = await withRetry(() =>
 			chromaClient.createCollection({
 				name: collectionName,
-				embeddingFunction: embedFnOpenAi,
+				embeddingFunction: chooseEmbeddingFunction(),
 				metadata: { name: collectionName, created: new Date().toString() },
 			})
 		);

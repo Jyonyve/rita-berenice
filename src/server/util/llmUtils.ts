@@ -98,7 +98,8 @@ export const sanitizeLlmResponse = (text: string): string => {
  */
 export const boostByCriticalTerm = <T extends ChatTurn | LoreInfo | HistoryInfo>(
 	results: T[],
-	criticalTerm: string | undefined
+	criticalTerm: string | undefined,
+	queryTexts: string[] = []
 ): T[] => {
 	if (!criticalTerm || results.length === 0) return results;
 
