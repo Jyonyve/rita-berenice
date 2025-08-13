@@ -30,6 +30,7 @@ import {
 	buildMessageId,
 } from '#shared/util/buildIdUtils.js';
 import { FilterCriteria } from '../util/schemaUtils.js';
+import { MEMORY_CONFIG, prioritizeRecentTurns } from '../util/queryUtils.js';
 
 // Destructure outside the object
 const {
@@ -504,6 +505,7 @@ export const chatStore = {
 		try {
 			let turnIdsToSearch: string[] | undefined = undefined;
 			const collection = await chatStore._getChatCollection();
+
 			// Step 1: Pre-filter based on metadata to get relevant turn IDs
 			if (filterCriteria && Object.keys(filterCriteria).length > 0) {
 				const indexWhereClause = chatStore._buildIndexWhereClause(sessionId, filterCriteria);
@@ -513,7 +515,6 @@ export const chatStore = {
 					const indexResults = await getRecords(collection, indexWhereClause);
 					const validatedIndexes = validateChromaResponse(indexResults, 'getList', collectionType);
 
-					// Collect unique turn IDs from the matching index records
 					const matchingTurnIds = [
 						...new Set(
 							validatedIndexes.metadatas.map((m) => (m as unknown as ChatIndexMetadata)?.chatTurnId)
@@ -524,18 +525,26 @@ export const chatStore = {
 						console.log('[chatStore] No turns found matching metadata filter. Returning empty.');
 						return emptyChatResponse();
 					}
-					turnIdsToSearch = matchingTurnIds;
+
+					// **NEW: Apply smart limiting to pre-filtered results**
+					if (matchingTurnIds.length > MEMORY_CONFIG.MAX_PREFILTER_TURNS) {
+						turnIdsToSearch = prioritizeRecentTurns(matchingTurnIds, MEMORY_CONFIG.MAX_PREFILTER_TURNS);
+						console.log(
+							`[chatStore] Reduced from ${matchingTurnIds.length} to ${turnIdsToSearch.length} turns using recency bias.`
+						);
+					} else {
+						turnIdsToSearch = matchingTurnIds;
+					}
+
 					console.log(`[chatStore] Pre-filtered to ${turnIdsToSearch.length} turns.`);
 				}
 			}
 
-			// --- Step 2: Perform vector search on TURN documents ---
-			// Build the final WHERE clause for the vector query.
+			// Step 2: Perform vector search on TURN documents (rest remains the same)
 			const queryWhere: Where = {
 				$and: [{ type: { $eq: METADATA_TYPES.TURN } }, { sessionId: { $eq: sessionId } }],
 			};
 
-			// If we pre-filtered, add the $in condition to search only those turns.
 			if (turnIdsToSearch) {
 				queryWhere.$and?.push({ chatTurnId: { $in: turnIdsToSearch } });
 			}
@@ -548,24 +557,24 @@ export const chatStore = {
 				whereDocument,
 				limit
 			);
+
+			// Rest of the method remains the same...
 			const result = queryResults.map((r) => validateChromaResponse(r, 'getList', collectionType));
 			const turnIds = result.flatMap((r) => r.ids);
 			const turnMetadatas = result.flatMap((r) => r.metadatas);
 			const turnDocuments = result.flatMap((r) => r.documents);
-			// Collect all results
+
 			if (turnMetadatas.length === 0) {
 				return emptyChatResponse();
 			}
 
-			// Step 3: Fetch all index records for the final set of turns
 			const chatTurnIds: string[] = turnMetadatas
 				.map((m) => m?.chatTurnId)
 				.filter((id): id is string => typeof id === 'string');
 
 			const indexMetadatas = await chatStore._constructChatTurnIndexes(chatTurnIds);
-
-			// Step 4: Reconstruct the full rich objects
 			const chatTurns = chatStore._constructFullChatTurns(turnMetadatas, indexMetadatas);
+
 			return {
 				ids: turnIds,
 				metadatas: turnMetadatas,
