@@ -13,10 +13,17 @@ export const parseEntriesToConversation = (entries: ChatEntry[]): string => {
 
 export const parseConversationToEntries = (text: string): ChatEntry[] => {
 	const entries: ChatEntry[] = [];
+
+	// For comprehensive quote normalization
+	const normalizedText = text
+		.replace(/[""‟"]/g, '"') // Double quotes
+		.replace(/[''‛']/g, "'"); // Single quotes and apostrophes
+
+	// Use normalizedText instead of text!
 	const regex = /"([^"]+)"|([^"]+)/g;
 	let match;
 
-	while ((match = regex.exec(text)) !== null) {
+	while ((match = regex.exec(normalizedText)) !== null) {
 		if (match[1]) {
 			// Quoted text is dialogue
 			entries.push({ type: 'dialogue', prompt: match[1].trim() });
