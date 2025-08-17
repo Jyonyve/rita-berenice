@@ -6,6 +6,7 @@ import { ChromaResponse } from '#shared/api/ModuleResponse.js';
 import { OpenAIEmbeddingFunction } from '@chroma-core/openai';
 import { CohereEmbeddingFunction } from '@chroma-core/cohere';
 import { get_encoding } from 'tiktoken';
+import { getTokenCount } from '../util/queryUtils.js';
 
 const OPENAI_TOKEN_LIMIT = 8191; // text-embedding-3-small limit
 const COHERE_TOKEN_LIMIT = 512000; // embed-v4.0 limit
@@ -68,24 +69,6 @@ const _withRetry = async <T>(fn: () => Promise<T>, retries = 1, delay = 1500): P
 		}
 	}
 	throw lastError;
-};
-
-export const getTokenCount = (text: string): number => {
-	let encoding;
-	try {
-		encoding = get_encoding('cl100k_base'); // Most common encoding for modern models
-		const tokens = encoding.encode(text);
-		const tokenCount = tokens.length;
-		encoding.free();
-		return tokenCount;
-	} catch (error) {
-		if (encoding) {
-			encoding.free();
-		}
-		console.error('[ChromaClient] Token counting failed:', error);
-		// Fallback: rough estimation (4 chars per token)
-		return Math.ceil(text.length / 4);
-	}
 };
 
 const chooseEmbeddingFunction = (type: EmbeddingFunction, text?: string) => {

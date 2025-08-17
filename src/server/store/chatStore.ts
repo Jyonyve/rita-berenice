@@ -1,5 +1,5 @@
 import { Collection, Metadata, Where, WhereDocument } from 'chromadb';
-import { chromaDbClient, getTokenCount } from '../db/chromaDbClient.js';
+import { chromaDbClient } from '../db/chromaDbClient.js';
 
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
@@ -30,8 +30,13 @@ import {
 	buildMessageId,
 } from '#shared/util/buildIdUtils.js';
 import { FilterCriteria } from '../util/schemaUtils.js';
-import { MEMORY_CONFIG, prioritizeRecentTurns, reRankSemanticResults } from '../util/queryUtils.js';
-import { parseEntriesToConversation } from '../util/chatParseUtils.ts';
+import {
+	getTokenCount,
+	MEMORY_CONFIG,
+	prioritizeRecentTurns,
+	reRankSemanticResults,
+} from '../util/queryUtils.js';
+import { parseEntriesToConversation } from '../util/chatParseUtils.js';
 import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
 import { convertArrayToString } from '#shared/util/parseUtils.js';
 import { mapEmotionToCategory } from '#shared/util/emotionUtils.js';
