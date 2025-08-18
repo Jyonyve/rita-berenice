@@ -241,9 +241,7 @@ export const ChatPage: FC<{
 		setPageError(undefined);
 		try {
 			const sequence = tempChatTurn.sequence;
-			const userInput = parseEntriesToText(
-				tempChatTurn.chatTurnSets[currentTempSetNo].request.entries
-			);
+			const userInput = JSON.stringify(tempChatTurn.chatTurnSets[currentTempSetNo].request.entries);
 			const recentChatTurnString = JSON.stringify(getRecentTurnsForMemory());
 			const tempChatTurnCdo: TempChatTurnCdo = { sessionId, sequence, userInput, userId };
 			const result: TempChatTurn = await receiveBotResponse.mutateAsync({
@@ -262,7 +260,7 @@ export const ChatPage: FC<{
 				setFocusedTurnIndex(chatTurns.length);
 				updateSessionOnNewMessage.mutateAsync({
 					sessionId,
-					latestCharMessage: parseEntriesToText(result.chatTurnSets[newSetIndex].response.entries),
+					latestCharMessage: JSON.stringify(result.chatTurnSets[newSetIndex].response.entries),
 				});
 			}
 		} catch (err: any) {

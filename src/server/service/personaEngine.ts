@@ -33,7 +33,7 @@ export const personaEngine = {
 		recalledMemories: MemoryResponse,
 		characterInfo: CharacterInfo,
 		profileInfo: ProfileInfo,
-		userInput: string,
+		userConversation: string,
 		aiModelInfo: AiModelInfo,
 		options?: { signal?: AbortSignal; isScene?: boolean }
 	): Promise<PersonaResponse> {
@@ -71,7 +71,7 @@ export const personaEngine = {
 			// Third: Recent conversation verbatim
 			...shortTermMessages,
 			// Last: The current user input
-			buildChatCompletion('user', userInput, profileInfo.showName),
+			buildChatCompletion('user', userConversation, profileInfo.showName),
 		];
 
 		const personaSchema = createPersonaResponseSchema(charName, userName, langCode);

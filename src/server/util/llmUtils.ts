@@ -22,73 +22,79 @@ export const extractValidOpenAiContent = (response: ChatCompletion): string => {
 };
 
 /**
- * Sanitizes and parses raw LLM response text into an array of structured ChatEntry objects.
- * - It distinguishes between narration (action) and dialogue.
- * - Consecutive lines of the same type are grouped into a single entry.
+ * Sanitizes, normalizes, and parses raw LLM response text into structured ChatEntry objects.
+ * This comprehensive function performs the following steps:
+ * 1.  Normalizes all line break styles (CRLF, CR) to a single LF (`\n`).
+ * 2.  Replaces any sequence of two or more line breaks with a single one.
+ * 3.  Converts all "smart" or typographic quotes (e.g., “ ”, ‘ ’) to standard straight quotes ("").
+ * 4.  Parses the cleaned text into 'dialogue' and 'action' entries.
+ * 5.  Groups consecutive lines of the same type into a single, cohesive entry.
  *
  * @param text The raw string response from the LLM.
- * @returns An array of ChatEntry objects.
+ * @returns An array of structured ChatEntry objects.
  */
-export const sanitizeLlmResponse = (text: string): string => {
-	logFlow('TextTransform', 'Starting text parsing to ChatEntry[]', {
-		inputLength: text.length,
-		preview: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
+export const sanitizeLlmResponse = (text: string): ChatEntry[] => {
+	logFlow('TextTransform', 'Starting full LLM response sanitization and parsing', {
+		inputLength: text?.length ?? 0,
 	});
 
 	if (!text || text.trim() === '') {
-		return '';
+		return [];
 	}
 
-	// Step 1: Split text into individual lines, trimming and removing empty lines.
-	const lines = text
+	// Step 1 & 2: Normalize line breaks and consolidate multiples
+	let sanitizedText = text.replace(/\r\n|\r/g, '\n').replace(/\n{2,}/g, '\n');
+
+	// Step 3: Normalize all forms of quotes to standard double quotes
+	sanitizedText = sanitizedText
+		.replace(/[“”‟„]/g, '"') // All double quotes to standard "
+		.replace(/[‘’‚‛]/g, "'"); // All single quotes to standard '
+
+	// Step 4: Split into lines for processing
+	const lines = sanitizedText
 		.split('\n')
 		.map((line) => line.trim())
 		.filter((line) => line.length > 0);
 
-	// Step 2: Classify each line as 'dialogue' or 'action'.
-	const classifiedLines: ChatEntry[] = lines.map((line) => {
-		// Heuristic: A line is dialogue if it starts with a quote or common dialogue markers.
-		const isDialogue = line.startsWith('"');
-		// Clean the line by removing surrounding quotes for a clean prompt.
-		const prompt = isDialogue ? line.replace(/^"|"$/g, '').trim() : line;
-		const type = isDialogue ? 'dialogue' : 'action';
-		return { type, prompt };
-	});
-
-	// Step 3: Group consecutive lines of the same type into blocks.
-	if (classifiedLines.length === 0) {
-		return '';
+	if (lines.length === 0) {
+		return [];
 	}
 
-	const groupedBlocks: ChatEntry[] = [];
-	let currentBlock = { ...classifiedLines[0] };
+	// Step 5: Classify and group lines in a single pass
+	const entries: ChatEntry[] = [];
+	let currentEntry: ChatEntry | null = null;
 
-	for (let i = 1; i < classifiedLines.length; i++) {
-		const line = classifiedLines[i];
-		if (line.type === currentBlock.type) {
-			// If the line type is the same, append its content to the current block.
-			currentBlock.prompt += `\n${line.prompt}`;
+	for (const line of lines) {
+		// A line is dialogue if it's enclosed in quotes.
+		const isDialogue = line.startsWith('"') && line.endsWith('"');
+		const type = isDialogue ? 'dialogue' : 'action';
+		const prompt = isDialogue ? line.substring(1, line.length - 1).trim() : line;
+
+		if (prompt === '') continue; // Skip empty prompts after trimming quotes
+
+		if (currentEntry && currentEntry.type === type) {
+			// Append to the existing entry of the same type
+			currentEntry.prompt += '\n' + prompt;
 		} else {
-			// If the type changes, push the completed block and start a new one.
-			groupedBlocks.push(currentBlock);
-			currentBlock = { ...line };
+			// Push the previous entry (if it exists) and start a new one
+			if (currentEntry) {
+				entries.push(currentEntry);
+			}
+			currentEntry = { type, prompt };
 		}
 	}
-	// Add the last remaining block to the array.
-	groupedBlocks.push(currentBlock);
 
-	// Step 4: Convert each block into a ChatEntry object.
-	const chatEntries: ChatEntry[] = groupedBlocks.map((block) => ({
-		type: block.type,
-		prompt: block.prompt,
-	}));
+	// Don't forget the last entry
+	if (currentEntry) {
+		entries.push(currentEntry);
+	}
 
-	logFlow('TextTransform', 'Text parsing completed', {
-		outputEntryCount: chatEntries.length,
-		result: chatEntries,
+	logFlow('TextTransform', 'LLM response processing complete', {
+		outputEntryCount: entries.length,
+		result: entries,
 	});
 
-	return parseEntriesToConversation(chatEntries);
+	return entries;
 };
 
 export const buildChatCompletion = (role: DefaultAiRole, content: string, name?: string) => {

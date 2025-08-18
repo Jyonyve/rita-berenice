@@ -24,7 +24,7 @@ import { detectLanguage } from '../util/languageUtils.js';
 import { createBasicChatTurn } from '#shared/util/typeGuardUtils.js';
 import { ApiError } from '#shared/domain/error/errors.js';
 import { sanitizeLlmResponse as sanitizeLlmResponse } from '../util/llmUtils.js';
-import { buildChatMessage } from '../util/chatParseUtils.js';
+import { buildChatMessage, parseEntriesToConversation } from '../util/chatParseUtils.js';
 
 const timerLabel = (sequence: number) => `RESPONSE_GENERATION: Turn ${sequence}`;
 
@@ -64,11 +64,12 @@ export const receiveBotResponse = async (
 		let tempTurn = await _getOrCreateTempTurn(sessionId, sequence, tempChatTurnCdo.userId);
 		// --- 2. LOG CHECKPOINT 1 ---
 		console.timeLog(timerLabel(tempChatTurnCdo.sequence), 'Temp turn ready.');
+		const userConverSation = parseEntriesToConversation(JSON.parse(userInput));
 
 		// 2. 새로운 응답 생성 및 추가 (책임 위임)
 		tempTurn = await _generateAndAppendResponse(
 			tempTurn,
-			userInput,
+			userConverSation,
 			characterInfo,
 			profileInfo,
 			aiModelInfo,
@@ -185,7 +186,7 @@ const _getOrCreateTempTurn = async (
  */
 async function _generateAndAppendResponse(
 	tempTurn: TempChatTurn,
-	userInput: string,
+	userConversation: string,
 	characterInfo: CharacterInfo,
 	profileInfo: ProfileInfo,
 	aiModelInfo: AiModelInfo,
@@ -194,12 +195,12 @@ async function _generateAndAppendResponse(
 ): Promise<TempChatTurn> {
 	// 1. Recall relevant memories for context.
 	let recalledMemories: MemoryResponse;
-	const langCode = detectLanguage(userInput);
+	const langCode = detectLanguage(userConversation);
 	const recentChatTurn: ChatTurn[] = JSON.parse(recentChatTurnString);
 	try {
 		recalledMemories = await memoryEngine.recallRelevantMemories(
 			tempTurn.sessionId,
-			userInput,
+			userConversation,
 			tempTurn.userId,
 			recentChatTurn,
 			langCode
@@ -229,28 +230,29 @@ async function _generateAndAppendResponse(
 		recalledMemories,
 		characterInfo,
 		profileInfo,
-		userInput,
+		userConversation,
 		aiModelInfo,
 		options
 	);
 	console.timeLog(timerLabel(tempTurn.sequence), 'llm generate response finishing.');
 
-	const sanitizedResponse = sanitizeLlmResponse(personaResponse.response);
+	const botChatEntries = sanitizeLlmResponse(personaResponse.response);
 	// 3. Create the new bot response message.
 	const request = buildChatMessage(
 		'user',
 		tempTurn.sequence,
 		profileInfo.showName,
-		userInput,
+		userConversation,
 		tempTurn.sessionId
 	);
 	const response = buildChatMessage(
 		'assistant',
 		tempTurn.sequence,
 		characterInfo.showName,
-		sanitizedResponse,
+		parseEntriesToConversation(botChatEntries),
 		tempTurn.sessionId,
-		personaResponse.emotion
+		personaResponse.emotion,
+		aiModelInfo.model
 	);
 	const newChatTurnSet: ChatMessageSet = { request, response, setNo: tempTurn.chatTurnSets.length };
 

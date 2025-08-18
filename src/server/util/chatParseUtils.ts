@@ -46,7 +46,8 @@ export const buildChatMessage = (
 	showName: string,
 	entriesString: string,
 	sessionId: string,
-	emotion = DEFAULT_EMOTION
+	emotion = DEFAULT_EMOTION,
+	model?: string
 ): ChatMessage => {
 	const entries: ChatEntry[] = parseConversationToEntries(entriesString);
 	const messageType: ChatMessageType = role === 'user' ? 'request' : 'response';
@@ -62,6 +63,6 @@ export const buildChatMessage = (
 		createdAt: '',
 		updatedAt: '',
 		type: 'message',
-		model: '',
+		model: model || '',
 	};
 };

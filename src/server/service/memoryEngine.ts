@@ -38,7 +38,7 @@ export const memoryEngine = {
 	 */
 	async recallRelevantMemories(
 		sessionId: string,
-		userInput: string,
+		userConversation: string,
 		userId: string,
 		recentChatTurns: ChatTurn[],
 		langCode: LangCode
@@ -50,7 +50,7 @@ export const memoryEngine = {
 
 		try {
 			const transformedQuery = await ragQueryService.transformQuery(
-				userInput,
+				userConversation,
 				sessionId,
 				userId,
 				request.showName,
@@ -119,7 +119,7 @@ export const memoryEngine = {
 			// Step 4: Log analysis for debugging and optimization
 			logFlow('memoryEngine', 'retrieval-analysis', {
 				criticalTerm,
-				userInputPreview: userInput.substring(0, 50) + '...',
+				userInputPreview: userConversation.substring(0, 50) + '...',
 				results: {
 					longTermChat: boostedChatTurns.length,
 					lore: boostedLore.length,
@@ -144,7 +144,7 @@ export const memoryEngine = {
 			handleServiceError(
 				error,
 				'An internal error occurred while do [recallRelevantMemories].',
-				`Failed to recall relevant memories ${userInput.substring(0, 30)}...`
+				`Failed to recall relevant memories ${userConversation.substring(0, 30)}...`
 			);
 		}
 	},

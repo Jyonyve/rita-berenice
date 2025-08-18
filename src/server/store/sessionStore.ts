@@ -10,6 +10,7 @@ import { buildSessionId } from '../../shared/util/buildIdUtils.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
 import { flatSessionToDoc, inflateSessionDoc } from '../util/documentUtils.js';
 import { metadataToSession } from '#shared/util/dbConvertUtils.js';
+import { parseEntriesToConversation } from '../util/chatParseUtils.js';
 
 // Destructure chromaDbClient methods
 const { getSessionCollection, addRecord, updateRecord, getRecordById, getRecords } = chromaDbClient; // Assume getSessionCollection is added to chromaDbClient
@@ -174,9 +175,10 @@ export const sessionStore = {
 				messageCount: sessionMetadata.messageCount + 1,
 			};
 
+			const newMessage = parseEntriesToConversation(JSON.parse(latestCharMessage));
 			const documentForEmbedding = flatSessionToDoc({
 				...updatedMetadata,
-				lastCharMessage: latestCharMessage,
+				lastCharMessage: newMessage,
 			});
 			await updateRecord(collection, updatedMetadata.sessionId, documentForEmbedding, updatedMetadata);
 		} catch (error) {
