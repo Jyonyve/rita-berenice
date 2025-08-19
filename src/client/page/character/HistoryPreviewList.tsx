@@ -11,7 +11,7 @@ export const HistoryPreviewList: FC<{
 	handleHistory: (historyId: string) => void;
 }> = ({ characterId, handleHistory }) => {
 	const { data: historyRes, isLoading, error } = useLoreApi().getHistories(characterId);
-
+	console.log(historyRes);
 	if (isLoading) {
 		return (
 			<ListItem sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>

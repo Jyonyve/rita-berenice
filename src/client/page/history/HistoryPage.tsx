@@ -23,7 +23,6 @@ import { HistoryInfo } from '#shared/domain/lore/LoreInterfaces.js';
 const HistoryPage: FC<{ historyInfo: HistoryInfo; userId: string }> = ({ historyInfo, userId }) => {
 	const navigate = useNavigate();
 	const { addToast } = useToast();
-
 	// Portrait: pick default or first available
 	const portraits = getLoreImage(historyInfo.characterId, historyInfo.historyId);
 
