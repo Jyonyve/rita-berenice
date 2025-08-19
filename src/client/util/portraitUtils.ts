@@ -12,6 +12,8 @@ import {
 // --- DATA STORES ---
 const allPortraitsMap = new Map<string, PortraitUrlMap>();
 const defaultPortraitsMap = new Map<string, string>();
+// NEW: Data store for lore-specific images, mapping characterId -> (historyId -> URL)
+const lorePortraitsMap = new Map<string, Map<string, string>>();
 
 // Flag to track if initialization has happened
 let isInitialized = false;
@@ -25,27 +27,53 @@ function getCharacterIdFromPath(path: string): string | null {
 }
 
 /**
- * Lazy initialization function that only runs when first needed.
- * This ensures it runs AFTER React and the CacheProvider are established.
+ * NEW: Parses characterId and historyId from a lore image path.
+ * Example path: /src/client/asset/character/charId123/lore/historyId456.avif
+ */
+function getLoreInfoFromPath(path: string): { characterId: string; historyId: string } | null {
+	const match = path.match(/\/asset\/character\/([^/]+)\/lore\/([^/.]+)\.\w+$/);
+	if (match && match[1] && match[2]) {
+		return { characterId: match[1], historyId: match[2] };
+	}
+	return null;
+}
+
+/**
+ * Lazy initialization function that now handles both emotion and lore portraits.
  */
 function initializePortraits(): void {
 	if (isInitialized) return; // Only run once
 
-	console.log('[PortraitUtil] Initializing all character portraits...');
+	console.log('[PortraitUtil] Initializing all character and lore portraits...');
 
-	// Use Vite's glob import to get all portrait images
+	// UPDATED: Glob pattern now includes the /lore/ subdirectory
 	const allImageModules = import.meta.glob<string>(
-		['/src/client/asset/character/*/*.webp', '/src/client/asset/character/*/*.avif'],
+		[
+			'/src/client/asset/character/*/*.{webp,avif}',
+			'/src/client/asset/character/*/lore/*.{webp,avif}',
+		],
 		{ eager: true, import: 'default' }
 	) as Record<string, string>;
 
-	const filenameRegex = /_(\d+)\.(webp|avif)$/;
+	const emotionFilenameRegex = /_(\d+)\.(webp|avif)$/;
 
 	for (const path in allImageModules) {
+		// First, check if it's a lore image by matching the path structure
+		const loreInfo = getLoreInfoFromPath(path);
+		if (loreInfo) {
+			const { characterId, historyId } = loreInfo;
+			// Get or create the inner map for the character
+			const loreMap = lorePortraitsMap.get(characterId) || new Map<string, string>();
+			loreMap.set(historyId, allImageModules[path]);
+			lorePortraitsMap.set(characterId, loreMap);
+			continue; // Skip to the next file
+		}
+
+		// If not a lore image, process it as a standard emotion portrait
 		const characterId = getCharacterIdFromPath(path);
 		if (!characterId) continue;
 
-		const match = path.match(filenameRegex);
+		const match = path.match(emotionFilenameRegex);
 		if (!match || !match[1]) continue;
 
 		const imageNumber = parseInt(match[1], 10) as EmotionKey;
@@ -62,7 +90,7 @@ function initializePortraits(): void {
 
 	isInitialized = true;
 	console.log(
-		`[PortraitUtil] Initialization complete. Loaded portraits for ${allPortraitsMap.size} characters.`
+		`[PortraitUtil] Initialization complete. Loaded emotion portraits for ${allPortraitsMap.size} characters and lore images for ${lorePortraitsMap.size} characters.`
 	);
 }
 
@@ -75,24 +103,24 @@ function getImageNumberForEmotion(emotion: string): EmotionKey {
 			}
 		}
 	}
-	return 0;
+	return 0; // Default emotion key (e.g., 'neutral')
 }
 
-// --- PUBLIC API ---
-// Each function now calls initializePortraits() to ensure lazy initialization
+// --- PUBLIC API (Emotion Portraits) ---
+// All existing functions work as before and use lazy initialization.
 
 export function getAllPortraits(characterId: string): PortraitUrlMap | undefined {
-	initializePortraits(); // Lazy init on first access
+	initializePortraits();
 	return allPortraitsMap.get(characterId);
 }
 
-export function getDefaultImage(characterId: string) {
-	initializePortraits(); // Lazy init on first access
+export function getDefaultImage(characterId: string): string | undefined {
+	initializePortraits();
 	return defaultPortraitsMap.get(characterId);
 }
 
 export function getImageForEmotion(characterId: string, emotion: string): string | undefined {
-	initializePortraits(); // Lazy init on first access
+	initializePortraits();
 	const allPortraits = allPortraitsMap.get(characterId);
 	if (!allPortraits) return defaultPortraitsMap.get(characterId);
 
@@ -100,19 +128,38 @@ export function getImageForEmotion(characterId: string, emotion: string): string
 	return allPortraits[imageNumber] ?? defaultPortraitsMap.get(characterId);
 }
 
-export function getAllDefaultImageMap() {
-	initializePortraits(); // Lazy init on first access
+export function getAllDefaultImageMap(): Map<string, string> {
+	initializePortraits();
 	return defaultPortraitsMap;
 }
 
-export function getCharacterImages(characterId: string) {
-	initializePortraits(); // Lazy init on first access
-	return allPortraitsMap.get(characterId);
-}
-
 export function getCharacterImageArray(characterId: string): string[] {
-	initializePortraits(); // Lazy init on first access
+	initializePortraits();
 	const portraits = allPortraitsMap.get(characterId);
 	if (!portraits) return [];
 	return Object.values(portraits).filter(Boolean);
+}
+
+// --- NEW PUBLIC API (Lore Images) ---
+
+/**
+ * Retrieves a specific lore image for a character given a historyId.
+ * @param characterId - The ID of the character.
+ * @param historyId - The ID of the lore/history item (filename without extension).
+ * @returns The URL of the image, or undefined if not found.
+ */
+export function getLoreImage(characterId: string, historyId: string): string | undefined {
+	initializePortraits(); // Ensures all images are loaded before access
+	const loreMap = lorePortraitsMap.get(characterId);
+	return loreMap ? loreMap.get(historyId) : undefined;
+}
+
+/**
+ * Retrieves all lore images for a given character.
+ * @param characterId - The ID of the character.
+ * @returns A Map where keys are historyIds and values are image URLs, or undefined if none exist.
+ */
+export function getAllLoreImages(characterId: string): Map<string, string> | undefined {
+	initializePortraits(); // Ensures all images are loaded before access
+	return lorePortraitsMap.get(characterId);
 }

@@ -10,3 +10,4 @@ export * from './GlassSelect.jsx';
 export * from './GlassMenuItem.jsx';
 export * from './GlassPortraitSlider.jsx';
 export * from './GlassCircularProgress.jsx';
+export * from './GlassContainer.jsx';

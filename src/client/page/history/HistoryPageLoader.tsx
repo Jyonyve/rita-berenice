@@ -1,29 +1,29 @@
 import { CircularProgress, Container, Typography } from '@mui/material';
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { useCharacterApi } from '../../hook/index.js';
+import { useCharacterApi, useLoreApi } from '../../hook/index.js';
 import { useAuth } from '../../provider/index.js';
-import CharacterPage from './CharacterPage.jsx';
+import HistoryPage from './HistoryPage.jsx';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
 
-export function CharacterPageLoader() {
+export function HistoryPageLoader() {
 	const navigate = useNavigate();
-	const { characterId } = useParams();
+	const { historyId } = useParams();
 	const { userId } = useAuth();
 
 	useEffect(() => {
-		if (!characterId) {
-			navigate('/not-found-characterId', { replace: true });
+		if (!historyId) {
+			navigate('/not-found-historyId', { replace: true });
 		}
-	}, [characterId, navigate]);
+	}, [historyId, navigate]);
 
-	if (!characterId) return;
+	if (!historyId) return;
 
-	const { data: characterRes, isLoading } = useCharacterApi().getCharacter(characterId);
+	const { data: historyRes, isLoading } = useLoreApi().getHistory(historyId);
 
-	if (isLoading || !characterRes) {
+	if (isLoading || !historyRes) {
 		// Use a more descriptive loading state, maybe centered
 		return (
 			<Container
@@ -36,10 +36,10 @@ export function CharacterPageLoader() {
 				}}
 			>
 				<GlassCircularProgress colorVariant="silver" />
-				<Typography sx={{ mt: 2 }}>{getLangText(LANG_KEYS.LOADING_CHARACTERS)}</Typography>
+				<Typography sx={{ mt: 2 }}>{getLangText(LANG_KEYS.LOADING_STORIES)}</Typography>
 			</Container>
 		);
 	}
 
-	return <CharacterPage characterInfo={characterRes?.characterInfo} userId={userId} />;
+	return <HistoryPage historyInfo={historyRes?.historyInfo} userId={userId} />;
 }

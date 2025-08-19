@@ -124,6 +124,21 @@ export const useLoreApi = () => {
 			enabled: !!characterId,
 		});
 
+	/**
+	 * Fetches a single history entry by its unique ID.
+	 * Query key: ['getHistory']
+	 */
+	const getHistory = (historyId: string) =>
+		useQuery<HistoryResponse, Error>({
+			queryKey: ['getHistory', historyId], // Adjusted to include historyId in key
+			queryFn: async () => {
+				const url = genApiUrl(MODULE_NAME, 'getHistory', [historyId]);
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<HistoryResponse>(response.data.payload);
+			},
+			enabled: !!historyId,
+		});
+
 	// /**
 	//  * Performs a semantic search for history entries.
 	//  * Mutation key: 'queryHistories' (as it's a POST request for search)
@@ -149,6 +164,7 @@ export const useLoreApi = () => {
 		// History methods
 		storeHistory,
 		getHistories,
+		getHistory,
 		// queryHistories,
 	};
 };

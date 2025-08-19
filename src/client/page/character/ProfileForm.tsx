@@ -57,7 +57,7 @@ const modalStyle = {
 	msOverflowStyle: 'none', // Hide scrollbar for Internet Explorer
 };
 
-export const ProfileCard: FC<{ userId: string; onSubmit: (profileData: ProfileCdo) => void }> = ({
+export const ProfileForm: FC<{ userId: string; onSubmit: (profileData: ProfileCdo) => void }> = ({
 	userId,
 	onSubmit,
 }) => {

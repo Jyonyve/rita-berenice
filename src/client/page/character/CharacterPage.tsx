@@ -5,7 +5,12 @@ import { Box, Grid, List, Typography } from '@mui/material';
 import { FC } from 'react';
 import { useNavigate } from 'react-router';
 import { useProfileApi } from '../../hook/api/index.js';
-import { GlassCard, GlassPaper, GlassPortraitSlider } from '../../layout/glass/index.js';
+import {
+	GlassButton,
+	GlassCard,
+	GlassPaper,
+	GlassPortraitSlider,
+} from '../../layout/glass/index.js';
 import { RomanticTitle } from '../../layout/RomanticTitle.jsx';
 import { useAuth } from '../../provider/AuthProvider.jsx';
 import { useToast } from '../../provider/ToastProvider.jsx';
@@ -13,8 +18,9 @@ import { routeConstants } from '../../routeConstants.js';
 import { containerSpacing } from '../../style/index.js';
 import { getCharacterImageArray } from '../../util/portraitUtils.js';
 import { getLangAlertText, getLangText } from '../../util/translateUtils.js';
-import { ProfileCard } from './ProfileCard.jsx';
+import { ProfileForm } from './ProfileForm.jsx';
 import { SessionPreviewList } from './SessionPreviewList.jsx';
+import { ProfileHistoryTabs } from './ProfileHistoryTab.jsx';
 
 const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 	characterInfo,
@@ -30,6 +36,10 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 	const { storeProfile } = useProfileApi();
 
 	// Handlers
+	const handleHistory = (historyId: string) => {
+		navigate(`/${routeConstants.HISTORY}/${historyId}`);
+	};
+
 	const handleStartSession = (sessionId: string) => {
 		navigate(`/${routeConstants.CHAT}/${sessionId}`);
 	};
@@ -106,9 +116,22 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 					<Box display="flex" flexDirection="column" gap={2}>
 						{/* Title and Description Card */}
 						<GlassCard variant="outlined">
-							<RomanticTitle noGlow hover variant="h6" color="primary" mt={1} ml={1}>
-								{characterInfo.showName}
-							</RomanticTitle>
+							<Box
+								sx={{
+									display: 'flex',
+									justifyContent: 'space-between',
+									alignItems: 'center',
+									mt: 1,
+									ml: 1,
+								}}
+							>
+								<RomanticTitle noGlow hover variant="h6" color="primary">
+									{characterInfo.showName}
+								</RomanticTitle>
+								{/* <GlassButton colorVariant="silver" variant="outlined" onClick={handleOpenModal}>
+									{getLangText(LANG_KEYS.EDIT)}
+								</GlassButton> */}
+							</Box>
 							<Typography variant="body2" mt={1} ml={2}>
 								{characterInfo.description}
 							</Typography>
@@ -131,7 +154,12 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 						</GlassCard>
 
 						{/* Profile Card */}
-						<ProfileCard userId={userId} onSubmit={handleStartNewSession} />
+						<ProfileHistoryTabs
+							userId={userId}
+							characterId={characterId}
+							onSubmit={handleStartNewSession}
+							onHistory={handleHistory}
+						/>
 					</Box>
 				</Grid>
 			</Grid>

@@ -75,7 +75,8 @@ export const ChatPage: FC<{
 
 	useEffect(() => {
 		if (tempTurnRes?.tempChatTurn) {
-			changeTempChatTurn(tempTurnRes.tempChatTurn);
+			changeTempChatTurn(tempTurnRes?.tempChatTurn);
+			setCurrentTempSetNo(tempTurnRes?.tempChatTurn.chatTurnSets.length - 1);
 		}
 	}, [tempTurnRes]);
 
