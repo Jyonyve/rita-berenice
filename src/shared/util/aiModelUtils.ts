@@ -1,14 +1,13 @@
-import { supportAiModelInfo } from '../config/supportAiModelInfo.js';
+// src/shared/util/aiModelUtils.ts
+
+import { MODEL_LIMITS_INFO, SUPPORTED_MODEL_INFO } from '../config/supportAiModelInfo.js';
 import {
 	AiModelInfo,
 	AiPlatform,
 	AiProvider,
 	AllModelNames,
-	DEFAULT_CHAT_MODEL_FREE,
-	DEFAULT_RECAP_MODEL_FREE,
+	DEFAULT_EXTRACTION_MODEL,
 } from '../domain/aimodel/AiInfoTypes.js';
-
-// src/shared/util/aiModelUtils.ts (CLIENT-SIDE REFACTORED)
 
 // --- Constants (Client-safe) ---
 const PLATFORM_OPENROUTER = 'openrouter';
@@ -16,83 +15,62 @@ const PLATFORM_LOCAL = 'local';
 const DEFAULT_TEMPERATURE = 0.85;
 const DEFAULT_MAX_TOKEN = 1500;
 
-// --- Utility Functions (Client-Side Safe) ---
-
-/**
- * Extracts models marked as ':free' from the supportAiModelInfo.
- * Does NOT include API keys.
- * @param platform - The platform to extract from (defaults to openrouter).
- * @returns Array of AiModelInfo for free models.
- */
-const extractFreeModels = (platform: AiPlatform = PLATFORM_OPENROUTER): AiModelInfo[] => {
-	const platformProviders = supportAiModelInfo[platform];
-	if (!platformProviders) return [];
-
-	if (platform === PLATFORM_OPENROUTER) {
-		return Object.entries(platformProviders).flatMap(([provider, models]) =>
-			models
-				.filter((model) => model.endsWith(':free'))
-				.map((model) => ({
-					platform,
-					provider: provider as AiProvider<'openrouter'>,
-					model: model as AllModelNames,
-					maxTokens: DEFAULT_MAX_TOKEN,
-					temperature: DEFAULT_TEMPERATURE,
-				}))
-		);
-	}
-	// Add logic for other platforms if they have ':free' convention
-	return [];
-};
-
-// Pre-calculate free models list (client-side)
-export const freeAiModelInfos: AiModelInfo[] = extractFreeModels();
-
 /**
  * Gets the AiModelInfo structure for a given model name based on supportAiModelInfo.
  * Does NOT include API keys. This is purely for identifying the model's details.
  * @param modelName - The full name of the model (e.g., 'openai/gpt-4o', 'google/gemini-pro:free', 'ollama/llama3').
  * @returns AiModelInfo structure without API key, or a default free model if not found.
  */
-export const getAiModelInfo = (modelName: string): AiModelInfo => {
+export const getAiModelInfo = (modelName: AllModelNames): AiModelInfo => {
 	try {
-		// Handle OpenRouter format (provider/model-name)
-		if (modelName.includes('/') && supportAiModelInfo[PLATFORM_OPENROUTER]) {
-			const [provider, modelPart] = modelName.split('/');
-			const fullModelNameInMap = modelName; // Use the full name for lookup
+		// First, check if we have token limits for this model
+		const modelLimits = MODEL_LIMITS_INFO[modelName];
+		if (!modelLimits) {
+			console.warn(`No token limits found for model: ${modelName}`);
+		}
 
-			// Use type assertion carefully or check provider existence first
-			const providersForPlatform = supportAiModelInfo[PLATFORM_OPENROUTER];
-			if (provider in providersForPlatform) {
-				const modelsForProvider = providersForPlatform[provider as keyof typeof providersForPlatform];
-				if (modelsForProvider?.includes(fullModelNameInMap as any)) {
+		// Get the appropriate maxTokens
+		const getMaxTokens = (): number => {
+			if (modelLimits?.maxOutputTokens) {
+				return modelLimits.maxOutputTokens;
+			}
+			return DEFAULT_MAX_TOKEN;
+		};
+
+		// Handle OpenRouter format (provider/model-name)
+		if (modelName.includes('/') && SUPPORTED_MODEL_INFO[PLATFORM_OPENROUTER]) {
+			const [providerPart, modelPart] = modelName.split('/');
+
+			const providersForPlatform = SUPPORTED_MODEL_INFO[PLATFORM_OPENROUTER];
+			if (providerPart in providersForPlatform) {
+				const modelsForProvider =
+					providersForPlatform[providerPart as keyof typeof providersForPlatform];
+				if (Array.isArray(modelsForProvider) && modelsForProvider.includes(modelName as any)) {
 					return {
 						platform: PLATFORM_OPENROUTER,
-						provider: provider as AiProvider<'openrouter'>,
-						model: fullModelNameInMap as AllModelNames,
-						maxTokens: DEFAULT_MAX_TOKEN,
+						provider: providerPart,
+						model: modelName,
+						maxTokens: getMaxTokens(),
 						temperature: DEFAULT_TEMPERATURE,
-						// No apiKey
-					};
+					} as AiModelInfo;
 				}
 			}
 		}
 
-		// Handle other platforms (direct, local)
-		for (const [platform, providers] of Object.entries(supportAiModelInfo)) {
+		// Handle other platforms (direct, local, googleai, bedrock)
+		for (const [platformKey, providers] of Object.entries(SUPPORTED_MODEL_INFO)) {
 			// Skip openrouter as it was handled above
-			if (platform === PLATFORM_OPENROUTER) continue;
+			if (platformKey === PLATFORM_OPENROUTER) continue;
 
 			for (const [providerKey, models] of Object.entries(providers)) {
-				// Ensure models is an array before calling includes
 				if (Array.isArray(models) && models.includes(modelName as any)) {
 					return {
-						platform: platform as AiPlatform,
-						provider: providerKey as AiProvider<typeof platform>,
-						model: modelName as AllModelNames,
-						maxTokens: DEFAULT_MAX_TOKEN,
+						platform: platformKey,
+						provider: providerKey,
+						model: modelName,
+						maxTokens: getMaxTokens(),
 						temperature: DEFAULT_TEMPERATURE,
-					};
+					} as AiModelInfo;
 				}
 			}
 		}
@@ -101,40 +79,17 @@ export const getAiModelInfo = (modelName: string): AiModelInfo => {
 		console.warn(
 			`Model "${modelName}" not found in supportAiModelInfo. Falling back to default free model.`
 		);
-		// Return default free model directly (ensure it's keyless)
-		return DEFAULT_CHAT_MODEL_FREE;
+		return DEFAULT_EXTRACTION_MODEL;
 	} catch (error) {
 		console.error(`Error getting AI Model info for "${modelName}":`, error);
-		// Fallback to a safe default in case of error
-		return DEFAULT_CHAT_MODEL_FREE;
+		return DEFAULT_EXTRACTION_MODEL;
 	}
-};
-
-/**
- * Determines the initial default AiModelInfo based on available free models.
- * Uses the pre-calculated freeAiModelInfos list.
- * @returns AiModelInfo for the determined default model (keyless).
- */
-export const determineInitialDefaultAiInfo = (): AiModelInfo => {
-	// Simplified: just use the constant if it's reliable
-	return DEFAULT_CHAT_MODEL_FREE;
-	// Or, if logic is needed based on freeAiModelInfos:
-	// return freeAiModelInfos[0] || DEFAULT_CHAT_MODEL_FREE;
-};
-
-/**
- * Determines the default AiModelInfo for summary tasks.
- * @returns AiModelInfo for the summary model (keyless).
- */
-export const determineDefaultSummaryAiInfo = (): AiModelInfo => {
-	// Simplified: just use the constant
-	return DEFAULT_RECAP_MODEL_FREE;
 };
 
 /**
  * Validates if an object structurally matches the AiModelInfo interface
  * and if the model is listed in the supportAiModelInfo configuration.
- * Does NOT check for API keys.
+ * Also validates that maxTokens is within the model's allowed limits.
  * @param aiInfo - The object to validate.
  * @returns True if the object is a valid AiModelInfo structure and the model is supported.
  */
@@ -147,22 +102,78 @@ export const isValidAiModelInfo = (aiInfo: unknown): aiInfo is AiModelInfo => {
 		!('provider' in aiInfo) ||
 		typeof aiInfo.provider !== 'string' ||
 		!('model' in aiInfo) ||
-		typeof aiInfo.model !== 'string'
-		// No apiKey check needed
+		typeof aiInfo.model !== 'string' ||
+		!('maxTokens' in aiInfo) ||
+		typeof aiInfo.maxTokens !== 'number' ||
+		aiInfo.maxTokens <= 0
 	) {
 		return false;
 	}
 
-	// Check if the model exists in the configuration
 	const platform = aiInfo.platform as AiPlatform;
-	const provider = aiInfo.provider as string; // Use string for lookup key
-	const model = aiInfo.model as string;
+	const provider = aiInfo.provider as string;
+	const model = aiInfo.model as AllModelNames;
+	const maxTokens = aiInfo.maxTokens;
 
-	const providersForPlatform = supportAiModelInfo[platform];
+	// Validate platform and provider exist
+	const providersForPlatform = SUPPORTED_MODEL_INFO[platform];
 	if (!providersForPlatform || !(provider in providersForPlatform)) {
-		return false; // Platform or provider doesn't exist
+		console.warn(`Platform "${platform}" or provider "${provider}" not found in configuration`);
+		return false;
 	}
-	const modelsForProvider = providersForPlatform[provider as keyof typeof providersForPlatform];
 
-	return Array.isArray(modelsForProvider) && modelsForProvider.includes(model as any);
+	// Validate model exists for the provider
+	const modelsForProvider = providersForPlatform[provider as keyof typeof providersForPlatform];
+	if (!Array.isArray(modelsForProvider) || !modelsForProvider.includes(model as any)) {
+		console.warn(`Model "${model}" not found for provider "${provider}" on platform "${platform}"`);
+		return false;
+	}
+
+	// Validate maxTokens against model limits
+	const modelLimits = MODEL_LIMITS_INFO[model];
+	if (!modelLimits) {
+		console.warn(`No token limits defined for model: ${model}. Allowing maxTokens: ${maxTokens}`);
+		// Don't fail validation if limits aren't defined, just warn
+		return maxTokens >= 100 && maxTokens <= 50000; // Reasonable bounds
+	}
+
+	// Check if maxTokens is within the model's maximum output token limit
+	if (maxTokens > modelLimits.maxOutputTokens) {
+		console.warn(
+			`maxTokens (${maxTokens}) exceeds model limit (${modelLimits.maxOutputTokens}) for ${model}`
+		);
+		return false;
+	}
+
+	// Additional validation: ensure maxTokens is reasonable (not too small)
+	const minReasonableTokens = 100;
+	if (maxTokens < minReasonableTokens) {
+		console.warn(
+			`maxTokens (${maxTokens}) is too small, minimum recommended: ${minReasonableTokens}`
+		);
+		return false;
+	}
+
+	return true;
+};
+
+/**
+ * Helper function to get safe maxTokens for a model
+ * @param modelName - The model name
+ * @param requestedTokens - Requested token count (optional)
+ * @returns Safe token count within model limits
+ */
+export const getSafeMaxTokens = (modelName: AllModelNames, requestedTokens?: number): number => {
+	const modelLimits = MODEL_LIMITS_INFO[modelName];
+	if (!modelLimits) {
+		const fallbackTokens = requestedTokens || DEFAULT_MAX_TOKEN;
+		console.warn(`No limits found for ${modelName}, using fallback: ${fallbackTokens}`);
+		return Math.min(fallbackTokens, 4096); // Safe upper bound
+	}
+
+	if (requestedTokens) {
+		return Math.min(requestedTokens, modelLimits.maxOutputTokens);
+	}
+
+	return modelLimits.maxOutputTokens;
 };

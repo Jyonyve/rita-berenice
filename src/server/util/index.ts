@@ -5,3 +5,6 @@ export * from './queryUtils.js';
 export * from './languageUtils.js';
 export * from './cryptoUtils.js';
 export * from './schemaUtils.js';
+export * from './jsonlLogger.js';
+export * from './chatParseUtils.js';
+export * from './documentUtils.js';

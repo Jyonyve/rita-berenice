@@ -16,6 +16,8 @@ import {
 import { metadataToHistory, metadataToLore } from '#shared/util/dbConvertUtils.js';
 import { buildLoreIndexId } from '#shared/util/buildIdUtils.js';
 import { validateChromaResponse, handleServiceError } from '../util/serviceHelpers.js';
+import { FilterCriteria } from '../util/schemaUtils.js';
+import { reRankSemanticResults } from '../util/queryUtils.js';
 
 // Destructure chromaDbClient methods
 const { getLoreCollection, upsertRecords, getRecords, getRecordById, queryRecords, deleteRecords } =
@@ -54,11 +56,9 @@ export const loreStore = {
 	},
 
 	// --- LORE OPERATIONS ---
-
 	storeLore: async (loreInfo: LoreInfo): Promise<void> => {
 		try {
 			const collection = await loreStore._getCollection();
-			// 1. Convert to the flat metadata object for the primary document.
 			const loreMetadata: LoreMetadata = {
 				type: METADATA_TYPES.LORE,
 				loreId: loreInfo.loreId,
@@ -73,49 +73,88 @@ export const loreStore = {
 				source: loreInfo.source,
 				summary: loreInfo.summary,
 			};
-
-			// 2. Upsert the primary document.
 			await upsertRecords(collection, [loreInfo.loreId], [loreInfo.content], [loreMetadata]);
-
-			// 3. Update its search indexes.
 			await loreStore._updateSearchIndexForLore(loreInfo);
 		} catch (error) {
 			handleServiceError(error, `Failed to store lore ${loreInfo.loreId}`);
 		}
 	},
 
+	/**
+	 * @private
+	 * Dynamically builds a ChromaDB 'where' clause to filter LORE/HISTORY index documents.
+	 */
+	_buildIndexWhereClause(characterId: string, criteria: FilterCriteria): Where | undefined {
+		const orConditions: Where[] = [];
+
+		const addConditions = (list: string[] | undefined, type: LoreIndexContentType) => {
+			if (!list || list.length === 0) return;
+			const topTerms = list.slice(0, 5); // Be selective
+			topTerms.forEach((item) => {
+				orConditions.push({ $and: [{ contentType: { $eq: type } }, { value: { $eq: item } }] });
+			});
+		};
+
+		addConditions(criteria.topics, 'TOPIC');
+		addConditions(criteria.keywords, 'KEYWORD');
+		addConditions(criteria.entities?.characters, 'AFFECTED_CHARACTER');
+		addConditions(criteria.entities?.locations, 'ENTITY');
+		addConditions(criteria.entities?.items, 'ENTITY');
+		if (criteria.period) {
+			addConditions([criteria.period], 'RELATED_EVENT');
+		}
+
+		if (orConditions.length === 0) return undefined;
+
+		return {
+			$and: [
+				{ type: { $eq: METADATA_TYPES.INDEX } },
+				{ characterId: { $eq: characterId } },
+				{ $or: orConditions },
+			],
+		};
+	},
+
 	_updateSearchIndexForLore: async (loreInfo: LoreInfo): Promise<void> => {
 		const collection = await loreStore._getCollection();
-		// 1. Delete ONLY the old INDEX entries for this lore.
 		const oldIndexWhere: Where = {
 			$and: [{ type: { $eq: METADATA_TYPES.INDEX } }, { contentId: { $eq: loreInfo.loreId } }],
 		};
 		await collection.delete({ where: oldIndexWhere });
 
-		// 2. Create new index records.
 		const newIndexRecords: { id: string; document: string; metadata: LoreIndexMetadata }[] = [];
 		const baseMetadata = {
 			type: METADATA_TYPES.INDEX,
 			contentId: loreInfo.loreId,
 			characterId: loreInfo.characterId,
 		};
-		const createIndexRecords = (list: string[], contentType: LoreIndexContentType) => {
+
+		const createIndexRecords = (
+			list: string[],
+			contentType: LoreIndexContentType,
+			contextDescription: string
+		) => {
 			if (!list || list.length === 0) return;
 			for (const value of list) {
 				if (!value || value.trim() === '') continue;
+				const semanticDocument = `${contextDescription}: "${value}". From lore titled "${loreInfo.title}", summarized as: ${loreInfo.summary}`;
 				newIndexRecords.push({
-					id: buildLoreIndexId(loreInfo.loreId, contentType),
-					document: value,
+					id: buildLoreIndexId(loreInfo.loreId, contentType), // Unique ID per value
+					document: semanticDocument,
 					metadata: { ...baseMetadata, contentType, value },
 				});
 			}
 		};
-		createIndexRecords(loreInfo.keywordList, 'KEYWORD');
-		createIndexRecords(loreInfo.topicList, 'TOPIC');
-		createIndexRecords(loreInfo.entityList, 'ENTITY');
-		createIndexRecords(loreInfo.allAffectedCharacterIdList, 'AFFECTED_CHARACTER');
 
-		// 3. Batch upsert the new index records.
+		createIndexRecords(loreInfo.keywordList, 'KEYWORD', 'Key concept');
+		createIndexRecords(loreInfo.topicList, 'TOPIC', 'Main topic');
+		createIndexRecords(loreInfo.entityList, 'ENTITY', 'Mentioned entity');
+		createIndexRecords(
+			loreInfo.allAffectedCharacterIdList,
+			'AFFECTED_CHARACTER',
+			'Affected character'
+		);
+
 		if (newIndexRecords.length > 0) {
 			await upsertRecords(
 				collection,
@@ -257,7 +296,6 @@ export const loreStore = {
 	},
 
 	// --- HISTORY OPERATIONS (Corrected and aligned with Lore) ---
-
 	storeHistory: async (historyInfo: HistoryInfo): Promise<void> => {
 		try {
 			const collection = await loreStore._getCollection();
@@ -302,24 +340,34 @@ export const loreStore = {
 			contentId: historyInfo.historyId,
 			characterId: historyInfo.characterId,
 		};
-		const createIndexRecords = (list: any[], contentType: LoreIndexContentType) => {
+
+		const createIndexRecords = (
+			list: any[],
+			contentType: LoreIndexContentType,
+			contextDescription: string
+		) => {
 			if (!list || list.length === 0) return;
 			for (const item of list) {
-				// Handle both strings and objects (for RelatedEvent)
 				const value = typeof item === 'string' ? item : JSON.stringify(item);
 				if (!value || value.trim() === '') continue;
+				const semanticDocument = `${contextDescription}: "${value}". From history event titled "${historyInfo.title}", summarized as: ${historyInfo.summary}`;
 				newIndexRecords.push({
 					id: buildLoreIndexId(historyInfo.historyId, contentType),
-					document: value,
+					document: semanticDocument,
 					metadata: { ...baseMetadata, contentType, value },
 				});
 			}
 		};
-		createIndexRecords(historyInfo.keywordList, 'KEYWORD');
-		createIndexRecords(historyInfo.topicList, 'TOPIC');
-		createIndexRecords(historyInfo.entityList, 'ENTITY');
-		createIndexRecords(historyInfo.allAffectedCharacterIdList, 'AFFECTED_CHARACTER');
-		createIndexRecords(historyInfo.relatedEventList, 'RELATED_EVENT');
+
+		createIndexRecords(historyInfo.keywordList, 'KEYWORD', 'Key concept');
+		createIndexRecords(historyInfo.topicList, 'TOPIC', 'Main topic');
+		createIndexRecords(historyInfo.entityList, 'ENTITY', 'Mentioned entity');
+		createIndexRecords(
+			historyInfo.allAffectedCharacterIdList,
+			'AFFECTED_CHARACTER',
+			'Affected character'
+		);
+		createIndexRecords(historyInfo.relatedEventList, 'RELATED_EVENT', 'Related event');
 
 		if (newIndexRecords.length > 0) {
 			await upsertRecords(
@@ -459,35 +507,34 @@ export const loreStore = {
 	},
 
 	// --- QUERY OPERATIONS ---
-
 	/**
 	 * [For Backend RAG] Performs a hybrid semantic/metadata search for Lore entries.
 	 */
 	async queryLores(
-		characterId: string, // Primary character context
+		characterId: string,
 		queryTexts: string[],
-		whereFilter?: Where, // This filter is for the INDEX records
+		filterCriteria?: FilterCriteria,
 		whereDocument?: WhereDocument,
 		limit?: number
-	): Promise<LoreInfo[]> {
+	): Promise<LoreResponse> {
 		try {
 			const collection = await loreStore._getCollection();
 			let contentIdsToSearch: string[] | undefined = undefined;
 
-			// Step 1: Pre-filter using the index to get relevant lore IDs.
-			if (whereFilter && Object.keys(whereFilter).length > 0) {
-				const indexResults = await getRecords(collection, whereFilter);
-				const validatedIndexes = validateChromaResponse(indexResults, 'getList', collectionType);
-				contentIdsToSearch = [
-					...new Set(validatedIndexes.metadatas.map((m) => (m as unknown as LoreMetadata).loreId)),
-				];
-
-				if (contentIdsToSearch.length === 0) {
-					return [];
+			if (filterCriteria && Object.keys(filterCriteria).length > 0) {
+				const indexWhereFilter = loreStore._buildIndexWhereClause(characterId, filterCriteria);
+				if (indexWhereFilter) {
+					const indexResults = await getRecords(collection, indexWhereFilter);
+					const validatedIndexes = validateChromaResponse(indexResults, 'getList', collectionType);
+					contentIdsToSearch = [
+						...new Set(
+							validatedIndexes.metadatas.map((m) => (m as unknown as LoreIndexMetadata).contentId)
+						),
+					];
+					if (contentIdsToSearch.length === 0) return emptyLoreRes;
 				}
 			}
 
-			// Step 2: Perform semantic search on the pre-filtered set of primary documents.
 			const queryConditions: Where[] = [
 				{ type: { $eq: METADATA_TYPES.LORE } },
 				{ characterId: { $eq: characterId } },
@@ -497,43 +544,54 @@ export const loreStore = {
 			}
 			const queryWhere: Where = { $and: queryConditions };
 
+			const searchLimit = limit ? Math.min(limit * 3, 50) : 30;
 			const queryResults = await queryRecords(
 				collection,
 				queryTexts,
 				queryWhere,
 				whereDocument,
-				limit
+				searchLimit
 			);
 			const validatedQueryResults = queryResults.map((r) =>
 				validateChromaResponse(r, 'getList', collectionType)
 			);
-			const loreMetadatas = validatedQueryResults.flatMap((r) => r.metadatas);
-			const loreDocuments = validatedQueryResults.flatMap((r) => r.documents);
 
-			if (loreMetadatas.length === 0) {
-				return [];
-			}
+			const rankedResults = reRankSemanticResults(validatedQueryResults, limit, {
+				semanticWeight: 0.5,
+				recencyWeight: 0.5,
+				updatedAtField: 'updatedAt',
+			});
 
-			// Step 3: Fetch all index records for the final set of lores to enable full reconstruction.
-			const finalContentIds = loreMetadatas
-				.map((m) => m?.loreId)
-				.filter((id): id is string => typeof id === 'string');
-			const finalIndexResults = await getRecords(collection, { loreId: { $in: finalContentIds } });
-			const allIndexResult = validateChromaResponse(finalIndexResults, 'getList', collectionType);
+			if (rankedResults.ids.length === 0) return emptyLoreRes;
 
-			// Step 4: Reconstruct the full rich objects.
-			return loreMetadatas.map((metadata, i) => {
-				const relatedIndexMetadatas = allIndexResult.metadatas.filter(
-					(record): record is Metadata => !!record && record.contentId === metadata?.loreId
+			const finalContentIds = rankedResults.ids;
+			const allIndexResult = await getRecords(collection, { contentId: { $in: finalContentIds } });
+			const validatedIndexes = validateChromaResponse(allIndexResult, 'getList', collectionType);
+
+			const loreInfos = rankedResults.metadatas.map((metadata, i) => {
+				const relatedIndexMetadatas = validatedIndexes.metadatas.filter(
+					(record): record is Metadata =>
+						!!record && record.contentId === (metadata as unknown as LoreMetadata).loreId
 				);
 				return metadataToLore(
 					metadata as unknown as LoreMetadata,
-					loreDocuments[i] || '',
+					rankedResults.documents[i] || '',
 					relatedIndexMetadatas as unknown as LoreIndexMetadata[]
 				);
 			});
+
+			return {
+				ids: rankedResults.ids,
+				metadatas: rankedResults.metadatas,
+				documents: rankedResults.documents,
+				loreInfos,
+				loreInfo: loreInfos[0] || ({} as LoreInfo),
+				loreContent: loreInfos[0]?.content || '',
+				loreContents: loreInfos.map((r) => r.content),
+			};
 		} catch (error) {
 			handleServiceError(error, `Failed to query lores for character ${characterId}`);
+			return emptyLoreRes;
 		}
 	},
 
@@ -541,32 +599,30 @@ export const loreStore = {
 	 * [For Backend RAG] Performs a hybrid semantic/metadata search for History entries.
 	 */
 	async queryHistories(
-		characterId: string, // Primary character context
+		characterId: string,
 		queryTexts: string[],
-		whereFilter?: Where, // This filter is for the INDEX records
+		filterCriteria?: FilterCriteria,
 		whereDocument?: WhereDocument,
 		limit?: number
-	): Promise<HistoryInfo[]> {
+	): Promise<HistoryResponse> {
 		try {
 			const collection = await loreStore._getCollection();
 			let contentIdsToSearch: string[] | undefined = undefined;
 
-			// Step 1: Pre-filter using the index to get relevant history IDs.
-			if (whereFilter && Object.keys(whereFilter).length > 0) {
-				const indexResults = await getRecords(collection, whereFilter);
-				const validatedIndexes = validateChromaResponse(indexResults, 'getList', collectionType);
-				contentIdsToSearch = [
-					...new Set(
-						validatedIndexes.metadatas.map((m) => (m as unknown as LoreIndexMetadata).contentId)
-					),
-				];
-
-				if (contentIdsToSearch.length === 0) {
-					return [];
+			if (filterCriteria && Object.keys(filterCriteria).length > 0) {
+				const indexWhereFilter = loreStore._buildIndexWhereClause(characterId, filterCriteria);
+				if (indexWhereFilter) {
+					const indexResults = await getRecords(collection, indexWhereFilter);
+					const validatedIndexes = validateChromaResponse(indexResults, 'getList', collectionType);
+					contentIdsToSearch = [
+						...new Set(
+							validatedIndexes.metadatas.map((m) => (m as unknown as LoreIndexMetadata).contentId)
+						),
+					];
+					if (contentIdsToSearch.length === 0) return emptyHisRes;
 				}
 			}
 
-			// Step 2: Perform semantic search on the pre-filtered set of primary documents.
 			const queryConditions: Where[] = [
 				{ type: { $eq: METADATA_TYPES.HISTORY } },
 				{ characterId: { $eq: characterId } },
@@ -576,43 +632,54 @@ export const loreStore = {
 			}
 			const queryWhere: Where = { $and: queryConditions };
 
+			const searchLimit = limit ? Math.min(limit * 3, 50) : 30;
 			const queryResults = await queryRecords(
 				collection,
 				queryTexts,
 				queryWhere,
 				whereDocument,
-				limit
+				searchLimit
 			);
 			const validatedQueryResults = queryResults.map((r) =>
 				validateChromaResponse(r, 'getList', collectionType)
 			);
-			const historyMetadatas = validatedQueryResults.flatMap((r) => r.metadatas);
-			const historyDocuments = validatedQueryResults.flatMap((r) => r.documents);
 
-			if (historyMetadatas.length === 0) {
-				return [];
-			}
+			const rankedResults = reRankSemanticResults(validatedQueryResults, limit, {
+				semanticWeight: 1.0,
+				recencyWeight: 0.0,
+				updatedAtField: 'updatedAt',
+			});
 
-			// Step 3: Fetch all index records for the final set of histories.
-			const finalContentIds = historyMetadatas
-				.map((m) => m?.historyId)
-				.filter((id): id is string => typeof id === 'string');
-			const finalIndexResults = await getRecords(collection, { contentId: { $in: finalContentIds } });
-			const allIndexResult = validateChromaResponse(finalIndexResults, 'getList', collectionType);
+			if (rankedResults.ids.length === 0) return emptyHisRes;
 
-			// Step 4: Reconstruct the full rich objects.
-			return historyMetadatas.map((metadata, i) => {
-				const relatedIndexRecords = allIndexResult.metadatas.filter(
-					(record): record is Metadata => !!record && record.contentId === metadata?.historyId
+			const finalContentIds = rankedResults.ids;
+			const allIndexResult = await getRecords(collection, { contentId: { $in: finalContentIds } });
+			const validatedIndexes = validateChromaResponse(allIndexResult, 'getList', collectionType);
+
+			const historyInfos = rankedResults.metadatas.map((metadata, i) => {
+				const relatedIndexMetadatas = validatedIndexes.metadatas.filter(
+					(record): record is Metadata =>
+						!!record && record.contentId === (metadata as unknown as HistoryMetadata).historyId
 				);
 				return metadataToHistory(
 					metadata as unknown as HistoryMetadata,
-					historyDocuments[i] || '',
-					relatedIndexRecords as unknown as LoreIndexMetadata[]
+					rankedResults.documents[i] || '',
+					relatedIndexMetadatas as unknown as LoreIndexMetadata[]
 				);
 			});
+
+			return {
+				ids: rankedResults.ids,
+				metadatas: rankedResults.metadatas,
+				documents: rankedResults.documents,
+				historyInfos,
+				historyInfo: historyInfos[0] || ({} as HistoryInfo),
+				historyContent: historyInfos[0]?.content || '',
+				historyContents: historyInfos.map((r) => r.content),
+			};
 		} catch (error) {
 			handleServiceError(error, `Failed to query histories for character ${characterId}`);
+			return emptyHisRes;
 		}
 	},
 

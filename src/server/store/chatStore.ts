@@ -15,21 +15,41 @@ import {
 	TempChatTurn,
 	TempChatTurnMetadata,
 } from '#shared/domain/chat/ChatInterfaces.js';
+<<<<<<< HEAD
 import { flatChatMessageToDoc, chatTurnToDocument } from '#shared/util/documentUtils.js';
 import { ApiError, handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
+=======
+import { flatChatMessageToDoc, chatTurnToDocument } from '#server/util/documentUtils.js';
+import { ApiError } from '#shared/domain/error/errors.js';
+import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
+>>>>>>> origin
 import {
 	chatTurnToMetadata,
 	metadataToChatTurn,
 	metadataToDisplayTurn,
 } from '#shared/util/dbConvertUtils.js';
 import { ChatResponse } from '#shared/api/ModuleResponse.js';
+<<<<<<< HEAD
 import { parseTextToEntries } from '#shared/util/chatParseUtils.js';
 import { isAndWhere } from '../util/queryUtils.js';
+=======
+>>>>>>> origin
 import {
 	buildChatTurnIndexId,
 	buildChatTurnId,
 	buildMessageId,
 } from '#shared/util/buildIdUtils.js';
+import { FilterCriteria } from '../util/schemaUtils.js';
+import {
+	getTokenCount,
+	MEMORY_CONFIG,
+	prioritizeRecentTurns,
+	reRankSemanticResults,
+} from '../util/queryUtils.js';
+import { parseEntriesToConversation } from '../util/chatParseUtils.js';
+import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
+import { convertArrayToString } from '#shared/util/parseUtils.js';
+import { mapEmotionToCategory } from '#shared/util/emotionUtils.js';
 
 // Destructure outside the object
 const {
@@ -159,61 +179,227 @@ export const chatStore = {
 			return metadataToDisplayTurn(metadata);
 		});
 	},
+
 	/**
 	 * @private
-	 * Creates or updates the denormalized search index records for a given ChatTurn.
+	 * Creates or updates semantic-rich search index records for a given ChatTurn.
 	 */
 	_updateSearchIndexForTurn: async (turn: ChatTurn): Promise<void> => {
 		const collection = await chatStore._getChatCollection();
 
-		// --- 1. CRITICAL FIX: Atomically delete all EXISTING INDEX entries for this turn ---
+		// Delete existing index entries
 		const oldIndexWhere: Where = {
 			$and: [{ type: { $eq: METADATA_TYPES.INDEX } }, { chatTurnId: { $eq: turn.chatTurnId } }],
 		};
 		await collection.delete({ where: oldIndexWhere });
 
-		// --- 2. Create new index records with UNIQUE IDs and document content ---
 		const newIndexRecords: { id: string; document: string; metadata: ChatIndexMetadata }[] = [];
 		const baseMetadata = {
-			type: METADATA_TYPES.INDEX, // Use a dedicated type for indexes
+			type: METADATA_TYPES.INDEX,
 			chatTurnId: turn.chatTurnId,
 			sessionId: turn.sessionId,
 			characterId: turn.characterId,
 			originalCreatedAt: turn.createdAt,
 		};
 
-		const createIndexRecords = (list: string[], contentType: ChatIndexContentType) => {
+		// Create semantic-searchable documents for different content types
+		const createSemanticIndexRecords = (
+			list: string[],
+			contentType: ChatIndexContentType,
+			contextDescription: string
+		) => {
 			if (!list || list.length === 0) return;
-			for (const value of list) {
-				if (!value || value.trim() === '') continue;
+
+			list.forEach((value, index) => {
+				// Create rich document content for semantic search
+				const semanticDocument = `${contextDescription}: ${value}. Context: ${parseEntriesToConversation(turn.request.entries) || ''} ${parseEntriesToConversation(turn.response.entries) || ''}. Emotional tone: ${turn.userEmotion?.primary || DEFAULT_EMOTION}, ${turn.characterEmotion?.primary || 'neutral'}. Topics discussed: ${convertArrayToString(turn.topicList) || 'general'}`;
+
+				const tokenCount = getTokenCount(value);
+
 				newIndexRecords.push({
-					// --- CRITICAL FIX: Ensure ID is unique by including the value ---
 					id: buildChatTurnIndexId(turn.chatTurnId, contentType),
-					document: value, // The value itself is the content to be embedded
-					metadata: { ...baseMetadata, contentType, value },
+					document: semanticDocument,
+					metadata: {
+						...baseMetadata,
+						contentType,
+						value,
+						semanticContext: contextDescription,
+						tokenCount,
+						// Default values for non-emotion records
+						emotionCategory: 'neutral',
+						emotionIntensity: 0.5,
+						emotionType: 'primary',
+					},
 				});
-			}
+			});
 		};
 
-		// Create index records for all filterable attributes
-		createIndexRecords(turn.keywordList, 'KEYWORD');
-		createIndexRecords(turn.topicList, 'TOPIC');
-		createIndexRecords(turn.entityList, 'ENTITY');
-		createIndexRecords(turn.actionList, 'ACTION');
-		createIndexRecords(turn.flagList, 'FLAG');
-		createIndexRecords(turn.relationshipShiftList, 'RELATIONSHIP_SHIFT');
-		createIndexRecords(turn.userEmotion.nuanceList, 'USER_EMOTION_NUANCE');
-		createIndexRecords(turn.characterEmotion.nuanceList, 'CHARACTER_EMOTION_NUANCE');
+		// Create semantic index records with rich context
+		createSemanticIndexRecords(
+			turn.keywordList,
+			'KEYWORD',
+			'Key concept or important term discussed'
+		);
+		createSemanticIndexRecords(turn.topicList, 'TOPIC', 'Main topic or theme of conversation');
+		createSemanticIndexRecords(turn.entityList, 'ENTITY', 'Person, place, or thing mentioned');
+		createSemanticIndexRecords(turn.actionList, 'ACTION', 'Action taken or behavior observed');
+		createSemanticIndexRecords(
+			turn.flagList,
+			'FLAG',
+			'Important flag or marker for this conversation'
+		);
+		createSemanticIndexRecords(
+			turn.relationshipShiftList,
+			'RELATIONSHIP_SHIFT',
+			'Change in relationship dynamic'
+		);
 
-		// --- 3. Batch upsert the new index records ---
+		// Enhanced emotion indexing with semantic context
+		if (turn.userEmotion?.nuanceList?.length) {
+			turn.userEmotion.nuanceList.forEach((emotion, index) => {
+				const emotionDocument = `User emotional state: ${emotion}. In response to: ${parseEntriesToConversation(turn.request.entries) || 'interaction'}. Character response tone: ${turn.characterEmotion?.primary || 'neutral'}. Conversation context: ${turn.topicList?.join(', ') || 'general discussion'}`;
+
+				const tokenCount = getTokenCount(emotion);
+
+				newIndexRecords.push({
+					id: buildChatTurnIndexId(turn.chatTurnId, 'USER_EMOTION_NUANCE'),
+					document: emotionDocument,
+					metadata: {
+						...baseMetadata,
+						contentType: 'USER_EMOTION_NUANCE',
+						value: emotion,
+						semanticContext: 'User emotional expression and feeling',
+						tokenCount,
+						// Proper emotion-specific values
+						emotionCategory: mapEmotionToCategory(emotion),
+						emotionIntensity: turn.userEmotion.intensity || 0.5,
+						emotionType: 'nuance',
+					},
+				});
+			});
+		}
+
+		if (turn.characterEmotion?.nuanceList?.length) {
+			turn.characterEmotion.nuanceList.forEach((emotion, index) => {
+				const emotionDocument = `Character emotional response: ${emotion}. Triggered by user: ${parseEntriesToConversation(turn.request.entries) || 'interaction'}. Character personality: ${turn.characterId}. Relationship context: ${turn.relationshipShiftList?.join(', ') || 'stable'}`;
+
+				const tokenCount = getTokenCount(emotion);
+
+				newIndexRecords.push({
+					id: buildChatTurnIndexId(turn.chatTurnId, 'CHARACTER_EMOTION_NUANCE'),
+					document: emotionDocument,
+					metadata: {
+						...baseMetadata,
+						contentType: 'CHARACTER_EMOTION_NUANCE',
+						value: emotion,
+						semanticContext: 'Character emotional reaction and response',
+						tokenCount,
+						// Proper emotion-specific values
+						emotionCategory: mapEmotionToCategory(emotion),
+						emotionIntensity: turn.characterEmotion.intensity || 0.5,
+						emotionType: 'nuance',
+					},
+				});
+			});
+		}
+
+		// Batch upsert the enriched index records
 		if (newIndexRecords.length > 0) {
-			await upsertRecords(
+			await chromaDbClient.upsertRecords(
 				collection,
 				newIndexRecords.map((r) => r.id),
 				newIndexRecords.map((r) => r.document),
 				newIndexRecords.map((r) => r.metadata)
 			);
 		}
+	},
+
+	/**
+	 * @private
+	 * Enhanced metadata filtering with stricter criteria for better precision
+	 */
+	_buildIndexWhereClause(sessionId: string, criteria: FilterCriteria): Where | undefined {
+		const andConditions: Where[] = [];
+
+		// Base session filter
+		andConditions.push({ sessionId: { $eq: sessionId } });
+		andConditions.push({ type: { $eq: METADATA_TYPES.INDEX } });
+
+		// More restrictive OR conditions - require higher relevance
+		const orConditions: Where[] = [];
+
+		// Prioritize exact keyword/topic matches (removed unused weight parameter)
+		const addExactConditions = (list: string[] | undefined, type: ChatIndexContentType) => {
+			if (!list || list.length === 0) return;
+
+			// Only take top 70% most relevant terms for selectivity
+			const topTerms = list.slice(0, Math.ceil(list.length * 0.7));
+
+			topTerms.forEach((item) => {
+				orConditions.push({
+					$and: [
+						{ contentType: { $eq: type } },
+						{ value: { $eq: item } }, // Use exact match only
+					],
+				});
+			});
+		};
+
+		// Prioritize topics and keywords over other metadata
+		addExactConditions(criteria.topics, 'TOPIC');
+		addExactConditions(criteria.keywords, 'KEYWORD');
+
+		// Be more selective with entities
+		if (criteria.entities?.characters?.length) {
+			criteria.entities.characters.slice(0, 2).forEach((char) => {
+				orConditions.push({
+					$and: [
+						{ contentType: { $eq: 'ENTITY' } },
+						{ value: { $eq: char } }, // Exact match for entities
+					],
+				});
+			});
+		}
+
+		// Enhanced emotion filtering with category mapping
+		if (criteria.emotion && criteria.emotion !== 'neutral') {
+			const emotionCategory = mapEmotionToCategory(criteria.emotion);
+
+			// Try both specific emotion and broader category
+			orConditions.push({
+				$and: [
+					{ contentType: { $eq: 'USER_EMOTION_NUANCE' } },
+					{ value: { $eq: criteria.emotion } }, // Exact match first
+				],
+			});
+
+			orConditions.push({
+				$and: [
+					{ contentType: { $eq: 'USER_EMOTION_NUANCE' } },
+					{ value: { $eq: emotionCategory } }, // Category fallback
+				],
+			});
+
+			orConditions.push({
+				$and: [
+					{ contentType: { $eq: 'CHARACTER_EMOTION_NUANCE' } },
+					{ value: { $eq: criteria.emotion } },
+				],
+			});
+
+			orConditions.push({
+				$and: [
+					{ contentType: { $eq: 'CHARACTER_EMOTION_NUANCE' } },
+					{ value: { $eq: emotionCategory } },
+				],
+			});
+		}
+
+		if (orConditions.length === 0) {
+			return undefined; // No filter - will get recent turns
+		}
+
+		return { $and: [...andConditions, { $or: orConditions }] };
 	},
 
 	/**
@@ -227,7 +413,7 @@ export const chatStore = {
 			// 1. Prepare and store the primary TURN document
 			const metadata = chatTurnToMetadata(turn);
 			const document = chatTurnToDocument(turn);
-			await upsertRecords(collection, [metadata.chatTurnId], [document], [metadata]);
+			await upsertRecord(collection, metadata.chatTurnId, document, metadata);
 
 			// 2. Update the denormalized search index for this turn
 			await chatStore._updateSearchIndexForTurn(turn);
@@ -324,6 +510,10 @@ export const chatStore = {
 	/**
 	 * [OPTIMIZED for Deep Copy & RAG] Fetches full, rich ChatTurn objects for a session.
 	 * This version uses a single, efficient query to avoid the N+1 problem.
+<<<<<<< HEAD
+=======
+	 * NOTE: it querys lots of data, db crashes at scale 1. if want to use this method upgrade db or give some limits.
+>>>>>>> origin
 	 */
 	getAllChatTurns: async (sessionId: string): Promise<ChatResponse> => {
 		try {
@@ -411,114 +601,99 @@ export const chatStore = {
 		}
 	},
 
-	// Enhanced Query Operations
-	queryChatMessages: async (
-		sessionId: string,
-		queryTexts: string[],
-		messageType: ChatMessageType,
-		where?: Where,
-		whereDocumennt?: WhereDocument,
-		limit?: number
-	): Promise<string[]> => {
-		try {
-			const collection = await chatStore._getChatCollection();
-
-			const conditions: Where[] = [
-				{ sessionId: { $eq: sessionId } },
-				{ type: { $eq: METADATA_TYPES.MESSAGE } },
-				{ messageType: { $eq: messageType } },
-			];
-			if (where && isAndWhere(where)) {
-				conditions.push(...where.$and);
-			}
-			const whereClause: Where = { $and: conditions };
-
-			const rawResults = await queryRecords(
-				collection,
-				queryTexts,
-				whereClause,
-				whereDocumennt,
-				limit
-			);
-			const results = rawResults.map((raw) => validateChromaResponse(raw, 'getList', collectionType));
-			return results.flatMap((result) => {
-				const chatMessages = result.documents
-					.flatMap((doc) => (typeof doc === 'string' ? parseTextToEntries(doc) : []))
-					.filter((msg) => msg !== null);
-
-				return chatMessages.map((msg) => JSON.stringify(msg));
-			});
-		} catch (error) {
-			console.error(`Failed to query chat log for session ${sessionId}:`, error);
-			return [];
-		}
-	},
-
 	queryChatTurns: async (
 		sessionId: string,
 		queryTexts: string[],
-		where?: Where,
+		filterCriteria?: FilterCriteria,
 		whereDocument?: WhereDocument,
 		limit?: number
 	): Promise<ChatResponse> => {
 		try {
-			let turnIdsToFetch: string[] = [];
+			let turnIdsToSearch: string[] | undefined = undefined;
 			const collection = await chatStore._getChatCollection();
-			// Step 1: Pre-filter based on metadata to get relevant turn IDs
-			if (where && Object.keys(where).length > 0) {
-				const indexResults = await getRecords(collection, where);
-				const validatedIndexes = validateChromaResponse(indexResults, 'getList', collectionType);
-				turnIdsToFetch = [
-					...new Set(
-						validatedIndexes.metadatas.map((m) => (m as unknown as ChatIndexMetadata).chatTurnId)
-					),
-				];
 
-				if (turnIdsToFetch.length === 0) {
-					return emptyChatResponse();
+			// Step 1: Enhanced pre-filtering with metadata
+			if (filterCriteria && Object.keys(filterCriteria).length > 0) {
+				const indexWhereClause = chatStore._buildIndexWhereClause(sessionId, filterCriteria);
+
+				if (indexWhereClause) {
+					console.log('[chatStore] Querying INDEX docs with:', JSON.stringify(indexWhereClause));
+					const indexResults = await getRecords(collection, indexWhereClause);
+					const validatedIndexes = validateChromaResponse(indexResults, 'getList', collectionType);
+
+					const matchingTurnIds = [
+						...new Set(
+							validatedIndexes.metadatas.map((m) => (m as unknown as ChatIndexMetadata)?.chatTurnId)
+						),
+					].filter(Boolean);
+
+					if (matchingTurnIds.length === 0) {
+						console.log('[chatStore] No turns found matching metadata filter. Returning empty.');
+						return emptyChatResponse();
+					}
+
+					if (matchingTurnIds.length > MEMORY_CONFIG.MAX_PREFILTER_TURNS) {
+						turnIdsToSearch = prioritizeRecentTurns(matchingTurnIds, MEMORY_CONFIG.MAX_PREFILTER_TURNS);
+						console.log(
+							`[chatStore] Reduced from ${matchingTurnIds.length} to ${turnIdsToSearch.length} turns using recency bias.`
+						);
+					} else {
+						turnIdsToSearch = matchingTurnIds;
+					}
+
+					console.log(`[chatStore] Pre-filtered to ${turnIdsToSearch.length} turns.`);
 				}
 			}
 
-			// Step 2: Perform semantic search on the pre-filtered set
-			// CORRECTED: Programmatically build the conditions to avoid TypeScript errors.
-			const conditions: Where[] = [
-				{ type: { $eq: METADATA_TYPES.TURN } },
-				{ sessionId: { $eq: sessionId } },
-			];
-			if (turnIdsToFetch) {
-				conditions.push({ chatTurnId: { $in: turnIdsToFetch } });
+			// Step 2: Perform vector search with higher limit for better ranking
+			const queryWhere: Where = {
+				$and: [{ type: { $eq: METADATA_TYPES.TURN } }, { sessionId: { $eq: sessionId } }],
+			};
+
+			if (turnIdsToSearch) {
+				queryWhere.$and?.push({ chatTurnId: { $in: turnIdsToSearch } });
 			}
-			const queryWhere: Where = { $and: conditions };
+
+			// Use higher limit for vector search to get better candidates for ranking
+			const searchLimit = limit ? Math.min(limit * 3, 50) : 30;
+			console.log('[chatStore] Querying TURN docs with limit:', searchLimit);
 
 			const queryResults = await queryRecords(
 				collection,
 				queryTexts,
 				queryWhere,
 				whereDocument,
-				limit
+				searchLimit
 			);
-			const result = queryResults.map((r) => validateChromaResponse(r, 'getList', collectionType));
-			const turnIds = result.flatMap((r) => r.ids);
-			const turnMetadatas = result.flatMap((r) => r.metadatas);
-			const turnDocuments = result.flatMap((r) => r.documents);
-			// Collect all results
-			if (turnMetadatas.length === 0) {
+
+			// Step 3: Validate results
+			const validatedResults = queryResults.map((r) =>
+				validateChromaResponse(r, 'getList', collectionType)
+			);
+
+			// Step 4: Apply semantic + recency ranking
+			const rankedResults = reRankSemanticResults(validatedResults, limit, {
+				semanticWeight: 0.7,
+				recencyWeight: 0.3,
+				updatedAtField: 'updatedAt',
+			});
+
+			if (rankedResults.ids.length === 0) {
 				return emptyChatResponse();
 			}
 
-			// Step 3: Fetch all index records for the final set of turns
-			const chatTurnIds: string[] = turnMetadatas
-				.map((m) => m?.chatTurnId)
+			// Step 5: Reconstruct ChatTurns
+			const chatTurnIds: string[] = rankedResults.metadatas
+				.map((m) => (m as any)?.chatTurnId)
 				.filter((id): id is string => typeof id === 'string');
 
 			const indexMetadatas = await chatStore._constructChatTurnIndexes(chatTurnIds);
+			const chatTurns = chatStore._constructFullChatTurns(rankedResults.metadatas, indexMetadatas);
 
-			// Step 4: Reconstruct the full rich objects
-			const chatTurns = chatStore._constructFullChatTurns(turnMetadatas, indexMetadatas);
 			return {
-				ids: turnIds,
-				metadatas: turnMetadatas,
-				documents: turnDocuments,
+				ids: rankedResults.ids,
+				metadatas: rankedResults.metadatas,
+				documents: rankedResults.documents,
 				chatTurns,
 				displayTurns: [],
 			};
@@ -557,14 +732,16 @@ export const chatStore = {
 	},
 
 	/** Gets a single FIXED turn by sequence */
-	getChatTurnBySequence: async (sessionId: string, sequence: number): Promise<ChatTurn> => {
+	getChatTurnBySequence: async (sessionId: string, sequence: number): Promise<ChatResponse> => {
 		const collection = await chatStore._getChatCollection();
 		const turnId = buildChatTurnId(sessionId, sequence);
 		try {
 			const rawResult = await getRecordById(collection, turnId);
 			const results = validateChromaResponse(rawResult, 'getOne', collectionType);
-			const indexMetadatas = await chatStore._constructChatTurnIndexes([results.ids[0]]);
-			return chatStore._constructFullChatTurns(results.metadatas, indexMetadatas)[0];
+			const indexMetadatas = await chatStore._constructChatTurnIndexes(results.ids);
+			const chatTurns = chatStore._constructFullChatTurns(results.metadatas, indexMetadatas);
+
+			return { ...results, chatTurns, displayTurns: [] };
 		} catch (error) {
 			handleServiceError(
 				error,

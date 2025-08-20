@@ -9,3 +9,4 @@ export * from './user/index.js';
 export * from './profile/index.js';
 export * from './session/index.js';
 export * from './BaseTypes.js';
+export * from './error/index.js';

@@ -1,12 +1,12 @@
-import { supportAiModelInfo } from '../../config/supportAiModelInfo.js'; //should export from file, not index(circular error)
+import { MODEL_LIMITS_INFO, SUPPORTED_MODEL_INFO } from '../../config/supportAiModelInfo.js'; //should export from file, not index(circular error)
 
 // 2. Define types based on the new structure
-export type AiPlatform = keyof typeof supportAiModelInfo;
-export type AiProvider<P extends AiPlatform> = keyof (typeof supportAiModelInfo)[P];
+export type AiPlatform = keyof typeof SUPPORTED_MODEL_INFO;
+export type AiProvider<P extends AiPlatform> = keyof (typeof SUPPORTED_MODEL_INFO)[P];
 export type AiModelName<
 	P extends AiPlatform,
 	Pr extends AiProvider<P>,
-> = (typeof supportAiModelInfo)[P][Pr] extends readonly (infer M)[] ? M : never;
+> = (typeof SUPPORTED_MODEL_INFO)[P][Pr] extends readonly (infer M)[] ? M : never;
 
 // Utility type to extract all models for a given source
 type ModelsForPlatform<S extends AiPlatform> = {
@@ -24,43 +24,26 @@ export type AiModelInfo = {
 			provider: Pr;
 			model: AiModelName<P, Pr>;
 			temperature?: number;
-			maxTokens?: number;
+			maxTokens: number;
 		};
 	}[AiProvider<P>]; // Gets the union of all provider objects for platform P
 }[AiPlatform]; // Gets the union of all platform unions
 
 // Get all sources
-export const SupportAiPlatformList = Object.keys(supportAiModelInfo) as AiPlatform[];
+export const SupportAiPlatformList = Object.keys(SUPPORTED_MODEL_INFO) as AiPlatform[];
 
 // Get all model names (flattened)
-export const SupportAiModelList = Object.values(supportAiModelInfo)
+export const SupportAiModelList = Object.values(SUPPORTED_MODEL_INFO)
 	.map((providers) => Object.values(providers).flat())
 	.flat() as AllModelNames[]; // Fixed: Use proper type assertion
 
 // 5. Define AiRole (remains unchanged)
 export type DefaultAiRole = 'system' | 'user' | 'assistant';
 
-export const DEFAULT_CHAT_MODEL_FREE: AiModelInfo = {
+export const DEFAULT_EXTRACTION_MODEL: AiModelInfo = {
 	platform: 'openrouter',
-	provider: 'deepseek',
-	model: 'deepseek/deepseek-chat-v3-0324:free',
-};
-
-export const DEFAULT_RECAP_MODEL_FREE: AiModelInfo = {
-	platform: 'openrouter',
-	provider: 'deepseek',
-	model: 'deepseek/deepseek-chat-v3-0324:free',
-	temperature: 0.7,
-};
-
-export const DEFAULT_LOCAL_MODEL: AiModelInfo = {
-	platform: 'local',
-	provider: 'exaone',
-	model: 'exaone-deep-2.4b',
-};
-
-export const DEFAULT_MODEL_GOOGLEAI: AiModelInfo = {
-	platform: 'googleai',
 	provider: 'google',
-	model: 'gemini-2.0-flash-001',
+	model: 'google/gemini-2.5-flash-lite',
+	temperature: 0.3,
+	maxTokens: MODEL_LIMITS_INFO['google/gemini-2.5-flash-lite']?.maxOutputTokens || 8192,
 };
