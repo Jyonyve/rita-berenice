@@ -14,6 +14,28 @@ export type LoreIndexContentType =
 	| 'TOPIC'
 	| 'ENTITY'
 	| 'RELATED_EVENT';
+export type LoreCategory =
+	| 'Mythology' // Legends| creation stories| religious beliefs
+	| 'Item' // Magical items| artifacts| important objects
+	| 'Concept' // Abstract ideas| philosophies| systems
+	| 'Organization' // Groups| factions| institutions
+	| 'Character' // Important NPCs| legendary figures
+	| 'Location' // Places| regions| landmarks
+	| 'Event' // Historical events| disasters| celebrations
+	| 'Culture' // Customs| traditions| social norms
+	| 'Magic' // Spells| magical phenomena| arcane knowledge
+	| 'History' // Historical records| timelines
+	| 'Technology' // Inventions| crafts| techniques
+	| 'Politics' // Government systems| laws| treaties
+	| 'Other'; // Fallback for unique cases
+export type HistoryCategory =
+	| 'Origin Story'
+	| 'Major Life Event'
+	| 'Relationship Turnpoint'
+	| 'Career & Faction'
+	| 'Conflict & War'
+	| 'Internal Struggle'
+	| 'Other';
 
 // --- A. PRIMARY DOCUMENT METADATA ---
 export interface LoreMetadata {
@@ -92,7 +114,7 @@ export interface HistoryContext {
 	periodLabel: string; // The life period this event belongs to
 	keywordList: string[]; // Specific search terms
 	topicList: string[]; // Broader thematic concepts
-	entityList: string[]; // Specific named people, places, things
+	entityList: string[]; // Specific named people| places| things
 	allAffectedCharacterIdList: string[];
 }
 

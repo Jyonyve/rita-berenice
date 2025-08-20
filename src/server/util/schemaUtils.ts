@@ -1,9 +1,9 @@
-import { z, ZodObject } from 'zod';
+import { z } from 'zod';
 import { curatedEmotionKeywords } from '#shared/config/emotionWordsMapper.js';
-import { ZodObjectV4 } from '@langchain/core/utils/types';
+import { convertArrayToString } from '#shared/util/parseUtils.js';
 
-type NonEmptyArray<T> = [T, ...T[]];
-const emotionList = curatedEmotionKeywords as NonEmptyArray<string>;
+// type NonEmptyArray<T> = [T, ...T[]];
+// const emotionList = curatedEmotionKeywords as NonEmptyArray<string>;
 
 /**
  * Creates an efficient Zod schema for persona responses with minimal token overhead.
@@ -20,10 +20,10 @@ export const createPersonaResponseSchema = (
 				.string()
 				.describe(
 					langCode === 'kor'
-						? `${charName}의 3인칭 서술. 800-1000자. 서술은 '~다'로 끝남. 대화시 줄바꿈(\\n) 사용.`
-						: `Third-person narration for ${charName}. 800-1000 chars. Use \\n between narration/dialogue.`
+						? `${charName}의 3인칭 서술. 1000-2000자. 서술은 '~다'로 끝남. 문단 변경, 대화시 줄바꿈(\\n) 사용.`
+						: `Third-person narration for ${charName}. 1000-2000 chars. Use \\n between narration/dialogue/paragraph.`
 				),
-			emotion: z.enum(emotionList).describe('Single emotion word from the provided list.'),
+			emotion: z.enum(curatedEmotionKeywords).describe('Single emotion word from the provided list.'),
 		})
 		.describe(
 			langCode === 'kor'
@@ -72,7 +72,7 @@ export const createChatTurnMetadataSchema = (charEng: string, userEng: string) =
 				primary: z
 					.string()
 					.describe(
-						`The primary emotion of ${userEng}. MUST be one of the following: [${emotionList.join(', ')}]`
+						`The primary emotion of ${userEng}. MUST be one of the following: [${convertArrayToString(curatedEmotionKeywords)}]`
 					),
 				intensity: z
 					.number()
@@ -88,7 +88,7 @@ export const createChatTurnMetadataSchema = (charEng: string, userEng: string) =
 				primary: z
 					.string()
 					.describe(
-						`The primary emotion of ${charEng}. MUST be one of the following: [${emotionList.join(', ')}]`
+						`The primary emotion of ${charEng}. MUST be one of the following: [${convertArrayToString(curatedEmotionKeywords)}]`
 					),
 				intensity: z
 					.number()
@@ -157,17 +157,30 @@ export const createLoreMetadataSchema = (availableCharacterIds: string[]) => {
 				.string()
 				.describe('A one-paragraph summary of the lore, explaining its significance.'),
 			category: z
-				.string()
+				.enum([
+					'Mythology', // Legends, creation stories, religious beliefs
+					'Item', // Magical items, artifacts, important objects
+					'Concept', // Abstract ideas, philosophies, systems
+					'Organization', // Groups, factions, institutions
+					'Character', // Important NPCs, legendary figures
+					'Location', // Places, regions, landmarks
+					'Event', // Historical events, disasters, celebrations
+					'Culture', // Customs, traditions, social norms
+					'Magic', // Spells, magical phenomena, arcane knowledge
+					'History', // Historical records, timelines
+					'Technology', // Inventions, crafts, techniques
+					'Politics', // Government systems, laws, treaties
+					'Other', // Fallback for unique cases
+				])
 				.describe("A category for the lore, e.g., 'Mythology', 'Item', 'Concept', 'Organization'."),
 			source: z
 				.string()
 				.describe("Where this lore originates from, e.g., 'Ancient Texts', 'Character Dialogue'."),
-
 			// Character Involvement
 			sideCharacterIdList: z
 				.array(z.string())
 				.describe(
-					`Other characters significantly related to this lore. MUST be chosen from: [${availableCharacterIds.join(', ')}]`
+					`Other characters significantly related to this lore. MUST be chosen from: [${convertArrayToString(availableCharacterIds)}]`
 				),
 
 			// Searchable Indexable Lists
@@ -202,16 +215,23 @@ export const createHistoryMetadataSchema = (
 				.string()
 				.describe('A one-paragraph summary of the event, capturing the key actions and outcomes.'),
 			category: z
-				.string()
+				.enum([
+					'Origin Story',
+					'Major Life Event',
+					'Relationship Turnpoint',
+					'Career & Faction',
+					'Conflict & War',
+					'Internal Struggle',
+					'Other',
+				])
 				.describe(
-					"A category for the event, e.g., 'Character Origin', 'Major Conflict', 'Political Event'."
+					'Classify the event into one of the following predefined categories. Choose the one that best fits the main theme of the story.'
 				),
-
 			// Character Involvement
 			sideCharacterIdList: z
 				.array(z.string())
 				.describe(
-					`Other characters involved in the event. MUST be chosen from: [${availableCharacterIds.join(', ')}]`
+					`Other characters involved in the event. MUST be chosen from: [${convertArrayToString(availableCharacterIds)}]`
 				),
 
 			// Timeline Information
@@ -247,7 +267,7 @@ export const createHistoryMetadataSchema = (
 						relatedEventTitle: z
 							.string()
 							.describe(
-								`The exact title of a related event. MUST be one of: [${existingEventTitles.join(', ')}]`
+								`The exact title of a related event. MUST be one of: [${convertArrayToString(existingEventTitles)}]`
 							),
 						description: z.string().optional().describe('An optional brief description of the relation.'),
 					})
@@ -289,14 +309,18 @@ export const createFactualRecapSchema = (
 			keywords: z
 				.array(z.string())
 				.describe(
-					`An array of 5-10 of the most relevant factual keywords, selected from: [${availableKeywords.join(', ')}]`
+					`An array of 5-10 of the most relevant factual keywords, selected from: [${convertArrayToString(availableKeywords)}]`
 				),
 			topics: z
 				.array(z.string())
-				.describe(`An array of 3-7 key factual themes, selected from: [${availableTopics.join(', ')}]`),
+				.describe(
+					`An array of 3-7 key factual themes, selected from: [${convertArrayToString(availableTopics)}]`
+				),
 			entities: z
 				.array(z.string())
-				.describe(`An array of important entities, selected from: [${availableEntities.join(', ')}]`),
+				.describe(
+					`An array of important entities, selected from: [${convertArrayToString(availableEntities)}]`
+				),
 			flags: z
 				.array(z.string())
 				.describe(
@@ -305,12 +329,12 @@ export const createFactualRecapSchema = (
 			loreReferenceList: z
 				.array(z.object({ id: z.string(), relevance: z.number().min(0.0).max(1.0) }))
 				.describe(
-					`A list of relevant lore IDs, selected ONLY from this list: [${existingLoreIds.join(', ')}]`
+					`A list of relevant lore IDs, selected ONLY from this list: [${convertArrayToString(existingLoreIds)}]`
 				),
 			historyReferenceList: z
 				.array(z.object({ id: z.string(), relevance: z.number().min(0.0).max(1.0) }))
 				.describe(
-					`A list of relevant history IDs, selected ONLY from this list: [${existingHistoryIds.join(', ')}]`
+					`A list of relevant history IDs, selected ONLY from this list: [${convertArrayToString(existingHistoryIds)}]`
 				),
 		})
 		.describe(
@@ -340,17 +364,17 @@ export const createRelationshipRecapSchema = (
 			keywords: z
 				.array(z.string())
 				.describe(
-					`An array of 5-10 of the most relevant relationship-focused keywords, selected from: [${availableKeywords.join(', ')}]`
+					`An array of 5-10 of the most relevant relationship-focused keywords, selected from: [${convertArrayToString(availableKeywords)}]`
 				),
 			topics: z
 				.array(z.string())
 				.describe(
-					`An array of 3-7 key relationship themes and emotional topics, selected from: [${availableTopics.join(', ')}]`
+					`An array of 3-7 key relationship themes and emotional topics, selected from: [${convertArrayToString(availableTopics)}]`
 				),
 			entities: z
 				.array(z.string())
 				.describe(
-					`An array of important entities that affected the relationship, selected from: [${availableEntities.join(', ')}]`
+					`An array of important entities that affected the relationship, selected from: [${convertArrayToString(availableEntities)}]`
 				),
 			flags: z
 				.array(z.string())
@@ -360,12 +384,12 @@ export const createRelationshipRecapSchema = (
 			loreReferenceList: z
 				.array(z.object({ id: z.string(), relevance: z.number().min(0.0).max(1.0) }))
 				.describe(
-					`A list of relevant lore IDs that influenced the relationship, selected ONLY from this list: [${existingLoreIds.join(', ')}]`
+					`A list of relevant lore IDs that influenced the relationship, selected ONLY from this list: [${convertArrayToString(existingLoreIds)}]`
 				),
 			historyReferenceList: z
 				.array(z.object({ id: z.string(), relevance: z.number().min(0.0).max(1.0) }))
 				.describe(
-					`A list of relevant history IDs that influenced the relationship, selected ONLY from this list: [${existingHistoryIds.join(', ')}]`
+					`A list of relevant history IDs that influenced the relationship, selected ONLY from this list: [${convertArrayToString(existingHistoryIds)}]`
 				),
 		})
 		.describe(

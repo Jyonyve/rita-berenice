@@ -41,7 +41,6 @@
 export const numberToEmotionWordsMap = {
 	// 0: Represents default, neutral, calm, or standard states. (기본 / 중립 / 차분함)
 	0: [
-		'default', // 기본
 		'neutral', // 중립
 		'normal', // 정상
 		'standard', // 표준
