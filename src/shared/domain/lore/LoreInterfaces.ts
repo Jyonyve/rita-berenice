@@ -48,7 +48,7 @@ export interface LoreMetadata {
 	updatedAt: string;
 	title: string;
 	generatedTitle: string;
-	category: string;
+	category: LoreCategory;
 	source: string;
 	summary: string;
 }
@@ -63,7 +63,7 @@ export interface HistoryMetadata {
 	updatedAt: string;
 	title: string;
 	generatedTitle: string;
-	category: string;
+	category: HistoryCategory;
 	summary: string;
 	periodLabel: string;
 	eventDateValue: string;

@@ -26,69 +26,11 @@ import { ragQueryService } from './ragQueryService.js';
 import { WhereDocument } from 'chromadb';
 import { createChatTurnMetadataSchema } from '#server/util/schemaUtils.js';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
-<<<<<<< HEAD
-import { DEFAULT_EMOTION } from '#shared/index.js';
-
-/**
- * @private
- * Safely merges a ChatTurn with LLM-generated enrichment data.
- * This function now populates the consistent `...List` properties.
- */
-function _extractChatTurnMetadataInfoFromLlm(
-	turn: ChatTurn,
-	enrichment: Record<string, any>
-): ChatTurn {
-	return {
-		...turn,
-		summary: enrichment.summary || '',
-		keywordList: Array.isArray(enrichment.keywordList) ? enrichment.keywordList : [],
-		topicList: Array.isArray(enrichment.topicList) ? enrichment.topicList : [],
-		entityList: Array.isArray(enrichment.entityList) ? enrichment.entityList : [],
-		actionList: Array.isArray(enrichment.actionList) ? enrichment.actionList : [],
-		flagList: Array.isArray(enrichment.flagList) ? enrichment.flagList : [],
-		relationshipShiftList: Array.isArray(enrichment.relationshipShiftList)
-			? enrichment.relationshipShiftList
-			: [],
-		userEmotion: {
-			primary: enrichment.userEmotion?.primary || DEFAULT_EMOTION,
-			intensity: enrichment.userEmotion?.intensity ?? 0.5,
-			nuanceList: Array.isArray(enrichment.userEmotion?.nuanceList)
-				? enrichment.userEmotion.nuanceList
-				: [],
-		},
-		characterEmotion: {
-			primary: enrichment.characterEmotion?.primary || DEFAULT_EMOTION,
-			intensity: enrichment.characterEmotion?.intensity ?? 0.5,
-			nuanceList: Array.isArray(enrichment.characterEmotion?.nuanceList)
-				? enrichment.characterEmotion.nuanceList
-				: [],
-		},
-		dialogueAct: enrichment.dialogueAct || NA,
-		memoryChunk: enrichment.memoryChunk || '',
-		loreReferenceList: Array.isArray(enrichment.loreReferenceList)
-			? enrichment.loreReferenceList
-			: [],
-		historyReferenceList: Array.isArray(enrichment.historyReferenceList)
-			? enrichment.historyReferenceList
-			: [],
-	};
-}
-
-/**
- * @private
- * Formats a recap into a concise string for inclusion in a prompt.
- */
-function _formatRecapForPrompt(recap: RecapInfo): string {
-	const flags = recap.flagList.length > 0 ? ` [FLAGS: ${convertArrayToString(recap.flagList)}]` : '';
-	return `[Recap from turns ${recap.turnStart}-${recap.turnEnd}]${flags} Summary: ${recap.content}...`;
-}
-=======
 import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
 import { logFlow } from '../util/jsonlLogger.js';
 import { LangCode } from '#shared/config/langConstants.js';
 import { HistoryInfo, LoreInfo } from '#shared/domain/lore/LoreInterfaces.js';
 import { parseEntriesToConversation } from '../util/chatParseUtils.js';
->>>>>>> origin
 
 export const memoryEngine = {
 	/**
@@ -217,7 +159,9 @@ export const memoryEngine = {
 
 		try {
 			// 1. Extract named entities to ensure they are in the glossary.
-			const textForNer = `${parseEntriesToConversation(turn.request.entries)}\n${parseEntriesToConversation(turn.response.entries)}`;
+			const textForNer = `${parseEntriesToConversation(
+				turn.request.entries
+			)}\n${parseEntriesToConversation(turn.response.entries)}`;
 			const extractedKpns = await llmService.extractProperNouns(textForNer, userId);
 
 			// 2. Fetch all necessary context for the enrichment prompt.

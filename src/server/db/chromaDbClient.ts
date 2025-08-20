@@ -1,11 +1,6 @@
 // src/server/db/chromaDbClient.ts
-<<<<<<< HEAD
-import { ChromaClient, Collection, IncludeEnum, Where, WhereDocument } from 'chromadb';
-import { COLLECTIONS, CollectionType } from './ChromaInterfaces.js';
-=======
 import { ChromaClient, Collection, IncludeEnum, Metadata, Where, WhereDocument } from 'chromadb';
 import { COLLECTIONS, CollectionType, EmbeddingFunction } from './ChromaInterfaces.js';
->>>>>>> origin
 import { MetadataType } from '#shared/config/constants.js';
 import { ChromaResponse } from '#shared/api/ModuleResponse.js';
 import { OpenAIEmbeddingFunction } from '@chroma-core/openai';
@@ -24,15 +19,6 @@ if (!cohereApiKey || !openAiApiKey) {
 	throw new Error('FATAL: COHERE_API_KEY secret is not set in the environment.');
 }
 
-<<<<<<< HEAD
-const embedFnOpenAi = new OpenAIEmbeddingFunction({ apiKey, modelName: 'text-embedding-3-small' });
-const host =
-	process.env.APP_ENV === 'development'
-		? 'chromadb-flyio.fly.dev'
-		: 'rita-berenice-chromadb.fly.dev';
-const port = 443;
-const ssl = true;
-=======
 const embedFnOpenAi = new OpenAIEmbeddingFunction({
 	apiKey: openAiApiKey,
 	modelName: 'text-embedding-3-small',
@@ -46,7 +32,6 @@ const embedFnCohere = new CohereEmbeddingFunction({
 const host = process.env.CHROMA_HOST;
 const port = process.env.CHROMA_PORT;
 const ssl = process.env.CHROMA_SSL === 'true';
->>>>>>> origin
 
 if (!host || !port) {
 	throw new Error(
@@ -57,7 +42,7 @@ if (!host || !port) {
 }
 const chromaClient = new ChromaClient({
 	host,
-	port, // Ensure port is a number
+	port: Number(port), // Ensure port is a number
 	ssl,
 });
 
@@ -72,11 +57,7 @@ const logJsonPreview = (obj: any, length: number = 100): string => {
 	return `${str.substring(0, length)}...`;
 };
 // Retry wrapper
-<<<<<<< HEAD
-const withRetry = async <T>(fn: () => Promise<T>, retries = 1, delay = 1500): Promise<T> => {
-=======
 const _withRetry = async <T>(fn: () => Promise<T>, retries = 1, delay = 1500): Promise<T> => {
->>>>>>> origin
 	let lastError: unknown;
 	for (let i = 0; i < retries; i++) {
 		try {
@@ -352,13 +333,9 @@ export const chromaDbClient = {
 	): Promise<ChromaResponse> => {
 		try {
 			console.log(
-<<<<<<< HEAD
 				`[ChromaClient.getRecords] filter: ${logJsonPreview(where)}, document: ${logJsonPreview(
 					whereDocument
 				)}, limit: ${limit}`
-=======
-				`[ChromaClient.getRecords] filter: ${logJsonPreview(where)}, document: ${logJsonPreview(whereDocument)}, limit: ${limit}`
->>>>>>> origin
 			);
 			const MAX = await collection.count(); // Ensure the collection is initialized
 			const results = await collection.get({
@@ -384,13 +361,10 @@ export const chromaDbClient = {
 	): Promise<ChromaResponse[]> => {
 		try {
 			console.log(
-<<<<<<< HEAD
-				`[ChromaClient.queryRecords] Querying with text: "${queryTexts.join(
-					'\n'
+				`[ChromaClient.queryRecords] Querying with text: "${queryTexts[0].substring(
+					0,
+					10
 				)}...",\n filter: ${logJsonPreview(where)}, ${logJsonPreview(whereDocument)},\n limit: ${limit}`
-=======
-				`[ChromaClient.queryRecords] Querying with text: "${queryTexts[0].substring(0, 10)}...",\n filter: ${logJsonPreview(where)}, ${logJsonPreview(whereDocument)},\n limit: ${limit}`
->>>>>>> origin
 			);
 			const MAX = await collection.count(); // Ensure the collection is initialized
 			const results = await collection.query({
@@ -466,13 +440,6 @@ export const chromaDbClient = {
 		return await collection.delete(deleteOptions);
 	},
 
-<<<<<<< HEAD
-	getOrCreateSingletonCollection: async (collection: CollectionType) => {
-		return _getOrCreateSingletonCollection(collection);
-	},
-
-=======
->>>>>>> origin
 	countOption: async (collection: Collection, where: Where): Promise<number> => {
 		const result = await collection.get({ where: where, include: [] });
 		return result.ids.length;

@@ -105,7 +105,9 @@ export const buildPersonaSystemPrompt = (
 		return turns
 			.map(
 				(turn) =>
-					`${turn.request.showName}: ${parseEntriesToConversation(turn.request.entries)}\n${turn.response.showName}: ${parseEntriesToConversation(turn.response.entries)}`
+					`${turn.request.showName}: ${parseEntriesToConversation(turn.request.entries)}\n${
+						turn.response.showName
+					}: ${parseEntriesToConversation(turn.response.entries)}`
 			)
 			.join('\n\n');
 	};
@@ -225,11 +227,11 @@ ${
 	isScene
 		? enhanceScenePrompt(userName, langCode)
 		: // 		`
-			// **성애 장면:**
-			// • 물리적 세부사항과 인과관계 묘사
-			// • 성적 자극에 대한 창의적 반응 서술
-			// • 해부학적 특수성과 감각적 사실주의 적용`
-			''
+		  // **성애 장면:**
+		  // • 물리적 세부사항과 인과관계 묘사
+		  // • 성적 자극에 대한 창의적 반응 서술
+		  // • 해부학적 특수성과 감각적 사실주의 적용`
+		  ''
 }
 `
 			: `
@@ -422,7 +424,9 @@ Analyze the following single turn of conversation between ${userKor} (English: $
 *   **Session ID:** ${userRequest.sessionId}
 *   **Turn Sequence:** ${userRequest.sequence}
 *   **User (${userKor}/${userEng}, Initial Emotion: ${userRequest.emotion}):** ${userRequestContent}
-*   **Character (${charKor}/${charEng}, Initial Emotion: ${charResponse.emotion}, Model: ${charResponse.model || NA}):** ${charResponseContent}
+*   **Character (${charKor}/${charEng}, Initial Emotion: ${charResponse.emotion}, Model: ${
+				charResponse.model || NA
+		  }):** ${charResponseContent}
 
 **Reference Catalog (CRITICAL):**
 Use this catalog to identify relevant lore or history. For the 'loreReferenceList' and 'historyReferenceList' fields, you MUST use the 'loreId' or 'historyId' from this catalog.
@@ -450,7 +454,9 @@ ${userKor}(영어명: ${userEng}, ${userGender} 사용자)과 ${charKor}(영어�
 *   **세션 ID:** ${userRequest.sessionId}
 *   **턴 순서:** ${userRequest.sequence}
 *   **사용자 (${userKor}/${userEng}, 초기 감정: ${userRequest.emotion}):** ${userRequestContent}
-*   **캐릭터 (${charKor}/${charEng}, 초기 감정: ${charResponse.emotion}, 모델: ${charResponse.model || NA}):** ${charResponseContent}
+*   **캐릭터 (${charKor}/${charEng}, 초기 감정: ${charResponse.emotion}, 모델: ${
+				charResponse.model || NA
+		  }):** ${charResponseContent}
 
 **중요 지침:**
 ${termGuidanceInstruction}
@@ -827,8 +833,11 @@ export const buildHistoryMetadataPrompt = (
 		originalTitle: string;
 		historyId: string;
 		generatedTitle: string;
+		summary?: string; // Add summary field for better context
+		category?: string; // Add category for better understanding
+		periodLabel?: string; // Add period for temporal context
 	}> = [],
-	termGuidanceMap?: Map<string, string>,
+	termGuidanceMap: Map<string, string>,
 	eng?: boolean
 ): string => {
 	// --- Dynamically generate the terminology guidance section ---
@@ -850,6 +859,28 @@ export const buildHistoryMetadataPrompt = (
 			: `**용어 지침 (필수):**\n영어 메타데이터 생성 시 다음 규칙을 준수해야 한다:\n${korRulesList}\n`;
 	}
 
+	// --- Enhanced existing history context with summaries ---
+	const formatExistingHistories = (entries: typeof existingHistoryEntries) => {
+		if (entries.length === 0) return eng ? 'None' : '없음';
+
+		return entries
+			.map((h) => {
+				const parts = [
+					`"${h.originalTitle}"`,
+					h.generatedTitle ? `→ "${h.generatedTitle}"` : '',
+					h.category ? `[${h.category}]` : '',
+					h.periodLabel ? `(${h.periodLabel})` : '',
+					`ID: ${h.historyId}`,
+				].filter(Boolean);
+
+				const header = parts.join(' ');
+				const summary = h.summary ? `\n  Summary: ${h.summary}` : '';
+
+				return `- ${header}${summary}`;
+			})
+			.join('\n');
+	};
+
 	const basePrompt = eng
 		? `
 You are an expert AI assistant who analyzes character backstories to extract structured metadata.
@@ -861,12 +892,14 @@ ${content}
 **Contextual Information:**
 - Available Character IDs: ${availableCharacterIds.join(', ')}
 - Existing History Entries:
-${existingHistoryEntries.map((h) => `- "${h.originalTitle}" (ID: ${h.historyId})`).join('\n') || NA}
+${formatExistingHistories(existingHistoryEntries)}
 
 **Instructions:**
 - Analyze the event content to generate the required metadata.
 - The "summary" is CRITICAL and must accurately reflect the entire event.
-- Base "temporalRelations" on the provided Existing History Entries.
+- Use the existing history summaries to identify temporal relationships, cause-effect connections, and thematic links.
+- When identifying related events, consider chronological order, character development arcs, and narrative connections.
+- Base "relatedEventList" on the provided Existing History Entries and their summaries.
 - All metadata fields must be filled and in English.
 ${termGuidanceInstruction}
 `
@@ -880,12 +913,14 @@ ${content}
 **문맥 정보:**
 - 사용 가능한 캐릭터 ID: ${availableCharacterIds.join(', ')}
 - 기존 역사 사건들:
-${existingHistoryEntries.map((h) => `- "${h.originalTitle}" → "${h.generatedTitle}" (ID: ${h.historyId})`).join('\n') || '없음'}
+${formatExistingHistories(existingHistoryEntries)}
 
 **메타데이터 지침:**
 - 사건 내용을 분석하여 요청된 스키마에 따라 메타데이터를 생성하라.
 - 요약(summary)은 매우 중요하며, 발생한 모든 사건을 명확히 반영해야 한다.
-- 시간 관계(temporalRelations)는 제공된 기존 역사 사건 목록을 기반으로 해야 한다.
+- 기존 역사 사건들의 요약을 활용하여 시간적 관계, 인과관계, 주제적 연결고리를 파악하라.
+- 관련 사건을 식별할 때는 시간순서, 캐릭터 발전 과정, 서사적 연결성을 고려하라.
+- 관련 사건 목록(relatedEventList)은 제공된 기존 역사 사건 목록과 그 요약을 기반으로 해야 한다.
 - 모든 메타데이터는 영어로만 작성해야 한다.
 ${termGuidanceInstruction}
 `;

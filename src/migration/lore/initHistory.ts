@@ -11,9 +11,7 @@ import { createHistoryMetadataSchema } from '#server/util/schemaUtils.js';
 import { buildHistoryMetadataPrompt } from '#server/util/templateUtils.js';
 import { loreStore } from '#server/store/loreStore.js';
 import { ChatOpenAI } from '@langchain/openai';
-import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
-import { ChatGroq } from '@langchain/groq';
-import { RelatedEvent } from '#shared/domain/BaseTypes.js';
+import { mapTerms, termStore } from '#server/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,8 +20,6 @@ const __dirname = path.dirname(__filename);
 const HISTORY_RESULT_DIR = path.join(__dirname, 'result');
 const USER_ID = 'sunfish';
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const APP_TITLE = 'Rita-Berenice';
 const REPO_URL = 'https://github.com/Jyonyve/rita-berenice';
 
@@ -44,12 +40,15 @@ const queryExistingHistories = async (characterId: string): Promise<ExistingHist
 	const allExistingHistories: ExistingHistoryEntry[] = [];
 
 	try {
-		const { historyInfos } = await loreStore.getHistories(characterId);
-		if (historyInfos.length > 0) {
-			const mapped = historyInfos.map((h) => ({
+		const historyResponse = await loreStore.getHistories(characterId);
+		if (historyResponse.historyInfos && historyResponse.historyInfos.length > 0) {
+			const mapped = historyResponse.historyInfos.map((h) => ({
 				originalTitle: h.title,
 				historyId: h.historyId,
 				generatedTitle: h.generatedTitle,
+				summary: h.summary, // Add this
+				category: h.category, // Add this
+				periodLabel: h.periodLabel, // Add this
 			}));
 			allExistingHistories.push(...mapped);
 		}
@@ -68,21 +67,21 @@ const enrichHistoryWithMetadata = async (
 	availableCharacterIds: string[],
 	existingHistoryEntries: ExistingHistoryEntry[]
 ) => {
-	// Use the comprehensive, aligned schema
 	const historySchema = createHistoryMetadataSchema(availableCharacterIds, existingHistoryEntries);
-	// Ensure the prompt asks for all the fields in the schema
+	const termResponse = await termStore.getTermsBySessionId('tarion_spinoff_9gsTh0LA');
+	const termGuidanceMap = mapTerms(termResponse.terms);
 	const prompt = buildHistoryMetadataPrompt(
 		originalTitle,
 		content,
 		availableCharacterIds,
-		existingHistoryEntries
+		existingHistoryEntries,
+		termGuidanceMap
 	);
 
 	let enrichedData: z.infer<typeof historySchema>;
 
 	try {
-		// 1. Attempt OpenRouter
-		console.log(`     📞 Calling OpenRouter (google/google/gemini-2.5-flash-lite)...`);
+		console.log(`     📞 Calling OpenRouter (google/gemini-2.5-flash-lite)...`);
 		const openRouterClient = new ChatOpenAI({
 			apiKey: OPENROUTER_API_KEY,
 			model: 'google/gemini-2.5-flash-lite',
@@ -95,45 +94,32 @@ const enrichHistoryWithMetadata = async (
 		});
 		const structuredOpenRouter = openRouterClient.withStructuredOutput(historySchema);
 		enrichedData = await structuredOpenRouter.invoke(prompt);
+		console.log(`     ✅ OpenRouter call successful`);
 	} catch (openRouterError: any) {
-		console.error(`     💥 OpenRouter failed.`, openRouterError.message);
-		console.log(`     🔁 Falling back to direct Gemini...`);
-		try {
-			// 2. Fallback to Gemini
-			const geminiClient = new ChatGoogleGenerativeAI({
-				apiKey: GEMINI_API_KEY,
-				model: 'gemini-2.0-flash',
-				temperature: 0.2,
-				maxOutputTokens: 2048,
-			});
-			const structuredGemini = geminiClient.withStructuredOutput(historySchema);
-			enrichedData = await structuredGemini.invoke(prompt);
-		} catch (geminiError: any) {
-			console.error(`     💥 Direct Gemini also failed.`, geminiError.message);
-			console.log(`     🔁 Falling back to Groq...`);
-			// 3. Final fallback to Groq
-			const groqClient = new ChatGroq({
-				apiKey: GROQ_API_KEY,
-				model: 'llama3-70b-8192',
-				temperature: 0.2,
-				maxTokens: 2048,
-			});
-			const structuredGroq = groqClient.withStructuredOutput(historySchema);
-			enrichedData = await structuredGroq.invoke(prompt);
-		}
+		console.error(`     💥 OpenRouter failed:`, openRouterError.message);
+		throw new Error(`LLM enrichment failed: ${openRouterError.message}`);
 	}
+
 	return enrichedData;
 };
 
 // --- Main Initialization Script ---
-async function initHistoryFromFiles() {
+async function initHistoryFromFiles(characterId: string) {
 	console.log('🚀 Starting history initialization...');
-	if (!OPENROUTER_API_KEY || !GEMINI_API_KEY || !GROQ_API_KEY) {
-		console.error('🚨 One or more API keys are not set. Aborting.');
+
+	if (!OPENROUTER_API_KEY) {
+		console.error('🚨 OPENROUTER_API_KEY is not set. Aborting.');
 		process.exit(1);
 	}
 
+	if (!characterId) {
+		console.error('🚨 characterId argument is required. Usage: bun initHistory.ts <characterId>');
+		process.exit(1);
+	}
+
+	console.log(`📋 Processing histories for character: ${characterId}`);
 	console.log(`Ensuring connection to ChromaDB via loreStore...`);
+
 	try {
 		await loreStore._getCollection();
 		console.log(`Collection "${COLLECTIONS.LORE}" is ready.`);
@@ -145,7 +131,7 @@ async function initHistoryFromFiles() {
 	try {
 		const jsonFiles = (await fs.readdir(HISTORY_RESULT_DIR)).filter((file) => file.endsWith('.json'));
 		if (jsonFiles.length === 0) {
-			console.log(`No JSON files found. Nothing to process.`);
+			console.log(`No JSON files found in ${HISTORY_RESULT_DIR}. Nothing to process.`);
 			return;
 		}
 		console.log(`Found ${jsonFiles.length} history files to process.`);
@@ -172,51 +158,48 @@ async function initHistoryFromFiles() {
 				);
 
 				const now = new Date().toISOString();
-				const primaryCharacterId = characterId; // Assign a primary owner
-				const historyId = buildHistoryId(primaryCharacterId, enrichedMetadata.period.label);
+				const historyId = buildHistoryId(characterId, enrichedMetadata.period.label);
 
-				// --- This mapping is now clean and directly aligned with HistoryInfo ---
+				// --- PERFECTLY ALIGNED WITH HistoryInfo INTERFACE ---
 				const historyInfo: HistoryInfo = {
-					// Base Metadata
-					userId: USER_ID,
-					characterId: primaryCharacterId,
-					profileId: buildProfileId(primaryCharacterId, USER_ID),
+					// HistoryMetadata fields
 					type: 'history',
+					historyId,
+					characterId,
+					userId: USER_ID,
+					profileId: buildProfileId(characterId, USER_ID),
 					createdAt: now,
 					updatedAt: now,
-					historyId,
 					title: data.title,
-					content: data.content.trim(),
-
-					// Directly Mapped from the Aligned Schema
 					generatedTitle: enrichedMetadata.generatedEnglishTitle,
-					summary: enrichedMetadata.summary,
 					category: enrichedMetadata.category,
-					keywordList: enrichedMetadata.keywordList,
-					topicList: enrichedMetadata.topicList,
-					entityList: enrichedMetadata.entityList,
-					sideCharacterIdList: enrichedMetadata.sideCharacterIdList,
-					allAffectedCharacterIdList: [
-						...new Set([primaryCharacterId, ...enrichedMetadata.sideCharacterIdList]),
-					],
+					summary: enrichedMetadata.summary,
 					periodLabel: enrichedMetadata.period.label,
 					eventDateValue: enrichedMetadata.eventDate.value,
 					eventDateType: enrichedMetadata.eventDate.type,
-					relatedEventList: enrichedMetadata.relatedEventList.map((tr): RelatedEvent => {
+
+					// HistoryInfo extension fields
+					content: data.content.trim(),
+					sideCharacterIdList: enrichedMetadata.sideCharacterIdList || [],
+					allAffectedCharacterIdList: [
+						...new Set([characterId, ...(enrichedMetadata.sideCharacterIdList || [])]),
+					],
+					relatedEventList: (enrichedMetadata.relatedEventList || []).map((tr) => {
 						const relatedHistory = existingHistories.find(
 							(h) => h.originalTitle === tr.relatedEventTitle
 						);
 						return {
-							// `relatedHistory?.historyId` is mapped to `id`
 							id: relatedHistory?.historyId || 'UNKNOWN_ID',
-							// `tr.type` is mapped to `relationship`
 							relationship: tr.type,
-							// `tr.description` is mapped to `description`
 							description: tr.description || '',
 						};
 					}),
+					keywordList: enrichedMetadata.keywordList || [],
+					topicList: enrichedMetadata.topicList || [],
+					entityList: enrichedMetadata.entityList || [],
 				};
 
+				// Store using the updated loreStore method
 				await loreStore.storeHistory(historyInfo);
 
 				console.log(
@@ -231,6 +214,7 @@ async function initHistoryFromFiles() {
 				});
 			} catch (fileError: any) {
 				console.error(`   ❌ Error processing file "${fileName}":`, fileError.message);
+				console.error(`   Stack trace:`, fileError.stack);
 				continue;
 			}
 		}
@@ -242,9 +226,16 @@ async function initHistoryFromFiles() {
 	}
 }
 
+// --- Script Execution ---
 const characterId = process.argv[2];
 
-initHistoryFromFiles().catch((err) => {
+if (!characterId) {
+	console.error('🚨 Error: Please provide a characterId as a command-line argument.');
+	console.log('Usage: bun src/migration/history/initHistory.ts <characterId>');
+	process.exit(1);
+}
+
+initHistoryFromFiles(characterId).catch((err) => {
 	console.error('🚨🚨 FATAL SCRIPT ERROR:', err);
 	process.exit(1);
 });

@@ -10,9 +10,8 @@ import {
 	buildMessageId,
 	buildSessionId,
 	buildProfileId,
-	flatSessionToDoc,
 } from '#shared/util/index.js';
-import { parseSessionId, parseTextToEntries } from '#shared/util/chatParseUtils.js';
+import { parseConversationToEntries } from '#server/util/chatParseUtils.js';
 import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
 import { DEFAULT_EMOTION, EmotionValue, validEmotions } from '#shared/config/emotionWordsMapper.js';
 import { APPNAME, METADATA_TYPES, NA } from '#shared/config/constants.js';

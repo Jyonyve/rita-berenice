@@ -15,25 +15,15 @@ import {
 	TempChatTurn,
 	TempChatTurnMetadata,
 } from '#shared/domain/chat/ChatInterfaces.js';
-<<<<<<< HEAD
-import { flatChatMessageToDoc, chatTurnToDocument } from '#shared/util/documentUtils.js';
-import { ApiError, handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
-=======
 import { flatChatMessageToDoc, chatTurnToDocument } from '#server/util/documentUtils.js';
 import { ApiError } from '#shared/domain/error/errors.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
->>>>>>> origin
 import {
 	chatTurnToMetadata,
 	metadataToChatTurn,
 	metadataToDisplayTurn,
 } from '#shared/util/dbConvertUtils.js';
 import { ChatResponse } from '#shared/api/ModuleResponse.js';
-<<<<<<< HEAD
-import { parseTextToEntries } from '#shared/util/chatParseUtils.js';
-import { isAndWhere } from '../util/queryUtils.js';
-=======
->>>>>>> origin
 import {
 	buildChatTurnIndexId,
 	buildChatTurnId,
@@ -212,7 +202,13 @@ export const chatStore = {
 
 			list.forEach((value, index) => {
 				// Create rich document content for semantic search
-				const semanticDocument = `${contextDescription}: ${value}. Context: ${parseEntriesToConversation(turn.request.entries) || ''} ${parseEntriesToConversation(turn.response.entries) || ''}. Emotional tone: ${turn.userEmotion?.primary || DEFAULT_EMOTION}, ${turn.characterEmotion?.primary || 'neutral'}. Topics discussed: ${convertArrayToString(turn.topicList) || 'general'}`;
+				const semanticDocument = `${contextDescription}: ${value}. Context: ${
+					parseEntriesToConversation(turn.request.entries) || ''
+				} ${parseEntriesToConversation(turn.response.entries) || ''}. Emotional tone: ${
+					turn.userEmotion?.primary || DEFAULT_EMOTION
+				}, ${turn.characterEmotion?.primary || 'neutral'}. Topics discussed: ${
+					convertArrayToString(turn.topicList) || 'general'
+				}`;
 
 				const tokenCount = getTokenCount(value);
 
@@ -257,7 +253,11 @@ export const chatStore = {
 		// Enhanced emotion indexing with semantic context
 		if (turn.userEmotion?.nuanceList?.length) {
 			turn.userEmotion.nuanceList.forEach((emotion, index) => {
-				const emotionDocument = `User emotional state: ${emotion}. In response to: ${parseEntriesToConversation(turn.request.entries) || 'interaction'}. Character response tone: ${turn.characterEmotion?.primary || 'neutral'}. Conversation context: ${turn.topicList?.join(', ') || 'general discussion'}`;
+				const emotionDocument = `User emotional state: ${emotion}. In response to: ${
+					parseEntriesToConversation(turn.request.entries) || 'interaction'
+				}. Character response tone: ${
+					turn.characterEmotion?.primary || 'neutral'
+				}. Conversation context: ${turn.topicList?.join(', ') || 'general discussion'}`;
 
 				const tokenCount = getTokenCount(emotion);
 
@@ -281,7 +281,11 @@ export const chatStore = {
 
 		if (turn.characterEmotion?.nuanceList?.length) {
 			turn.characterEmotion.nuanceList.forEach((emotion, index) => {
-				const emotionDocument = `Character emotional response: ${emotion}. Triggered by user: ${parseEntriesToConversation(turn.request.entries) || 'interaction'}. Character personality: ${turn.characterId}. Relationship context: ${turn.relationshipShiftList?.join(', ') || 'stable'}`;
+				const emotionDocument = `Character emotional response: ${emotion}. Triggered by user: ${
+					parseEntriesToConversation(turn.request.entries) || 'interaction'
+				}. Character personality: ${turn.characterId}. Relationship context: ${
+					turn.relationshipShiftList?.join(', ') || 'stable'
+				}`;
 
 				const tokenCount = getTokenCount(emotion);
 
@@ -510,10 +514,7 @@ export const chatStore = {
 	/**
 	 * [OPTIMIZED for Deep Copy & RAG] Fetches full, rich ChatTurn objects for a session.
 	 * This version uses a single, efficient query to avoid the N+1 problem.
-<<<<<<< HEAD
-=======
 	 * NOTE: it querys lots of data, db crashes at scale 1. if want to use this method upgrade db or give some limits.
->>>>>>> origin
 	 */
 	getAllChatTurns: async (sessionId: string): Promise<ChatResponse> => {
 		try {

@@ -18,6 +18,7 @@ async function checkAllHistories() {
 		console.log(`Querying for ALL history documents (type: HISTORY)...`);
 
 		const result = await collection.get();
+		await collection.delete({ ids: result.ids });
 		console.log(result);
 	} catch (error) {
 		console.error('Error checking all histories:', error);
