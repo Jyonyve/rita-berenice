@@ -1,11 +1,6 @@
 // src/shared/emotionWordsMapper.ts (Example path)
 
 /**
- * Defines the mapping from image number index to associated emotion keywords.
- * Key: Image number (as referenced in filenames like ..._N.webp)
- * Value: Array of lowercase emotion keywords associated with that image.
- * IMPORTANT: Ensure keyword 'default' and/or 'neutral' maps to DEFAULT_IMAGE_NUMBER.
- *
  * Quick Reference - Number to Emotion Group (English):
  * 0: Default / Neutral / Calm
  * 1: Positive / Happy / Joyful
@@ -21,6 +16,7 @@
  * 11: Awe / Wonder
  * 12: Boredom / Apathy
  * 13: Romance / Limerence
+ * 14: Complex / Mixed States
  *
  * 빠른 참조 - 숫자별 감정 그룹 (한국어):
  * 0: 기본 / 중립 / 차분함
@@ -37,7 +33,9 @@
  * 11: 경외 / 경탄
  * 12: 지루함 / 무관심
  * 13: 로맨스 / 설렘
+ * 14: 복합 / 혼재 감정
  */
+
 export const numberToEmotionWordsMap = {
 	// 0: Represents default, neutral, calm, or standard states. (기본 / 중립 / 차분함)
 	0: [
@@ -133,6 +131,8 @@ export const numberToEmotionWordsMap = {
 
 	// 2: Represents anger and related negative emotions like frustration and irritation. (분노 / 좌절)
 	2: [
+		'demanding', // 요구하는, 강요하는
+		'threatening', // 위협적인, 협박하는
 		'angry', // 화난
 		'anger', // 분노
 		'mad', // (몹시) 화가 난
@@ -427,6 +427,8 @@ export const numberToEmotionWordsMap = {
 
 	// 8: Represents disgust, contempt, and revulsion, including dislike. (혐오 / 경멸)
 	8: [
+		'dismissive', // 무시하는, 일축하는
+		'unfriendly', // 우호적이지 않은, 적대적인
 		'cold', // 냉담한, 무관심한
 		'disgust', // 혐오(감)
 		'disgusted', // 혐오감을 느끼는
@@ -706,87 +708,169 @@ export const numberToEmotionWordsMap = {
 		'cuddling', // 껴안는
 		'seductive', // 유혹적인
 	],
+	// 14: Represents complex, mixed, or ambiguous emotional states. (복합 / 혼재 / 애매한 감정)
+	14: [
+		'conflicted', // 갈등하는, 상반된 감정을 느끼는
+		'bittersweet', // 씁쓸달콤한, 기쁘면서도 슬픈
+		'ambivalent', // 양면 가치의, 태도가 불확실한 (moved from category 5)
+		'wistful', // 그리워하는, 아련한
+		'nostalgic', // 향수를 느끼는
+		'melancholic', // 우울한, 애수에 찬 (moved from category 12 for better fit)
+		'poignant', // 가슴 아픈, 감동적인
+		'mixed feelings', // 복잡한 감정
+		'torn', // 갈등하는, 찢어진
+		'paradoxical', // 모순된, 역설적인
+		'complex', // 복잡한 (감정적으로)
+		'nuanced', // 미묘한, 세밀한 차이가 있는
+		'layered', // 층층이 쌓인, 복합적인
+		'intricate', // 복잡한, 얽힌
+		'multifaceted', // 다면적인
+		'contradictory', // 모순적인, 상반되는
+		'enigmatic', // 수수께끼 같은, 불가사의한
+		'paradoxical', // 역설적인, 모순된
+	],
 } as const;
 
 // A curated list of essential emotion keywords for LLM prompting.
 // This is a more stable and efficient alternative to the exhaustive list.
+// Enhanced curated list with better coverage and balance
+// A comprehensive curated list covering all 15 categories efficiently for LLM usage
 export const curatedEmotionKeywords = [
-	// --- Neutral / Default States ---
+	// === Category 0: Neutral/Default (6 emotions) ===
 	'neutral',
 	'calm',
+	'peaceful',
+	'composed',
 	'pensive',
-	'curious',
 	'observant',
 
-	// --- Joy / Happiness ---
-	'content',
+	// === Category 1: Joy/Happiness (10 emotions) ===
 	'happy',
-	'amused',
 	'joyful',
+	'delighted',
 	'elated',
+	'cheerful',
+	'content',
+	'grateful',
+	'relieved',
 	'triumphant',
-	'playful',
+	'amused',
 
-	// --- Sadness / Grief ---
-	'disappointed',
-	'sad',
-	'melancholy',
-	'lonely',
-	'heartbroken',
-	'worried',
-	'anxious',
-
-	// --- Anger / Frustration ---
+	// === Category 2: Anger/Frustration (10 emotions) ===
+	'angry',
+	'furious',
 	'annoyed',
 	'frustrated',
 	'irritated',
-	'angry',
 	'resentful',
 	'indignant',
+	'demanding',
+	'threatening',
+	'hostile',
 
-	// --- Fear / Surprise ---
-	'surprised',
-	'shocked',
-	'uneasy',
-	'nervous',
+	// === Category 3: Sadness/Grief (10 emotions) ===
+	'sad',
+	'heartbroken',
+	'melancholy',
+	'depressed',
+	'disappointed',
+	'worried',
+	'anxious',
+	'lonely',
+	'despondent',
+	'grief-stricken',
+
+	// === Category 4: Fear/Surprise (8 emotions) ===
 	'afraid',
 	'terrified',
+	'scared',
+	'surprised',
+	'shocked',
+	'startled',
+	'nervous',
+	'overwhelmed',
 
-	// --- Affection / Love ---
+	// === Category 5: Thinking/Curiosity (7 emotions) ===
+	'curious',
+	'puzzled',
+	'confused',
+	'contemplative',
+	'intrigued',
+	'skeptical',
+	'uncertain',
+
+	// === Category 6: Affection/Love (8 emotions) ===
+	'loving',
 	'affectionate',
 	'caring',
-	'loving',
-	'passionate',
-	'longing',
-	'sentimental',
+	'shy',
+	'compassionate',
+	'tender',
+	'protective',
+	'gentle',
 
-	// --- Contempt / Dislike ---
+	// === Category 7: Excitement/Eagerness (7 emotions) ===
+	'excited',
+	'enthusiastic',
+	'eager',
+	'energetic',
+	'passionate',
+	'playful',
+	'vibrant',
+
+	// === Category 8: Disgust/Contempt (7 emotions) ===
 	'disgusted',
-	'skeptical',
+	'dismissive',
+	'unfriendly',
 	'disdainful',
+	'contemptuous',
 	'sarcastic',
 	'cold',
 
-	// --- Pride / Confidence ---
+	// === Category 9: Pride/Confidence (6 emotions) ===
 	'confident',
-	'smug',
 	'proud',
 	'bold',
+	'determined',
+	'assertive',
+	'smug',
 
-	// --- Shame / Guilt ---
-	'shy',
-	'embarrassed',
+	// === Category 10: Shame/Guilt (6 emotions) ===
 	'ashamed',
 	'guilty',
+	'embarrassed',
+	'mortified',
+	'remorseful',
 	'vulnerable',
 
-	// --- Complex / Nuanced ---
+	// === Category 11: Awe/Wonder (5 emotions) ===
+	'awe',
+	'amazed',
+	'fascinated',
+	'inspired',
+	'enchanted',
+
+	// === Category 12: Boredom/Apathy (5 emotions) ===
+	'bored',
+	'apathetic',
+	'listless',
+	'sluggish',
+	'indifferent',
+
+	// === Category 13: Romance/Limerence (5 emotions) ===
+	'romantic',
+	'infatuated',
+	'yearning',
+	'smitten',
+	'flirtatious',
+
+	// === Category 14: Complex/Mixed (5 emotions) ===
 	'conflicted',
 	'bittersweet',
-	'awe',
-	'determined',
-	'relieved',
-];
+	'ambivalent',
+	'wistful',
+	'nostalgic',
+] as const;
 
 // Default portrait number
 export type EmotionKey = keyof typeof numberToEmotionWordsMap;

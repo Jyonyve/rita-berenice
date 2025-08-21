@@ -2,8 +2,19 @@ import { z } from 'zod';
 import { curatedEmotionKeywords } from '#shared/config/emotionWordsMapper.js';
 import { convertArrayToString } from '#shared/util/parseUtils.js';
 
-// type NonEmptyArray<T> = [T, ...T[]];
-// const emotionList = curatedEmotionKeywords as NonEmptyArray<string>;
+// Safe type guard to ensure non-empty array
+function ensureNonEmptyArray<T>(arr: T[]): asserts arr is [T, ...T[]] {
+	if (arr.length === 0) {
+		throw new Error('Array cannot be empty for z.enum()');
+	}
+}
+
+// Create emotion enum safely
+const createEmotionEnum = () => {
+	const emotions = [...curatedEmotionKeywords]; // Create a copy
+	ensureNonEmptyArray(emotions);
+	return z.enum(emotions);
+};
 
 /**
  * Creates an efficient Zod schema for persona responses with minimal token overhead.
@@ -23,7 +34,7 @@ export const createPersonaResponseSchema = (
 						? `${charName}의 3인칭 서술. 1000-2000자. 서술은 '~다'로 끝남. 문단 변경, 대화시 줄바꿈(\\n) 사용.`
 						: `Third-person narration for ${charName}. 1000-2000 chars. Use \\n between narration/dialogue/paragraph.`
 				),
-			emotion: z.enum(curatedEmotionKeywords).describe('Single emotion word from the provided list.'),
+			emotion: createEmotionEnum().describe('Single emotion word from the provided list.'),
 		})
 		.describe(
 			langCode === 'kor'
@@ -69,13 +80,9 @@ export const createChatTurnMetadataSchema = (charEng: string, userEng: string) =
 				),
 
 			userEmotion: z.object({
-				primary: z
-					.string()
-					.describe(
-						`The primary emotion of ${userEng}. MUST be one of the following: [${convertArrayToString(
-							curatedEmotionKeywords
-						)}]`
-					),
+				primary: createEmotionEnum().describe(
+					`The primary emotion of ${userEng}. MUST be from the provided list.`
+				),
 				intensity: z
 					.number()
 					.min(0.0)
@@ -87,13 +94,9 @@ export const createChatTurnMetadataSchema = (charEng: string, userEng: string) =
 			}),
 
 			characterEmotion: z.object({
-				primary: z
-					.string()
-					.describe(
-						`The primary emotion of ${charEng}. MUST be one of the following: [${convertArrayToString(
-							curatedEmotionKeywords
-						)}]`
-					),
+				primary: createEmotionEnum().describe(
+					`The primary emotion of ${charEng}.  MUST be from the provided list.`
+				),
 				intensity: z
 					.number()
 					.min(0.0)
