@@ -93,12 +93,12 @@ if (!sessionIdToDelete) {
 	process.exit(1);
 }
 
-// deleteChatSession(sessionIdToDelete).catch((err) => {
-// 	console.error('FATAL ERROR:', err);
-// 	process.exit(1);
-// });
-
-deleteChatSessionBySequence(sessionIdToDelete).catch((err) => {
+deleteChatSession(sessionIdToDelete).catch((err) => {
 	console.error('FATAL ERROR:', err);
 	process.exit(1);
 });
+
+// deleteChatSessionBySequence(sessionIdToDelete).catch((err) => {
+// 	console.error('FATAL ERROR:', err);
+// 	process.exit(1);
+// });

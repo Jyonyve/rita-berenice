@@ -16,10 +16,10 @@ async function checkAllHistories() {
 		console.log(`Collection "${TARGET_COLLECTION_NAME}" accessed.`);
 
 		console.log(`Querying for ALL history documents (type: HISTORY)...`);
-
-		const result = await collection.get({ where: { characterId: { $eq: characterId } } });
-		await collection.delete({ ids: result.ids });
-		console.log(result);
+		const result = await collection.get();
+		// const result = await collection.get({ where: { characterId: { $eq: characterId } } });
+		// await collection.delete({ ids: result.ids });
+		console.log(result.metadatas);
 	} catch (error) {
 		console.error('Error checking all histories:', error);
 		process.exit(1);

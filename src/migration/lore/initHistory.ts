@@ -68,7 +68,7 @@ const enrichHistoryWithMetadata = async (
 	existingHistoryEntries: ExistingHistoryEntry[]
 ) => {
 	const historySchema = createHistoryMetadataSchema(availableCharacterIds, existingHistoryEntries);
-	const termResponse = await termStore.getTermsBySessionId('tarion_original_cWRM1T3x');
+	const termResponse = await termStore.getTermsByCharacterId(characterId);
 	const termGuidanceMap = mapTerms(termResponse.terms);
 	const prompt = buildHistoryMetadataPrompt(
 		originalTitle,

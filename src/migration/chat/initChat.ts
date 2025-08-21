@@ -10,6 +10,7 @@ import {
 	buildMessageId,
 	buildSessionId,
 	buildProfileId,
+	parseSessionId,
 } from '#shared/util/index.js';
 import { parseConversationToEntries } from '#server/util/chatParseUtils.js';
 import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
@@ -18,6 +19,7 @@ import { APPNAME, METADATA_TYPES, NA } from '#shared/config/constants.js';
 import { chatStore } from '#server/store/chatStore.js';
 import { buildChatTurnMetadataPrompt } from '#server/util/templateUtils.js';
 import {
+	flatSessionToDoc,
 	mapHistoryContexts,
 	mapLoreContexts,
 	mapTerms,
@@ -28,7 +30,6 @@ import { createChatTurnMetadataSchema } from '#server/util/schemaUtils.js';
 import { loreStore } from '#server/store/loreStore.js';
 import { ChatGroq } from '@langchain/groq';
 import { HistoryContext, LoreContext, SessionInfo, SessionMetadata } from '#shared/domain/index.js';
-import { getOriginalTerms } from '../term/initTerm.js';
 import { chromaDbClient } from '#server/db/chromaDbClient.js';
 import {
 	getMondayUserProfileTemplate,
@@ -39,6 +40,7 @@ import { encoding_for_model } from 'tiktoken';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { ChatOpenAI } from '@langchain/openai';
 import { USER_ID } from '../userId.js';
+import { getSessionTerms } from '../term/initTerm.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -471,7 +473,7 @@ async function initChatFromLogFiles() {
 						? getTarionOriginalProfileTemplate(USER_ID, TARGET_SESSION_ID)
 						: getTarionSpinoffProfileTemplate(USER_ID, TARGET_SESSION_ID)
 				);
-				await termStore.storeTerms(getOriginalTerms(TARGET_SESSION_ID));
+				await termStore.storeSessionTerms(getSessionTerms(TARGET_SESSION_ID));
 			} else {
 				await profileStore.storeProfile(getMondayUserProfileTemplate(USER_ID, TARGET_SESSION_ID));
 			}
@@ -534,7 +536,7 @@ async function initChatFromLogFiles() {
 					role: 'user',
 					messageId: buildMessageId(TARGET_SESSION_ID, currentSequence, 'request'),
 					messageType: 'request',
-					entries: parseTextToEntries(userLog.content),
+					entries: parseConversationToEntries(userLog.content),
 					emotion: DEFAULT_EMOTION,
 					createdAt: userLog.createdAt,
 					updatedAt: userLog.updatedAt || userLog.createdAt,
@@ -548,7 +550,7 @@ async function initChatFromLogFiles() {
 					role: 'assistant',
 					messageId: buildMessageId(TARGET_SESSION_ID, currentSequence, 'response'),
 					messageType: 'response',
-					entries: parseTextToEntries(botLog.content),
+					entries: parseConversationToEntries(botLog.content),
 					emotion:
 						botLog.emotion && validEmotions.has(botLog.emotion)
 							? (botLog.emotion as EmotionValue)

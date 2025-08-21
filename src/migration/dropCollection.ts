@@ -6,7 +6,7 @@ import { chromaDbClient } from '../server/index.ts';
 const CHROMA_HOST = process.env.CHROMA_HOST;
 const CHROMA_PORT = Number(process.env.CHROMA_PORT) || 443;
 const CHROMA_SSL = true; // Your URL starts with https://
-const COLLECTION_TO_DROP = COLLECTIONS.TERM;
+const COLLECTION_TO_DROP = COLLECTIONS.LORE;
 
 // --- Main Deletion Logic ---
 async function dropCollection() {
