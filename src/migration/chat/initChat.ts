@@ -283,7 +283,7 @@ const enrichChatTurnWithMetadata = async (
 
 	// --- Data mapping (unchanged) ---
 	const defineEmotion = (originalEmotion: string, newPrimaryEmotion: string): EmotionValue => {
-		return originalEmotion && originalEmotion !== 'default'
+		return originalEmotion && originalEmotion !== DEFAULT_EMOTION
 			? (originalEmotion as EmotionValue)
 			: (newPrimaryEmotion as EmotionValue);
 	};
