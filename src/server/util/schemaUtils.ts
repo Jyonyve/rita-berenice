@@ -18,6 +18,28 @@ const createEmotionList = () => {
 
 const emotionList = createEmotionList();
 
+function createEmotionUnion(emotions: readonly string[]) {
+	// Split into chunks of 15 to avoid payload size issues
+	const chunkSize = 15;
+	const chunks: string[][] = [];
+
+	for (let i = 0; i < emotions.length; i += chunkSize) {
+		chunks.push(emotions.slice(i, i + chunkSize));
+	}
+
+	// Create union for each chunk
+	const unionChunks = chunks.map((chunk) =>
+		z.union(
+			chunk.map((emotion) => z.literal(emotion)) as [z.ZodLiteral<string>, ...z.ZodLiteral<string>[]]
+		)
+	);
+
+	// Combine all chunks into final union
+	return z.union(unionChunks as [z.ZodUnion<any>, ...z.ZodUnion<any>[]]);
+}
+
+const metadataEmotionEnum = createEmotionUnion(curatedEmotionKeywords);
+
 /**
  * Creates an efficient Zod schema for persona responses with minimal token overhead.
  * Focuses on structure validation rather than verbose instructions.
@@ -82,35 +104,19 @@ export const createChatTurnMetadataSchema = (charEng: string, userEng: string) =
 				),
 
 			userEmotion: z.object({
-				primary: z
-					.string()
-					.describe(
-						`The primary emotion of ${userEng}. MUST be one of the following: [${convertArrayToString(emotionList)}]`
-					),
-				intensity: z
-					.number()
-					.min(0.0)
-					.max(1.0)
-					.describe('The intensity of the primary emotion, from 0.0 to 1.0.'),
-				nuanceList: z
-					.array(z.string())
-					.describe("An array of specific emotion words, e.g., ['frustration', 'curiosity']"),
+				primary: metadataEmotionEnum.describe(
+					`Primary emotion of ${userEng} from curated list (for exact search)`
+				),
+				intensity: z.number().min(0.0).max(1.0).describe('Emotion intensity 0.0-1.0'),
+				nuanceList: z.array(z.string()).describe('Additional emotion nuances'),
 			}),
 
 			characterEmotion: z.object({
-				primary: z
-					.string()
-					.describe(
-						`The primary emotion of ${charEng}. MUST be one of the following: [${convertArrayToString(emotionList)}]`
-					),
-				intensity: z
-					.number()
-					.min(0.0)
-					.max(1.0)
-					.describe('The intensity of the primary emotion, from 0.0 to 1.0.'),
-				nuanceList: z
-					.array(z.string())
-					.describe("An array of specific emotion words, e.g., ['defensive', 'sadness']"),
+				primary: metadataEmotionEnum.describe(
+					`Primary emotion of ${charEng} from curated list (for exact search)`
+				),
+				intensity: z.number().min(0.0).max(1.0).describe('Emotion intensity 0.0-1.0'),
+				nuanceList: z.array(z.string()).describe('Additional emotion nuances'),
 			}),
 
 			relationshipShiftList: z

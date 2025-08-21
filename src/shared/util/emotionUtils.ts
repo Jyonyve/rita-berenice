@@ -31,6 +31,7 @@ const EMOTION_CATEGORY_NAMES: Record<EmotionKey, string> = {
 	11: 'amazed',
 	12: 'bored',
 	13: 'romantic',
+	14: 'conflicted', // Added category 14
 } as const;
 
 /**
@@ -56,7 +57,7 @@ export const mapEmotionToCategory = (emotion: string): string => {
 /**
  * Maps specific emotion keywords to their category numbers
  * @param emotion - The specific emotion keyword
- * @returns The emotion category number (0-13)
+ * @returns The emotion category number (0-14) - Updated range
  */
 export const mapEmotionToCategoryNumber = (emotion: string): EmotionKey => {
 	if (!emotion) return 0;
@@ -69,7 +70,7 @@ export const mapEmotionToCategoryNumber = (emotion: string): EmotionKey => {
 
 /**
  * Gets all emotions in a specific category
- * @param categoryNumber - The emotion category number (0-13)
+ * @param categoryNumber - The emotion category number (0-14) - Updated range
  * @returns Array of emotion keywords in that category
  */
 export const getEmotionsInCategory = (categoryNumber: EmotionKey): readonly string[] => {
@@ -117,7 +118,7 @@ export const EMOTION_COMPATIBILITY_MATRIX: Record<
 	Partial<Record<EmotionKey, number>>
 > = {
 	// Neutral (0) - low compatibility with intense emotions
-	0: { 5: 0.6, 6: 0.4, 12: 0.7 },
+	0: { 5: 0.6, 6: 0.4, 12: 0.7, 14: 0.5 },
 
 	// Happy (1) - compatible with positive emotions
 	1: { 6: 0.7, 7: 0.8, 9: 0.6, 11: 0.5, 13: 0.6 },
@@ -126,7 +127,7 @@ export const EMOTION_COMPATIBILITY_MATRIX: Record<
 	2: { 3: 0.4, 4: 0.5, 8: 0.6, 10: 0.3 },
 
 	// Sad (3) - compatible with other vulnerable emotions
-	3: { 2: 0.4, 4: 0.6, 10: 0.7, 12: 0.5 },
+	3: { 2: 0.4, 4: 0.6, 10: 0.7, 12: 0.5, 14: 0.6 },
 
 	// Fear (4) - compatible with anxiety-related emotions
 	4: { 2: 0.5, 3: 0.6, 5: 0.4, 10: 0.6 },
@@ -157,6 +158,9 @@ export const EMOTION_COMPATIBILITY_MATRIX: Record<
 
 	// Romantic (13) - compatible with warm, intimate emotions
 	13: { 1: 0.6, 6: 0.9, 7: 0.7 },
+
+	// Conflicted (14) - compatible with complex states
+	14: { 0: 0.5, 3: 0.6, 5: 0.4, 10: 0.5 },
 };
 
 /**
