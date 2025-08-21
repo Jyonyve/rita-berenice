@@ -4,7 +4,7 @@ import { EmotionValue } from '../config/emotionWordsMapper.js';
 import { CharacterInfo } from '../domain/character/CharacterInterfaces.js';
 import { ChatTurn, TempChatTurn, DisplayTurn } from '../domain/chat/ChatInterfaces.js';
 import { RecapInfo } from '../domain/recap/RecapInterfaces.js';
-import { TermInfo } from '../domain/term/TermInterfaces.js';
+import { SessionTermInfo, CharacterTermInfo } from '../domain/term/TermInterfaces.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { UserInfo } from '../domain/user/UserInterfaces.js';
 import { SessionInfo } from '../domain/session/SessionInterfaces.js';
@@ -86,11 +86,14 @@ export type RecapResponse = RecapChromaResponse;
 interface TermChromaResponse extends ChromaResponse {
 	term: Term;
 	terms: Term[];
-	termInfo: TermInfo;
-	termInfos: TermInfo[];
+	characterTermInfos: CharacterTermInfo[];
+	sessionTermInfos: SessionTermInfo[];
 }
 export type TermResponse = TermChromaResponse;
-export type Term = Pick<TermInfo, 'koreanTerm' | 'englishTerm' | 'termId'>;
+export type Term = Pick<
+	CharacterTermInfo | SessionTermInfo,
+	'koreanTerm' | 'englishTerm' | 'termId' | 'type'
+>;
 
 interface MemoryLlmResponse {
 	langCode: LangCode;

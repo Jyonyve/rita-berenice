@@ -1,4 +1,4 @@
-import { ALPHANUMERIC_ALPHABET } from '#shared/config/constants.js';
+import { ALPHANUMERIC_ALPHABET, METADATA_TYPES } from '#shared/config/constants.js';
 import { ChatIndexContentType, ChatMessageType } from '#shared/domain/chat/ChatInterfaces.js';
 import { customAlphabet } from 'nanoid';
 import { _nanoid } from 'zod/v4/core';
@@ -91,8 +91,12 @@ export const buildRecapId = (sessionId: string, turnStart: number, turnEnd: numb
 	return `${sessionId}_${turnStart}_${turnEnd}_${SUFFIX.RECAP}`;
 };
 
-export const buildTermId = (sessionId: string): string => {
-	return `${sessionId}_${_genNanoId(8)}_${SUFFIX.TERM}`;
+export const buildCharacterTermId = (characterId: string): string => {
+	return `${characterId}_${_genNanoId(4)}_${METADATA_TYPES.CHARACTER}_${SUFFIX.TERM}`;
+};
+
+export const buildSessionTermId = (sessionId: string): string => {
+	return `${sessionId}_${METADATA_TYPES.SESSION}_${SUFFIX.TERM}`;
 };
 
 export const buildRelationshipRecapId = (

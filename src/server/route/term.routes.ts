@@ -9,61 +9,144 @@ import {
 	compressData,
 	genRoutePattern,
 	validateRequestData,
-	validateServiceId,
 } from '../util/routeHelpers.js';
-import { TermCdo, TermInfo } from '#shared/domain/term/TermInterfaces.js';
+import {
+	SessionTermCdo,
+	SessionTermInfo,
+	CharacterTermCdo,
+	CharacterTermInfo,
+} from '#shared/domain/term/TermInterfaces.js';
 
 const router = express.Router();
-const collectionType = COLLECTIONS.TERM; // For validating sessionId if it were used as a serviceId elsewhere
+const collectionType = COLLECTIONS.TERM;
+
 /**
- * POST /api/glossary/store-term
- * Creates or updates a term in the glossary for a specific session.
+ * POST /api/glossary/store-session-term
+ * Creates or updates a session term in the glossary for a specific session.
  * Also updates the in-memory cache for that session.
- * @param {TermCdo | TermInfo} req.body - The term data to be stored.
+ * @param {SessionTermCdo | SessionTermInfo} req.body - The session term data to be stored.
  * @returns {object} A success confirmation message.
  */
 router.post(
-	genRoutePattern('storeTerm'),
+	genRoutePattern('storeSessionTerm'),
 	asyncHandler(
 		async (
-			req: Request<object, { message: string }, TermCdo | TermInfo>,
+			req: Request<object, { message: string }, SessionTermCdo | SessionTermInfo>,
 			res: Response<{ message: string }>
 		): Promise<void> => {
-			const requiredFields: (keyof TermInfo)[] = ['koreanTerm', 'sessionId'];
+			const requiredFields: (keyof SessionTermInfo)[] = ['koreanTerm', 'sessionId'];
 			validateRequestData(req.body, 'body', requiredFields);
-			validateServiceId(req.body.sessionId, collectionType);
 
-			const path = genRoutePattern('storeTerm');
+			const path = genRoutePattern('storeSessionTerm');
 			console.log(
 				`API HIT: POST ${path} for session ${req.body.sessionId}, term "${req.body.koreanTerm}"`
 			);
 
-			await termStore.storeTerm(req.body);
-			res.status(201).json({ message: 'Term stored successfully.' });
+			await termStore.storeSessionTerm(req.body);
+			res.status(201).json({ message: 'Session term stored successfully.' });
 		}
 	)
 );
 
 /**
- * GET /api/glossary/get-term-by-korean/:sessionId/:koreanTerm
- * Retrieves a specific term by its Korean name for a given session.
- * @param {string} sessionId - The ID of the session.
+ * POST /api/glossary/store-character-term
+ * Creates or updates a character term in the glossary for a specific character.
+ * Also updates the in-memory cache for that character.
+ * @param {CharacterTermCdo | CharacterTermInfo} req.body - The character term data to be stored.
+ * @returns {object} A success confirmation message.
+ */
+router.post(
+	genRoutePattern('storeCharacterTerm'),
+	asyncHandler(
+		async (
+			req: Request<object, { message: string }, CharacterTermCdo | CharacterTermInfo>,
+			res: Response<{ message: string }>
+		): Promise<void> => {
+			const requiredFields: (keyof CharacterTermInfo)[] = ['koreanTerm', 'characterId'];
+			validateRequestData(req.body, 'body', requiredFields);
+
+			const path = genRoutePattern('storeCharacterTerm');
+			console.log(
+				`API HIT: POST ${path} for character ${req.body.characterId}, term "${req.body.koreanTerm}"`
+			);
+
+			await termStore.storeCharacterTerm(req.body);
+			res.status(201).json({ message: 'Character term stored successfully.' });
+		}
+	)
+);
+
+/**
+ * POST /api/glossary/store-session-terms
+ * Bulk stores multiple session terms for efficiency.
+ * @param {(SessionTermCdo | SessionTermInfo)[]} req.body.terms - Array of session terms to store.
+ * @returns {object} A success confirmation message.
+ */
+router.post(
+	genRoutePattern('storeSessionTerms'),
+	asyncHandler(
+		async (
+			req: Request<object, { message: string }, { terms: (SessionTermCdo | SessionTermInfo)[] }>,
+			res: Response<{ message: string }>
+		): Promise<void> => {
+			validateRequestData(req.body, 'body', ['terms']);
+
+			const path = genRoutePattern('storeSessionTerms');
+			console.log(`API HIT: POST ${path} for bulk storing ${req.body.terms.length} session terms`);
+
+			await termStore.storeSessionTerms(req.body.terms);
+			res.status(201).json({ message: `${req.body.terms.length} session terms stored successfully.` });
+		}
+	)
+);
+
+/**
+ * POST /api/glossary/store-character-terms
+ * Bulk stores multiple character terms for efficiency.
+ * @param {(CharacterTermCdo | CharacterTermInfo)[]} req.body.terms - Array of character terms to store.
+ * @returns {object} A success confirmation message.
+ */
+router.post(
+	genRoutePattern('storeCharacterTerms'),
+	asyncHandler(
+		async (
+			req: Request<object, { message: string }, { terms: (CharacterTermCdo | CharacterTermInfo)[] }>,
+			res: Response<{ message: string }>
+		): Promise<void> => {
+			validateRequestData(req.body, 'body', ['terms']);
+
+			const path = genRoutePattern('storeCharacterTerms');
+			console.log(`API HIT: POST ${path} for bulk storing ${req.body.terms.length} character terms`);
+
+			await termStore.storeCharacterTerms(req.body.terms);
+			res
+				.status(201)
+				.json({ message: `${req.body.terms.length} character terms stored successfully.` });
+		}
+	)
+);
+
+/**
+ * GET /api/glossary/get-term-by-korean/:id/:koreanTerm/:type
+ * Retrieves a specific term by its Korean name for a given session or character.
+ * @param {string} id - The ID of the session or character.
  * @param {string} koreanTerm - The Korean term to look up.
+ * @param {string} type - The type of term ('session' or 'character').
  * @returns {TermResponse} An object containing the found term information.
  */
 router.get(
-	genRoutePattern('getTermByKorean', ['sessionId', 'koreanTerm']),
+	genRoutePattern('getTermByKorean', ['id', 'koreanTerm', 'type']),
 	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
-		const { sessionId, koreanTerm } = req.params;
-		validateServiceId(sessionId, collectionType);
-		validateRequestData(req.params, 'params', ['koreanTerm']);
+		const { id, koreanTerm, type } = req.params;
 
-		const path = genRoutePattern('getTermByKorean', ['sessionId', 'koreanTerm']);
+		validateRequestData(req.params, 'params', ['koreanTerm', 'type']);
+
+		const path = genRoutePattern('getTermByKorean', ['id', 'koreanTerm', 'type']);
 		console.log(
-			`API HIT: GET ${path.replace(':sessionId', sessionId).replace(':koreanTerm', koreanTerm)}`
+			`API HIT: GET ${path.replace(':id', id).replace(':koreanTerm', koreanTerm).replace(':type', type)}`
 		);
 
-		const response = await termStore.getTermByKorean(sessionId, koreanTerm);
+		const response = await termStore.getTermByKorean(id, koreanTerm, type as 'session' | 'character');
 		const payload = compressData(response);
 		res.status(200).json({ payload });
 	})
@@ -79,7 +162,6 @@ router.get(
 	genRoutePattern('getTermsBySessionId', ['sessionId']),
 	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
 		const { sessionId } = req.params;
-		validateServiceId(sessionId, collectionType);
 
 		const path = genRoutePattern('getTermsBySessionId', ['sessionId']);
 		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
@@ -91,17 +173,36 @@ router.get(
 );
 
 /**
+ * GET /api/glossary/get-terms-by-character-id/:characterId
+ * Retrieves all glossary terms associated with a specific character.
+ * @param {string} characterId - The ID of the character.
+ * @returns {TermResponse} An object containing a list of all terms for the character.
+ */
+router.get(
+	genRoutePattern('getTermsByCharacterId', ['characterId']),
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+		const { characterId } = req.params;
+
+		const path = genRoutePattern('getTermsByCharacterId', ['characterId']);
+		console.log(`API HIT: GET ${path.replace(':characterId', characterId)}`);
+
+		const response = await termStore.getTermsByCharacterId(characterId);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
+	})
+);
+
+/**
  * POST /api/glossary/ensure-terms
  * Takes an array of Korean terms, translates any that are not already in the session's
  * glossary, stores them, and returns a map of all requested terms to their English counterparts.
- * @param {object} req.body - Contains sessionId and an array of koreanTermsToEnsure.
+ * @param {object} req.body - Contains sessionId, userId, and an array of koreanTermsToEnsure.
  * @returns {object} A key-value map of Korean terms to their English translations.
  */
 router.post(
 	genRoutePattern('ensureAndGetTermsForPrompt'),
 	asyncHandler(async (req: Request, res: Response<object>): Promise<void> => {
 		const { sessionId, koreanTermsToEnsure, userId } = req.body;
-		validateServiceId(sessionId, collectionType);
 		validateRequestData(req.body, 'body', ['sessionId', 'koreanTermsToEnsure', 'userId']);
 
 		const path = genRoutePattern('ensureAndGetTermsForPrompt');
@@ -109,8 +210,8 @@ router.post(
 
 		const termMap = await termStore.ensureAndGetTermsForPrompt(
 			sessionId,
-			koreanTermsToEnsure,
-			userId
+			userId,
+			koreanTermsToEnsure
 		);
 		// Convert Map to a plain object for JSON serialization
 		const response = Object.fromEntries(termMap);
@@ -128,13 +229,31 @@ router.delete(
 	genRoutePattern('clearSessionCache', ['sessionId']),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { sessionId } = req.params;
-		validateServiceId(sessionId, collectionType);
 
 		const path = genRoutePattern('clearSessionCache', ['sessionId']);
 		console.log(`API HIT: DELETE ${path.replace(':sessionId', sessionId)}`);
 
 		termStore.clearSessionCache(sessionId);
 		res.status(200).json({ message: `Cache cleared for session ${sessionId}.` });
+	})
+);
+
+/**
+ * DELETE /api/glossary/character-cache/:characterId
+ * Clears the in-memory cache for a specific character's glossary terms.
+ * @param {string} characterId - The ID of the character whose cache should be cleared.
+ * @returns {object} A success confirmation message.
+ */
+router.delete(
+	genRoutePattern('clearCharacterCache', ['characterId']),
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		const { characterId } = req.params;
+
+		const path = genRoutePattern('clearCharacterCache', ['characterId']);
+		console.log(`API HIT: DELETE ${path.replace(':characterId', characterId)}`);
+
+		termStore.clearCharacterCache(characterId);
+		res.status(200).json({ message: `Cache cleared for character ${characterId}.` });
 	})
 );
 
