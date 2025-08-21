@@ -10,11 +10,13 @@ function ensureNonEmptyArray<T>(arr: T[]): asserts arr is [T, ...T[]] {
 }
 
 // Create emotion enum safely
-const createEmotionEnum = () => {
+const createEmotionList = () => {
 	const emotions = [...curatedEmotionKeywords]; // Create a copy
 	ensureNonEmptyArray(emotions);
-	return z.enum(emotions);
+	return emotions;
 };
+
+const emotionList = createEmotionList();
 
 /**
  * Creates an efficient Zod schema for persona responses with minimal token overhead.
@@ -34,7 +36,7 @@ export const createPersonaResponseSchema = (
 						? `${charName}의 3인칭 서술. 1000-2000자. 서술은 '~다'로 끝남. 문단 변경, 대화시 줄바꿈(\\n) 사용.`
 						: `Third-person narration for ${charName}. 1000-2000 chars. Use \\n between narration/dialogue/paragraph.`
 				),
-			emotion: createEmotionEnum().describe('Single emotion word from the provided list.'),
+			emotion: z.enum(emotionList).describe('Single emotion word from the provided list.'),
 		})
 		.describe(
 			langCode === 'kor'
@@ -80,9 +82,11 @@ export const createChatTurnMetadataSchema = (charEng: string, userEng: string) =
 				),
 
 			userEmotion: z.object({
-				primary: createEmotionEnum().describe(
-					`The primary emotion of ${userEng}. MUST be from the provided list.`
-				),
+				primary: z
+					.string()
+					.describe(
+						`The primary emotion of ${userEng}. MUST be one of the following: [${convertArrayToString(emotionList)}]`
+					),
 				intensity: z
 					.number()
 					.min(0.0)
@@ -94,9 +98,11 @@ export const createChatTurnMetadataSchema = (charEng: string, userEng: string) =
 			}),
 
 			characterEmotion: z.object({
-				primary: createEmotionEnum().describe(
-					`The primary emotion of ${charEng}.  MUST be from the provided list.`
-				),
+				primary: z
+					.string()
+					.describe(
+						`The primary emotion of ${charEng}. MUST be one of the following: [${convertArrayToString(emotionList)}]`
+					),
 				intensity: z
 					.number()
 					.min(0.0)
