@@ -96,7 +96,7 @@ export const buildCharacterTermId = (characterId: string): string => {
 };
 
 export const buildSessionTermId = (sessionId: string): string => {
-	return `${sessionId}_${METADATA_TYPES.SESSION}_${SUFFIX.TERM}`;
+	return `${sessionId}_${_genNanoId(4)}_${METADATA_TYPES.SESSION}_${SUFFIX.TERM}`;
 };
 
 export const buildRelationshipRecapId = (
