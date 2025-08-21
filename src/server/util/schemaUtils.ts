@@ -72,7 +72,9 @@ export const createChatTurnMetadataSchema = (charEng: string, userEng: string) =
 				primary: z
 					.string()
 					.describe(
-						`The primary emotion of ${userEng}. MUST be one of the following: [${convertArrayToString(curatedEmotionKeywords)}]`
+						`The primary emotion of ${userEng}. MUST be one of the following: [${convertArrayToString(
+							curatedEmotionKeywords
+						)}]`
 					),
 				intensity: z
 					.number()
@@ -88,7 +90,9 @@ export const createChatTurnMetadataSchema = (charEng: string, userEng: string) =
 				primary: z
 					.string()
 					.describe(
-						`The primary emotion of ${charEng}. MUST be one of the following: [${convertArrayToString(curatedEmotionKeywords)}]`
+						`The primary emotion of ${charEng}. MUST be one of the following: [${convertArrayToString(
+							curatedEmotionKeywords
+						)}]`
 					),
 				intensity: z
 					.number()
@@ -150,9 +154,9 @@ export const createLoreMetadataSchema = (availableCharacterIds: string[]) => {
 	return z
 		.object({
 			// Core Identification
-			generatedEnglishTitle: z
+			generatedTitle: z
 				.string()
-				.describe('A concise, descriptive title in English for the lore entry.'),
+				.describe('A concise, descriptive title in English for the lore entry. Maximum 3 words.'),
 			summary: z
 				.string()
 				.describe('A one-paragraph summary of the lore, explaining its significance.'),
@@ -180,7 +184,9 @@ export const createLoreMetadataSchema = (availableCharacterIds: string[]) => {
 			sideCharacterIdList: z
 				.array(z.string())
 				.describe(
-					`Other characters significantly related to this lore. MUST be chosen from: [${convertArrayToString(availableCharacterIds)}]`
+					`Other characters significantly related to this lore. MUST be chosen from: [${convertArrayToString(
+						availableCharacterIds
+					)}]`
 				),
 
 			// Searchable Indexable Lists
@@ -208,9 +214,9 @@ export const createHistoryMetadataSchema = (
 	return z
 		.object({
 			// Core Identification
-			generatedEnglishTitle: z
+			generatedTitle: z
 				.string()
-				.describe('A concise, descriptive title in English for the event.'),
+				.describe('A concise, descriptive title in English for the event. Maximum 3 words.'),
 			summary: z
 				.string()
 				.describe('A one-paragraph summary of the event, capturing the key actions and outcomes.'),
@@ -231,7 +237,9 @@ export const createHistoryMetadataSchema = (
 			sideCharacterIdList: z
 				.array(z.string())
 				.describe(
-					`Other characters involved in the event. MUST be chosen from: [${convertArrayToString(availableCharacterIds)}]`
+					`Other characters involved in the event. MUST be chosen from: [${convertArrayToString(
+						availableCharacterIds
+					)}]`
 				),
 
 			// Timeline Information
@@ -267,7 +275,9 @@ export const createHistoryMetadataSchema = (
 						relatedEventTitle: z
 							.string()
 							.describe(
-								`The exact title of a related event. MUST be one of: [${convertArrayToString(existingEventTitles)}]`
+								`The exact title of a related event. MUST be one of: [${convertArrayToString(
+									existingEventTitles
+								)}]`
 							),
 						description: z.string().optional().describe('An optional brief description of the relation.'),
 					})
@@ -309,7 +319,9 @@ export const createFactualRecapSchema = (
 			keywords: z
 				.array(z.string())
 				.describe(
-					`An array of 5-10 of the most relevant factual keywords, selected from: [${convertArrayToString(availableKeywords)}]`
+					`An array of 5-10 of the most relevant factual keywords, selected from: [${convertArrayToString(
+						availableKeywords
+					)}]`
 				),
 			topics: z
 				.array(z.string())
@@ -329,12 +341,16 @@ export const createFactualRecapSchema = (
 			loreReferenceList: z
 				.array(z.object({ id: z.string(), relevance: z.number().min(0.0).max(1.0) }))
 				.describe(
-					`A list of relevant lore IDs, selected ONLY from this list: [${convertArrayToString(existingLoreIds)}]`
+					`A list of relevant lore IDs, selected ONLY from this list: [${convertArrayToString(
+						existingLoreIds
+					)}]`
 				),
 			historyReferenceList: z
 				.array(z.object({ id: z.string(), relevance: z.number().min(0.0).max(1.0) }))
 				.describe(
-					`A list of relevant history IDs, selected ONLY from this list: [${convertArrayToString(existingHistoryIds)}]`
+					`A list of relevant history IDs, selected ONLY from this list: [${convertArrayToString(
+						existingHistoryIds
+					)}]`
 				),
 		})
 		.describe(
@@ -364,17 +380,23 @@ export const createRelationshipRecapSchema = (
 			keywords: z
 				.array(z.string())
 				.describe(
-					`An array of 5-10 of the most relevant relationship-focused keywords, selected from: [${convertArrayToString(availableKeywords)}]`
+					`An array of 5-10 of the most relevant relationship-focused keywords, selected from: [${convertArrayToString(
+						availableKeywords
+					)}]`
 				),
 			topics: z
 				.array(z.string())
 				.describe(
-					`An array of 3-7 key relationship themes and emotional topics, selected from: [${convertArrayToString(availableTopics)}]`
+					`An array of 3-7 key relationship themes and emotional topics, selected from: [${convertArrayToString(
+						availableTopics
+					)}]`
 				),
 			entities: z
 				.array(z.string())
 				.describe(
-					`An array of important entities that affected the relationship, selected from: [${convertArrayToString(availableEntities)}]`
+					`An array of important entities that affected the relationship, selected from: [${convertArrayToString(
+						availableEntities
+					)}]`
 				),
 			flags: z
 				.array(z.string())
@@ -384,12 +406,16 @@ export const createRelationshipRecapSchema = (
 			loreReferenceList: z
 				.array(z.object({ id: z.string(), relevance: z.number().min(0.0).max(1.0) }))
 				.describe(
-					`A list of relevant lore IDs that influenced the relationship, selected ONLY from this list: [${convertArrayToString(existingLoreIds)}]`
+					`A list of relevant lore IDs that influenced the relationship, selected ONLY from this list: [${convertArrayToString(
+						existingLoreIds
+					)}]`
 				),
 			historyReferenceList: z
 				.array(z.object({ id: z.string(), relevance: z.number().min(0.0).max(1.0) }))
 				.describe(
-					`A list of relevant history IDs that influenced the relationship, selected ONLY from this list: [${convertArrayToString(existingHistoryIds)}]`
+					`A list of relevant history IDs that influenced the relationship, selected ONLY from this list: [${convertArrayToString(
+						existingHistoryIds
+					)}]`
 				),
 		})
 		.describe(

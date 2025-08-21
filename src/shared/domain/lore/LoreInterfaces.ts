@@ -110,7 +110,7 @@ export interface HistoryContext {
 	historyId: string; // The ID to be returned
 	title: string; // The human-readable title
 	summary: string; // A concise summary of the event
-	category: string; // The event's classification
+	category: HistoryCategory; // The event's classification
 	periodLabel: string; // The life period this event belongs to
 	keywordList: string[]; // Specific search terms
 	topicList: string[]; // Broader thematic concepts
@@ -123,7 +123,7 @@ export interface LoreContext {
 	loreId: string;
 	title: string;
 	summary: string;
-	category: string;
+	category: LoreCategory;
 	keywordList: string[];
 	topicList: string[];
 	entityList: string[];
