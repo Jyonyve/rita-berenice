@@ -68,7 +68,7 @@ const enrichHistoryWithMetadata = async (
 	existingHistoryEntries: ExistingHistoryEntry[]
 ) => {
 	const historySchema = createHistoryMetadataSchema(availableCharacterIds, existingHistoryEntries);
-	const termResponse = await termStore.getTermsBySessionId('tarion_spinoff_9gsTh0LA');
+	const termResponse = await termStore.getTermsBySessionId('tarion_original_cWRM1T3x');
 	const termGuidanceMap = mapTerms(termResponse.terms);
 	const prompt = buildHistoryMetadataPrompt(
 		originalTitle,
@@ -144,10 +144,10 @@ async function initHistoryFromFiles(characterId: string) {
 			const fileContent = await fs.readFile(filePath, 'utf-8');
 			const data: HistoryFileContent = JSON.parse(fileContent);
 
-			if (existingHistories.some((h) => h.originalTitle === data.title)) {
-				console.log(`   ⏭️ History with title "${data.title}" already exists. Skipping.`);
-				continue;
-			}
+			// if (existingHistories.some((h) => h.originalTitle === data.title)) {
+			// 	console.log(`   ⏭️ History with title "${data.title}" already exists. Skipping.`);
+			// 	continue;
+			// }
 
 			try {
 				const enrichedMetadata = await enrichHistoryWithMetadata(
@@ -171,7 +171,7 @@ async function initHistoryFromFiles(characterId: string) {
 					createdAt: now,
 					updatedAt: now,
 					title: data.title,
-					generatedTitle: enrichedMetadata.generatedEnglishTitle,
+					generatedTitle: enrichedMetadata.generatedTitle,
 					category: enrichedMetadata.category,
 					summary: enrichedMetadata.summary,
 					periodLabel: enrichedMetadata.period.label,

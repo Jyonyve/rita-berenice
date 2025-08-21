@@ -17,7 +17,7 @@ async function checkAllHistories() {
 
 		console.log(`Querying for ALL history documents (type: HISTORY)...`);
 
-		const result = await collection.get();
+		const result = await collection.get({ where: { characterId: { $eq: characterId } } });
 		await collection.delete({ ids: result.ids });
 		console.log(result);
 	} catch (error) {
