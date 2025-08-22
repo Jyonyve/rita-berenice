@@ -16,6 +16,7 @@ import { setupApiClient } from './util/clientApiHelpers.js';
 import { NewChatPageLoader } from './page/chat/NewChatPageLoader.jsx';
 import { SessionAuth } from 'supertokens-auth-react/recipe/session/index.js';
 import { HistoryPageLoader } from './page/history/HistoryPageLoader.jsx';
+import { NewCharacterPageLoader } from './page/character/NewCharacterPageLoader.jsx';
 
 export function App() {
 	const { CHARACTER, CHAT, ERROR, HISTORY } = routeConstants;
@@ -33,6 +34,14 @@ export function App() {
 				<Route index element={<MainLandingPage />} />
 				{hasMounted && getSuperTokensRoutesForReactRouterDom(reactRouter, [EmailPasswordPreBuiltUI])}
 				<Route path={`${CHARACTER}`} element={<CharacterListPageLoader />} />
+				<Route
+					path={`${CHARACTER}/new`}
+					element={
+						<SessionAuth>
+							<NewCharacterPageLoader />
+						</SessionAuth>
+					}
+				/>
 				<Route path={`${CHARACTER}/:characterId`} element={<CharacterPageLoader />} />
 				<Route path={`${HISTORY}/:historyId`} element={<HistoryPageLoader />} />
 				<Route

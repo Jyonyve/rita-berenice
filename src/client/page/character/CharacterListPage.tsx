@@ -8,6 +8,26 @@ import { GlassCard, GlassPaper, GlassPortrait } from '../../layout/glass/index.j
 import { RomanticTitle, useHoverState } from '../../layout/index.js';
 import { containerSpacing } from '../../style/index.js';
 import { getDefaultImage } from '../../util/portraitUtils.js';
+import { getLangText } from '../../util/translateUtils.js';
+import { LANG_KEYS } from '#shared/config/langConstants.js';
+
+const characterCardSx = {
+	display: 'flex',
+	flexDirection: 'column',
+	position: 'relative',
+	zIndex: 1,
+	'&:hover': {
+		zIndex: 2, // Lifts card to prevent glow clipping, but no shadow on the card itself.
+	},
+};
+
+const contentSx = {
+	height: '100%',
+	display: 'flex',
+	flexDirection: 'column',
+	justifyContent: 'space-between',
+	'&:last-child': { pb: 1 }, // Override MUI's default bottom padding
+};
 
 // Helper Component: CharacterItem now uses GlassCard
 const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterInfo }) => {
@@ -15,23 +35,6 @@ const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterIn
 	const defaultImage = getDefaultImage(characterInfo.characterId);
 	const handleCharacterPage = () => {
 		navigate(`${characterInfo.characterId}`);
-	};
-	const characterCardSx = {
-		display: 'flex',
-		flexDirection: 'column',
-		position: 'relative',
-		zIndex: 1,
-		'&:hover': {
-			zIndex: 2, // Lifts card to prevent glow clipping, but no shadow on the card itself.
-		},
-	};
-
-	const contentSx = {
-		height: '100%',
-		display: 'flex',
-		flexDirection: 'column',
-		justifyContent: 'space-between',
-		'&:last-child': { pb: 1 }, // Override MUI's default bottom padding
 	};
 
 	return (
@@ -81,7 +84,41 @@ export const CharacterListPage = ({ characterInfos }: { characterInfos: Characte
 						<CharacterItem characterInfo={characterInfo} />
 					</Grid>
 				))}
+				<Grid key={'add-new-character'} size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
+					<NewCharacterItem />
+				</Grid>
 			</Grid>
 		</GlassPaper>
+	);
+};
+
+const NewCharacterItem = () => {
+	const navigate = useNavigate();
+
+	const handleCharacterPage = () => {
+		navigate(`new`);
+	};
+
+	return (
+		<GlassCard
+			sx={characterCardSx}
+			role="button"
+			onClick={handleCharacterPage}
+			contentProps={{ sx: contentSx }}
+		>
+			<Box sx={{ mt: 'auto' }}>
+				<RomanticTitle
+					noGlow // Disable the title's own hover effect
+					variant="h6"
+					color="silver"
+					colorVariant="silver" // Ensures the glow color is gold
+				>
+					{getLangText(LANG_KEYS.NEW_CHARACTER)}
+				</RomanticTitle>
+				{/* <Typography variant="body2" noWrap>
+					{characterInfo.title}
+				</Typography> */}
+			</Box>
+		</GlassCard>
 	);
 };

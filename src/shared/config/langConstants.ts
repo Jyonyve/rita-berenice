@@ -24,6 +24,7 @@ export const LANG_KEYS = {
 	EDIT: 'EDIT',
 	SEND: 'SEND',
 	STORY: 'STORY',
+	CANCEL: 'CANCEL',
 	LOADING_CHARACTERS: 'LOADING_CHARACTERS',
 	LOADING_CHAT: 'LOADING_CHAT',
 	LOADING_SESSIONS: 'LOADING_SESSIONS',
@@ -32,6 +33,13 @@ export const LANG_KEYS = {
 	FAILED_LOAD_CHAT: 'FAILED_LOAD_CHAT',
 	CREATING_SESSION: 'CREATING_SESSION',
 	GEN_RESPONSE: 'GEN_RESPONSE',
+	NEW_CHARACTER: 'NEW_CHARACTER',
+	CHARACTER_CREATED_SUCCESS: 'CHARACTER_CREATED_SUCCESS',
+	NO_IMAGES: 'NO_IMAGES',
+	PORTRAIT: 'PORTRAIT',
+	EMOTION: 'EMOTION',
+	BASIC_INFO: 'BASIC_INFO',
+	CREATING: 'CREATING',
 } as const;
 export type LangKey = keyof typeof LANG_KEYS;
 
@@ -52,7 +60,12 @@ export const langConstants: LangRecord = {
 	LOGOUT: { kor: '로그아웃', eng: 'Logout' },
 	EDIT: { kor: '수정', eng: 'Edit' },
 	SEND: { kor: '보내기', eng: 'Send' },
+	TITLE: { kor: '한줄소개', eng: 'Title' },
+	SHOWNAME: { kor: '이름', eng: 'show name*' },
 	STORY: { kor: '스토리', eng: 'Story' },
+	CANCEL: { kor: '취소', eng: 'Cancel' },
+	// CREATING: { kor: '스토리', eng: 'Story' },
+	CREATING: { kor: '생성중...', eng: 'Creating...' },
 	LOADING_CHARACTERS: { kor: '캐릭터를 불러오는 중입니다...', eng: 'Loading characters...' },
 	LOADING_SESSIONS: { kor: '지난 이야기를 불러오는 중입니다...', eng: 'Loading sessions...' },
 	LOADING_STORIES: { kor: '캐릭터 스토리를 불러오는 중입니다...', eng: 'Loading stories...' },
@@ -64,6 +77,11 @@ export const langConstants: LangRecord = {
 	},
 	LOADING_CHAT: { kor: '채팅을 불러오는 중입니다...', eng: 'Loading chat...' },
 	GEN_RESPONSE: { kor: '답변을 받아오는 중입니다...', eng: 'Generating response...' },
+	NEW_CHARACTER: { kor: '새 캐릭터', eng: 'New Character' },
+	NO_IMAGES: { kor: '업로드된 이미지가 없습니다.', eng: 'No Images' },
+	PORTRAIT: { kor: '초상화', eng: 'Portrait' },
+	EMOTION: { kor: '감정', eng: 'emotion' },
+	BASIC_INFO: { kor: '기본 정보', eng: 'Basic Information' },
 };
 
 export const alertToastConstants: LangRecord = {
@@ -78,5 +96,9 @@ export const alertToastConstants: LangRecord = {
 	STATIC_SESSION_DISABLE: {
 		kor: '샘플 사이트에서는 새 대화를 시작하실 수 없습니다.',
 		eng: 'New session is disabled in static mode',
+	},
+	CHARACTER_CREATED_SUCCESS: {
+		kor: '캐릭터를 생성하였습니다.',
+		eng: 'Character created successfully!',
 	},
 };

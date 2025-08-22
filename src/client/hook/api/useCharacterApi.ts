@@ -72,10 +72,36 @@ export const useCharacterApi = () => {
 		},
 	});
 
+	/**
+	 * Uploads a character image
+	 */
+	const uploadCharacterImage = useMutation<any, Error, FormData>({
+		mutationFn: async (formData) => {
+			const url = genApiUrl(MODULE_NAME, 'uploadCharacterImage');
+			const response = await apiClient.post(url, formData, {
+				headers: { 'Content-Type': 'multipart/form-data' },
+			});
+			return response.data;
+		},
+	});
+
+	/**
+	 * Creates a character folder
+	 */
+	const createCharacterFolder = useMutation<any, Error, { characterId: string }>({
+		mutationFn: async (data) => {
+			const url = genApiUrl(MODULE_NAME, 'createCharacterFolder');
+			const response = await apiClient.post(url, data);
+			return response.data;
+		},
+	});
+
 	return {
 		getAllCharacters,
 		getCharacter,
 		getCharactersByShowName,
 		storeCharacter: storeCharacter.mutateAsync,
+		uploadCharacterImage: uploadCharacterImage.mutateAsync,
+		createCharacterFolder: createCharacterFolder.mutateAsync,
 	};
 };
