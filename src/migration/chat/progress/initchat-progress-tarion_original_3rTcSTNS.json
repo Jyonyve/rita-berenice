@@ -1,12 +1,12 @@
 {
   "sessionId": "tarion_original_3rTcSTNS",
   "totalTurnsInLogFile": 687,
-  "lastProcessedSequence": 580,
-  "successfullyEnrichedTurnsCount": 580,
+  "lastProcessedSequence": 686,
+  "successfullyEnrichedTurnsCount": 685,
   "fallbackSavedTurnsCount": 0,
   "startedAt": "2025-08-21T05:00:56.825Z",
-  "lastUpdatedAt": "2025-08-22T08:05:14.937Z",
-  "status": "in_progress",
+  "lastUpdatedAt": "2025-08-25T02:21:35.314Z",
+  "status": "completed",
   "errors": [
     {
       "sequence": 106,

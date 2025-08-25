@@ -18,8 +18,8 @@ async function checkSeededData(sessionId: string) {
 		console.log(`whole records count: ${count}`);
 		// const result = await chatStore.getAllDisplayTurns(sessionId);
 		const result = await collection.get({
-			// where: { $and: [{ type: { $eq: METADATA_TYPES.TURN } }, { sessionId: { $eq: sessionId } }] },
-			where: { type: { $eq: METADATA_TYPES.TURN } },
+			where: { $and: [{ type: { $eq: METADATA_TYPES.TURN } }, { sessionId: { $eq: sessionId } }] },
+			// where: { type: { $eq: METADATA_TYPES.TURN } },
 		});
 		console.log(`✅ Found ${result.ids.length} chat turns for the session.`);
 		console.log(result.metadatas.reverse().slice(0, 3));

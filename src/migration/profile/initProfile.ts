@@ -57,7 +57,7 @@ export const getMondayUserProfileTemplate = (userId: string, sessionId: string):
 
 // --- Main Seeding Logic ---
 async function initProfile() {
-	const tarion_original = 'tarion_original_dw2xVb8s';
+	const tarion_original = 'tarion_original_3rTcSTNS';
 	const tarion_spinoff = 'tarion_spinoff_PCyAjZnG';
 	const sessionId = 'monday_original_zUwPMBc4';
 	try {
@@ -72,17 +72,17 @@ async function initProfile() {
 
 		// Upsert sample profiles with a specific userId and unique sessionIds
 		console.log(`Upserting profiles...`);
-		(console.log(
-			await profileStore.storeProfile(getMondayUserProfileTemplate(userId, 'monday_original_gKBOnr26'))
-		),
-			// console.log(
-			// 	await profileStore.storeProfile(getTarionOriginalProfileTemplate(userId, tarion_original))
-			// );
-			// console.log(
-			// 	await profileStore.storeProfile(getTarionSpinoffProfileTemplate(userId, tarion_spinoff))
-			// );
+		// (console.log(
+		// 	await profileStore.storeProfile(getMondayUserProfileTemplate(userId, 'monday_original_gKBOnr26'))
+		// ),
+		console.log(
+			await profileStore.storeProfile(getTarionOriginalProfileTemplate(userId, tarion_original))
+		);
+		// console.log(
+		// 	await profileStore.storeProfile(getTarionSpinoffProfileTemplate(userId, tarion_spinoff))
+		// );
 
-			console.log(`✅ Successfully seeded profiles.`));
+		console.log(`✅ Successfully seeded profiles.`);
 		process.exit(0);
 	} catch (error: any) {
 		// Step 3: If getting the collection fails, exit with a helpful error.
@@ -95,4 +95,4 @@ async function initProfile() {
 }
 
 // --- Run the script ---
-// initProfile();
+initProfile();

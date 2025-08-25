@@ -1,10 +1,9 @@
 import { OpenAIEmbeddingFunction } from '@chroma-core/openai';
 import { ChromaClient, Metadata, Where } from 'chromadb';
 import { buildProfileId, buildSessionId } from '#shared/util/buildIdUtils.js';
-import { flatProfileToDoc, flatSessionToDoc } from '#shared/util/documentUtils.js';
 import { SessionInfo, SessionMetadata } from '#shared/domain/session/SessionInterfaces.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
-import { COLLECTIONS } from '../server/index.ts';
+import { COLLECTIONS, flatProfileToDoc, flatSessionToDoc } from '../server/index.ts';
 import { METADATA_TYPES } from '../shared/index.ts';
 
 // --- Configuration ---
@@ -20,12 +19,16 @@ const embedFnOpenAi = new OpenAIEmbeddingFunction({ apiKey, modelName: 'text-emb
 // Source DB: Your old Fly.io Chroma instance
 const SOURCE_CONFIG = { host: 'chromadb-flyio.fly.dev', port: 443, ssl: true };
 // Destination DB: Your new Fly.io Chroma instance
-const DESTINATION_CONFIG = { host: 'rita-berenice-chromadb.fly.dev', port: 443, ssl: true };
+// const DESTINATION_CONFIG = { host: 'rita-berenice-chromadb.fly.dev', port: 443, ssl: true };
+const DESTINATION_CONFIG = { host: 'localhost', port: 8000 };
 // --- Configuration ---
 // The old development ID to find and replace.
 const USER_ID_OLD = '6b335673-c837-43f9-a1c7-0b92c90edefb';
+// const USER_ID_NEW = '6b335673-c837-43f9-a1c7-0b92c90edefb';
+
 // The new production ID to replace it with.
 const USER_ID_NEW = 'dbce0624-7eb1-4e0f-85d2-d25333996992';
+// const USER_ID_OLD = 'dbce0624-7eb1-4e0f-85d2-d25333996992';
 
 // List of all collections to migrate
 const COLLECTIONS_TO_MIGRATE = ['character', 'chat', 'temp', 'recap', 'lore', 'term'];
@@ -139,21 +142,26 @@ async function migrateMissingTurns(sourceClient: ChromaClient, destClient: Chrom
 			const updatedMetadatas: any[] = [];
 
 			// Transform the metadata for the new user ID.
-			for (const oldMeta of batchToMigrate.metadatas) {
-				if (!oldMeta) continue;
-				updatedMetadatas.push({
-					...oldMeta,
-					userId: USER_ID_NEW,
-					profileId: buildProfileId(oldMeta.sessionId as string, USER_ID_NEW),
-				});
-			}
+			// for (const oldMeta of batchToMigrate.metadatas) {
+			// 	if (!oldMeta) continue;
+			// 	updatedMetadatas.push({
+			// 		...oldMeta,
+			// 		userId: USER_ID_NEW,
+			// 		profileId: buildProfileId(oldMeta.sessionId as string, USER_ID_NEW),
+			// 	});
+			// }
 
 			console.log(`   Upserting batch of ${batchToMigrate.ids.length} records to DESTINATION DB...`);
 
 			// *** CORRECTED: Upsert the modified data into the destCollection ***
+			// await destCollection.upsert({
+			// 	ids: batchToMigrate.ids,
+			// 	metadatas: updatedMetadatas,
+			// 	documents: batchToMigrate.documents as string[],
+			// });
 			await destCollection.upsert({
 				ids: batchToMigrate.ids,
-				metadatas: updatedMetadatas,
+				metadatas: batchToMigrate.metadatas as Metadata[],
 				documents: batchToMigrate.documents as string[],
 			});
 
