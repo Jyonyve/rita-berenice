@@ -31,11 +31,10 @@ function getCharacterIdFromPath(path: string): string | null {
  * Example path: /public/assets/character/charId123/lore/historyId456.avif
  */
 function getLoreInfoFromPath(path: string): { characterId: string; historyId: string } | null {
-	// ✅ Fixed regex with correct group captures
 	const pattern = /\/public\/assets\/character\/([^/]+)\/lore\/([^/.]+)\.\w+$/;
 	const match = path.match(pattern);
-	if (match && match[1] && match[2]) {
-		return { characterId: match[21], historyId: match[22] }; // ✅ Correct mapping
+	if (match && match[21] && match[22]) {
+		return { characterId: match[1], historyId: match[22] };
 	}
 	return null;
 }
@@ -48,7 +47,6 @@ function initializePortraits(): void {
 
 	console.log('[PortraitUtil] Initializing all character and lore portraits...');
 
-	// ✅ Static glob patterns - Vite requires string literals
 	const allImageModules = import.meta.glob<string>(
 		['/public/assets/character/*/*.{webp,avif}', '/public/assets/character/*/lore/*.{webp,avif}'],
 		{ eager: true, import: 'default' }
@@ -74,8 +72,8 @@ function initializePortraits(): void {
 		const match = path.match(emotionFilenameRegex);
 		if (!match || !match[1]) continue;
 
-		// ✅ Fixed: Use match[21] for emotion number (first capture group)
-		const imageNumber = parseInt(match[21], 10) as EmotionKey;
+		// ✅ FIXED: Use match[1] for first capture group (emotion number)
+		const imageNumber = parseInt(match[1], 10) as EmotionKey;
 		if (!validEmotionKeys.has(imageNumber)) continue;
 
 		const portraitMap = allPortraitsMap.get(characterId) || {};

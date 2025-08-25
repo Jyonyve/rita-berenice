@@ -171,7 +171,7 @@ export interface TempChatTurn extends TempChatTurnMetadata {
 }
 
 export type TempChatTurnCdo = Pick<TempChatTurn, 'sessionId' | 'sequence' | 'userId'> & {
-	userInput: string;
+	inputJsonString: string;
 };
 
 export interface DisplayTurn {

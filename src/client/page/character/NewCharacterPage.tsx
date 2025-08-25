@@ -1,4 +1,4 @@
-import { LANG_KEYS } from '#shared/config/langConstants.js';
+import { LANG_KEYS, LangKey } from '#shared/config/langConstants.js';
 import { CharacterCdo } from '#shared/domain/character/CharacterInterfaces.js';
 import {
 	Box,
@@ -35,20 +35,21 @@ import { containerSpacing } from '../../style/index.js';
 import { getLangAlertText, getLangText } from '../../util/translateUtils.js';
 import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
 import { EMOTION_CATEGORY_NAMES } from '#shared/util/emotionUtils.js';
-import { BASE_IMAGE_DIR, LIMIT_5MB } from '#shared/config/constants.js';
+import { BASE_IMAGE_DIR, LIMIT_5MB, REQUEST_CHARACTER_LIMIT } from '#shared/config/constants.js';
+import { SolidMetallicButton } from '../../layout/SolidMetallicButton.jsx';
 
 // Gender options
+
 const GENDER_OPTIONS = [
-	{ key: 'male', label: 'Male' },
-	{ key: 'female', label: 'Female' },
-	{ key: 'non-binary', label: 'Non-binary' },
-	{ key: 'other', label: 'Other' },
+	{ key: LANG_KEYS.MALE.toLowerCase(), label: getLangText(LANG_KEYS.MALE) },
+	{ key: LANG_KEYS.FEMALE.toLowerCase(), label: getLangText(LANG_KEYS.FEMALE) },
+	{ key: LANG_KEYS.OTHER.toLowerCase(), label: getLangText(LANG_KEYS.OTHER) },
 ];
 
 // Convert to options array for the select box
 const EMOTION_OPTIONS = Object.entries(EMOTION_CATEGORY_NAMES).map(([key, value]) => ({
 	key: value,
-	label: value.charAt(0).toUpperCase() + value.slice(1),
+	label: getLangText(value.toUpperCase() as LangKey),
 	emotionKey: parseInt(key),
 }));
 
@@ -60,20 +61,15 @@ interface UploadedImage {
 }
 
 const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
-	const { openLoginModal } = useAuth();
 	const navigate = useNavigate();
 	const { addToast } = useToast();
 	const { storeCharacter, uploadCharacterImage, createCharacterFolder } = useCharacterApi();
-
-	// File input ref
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	// React Hook Form setup
 	const {
 		control,
 		handleSubmit,
 		formState: { errors, isSubmitting },
-		setValue,
 		watch,
 	} = useForm<CharacterCdo>({
 		defaultValues: {
@@ -90,252 +86,107 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 		mode: 'onBlur',
 	});
 
-	// Image upload state
 	const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
 	const [selectedEmotion, setSelectedEmotion] = useState<string>(DEFAULT_EMOTION);
-	const [alertMessage, setAlertMessage] = useState<{
-		message: string;
-		severity: 'success' | 'error' | 'info' | 'warning';
-	}>();
 
-	// Get emotion key from emotion name
 	const getEmotionKey = (emotionName: string): number => {
-		const entry = Object.entries(EMOTION_CATEGORY_NAMES).find(
-			([key, value]) => value === emotionName
-		);
-		return entry ? parseInt(entry[0]) : 0;
-	};
-
-	// Handlers
-	const handleEmotionChange = (event: any) => {
-		setSelectedEmotion(event.target.value);
+		const option = EMOTION_OPTIONS.find((opt) => opt.key === emotionName);
+		return option ? option.emotionKey : 0;
 	};
 
 	const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
-		const files = event.target.files;
-		if (!files || files.length === 0) return;
+		const file = event.target.files?.[0];
+		if (!file) return;
 
-		const file = files[0];
-
-		// Validate file type
 		if (!file.type.startsWith('image/')) {
-			setAlertMessage({
-				message: 'Invalid file type. Please upload an image file.',
-				severity: 'error',
-			});
-			return;
+			return addToast(getLangAlertText(LANG_KEYS.INVALID_FILE_TYPE), 'error');
 		}
-
-		// Validate file size (max 5MB)
 		if (file.size > LIMIT_5MB) {
-			setAlertMessage({
-				message: 'File too large. Please upload an image smaller than 5MB.',
-				severity: 'error',
-			});
-			return;
+			return addToast(getLangAlertText(LANG_KEYS.FILE_TOO_LARGE), 'error');
 		}
 
-		// Check if emotion already has an image
-		const existingImageIndex = uploadedImages.findIndex((img) => img.emotion === selectedEmotion);
+		const existingIndex = uploadedImages.findIndex((img) => img.emotion === selectedEmotion);
+		const newImage: UploadedImage = {
+			file,
+			emotion: selectedEmotion,
+			emotionKey: getEmotionKey(selectedEmotion),
+			preview: URL.createObjectURL(file),
+		};
 
-		const preview = URL.createObjectURL(file);
-		const emotionKey = getEmotionKey(selectedEmotion);
-		const newImage: UploadedImage = { file, emotion: selectedEmotion, emotionKey, preview };
-
-		if (existingImageIndex >= 0) {
-			// Replace existing image for this emotion
-			setUploadedImages((prev) => {
-				const newImages = [...prev];
-				URL.revokeObjectURL(newImages[existingImageIndex].preview);
-				newImages[existingImageIndex] = newImage;
-				return newImages;
-			});
-		} else {
-			// Add new image
-			setUploadedImages((prev) => [...prev, newImage]);
-		}
-
-		// Reset file input
-		if (fileInputRef.current) {
-			fileInputRef.current.value = '';
-		}
-
-		setAlertMessage({
-			message: `Image uploaded for ${selectedEmotion} emotion!`,
-			severity: 'success',
+		setUploadedImages((prev) => {
+			const newImages = [...prev];
+			if (existingIndex >= 0) {
+				URL.revokeObjectURL(newImages[existingIndex].preview);
+				newImages[existingIndex] = newImage;
+			} else {
+				newImages.push(newImage);
+			}
+			return newImages;
 		});
+
+		if (fileInputRef.current) fileInputRef.current.value = '';
+		addToast(getLangAlertText(LANG_KEYS.IMAGE_UPLOADED_FOR), 'success');
 	};
 
 	const handleRemoveImage = (emotion: string) => {
 		setUploadedImages((prev) => {
 			const imageToRemove = prev.find((img) => img.emotion === emotion);
-			if (imageToRemove) {
-				URL.revokeObjectURL(imageToRemove.preview);
-			}
+			if (imageToRemove) URL.revokeObjectURL(imageToRemove.preview);
 			return prev.filter((img) => img.emotion !== emotion);
 		});
 	};
 
-	// Convert and save images to the asset directory
-	const saveCharacterImages = async (
-		characterId: string,
-		images: UploadedImage[]
-	): Promise<void> => {
-		const savePromises = images.map(async (image) => {
-			return new Promise<void>((resolve, reject) => {
-				const canvas = document.createElement('canvas');
-				const ctx = canvas.getContext('2d');
-				const img = new Image();
-
-				img.onload = () => {
-					canvas.width = img.width;
-					canvas.height = img.height;
-
-					if (ctx) {
-						ctx.drawImage(img, 0, 0);
-
-						// Convert to WebP format
-						canvas.toBlob(
-							async (blob) => {
-								if (blob) {
-									try {
-										const fileName = `${characterId}_${image.emotion}.webp`;
-										const filePath = `${BASE_IMAGE_DIR}/${characterId}/${fileName}`;
-
-										// Create directory if it doesn't exist
-										// In a real implementation, you'd use Node.js fs API or a file upload service
-										// For now, this is a placeholder for the file saving logic
-
-										// Create a download link for the converted image (for demonstration)
-										const url = URL.createObjectURL(blob);
-										const a = document.createElement('a');
-										a.href = url;
-										a.download = fileName;
-										document.body.appendChild(a);
-										a.click();
-										document.body.removeChild(a);
-										URL.revokeObjectURL(url);
-
-										resolve();
-									} catch (error) {
-										reject(error);
-									}
-								} else {
-									reject(new Error('Failed to convert image to WebP'));
-								}
-							},
-							'image/webp',
-							0.9
-						);
-					}
-				};
-
-				img.onerror = () => reject(new Error('Failed to load image'));
-				img.src = image.preview;
-			});
-		});
-
-		await Promise.all(savePromises);
-	};
-
-	const uploadCharacterImages = async (
-		characterId: string,
-		images: UploadedImage[]
-	): Promise<void> => {
+	const uploadPortraits = async (characterId: string, images: UploadedImage[]): Promise<void> => {
 		try {
 			await createCharacterFolder({ characterId });
-
 			await Promise.all(
-				images.map(async (image) => {
+				images.map((image) => {
 					const formData = new FormData();
 					formData.append('image', image.file);
 					formData.append('characterId', characterId);
 					formData.append('emotion', image.emotion);
-
-					await uploadCharacterImage(formData);
+					return uploadCharacterImage(formData);
 				})
 			);
-
-			console.log(`Successfully uploaded ${images.length} images for character ${characterId}`);
 		} catch (error) {
 			console.error('Error uploading images:', error);
 			throw error;
 		}
 	};
 
-	// ✅ UPDATED: Form submission handler
 	const onSubmit = async (data: CharacterCdo) => {
 		try {
-			// Create character first
 			const response = await storeCharacter(data);
-			if (!!response) {
-				const characterId: string = JSON.parse(response).characterId;
-
-				// Upload images using API if any
+			const { characterId } = JSON.parse(response);
+			if (characterId) {
 				if (uploadedImages.length > 0) {
-					await uploadCharacterImages(characterId, uploadedImages);
+					await uploadPortraits(characterId, uploadedImages);
 				}
-
-				setAlertMessage({
-					message: getLangAlertText(LANG_KEYS.CHARACTER_CREATED_SUCCESS),
-					severity: 'success',
-				});
-
-				// Navigate after a short delay to show the success message
-				setTimeout(() => {
-					navigate(`/${routeConstants.CHARACTER}/${characterId}`);
-				}, 1500);
+				addToast(getLangAlertText(LANG_KEYS.CHARACTER_CREATED_SUCCESS), 'success');
+				navigate(`/${routeConstants.CHARACTER}/${characterId}`);
 			} else {
-				throw new Error('Failed to create character');
+				throw new Error(getLangText(LANG_KEYS.FAILED_TO_CREATE_CHARACTER));
 			}
-		} catch (error) {
+		} catch (error: any) {
 			console.error('Error creating character:', error);
-			setAlertMessage({ message: 'Error creating character. Please try again.', severity: 'error' });
+			addToast(error.message || getLangAlertText(LANG_KEYS.ERROR_CREATING_CHARACTER), 'error');
 		}
-	};
-
-	// Get preview images for the slider
-	const getPreviewImages = (): string[] => {
-		return uploadedImages.map((img) => img.preview);
 	};
 
 	return (
 		<GlassPaper key="new-character-page" className="paper">
 			<form onSubmit={handleSubmit(onSubmit)}>
 				<Grid container spacing={containerSpacing}>
-					{/* Left Column - Image Preview */}
+					{/* Left Column */}
 					<Grid
 						size={{ xs: 12, md: 4 }}
-						sx={{
-							position: { xs: 'static', md: 'sticky' },
-							top: (theme) => theme.spacing(2),
-							alignSelf: 'flex-start',
-							height: {
-								xs: 'auto',
-								md: (theme) =>
-									`calc(100vh - var(--header-height) - var(--footer-height) - ${theme.spacing(8)})`,
-							},
-							display: 'flex',
-							alignItems: 'center',
-							justifyContent: 'center',
-						}}
+						sx={{ position: { md: 'sticky' }, top: (theme) => theme.spacing(2), alignSelf: 'flex-start' }}
 					>
 						<Box sx={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
-							{/* Alert Messages */}
-							{alertMessage && (
-								<Alert
-									severity={alertMessage.severity}
-									onClose={() => setAlertMessage(undefined)}
-									sx={{ mb: 2 }}
-								>
-									{alertMessage.message}
-								</Alert>
-							)}
-
 							{/* Image Preview */}
 							<Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 								{uploadedImages.length > 0 ? (
-									<GlassPortraitSlider imageUrls={getPreviewImages()} />
+									<GlassPortraitSlider imageUrls={uploadedImages.map((img) => img.preview)} />
 								) : (
 									<Box
 										width="100%"
@@ -353,54 +204,46 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 									</Box>
 								)}
 							</Box>
-
 							{/* Upload Controls */}
-							<GlassCard variant="outlined" sx={{ p: 2 }}>
-								<Typography variant="subtitle2" mb={2}>
+							<GlassCard variant="outlined">
+								<Typography color="secondary" variant="h6" gutterBottom>
 									{getLangText(LANG_KEYS.PORTRAIT)}
 								</Typography>
-
-								<FormControl fullWidth size="small" sx={{ mb: 2 }}>
-									<InputLabel>Emotion</InputLabel>
+								<FormControl fullWidth sx={{ mt: 1, mb: 2 }}>
+									<InputLabel>{getLangText(LANG_KEYS.EMOTION)}</InputLabel>
 									<GlassSelect
 										value={selectedEmotion}
-										onChange={handleEmotionChange}
-										label={getLangText(LANG_KEYS.EMOTION)}
+										onChange={(e) => setSelectedEmotion(e.target.value as string)}
 									>
-										{EMOTION_OPTIONS.map((option) => (
-											<MenuItem key={option.key} value={option.key}>
-												{option.label}
+										{EMOTION_OPTIONS.map((opt) => (
+											<MenuItem key={opt.key} value={opt.key}>
+												{opt.label}
 											</MenuItem>
 										))}
 									</GlassSelect>
 								</FormControl>
-
 								<input
 									type="file"
 									ref={fileInputRef}
 									onChange={handleImageUpload}
-									accept="image/webp,image/avif,image/jpeg,image/png"
+									accept="image/*"
 									style={{ display: 'none' }}
 								/>
-
 								<GlassButton
 									fullWidth
 									startIcon={<CloudUpload />}
 									onClick={() => fileInputRef.current?.click()}
-									colorVariant="primary"
+									colorVariant="secondary"
 									sx={{ mb: 2 }}
-									type="button"
 								>
-									Upload Image for {EMOTION_OPTIONS.find((e) => e.key === selectedEmotion)?.label}
+									{getLangText(LANG_KEYS.UPLOAD_IMAGE)}
 								</GlassButton>
-
-								{/* Uploaded Images List */}
 								{uploadedImages.length > 0 && (
 									<Stack direction="row" flexWrap="wrap" gap={1}>
 										{uploadedImages.map((img) => (
 											<Chip
 												key={img.emotion}
-												label={`${EMOTION_OPTIONS.find((e) => e.key === img.emotion)?.label} (${img.emotionKey})`}
+												label={EMOTION_OPTIONS.find((e) => e.key === img.emotion)?.label}
 												onDelete={() => handleRemoveImage(img.emotion)}
 												color="primary"
 												variant="outlined"
@@ -412,90 +255,73 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 							</GlassCard>
 						</Box>
 					</Grid>
-
-					{/* Right Column - Character Form */}
+					{/* Right Column */}
 					<Grid size={{ xs: 12, md: 8 }}>
-						<Box display="flex" flexDirection="column" gap={3}>
+						<Box display="flex" flexDirection="column" gap={2}>
 							{/* Header */}
 							<GlassCard variant="outlined">
-								<RomanticTitle noGlow hover variant="h4" color="primary" sx={{ mb: 1 }}>
-									{getLangText(LANG_KEYS.NEW_CHARACTER)}
+								<RomanticTitle hover variant="h4" color="secondary" colorVariant="primary" gutterBottom>
+									{watch('showName') || getLangText(LANG_KEYS.NEW_CHARACTER)}
 								</RomanticTitle>
-								<Typography variant="body2" color="text.secondary">
-									Fill in the details below to create a new character for your collection.
+								<Typography variant="body2" color="text.secondary" mt={1} ml={2}>
+									{watch('title') || getLangText(LANG_KEYS.TITLE_GUIDANCE)}
 								</Typography>
 							</GlassCard>
-
-							{/* Basic Information */}
+							{/* Form Sections */}
 							<GlassCard variant="outlined">
-								<Typography variant="h6" color="primary" gutterBottom>
+								<Typography variant="h6" color="secondary" gutterBottom>
 									{getLangText(LANG_KEYS.BASIC_INFO)}
 								</Typography>
-
 								<Grid container spacing={2}>
-									<Grid size={{ xs: 12, sm: 6 }}>
-										<Controller
-											name="name"
-											control={control}
-											rules={{ required: 'Character name is required' }}
-											render={({ field }) => (
-												<TextField
-													{...field}
-													fullWidth
-													label="Name"
-													error={!!errors.name}
-													helperText={errors.name?.message}
-													required
-												/>
-											)}
-										/>
-									</Grid>
-									<Grid size={{ xs: 12, sm: 6 }}>
-										<Controller
-											name="title"
-											control={control}
-											rules={{ required: 'Title is required' }}
-											render={({ field }) => (
-												<TextField
-													{...field}
-													fullWidth
-													label="Title"
-													error={!!errors.title}
-													helperText={errors.title?.message}
-													required
-												/>
-											)}
-										/>
-									</Grid>
-									<Grid size={{ xs: 12, sm: 6 }}>
+									{/* Fields: showName, name, gender, contact, title */}
+									<Grid size={{ xs: 12, sm: 5 }}>
 										<Controller
 											name="showName"
 											control={control}
-											rules={{ required: 'Show name is required' }}
+											rules={{ required: getLangText(LANG_KEYS.SHOW_NAME_REQUIRED) }}
 											render={({ field }) => (
 												<TextField
 													{...field}
 													fullWidth
-													label="Show/Series Name"
+													label={getLangText(LANG_KEYS.SHOWNAME)}
 													error={!!errors.showName}
 													helperText={errors.showName?.message}
+													placeholder={getLangText(LANG_KEYS.SHOW_NAME_PLACEHOLDER)}
 													required
 												/>
 											)}
 										/>
 									</Grid>
-									<Grid size={{ xs: 12, sm: 6 }}>
+									<Grid size={{ xs: 12, sm: 7 }}>
+										<Controller
+											name="name"
+											control={control}
+											rules={{ required: getLangText(LANG_KEYS.NAME_REQUIRED) }}
+											render={({ field }) => (
+												<TextField
+													{...field}
+													fullWidth
+													label={getLangText(LANG_KEYS.NAME)}
+													error={!!errors.name}
+													helperText={errors.name?.message}
+													placeholder={getLangText(LANG_KEYS.NAME_PLACEHOLDER)}
+													required
+												/>
+											)}
+										/>
+									</Grid>
+									<Grid size={{ xs: 12, sm: 5 }}>
 										<Controller
 											name="gender"
 											control={control}
-											rules={{ required: 'Gender is required' }}
+											rules={{ required: getLangText(LANG_KEYS.GENDER_REQUIRED) }}
 											render={({ field }) => (
 												<FormControl fullWidth error={!!errors.gender}>
-													<InputLabel>Gender *</InputLabel>
-													<GlassSelect {...field} label="Gender *">
-														{GENDER_OPTIONS.map((option) => (
-															<MenuItem key={option.key} value={option.key}>
-																{option.label}
+													<InputLabel>{getLangText(LANG_KEYS.GENDER)}</InputLabel>
+													<GlassSelect {...field}>
+														{GENDER_OPTIONS.map((opt) => (
+															<MenuItem key={opt.key} value={opt.key}>
+																{getLangText(opt.label as LangKey)}
 															</MenuItem>
 														))}
 													</GlassSelect>
@@ -504,7 +330,7 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 											)}
 										/>
 									</Grid>
-									<Grid size={12}>
+									<Grid size={{ xs: 12, sm: 7 }}>
 										<Controller
 											name="contact"
 											control={control}
@@ -512,82 +338,98 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 												<TextField
 													{...field}
 													fullWidth
-													label="Contact Information"
-													error={!!errors.contact}
-													helperText={errors.contact?.message}
+													label={getLangText(LANG_KEYS.CONTACT)}
+													placeholder={getLangText(LANG_KEYS.CONTACT_PLACEHOLDER)}
+												/>
+											)}
+										/>
+									</Grid>
+									<Grid size={{ xs: 12 }}>
+										<Controller
+											name="title"
+											control={control}
+											rules={{ required: getLangText(LANG_KEYS.TITLE_REQUIRED) }}
+											render={({ field }) => (
+												<TextField
+													{...field}
+													fullWidth
+													label={getLangText(LANG_KEYS.TITLE)}
+													error={!!errors.title}
+													helperText={errors.title?.message}
+													placeholder={getLangText(LANG_KEYS.TITLE_PLACEHOLDER)}
+													required
+													slotProps={{ htmlInput: { maxLength: REQUEST_CHARACTER_LIMIT } }}
 												/>
 											)}
 										/>
 									</Grid>
 								</Grid>
 							</GlassCard>
-
-							{/* Character Details */}
 							<GlassCard variant="outlined">
-								<Typography variant="h6" color="primary" gutterBottom>
-									Character Details
+								<Typography variant="h6" color="secondary" gutterBottom>
+									{getLangText(LANG_KEYS.CHARACTER_DETAIL)}
 								</Typography>
-
 								<Grid container spacing={2}>
-									<Grid size={12}>
+									{/* Fields: description, instruction, firstMessage */}
+									<Grid size={{ xs: 12 }}>
 										<Controller
 											name="description"
 											control={control}
-											rules={{ required: 'Description is required' }}
+											rules={{ required: getLangText(LANG_KEYS.DESCRIPTION_REQUIRED) }}
 											render={({ field }) => (
 												<TextField
 													{...field}
 													fullWidth
-													label="Description"
+													label={getLangText(LANG_KEYS.DESCRIPTION)}
 													multiline
-													rows={4}
+													rows={3}
 													error={!!errors.description}
 													helperText={errors.description?.message}
-													placeholder="Describe the character's appearance, personality, background..."
+													placeholder={getLangText(LANG_KEYS.DESCRIPTION_PLACEHOLDER)}
 													required
 												/>
 											)}
 										/>
 									</Grid>
-									<Grid size={12}>
+									<Grid size={{ xs: 12 }}>
 										<Controller
 											name="instruction"
 											control={control}
+											rules={{ required: getLangText(LANG_KEYS.INSTRUCTION_REQUIRED) }}
 											render={({ field }) => (
 												<TextField
 													{...field}
 													fullWidth
-													label="AI Instructions"
+													label={getLangText(LANG_KEYS.INSTRUCTION)}
 													multiline
 													rows={3}
-													error={!!errors.instruction}
+													error={!!errors.description}
 													helperText={
-														errors.instruction?.message ||
-														'Instructions for how the AI should roleplay this character'
+														errors.instruction?.message || getLangText(LANG_KEYS.AI_INSTRUCTION_HELPER)
 													}
-													placeholder="You are [character name]. You should speak like... Your personality is..."
+													placeholder={getLangText(LANG_KEYS.INSTRUCTION_PLACEHOLDER)}
+													required
 												/>
 											)}
 										/>
 									</Grid>
-									<Grid size={12}>
+									<Grid size={{ xs: 12 }}>
 										<Controller
 											name="firstMessage"
 											control={control}
-											rules={{ required: 'First message is required' }}
+											rules={{ required: getLangText(LANG_KEYS.FIRST_MESSAGE_REQUIRED) }}
 											render={({ field }) => (
 												<TextField
 													{...field}
 													fullWidth
-													label="First Message"
+													label={getLangText(LANG_KEYS.FIRST_MESSAGE)}
 													multiline
 													rows={3}
 													error={!!errors.firstMessage}
 													helperText={
-														errors.firstMessage?.message ||
-														"The character's opening message when starting a new conversation"
+														errors.firstMessage?.message || getLangText(LANG_KEYS.FIRST_MESSAGE_HELPER)
 													}
-													placeholder="Hello! I'm [character name]. It's nice to meet you..."
+													placeholder={getLangText(LANG_KEYS.FIRST_MESSAGE_PLACEHOLDER)}
 													required
 												/>
 											)}
@@ -595,7 +437,6 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 									</Grid>
 								</Grid>
 							</GlassCard>
-
 							{/* Action Buttons */}
 							<Box display="flex" gap={2} justifyContent="flex-end">
 								<GlassButton
@@ -603,18 +444,17 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 									variant="outlined"
 									onClick={() => navigate(`/${routeConstants.CHARACTER}`)}
 									disabled={isSubmitting}
-									type="button"
 								>
 									{getLangText(LANG_KEYS.CANCEL)}
 								</GlassButton>
-								<GlassButton
-									colorVariant="primary"
+								<SolidMetallicButton
+									colorVariant="gold"
 									type="submit"
 									disabled={isSubmitting}
 									loading={isSubmitting}
 								>
-									{isSubmitting && getLangText(LANG_KEYS.CREATING)}
-								</GlassButton>
+									{isSubmitting ? getLangText(LANG_KEYS.CREATING) : getLangText(LANG_KEYS.CREATE)}
+								</SolidMetallicButton>
 							</Box>
 						</Box>
 					</Grid>

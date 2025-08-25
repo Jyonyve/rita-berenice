@@ -65,7 +65,7 @@ export const useCharacterApi = () => {
 		mutationFn: async (character) => {
 			const url = genApiUrl(MODULE_NAME, 'storeCharacter');
 			const response = await apiClient.post<string>(url, character);
-			return JSON.parse(response.data);
+			return response.data;
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['getAllCharacters'] });

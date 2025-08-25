@@ -21,18 +21,36 @@ const lightPalette = {
 
 // --- THEME CREATION ---
 
-export const getTheme = (mode: 'light' | 'dark') =>
-	createTheme({
+export const getTheme = (mode: 'light' | 'dark') => {
+	const theme = createTheme({
 		palette: { mode, ...(mode === 'dark' ? darkPalette : lightPalette) },
 		typography: typography,
+	});
+
+	return createTheme(theme, {
 		components: {
-			MuiTextField: { defaultProps: { size: 'small' } },
+			MuiTextField: {
+				defaultProps: { size: 'small', variant: 'outlined' },
+				styleOverrides: {
+					root: {
+						// Target the placeholder pseudo-element
+						'& .MuiInputBase-input::placeholder': {
+							fontSize: theme.typography.body2.fontSize,
+							opacity: 0.7, // Adjust placeholder opacity if needed
+						},
+					},
+				},
+			},
 			MuiFormControl: { defaultProps: { size: 'small' } },
 			MuiInputLabel: {
-				styleOverrides: { shrink: ({ theme }) => ({ fontSize: theme.typography.body2.fontSize }) },
+				styleOverrides: {
+					root: { fontSize: theme.typography.body2.fontSize },
+					// Ensure the shrinked label is also the correct size
+					shrink: { fontSize: theme.typography.body2.fontSize },
+				},
 			},
 			MuiCssBaseline: {
-				styleOverrides: (theme) => ({
+				styleOverrides: {
 					// --- BASE & BOX-SIZING ---
 					'*, *::before, *::after': { boxSizing: 'border-box' },
 					html: { height: '100%', margin: 0, padding: 0 },
@@ -82,7 +100,8 @@ export const getTheme = (mode: 'light' | 'dark') =>
 						msOverflowStyle: 'none', // Correct: camelCase for -ms-overflow-style
 						scrollbarWidth: 'none', // Correct: camelCase for scrollbar-width
 					},
-				}),
+				},
 			},
 		},
 	});
+};
