@@ -1,8 +1,25 @@
 import { ChromaClient, Collection, Metadata } from 'chromadb';
 import { METADATA_TYPES } from '#shared/config/constants.js';
-import { ChatMessage } from '#shared/domain/chat/index.js';
+import { ChatEntry, ChatMessage } from '#shared/domain/chat/index.js';
 import { EmotionValue } from '#shared/index.js';
-import { chromaDbClient } from '#server/index.js';
+import { chromaDbClient, parseConversationToEntries } from '#server/index.js';
+import { parseTextToEntries } from 'src/client/util/chatParseUtils.ts';
+
+/**
+ * Filters out dialogue entries that have an empty or whitespace-only prompt.
+ * @param entries An array of ChatEntry objects.
+ * @returns A new array with the empty dialogue entries removed.
+ */
+function removeEmptyDialogueEntries(entries: ChatEntry[]): ChatEntry[] {
+	return entries.filter((entry) => {
+		// If the entry is a dialogue, check if its prompt has content
+		if (entry.type === 'dialogue') {
+			return entry.prompt.trim().length > 0;
+		}
+		// Always keep entries that are not of type 'dialogue'
+		return true;
+	});
+}
 
 /**
  * Corrects the 'emotion' field within the responseJson of a chat turn.
@@ -78,6 +95,109 @@ async function patchResponseJsonEmotion(sessionId: string): Promise<void> {
 	}
 }
 
+/**
+ * Corrects chat turn entries and removes empty dialogues.
+ * @param sessionId The ID of the session to process.
+ */
+export async function patchEntryAsterisk(sessionId: string): Promise<void> {
+	console.log(`Starting entry patch for session ID: ${sessionId}...`);
+
+	const client = chromaDbClient;
+	const collection = await client.getChatCollection();
+
+	// 1. Fetch all primary turn documents for the session
+	const chatTurns = await collection.get({
+		where: { $and: [{ type: { $eq: METADATA_TYPES.TURN } }, { sessionId: { $eq: sessionId } }] },
+		include: ['metadatas'],
+	});
+
+	if (!chatTurns.ids || chatTurns.ids.length === 0) {
+		console.log('✅ No chat turns found to patch.');
+		return;
+	}
+
+	console.log(`Found ${chatTurns.ids.length} chat turns to check.`);
+
+	const idsToUpdate: string[] = [];
+	const metadatasToUpdate: Metadata[] = [];
+
+	// 2. Iterate through each turn
+	for (let i = 0; i < chatTurns.ids.length; i++) {
+		const id = chatTurns.ids[i];
+		const metadata = chatTurns.metadatas[i] as Metadata;
+		let needsUpdate = false;
+
+		if (!metadata || !metadata.requestJson || !metadata.responseJson) {
+			console.warn(`Skipping turn ${id} due to missing JSON.`);
+			continue;
+		}
+
+		try {
+			const oldReq: ChatMessage = JSON.parse(metadata.requestJson as string);
+			const oldRes: ChatMessage = JSON.parse(metadata.responseJson as string);
+
+			let newReqEntries = oldReq.entries;
+			let newResEntries = oldRes.entries;
+
+			// Process request entries
+			if (oldReq.entries.length === 1 && typeof oldReq.entries[0]?.prompt === 'string') {
+				const prompt = oldReq.entries[0].prompt;
+				const parsed = prompt.includes('*')
+					? parseTextToEntries(prompt)
+					: parseConversationToEntries(prompt);
+
+				// ✅ Filter out empty dialogues after parsing
+				const cleanedEntries = removeEmptyDialogueEntries(parsed);
+
+				newReqEntries = cleanedEntries;
+				needsUpdate = true;
+			}
+
+			// Process response entries
+			if (oldRes.entries.length === 1 && typeof oldRes.entries[0]?.prompt === 'string') {
+				const prompt = oldRes.entries[0].prompt;
+				const parsed = prompt.includes('*')
+					? parseTextToEntries(prompt)
+					: parseConversationToEntries(prompt);
+
+				// ✅ Filter out empty dialogues after parsing
+				const cleanedEntries = removeEmptyDialogueEntries(parsed);
+
+				newResEntries = cleanedEntries;
+				needsUpdate = true;
+			}
+
+			if (needsUpdate) {
+				const updatedRequestJson = JSON.stringify({ ...oldReq, entries: newReqEntries });
+				const updatedResponseJson = JSON.stringify({ ...oldRes, entries: newResEntries });
+
+				const newMetadata: Metadata = {
+					...metadata,
+					requestJson: updatedRequestJson,
+					responseJson: updatedResponseJson,
+				};
+
+				idsToUpdate.push(id);
+				metadatasToUpdate.push(newMetadata);
+			}
+		} catch (error) {
+			console.error(`Failed to process turn ${id}:`, error);
+		}
+	}
+
+	// 3. Perform the batch update
+	if (idsToUpdate.length > 0) {
+		console.log(`Updating ${idsToUpdate.length} chat turns in a single batch...`);
+		await collection.update({
+			ids: idsToUpdate,
+			metadatas: metadatasToUpdate,
+		});
+		console.log(`✅ Successfully updated ${idsToUpdate.length} chat turns.`);
+	} else {
+		console.log('✅ No chat turns required updates.');
+	}
+}
+
 // Get the session ID from command-line arguments
 const sessionId = process.argv[2];
 if (!sessionId) {
@@ -86,7 +206,11 @@ if (!sessionId) {
 	process.exit(1);
 }
 
-patchResponseJsonEmotion(sessionId).catch((error) => {
+// patchResponseJsonEmotion(sessionId).catch((error) => {
+// 	console.error('Patch script failed:', error);
+// 	process.exit(1);
+// });
+patchEntryAsterisk(sessionId).catch((error) => {
 	console.error('Patch script failed:', error);
 	process.exit(1);
 });
