@@ -557,10 +557,16 @@ export const chatStore = {
 			);
 			console.log(`[chatStore] Successfully stored ${chatTurns.length} primary turns.`);
 
-			// Step 2: Update the search index for EACH turn
+			// Step 2: Update the search index for EACH turn with progress logging
 			console.log(`[chatStore] Now updating indexes for ${chatTurns.length} turns...`);
+			let processedCount = 0;
 			for (const turn of chatTurns) {
 				await chatStore._updateSearchIndexForTurn(turn);
+				processedCount++;
+				// Log progress every 10 items or on the very last item to avoid spamming the console
+				if (processedCount % 10 === 0 || processedCount === chatTurns.length) {
+					console.log(`[chatStore] -> Updated index for turn ${processedCount} of ${chatTurns.length}`);
+				}
 			}
 			console.log(`[chatStore] Successfully updated all search indexes.`);
 		} catch (error) {
@@ -571,7 +577,6 @@ export const chatStore = {
 			);
 		}
 	},
-
 	/**
 	 * Enhanced query with semantic emotion search
 	 */
