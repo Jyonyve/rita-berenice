@@ -4,7 +4,7 @@ import {
 	ChatMessageType,
 	ChatRoleType,
 } from '#shared/domain/chat/ChatInterfaces.js';
-import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
+import { DEFAULT_EMOTION, EmotionValue } from '#shared/config/emotionWordsMapper.js';
 export const parseEntriesToConversation = (entries: ChatEntry[]): string => {
 	return entries
 		.map((entry) => (entry.type === 'dialogue' ? `"${entry.prompt}"` : entry.prompt))
@@ -46,7 +46,7 @@ export const buildChatMessage = (
 	showName: string,
 	entriesString: string,
 	sessionId: string,
-	emotion = DEFAULT_EMOTION,
+	emotion?: EmotionValue,
 	model?: string
 ): ChatMessage => {
 	const entries: ChatEntry[] = parseConversationToEntries(entriesString);
@@ -59,7 +59,7 @@ export const buildChatMessage = (
 		messageId: '',
 		messageType,
 		showName,
-		emotion,
+		emotion: emotion || DEFAULT_EMOTION,
 		createdAt: '',
 		updatedAt: '',
 		type: 'message',
