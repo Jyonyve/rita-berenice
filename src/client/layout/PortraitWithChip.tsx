@@ -20,7 +20,7 @@ export const PortraitWithChip: FC<PortraitWithChipProps> = ({
 }) => {
 	return (
 		<Box sx={{ position: 'relative', display: 'inline-block', lineHeight: 0 }}>
-			<GlassPortrait imageUrl={imageUrl} alt={alt || label} sx={sx} />
+			<GlassPortrait hover={false} imageUrl={imageUrl} alt={alt || label} sx={sx} />
 			<Chip
 				label={label}
 				size="small"
