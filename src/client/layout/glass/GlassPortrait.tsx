@@ -3,7 +3,7 @@ import { Box, BoxProps, SxProps, Theme, useTheme } from '@mui/material';
 import { ColorVariant, getColor } from '../../style/colors.js';
 import { useHoverState } from '../index.js';
 
-interface GlassPortraitProps extends BoxProps {
+export interface GlassPortraitProps extends BoxProps {
 	imageUrl: string;
 	alt?: string;
 	colorVariant?: ColorVariant;

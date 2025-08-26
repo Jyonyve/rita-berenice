@@ -168,12 +168,14 @@ export const ChatPage: FC<{
 		// This promise generates the *new* temp turn
 		const generatePromise = (async () => {
 			if (!userInput.trim()) return null;
+			const inputJsonString = JSON.stringify(parseTextToEntries(userInput));
 			const recentChatTurnString = JSON.stringify(getRecentTurnsForMemory());
 			const newTempSequence = getNextSequence();
+
 			const tempChatTurnCdo: TempChatTurnCdo = {
 				sessionId,
 				sequence: newTempSequence,
-				userInput,
+				inputJsonString,
 				userId,
 			};
 			return receiveBotResponse.mutateAsync({
@@ -244,7 +246,12 @@ export const ChatPage: FC<{
 			const sequence = tempChatTurn.sequence;
 			const userInput = JSON.stringify(tempChatTurn.chatTurnSets[currentTempSetNo].request.entries);
 			const recentChatTurnString = JSON.stringify(getRecentTurnsForMemory());
-			const tempChatTurnCdo: TempChatTurnCdo = { sessionId, sequence, userInput, userId };
+			const tempChatTurnCdo: TempChatTurnCdo = {
+				sessionId,
+				sequence,
+				inputJsonString: userInput,
+				userId,
+			};
 			const result: TempChatTurn = await receiveBotResponse.mutateAsync({
 				tempChatTurnCdo,
 				characterInfo,

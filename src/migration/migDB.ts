@@ -5,16 +5,30 @@ import { SessionInfo, SessionMetadata } from '#shared/domain/session/SessionInte
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { COLLECTIONS, flatProfileToDoc, flatSessionToDoc } from '../server/index.ts';
 import { METADATA_TYPES } from '../shared/index.ts';
+import fs from 'fs';
+import readline from 'node:readline';
+import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { chatStore } from '#server/store/chatStore.js';
+import { CohereEmbeddingFunction } from '@chroma-core/cohere';
 
 // --- Configuration ---
-const apiKey = process.env.OPENAI_API_KEY;
-if (!apiKey) {
+const openAiApiKey = process.env.OPENAI_API_KEY;
+const cohereApiKey = process.env.COHERE_API_KEY;
+if (!openAiApiKey) {
 	// This check is important. It will cause the server to crash on startup
 	// if the secret is not set, which is good practice (fail fast).
 	throw new Error('FATAL: OPENAI_API_KEY secret is not set in the environment.');
 }
 
-const embedFnOpenAi = new OpenAIEmbeddingFunction({ apiKey, modelName: 'text-embedding-3-small' });
+const embedFnOpenAi = new OpenAIEmbeddingFunction({
+	apiKey: openAiApiKey,
+	modelName: 'text-embedding-3-small',
+});
+const embedFnCohere = new CohereEmbeddingFunction({
+	apiKey: cohereApiKey,
+	modelName: 'embed-english-v3.0', // A common choice for search documents
+	inputType: 'search_document',
+});
 
 // Source DB: Your old Fly.io Chroma instance
 const SOURCE_CONFIG = { host: 'chromadb-flyio.fly.dev', port: 443, ssl: true };
@@ -30,66 +44,110 @@ const USER_ID_OLD = '6b335673-c837-43f9-a1c7-0b92c90edefb';
 const USER_ID_NEW = 'dbce0624-7eb1-4e0f-85d2-d25333996992';
 // const USER_ID_OLD = 'dbce0624-7eb1-4e0f-85d2-d25333996992';
 
-// List of all collections to migrate
-const COLLECTIONS_TO_MIGRATE = ['character', 'chat', 'temp', 'recap', 'lore', 'term'];
-const BATCH_SIZE = 100;
+const CHAT_JSONL_PATH =
+	'C:/Users/nextree/Favorites/rita-berenice-task/src/migration/chat/backup/tarion_original_3rTcSTNS.jsonl';
 
-// --- Script Logic ---
+// List of collections to migrate from the remote source
+const COLLECTIONS_TO_MIGRATE = ['character', 'recap', 'lore', 'term'];
+const BATCH_SIZE = 50; // Use a smaller batch size since storeChatTurns does more work (indexing)
+
+// --- REFACTORED: Migrate Chat using chatStore ---
+
+async function migrateChatFromJsonl(filePath: string): Promise<void> {
+	console.log(`\n--- Starting CHAT migration from local file: "${filePath}" ---`);
+
+	if (!fs.existsSync(filePath)) {
+		console.error(`❌ Error: File not found at path: ${filePath}`);
+		return;
+	}
+
+	try {
+		const fileStream = fs.createReadStream(filePath);
+		const rl = readline.createInterface({
+			input: fileStream,
+			crlfDelay: Infinity,
+		});
+
+		let chatTurnBatch: ChatTurn[] = [];
+		let totalLines = 0;
+
+		for await (const line of rl) {
+			if (line.trim() === '') continue;
+
+			// The JSONL file should contain full ChatTurn objects
+			const turn: ChatTurn = JSON.parse(line);
+			chatTurnBatch.push(turn);
+			totalLines++;
+
+			// When the batch is full, store it using your existing logic
+			if (chatTurnBatch.length >= BATCH_SIZE) {
+				console.log(`Storing batch of ${chatTurnBatch.length} chat turns via chatStore...`);
+				await chatStore.storeChatTurns(chatTurnBatch);
+				chatTurnBatch = []; // Reset for the next batch
+			}
+		}
+
+		// Store any remaining records in the final batch
+		if (chatTurnBatch.length > 0) {
+			console.log(`Storing final batch of ${chatTurnBatch.length} chat turns...`);
+			await chatStore.storeChatTurns(chatTurnBatch);
+		}
+
+		console.log(`✅ Successfully migrated ${totalLines} records to CHAT collection using chatStore.`);
+	} catch (error) {
+		console.error(`❌ Failed to migrate CHAT collection from JSONL:`, error);
+	}
+}
 
 async function migrateCollection(
 	sourceClient: ChromaClient,
 	destClient: ChromaClient,
-	collectionName: string
+	collectionName: string,
+	embeddingFunction: CohereEmbeddingFunction | OpenAIEmbeddingFunction = embedFnOpenAi // Default to OpenAI
 ): Promise<void> {
-	console.log(`\n--- Starting migration for collection: "${collectionName}" ---`);
+	console.log(
+		`\n--- Starting migration for collection: "${collectionName}" (Using ${embeddingFunction.constructor.name}) ---`
+	);
 	try {
+		// Get source collection (it will use its original embedding function for retrieval)
 		const sourceCollection = await sourceClient.getCollection({
 			name: collectionName,
-			embeddingFunction: embedFnOpenAi,
 		});
+
+		// Create destination collection with the SPECIFIED embedding function
 		const destCollection = await destClient.getOrCreateCollection({
 			name: collectionName,
-			embeddingFunction: embedFnOpenAi,
+			embeddingFunction: embeddingFunction, // Use the passed function here
 			metadata: { name: collectionName, created: new Date().toISOString() },
 		});
 
-		// First, get the total number of records to process
 		const totalRecords = await sourceCollection.count();
 		if (totalRecords === 0) {
 			console.log(`Collection "${collectionName}" is empty. Nothing to migrate.`);
 			return;
 		}
-
 		console.log(`Found ${totalRecords} total records in source collection "${collectionName}".`);
 
-		// Loop through the source collection using pagination
 		for (let offset = 0; offset < totalRecords; offset += BATCH_SIZE) {
 			console.log(`Fetching batch from source at offset ${offset}...`);
-
-			// 1. Fetch one batch from the source using limit and offset
 			const batch = await sourceCollection.get({
 				limit: BATCH_SIZE,
 				offset: offset,
-				include: ['metadatas', 'documents'],
+				include: ['metadatas', 'documents'], // We get documents, new embeddings will be generated on upsert
 			});
 
-			if (!batch.ids || batch.ids.length === 0) {
-				// This condition prevents an infinite loop if something goes wrong
-				break;
-			}
+			if (!batch.ids || batch.ids.length === 0) break;
 
 			console.log(
 				`Upserting batch ${Math.floor(offset / BATCH_SIZE) + 1} with ${batch.ids.length} records...`
 			);
-
-			// 2. Upsert that same batch to the destination
+			// When upserting to destCollection, it will automatically use the new embedding function (e.g., Cohere)
 			await destCollection.upsert({
 				ids: batch.ids,
 				metadatas: batch.metadatas as Metadata[],
 				documents: batch.documents as string[],
 			});
 		}
-
 		console.log(`✅ Successfully migrated collection: "${collectionName}"`);
 	} catch (error) {
 		console.error(`❌ Failed to migrate collection "${collectionName}":`, error);
@@ -350,12 +408,15 @@ async function main() {
 	const destClient = new ChromaClient(DESTINATION_CONFIG);
 
 	console.log('Starting full database migration...');
-	await migrateMissingTurns(sourceClient, destClient);
+	// await migrateMissingTurns(sourceClient, destClient);
 	// await migrateSessionAndProfileData(sourceClient, destClient);
-	// for (const collectionName of COLLECTIONS_TO_MIGRATE) {
-	// 	await migrateCollection(sourceClient, destClient, collectionName);
-	// 	await migrateUserAndProfileIds(destClient, collectionName);
-	// }
+	await migrateCollection(sourceClient, destClient, 'temp', embedFnCohere);
+	for (const collectionName of COLLECTIONS_TO_MIGRATE) {
+		await migrateCollection(sourceClient, destClient, collectionName);
+		// await migrateUserAndProfileIds(destClient, collectionName);
+	}
+	// await migrateChatFromJsonl(CHAT_JSONL_PATH);
+
 	console.log('\n🚀 Full migration process complete.');
 }
 

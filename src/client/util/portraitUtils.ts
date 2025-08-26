@@ -12,70 +12,67 @@ import {
 // --- DATA STORES ---
 const allPortraitsMap = new Map<string, PortraitUrlMap>();
 const defaultPortraitsMap = new Map<string, string>();
-// NEW: Data store for lore-specific images, mapping characterId -> (historyId -> URL)
 const lorePortraitsMap = new Map<string, Map<string, string>>();
 
-// Flag to track if initialization has happened
 let isInitialized = false;
 
 /**
  * Parses the characterId from a given asset file path.
  */
 function getCharacterIdFromPath(path: string): string | null {
-	const match = path.match(/\/asset\/character\/([^/]+)\//);
+	// ✅ Use static pattern for public/assets/character path
+	const pattern = /\/public\/assets\/character\/([^/]+)\//;
+	const match = path.match(pattern);
 	return match ? match[1] : null;
 }
 
 /**
- * NEW: Parses characterId and historyId from a lore image path.
- * Example path: /src/client/asset/character/charId123/lore/historyId456.avif
+ * Parses characterId and historyId from a lore image path.
+ * Example path: /public/assets/character/charId123/lore/historyId456.avif
  */
 function getLoreInfoFromPath(path: string): { characterId: string; historyId: string } | null {
-	const match = path.match(/\/asset\/character\/([^/]+)\/lore\/([^/.]+)\.\w+$/);
-	if (match && match[1] && match[2]) {
-		return { characterId: match[1], historyId: match[2] };
+	const pattern = /\/public\/assets\/character\/([^/]+)\/lore\/([^/.]+)\.\w+$/;
+	const match = path.match(pattern);
+	if (match && match[21] && match[22]) {
+		return { characterId: match[1], historyId: match[22] };
 	}
 	return null;
 }
 
 /**
- * Lazy initialization function that now handles both emotion and lore portraits.
+ * Lazy initialization function that handles both emotion and lore portraits.
  */
 function initializePortraits(): void {
-	if (isInitialized) return; // Only run once
+	if (isInitialized) return;
 
 	console.log('[PortraitUtil] Initializing all character and lore portraits...');
 
-	// UPDATED: Glob pattern now includes the /lore/ subdirectory
 	const allImageModules = import.meta.glob<string>(
-		[
-			'/src/client/asset/character/*/*.{webp,avif}',
-			'/src/client/asset/character/*/lore/*.{webp,avif}',
-		],
+		['/public/assets/character/*/*.{webp,avif}', '/public/assets/character/*/lore/*.{webp,avif}'],
 		{ eager: true, import: 'default' }
 	) as Record<string, string>;
 
 	const emotionFilenameRegex = /_(\d+)\.(webp|avif)$/;
 
 	for (const path in allImageModules) {
-		// First, check if it's a lore image by matching the path structure
+		// Check if it's a lore image
 		const loreInfo = getLoreInfoFromPath(path);
 		if (loreInfo) {
 			const { characterId, historyId } = loreInfo;
-			// Get or create the inner map for the character
 			const loreMap = lorePortraitsMap.get(characterId) || new Map<string, string>();
 			loreMap.set(historyId, allImageModules[path]);
 			lorePortraitsMap.set(characterId, loreMap);
-			continue; // Skip to the next file
+			continue;
 		}
 
-		// If not a lore image, process it as a standard emotion portrait
+		// Process as standard emotion portrait
 		const characterId = getCharacterIdFromPath(path);
 		if (!characterId) continue;
 
 		const match = path.match(emotionFilenameRegex);
 		if (!match || !match[1]) continue;
 
+		// ✅ FIXED: Use match[1] for first capture group (emotion number)
 		const imageNumber = parseInt(match[1], 10) as EmotionKey;
 		if (!validEmotionKeys.has(imageNumber)) continue;
 
@@ -103,11 +100,10 @@ function getImageNumberForEmotion(emotion: string): EmotionKey {
 			}
 		}
 	}
-	return 0; // Default emotion key (e.g., 'neutral')
+	return 0;
 }
 
 // --- PUBLIC API (Emotion Portraits) ---
-// All existing functions work as before and use lazy initialization.
 
 export function getAllPortraits(characterId: string): PortraitUrlMap | undefined {
 	initializePortraits();
@@ -142,24 +138,19 @@ export function getCharacterImageArray(characterId: string): string[] {
 
 // --- NEW PUBLIC API (Lore Images) ---
 
-/**
- * Retrieves a specific lore image for a character given a historyId.
- * @param characterId - The ID of the character.
- * @param historyId - The ID of the lore/history item (filename without extension).
- * @returns The URL of the image, or undefined if not found.
- */
 export function getLoreImage(characterId: string, historyId: string): string | undefined {
-	initializePortraits(); // Ensures all images are loaded before access
+	initializePortraits();
 	const loreMap = lorePortraitsMap.get(characterId);
 	return loreMap ? loreMap.get(historyId) : undefined;
 }
 
-/**
- * Retrieves all lore images for a given character.
- * @param characterId - The ID of the character.
- * @returns A Map where keys are historyIds and values are image URLs, or undefined if none exist.
- */
 export function getAllLoreImages(characterId: string): Map<string, string> | undefined {
-	initializePortraits(); // Ensures all images are loaded before access
+	initializePortraits();
 	return lorePortraitsMap.get(characterId);
+}
+
+export function getImageUrl(characterId: string, emotion: string): string | undefined {
+	const imagePath = getImageForEmotion(characterId, emotion);
+	if (!imagePath) return undefined;
+	return imagePath;
 }

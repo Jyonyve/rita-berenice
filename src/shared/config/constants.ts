@@ -1,6 +1,8 @@
 export const ALPHANUMERIC_ALPHABET =
 	'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' as const;
-export const BASE_IMAGE_DIR = '/src/client/asset/character';
+export const RUNTIME_IMAGE_DIR = '/assets/character';
+export const BASE_IMAGE_DIR = `public${RUNTIME_IMAGE_DIR}`;
+export const SOURCE_IMAGE_DIR = `/${BASE_IMAGE_DIR}`;
 export const ABORT_TIMEOUT = 600 as const; ///300초
 export const DEFAULT_RECAP_INTERVAL: number = 3 as const;
 export const DEFAULT_RELATIONSHIP_RECAP_INTERVAL = 5 as const;
@@ -15,6 +17,7 @@ export const RESPONSE_CHARACTER_LIMIT = 1000 as const;
 export const NA = 'N/A' as const;
 export const APPNAME = 'Rita-Berenice' as const;
 export const APPNAME_LOWERCASE = APPNAME.toLowerCase();
+export const LIMIT_5MB = 5 * 1024 * 1024;
 
 // Default limit for querying chat logs
 export const DEFAULT_QUERY_LIMIT: number = 10 as const;

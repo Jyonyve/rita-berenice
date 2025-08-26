@@ -5,3 +5,5 @@ export * from './SessionPreviewList.jsx';
 export * from './ProfilePreviewList.jsx';
 export * from './ProfileForm.jsx';
 export * from './HistoryPreviewList.jsx';
+export * from './NewCharacterPageLoader.jsx';
+export * from './NewCharacterPage.jsx';

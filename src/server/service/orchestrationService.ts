@@ -45,7 +45,7 @@ export const receiveBotResponse = async (
 	// --- 1. START TIMER ---
 	console.time(timerLabel(tempChatTurnCdo.sequence));
 
-	const { sequence, sessionId, userInput } = tempChatTurnCdo;
+	const { sequence, sessionId, inputJsonString } = tempChatTurnCdo;
 
 	const controller = new AbortController();
 	const timeoutId = setTimeout(() => {
@@ -64,7 +64,7 @@ export const receiveBotResponse = async (
 		let tempTurn = await _getOrCreateTempTurn(sessionId, sequence, tempChatTurnCdo.userId);
 		// --- 2. LOG CHECKPOINT 1 ---
 		console.timeLog(timerLabel(tempChatTurnCdo.sequence), 'Temp turn ready.');
-		const userConverSation = parseEntriesToConversation(JSON.parse(userInput));
+		const userConverSation = parseEntriesToConversation(JSON.parse(inputJsonString));
 
 		// 2. 새로운 응답 생성 및 추가 (책임 위임)
 		tempTurn = await _generateAndAppendResponse(
