@@ -875,7 +875,7 @@ export const curatedEmotionKeywords = [
 // Default portrait number
 export type EmotionKey = keyof typeof numberToEmotionWordsMap;
 export type EmotionValue = (typeof numberToEmotionWordsMap)[EmotionKey][number];
-export const DEFAULT_EMOTION: EmotionValue = 'neutral' as const;
+export const DEFAULT_EMOTION: EmotionValue[number] = 'neutral' as const;
 
 // The PortraitMap stores loaded image URLs, keyed by their valid EmotionKey (image number).
 // It's Partial because not every EmotionKey defined in numberToEmotionWordsMap

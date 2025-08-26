@@ -37,6 +37,9 @@ import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
 import { EMOTION_CATEGORY_NAMES } from '#shared/util/emotionUtils.js';
 import { BASE_IMAGE_DIR, LIMIT_5MB, REQUEST_CHARACTER_LIMIT } from '#shared/config/constants.js';
 import { SolidMetallicButton } from '../../layout/SolidMetallicButton.jsx';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { PortraitWithChip } from '../../layout/PortraitWithChip.jsx';
+import { A11y, EffectFade, Mousewheel, Pagination } from 'swiper/modules';
 
 // Gender options
 
@@ -46,8 +49,7 @@ const GENDER_OPTIONS = [
 	{ key: LANG_KEYS.OTHER.toLowerCase(), label: getLangText(LANG_KEYS.OTHER) },
 ];
 
-// Convert to options array for the select box
-const EMOTION_OPTIONS = Object.entries(EMOTION_CATEGORY_NAMES).map(([key, value]) => ({
+export const EMOTION_OPTIONS = Object.entries(EMOTION_CATEGORY_NAMES).map(([key, value]) => ({
 	key: value,
 	label: getLangText(value.toUpperCase() as LangKey),
 	emotionKey: parseInt(key),
@@ -80,7 +82,7 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 			gender: '',
 			name: '',
 			showName: '',
-			userId: userId,
+			userId,
 			firstMessage: '',
 		},
 		mode: 'onBlur',
@@ -186,7 +188,29 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 							{/* Image Preview */}
 							<Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 								{uploadedImages.length > 0 ? (
-									<GlassPortraitSlider imageUrls={uploadedImages.map((img) => img.preview)} />
+									// ✅ Swiper logic is now directly in this component
+									<Box sx={{ width: '100%', height: '100%', overflow: 'visible' }}>
+										<Swiper
+											modules={[Pagination, A11y, EffectFade, Mousewheel]}
+											slidesPerView={1}
+											loop={true}
+											effect="fade"
+											fadeEffect={{ crossFade: true }}
+											style={{ overflow: 'visible' }}
+											pagination={{ clickable: true }}
+											mousewheel={{ forceToAxis: true, sensitivity: 1, releaseOnEdges: true, invert: true }}
+										>
+											{uploadedImages.map((image) => {
+												const emotionLabel =
+													EMOTION_OPTIONS.find((e) => e.key === image.emotion)?.label || image.emotion;
+												return (
+													<SwiperSlide key={image.emotion}>
+														<PortraitWithChip imageUrl={image.preview} label={emotionLabel} />
+													</SwiperSlide>
+												);
+											})}
+										</Swiper>
+									</Box>
 								) : (
 									<Box
 										width="100%"
