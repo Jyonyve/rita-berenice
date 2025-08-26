@@ -17,10 +17,9 @@ const lorePortraitsMap = new Map<string, Map<string, string>>();
 let isInitialized = false;
 
 /**
- * Parses the characterId from a given asset file path.
+ * Parses the characterId from a path like /public/assets/character/charId123/...
  */
 function getCharacterIdFromPath(path: string): string | null {
-	// ✅ Use static pattern for public/assets/character path
 	const pattern = /\/public\/assets\/character\/([^/]+)\//;
 	const match = path.match(pattern);
 	return match ? match[1] : null;
@@ -28,13 +27,13 @@ function getCharacterIdFromPath(path: string): string | null {
 
 /**
  * Parses characterId and historyId from a lore image path.
- * Example path: /public/assets/character/charId123/lore/historyId456.avif
  */
 function getLoreInfoFromPath(path: string): { characterId: string; historyId: string } | null {
 	const pattern = /\/public\/assets\/character\/([^/]+)\/lore\/([^/.]+)\.\w+$/;
 	const match = path.match(pattern);
-	if (match && match[21] && match[22]) {
-		return { characterId: match[1], historyId: match[22] };
+	if (match && match[1] && match[2]) {
+		// Corrected match indices
+		return { characterId: match[1], historyId: match[2] };
 	}
 	return null;
 }
@@ -55,12 +54,16 @@ function initializePortraits(): void {
 	const emotionFilenameRegex = /_(\d+)\.(webp|avif)$/;
 
 	for (const path in allImageModules) {
+		// --- THIS IS THE FIX ---
+		// The glob gives you a path with `/public`, but the URL needs it removed.
+		const finalImageUrl = path.replace('/public', '');
+
 		// Check if it's a lore image
 		const loreInfo = getLoreInfoFromPath(path);
 		if (loreInfo) {
 			const { characterId, historyId } = loreInfo;
 			const loreMap = lorePortraitsMap.get(characterId) || new Map<string, string>();
-			loreMap.set(historyId, allImageModules[path]);
+			loreMap.set(historyId, finalImageUrl); // Use the corrected URL
 			lorePortraitsMap.set(characterId, loreMap);
 			continue;
 		}
@@ -72,16 +75,15 @@ function initializePortraits(): void {
 		const match = path.match(emotionFilenameRegex);
 		if (!match || !match[1]) continue;
 
-		// ✅ FIXED: Use match[1] for first capture group (emotion number)
 		const imageNumber = parseInt(match[1], 10) as EmotionKey;
 		if (!validEmotionKeys.has(imageNumber)) continue;
 
 		const portraitMap = allPortraitsMap.get(characterId) || {};
-		portraitMap[imageNumber] = allImageModules[path];
+		portraitMap[imageNumber] = finalImageUrl; // Use the corrected URL
 		allPortraitsMap.set(characterId, portraitMap);
 
 		if (imageNumber === getImageNumberForEmotion(DEFAULT_EMOTION)) {
-			defaultPortraitsMap.set(characterId, allImageModules[path]);
+			defaultPortraitsMap.set(characterId, finalImageUrl); // Use the corrected URL
 		}
 	}
 
