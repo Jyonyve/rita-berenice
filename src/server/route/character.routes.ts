@@ -111,7 +111,17 @@ router.get(
 router.post(
 	genRoutePattern('storeCharacter'),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const requiredFields = ['name', 'variant', 'description', 'instruction'];
+		const requiredFields = [
+			'title',
+			'contact',
+			'description',
+			'instruction',
+			'gender',
+			'name',
+			'showName',
+			'userId',
+			'firstMessage',
+		];
 		validateRequestData(req.body, 'body', requiredFields);
 
 		const characterInfo = req.body as CharacterInfo;

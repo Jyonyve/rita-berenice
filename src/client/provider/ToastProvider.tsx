@@ -33,7 +33,7 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
 	}, [toasts, currentToast]);
 
 	const addToast = useCallback(
-		(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info', duration?: number) => {
+		(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info', duration = 3000) => {
 			const id = nanoid();
 			setToasts((prevToasts) => [...prevToasts, { id, message, type, duration }]);
 		},
@@ -53,7 +53,7 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
 			{currentToast && (
 				<Snackbar
 					open={open}
-					autoHideDuration={currentToast.duration ?? 3000}
+					autoHideDuration={currentToast.duration}
 					onClose={handleClose}
 					slotProps={{ transition: { onExited: handleExited } }}
 					anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}

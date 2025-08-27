@@ -17,7 +17,7 @@ Object.entries(numberToEmotionWordsMap).forEach(([categoryNumber, emotions]) => 
 });
 
 // Category names mapping for human-readable output
-export const EMOTION_CATEGORY_NAMES: Record<EmotionKey, string> = {
+export const EMOTION_CATEGORY_NAMES: Record<EmotionKey, EmotionValue> = {
 	0: 'neutral',
 	1: 'happy',
 	2: 'angry',

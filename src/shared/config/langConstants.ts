@@ -87,20 +87,20 @@ export const LANG_KEYS = {
 	DESCRIPTION_PLACEHOLDER: 'DESCRIPTION_PLACEHOLDER',
 	INSTRUCTION_PLACEHOLDER: 'INSTRUCTION_PLACEHOLDER',
 	FIRST_MESSAGE_PLACEHOLDER: 'FIRST_MESSAGE_PLACEHOLDER',
-	AI_INSTRUCTION_HELPER: 'AI_INSTRUCTION_HELPER',
+	DESCRIPTION_HELPER: 'DESCRIPTION_HELPER',
+	INSTRUCTION_HELPER: 'INSTRUCTION_HELPER',
 	FIRST_MESSAGE_HELPER: 'FIRST_MESSAGE_HELPER',
 } as const;
 export type LangKey = keyof typeof LANG_KEYS;
 
 export type LangRecord = Record<LangKey[number], LanguageMap>;
-
 export const langConstants: LangRecord = {
-	SESSIONS_WITH_CHARACTER: { kor: '지난 이야기', eng: 'Sessions with this character' },
-	CREATE_NEW_PROFILE: { kor: '새 프로필 만들기', eng: 'Create New Profile' },
+	SESSIONS_WITH_CHARACTER: { kor: '지난 이야기', eng: 'Past Sessions' },
+	CREATE_NEW_PROFILE: { kor: '새 프로필 만들기', eng: 'Create a New Profile' },
 	CREATE_PROFILE: { kor: '프로필 생성', eng: 'Create Profile' },
-	CHOOSE_EXISTING_PROFILE: { kor: '기존 프로필', eng: 'Choose from Existing Profile' },
-	START_NEW_SESSION: { kor: '새로운 대화 시작하기', eng: 'Start New Session' },
-	GENDER: { kor: '성별', eng: 'GENDER' },
+	CHOOSE_EXISTING_PROFILE: { kor: '기존 프로필', eng: 'Existing Profiles' },
+	START_NEW_SESSION: { kor: '새로운 대화 시작하기', eng: 'Start a New Conversation' },
+	GENDER: { kor: '성별', eng: 'Gender' },
 	MALE: { kor: '남성', eng: 'Male' },
 	FEMALE: { kor: '여성', eng: 'Female' },
 	OTHER: { kor: '기타', eng: 'Other' },
@@ -109,90 +109,100 @@ export const langConstants: LangRecord = {
 	LOGOUT: { kor: '로그아웃', eng: 'Logout' },
 	EDIT: { kor: '수정', eng: 'Edit' },
 	SEND: { kor: '보내기', eng: 'Send' },
-	TITLE: { kor: '한줄 소개', eng: 'Title' },
+	TITLE: { kor: '한줄 소개', eng: 'Tagline' },
 	STORY: { kor: '스토리', eng: 'Story' },
 	CANCEL: { kor: '취소', eng: 'Cancel' },
 	CREATING: { kor: '생성중...', eng: 'Creating...' },
 	CREATE: { kor: '생성', eng: 'Create' },
 	LOADING_CHARACTERS: { kor: '캐릭터를 불러오는 중입니다...', eng: 'Loading characters...' },
-	LOADING_SESSIONS: { kor: '지난 이야기를 불러오는 중입니다...', eng: 'Loading sessions...' },
-	LOADING_STORIES: { kor: '캐릭터 스토리를 불러오는 중입니다...', eng: 'Loading stories...' },
+	LOADING_SESSIONS: { kor: '지난 이야기를 불러오는 중입니다...', eng: 'Loading past sessions...' },
+	LOADING_STORIES: {
+		kor: '캐릭터 스토리를 불러오는 중입니다...',
+		eng: 'Loading character stories...',
+	},
 	LOADING_STORY: { kor: '스토리를 불러오는 중입니다...', eng: 'Loading story...' },
-	CREATING_SESSION: { kor: '새 이야기를 시작하는 중입니다...', eng: 'Creating new session...' },
+	CREATING_SESSION: { kor: '새 이야기를 시작하는 중입니다...', eng: 'Starting a new session...' },
 	FAILED_LOAD_CHAT: {
 		kor: '채팅을 불러오는 데 실패했습니다. 다시 시도해 주세요.',
-		eng: 'Failed to load essential chat data. Please try again.',
+		eng: 'Failed to load chat. Please try again.',
 	},
 	LOADING_CHAT: { kor: '채팅을 불러오는 중입니다...', eng: 'Loading chat...' },
 	GEN_RESPONSE: { kor: '답변을 받아오는 중입니다...', eng: 'Generating response...' },
 	NEW_CHARACTER: { kor: '새 캐릭터', eng: 'New Character' },
-	NO_IMAGES: { kor: '업로드된 이미지가 없습니다.', eng: 'No Images' },
-	PORTRAIT: { kor: '초상화', eng: 'Portrait' },
-	EMOTION: { kor: '감정', eng: 'emotion' },
+	NO_IMAGES: { kor: '업로드된 이미지가 없습니다.', eng: 'No images uploaded.' },
+	PORTRAIT: { kor: '초상화', eng: 'Portraits' },
+	EMOTION: { kor: '감정', eng: 'Emotion' },
 	BASIC_INFO: { kor: '기본 정보', eng: 'Basic Information' },
-	NAME: { kor: '이름(영어)', eng: 'Name' },
-	SHOWNAME: { kor: '이름', eng: 'Showing Name' },
-	DESCRIPTION: { kor: '캐릭터 소개', eng: 'Description' },
+	NAME: { kor: '이름(영어)', eng: 'Name (English)' },
+	SHOWNAME: { kor: '이름', eng: 'Display Name' },
+	DESCRIPTION: { kor: '캐릭터 소개', eng: 'Character Introduction' },
 	CONTACT: { kor: '연락처', eng: 'Contact' },
-	INSTRUCTION: { kor: '세계관 및 설정', eng: 'Instruction & World Info' },
+	INSTRUCTION: { kor: '세계관 및 설정', eng: 'World & AI Instructions' },
 	UPLOAD_IMAGE: { kor: '이미지 업로드', eng: 'Upload Image' },
-	CHARACTER_DETAIL: { kor: '상세 정보', eng: 'Character Details' },
+	CHARACTER_DETAIL: { kor: '상세 정보', eng: 'Details' },
 	TITLE_GUIDANCE: {
 		kor: '한줄 소개는 다른 사람들에게 보이는 정보이며, AI 답변에 사용되지 않습니다.',
-		eng: 'Fill in the details below to create a new character for your collection.',
+		eng: 'This tagline is shown to other users and does not affect AI responses.',
 	},
 	FIRST_MESSAGE: { kor: '첫 메시지', eng: 'First Message' },
-	SHOW_NAME_REQUIRED: { kor: '표시될 이름은 필수 항목입니다.', eng: 'Show name is required.' },
+	SHOW_NAME_REQUIRED: { kor: '표시될 이름은 필수 항목입니다.', eng: 'Display Name is required.' },
 	NAME_REQUIRED: {
 		kor: '캐릭터 ID(영어)는 필수 항목입니다.',
-		eng: 'Character Name (English) is required.',
+		eng: 'Character Name (English, for ID) is required.',
 	},
 	GENDER_REQUIRED: { kor: '성별은 필수 항목입니다.', eng: 'Gender is required.' },
-	TITLE_REQUIRED: { kor: '한줄 소개는 필수 항목입니다.', eng: 'Title is required.' },
-	DESCRIPTION_REQUIRED: { kor: '캐릭터 소개는 필수 항목입니다.', eng: 'Description is required.' },
+	TITLE_REQUIRED: { kor: '한줄 소개는 필수 항목입니다.', eng: 'Tagline is required.' },
+	DESCRIPTION_REQUIRED: {
+		kor: '캐릭터 소개는 필수 항목입니다.',
+		eng: 'Character Introduction is required.',
+	},
 	INSTRUCTION_REQUIRED: {
 		kor: '세계관 및 설정은 필수 항목입니다.',
-		eng: 'Instruction is required.',
+		eng: 'World & AI Instructions are required.',
 	},
-	FIRST_MESSAGE_REQUIRED: { kor: '첫 메시지는 필수 항목입니다.', eng: 'First message is required.' },
+	FIRST_MESSAGE_REQUIRED: { kor: '첫 메시지는 필수 항목입니다.', eng: 'First Message is required.' },
 	SHOW_NAME_PLACEHOLDER: {
 		kor: '캐릭터가 표시될 이름을 입력해 주세요.',
 		eng: 'Enter the name to be displayed for the character.',
 	},
 	NAME_PLACEHOLDER: {
 		kor: '캐릭터의 영어 이름을 한 단어로 작성해 주세요. ID에 포함됩니다.',
-		eng: "Enter the character's English name in one word. It will be part of the ID.",
+		eng: "Enter a single English name for the character's ID.",
 	},
 	CONTACT_PLACEHOLDER: {
 		kor: '캐릭터 작성자의 연락처 정보를 기재해 주세요.',
-		eng: 'Please provide the contact information of the character creator.',
+		eng: "Enter the contact information of the character's creator.",
 	},
 	TITLE_PLACEHOLDER: {
 		kor: '다른 유저들에게 캐릭터를 소개해 주세요.',
 		eng: 'Introduce your character to other users.',
 	},
 	DESCRIPTION_PLACEHOLDER: {
-		kor: '캐릭터의 외모, 성격, 배경 등을 설명해주세요...',
-		eng: "Describe the character's appearance, personality, background...",
+		kor: '캐릭터의 이름, 성별, 성격, 외모 등을 자세히 설명해주세요.',
+		eng: "Describe the character's name, gender, personality, appearance, etc. in detail.",
 	},
 	INSTRUCTION_PLACEHOLDER: {
-		kor: '[캐릭터 이름]이 되어 답변합니다. [캐릭터 이름]은 ~한 말투를 사용하고, ~한 성격을 가졌습니다...',
-		eng: 'You are [character name]. You should speak like... Your personality is...',
+		kor: '캐릭터의 세계관에 대해 설명해주세요.',
+		eng: 'Explain the world and setting this character belongs to.',
 	},
 	FIRST_MESSAGE_PLACEHOLDER: {
-		kor: '안녕하세요! 저는 [캐릭터 이름]입니다. 만나서 반가워요...',
-		eng: "Hello! I'm [character name]. It's nice to meet you...",
+		kor: '새 대화를 시작할 때 캐릭터가 보내는 첫 메시지입니다.',
+		eng: "The character's first message when starting a new conversation.",
 	},
-	AI_INSTRUCTION_HELPER: {
-		kor: 'AI가 캐릭터를 연기하는 방법에 대한 지침입니다.',
-		eng: 'Instructions for how the AI should roleplay this character.',
+	DESCRIPTION_HELPER: {
+		kor: 'AI에게 제공되는 캐릭터의 정보입니다.',
+		eng: 'This is the character information provided to the AI.',
+	},
+	INSTRUCTION_HELPER: {
+		kor: 'AI에게 캐릭터의 세계관에 대해 설명합니다.',
+		eng: "This explains the character's world setting to the AI.",
 	},
 	FIRST_MESSAGE_HELPER: {
-		kor: '새 대화를 시작할 때 캐릭터가 보내는 첫 메시지입니다.',
-		eng: "The character's opening message when starting a new conversation.",
+		kor: '채팅창에 표시되는 캐릭터의 첫 대화입니다.',
+		eng: "This is the character's first line of dialogue shown in the chat window.",
 	},
 
-	// --- [NEW] Emotion Translations ---
+	// --- Emotion Translations ---
 	NEUTRAL: { kor: '중립', eng: 'Neutral' },
 	HAPPY: { kor: '행복', eng: 'Happy' },
 	ANGRY: { kor: '화남', eng: 'Angry' },
@@ -213,15 +223,15 @@ export const langConstants: LangRecord = {
 export const alertToastConstants: LangRecord = {
 	CREATE_NEW_PROFILE: {
 		kor: '대화에 참여할 프로필을 생성해 주세요.',
-		eng: 'Please create a profile before starting a session.',
+		eng: 'Please create a profile to join the conversation.',
 	},
 	STATIC_SENDING_DISABLE: {
 		kor: '샘플 사이트에서는 메시지를 보내실 수 없습니다.',
-		eng: 'Sending is disabled in static mode',
+		eng: 'Sending messages is disabled on the sample site.',
 	},
 	STATIC_SESSION_DISABLE: {
 		kor: '샘플 사이트에서는 새 대화를 시작하실 수 없습니다.',
-		eng: 'New session is disabled in static mode',
+		eng: 'Starting a new conversation is disabled on the sample site.',
 	},
 	CHARACTER_CREATED_SUCCESS: {
 		kor: '캐릭터를 생성하였습니다.',
@@ -236,8 +246,8 @@ export const alertToastConstants: LangRecord = {
 		eng: 'File is too large. Please upload an image smaller than 5MB.',
 	},
 	IMAGE_UPLOADED_FOR: {
-		kor: '{emotion} 감정 이미지가 업로드되었습니다!',
-		eng: 'Image uploaded for {emotion} emotion!',
+		kor: '감정 이미지가 업로드되었습니다!',
+		eng: 'Emotion image has been uploaded!',
 	},
 	FAILED_TO_CREATE_CHARACTER: {
 		kor: '캐릭터 생성에 실패했습니다.',
@@ -245,6 +255,6 @@ export const alertToastConstants: LangRecord = {
 	},
 	ERROR_CREATING_CHARACTER: {
 		kor: '캐릭터 생성 중 오류가 발생했습니다. 다시 시도해주세요.',
-		eng: 'Error creating character. Please try again.',
+		eng: 'An error occurred while creating the character. Please try again.',
 	},
 };
