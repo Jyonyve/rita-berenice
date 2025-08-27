@@ -1,6 +1,6 @@
 // src/client/component/page/CharacterListPage.tsx
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Typography, Box, CircularProgress, Grid, Theme } from '@mui/material';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { useNavigate } from 'react-router';

@@ -16,74 +16,66 @@ const lorePortraitsMap = new Map<string, Map<string, string>>();
 
 let isInitialized = false;
 
-/**
- * Parses the characterId from a path like /public/assets/character/charId123/...
- */
+// Parses characterId from a URL like /assets/character/charId123/...
 function getCharacterIdFromPath(path: string): string | null {
-	const pattern = /\/public\/assets\/character\/([^/]+)\//;
+	const pattern = /^\/assets\/character\/([^/]+)\//;
 	const match = path.match(pattern);
 	return match ? match[1] : null;
 }
 
-/**
- * Parses characterId and historyId from a lore image path.
- */
+// Parses characterId and historyId from a lore image URL.
 function getLoreInfoFromPath(path: string): { characterId: string; historyId: string } | null {
-	const pattern = /\/public\/assets\/character\/([^/]+)\/lore\/([^/.]+)\.\w+$/;
+	const pattern = /^\/assets\/character\/([^/]+)\/lore\/([^/.]+)\.\w+$/;
 	const match = path.match(pattern);
 	if (match && match[1] && match[2]) {
-		// Corrected match indices
 		return { characterId: match[1], historyId: match[2] };
 	}
 	return null;
 }
 
-/**
- * Lazy initialization function that handles both emotion and lore portraits.
- */
 function initializePortraits(): void {
 	if (isInitialized) return;
-
 	console.log('[PortraitUtil] Initializing all character and lore portraits...');
 
-	const allImageModules = import.meta.glob<string>(
-		['/public/assets/character/*/*.{webp,avif}', '/public/assets/character/*/lore/*.{webp,avif}'],
-		{ eager: true, import: 'default' }
-	) as Record<string, string>;
+	// This glob pattern is more explicit and reliable for finding files in subdirectories.
+	const allImageModules = import.meta.glob<string>('/public/assets/character/**/*.{webp,avif}', {
+		eager: true,
+		import: 'default',
+	}) as Record<string, string>;
 
 	const emotionFilenameRegex = /_(\d+)\.(webp|avif)$/;
 
 	for (const path in allImageModules) {
-		// --- THIS IS THE FIX ---
-		// The glob gives you a path with `/public`, but the URL needs it removed.
+		// Create the correct web-accessible URL by removing the '/public' prefix.
 		const finalImageUrl = path.replace('/public', '');
 
-		// Check if it's a lore image
-		const loreInfo = getLoreInfoFromPath(path);
+		// ✅ RESTORED: First, check if the path is for a lore image.
+		const loreInfo = getLoreInfoFromPath(finalImageUrl);
 		if (loreInfo) {
 			const { characterId, historyId } = loreInfo;
 			const loreMap = lorePortraitsMap.get(characterId) || new Map<string, string>();
-			loreMap.set(historyId, finalImageUrl); // Use the corrected URL
+			loreMap.set(historyId, finalImageUrl);
 			lorePortraitsMap.set(characterId, loreMap);
+			// continue to the next file, as this is not an emotion portrait.
 			continue;
 		}
 
-		// Process as standard emotion portrait
-		const characterId = getCharacterIdFromPath(path);
+		// If it's not a lore image, process it as a standard emotion portrait.
+		const characterId = getCharacterIdFromPath(finalImageUrl);
 		if (!characterId) continue;
 
-		const match = path.match(emotionFilenameRegex);
+		const match = finalImageUrl.match(emotionFilenameRegex);
 		if (!match || !match[1]) continue;
 
 		const imageNumber = parseInt(match[1], 10) as EmotionKey;
 		if (!validEmotionKeys.has(imageNumber)) continue;
 
 		const portraitMap = allPortraitsMap.get(characterId) || {};
-		portraitMap[imageNumber] = finalImageUrl; // Use the corrected URL
+		portraitMap[imageNumber] = finalImageUrl;
 		allPortraitsMap.set(characterId, portraitMap);
 
 		if (imageNumber === getImageNumberForEmotion(DEFAULT_EMOTION)) {
-			defaultPortraitsMap.set(characterId, finalImageUrl); // Use the corrected URL
+			defaultPortraitsMap.set(characterId, finalImageUrl);
 		}
 	}
 
@@ -105,7 +97,7 @@ function getImageNumberForEmotion(emotion: string): EmotionKey {
 	return 0;
 }
 
-// --- PUBLIC API (Emotion Portraits) ---
+// --- (All your PUBLIC API functions remain the same) ---
 
 export function getAllPortraits(characterId: string): PortraitUrlMap | undefined {
 	initializePortraits();
@@ -137,8 +129,6 @@ export function getCharacterImageArray(characterId: string): string[] {
 	if (!portraits) return [];
 	return Object.values(portraits).filter(Boolean);
 }
-
-// --- NEW PUBLIC API (Lore Images) ---
 
 export function getLoreImage(characterId: string, historyId: string): string | undefined {
 	initializePortraits();

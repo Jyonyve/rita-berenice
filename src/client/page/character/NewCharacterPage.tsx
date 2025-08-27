@@ -162,7 +162,7 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 					const formData = new FormData();
 					formData.append('image', image.file);
 					formData.append('characterId', characterId);
-					formData.append('emotion', image.emotion);
+					formData.append('emotionKey', image.emotionKey.toString());
 					return uploadCharacterImage(formData);
 				})
 			);

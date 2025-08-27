@@ -143,9 +143,9 @@ router.post(
 	genRoutePattern('uploadCharacterImage'),
 	upload.single('image'),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		validateRequestData(req.body, 'body', ['characterId', 'emotion']);
+		validateRequestData(req.body, 'body', ['characterId', 'emotionKey']);
 
-		const { characterId, emotion } = req.body;
+		const { characterId, emotionKey } = req.body;
 		const file = req.file;
 
 		if (!file) {
@@ -154,7 +154,9 @@ router.post(
 		}
 
 		const routePath = genRoutePattern('uploadCharacterImage');
-		console.log(`API HIT: POST ${routePath} for character: ${characterId}, emotion: ${emotion}`);
+		console.log(
+			`API HIT: POST ${routePath} for character: ${characterId}, emotionKey: ${emotionKey}`
+		);
 
 		// ✅ Use constant for directory path
 		const uploadDir = `${BASE_IMAGE_DIR}/${characterId}`;
@@ -166,7 +168,7 @@ router.post(
 			console.log(`Created directory: ${fullUploadPath}`);
 		}
 
-		const fileName = `${characterId}_${emotion}.avif`; // Changed to match AVIF format
+		const fileName = `${characterId}_${emotionKey}.avif`; // Changed to match AVIF format
 		const filePath = path.join(fullUploadPath, fileName);
 
 		try {
