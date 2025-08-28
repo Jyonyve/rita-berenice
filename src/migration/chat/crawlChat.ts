@@ -34,7 +34,7 @@ const CHARACTERS = [
 				uuid: '41cebfbc-3808-43a9-bce4-cdb29eab8cfa',
 				name: 'yonyve',
 				showName: '요니브',
-				emotion: 'default',
+				emotion: 'neutral',
 			} as MigChatMessage,
 			{
 				role: 'assistant',
@@ -65,23 +65,60 @@ const CHARACTERS = [
 				uuid: '6a63a628-497a-40e8-bfb7-8476236d29ce',
 				name: 'yonyve',
 				showName: '요니브',
-				emotion: 'default',
+				emotion: 'neutral',
 			},
 			{
 				role: 'assistant',
 				messageType: 'response',
-				showName: 'tarion_spinoff',
 				content:
 					'*황제가 하사한 타리온의 성은 저녁 노을빛에 붉게 물들어 있었고, 성벽 위로는 바르가스의 깃발이 승전국의 위엄을 과시하듯 거세게 휘날리고 있었다.*\n\n*무거운 성문이 열리며 요니브가 다른 기사들에 의해 타리온 앞에 끌려왔다. 타리온은 느린 걸음으로 계단을 내려오며 요니브를 향해 다가왔다. 그의 발걸음 소리가 텅 빈 홀에 메아리쳤고, 그가 눈짓으로 기사들을 물리자 그들은 조용히 물러났다.*\n\n*타리온은 강제로 무릎 꿇린 요니브를 비꼬듯이 훑어보았다. 그의 차가운 시선에는 전쟁의 상흔과 복수심이 깃들어 있었고, 성 안의 공기는 팽팽한 긴장감으로 가득 차 있었다.*\n\n귀한 집 자녀가 이렇게 있는 꼴을 보게 되다니, 네 아버지를 원망하거라.\n\n*차가운 음성에 담긴 경멸이 성 안에 울려 퍼졌다.*',
 				createdAt: '2025-03-14T06:20:08.300Z',
 				updatedAt: '2025-03-14T06:20:08.300Z',
 				model: 'Claude 3.5 Sonnet v2',
 				emotion: 'neutral',
+				name: 'tarion',
+				showName: '타리온',
 				uuid: '6a63a628-497a-40e8-bfb7-8476236d29ce',
 			},
 		] as MigChatMessage[],
 	},
-	// Add more characters as needed
+	{
+		name: 'hanseo_adult',
+		showName: '한서',
+		url: 'https://rofan.ai/chat/41e298e6-888d-4f9d-83b9-4b2d392808bd',
+		firstTurn: [
+			{
+				role: 'user',
+				messageType: 'request',
+				content: '',
+				createdAt: '2025-08-01T23:21:07.300Z',
+				updatedAt: '2025-08-01T23:21:07.300Z',
+				uuid: 'e9cddda6-9f09-4ecf-b0ef-90493d5d26dd',
+				name: 'lirium',
+				showName: '리리엄',
+				emotion: 'neutral',
+			} as MigChatMessage,
+			{
+				role: 'assistant',
+				messageType: 'response',
+				content: `*아, 젠장. 기어코 리리엄과 약혼을 하게 되었다. 대의명분이 있고, 이 나라의 지도자가 원했으니, 거부하기가 마땅치 않았다. 나이 지긋하신 분이 눈물까지 보이는 게 껄끄럽기 그지없다. 한데 그것도 모자라 국왕은 리리엄과 한서가 이제부터 같은 집에서 생활하라고 명하기까지 했다. 대놓고 리리엄더러 미인계로 한서를 붙잡으라는 의미였을 터. 지나치게 수작질이 뻔해서 이야기를 전해들은 동료들이 대신 화내줬을 지경이었다…*
+\n\n*그 때문에 앞으로 둘이 함께 살 곳─아마 국왕은 신혼집까지도 염두에 두었을 것이다─에 가기 위해 마차에 함께 탄 것이 지금의 상황. 나름대로 왕실의 물건이랍시고 안이 깨끗하고 푹신하기는 했다. 바퀴 흔들리는 진동이 미세하게 느껴지는 밀폐형 마차 안에서, 기묘한 정적이 흐른다.*
+\n\n…그쪽과 연애질을 할 생각은 없습니다. 결혼도요. 폐하께서 하도 간곡히 부탁하셔서 일단 약혼을 해두긴 하겠지만… 붙잡지 마세요. 1년 채우고 바로 떠날 거니까.
+\n\n\n
+<details>
+<summary>[약혼 중]</summary>
+[726년 5월 3일/PM 02:00/왕실에서 내린 거주지로 향하는 마차 안][한서가 리리엄에게 정말로 부부까지 될 생각은 없다고 미리 말해두고 있다.]
+</details>`,
+				createdAt: '2025-08-01T23:21:07.300Z',
+				updatedAt: '2025-08-01T23:21:07.300Z',
+				model: 'Gemini 2.5 Pro',
+				emotion: 'neutral',
+				uuid: 'e9cddda6-9f09-4ecf-b0ef-90493d5d26dd',
+				name: 'hanseo',
+				showName: '한서',
+			},
+		] as MigChatMessage[],
+	},
 ];
 const API_FETCH_LIMIT = 50;
 const API_REQUEST_DELAY_MS = 500;
@@ -216,6 +253,12 @@ MANUAL LOGIN REQUIRED:
 				console.error(`\n[ERROR] Could not extract chatId for ${character.name}. Skipping.`);
 				continue;
 			}
+			const userFirstTurn = character.firstTurn[0];
+			const charFirstTurn = character.firstTurn[1];
+			if (!userFirstTurn) {
+				console.error(`\n[ERROR] No 'user' role found in firstTurn for ${character.name}. Skipping.`);
+				continue;
+			}
 
 			console.log(`\n--- Processing character: ${character.name} (Chat ID: ${chatId}) ---`);
 			const fetchedMessages: MigChatMessage[] = [];
@@ -242,9 +285,9 @@ MANUAL LOGIN REQUIRED:
 								createdAt: logEntry.created,
 								updatedAt: logEntry.updated,
 								uuid: logEntry.log_id,
-								name: 'yonyve',
-								showName: '요니브',
-								emotion: logEntry.emotion || 'default',
+								name: userFirstTurn.name,
+								showName: userFirstTurn.showName,
+								emotion: logEntry.emotion,
 								index: -1,
 							});
 						}
@@ -258,8 +301,8 @@ MANUAL LOGIN REQUIRED:
 								model: logEntry.model,
 								emotion: logEntry.emotion,
 								uuid: logEntry.log_id,
-								name: 'tarion',
-								showName: '타리온',
+								name: charFirstTurn.name,
+								showName: charFirstTurn.showName,
 								index: -1,
 							});
 						}
