@@ -17,7 +17,6 @@ import { routeConstants } from '../../routeConstants.js';
 import { containerSpacing } from '../../style/index.js';
 import { getCharacterImageArray } from '../../util/portraitUtils.js';
 import { getLangAlertText, getLangText } from '../../util/translateUtils.js';
-import { ProfileForm } from './ProfileForm.jsx';
 import { SessionPreviewList } from './SessionPreviewList.jsx';
 import { ProfileHistoryTabs } from './ProfileHistoryTab.jsx';
 import { SolidMetallicButton, RomanticTitle } from '../../layout/index.js';
