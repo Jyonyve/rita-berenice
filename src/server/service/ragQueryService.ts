@@ -25,34 +25,45 @@ export const ragQueryService = {
 		userInput: string,
 		sessionId: string,
 		userId: string,
-		langCode: 'kor' | 'eng' = 'kor'
+		userName: string,
+		charName: string
 	): Promise<TransformedQuery> {
-		console.log('[ragQueryService] Transforming query with schema-aware extraction...');
-		if (langCode === 'eng') {
-			return { queryTexts: [userInput] };
-		}
+		console.log('[ragQueryService] Transforming query with translation-first approach...');
 
 		try {
 			const termRes = await termStore.getTermsBySessionId(sessionId);
 			const termGuidanceMap = new Map<string, string>();
 			termRes.terms.forEach((t) => termGuidanceMap.set(t.koreanTerm, t.englishTerm));
 
-			const extractedData = await ragQueryService._extractAndTranslateData(
-				userInput,
-				termGuidanceMap,
-				DEFAULT_EXTRACTION_MODEL,
-				userId
-			);
-			logFlow('ragQueryService', 'extractedData', extractedData);
+			const [translatedUserInput, extractedData] = await Promise.allSettled([
+				ragQueryService._translateToEnglish(userInput, termGuidanceMap, userId),
+				ragQueryService._extractAndTranslateData(
+					userInput, // Raw Korean for better term mapping
+					termGuidanceMap,
+					DEFAULT_EXTRACTION_MODEL,
+					userId,
+					userName,
+					charName
+				),
+			]);
 
-			const expandedQueries = ragQueryService._expandQuery(extractedData);
-			logFlow('ragQueryService', 'expandedQueries', expandedQueries);
+			// Handle translation result
+			const finalTranslation =
+				translatedUserInput.status === 'fulfilled' ? translatedUserInput.value : userInput; // Fallback to original
 
-			return {
-				queryTexts: [userInput, ...expandedQueries],
-				filterCriteria: extractedData,
-				criticalTerm: extractedData.criticalTerm,
+			// Handle extraction result
+			const finalExtraction =
+				extractedData.status === 'fulfilled' ? extractedData.value : ({} as FilterCriteria); // Fallback to empty
+
+			const expandedQueries = ragQueryService._expandQuery(finalExtraction);
+			const result = {
+				queryTexts: [finalTranslation, ...expandedQueries],
+				filterCriteria: finalExtraction,
+				criticalTerm: finalExtraction.criticalTerm,
 			};
+
+			logFlow('ragQueryService', 'transformQuery', { result });
+			return result;
 		} catch (error) {
 			console.error(error, 'Query transformation failed. Falling back to raw query.');
 			return { queryTexts: [userInput] };
@@ -67,9 +78,11 @@ export const ragQueryService = {
 		userInput: string,
 		termGuidanceMap: Map<string, string>,
 		modelInfo: AiModelInfo,
-		userId: string
+		userId: string,
+		userName: string,
+		charName: string
 	): Promise<FilterCriteria> {
-		const prompt = buildFilterCriteriaPrompt(userInput, termGuidanceMap);
+		const prompt = buildFilterCriteriaPrompt(userInput, termGuidanceMap, userName, charName);
 		const messages = [buildChatCompletion('user', prompt)];
 
 		const jsonString = await llmService.invokeLlm(
@@ -98,5 +111,38 @@ export const ragQueryService = {
 			expanded.add(data.criticalTerm);
 		}
 		return Array.from(expanded);
+	},
+
+	// **NEW: Add translation method**
+	async _translateToEnglish(
+		koreanText: string,
+		termGuidanceMap: Map<string, string>,
+		userId: string
+	): Promise<string> {
+		// First, apply known term mappings
+		let processedText = koreanText;
+		termGuidanceMap.forEach((english, korean) => {
+			const regex = new RegExp(korean, 'g');
+			processedText = processedText.replace(regex, english);
+		});
+
+		// Use LLM for comprehensive translation
+		const translationPrompt = `Translate the following Korean text to English, focusing on preserving semantic meaning and emotional nuance. Pay special attention to relationship terms, emotions, and cultural concepts:
+
+Korean text: ${koreanText}
+
+Provide only the English translation:`;
+
+		const messages = [buildChatCompletion('user', translationPrompt)];
+
+		try {
+			const translatedText = await llmService.invokeLlm(messages, DEFAULT_EXTRACTION_MODEL, userId);
+
+			// **FIXED: Return plain text, not JSON.parse**
+			return translatedText.trim() || processedText;
+		} catch (error) {
+			console.warn('Translation failed, using term mapping only:', error);
+			return processedText;
+		}
 	},
 };

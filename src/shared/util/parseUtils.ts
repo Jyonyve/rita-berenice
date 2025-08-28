@@ -7,7 +7,7 @@ import {
 	ChatTurn,
 	ChatTurnMetadata,
 } from '../domain/chat/ChatInterfaces.js';
-import { DEFAULT_EMOTION } from '../config/emotionWordsMapper.js';
+import { DEFAULT_EMOTION } from '../config/emotionConstants.js';
 import { buildCharacterId } from '#shared/util/buildIdUtils.js';
 import { NA } from '../config/constants.js';
 import zlib from 'zlib';
@@ -21,42 +21,6 @@ export const convertStringToArray = (input: string): string[] => {
 
 export const convertArrayToString = (arr: string[]): string => {
 	return arr && arr.length > 0 ? arr.join(',') : '';
-};
-
-export const parseTextToEntries = (text: string) => {
-	const starCount = (text.match(/\*/g) || []).length;
-	if (starCount % 2 !== 0) {
-		// --- ADD THESE LINES FOR DEBUGGING ---
-		console.error('\n🔴 PARSING FAILED! Found text with an odd number of asterisks:');
-		console.error('=================================================================');
-		console.error(text);
-		console.error('=================================================================\n');
-		throw Error('parsing error: "*" is not closed throughly.');
-	}
-
-	const entries: ChatEntry[] = [];
-	const regex = /\*([^*]+)\*|([^*]+)/g;
-	let match;
-
-	while ((match = regex.exec(text)) !== null) {
-		if (match[1]) {
-			entries.push({ type: 'action', prompt: match[1].trim() });
-		} else if (match[2]) {
-			let dialogueText = match[2].trim();
-			if (dialogueText.startsWith('"') && dialogueText.endsWith('"')) {
-				dialogueText = dialogueText.substring(1, dialogueText.length - 1);
-			}
-			entries.push({ type: 'dialogue', prompt: dialogueText });
-		}
-	}
-
-	return entries;
-};
-
-export const parseEntriesToText = (entries: ChatEntry[]): string => {
-	return entries
-		.map((entry) => (entry.type === 'action' ? `*${entry.prompt}*` : entry.prompt))
-		.join('\n');
 };
 
 export const parseChatTurnToMetadata = (turn: ChatTurn): ChatTurnMetadata => {
@@ -99,32 +63,6 @@ export const parseChatTurnToMetadata = (turn: ChatTurn): ChatTurnMetadata => {
 		// Complex objects as JSON strings
 		loreReferenceList: jsonStringifyOrEmpty(turn.loreReferenceList),
 		historyReferenceList: jsonStringifyOrEmpty(turn.historyReferenceList),
-	};
-};
-
-export const buildChatMessage = (
-	role: ChatRoleType,
-	sequence: number,
-	showName: string,
-	entriesString: string,
-	sessionId: string,
-	emotion = DEFAULT_EMOTION
-): ChatMessage => {
-	const entries: ChatEntry[] = parseTextToEntries(entriesString);
-	const messageType: ChatMessageType = role === 'user' ? 'request' : 'response';
-	return {
-		role,
-		sequence,
-		sessionId,
-		entries,
-		messageId: '',
-		messageType,
-		showName,
-		emotion,
-		createdAt: '',
-		updatedAt: '',
-		type: 'message',
-		model: '',
 	};
 };
 

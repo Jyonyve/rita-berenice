@@ -2,24 +2,38 @@
 
 import { Collection, Where } from 'chromadb'; // Or your specific Collection type
 import { chromaDbClient } from '../db/chromaDbClient.js';
-import { TermCdo, TermInfo, TermMetadata } from '#shared/domain/term/TermInterfaces.js';
-import { buildTermId } from '../../shared/util/buildIdUtils.js';
+import {
+	CharacterTermCdo,
+	CharacterTermInfo,
+	CharacterTermMetadata,
+	SessionTermCdo,
+	SessionTermInfo,
+	SessionTermMetadata,
+	TermType,
+} from '#shared/domain/term/TermInterfaces.js';
+import {
+	buildCharacterId,
+	buildCharacterTermId,
+	buildSessionTermId,
+} from '../../shared/util/buildIdUtils.js';
 
 import { ChromaResponse, Term, TermResponse } from '#shared/api/ModuleResponse.js';
 
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
-import { flatTermToDoc, inflateTermDoc } from '../../shared/util/documentUtils.js';
-import { isTermInfo } from '#shared/util/typeGuardUtils.js';
+import { flatTermToDoc, inflateTermDoc } from '../util/documentUtils.js';
+import { isCharacterTermInfo, isSessionTermInfo } from '#shared/util/typeGuardUtils.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import { llmService } from '../service/llmService.js';
+import { parseSessionId } from '#shared/util/parseUtils.js';
 
 const { getTermCollection } = chromaDbClient;
 const collectionType = COLLECTIONS.TERM;
 
 export const termStore = {
 	_termCollection: null as Collection | null,
-	_sessionTermCache: new Map<string, Map<string, TermInfo>>(),
+	_characterTermCache: new Map<string, Map<string, CharacterTermInfo>>(),
+	_sessionTermCache: new Map<string, Map<string, SessionTermInfo>>(),
 
 	_getCollection: async (): Promise<Collection> => {
 		if (termStore._termCollection) {
@@ -32,17 +46,23 @@ export const termStore = {
 
 	_constuctTermInfo: (results: ChromaResponse): TermResponse => {
 		const { ids, documents, metadatas } = results;
-		const { terms, termInfos } = ids.reduce(
+		const { terms, characterTermInfos, sessionTermInfos } = ids.reduce(
 			(acc, id, index) => {
 				const document = documents[index];
 				const metadata = metadatas[index];
 
 				acc.terms.push(inflateTermDoc(document!));
-				acc.termInfos.push(metadata! as unknown as TermInfo);
+				metadata?.type === 'character'
+					? acc.characterTermInfos.push(metadata! as unknown as CharacterTermInfo)
+					: acc.sessionTermInfos.push(metadata! as unknown as SessionTermInfo);
 
 				return acc;
 			},
-			{ terms: [] as Term[], termInfos: [] as TermInfo[] }
+			{
+				terms: [] as Term[],
+				characterTermInfos: [] as CharacterTermInfo[],
+				sessionTermInfos: [] as SessionTermInfo[],
+			}
 		);
 
 		return {
@@ -51,12 +71,33 @@ export const termStore = {
 			metadatas,
 			terms: terms.filter((t) => !!t),
 			term: terms[0],
-			termInfos: termInfos.filter((t) => !!t),
-			termInfo: termInfos[0],
+			characterTermInfos: characterTermInfos.filter((t) => !!t),
+			sessionTermInfos: sessionTermInfos.filter((t) => !!t),
 		};
 	},
 
-	_getOrBuildSessionTermMap: async (sessionId: string): Promise<Map<string, TermInfo>> => {
+	_getOrBuildCharacterTermMap: async (
+		characterId: string
+	): Promise<Map<string, CharacterTermInfo>> => {
+		// 1. Check the service-level cache first.
+		if (termStore._characterTermCache.has(characterId)) {
+			console.log(`TermService Cache HIT for character: ${characterId}`);
+			return termStore._characterTermCache.get(characterId)!;
+		}
+
+		// 2. If not cached (CACHE MISS), fetch from DB and build the map.
+		console.log(`TermService Cache MISS for character: ${characterId}. Building from DB.`);
+		const { characterTermInfos } = await termStore.getTermsByCharacterId(characterId);
+		const newTermMap = new Map<string, CharacterTermInfo>(
+			characterTermInfos.map((info) => [info.koreanTerm, info])
+		);
+
+		// 3. Store the newly built map in the cache for subsequent requests.
+		termStore._characterTermCache.set(characterId, newTermMap);
+		return newTermMap;
+	},
+
+	_getOrBuildSessionTermMap: async (sessionId: string): Promise<Map<string, SessionTermInfo>> => {
 		// 1. Check the service-level cache first.
 		if (termStore._sessionTermCache.has(sessionId)) {
 			console.log(`TermService Cache HIT for session: ${sessionId}`);
@@ -65,23 +106,125 @@ export const termStore = {
 
 		// 2. If not cached (CACHE MISS), fetch from DB and build the map.
 		console.log(`TermService Cache MISS for session: ${sessionId}. Building from DB.`);
-		const { termInfos } = await termStore.getTermsBySessionId(sessionId);
-		const newTermMap = new Map<string, TermInfo>(termInfos.map((info) => [info.koreanTerm, info]));
+		const { sessionTermInfos } = await termStore.getTermsBySessionId(sessionId);
+		const newTermMap = new Map<string, SessionTermInfo>(
+			sessionTermInfos.map((info) => [info.koreanTerm, info])
+		);
 
 		// 3. Store the newly built map in the cache for subsequent requests.
 		termStore._sessionTermCache.set(sessionId, newTermMap);
 		return newTermMap;
 	},
 
-	storeTerm: async (termInfo: TermCdo | TermInfo): Promise<void> => {
+	storeCharacterTerm: async (termInfo: CharacterTermCdo | CharacterTermInfo): Promise<void> => {
 		const collection = await termStore._getCollection();
 		const now = new Date().toISOString();
-		const isTerm = isTermInfo(termInfo);
+		const isTerm = isCharacterTermInfo(termInfo);
 
-		const metadata: TermMetadata = {
+		const metadata: CharacterTermMetadata = {
 			...termInfo,
-			termId: isTerm ? termInfo.termId : buildTermId(termInfo.sessionId),
-			type: METADATA_TYPES.TERM,
+			termId: isTerm ? termInfo.termId : buildCharacterTermId(termInfo.characterId),
+			type: METADATA_TYPES.CHARACTER,
+			initialTerm: termInfo.initialTerm,
+			englishTerm: isTerm ? termInfo.englishTerm : termInfo.initialTerm,
+			createdAt: isTerm ? termInfo.createdAt : now,
+			updatedAt: now,
+		};
+
+		const documentForEmbedding = flatTermToDoc(metadata);
+
+		try {
+			await chromaDbClient.upsertRecord(collection, metadata.termId, documentForEmbedding, metadata);
+
+			const sessionCache = await termStore._getOrBuildCharacterTermMap(metadata.characterId);
+			sessionCache.set(metadata.koreanTerm, metadata);
+			console.log(
+				`TermService: Updated cache for term "${metadata.koreanTerm}" in character ${metadata.characterId}.`
+			);
+		} catch (error: any) {
+			handleServiceError(
+				error,
+				`[termService] Internal error storing term, ${documentForEmbedding}`,
+				`Failed to store term for character ${termInfo.characterId}`
+			);
+		}
+	},
+
+	/**
+	 * Stores multiple glossary terms in a single bulk operation.
+	 * @param terms An array of TermCdo or TermInfo objects.
+	 */
+	storeCharacterTerms: async (terms: (CharacterTermCdo | CharacterTermInfo)[]): Promise<void> => {
+		if (!terms || terms.length === 0) {
+			return;
+		}
+		const collection = await termStore._getCollection();
+		const now = new Date().toISOString();
+
+		const recordsToUpsert = terms.map((termInfo) => {
+			const isTerm = isCharacterTermInfo(termInfo);
+
+			const metadata: CharacterTermMetadata = {
+				...termInfo,
+				termId: isTerm ? termInfo.termId : buildCharacterTermId(termInfo.characterId),
+				type: METADATA_TYPES.CHARACTER,
+				initialTerm: termInfo.initialTerm,
+				englishTerm: isTerm ? termInfo.englishTerm : termInfo.initialTerm,
+				createdAt: isTerm ? termInfo.createdAt : now,
+				updatedAt: now,
+			};
+			const document = flatTermToDoc(metadata);
+			return { id: metadata.termId, document, metadata };
+		});
+
+		try {
+			await chromaDbClient.upsertRecords(
+				collection,
+				recordsToUpsert.map((r) => r.id),
+				recordsToUpsert.map((r) => r.document),
+				recordsToUpsert.map((r) => r.metadata)
+			);
+
+			// Group terms by session to update caches efficiently
+			const termsByCharacter = new Map<string, CharacterTermMetadata[]>();
+			for (const record of recordsToUpsert) {
+				const { characterId } = record.metadata;
+				if (!termsByCharacter.has(characterId)) {
+					termsByCharacter.set(characterId, []);
+				}
+				termsByCharacter.get(characterId)!.push(record.metadata);
+			}
+
+			// Update the session cache for each affected session
+			for (const [characterId, characterTerms] of termsByCharacter.entries()) {
+				const characterCache = await termStore._getOrBuildCharacterTermMap(characterId);
+				for (const term of characterTerms) {
+					characterCache.set(term.koreanTerm, term);
+				}
+				console.log(
+					`TermService: Bulk updated cache for ${characterTerms.length} terms in session ${characterId}.`
+				);
+			}
+		} catch (error: any) {
+			handleServiceError(
+				error,
+				`[termService] Internal error during bulk storing of ${terms.length} terms.`,
+				`Failed to bulk store terms.`
+			);
+		}
+	},
+
+	storeSessionTerm: async (termInfo: SessionTermCdo | SessionTermInfo): Promise<void> => {
+		const collection = await termStore._getCollection();
+		const now = new Date().toISOString();
+		const isTerm = isSessionTermInfo(termInfo);
+		const { characterId } = parseSessionId(termInfo.sessionId);
+
+		const metadata: SessionTermMetadata = {
+			...termInfo,
+			characterId,
+			termId: isTerm ? termInfo.termId : buildSessionTermId(termInfo.sessionId),
+			type: METADATA_TYPES.SESSION,
 			initialTerm: termInfo.initialTerm,
 			englishTerm: isTerm ? termInfo.englishTerm : termInfo.initialTerm,
 			createdAt: isTerm ? termInfo.createdAt : now,
@@ -111,20 +254,22 @@ export const termStore = {
 	 * Stores multiple glossary terms in a single bulk operation.
 	 * @param terms An array of TermCdo or TermInfo objects.
 	 */
-	storeTerms: async (terms: (TermCdo | TermInfo)[]): Promise<void> => {
+	storeSessionTerms: async (terms: (SessionTermCdo | SessionTermInfo)[]): Promise<void> => {
 		if (!terms || terms.length === 0) {
 			return;
 		}
-
 		const collection = await termStore._getCollection();
 		const now = new Date().toISOString();
 
 		const recordsToUpsert = terms.map((termInfo) => {
-			const isTerm = isTermInfo(termInfo);
-			const metadata: TermMetadata = {
+			const isTerm = isSessionTermInfo(termInfo);
+			const { characterId } = parseSessionId(termInfo.sessionId);
+
+			const metadata: SessionTermMetadata = {
 				...termInfo,
-				termId: isTerm ? termInfo.termId : buildTermId(termInfo.sessionId),
-				type: METADATA_TYPES.TERM,
+				characterId,
+				termId: isTerm ? termInfo.termId : buildSessionTermId(termInfo.sessionId),
+				type: METADATA_TYPES.SESSION,
 				initialTerm: termInfo.initialTerm,
 				englishTerm: isTerm ? termInfo.englishTerm : termInfo.initialTerm,
 				createdAt: isTerm ? termInfo.createdAt : now,
@@ -143,7 +288,7 @@ export const termStore = {
 			);
 
 			// Group terms by session to update caches efficiently
-			const termsBySession = new Map<string, TermMetadata[]>();
+			const termsBySession = new Map<string, SessionTermMetadata[]>();
 			for (const record of recordsToUpsert) {
 				const { sessionId } = record.metadata;
 				if (!termsBySession.has(sessionId)) {
@@ -171,15 +316,15 @@ export const termStore = {
 		}
 	},
 
-	getTermByKorean: async (sessionId: string, koreanTerm: string): Promise<TermResponse> => {
+	getTermByKorean: async (id: string, koreanTerm: string, type: TermType): Promise<TermResponse> => {
 		const collection = await termStore._getCollection();
-		const where: Where = {
-			$and: [
-				{ type: { $eq: METADATA_TYPES.TERM } },
-				{ koreanTerm: { $eq: koreanTerm } }, // Query by the specific metadata field
-				{ sessionId: { $eq: sessionId } }, // Ensure it matches the sessionId
-			],
-		};
+		const whereCondition: Where =
+			type === 'character'
+				? { $and: [{ type: { $eq: METADATA_TYPES.CHARACTER } }, { characterId: { $eq: id } }] }
+				: { $and: [{ type: { $eq: METADATA_TYPES.SESSION } }, { sessionId: { $eq: id } }] };
+
+		const where: Where = { $and: [{ koreanTerm: { $eq: koreanTerm } }, whereCondition] };
+
 		try {
 			const rawResults = await chromaDbClient.getRecords(collection, where, undefined, 1); // Expecting one or none
 			const results = validateChromaResponse(rawResults, 'getOne', collectionType); // Adapt validation if needed
@@ -193,11 +338,32 @@ export const termStore = {
 		}
 	},
 
+	getTermsByCharacterId: async (characterId: string): Promise<TermResponse> => {
+		const collection = await termStore._getCollection();
+		const where: Where = {
+			$and: [
+				{ type: { $eq: METADATA_TYPES.CHARACTER } },
+				{ characterId: { $eq: characterId } }, // Ensure it matches the sessionId
+			],
+		};
+		try {
+			const rawResults = await chromaDbClient.getRecords(collection, where); // Expecting one or none
+			const results = validateChromaResponse(rawResults, 'getList', collectionType); // Adapt validation if needed
+			return termStore._constuctTermInfo(results);
+		} catch (error: any) {
+			handleServiceError(
+				error,
+				'An internal error occurred while fetching glossary entry by Korean term.',
+				`Failed to get glossary entry for character '${characterId}`
+			);
+		}
+	},
+
 	getTermsBySessionId: async (sessionId: string): Promise<TermResponse> => {
 		const collection = await termStore._getCollection();
 		const where: Where = {
 			$and: [
-				{ type: { $eq: METADATA_TYPES.TERM } },
+				{ type: { $eq: METADATA_TYPES.SESSION } },
 				{ sessionId: { $eq: sessionId } }, // Ensure it matches the sessionId
 			],
 		};
@@ -235,9 +401,9 @@ export const termStore = {
 				const initialTerm = await llmService.translateProperNoun(koreanTerm, userId);
 
 				if (initialTerm && initialTerm.trim() !== '') {
-					const newTermCdo: TermCdo = { sessionId, koreanTerm, initialTerm, termId: '' };
+					const newTermCdo: SessionTermCdo = { sessionId, koreanTerm, initialTerm };
 					try {
-						await termStore.storeTerm(newTermCdo);
+						await termStore.storeSessionTerm(newTermCdo);
 						termsForPromptMap.set(koreanTerm, initialTerm);
 					} catch (storeError) {
 						console.error(`Failed to auto-insert term "${koreanTerm}":`, storeError);
@@ -249,6 +415,11 @@ export const termStore = {
 			}
 		}
 		return termsForPromptMap;
+	},
+
+	clearCharacterCache: (characterId: string): void => {
+		termStore._characterTermCache.delete(characterId);
+		console.log(`TermService: Cleared cache for character ${characterId}.`);
 	},
 
 	clearSessionCache: (sessionId: string): void => {

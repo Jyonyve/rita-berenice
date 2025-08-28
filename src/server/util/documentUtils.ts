@@ -1,34 +1,25 @@
 import { ChatEntry, ChatMessage, ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
-import { parseEntriesToText, parseTextToEntries } from '#shared/util/parseUtils.js';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { HistoryInfo, LoreInfo } from '#shared/domain/lore/LoreInterfaces.js';
 import { RecapInfo } from '#shared/domain/recap/RecapInterfaces.js';
-import { TermInfo } from '#shared/domain/term/TermInterfaces.js';
+import { TermType } from '#shared/domain/term/TermInterfaces.js';
 import { UserInfo } from '#shared/domain/user/UserInterfaces.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { SessionInfo } from '#shared/domain/session/SessionInterfaces.js';
-
-export const buildNaturalChatText = (request: ChatMessage, response: ChatMessage): string => {
-	const userPrompt = parseEntriesToText(request.entries);
-	const charResponse = parseEntriesToText(response.entries);
-
-	let documentText = `User Prompt by ${request.showName}: ${userPrompt}\n`;
-	documentText += `Character Response by ${response.showName} (Emotion: ${response.emotion}) : ${charResponse}\n\n`;
-
-	return documentText.trim();
-};
+import { parseConversationToEntries, parseEntriesToConversation } from './chatParseUtils.js';
+import { Term } from '#shared/api/ModuleResponse.js';
 
 export const flatChatMessageToDoc = (entries: ChatEntry[]) => {
-	return parseEntriesToText(entries).trim();
+	return parseEntriesToConversation(entries).trim();
 };
 
 export const inflateChatMessageDoc = (document: string) => {
-	return parseTextToEntries(document);
+	return parseConversationToEntries(document);
 };
 
 export const chatTurnToDocument = (chatTurn: ChatTurn): string => {
-	const userText = parseEntriesToText(chatTurn.request.entries);
-	const charText = parseEntriesToText(chatTurn.response.entries);
+	const userText = parseEntriesToConversation(chatTurn.request.entries);
+	const charText = parseEntriesToConversation(chatTurn.response.entries);
 
 	return `User (${chatTurn.request.showName}): "${userText}"\nCharacter (${chatTurn.response.showName}): "${charText}"`;
 };
@@ -64,17 +55,22 @@ export const loreOrHistoryToDocument = (lore: LoreInfo | HistoryInfo): string =>
 	return `Title: ${lore.title}\nSummary: ${lore.summary}\n\n${lore.content}`;
 };
 
-export const flatTermToDoc = (lore: TermInfo) => {
-	const { koreanTerm, englishTerm, termId } = lore;
-	const document = { koreanTerm, englishTerm, termId };
+export const flatTermToDoc = (term: Term) => {
+	const { koreanTerm, englishTerm, termId, type } = term;
+	const document = { koreanTerm, englishTerm, termId, type };
 	return JSON.stringify(document).trim();
 };
 
 export const inflateTermDoc = (
 	document: string
-): { koreanTerm: string; englishTerm: string; termId: string } => {
+): { koreanTerm: string; englishTerm: string; termId: string; type: TermType } => {
 	const parsed = JSON.parse(document);
-	return { koreanTerm: parsed.koreanTerm, englishTerm: parsed.englishTerm, termId: parsed.termId };
+	return {
+		koreanTerm: parsed.koreanTerm,
+		englishTerm: parsed.englishTerm,
+		termId: parsed.termId,
+		type: parsed.type,
+	};
 };
 
 export const recapToDocument = (recap: RecapInfo) => {

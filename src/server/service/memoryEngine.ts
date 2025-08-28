@@ -5,11 +5,7 @@ import { METADATA_TYPES, NA } from '#shared/config/constants.js';
 import { buildChatTurnMetadataPrompt } from '../util/templateUtils.js';
 import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { RecapInfo } from '#shared/domain/recap/RecapInterfaces.js';
-import {
-	convertArrayToString,
-	parseEntriesToText,
-	parseSessionId,
-} from '#shared/util/parseUtils.js';
+import { convertArrayToString, parseSessionId } from '#shared/util/parseUtils.js';
 import { MemoryResponse } from '#shared/api/ModuleResponse.js';
 import { recapStore } from '../store/recapStore.js';
 import { characterStore } from '../store/characterStore.js';
@@ -17,71 +13,24 @@ import { chatStore } from '../store/chatStore.js';
 import { loreStore } from '../store/loreStore.js';
 import { profileStore } from '../store/profileStore.js';
 import { termStore } from '../store/termStore.js';
-import { detectLanguage } from '../util/languageUtils.js';
 import { handleServiceError } from '../util/serviceHelpers.js';
-import { mapLoreContexts, reRankByRecency, mapHistoryContexts } from '../util/llmUtils.js';
+import {
+	mapLoreContexts,
+	reRankByRecency,
+	mapHistoryContexts,
+	boostByCriticalTerm,
+} from '../util/llmUtils.js';
 import { llmService } from './llmService.js';
 import { DEFAULT_EXTRACTION_MODEL } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { ragQueryService } from './ragQueryService.js';
 import { WhereDocument } from 'chromadb';
 import { createChatTurnMetadataSchema } from '#server/util/schemaUtils.js';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
-import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
+import { DEFAULT_EMOTION } from '#shared/config/emotionConstants.js';
 import { logFlow } from '../util/jsonlLogger.js';
-
-/**
- * @private
- * Safely merges a ChatTurn with LLM-generated enrichment data.
- * This function now populates the consistent `...List` properties.
- */
-function _extractChatTurnMetadataInfoFromLlm(
-	turn: ChatTurn,
-	enrichment: Record<string, any>
-): ChatTurn {
-	return {
-		...turn,
-		summary: enrichment.summary || '',
-		keywordList: Array.isArray(enrichment.keywordList) ? enrichment.keywordList : [],
-		topicList: Array.isArray(enrichment.topicList) ? enrichment.topicList : [],
-		entityList: Array.isArray(enrichment.entityList) ? enrichment.entityList : [],
-		actionList: Array.isArray(enrichment.actionList) ? enrichment.actionList : [],
-		flagList: Array.isArray(enrichment.flagList) ? enrichment.flagList : [],
-		relationshipShiftList: Array.isArray(enrichment.relationshipShiftList)
-			? enrichment.relationshipShiftList
-			: [],
-		userEmotion: {
-			primary: enrichment.userEmotion?.primary || DEFAULT_EMOTION,
-			intensity: enrichment.userEmotion?.intensity ?? 0.5,
-			nuanceList: Array.isArray(enrichment.userEmotion?.nuanceList)
-				? enrichment.userEmotion.nuanceList
-				: [],
-		},
-		characterEmotion: {
-			primary: enrichment.characterEmotion?.primary || 'neutral',
-			intensity: enrichment.characterEmotion?.intensity ?? 0.5,
-			nuanceList: Array.isArray(enrichment.characterEmotion?.nuanceList)
-				? enrichment.characterEmotion.nuanceList
-				: [],
-		},
-		dialogueAct: enrichment.dialogueAct || NA,
-		memoryChunk: enrichment.memoryChunk || '',
-		loreReferenceList: Array.isArray(enrichment.loreReferenceList)
-			? enrichment.loreReferenceList
-			: [],
-		historyReferenceList: Array.isArray(enrichment.historyReferenceList)
-			? enrichment.historyReferenceList
-			: [],
-	};
-}
-
-/**
- * @private
- * Formats a recap into a concise string for inclusion in a prompt.
- */
-function _formatRecapForPrompt(recap: RecapInfo): string {
-	const flags = recap.flagList.length > 0 ? ` [FLAGS: ${convertArrayToString(recap.flagList)}]` : '';
-	return `[Recap from turns ${recap.turnStart}-${recap.turnEnd}]${flags} Summary: ${recap.content}...`;
-}
+import { LangCode } from '#shared/config/langConstants.js';
+import { HistoryInfo, LoreInfo } from '#shared/domain/lore/LoreInterfaces.js';
+import { parseEntriesToConversation } from '../util/chatParseUtils.js';
 
 export const memoryEngine = {
 	/**
@@ -89,92 +38,113 @@ export const memoryEngine = {
 	 */
 	async recallRelevantMemories(
 		sessionId: string,
-		userInput: string,
+		userConversation: string,
 		userId: string,
-		recentChatTurns: ChatTurn[]
+		recentChatTurns: ChatTurn[],
+		langCode: LangCode
 	): Promise<MemoryResponse> {
 		const { characterId } = parseSessionId(sessionId);
-		const INITIAL_QUERY_LIMIT = 30;
-		const FINAL_MEMORY_LIMIT = 10;
-		const langCode = detectLanguage(userInput);
+		const INITIAL_QUERY_LIMIT = 10;
+		const FINAL_MEMORY_LIMIT = 5;
+		const { request, response } = recentChatTurns[0];
 
 		try {
-			const transformedQuery = await ragQueryService.transformQuery(userInput, userId, langCode);
+			const transformedQuery = await ragQueryService.transformQuery(
+				userConversation,
+				sessionId,
+				userId,
+				request.showName,
+				response.showName
+			);
 			logFlow('ragQueryService', 'API HIT: transformQuery', { transformedQuery });
 
-			let documentFilter: WhereDocument | undefined = undefined;
-			const quotedTextMatch = userInput.match(/"(.*?)"/);
-			if (quotedTextMatch?.[1]) {
-				documentFilter = { $contains: quotedTextMatch[1] };
-			}
-			const [
-				longTermChatRes,
-				relevantLoreRes,
-				relevantHistoryRes,
-				relevantFactualRecapsRes,
-				relevantRelationshipRecapsRes,
-			] = await Promise.all([
+			const [longTermChatRes, relevantLoreRes, relevantHistoryRes] = await Promise.all([
 				chatStore.queryChatTurns(
 					sessionId,
 					transformedQuery.queryTexts,
 					transformedQuery.filterCriteria,
-					documentFilter,
+					undefined,
 					INITIAL_QUERY_LIMIT
 				),
 				loreStore.queryLores(
 					characterId,
 					transformedQuery.queryTexts,
 					transformedQuery.filterCriteria,
-					documentFilter
+					undefined
 				),
 				loreStore.queryHistories(
 					characterId,
 					transformedQuery.queryTexts,
 					transformedQuery.filterCriteria,
-					documentFilter
-				),
-				recapStore.queryRecaps(
-					sessionId,
-					transformedQuery.queryTexts,
-					METADATA_TYPES.RECAP,
-					transformedQuery.filterCriteria,
-					documentFilter
-				),
-				recapStore.queryRecaps(
-					sessionId,
-					transformedQuery.queryTexts,
-					METADATA_TYPES.RELATIONSHIP,
-					transformedQuery.filterCriteria,
-					documentFilter
+					undefined
 				),
 			]);
 
+			// Step 1: Apply recency-based re-ranking to chat results
 			const rerankedLongTerm = reRankByRecency<ChatTurn>(longTermChatRes);
 
-			const factualRecapSummary = relevantFactualRecapsRes.map(_formatRecapForPrompt).join('\n') || '';
-			const relationshipRecapSummary =
-				relevantRelationshipRecapsRes.map(_formatRecapForPrompt).join('\n') || '';
+			// Step 2: Apply critical term boosting to all result types
+			const criticalTerm = transformedQuery.criticalTerm;
+			const boostedChatTurns = boostByCriticalTerm(rerankedLongTerm.contents || [], criticalTerm);
+			const boostedLore = boostByCriticalTerm(relevantLoreRes.loreInfos || [], criticalTerm);
+			const boostedHistory = boostByCriticalTerm(relevantHistoryRes.historyInfos || [], criticalTerm);
 
-			logFlow('memoryEngine', 'API HIT: longTermChatRes', longTermChatRes);
-			logFlow('memoryEngine', 'API HIT: relevantLoreRes', relevantLoreRes.ids);
-			logFlow('memoryEngine', 'API HIT: relevantHistoryRes', relevantHistoryRes.ids);
-			logFlow('memoryEngine', 'API HIT: relevantFactualRecapsRes', relevantFactualRecapsRes);
-			logFlow('memoryEngine', 'API HIT: relevantRelationshipRecapsRes', relevantRelationshipRecapsRes);
+			// Step 3: Check for low retrieval and apply fallback if needed
+			const totalResults = boostedChatTurns.length + boostedLore.length + boostedHistory.length;
 
+			if (totalResults < 3 && criticalTerm) {
+				console.log(
+					`[memoryEngine] Low results (${totalResults}), trying fallback search with criticalTerm: "${criticalTerm}"`
+				);
+
+				const fallbackChatRes = await chatStore.queryChatTurns(
+					sessionId,
+					[criticalTerm], // Just the critical term
+					undefined, // No metadata filtering
+					undefined,
+					FINAL_MEMORY_LIMIT // Lower limit for fallback
+				);
+
+				if (fallbackChatRes.chatTurns?.length > 0) {
+					// Merge fallback results with existing ones, avoiding duplicates
+					const existingIds = new Set(boostedChatTurns.map((turn) => turn.chatTurnId));
+					const newFallbackTurns = fallbackChatRes.chatTurns.filter(
+						(turn) => !existingIds.has(turn.chatTurnId)
+					);
+					boostedChatTurns.push(...newFallbackTurns);
+					logFlow('memoryEngine', 'fallback-success', { additionalResults: newFallbackTurns.length });
+				}
+			}
+
+			// Step 4: Log analysis for debugging and optimization
+			logFlow('memoryEngine', 'retrieval-analysis', {
+				criticalTerm,
+				userInputPreview: userConversation.substring(0, 50) + '...',
+				results: {
+					longTermChat: boostedChatTurns.length,
+					lore: boostedLore.length,
+					history: boostedHistory.length,
+				},
+				finalSelections: {
+					longTermSelected: Math.min(boostedChatTurns.length, FINAL_MEMORY_LIMIT),
+					loreSelected: boostedLore.length,
+					historySelected: boostedHistory.length,
+				},
+			});
+
+			// Step 5: Return final curated memory response
 			return {
 				langCode,
 				shortTermHistory: recentChatTurns,
-				longTermHistory: rerankedLongTerm.contents?.slice(0, FINAL_MEMORY_LIMIT) || [],
-				relevantLore: relevantLoreRes.loreInfos || [],
-				relevantHistory: relevantHistoryRes.historyInfos || [],
-				factualRecapSummary,
-				relationshipRecapSummary,
+				longTermHistory: boostedChatTurns.slice(0, FINAL_MEMORY_LIMIT),
+				relevantLore: boostedLore,
+				relevantHistory: boostedHistory,
 			};
 		} catch (error) {
 			handleServiceError(
 				error,
 				'An internal error occurred while do [recallRelevantMemories].',
-				`Failed to recall relevant memories ${userInput.substring(0, 30)}...`
+				`Failed to recall relevant memories ${userConversation.substring(0, 30)}...`
 			);
 		}
 	},
@@ -189,7 +159,7 @@ export const memoryEngine = {
 
 		try {
 			// 1. Extract named entities to ensure they are in the glossary.
-			const textForNer = `${parseEntriesToText(turn.request.entries)}\n${parseEntriesToText(turn.response.entries)}`;
+			const textForNer = `${parseEntriesToConversation(turn.request.entries)}\n${parseEntriesToConversation(turn.response.entries)}`;
 			const extractedKpns = await llmService.extractProperNouns(textForNer, userId);
 
 			// 2. Fetch all necessary context for the enrichment prompt.
@@ -249,3 +219,57 @@ export const memoryEngine = {
 		}
 	},
 };
+
+/**
+ * @private
+ * Safely merges a ChatTurn with LLM-generated enrichment data.
+ * This function now populates the consistent `...List` properties.
+ */
+function _extractChatTurnMetadataInfoFromLlm(
+	turn: ChatTurn,
+	enrichment: Record<string, any>
+): ChatTurn {
+	return {
+		...turn,
+		summary: enrichment.summary || '',
+		keywordList: Array.isArray(enrichment.keywordList) ? enrichment.keywordList : [],
+		topicList: Array.isArray(enrichment.topicList) ? enrichment.topicList : [],
+		entityList: Array.isArray(enrichment.entityList) ? enrichment.entityList : [],
+		actionList: Array.isArray(enrichment.actionList) ? enrichment.actionList : [],
+		flagList: Array.isArray(enrichment.flagList) ? enrichment.flagList : [],
+		relationshipShiftList: Array.isArray(enrichment.relationshipShiftList)
+			? enrichment.relationshipShiftList
+			: [],
+		userEmotion: {
+			primary: enrichment.userEmotion?.primary || DEFAULT_EMOTION,
+			intensity: enrichment.userEmotion?.intensity ?? 0.5,
+			nuanceList: Array.isArray(enrichment.userEmotion?.nuanceList)
+				? enrichment.userEmotion.nuanceList
+				: [],
+		},
+		characterEmotion: {
+			primary: enrichment.characterEmotion?.primary || 'neutral',
+			intensity: enrichment.characterEmotion?.intensity ?? 0.5,
+			nuanceList: Array.isArray(enrichment.characterEmotion?.nuanceList)
+				? enrichment.characterEmotion.nuanceList
+				: [],
+		},
+		dialogueAct: enrichment.dialogueAct || NA,
+		memoryChunk: enrichment.memoryChunk || '',
+		loreReferenceList: Array.isArray(enrichment.loreReferenceList)
+			? enrichment.loreReferenceList
+			: [],
+		historyReferenceList: Array.isArray(enrichment.historyReferenceList)
+			? enrichment.historyReferenceList
+			: [],
+	};
+}
+
+/**
+ * @private
+ * Formats a recap into a concise string for inclusion in a prompt.
+ */
+function _formatRecapForPrompt(recap: RecapInfo): string {
+	const flags = recap.flagList.length > 0 ? ` [FLAGS: ${convertArrayToString(recap.flagList)}]` : '';
+	return `[Recap from turns ${recap.turnStart}-${recap.turnEnd}]${flags} Summary: ${recap.content}...`;
+}

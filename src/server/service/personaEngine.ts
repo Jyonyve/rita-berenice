@@ -8,20 +8,17 @@ import {
 	buildStaticSystemPrompt,
 } from '../util/templateUtils.js';
 
-import {
-	buildChatCompletion,
-	parseLlmJsonResponse,
-	sanitizeLlmResponse,
-} from '../util/llmUtils.js';
+import { buildChatCompletion } from '../util/llmUtils.js';
 import { MemoryResponse, PersonaResponse } from '#shared/api/ModuleResponse.js';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { llmService } from './llmService.js';
 import { AiModelInfo, DEFAULT_EXTRACTION_MODEL } from '#shared/domain/aimodel/AiInfoTypes.js';
-import { parseEntriesToText } from '#shared/util/parseUtils.js';
+
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { createPersonaResponseSchema } from '../util/schemaUtils.js';
 import { logFlow } from '../util/jsonlLogger.js';
+import { parseEntriesToConversation } from '../util/chatParseUtils.js';
 
 export const personaEngine = {
 	/**
@@ -36,7 +33,7 @@ export const personaEngine = {
 		recalledMemories: MemoryResponse,
 		characterInfo: CharacterInfo,
 		profileInfo: ProfileInfo,
-		userInput: string,
+		userConversation: string,
 		aiModelInfo: AiModelInfo,
 		options?: { signal?: AbortSignal; isScene?: boolean }
 	): Promise<PersonaResponse> {
@@ -69,91 +66,72 @@ export const personaEngine = {
 		const messages: ChatCompletionMessageParam[] = [
 			// First: Core rules and persona
 			buildChatCompletion('system', staticSystemPrompt),
-
 			// Second (optional): Background knowledge from RAG
 			...(longTermMemoryContent ? [buildChatCompletion('system', longTermMemoryContent)] : []),
-
 			// Third: Recent conversation verbatim
 			...shortTermMessages,
-
 			// Last: The current user input
-			buildChatCompletion('user', userInput, profileInfo.showName),
+			buildChatCompletion('user', userConversation, profileInfo.showName),
 		];
-
-		logFlow('personaEngine', 'generateResponse', { messages });
 
 		const personaSchema = createPersonaResponseSchema(charName, userName, langCode);
 		logFlow('personaEngine', 'createPersonaResponseSchema', { personaSchema });
 
-		try {
-			// --- 3. LLM Service Call ---
-			const rawLlmResponse = await llmService.invokeLlm(
-				messages,
-				aiModelInfo,
-				profileInfo.userId,
-				options,
-				personaSchema
-			);
+		// --- 2. LLM Call ---
+		const rawLlmResponse = await llmService.invokeLlm(
+			messages,
+			aiModelInfo,
+			profileInfo.userId,
+			options,
+			personaSchema
+		);
 
-			logFlow('personaEngine', 'rawLlmResponse', {
-				rawLlmResponse,
-				responseLength: rawLlmResponse.length,
+		// --- 3. Parsing and Correction Logic ---
+		try {
+			return JSON.parse(rawLlmResponse) as PersonaResponse;
+		} catch (parsingError: any) {
+			console.warn(`[personaEngine] Initial response failed parsing. Attempting self-correction.`);
+			logFlow('personaEngine', 'correction.start', {
+				rawResponse: rawLlmResponse,
+				reason: parsingError.message,
 			});
 
-			return parseLlmJsonResponse<PersonaResponse>(
-				rawLlmResponse,
-				'personaEngine.generateResponse (Attempt 1)'
-			);
-		} catch (error: any) {
-			// --- 2. Error Handling: Check for a fixable parsing error ---
-			if (error?.name === 'LlmResponseParseError') {
-				console.warn(
-					`[personaEngine] Initial response failed parsing. Reason: ${error.reason}. Attempting self-correction.`,
-					{
-						// By logging the details in an object, you can expand it
-						// in your console to view the full, untruncated rawResponse.
-						details: error.details,
-					}
+			try {
+				const requiredSchema = '{"response": "string", "emotion": "string"}';
+				const correctionPrompt = buildJsonCorrectionPrompt(
+					rawLlmResponse,
+					`The JSON was malformed. Reason: ${parsingError.message}.`,
+					requiredSchema
+				);
+				const correctionMessages: ChatCompletionMessageParam[] = [
+					buildChatCompletion(
+						'user',
+						`You are an expert at fixing malformed JSON. Please correct the following text to match the required schema. Your output must be ONLY the raw JSON object, with no markdown fences or other text.\n\n${correctionPrompt}`
+					),
+				];
+
+				let correctedLlmResponse = await llmService.invokeLlm(
+					correctionMessages,
+					DEFAULT_EXTRACTION_MODEL,
+					profileInfo.userId,
+					options
 				);
 
-				// --- 3. Second Attempt: Corrective LLM Call ---
-				try {
-					console.log(`[personaEngine] Invoking correction model: ${DEFAULT_EXTRACTION_MODEL}`);
-
-					const requiredSchema = '{"response": "string", "emotion": "string"}';
-					const correctionPrompt = buildJsonCorrectionPrompt(
-						error.details.rawResponse,
-						`The JSON was malformed. Reason: ${error.reason}.`,
-						requiredSchema
-					);
-
-					// The entire request is now a single user instruction, ensuring compatibility.
-					const correctionMessages: ChatCompletionMessageParam[] = [
-						buildChatCompletion(
-							'user',
-							`You are an expert at fixing malformed JSON. Please correct the following text to match the required schema.\n\n${correctionPrompt}`
-						),
-					];
-
-					const correctedLlmResponse = await llmService.invokeLlm(
-						correctionMessages,
-						DEFAULT_EXTRACTION_MODEL,
-						profileInfo.userId,
-						options
-					);
-
-					return parseLlmJsonResponse<PersonaResponse>(
-						correctedLlmResponse,
-						'personaEngine (Attempt 2)'
-					);
-				} catch (correctionError: any) {
-					console.error('[personaEngine] Self-correction attempt also failed.', correctionError);
-					throw error;
+				// **THE FIX**: Clean the response from the correction model.
+				// This regex removes the markdown fences (```json ... ```
+				const jsonRegex = new RegExp('```json\\s*([\\s\\S]*?)\\s*```');
+				const match = correctedLlmResponse.match(jsonRegex);
+				if (match && match[1]) {
+					correctedLlmResponse = match[1];
 				}
-			} else {
-				// This `else` block makes it clear what happens for other errors.
-				console.error('[personaEngine] A non-recoverable error occurred.', error);
-				throw error;
+
+				return JSON.parse(correctedLlmResponse) as PersonaResponse;
+			} catch (correctionError: any) {
+				console.error('[personaEngine] The self-correction attempt also failed.', {
+					originalError: parsingError.message,
+					correctionError: correctionError.message,
+				});
+				throw new Error(`Self-correction failed. Original raw response was: "${rawLlmResponse}"`);
 			}
 		}
 	},
@@ -174,7 +152,11 @@ const buildShortTermHistoryMessages = (
 		// Add the user's message part of the turn, if it exists
 		if (turn.request?.entries) {
 			turnMessages.push(
-				buildChatCompletion('user', parseEntriesToText(turn.request.entries), turn.request.showName)
+				buildChatCompletion(
+					'user',
+					parseEntriesToConversation(turn.request.entries),
+					turn.request.showName
+				)
 			);
 		}
 
@@ -183,7 +165,7 @@ const buildShortTermHistoryMessages = (
 			turnMessages.push(
 				buildChatCompletion(
 					'assistant',
-					parseEntriesToText(turn.response.entries),
+					parseEntriesToConversation(turn.response.entries),
 					turn.response.showName
 				)
 			);

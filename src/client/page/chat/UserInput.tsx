@@ -12,7 +12,7 @@ import {
 import React, { ChangeEvent, ChangeEventHandler, FC } from 'react';
 import { GlassBox, GlassButton, GlassCircularProgress } from '../../layout/glass/index.js';
 import { useToast } from '../../provider/ToastProvider.jsx';
-import { getLangAlertText } from '../../util/translateUtils.js';
+import { getLangAlertText, getLangText } from '../../util/translateUtils.js';
 import { AiModelSelector } from './AiModelSelector.jsx';
 import { AllModelNames } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { REQUEST_CHARACTER_LIMIT } from '#shared/config/constants.js';
@@ -122,7 +122,11 @@ export const UserInput: FC<UserInputProps> = ({
 					onClick={handleSend}
 					disabled={isDisabled || !value.trim()}
 				>
-					{isProcessing ? <GlassCircularProgress size={22} colorVariant="silver" /> : 'Send'}
+					{isProcessing ? (
+						<GlassCircularProgress size={22} colorVariant="silver" />
+					) : (
+						getLangText(LANG_KEYS.SEND)
+					)}
 				</GlassButton>
 			</Box>
 		</Box>

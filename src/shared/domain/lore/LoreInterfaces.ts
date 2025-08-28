@@ -14,6 +14,28 @@ export type LoreIndexContentType =
 	| 'TOPIC'
 	| 'ENTITY'
 	| 'RELATED_EVENT';
+export type LoreCategory =
+	| 'Mythology' // Legends| creation stories| religious beliefs
+	| 'Item' // Magical items| artifacts| important objects
+	| 'Concept' // Abstract ideas| philosophies| systems
+	| 'Organization' // Groups| factions| institutions
+	| 'Character' // Important NPCs| legendary figures
+	| 'Location' // Places| regions| landmarks
+	| 'Event' // Historical events| disasters| celebrations
+	| 'Culture' // Customs| traditions| social norms
+	| 'Magic' // Spells| magical phenomena| arcane knowledge
+	| 'History' // Historical records| timelines
+	| 'Technology' // Inventions| crafts| techniques
+	| 'Politics' // Government systems| laws| treaties
+	| 'Other'; // Fallback for unique cases
+export type HistoryCategory =
+	| 'Origin Story'
+	| 'Major Life Event'
+	| 'Relationship Turnpoint'
+	| 'Career & Faction'
+	| 'Conflict & War'
+	| 'Internal Struggle'
+	| 'Other';
 
 // --- A. PRIMARY DOCUMENT METADATA ---
 export interface LoreMetadata {
@@ -26,7 +48,7 @@ export interface LoreMetadata {
 	updatedAt: string;
 	title: string;
 	generatedTitle: string;
-	category: string;
+	category: LoreCategory;
 	source: string;
 	summary: string;
 }
@@ -41,7 +63,7 @@ export interface HistoryMetadata {
 	updatedAt: string;
 	title: string;
 	generatedTitle: string;
-	category: string;
+	category: HistoryCategory;
 	summary: string;
 	periodLabel: string;
 	eventDateValue: string;
@@ -88,11 +110,11 @@ export interface HistoryContext {
 	historyId: string; // The ID to be returned
 	title: string; // The human-readable title
 	summary: string; // A concise summary of the event
-	category: string; // The event's classification
+	category: HistoryCategory; // The event's classification
 	periodLabel: string; // The life period this event belongs to
 	keywordList: string[]; // Specific search terms
 	topicList: string[]; // Broader thematic concepts
-	entityList: string[]; // Specific named people, places, things
+	entityList: string[]; // Specific named people| places| things
 	allAffectedCharacterIdList: string[];
 }
 
@@ -101,7 +123,7 @@ export interface LoreContext {
 	loreId: string;
 	title: string;
 	summary: string;
-	category: string;
+	category: LoreCategory;
 	keywordList: string[];
 	topicList: string[];
 	entityList: string[];

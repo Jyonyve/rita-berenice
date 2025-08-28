@@ -1,5 +1,5 @@
 import { METADATA_TYPES, MetadataType } from '#shared/config/constants.js';
-import { allEmotionKeywordsList, EmotionValue } from '../../config/emotionWordsMapper.js';
+import { allEmotionKeywordsList, EmotionValue } from '../../config/emotionConstants.js';
 import { DefaultAiRole } from '../aimodel/AiInfoTypes.js';
 import { Reference } from '../BaseTypes.js';
 
@@ -82,6 +82,7 @@ export interface ChatTurnMetadata {
 /**
  * The single, unified metadata structure for all search index records.
  */
+// File: src/shared/domain/chat/ChatInterfaces.ts
 export interface ChatIndexMetadata {
 	type: typeof METADATA_TYPES.INDEX;
 	contentType: ChatIndexContentType;
@@ -90,6 +91,13 @@ export interface ChatIndexMetadata {
 	sessionId: string;
 	characterId: string;
 	originalCreatedAt: string;
+	semanticContext: string; // Context description for semantic understanding
+
+	// Enhanced emotion metadata properties
+	emotionCategory: string; // For emotion-related indexes (mapped category)
+	emotionIntensity: number; // For emotion-related indexes (0.0-1.0)
+	emotionType: 'primary' | 'nuance'; // Whether this is primary emotion or nuance
+	tokenCount: number; // For monitoring and optimization
 }
 
 // --- 3. The Application-Level Rich Object ---
@@ -163,7 +171,7 @@ export interface TempChatTurn extends TempChatTurnMetadata {
 }
 
 export type TempChatTurnCdo = Pick<TempChatTurn, 'sessionId' | 'sequence' | 'userId'> & {
-	userInput: string;
+	inputJsonString: string;
 };
 
 export interface DisplayTurn {

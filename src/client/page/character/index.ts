@@ -3,4 +3,7 @@ export * from './CharacterListPageLoader.jsx';
 export * from './CharacterPageLoader.jsx';
 export * from './SessionPreviewList.jsx';
 export * from './ProfilePreviewList.jsx';
-export * from './ProfileCard.jsx';
+export * from './ProfileForm.jsx';
+export * from './HistoryPreviewList.jsx';
+export * from './NewCharacterPageLoader.jsx';
+export * from './NewCharacterPage.jsx';

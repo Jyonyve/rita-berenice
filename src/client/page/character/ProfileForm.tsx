@@ -1,11 +1,12 @@
 // src/client/components/profile/ProfileCard.tsx
 
-import { LANG_KEYS } from '#shared/config/langConstants.js';
+import { LANG_KEYS, LangKey } from '#shared/config/langConstants.js';
 import { ProfileCdo, ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import {
 	Box,
 	CardActions,
 	FormControl,
+	FormHelperText,
 	Grid,
 	InputLabel,
 	List,
@@ -19,10 +20,11 @@ import {
 import { FC, useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { GlassButton, GlassCard } from '../../layout/glass/index.js';
-import { SolidMetallicButton } from '../../layout/index.js';
+import { GlassSelect, SolidMetallicButton } from '../../layout/index.js';
 import { innerSpacing } from '../../style/index.js';
-import { getLangText } from '../../util/translateUtils.js';
+import { GENDER_SELECT_MENUITEM, getLangText } from '../../util/translateUtils.js';
 import { ProfilePreviewList } from './ProfilePreviewList.jsx';
+import { REQUEST_CHARACTER_LIMIT } from '#shared/config/constants.js';
 
 const getInitialFormData = (userId: string): ProfileCdo => ({
 	name: '',
@@ -57,7 +59,7 @@ const modalStyle = {
 	msOverflowStyle: 'none', // Hide scrollbar for Internet Explorer
 };
 
-export const ProfileCard: FC<{ userId: string; onSubmit: (profileData: ProfileCdo) => void }> = ({
+export const ProfileForm: FC<{ userId: string; onSubmit: (profileData: ProfileCdo) => void }> = ({
 	userId,
 	onSubmit,
 }) => {
@@ -66,8 +68,8 @@ export const ProfileCard: FC<{ userId: string; onSubmit: (profileData: ProfileCd
 		handleSubmit,
 		control,
 		reset,
-		formState: { isSubmitting },
-	} = useForm<ProfileCdo>({ defaultValues: getInitialFormData(userId) });
+		formState: { isSubmitting, errors },
+	} = useForm<ProfileCdo>({ defaultValues: getInitialFormData(userId), mode: 'onBlur' });
 
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
@@ -121,50 +123,84 @@ export const ProfileCard: FC<{ userId: string; onSubmit: (profileData: ProfileCd
 					</Box>
 
 					<Stack spacing={1}>
-						{/* --- UPDATED TEXTFIELDS --- */}
-						<Controller
-							name="name"
-							control={control}
-							render={({ field }) => <TextField required fullWidth label="Profile Name" {...field} />}
-						/>
-						<Controller
-							name="showName"
-							control={control}
-							render={({ field }) => (
-								<TextField required fullWidth label="Display Name (in chat)" {...field} />
-							)}
-						/>
-
 						<Grid container spacing={innerSpacing}>
-							<Grid size={{ xs: 12, md: 3 }}>
+							<Grid size={{ xs: 12, md: 4 }}>
+								<Controller
+									name="showName"
+									control={control}
+									rules={{ required: getLangText(LANG_KEYS.SHOW_NAME_REQUIRED) }}
+									render={({ field }) => (
+										<TextField
+											{...field}
+											fullWidth
+											label={getLangText(LANG_KEYS.SHOWNAME)}
+											error={!!errors.showName}
+											helperText={errors.showName?.message}
+											placeholder={getLangText(LANG_KEYS.SHOW_NAME_PLACEHOLDER)}
+											required
+										/>
+									)}
+								/>
+							</Grid>
+							<Grid size={{ xs: 12, md: 8 }}>
+								<Controller
+									name="name"
+									control={control}
+									rules={{ required: getLangText(LANG_KEYS.NAME_REQUIRED) }}
+									render={({ field }) => (
+										<TextField
+											{...field}
+											fullWidth
+											label={getLangText(LANG_KEYS.NAME)}
+											error={!!errors.name}
+											helperText={errors.name?.message}
+											placeholder={getLangText(LANG_KEYS.NAME_PLACEHOLDER)}
+											required
+										/>
+									)}
+								/>
+							</Grid>
+						</Grid>
+						<Grid container spacing={innerSpacing}>
+							<Grid size={{ xs: 12, md: 4 }}>
 								{/* Your existing Controller for Select is already correct */}
 								<FormControl fullWidth required>
-									<InputLabel id="gender-select-label">{getLangText(LANG_KEYS.GENDER)}</InputLabel>
 									<Controller
 										name="gender"
 										control={control}
+										rules={{ required: getLangText(LANG_KEYS.GENDER_REQUIRED) }}
 										render={({ field }) => (
-											<Select labelId="gender-select-label" label="Gender" {...field}>
-												<MenuItem value="male">{getLangText(LANG_KEYS.MALE)}</MenuItem>
-												<MenuItem value="female">{getLangText(LANG_KEYS.FEMALE)}</MenuItem>
-												<MenuItem value="other">{getLangText(LANG_KEYS.OTHER)}</MenuItem>
-											</Select>
+											<FormControl fullWidth required error={!!errors.gender}>
+												<InputLabel>{getLangText(LANG_KEYS.GENDER)}</InputLabel>
+												<Select {...field}>
+													{GENDER_SELECT_MENUITEM.map((opt) => (
+														<MenuItem key={opt.key} value={opt.key}>
+															{opt.label}
+														</MenuItem>
+													))}
+												</Select>
+												{errors.gender && <FormHelperText>{errors.gender.message}</FormHelperText>}
+											</FormControl>
 										)}
 									/>
 								</FormControl>
 							</Grid>
-							<Grid size={{ xs: 12, md: 9 }}>
+							<Grid size={{ xs: 12, md: 8 }}>
 								{/* --- UPDATED TEXTFIELD --- */}
 								<Controller
 									name="title"
 									control={control}
+									rules={{ required: getLangText(LANG_KEYS.TITLE_REQUIRED) }}
 									render={({ field }) => (
 										<TextField
-											required
-											fullWidth
-											label="Title or Role"
-											placeholder="e.g., Crown Prince, Lead Researcher"
 											{...field}
+											fullWidth
+											label={getLangText(LANG_KEYS.TITLE)}
+											error={!!errors.title}
+											helperText={errors.title?.message}
+											placeholder={getLangText(LANG_KEYS.TITLE_PLACEHOLDER)}
+											required
+											slotProps={{ htmlInput: { maxLength: REQUEST_CHARACTER_LIMIT } }}
 										/>
 									)}
 								/>
@@ -175,15 +211,19 @@ export const ProfileCard: FC<{ userId: string; onSubmit: (profileData: ProfileCd
 						<Controller
 							name="description"
 							control={control}
+							rules={{ required: getLangText(LANG_KEYS.DESCRIPTION_REQUIRED) }}
 							render={({ field }) => (
 								<TextField
-									required
-									fullWidth
-									label="Description"
-									multiline
-									rows={4}
-									placeholder="Describe the persona's background and key traits."
 									{...field}
+									fullWidth
+									label={getLangText(LANG_KEYS.DESCRIPTION)}
+									multiline
+									minRows={3}
+									maxRows={10}
+									error={!!errors.description}
+									helperText={errors.description?.message || getLangText(LANG_KEYS.DESCRIPTION_HELPER)}
+									placeholder={getLangText(LANG_KEYS.DESCRIPTION_PLACEHOLDER)}
+									required
 								/>
 							)}
 						/>

@@ -5,16 +5,27 @@ import { CharacterListPage } from './CharacterListPage.jsx';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
+import { useLocation } from 'react-router';
+import { useAuth } from '../../provider/AuthProvider.tsx';
 
 export function CharacterListPageLoader() {
-	const { data: characterRes, isLoading } = useCharacterApi().getAllCharacters();
+	const location = useLocation();
+	const { userId, isLoggedIn } = useAuth();
+	const { getAllCharacters, getCharactersByUserId } = useCharacterApi();
+
+	const isMine = !!location.state?.isMine;
+
+	// Always call hooks in the same order
+	const { data: characterRes, isLoading } = isMine
+		? getCharactersByUserId(userId)
+		: getAllCharacters();
 
 	if (isLoading) {
 		return (
 			<Container
 				sx={{
 					display: 'flex',
-					flexDirection: 'column', // <-- Add this line
+					flexDirection: 'column',
 					justifyContent: 'center',
 					alignItems: 'center',
 					height: '80vh',
@@ -26,5 +37,10 @@ export function CharacterListPageLoader() {
 		);
 	}
 
-	return <CharacterListPage characterInfos={characterRes?.characterInfos || []} />;
+	const filteredCharacter =
+		userId === import.meta.env.VITE_ADMIN_USER_ID
+			? characterRes?.characterInfos
+			: characterRes?.characterInfos.filter((char) => char.userId !== 'sunfish');
+
+	return <CharacterListPage characterInfos={filteredCharacter || []} />;
 }

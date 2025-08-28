@@ -15,9 +15,11 @@ import { useToast } from './provider/ToastProvider.jsx';
 import { setupApiClient } from './util/clientApiHelpers.js';
 import { NewChatPageLoader } from './page/chat/NewChatPageLoader.jsx';
 import { SessionAuth } from 'supertokens-auth-react/recipe/session/index.js';
+import { HistoryPageLoader } from './page/history/HistoryPageLoader.jsx';
+import { NewCharacterPageLoader } from './page/character/NewCharacterPageLoader.jsx';
 
 export function App() {
-	const { CHARACTER, CHAT, ERROR, AUTH } = routeConstants;
+	const { CHARACTER, CHAT, ERROR, HISTORY } = routeConstants;
 	const { addToast } = useToast();
 	const [hasMounted, setHasMounted] = useState(false);
 
@@ -31,8 +33,27 @@ export function App() {
 			<Route path="/" element={<RootLayout />}>
 				<Route index element={<MainLandingPage />} />
 				{hasMounted && getSuperTokensRoutesForReactRouterDom(reactRouter, [EmailPasswordPreBuiltUI])}
+				{/* character  */}
 				<Route path={`${CHARACTER}`} element={<CharacterListPageLoader />} />
 				<Route path={`${CHARACTER}/:characterId`} element={<CharacterPageLoader />} />
+				<Route
+					path={`${CHARACTER}/new`}
+					element={
+						<SessionAuth>
+							<NewCharacterPageLoader />
+						</SessionAuth>
+					}
+				/>
+				{/* character history */}
+				<Route
+					path={`${HISTORY}/:historyId`}
+					element={
+						<SessionAuth>
+							<HistoryPageLoader />
+						</SessionAuth>
+					}
+				/>
+				{/* chat */}
 				<Route
 					path={`${CHAT}`}
 					element={

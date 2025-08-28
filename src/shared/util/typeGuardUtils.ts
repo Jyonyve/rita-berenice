@@ -1,6 +1,11 @@
 import { CharacterCdo, CharacterInfo } from '../domain/character/CharacterInterfaces.js';
 import { ProfileCdo, ProfileInfo } from '../domain/profile/ProfileInterfaces.js';
-import { TermCdo, TermInfo } from '../domain/term/TermInterfaces.js';
+import {
+	CharacterTermCdo,
+	CharacterTermInfo,
+	SessionTermCdo,
+	SessionTermInfo,
+} from '../domain/term/TermInterfaces.js';
 import {
 	buildCharacterId,
 	buildChatTurnId,
@@ -11,11 +16,17 @@ import { ChatTurn, ChatTurnCdo } from '../domain/chat/ChatInterfaces.js';
 import { parseSessionId } from './parseUtils.js';
 import { HistoryCdo, HistoryInfo, LoreCdo, LoreInfo } from '../domain/lore/LoreInterfaces.js';
 import { NA } from '../config/constants.js';
-import { DEFAULT_EMOTION } from '../config/emotionWordsMapper.js';
+import { DEFAULT_EMOTION } from '../config/emotionConstants.js';
 
 //type guard
-export function isTermInfo(term: TermCdo | TermInfo): term is TermInfo {
-	return (term as TermInfo).englishTerm !== undefined;
+export function isCharacterTermInfo(
+	term: CharacterTermCdo | CharacterTermInfo
+): term is CharacterTermInfo {
+	return (term as CharacterTermInfo).englishTerm !== undefined;
+}
+
+export function isSessionTermInfo(term: SessionTermCdo | SessionTermInfo): term is SessionTermInfo {
+	return (term as SessionTermInfo).englishTerm !== undefined;
 }
 
 export function isCharacterInfo(
@@ -90,7 +101,7 @@ export const createBasicHistory = (cdo: HistoryCdo): HistoryInfo => {
 		historyId: '',
 		type: 'history',
 		generatedTitle: '',
-		category: 'character_history',
+		category: 'Other',
 		summary: '',
 		periodLabel: 'Unknown',
 		eventDateValue: 'Unknown',

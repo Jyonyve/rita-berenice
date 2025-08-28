@@ -159,6 +159,27 @@ router.post(
 	)
 );
 
+/**
+ * GET /api/lore/get-history/:historyId
+ * Retrieves a single lore entry by its unique ID.
+ * @param {string} loreId - The unique ID of the lore entry.
+ * @returns {HistoryResponse} An object containing the single lore entry.
+ */
+router.get(
+	genRoutePattern('getHistory', ['historyId']),
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+		const { historyId } = req.params;
+		validateServiceId(historyId, collectionType);
+
+		const path = genRoutePattern('getHistory', ['historyId']);
+		console.log(`API HIT: GET ${path.replace(':historyId', historyId)}`);
+
+		const response = await loreStore.getHistory(historyId);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
+	})
+);
+
 // /**
 //  * POST /api/lore/query-histories
 //  * Performs a semantic search for history entries for a character.

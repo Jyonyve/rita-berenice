@@ -5,6 +5,8 @@ import { useCharacterApi } from '../../hook/index.js';
 import { useAuth } from '../../provider/index.js';
 import CharacterPage from './CharacterPage.jsx';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
+import { getLangText } from '../../util/translateUtils.js';
+import { LANG_KEYS } from '#shared/config/langConstants.js';
 
 export function CharacterPageLoader() {
 	const navigate = useNavigate();
@@ -34,7 +36,7 @@ export function CharacterPageLoader() {
 				}}
 			>
 				<GlassCircularProgress colorVariant="silver" />
-				{/* <Typography mt={2}>Loading characters...</Typography> */}
+				<Typography sx={{ mt: 2 }}>{getLangText(LANG_KEYS.LOADING_CHARACTERS)}</Typography>
 			</Container>
 		);
 	}

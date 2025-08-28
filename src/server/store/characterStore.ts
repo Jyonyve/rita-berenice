@@ -4,7 +4,7 @@ import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
 import { chromaDbClient } from '../db/chromaDbClient.js';
 import { CharacterResponse, ChromaResponse } from '#shared/api/ModuleResponse.js';
-import { flatCharacterToDoc, inflateCharacterDoc } from '../../shared/util/documentUtils.js';
+import { flatCharacterToDoc, inflateCharacterDoc } from '../util/documentUtils.js';
 import { validateChromaResponse, handleServiceError } from '../util/serviceHelpers.js';
 import { metadataToCharacter } from '#shared/util/dbConvertUtils.js';
 import {
@@ -121,6 +121,25 @@ export const characterStore = {
 				error,
 				'An internal error occurred while do [getCharactersByShowName].',
 				`Failed to get characters by showName '${showName}'`
+			);
+		}
+	},
+
+	getCharactersByUserId: async (userId: string): Promise<CharacterResponse> => {
+		const collection = await characterStore._getCollection();
+		const where: Where = {
+			$and: [{ type: { $eq: METADATA_TYPES.CHARACTER } }, { userId: { $eq: userId } }],
+		};
+		try {
+			const rawResults = await getRecords(collection, where);
+			const results = validateChromaResponse(rawResults, 'getList', collectionType);
+
+			return characterStore._constructCharacter(results);
+		} catch (error: any) {
+			handleServiceError(
+				error,
+				'An internal error occurred while do [getCharactersByUserId].',
+				`Failed to get characters by userId '${userId}'`
 			);
 		}
 	},

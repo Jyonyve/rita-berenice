@@ -5,7 +5,7 @@ import { METADATA_TYPES } from '#shared/config/constants.js';
 import { UserInfo, UserMetadata } from '#shared/domain/user/UserInterfaces.js';
 import { ChromaResponse, UserResponse } from '#shared/api/ModuleResponse.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
-import { flatUserToDoc, inflateUserDoc } from '../../shared/util/documentUtils.js';
+import { flatUserToDoc, inflateUserDoc } from '../util/documentUtils.js';
 import { metadataToUser } from '#shared/util/dbConvertUtils.js';
 
 const { getUserCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;

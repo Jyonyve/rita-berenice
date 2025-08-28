@@ -58,6 +58,21 @@ export const useCharacterApi = () => {
 		});
 
 	/**
+	 * Fetches characters by userId.
+	 * Query key: ['getCharactersByUserId', userId]
+	 */
+	const getCharactersByUserId = (userId: string) =>
+		useQuery<CharacterResponse, Error>({
+			queryKey: ['getCharactersByUserId', userId],
+			queryFn: async () => {
+				const url = genApiUrl(MODULE_NAME, 'getCharactersByUserId', [userId]);
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<CharacterResponse>(response.data.payload);
+			},
+			enabled: !!userId,
+		});
+
+	/**
 	 * Creates or updates a character.
 	 * Mutation key: 'storeCharacter'
 	 */
@@ -65,10 +80,34 @@ export const useCharacterApi = () => {
 		mutationFn: async (character) => {
 			const url = genApiUrl(MODULE_NAME, 'storeCharacter');
 			const response = await apiClient.post<string>(url, character);
-			return JSON.parse(response.data);
+			return response.data;
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['getAllCharacters'] });
+		},
+	});
+
+	/**
+	 * Uploads a character image
+	 */
+	const uploadCharacterImage = useMutation<any, Error, FormData>({
+		mutationFn: async (formData) => {
+			const url = genApiUrl(MODULE_NAME, 'uploadCharacterImage');
+			const response = await apiClient.post(url, formData, {
+				headers: { 'Content-Type': 'multipart/form-data' },
+			});
+			return response.data;
+		},
+	});
+
+	/**
+	 * Creates a character folder
+	 */
+	const createCharacterFolder = useMutation<any, Error, { characterId: string }>({
+		mutationFn: async (data) => {
+			const url = genApiUrl(MODULE_NAME, 'createCharacterFolder');
+			const response = await apiClient.post(url, data);
+			return response.data;
 		},
 	});
 
@@ -76,6 +115,9 @@ export const useCharacterApi = () => {
 		getAllCharacters,
 		getCharacter,
 		getCharactersByShowName,
+		getCharactersByUserId,
 		storeCharacter: storeCharacter.mutateAsync,
+		uploadCharacterImage: uploadCharacterImage.mutateAsync,
+		createCharacterFolder: createCharacterFolder.mutateAsync,
 	};
 };

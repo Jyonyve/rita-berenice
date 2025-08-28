@@ -1,7 +1,7 @@
 // src/shared/domain/character/CharacterInterfaces.ts
 // if type is stored as metadata, it should be premitive type.
 import { METADATA_TYPES } from '../../config/constants.js';
-import { EmotionKey } from '../../config/emotionWordsMapper.js';
+import { EmotionKey } from '../../config/emotionConstants.js';
 
 export interface BeingMetadata {
 	name: string;

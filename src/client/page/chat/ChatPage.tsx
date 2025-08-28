@@ -5,11 +5,10 @@ import { ChatLog } from './ChatLog.jsx';
 import { UserInput } from './UserInput.jsx';
 
 // MUI Components
-import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
+import { DEFAULT_EMOTION } from '#shared/config/emotionConstants.js';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { ChatTurnCdo, TempChatTurn, TempChatTurnCdo } from '#shared/domain/chat/ChatInterfaces.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
-import { parseEntriesToText, parseTextToEntries } from '#shared/util/parseUtils.js';
 import { Box, Grid, useMediaQuery, useTheme } from '@mui/material';
 import { useOrchestrationApi, useTempChatApi, useSessionApi } from '../../hook/api/index.js';
 import { useChatState } from '../../hook/state/useChatState.js';
@@ -23,6 +22,7 @@ import {
 	DEFAULT_EXTRACTION_MODEL,
 } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { useErrorDialog } from '../../util/styleUtils.jsx';
+import { parseEntriesToText, parseTextToEntries } from '../../util/chatParseUtils.js';
 
 export const ChatPage: FC<{
 	characterInfo: CharacterInfo;
@@ -75,7 +75,8 @@ export const ChatPage: FC<{
 
 	useEffect(() => {
 		if (tempTurnRes?.tempChatTurn) {
-			changeTempChatTurn(tempTurnRes.tempChatTurn);
+			changeTempChatTurn(tempTurnRes?.tempChatTurn);
+			setCurrentTempSetNo(tempTurnRes?.tempChatTurn.chatTurnSets.length - 1);
 		}
 	}, [tempTurnRes]);
 
@@ -167,12 +168,14 @@ export const ChatPage: FC<{
 		// This promise generates the *new* temp turn
 		const generatePromise = (async () => {
 			if (!userInput.trim()) return null;
+			const inputJsonString = JSON.stringify(parseTextToEntries(userInput));
 			const recentChatTurnString = JSON.stringify(getRecentTurnsForMemory());
 			const newTempSequence = getNextSequence();
+
 			const tempChatTurnCdo: TempChatTurnCdo = {
 				sessionId,
 				sequence: newTempSequence,
-				userInput,
+				inputJsonString,
 				userId,
 			};
 			return receiveBotResponse.mutateAsync({
@@ -241,11 +244,14 @@ export const ChatPage: FC<{
 		setPageError(undefined);
 		try {
 			const sequence = tempChatTurn.sequence;
-			const userInput = parseEntriesToText(
-				tempChatTurn.chatTurnSets[currentTempSetNo].request.entries
-			);
+			const userInput = JSON.stringify(tempChatTurn.chatTurnSets[currentTempSetNo].request.entries);
 			const recentChatTurnString = JSON.stringify(getRecentTurnsForMemory());
-			const tempChatTurnCdo: TempChatTurnCdo = { sessionId, sequence, userInput, userId };
+			const tempChatTurnCdo: TempChatTurnCdo = {
+				sessionId,
+				sequence,
+				inputJsonString: userInput,
+				userId,
+			};
 			const result: TempChatTurn = await receiveBotResponse.mutateAsync({
 				tempChatTurnCdo,
 				characterInfo,
@@ -262,7 +268,7 @@ export const ChatPage: FC<{
 				setFocusedTurnIndex(chatTurns.length);
 				updateSessionOnNewMessage.mutateAsync({
 					sessionId,
-					latestCharMessage: parseEntriesToText(result.chatTurnSets[newSetIndex].response.entries),
+					latestCharMessage: JSON.stringify(result.chatTurnSets[newSetIndex].response.entries),
 				});
 			}
 		} catch (err: any) {
