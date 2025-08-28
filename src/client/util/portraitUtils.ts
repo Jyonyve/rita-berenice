@@ -7,7 +7,7 @@ import {
 	PortraitUrlMap,
 	validEmotionKeys,
 	validEmotions,
-} from '#shared/config/emotionWordsMapper.js';
+} from '#shared/config/emotionConstants.js';
 
 // --- DATA STORES ---
 const allPortraitsMap = new Map<string, PortraitUrlMap>();

@@ -1,6 +1,6 @@
 // src/styles/theme.ts
 
-import { createTheme } from '@mui/material/styles';
+import { createTheme, Theme } from '@mui/material/styles';
 import { typography } from './typography.js';
 
 // --- PALETTES ---
@@ -24,7 +24,7 @@ const lightPalette = {
 export const getTheme = (mode: 'light' | 'dark') => {
 	const theme = createTheme({
 		palette: { mode, ...(mode === 'dark' ? darkPalette : lightPalette) },
-		typography: typography,
+		typography,
 	});
 
 	return createTheme(theme, {
@@ -33,19 +33,37 @@ export const getTheme = (mode: 'light' | 'dark') => {
 				defaultProps: { size: 'small', variant: 'outlined' },
 				styleOverrides: {
 					root: {
-						// Target the placeholder pseudo-element
+						'& .MuiInputBase-input': {
+							fontSize: theme.typography.body2.fontSize, // Uses body2 from your theme
+						},
 						'& .MuiInputBase-input::placeholder': {
 							fontSize: theme.typography.body2.fontSize,
-							opacity: 0.7, // Adjust placeholder opacity if needed
+							opacity: 0.7,
 						},
+
+						// MUI 충돌로 TextField 크기조정 제외
+						// '& .MuiInputBase-root.MuiInputBase-multiline textarea': {
+						// 	resize: 'vertical',
+						// 	// Use !important to override inline styles
+
+						// 	// On mobile, disable resizing
+						// 	[theme.breakpoints.down('md')]: { resize: 'none' },
+						// },
 					},
 				},
 			},
 			MuiFormControl: { defaultProps: { size: 'small' } },
+			MuiSelect: { styleOverrides: { select: { fontSize: theme.typography.body2.fontSize } } },
+			MuiMenuItem: { styleOverrides: { root: { fontSize: theme.typography.body2.fontSize } } },
+			MuiAutocomplete: {
+				styleOverrides: {
+					input: { fontSize: theme.typography.body2.fontSize },
+					option: { fontSize: theme.typography.body2.fontSize },
+				},
+			},
 			MuiInputLabel: {
 				styleOverrides: {
 					root: { fontSize: theme.typography.body2.fontSize },
-					// Ensure the shrinked label is also the correct size
 					shrink: { fontSize: theme.typography.body2.fontSize },
 				},
 			},

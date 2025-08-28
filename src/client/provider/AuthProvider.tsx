@@ -10,6 +10,7 @@ import React, {
 	useRef,
 } from 'react';
 import { useSessionContext } from 'supertokens-auth-react/recipe/session/index.js';
+import { signOut } from 'supertokens-auth-react/recipe/session/index.js';
 
 // --- Define the shape of our unified context ---
 interface AuthContextType {
@@ -18,6 +19,7 @@ interface AuthContextType {
 	isLoginModalOpen: boolean;
 	openLoginModal: () => void;
 	closeLoginModal: () => void;
+	logout: () => Promise<void>;
 	userId: string;
 }
 
@@ -28,27 +30,37 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 	// 1. Get the real session state from SuperTokens
 	const session = useSessionContext();
 
-	// 2. Get the mock session state from our external store (only in static mode)
-
-	// 3. Unify the session state into single variables
+	// 2. Unify the session state into single variables
 	const isSessionLoading = session.loading;
 	const isLoggedIn = !session.loading && session.doesSessionExist;
 	const userId = !session.loading && session.doesSessionExist ? session.userId : '';
 
-	// 4. Manage the modal state
+	// 3. Manage the modal state
 	const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 	const openLoginModal = () => setIsLoginModalOpen(true);
 	const closeLoginModal = () => setIsLoginModalOpen(false);
 
-	// 5. Consolidate the effect to auto-close the modal upon login
+	// 4. Add logout function that integrates with SuperTokens
+	const logout = async (): Promise<void> => {
+		try {
+			await signOut();
+			closeLoginModal();
+		} catch (error) {
+			console.error('Logout failed:', error);
+			throw error;
+		}
+	};
+
+	// 5. Auto-close modal upon login
 	const prevIsLoggedIn = useRef(isLoggedIn);
 	useEffect(() => {
-		// If the user just transitioned to logged-in and the modal is open, close it.
 		if (!prevIsLoggedIn.current && isLoggedIn && isLoginModalOpen) {
 			closeLoginModal();
 		}
 		prevIsLoggedIn.current = isLoggedIn;
-	}, [isLoggedIn, isLoginModalOpen, closeLoginModal]);
+	}, [isLoggedIn, isLoginModalOpen]);
+
+	// useEffect #7 REMOVED - no longer needed for production
 
 	const value: AuthContextType = {
 		isSessionLoading,
@@ -56,6 +68,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 		isLoginModalOpen,
 		openLoginModal,
 		closeLoginModal,
+		logout,
 		userId,
 	};
 

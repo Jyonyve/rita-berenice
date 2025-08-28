@@ -10,7 +10,6 @@ import { containerSpacing } from '../../style/index.js';
 import { getDefaultImage } from '../../util/portraitUtils.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'; //
 
 const characterCardSx = {
 	display: 'flex',
@@ -29,17 +28,6 @@ const contentSx = {
 	flexDirection: 'column',
 	justifyContent: 'space-between',
 	'&:last-child': { pb: 1 }, // Override MUI's default bottom padding
-};
-
-const newCharacterCardSx = {
-	...characterCardSx,
-	flexShrink: 0, // Prevents the card from shrinking
-	minHeight: '250px', // Ensures a consistent minimum height
-	alignItems: 'center',
-	justifyContent: 'center',
-	textAlign: 'center',
-	cursor: 'pointer',
-	p: 2,
 };
 
 // Helper Component: CharacterItem now uses GlassCard
@@ -112,7 +100,7 @@ const NewCharacterItem = () => {
 					{getLangText(LANG_KEYS.NEW_CHARACTER)}
 				</RomanticTitle>
 				<Typography variant="body2" noWrap>
-					{'sample text'}
+					{getLangText(LANG_KEYS.NEW_CHARACTER_TITLE)}
 				</Typography>
 			</Box>
 		</GlassCard>

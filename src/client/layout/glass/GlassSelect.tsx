@@ -29,7 +29,7 @@ export const GlassSelect = styled(Select)(({ theme }) => {
 		// --- All component-specific styles remain the same ---
 		'& .MuiSelect-select': {
 			// FIX: Reduce the font size for a more subtle look.
-			fontSize: theme.typography.caption.fontSize, // e.g., '0.75rem'
+			// fontSize: theme.typography.caption.fontSize, // e.g., '0.75rem'
 
 			// FIX: Reduce the padding to make the component more compact.
 			padding: theme.spacing(1, 1.5), // e.g., 8px 12px

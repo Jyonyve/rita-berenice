@@ -1,5 +1,7 @@
 // src/styles/typography.ts
 
+import { TypographyVariantsOptions } from '@mui/material';
+
 // THE NEW ADDITION: Define and export the title font stack as a constant.
 export const logoFontFamily = ['"Bemirs Demo"', '"Foglihtenno"', '"Ipanema Secco"', 'cursive'].join(
 	','
@@ -7,9 +9,11 @@ export const logoFontFamily = ['"Bemirs Demo"', '"Foglihtenno"', '"Ipanema Secco
 
 export const titleFontFamily = ['"Y Universe"', '"Cafe24ClassicType"', 'cursive'].join(',');
 
-export const typography = {
+export const typography: TypographyVariantsOptions = {
+	fontSize: 14,
 	// Default body font
 	fontFamily: [
+		// 'HakgyoansimBareondotum',
 		'Pretendard',
 		'-apple-system',
 		'BlinkMacSystemFont',

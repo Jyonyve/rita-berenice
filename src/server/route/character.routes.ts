@@ -101,6 +101,29 @@ router.get(
 );
 
 /**
+ * GET /api/character/get-characters-by-user-id/:userId
+ * Retrieves all characters associated with a specific show name
+ * @param {string} showName - The exact name of the show to filter by
+ * @returns {CharacterResponse} Array of matching character objects
+ * @throws {404} No characters found for the specified show name
+ * @throws {500} Internal server error
+ */
+router.get(
+	genRoutePattern('getCharactersByUserId', ['userId']),
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+		validateRequestData(req.params, 'params', ['userId']);
+		const { userId } = req.params;
+
+		const path = genRoutePattern('getCharactersByUserId', ['userId']);
+		console.log(`API HIT: GET ${path.replace(':userId', userId)}`);
+
+		const response = await characterStore.getCharactersByUserId(userId);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
+	})
+);
+
+/**
  * POST /api/character/store-character
  * Creates a new character or updates an existing one
  * @param {CharacterInfo} req.body - The character data payload

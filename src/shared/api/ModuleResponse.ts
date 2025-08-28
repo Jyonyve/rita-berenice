@@ -1,6 +1,6 @@
 import { HistoryInfo, LoreInfo } from '../domain/lore/LoreInterfaces.js';
 import { LangCode } from '../config/langConstants.js';
-import { EmotionValue } from '../config/emotionWordsMapper.js';
+import { EmotionValue } from '../config/emotionConstants.js';
 import { CharacterInfo } from '../domain/character/CharacterInterfaces.js';
 import { ChatTurn, TempChatTurn, DisplayTurn } from '../domain/chat/ChatInterfaces.js';
 import { RecapInfo } from '../domain/recap/RecapInterfaces.js';

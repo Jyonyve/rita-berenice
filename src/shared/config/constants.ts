@@ -60,18 +60,3 @@ export const METADATA_TYPES = {
 } as const;
 
 export type MetadataType = (typeof METADATA_TYPES)[keyof typeof METADATA_TYPES];
-
-export const ENV_CONSTANTS = {
-	VITE_API_URL: 'http://localhost:3000',
-	// VITE_APP_ENV: "development",
-	VITE_APP_ENV: 'production', // Or "development" in dev mode
-
-	// Langchain
-	LANGCHAIN_TRACING_V2: true,
-	LANGCHAIN_ENDPOINT: 'https://api.smith.langchain.com',
-	// LANGCHAIN_PROJECT: "rita-berenice",
-
-	// SSR Config
-	SSR_PORT: 3000,
-	SSR_HOST: '0.0.0.0',
-};

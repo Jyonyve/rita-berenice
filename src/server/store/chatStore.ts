@@ -28,7 +28,7 @@ import {
 	reRankSemanticResults,
 } from '../util/queryUtils.js';
 import { parseEntriesToConversation } from '../util/chatParseUtils.js';
-import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
+import { DEFAULT_EMOTION } from '#shared/config/emotionConstants.js';
 import { mapEmotionToCategory, isValidEmotion } from '#shared/util/emotionUtils.js';
 
 // Destructure outside the object

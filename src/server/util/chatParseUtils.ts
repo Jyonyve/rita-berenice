@@ -4,7 +4,7 @@ import {
 	ChatMessageType,
 	ChatRoleType,
 } from '#shared/domain/chat/ChatInterfaces.js';
-import { DEFAULT_EMOTION, EmotionValue } from '#shared/config/emotionWordsMapper.js';
+import { DEFAULT_EMOTION, EmotionValue } from '#shared/config/emotionConstants.js';
 export const parseEntriesToConversation = (entries: ChatEntry[]): string => {
 	return entries
 		.map((entry) => (entry.type === 'dialogue' ? `"${entry.prompt}"` : entry.prompt))

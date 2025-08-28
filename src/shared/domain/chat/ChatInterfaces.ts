@@ -1,5 +1,5 @@
 import { METADATA_TYPES, MetadataType } from '#shared/config/constants.js';
-import { allEmotionKeywordsList, EmotionValue } from '../../config/emotionWordsMapper.js';
+import { allEmotionKeywordsList, EmotionValue } from '../../config/emotionConstants.js';
 import { DefaultAiRole } from '../aimodel/AiInfoTypes.js';
 import { Reference } from '../BaseTypes.js';
 
