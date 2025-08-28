@@ -53,6 +53,10 @@ export const LANG_KEYS = {
 	TITLE_GUIDANCE: 'TITLE_GUIDANCE',
 	FIRST_MESSAGE: 'FIRST_MESSAGE',
 	NEW_CHARACTER_TITLE: 'NEW_CHARACTER_TITLE',
+	NO_SESSIONS: 'NO_SESSIONS',
+	NO_PROFILES: 'NO_PROFILES',
+	NO_HISTORIES: 'NO_HISTORIES',
+
 	// --- [NEW] Emotion Keys ---
 	NEUTRAL: 'NEUTRAL',
 	HAPPY: 'HAPPY',
@@ -134,6 +138,12 @@ export const langConstants: LangRecord = {
 	NEW_CHARACTER: { kor: '새 캐릭터', eng: 'New Character' },
 	NEW_CHARACTER_TITLE: { kor: '새 캐릭터를 만들어봐요!', eng: `Let's make a new character!` },
 	NO_IMAGES: { kor: '업로드된 이미지가 없습니다.', eng: 'No images uploaded.' },
+	NO_SESSIONS: {
+		kor: '지난 이야기가 없습니다. 새 이야기를 시작해봐요!',
+		eng: `No sessions found. Let the story begins!`,
+	},
+	NO_PROFILES: { kor: '기존 프로필이 없습니다.', eng: `No profiles found.` },
+	NO_HISTORIES: { kor: '캐릭터의 옛 이야기가 없습니다.', eng: `No character histories found.` },
 	PORTRAIT: { kor: '초상화', eng: 'Portraits' },
 	EMOTION: { kor: '감정', eng: 'Emotion' },
 	BASIC_INFO: { kor: '기본 정보', eng: 'Basic Information' },

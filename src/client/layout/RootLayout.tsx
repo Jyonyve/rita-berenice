@@ -21,7 +21,6 @@ import { useColorMode } from '../provider/ColorModeProvider.jsx';
 import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpassword/prebuiltui.js';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import { AuthPage } from 'supertokens-auth-react/ui/index.js';
-import { signOut } from 'supertokens-auth-react/recipe/session/index.js';
 import { APPNAME } from '#shared/config/constants.js';
 
 import {
@@ -172,7 +171,7 @@ export function RootLayout() {
 	const { mode, toggleMode } = useColorMode();
 	const isSmallScreen = useMediaQuery((theme) => theme.breakpoints.down('md'));
 	const navigate = useNavigate();
-	const { isSessionLoading, isLoggedIn, isLoginModalOpen, openLoginModal, closeLoginModal } =
+	const { isSessionLoading, isLoggedIn, isLoginModalOpen, openLoginModal, closeLoginModal, logout } =
 		useAuth();
 
 	const headerRef = useRef<HTMLElement>(null);
@@ -208,11 +207,27 @@ export function RootLayout() {
 	const goCharacterPage = (characterId: string) => {
 		navigate(`/${routeConstants.CHARACTER}/${characterId}`);
 	};
-
+	// In RootLayout component
 	const onLogout = async () => {
-		await signOut();
-		navigate('/');
-		handleMenuClose(); // Close menu after logout
+		try {
+			await logout();
+			const currentPath = location.pathname;
+			const sessionAuthPaths = ['/character/new', '/chat', '/history/'];
+
+			const needsRedirect = sessionAuthPaths.some((path) => {
+				if (path.endsWith('/')) return currentPath.startsWith(path);
+
+				return currentPath === path || currentPath.startsWith(path + '/');
+			});
+
+			if (needsRedirect) {
+				navigate('/');
+			}
+
+			handleMenuClose();
+		} catch (error) {
+			console.error('Logout failed:', error);
+		}
 	};
 
 	const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {

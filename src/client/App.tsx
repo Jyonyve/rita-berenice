@@ -33,7 +33,9 @@ export function App() {
 			<Route path="/" element={<RootLayout />}>
 				<Route index element={<MainLandingPage />} />
 				{hasMounted && getSuperTokensRoutesForReactRouterDom(reactRouter, [EmailPasswordPreBuiltUI])}
+				{/* character  */}
 				<Route path={`${CHARACTER}`} element={<CharacterListPageLoader />} />
+				<Route path={`${CHARACTER}/:characterId`} element={<CharacterPageLoader />} />
 				<Route
 					path={`${CHARACTER}/new`}
 					element={
@@ -42,8 +44,16 @@ export function App() {
 						</SessionAuth>
 					}
 				/>
-				<Route path={`${CHARACTER}/:characterId`} element={<CharacterPageLoader />} />
-				<Route path={`${HISTORY}/:historyId`} element={<HistoryPageLoader />} />
+				{/* character history */}
+				<Route
+					path={`${HISTORY}/:historyId`}
+					element={
+						<SessionAuth>
+							<HistoryPageLoader />
+						</SessionAuth>
+					}
+				/>
+				{/* chat */}
 				<Route
 					path={`${CHAT}`}
 					element={

@@ -10,7 +10,7 @@ import { useAuth } from '../../provider/AuthProvider.tsx';
 
 export function CharacterListPageLoader() {
 	const location = useLocation();
-	const { userId } = useAuth();
+	const { userId, isLoggedIn } = useAuth();
 	const { getAllCharacters, getCharactersByUserId } = useCharacterApi();
 
 	const isMine = !!location.state?.isMine;
@@ -37,5 +37,10 @@ export function CharacterListPageLoader() {
 		);
 	}
 
-	return <CharacterListPage characterInfos={characterRes?.characterInfos || []} />;
+	const filteredCharacter =
+		userId === import.meta.env.VITE_ADMIN_USER_ID
+			? characterRes?.characterInfos
+			: characterRes?.characterInfos.filter((char) => char.userId !== 'sunfish');
+
+	return <CharacterListPage characterInfos={filteredCharacter || []} />;
 }

@@ -11,7 +11,6 @@ import {
 	GlassPaper,
 	GlassPortraitSlider,
 } from '../../layout/glass/index.js';
-import { RomanticTitle } from '../../layout/RomanticTitle.jsx';
 import { useAuth } from '../../provider/AuthProvider.jsx';
 import { useToast } from '../../provider/ToastProvider.jsx';
 import { routeConstants } from '../../routeConstants.js';
@@ -21,12 +20,13 @@ import { getLangAlertText, getLangText } from '../../util/translateUtils.js';
 import { ProfileForm } from './ProfileForm.jsx';
 import { SessionPreviewList } from './SessionPreviewList.jsx';
 import { ProfileHistoryTabs } from './ProfileHistoryTab.jsx';
+import { SolidMetallicButton, RomanticTitle } from '../../layout/index.js';
 
 const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 	characterInfo,
 	userId,
 }) => {
-	const { openLoginModal } = useAuth();
+	const { openLoginModal, isLoggedIn } = useAuth();
 	const navigate = useNavigate();
 	const { addToast } = useToast();
 	const characterId = characterInfo.characterId;
@@ -49,7 +49,7 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 			addToast(getLangAlertText(LANG_KEYS.STATIC_SESSION_DISABLE), 'error');
 			return;
 		}
-		if (!userId) {
+		if (!isLoggedIn) {
 			openLoginModal();
 			return;
 		}
@@ -98,17 +98,24 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 						// --- FLEXBOX CENTERING FOR THE IMAGE ---
 						// These properties ensure the image is centered within the pillar and scales correctly.
 						display: 'flex',
+						flexDirection: 'column',
+						gap: 2,
 						alignItems: 'center',
 						justifyContent: 'center',
 					}}
 				>
-					<Box sx={{ height: '100%', width: '100%', display: 'flex' }}>
+					<Box sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 						{!!portraits ? (
 							<GlassPortraitSlider imageUrls={portraits.slice(0, 3)} />
 						) : (
 							<Box width={200} height={200} bgcolor="#eee" borderRadius={3} />
 						)}
 					</Box>
+					{!isLoggedIn && (
+						<SolidMetallicButton colorVariant="gold" variant="outlined" onClick={openLoginModal}>
+							{getLangText(LANG_KEYS.START_NEW_SESSION)}
+						</SolidMetallicButton>
+					)}
 				</Grid>
 
 				{/* Right Column: Using the correct MUI v7 'size' prop */}
@@ -136,30 +143,30 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 								{characterInfo.description}
 							</Typography>
 						</GlassCard>
-
-						{/* Session List Card */}
-						<GlassCard variant="outlined">
-							<Typography variant="subtitle1" color="text.secondary" mb={1}>
-								{getLangText('SESSIONS_WITH_CHARACTER')}
-							</Typography>
-							{userId && (
-								<List dense>
-									<SessionPreviewList
-										userId={userId}
-										characterId={characterId}
-										handleSessionStart={handleStartSession}
-									/>
-								</List>
-							)}
-						</GlassCard>
-
-						{/* Profile Card */}
-						<ProfileHistoryTabs
-							userId={userId}
-							characterId={characterId}
-							onSubmit={handleStartNewSession}
-							onHistory={handleHistory}
-						/>
+						{isLoggedIn && (
+							<>
+								{/* Session List Card */}
+								<GlassCard variant="outlined">
+									<Typography variant="subtitle1" color="text.secondary" mb={1}>
+										{getLangText('SESSIONS_WITH_CHARACTER')}
+									</Typography>
+									<List dense>
+										<SessionPreviewList
+											userId={userId}
+											characterId={characterId}
+											handleSessionStart={handleStartSession}
+										/>
+									</List>
+								</GlassCard>
+								{/* Profile Card */}
+								<ProfileHistoryTabs
+									userId={userId}
+									characterId={characterId}
+									onSubmit={handleStartNewSession}
+									onHistory={handleHistory}
+								/>
+							</>
+						)}
 					</Box>
 				</Grid>
 			</Grid>
