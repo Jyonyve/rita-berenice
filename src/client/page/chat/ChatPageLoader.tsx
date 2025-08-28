@@ -24,7 +24,7 @@ import { ChatPage } from './ChatPage.jsx';
 import { useAuth } from '../../provider/AuthProvider.jsx';
 import { HeaderContextType } from '../../layout/RootLayout.jsx';
 import { getDefaultImage, getImageForEmotion } from '../../util/portraitUtils.js';
-import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
+import { DEFAULT_EMOTION } from '#shared/config/emotionConstants.js';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';

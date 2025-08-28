@@ -32,30 +32,19 @@ import { useAuth } from '../../provider/AuthProvider.jsx';
 import { useToast } from '../../provider/ToastProvider.jsx';
 import { routeConstants } from '../../routeConstants.js';
 import { containerSpacing } from '../../style/index.js';
-import { getLangAlertText, getLangText } from '../../util/translateUtils.js';
-import { DEFAULT_EMOTION, EmotionValue } from '#shared/config/emotionWordsMapper.js';
-import { EMOTION_CATEGORY_NAMES } from '#shared/util/emotionUtils.js';
-import { BASE_IMAGE_DIR, LIMIT_5MB, REQUEST_CHARACTER_LIMIT } from '#shared/config/constants.js';
+import {
+	EMOTION_SELECT_MENUITEM,
+	GENDER_SELECT_MENUITEM,
+	getLangAlertText,
+	getLangText,
+	emotionToLangKey,
+} from '../../util/translateUtils.js';
+import { DEFAULT_EMOTION, EmotionValue } from '#shared/config/emotionConstants.js';
+import { LIMIT_5MB, REQUEST_CHARACTER_LIMIT } from '#shared/config/constants.js';
 import { SolidMetallicButton } from '../../layout/SolidMetallicButton.jsx';
 import { Swiper, SwiperClass, SwiperSlide } from 'swiper/react';
 import { PortraitWithChip } from '../../layout/PortraitWithChip.jsx';
 import { A11y, EffectFade, Mousewheel, Pagination } from 'swiper/modules';
-
-// Gender options
-
-const GENDER_OPTIONS = [
-	{ key: LANG_KEYS.MALE.toLowerCase(), label: getLangText(LANG_KEYS.MALE) },
-	{ key: LANG_KEYS.FEMALE.toLowerCase(), label: getLangText(LANG_KEYS.FEMALE) },
-	{ key: LANG_KEYS.OTHER.toLowerCase(), label: getLangText(LANG_KEYS.OTHER) },
-];
-
-const emotionToLangKey = (emotion: EmotionValue): LangKey => emotion.toUpperCase() as LangKey;
-
-export const EMOTION_OPTIONS = Object.entries(EMOTION_CATEGORY_NAMES).map(([key, value]) => ({
-	key: value,
-	label: getLangText(emotionToLangKey(value)),
-	emotionKey: parseInt(key),
-}));
 
 interface UploadedImage {
 	file: File;
@@ -94,7 +83,7 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 	const [selectedEmotion, setSelectedEmotion] = useState<EmotionValue>(DEFAULT_EMOTION);
 
 	const getEmotionKey = (emotionName: string): number => {
-		const option = EMOTION_OPTIONS.find((opt) => opt.key === emotionName);
+		const option = EMOTION_SELECT_MENUITEM.find((opt) => opt.key === emotionName);
 		return option ? option.emotionKey : 0;
 	};
 	// ✅ 1. Create a ref to hold the Swiper instance
@@ -223,7 +212,7 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 										>
 											{uploadedImages.map((image) => {
 												const emotionLabel =
-													EMOTION_OPTIONS.find((e) => e.key === image.emotion)?.label || image.emotion;
+													EMOTION_SELECT_MENUITEM.find((e) => e.key === image.emotion)?.label || image.emotion;
 												return (
 													<SwiperSlide key={image.emotion}>
 														<PortraitWithChip imageUrl={image.preview} label={emotionLabel} />
@@ -260,7 +249,7 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 										value={selectedEmotion}
 										onChange={(e) => setSelectedEmotion(e.target.value as EmotionValue)}
 									>
-										{EMOTION_OPTIONS.map((opt) => (
+										{EMOTION_SELECT_MENUITEM.map((opt) => (
 											<MenuItem key={opt.key} value={opt.key}>
 												{opt.label}
 											</MenuItem>
@@ -288,7 +277,7 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 										{uploadedImages.map((img) => (
 											<Chip
 												key={img.emotion}
-												label={EMOTION_OPTIONS.find((e) => e.key === img.emotion)?.label}
+												label={EMOTION_SELECT_MENUITEM.find((e) => e.key === img.emotion)?.label}
 												onDelete={() => handleRemoveImage(img.emotion)}
 												color="primary"
 												variant="outlined"
@@ -361,15 +350,15 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 											control={control}
 											rules={{ required: getLangText(LANG_KEYS.GENDER_REQUIRED) }}
 											render={({ field }) => (
-												<FormControl fullWidth error={!!errors.gender}>
+												<FormControl fullWidth required error={!!errors.gender}>
 													<InputLabel>{getLangText(LANG_KEYS.GENDER)}</InputLabel>
-													<GlassSelect {...field}>
-														{GENDER_OPTIONS.map((opt) => (
+													<Select {...field}>
+														{GENDER_SELECT_MENUITEM.map((opt) => (
 															<MenuItem key={opt.key} value={opt.key}>
-																{getLangText(opt.label as LangKey)}
+																{opt.label}
 															</MenuItem>
 														))}
-													</GlassSelect>
+													</Select>
 													{errors.gender && <FormHelperText>{errors.gender.message}</FormHelperText>}
 												</FormControl>
 											)}
@@ -427,7 +416,8 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 													fullWidth
 													label={getLangText(LANG_KEYS.DESCRIPTION)}
 													multiline
-													rows={3}
+													minRows={3}
+													maxRows={10}
 													error={!!errors.description}
 													helperText={errors.description?.message || getLangText(LANG_KEYS.DESCRIPTION_HELPER)}
 													placeholder={getLangText(LANG_KEYS.DESCRIPTION_PLACEHOLDER)}
@@ -447,7 +437,8 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 													fullWidth
 													label={getLangText(LANG_KEYS.INSTRUCTION)}
 													multiline
-													rows={3}
+													minRows={3}
+													maxRows={10}
 													error={!!errors.description}
 													helperText={errors.instruction?.message || getLangText(LANG_KEYS.INSTRUCTION_HELPER)}
 													placeholder={getLangText(LANG_KEYS.INSTRUCTION_PLACEHOLDER)}
@@ -467,7 +458,8 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 													fullWidth
 													label={getLangText(LANG_KEYS.FIRST_MESSAGE)}
 													multiline
-													rows={3}
+													minRows={3}
+													maxRows={10}
 													error={!!errors.firstMessage}
 													helperText={
 														errors.firstMessage?.message || getLangText(LANG_KEYS.FIRST_MESSAGE_HELPER)

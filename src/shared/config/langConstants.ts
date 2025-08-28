@@ -145,13 +145,13 @@ export const langConstants: LangRecord = {
 		eng: 'This tagline is shown to other users and does not affect AI responses.',
 	},
 	FIRST_MESSAGE: { kor: '첫 메시지', eng: 'First Message' },
-	SHOW_NAME_REQUIRED: { kor: '표시될 이름은 필수 항목입니다.', eng: 'Display Name is required.' },
+	SHOW_NAME_REQUIRED: { kor: '이름은 필수입니다.', eng: 'Display Name is required.' },
 	NAME_REQUIRED: {
-		kor: '캐릭터 ID(영어)는 필수 항목입니다.',
+		kor: '캐릭터 이름(영어)은 필수입니다.',
 		eng: 'Character Name (English, for ID) is required.',
 	},
-	GENDER_REQUIRED: { kor: '성별은 필수 항목입니다.', eng: 'Gender is required.' },
-	TITLE_REQUIRED: { kor: '한줄 소개는 필수 항목입니다.', eng: 'Tagline is required.' },
+	GENDER_REQUIRED: { kor: '성별은 필수입니다.', eng: 'Gender is required.' },
+	TITLE_REQUIRED: { kor: '한줄 소개는 필수입니다.', eng: 'Title is required.' },
 	DESCRIPTION_REQUIRED: {
 		kor: '캐릭터 소개는 필수 항목입니다.',
 		eng: 'Character Introduction is required.',
@@ -166,7 +166,7 @@ export const langConstants: LangRecord = {
 		eng: 'Enter the name to be displayed for the character.',
 	},
 	NAME_PLACEHOLDER: {
-		kor: '캐릭터의 영어 이름을 한 단어로 작성해 주세요. ID에 포함됩니다.',
+		kor: '캐릭터의 영어 이름을 한 단어로 작성해 주세요.',
 		eng: "Enter a single English name for the character's ID.",
 	},
 	CONTACT_PLACEHOLDER: {
@@ -190,11 +190,11 @@ export const langConstants: LangRecord = {
 		eng: "The character's first message when starting a new conversation.",
 	},
 	DESCRIPTION_HELPER: {
-		kor: 'AI에게 제공되는 캐릭터의 정보입니다.',
+		kor: '캐릭터의 자세한 정보를 서술해 주세요. 이 정보는 유저와 AI 양쪽에 제공됩니다.',
 		eng: 'This is the character information provided to the AI.',
 	},
 	INSTRUCTION_HELPER: {
-		kor: 'AI에게 캐릭터의 세계관에 대해 설명합니다.',
+		kor: '캐릭터의 세계관에 대해 서술해 주세요. 이 정보는 유저와 AI 양쪽에 제공됩니다.',
 		eng: "This explains the character's world setting to the AI.",
 	},
 	FIRST_MESSAGE_HELPER: {

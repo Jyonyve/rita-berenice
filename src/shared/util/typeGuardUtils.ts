@@ -16,7 +16,7 @@ import { ChatTurn, ChatTurnCdo } from '../domain/chat/ChatInterfaces.js';
 import { parseSessionId } from './parseUtils.js';
 import { HistoryCdo, HistoryInfo, LoreCdo, LoreInfo } from '../domain/lore/LoreInterfaces.js';
 import { NA } from '../config/constants.js';
-import { DEFAULT_EMOTION } from '../config/emotionWordsMapper.js';
+import { DEFAULT_EMOTION } from '../config/emotionConstants.js';
 
 //type guard
 export function isCharacterTermInfo(

@@ -3,7 +3,7 @@ import {
 	EmotionKey,
 	EmotionValue,
 	DEFAULT_EMOTION,
-} from '#shared/config/emotionWordsMapper.js';
+} from '#shared/config/emotionConstants.js';
 
 // Create reverse mapping: specific emotion -> emotion category number
 const emotionToCategoryMap = new Map<string, EmotionKey>();

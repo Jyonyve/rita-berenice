@@ -3,10 +3,13 @@
 import {
 	alertToastConstants,
 	DEFAULT_LANG,
+	LANG_KEYS,
 	LangCode,
 	langConstants,
 	LangKey,
 } from '#shared/config/langConstants.js';
+import { EmotionValue } from '#shared/config/emotionConstants.js';
+import { EMOTION_CATEGORY_NAMES } from '#shared/util/emotionUtils.js';
 
 /**
  * Retrieves the appropriate text for a given key based on the selected language.
@@ -46,3 +49,20 @@ export const getLangAlertText = (key: LangKey, lang: LangCode = DEFAULT_LANG): s
 	return record[lang] || record[DEFAULT_LANG];
 };
 export const notFoundMessage = (noWhat: string) => `No ${noWhat} found.`;
+
+export const emotionToLangKey = (emotion: EmotionValue): LangKey =>
+	emotion.toUpperCase() as LangKey;
+
+export const EMOTION_SELECT_MENUITEM = Object.entries(EMOTION_CATEGORY_NAMES).map(
+	([key, value]) => ({
+		key: value,
+		label: getLangText(emotionToLangKey(value)),
+		emotionKey: parseInt(key),
+	})
+);
+
+export const GENDER_SELECT_MENUITEM = [
+	{ key: LANG_KEYS.MALE.toLowerCase(), label: getLangText(LANG_KEYS.MALE) },
+	{ key: LANG_KEYS.FEMALE.toLowerCase(), label: getLangText(LANG_KEYS.FEMALE) },
+	{ key: LANG_KEYS.OTHER.toLowerCase(), label: getLangText(LANG_KEYS.OTHER) },
+];

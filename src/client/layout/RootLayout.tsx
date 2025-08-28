@@ -382,7 +382,7 @@ export function RootLayout() {
 					<Container maxWidth="sm">
 						<Typography variant="body2" color="text.secondary" align="center">
 							{`Copyright © ${APPNAME} `}
-							{new Date().getFullYear()}
+							{'2025'}
 							{'.'}
 						</Typography>
 					</Container>

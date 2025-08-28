@@ -37,6 +37,20 @@
 	font-style: normal;
 }
 
+@font-face {
+	font-family: 'HakgyoansimBareondotum';
+	src: url('/fonts/HakgyoansimBareondotumR.otf') format('opentype');
+	font-weight: normal; /* or 'normal' */
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'HakgyoansimBareondotum';
+	src: url('/fonts/HakgyoansimBareondotumB.otf') format('opentype');
+	font-weight: bold; /* or 'bold' */
+	font-style: normal;
+}
+
 /* Korean Font Fallback 2 */
 @font-face {
 	font-family: 'Cafe24ClassicType';

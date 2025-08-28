@@ -7,7 +7,7 @@ import {
 	ChatTurn,
 	ChatTurnMetadata,
 } from '../domain/chat/ChatInterfaces.js';
-import { DEFAULT_EMOTION } from '../config/emotionWordsMapper.js';
+import { DEFAULT_EMOTION } from '../config/emotionConstants.js';
 import { buildCharacterId } from '#shared/util/buildIdUtils.js';
 import { NA } from '../config/constants.js';
 import zlib from 'zlib';
