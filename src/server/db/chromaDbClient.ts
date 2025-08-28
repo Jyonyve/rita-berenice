@@ -29,9 +29,13 @@ const embedFnCohere = new CohereEmbeddingFunction({
 	inputType: 'search_document',
 });
 
-const host = process.env.CHROMA_HOST;
-const port = Number(process.env.CHROMA_PORT);
-const ssl = process.env.CHROMA_SSL === 'true';
+// const host = process.env.CHROMA_HOST;
+// const port = Number(process.env.CHROMA_PORT);
+// const ssl = process.env.CHROMA_SSL === 'true';
+
+// PROD
+const DESTINATION_CONFIG = { host: 'rita-berenice-chromadb.fly.dev', port: 443, ssl: true };
+const { host, port, ssl } = DESTINATION_CONFIG;
 
 if (!host || !port || isNaN(port) || ssl === undefined) {
 	throw new Error(
