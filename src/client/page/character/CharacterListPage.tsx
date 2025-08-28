@@ -1,6 +1,6 @@
 // src/client/component/page/CharacterListPage.tsx
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Typography, Box, CircularProgress, Grid, Theme } from '@mui/material';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { useNavigate } from 'react-router';
@@ -10,7 +10,10 @@ import { containerSpacing } from '../../style/index.js';
 import { getDefaultImage } from '../../util/portraitUtils.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
+<<<<<<< HEAD
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'; //
+=======
+>>>>>>> task
 
 const characterCardSx = {
 	display: 'flex',
@@ -30,6 +33,7 @@ const contentSx = {
 	justifyContent: 'space-between',
 	'&:last-child': { pb: 1 }, // Override MUI's default bottom padding
 };
+<<<<<<< HEAD
 
 const newCharacterCardSx = {
 	...characterCardSx,
@@ -41,6 +45,8 @@ const newCharacterCardSx = {
 	cursor: 'pointer',
 	p: 2,
 };
+=======
+>>>>>>> task
 
 // Helper Component: CharacterItem now uses GlassCard
 const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterInfo }) => {
@@ -112,7 +118,11 @@ const NewCharacterItem = () => {
 					{getLangText(LANG_KEYS.NEW_CHARACTER)}
 				</RomanticTitle>
 				<Typography variant="body2" noWrap>
+<<<<<<< HEAD
 					{'sample text'}
+=======
+					{getLangText(LANG_KEYS.NEW_CHARACTER_TITLE)}
+>>>>>>> task
 				</Typography>
 			</Box>
 		</GlassCard>

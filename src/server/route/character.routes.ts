@@ -101,6 +101,29 @@ router.get(
 );
 
 /**
+ * GET /api/character/get-characters-by-user-id/:userId
+ * Retrieves all characters associated with a specific show name
+ * @param {string} showName - The exact name of the show to filter by
+ * @returns {CharacterResponse} Array of matching character objects
+ * @throws {404} No characters found for the specified show name
+ * @throws {500} Internal server error
+ */
+router.get(
+	genRoutePattern('getCharactersByUserId', ['userId']),
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+		validateRequestData(req.params, 'params', ['userId']);
+		const { userId } = req.params;
+
+		const path = genRoutePattern('getCharactersByUserId', ['userId']);
+		console.log(`API HIT: GET ${path.replace(':userId', userId)}`);
+
+		const response = await characterStore.getCharactersByUserId(userId);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
+	})
+);
+
+/**
  * POST /api/character/store-character
  * Creates a new character or updates an existing one
  * @param {CharacterInfo} req.body - The character data payload
@@ -111,7 +134,17 @@ router.get(
 router.post(
 	genRoutePattern('storeCharacter'),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const requiredFields = ['name', 'variant', 'description', 'instruction'];
+		const requiredFields = [
+			'title',
+			'contact',
+			'description',
+			'instruction',
+			'gender',
+			'name',
+			'showName',
+			'userId',
+			'firstMessage',
+		];
 		validateRequestData(req.body, 'body', requiredFields);
 
 		const characterInfo = req.body as CharacterInfo;
@@ -133,9 +166,9 @@ router.post(
 	genRoutePattern('uploadCharacterImage'),
 	upload.single('image'),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		validateRequestData(req.body, 'body', ['characterId', 'emotion']);
+		validateRequestData(req.body, 'body', ['characterId', 'emotionKey']);
 
-		const { characterId, emotion } = req.body;
+		const { characterId, emotionKey } = req.body;
 		const file = req.file;
 
 		if (!file) {
@@ -144,7 +177,9 @@ router.post(
 		}
 
 		const routePath = genRoutePattern('uploadCharacterImage');
-		console.log(`API HIT: POST ${routePath} for character: ${characterId}, emotion: ${emotion}`);
+		console.log(
+			`API HIT: POST ${routePath} for character: ${characterId}, emotionKey: ${emotionKey}`
+		);
 
 		// ✅ Use constant for directory path
 		const uploadDir = `${BASE_IMAGE_DIR}/${characterId}`;
@@ -156,7 +191,7 @@ router.post(
 			console.log(`Created directory: ${fullUploadPath}`);
 		}
 
-		const fileName = `${characterId}_${emotion}.avif`; // Changed to match AVIF format
+		const fileName = `${characterId}_${emotionKey}.avif`; // Changed to match AVIF format
 		const filePath = path.join(fullUploadPath, fileName);
 
 		try {

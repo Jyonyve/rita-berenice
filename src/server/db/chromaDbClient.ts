@@ -30,10 +30,10 @@ const embedFnCohere = new CohereEmbeddingFunction({
 });
 
 const host = process.env.CHROMA_HOST;
-const port = process.env.CHROMA_PORT;
-// const ssl = process.env.CHROMA_SSL === 'true';
+const port = Number(process.env.CHROMA_PORT);
+const ssl = process.env.CHROMA_SSL === 'true';
 
-if (!host || !port) {
+if (!host || !port || isNaN(port) || ssl === undefined) {
 	throw new Error(
 		'ChromaDB environment variables (CHROMA_HOST, CHROMA_PORT, CHROMA_SSL) must be set.'
 	);
@@ -41,11 +41,7 @@ if (!host || !port) {
 	// console.log(`host: ${host}, port: ${port}, ssl:${ssl}`);
 	console.log(`host: ${host}, port: ${port}`);
 }
-const chromaClient = new ChromaClient({
-	host,
-	port: Number(port), // Ensure port is a number
-	// ssl,
-});
+const chromaClient = new ChromaClient({ host, port, ssl });
 
 const logJsonPreview = (obj: any, length: number = 100): string => {
 	if (obj === null || typeof obj === 'undefined') {

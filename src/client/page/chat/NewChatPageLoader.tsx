@@ -1,6 +1,6 @@
 // src/client/page/ChatPageLoader.tsx
 
-import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
+import { DEFAULT_EMOTION } from '#shared/config/emotionConstants.js';
 import { ChatMessage, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { buildMessageId } from '#shared/util/buildIdUtils.js';
 import { parseTextToEntries } from '../../util/chatParseUtils.js';

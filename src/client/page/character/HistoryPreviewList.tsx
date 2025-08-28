@@ -1,7 +1,7 @@
 import { Box, Divider, ListItem, ListItemButton, ListItemText, Typography } from '@mui/material';
 import React, { FC, Fragment } from 'react'; // Import Fragment
 import { useLoreApi } from '../../hook/api/index.js';
-import { getLangText, notFoundMessage } from '../../util/translateUtils.js';
+import { getLangText } from '../../util/translateUtils.js';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
 import { formatTimestamp } from '../../util/styleUtils.jsx';
@@ -11,7 +11,6 @@ export const HistoryPreviewList: FC<{
 	handleHistory: (historyId: string) => void;
 }> = ({ characterId, handleHistory }) => {
 	const { data: historyRes, isLoading, error } = useLoreApi().getHistories(characterId);
-	console.log(historyRes);
 	if (isLoading) {
 		return (
 			<ListItem sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -49,7 +48,7 @@ export const HistoryPreviewList: FC<{
 				<ListItemText
 					primary={
 						<Typography variant="body2" color="text.secondary">
-							{notFoundMessage('sessions')}
+							{getLangText(LANG_KEYS.NO_HISTORIES)}
 						</Typography>
 					}
 				/>

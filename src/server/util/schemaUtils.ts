@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { curatedEmotionKeywords } from '#shared/config/emotionWordsMapper.js';
+import { curatedEmotionKeywords } from '#shared/config/emotionConstants.js';
 import { convertArrayToString } from '#shared/util/parseUtils.js';
 
 // Safe type guard to ensure non-empty array

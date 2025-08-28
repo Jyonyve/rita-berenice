@@ -26,7 +26,7 @@ import { ragQueryService } from './ragQueryService.js';
 import { WhereDocument } from 'chromadb';
 import { createChatTurnMetadataSchema } from '#server/util/schemaUtils.js';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
-import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
+import { DEFAULT_EMOTION } from '#shared/config/emotionConstants.js';
 import { logFlow } from '../util/jsonlLogger.js';
 import { LangCode } from '#shared/config/langConstants.js';
 import { HistoryInfo, LoreInfo } from '#shared/domain/lore/LoreInterfaces.js';

@@ -125,6 +125,25 @@ export const characterStore = {
 		}
 	},
 
+	getCharactersByUserId: async (userId: string): Promise<CharacterResponse> => {
+		const collection = await characterStore._getCollection();
+		const where: Where = {
+			$and: [{ type: { $eq: METADATA_TYPES.CHARACTER } }, { userId: { $eq: userId } }],
+		};
+		try {
+			const rawResults = await getRecords(collection, where);
+			const results = validateChromaResponse(rawResults, 'getList', collectionType);
+
+			return characterStore._constructCharacter(results);
+		} catch (error: any) {
+			handleServiceError(
+				error,
+				'An internal error occurred while do [getCharactersByUserId].',
+				`Failed to get characters by userId '${userId}'`
+			);
+		}
+	},
+
 	storeCharacter: async (character: CharacterCdo | CharacterInfo): Promise<string> => {
 		const collection = await characterStore._getCollection();
 		const now = new Date().toISOString();

@@ -131,6 +131,7 @@ export const numberToEmotionWordsMap = {
 
 	// 2: Represents anger and related negative emotions like frustration and irritation. (분노 / 좌절)
 	2: [
+		'frustrated',
 		'demanding', // 요구하는, 강요하는
 		'threatening', // 위협적인, 협박하는
 		'angry', // 화난
@@ -237,6 +238,7 @@ export const numberToEmotionWordsMap = {
 
 	// 4: Represents fear and surprise, including shock and amazement. (공포 / 놀람 / 충격)
 	4: [
+		'surprised',
 		'fear', // 공포, 두려움
 		'scared', // 무서워하는, 겁먹은
 		'afraid', // 두려워하는, 무서워하는
@@ -372,6 +374,9 @@ export const numberToEmotionWordsMap = {
 		'receptive', // 수용적인 (마음을 여는)
 		'approachable', // 다가가기 쉬운, 친근한
 		'graceful', // 우아한 (행동/태도에서 비롯된 호감)
+		'compassionate',
+		'tender',
+		'protective',
 	],
 
 	// 7: Represents excitement, eagerness, and enthusiasm, including desire. (흥분 / 열정)
@@ -485,6 +490,7 @@ export const numberToEmotionWordsMap = {
 	],
 	// 9: Represents pride, confidence, and smugness. (자부심 / 자신감)
 	9: [
+		'proud',
 		'pride', // 자부심, 자랑스러움
 		'confident', // 자신감 있는
 		'assured', // 자신감 있는, 확신에 찬
@@ -542,6 +548,7 @@ export const numberToEmotionWordsMap = {
 	10: [
 		'ashamed', // 부끄러워하는, 창피한
 		'guilt', // 죄책감
+		'guilty',
 		'humiliation', // 굴욕, 창피
 		// 'embarrassment' is in cat 6 for social awkwardness, here for deeper shame
 		'mortified', // 몹시 당황한, 굴욕감을 느끼는
@@ -586,7 +593,10 @@ export const numberToEmotionWordsMap = {
 
 	// 11: Represents Awe and Wonder. (경외 / 경탄)
 	11: [
+		'amazed',
 		'awe', // 경외감
+		'fascinated',
+		'enchanted',
 		'wonder', // 경이로움, 놀라움 (긍정적)
 		'amazement', // (크나큰) 놀라움, 경탄
 		'astonishment', // (믿기 어려울 정도의) 놀라움, 경탄 (Cat 4 for shock, here for profound wonder)
@@ -625,6 +635,7 @@ export const numberToEmotionWordsMap = {
 
 	// 12: Represents Boredom and Apathy. (지루함 / 무관심)
 	12: [
+		'bored',
 		'boredom', // 지루함, 따분함
 		'apathy', // 무관심, 냉담
 		'indifference', // 무관심 (Cat 0 for neutral, here for lack of interest)
@@ -668,6 +679,8 @@ export const numberToEmotionWordsMap = {
 
 	// 13: Represents Romance and Limerence. (로맨스 / 설렘)
 	13: [
+		'romantic',
+		'infatuated',
 		'romance', // 로맨스, 연애
 		'limerence', // (강렬한) 연애 감정, 설렘 (특히 초기)
 		'infatuation', // (일시적인) 열정, 심취 (Cat 6 for general affection, here specifically romantic)
@@ -735,7 +748,7 @@ export const numberToEmotionWordsMap = {
 // This is a more stable and efficient alternative to the exhaustive list.
 // Enhanced curated list with better coverage and balance
 // A comprehensive curated list covering all 15 categories efficiently for LLM usage
-export const curatedEmotionKeywords = [
+export const curatedEmotionKeywords: EmotionValue[] = [
 	// === Category 0: Neutral/Default (6 emotions) ===
 	'neutral',
 	'calm',
@@ -788,7 +801,7 @@ export const curatedEmotionKeywords = [
 	'shocked',
 	'startled',
 	'nervous',
-	'overwhelmed',
+	'fear',
 
 	// === Category 5: Thinking/Curiosity (7 emotions) ===
 	'curious',
@@ -847,8 +860,8 @@ export const curatedEmotionKeywords = [
 	'awe',
 	'amazed',
 	'fascinated',
-	'inspired',
 	'enchanted',
+	'inspired',
 
 	// === Category 12: Boredom/Apathy (5 emotions) ===
 	'bored',
@@ -875,7 +888,11 @@ export const curatedEmotionKeywords = [
 // Default portrait number
 export type EmotionKey = keyof typeof numberToEmotionWordsMap;
 export type EmotionValue = (typeof numberToEmotionWordsMap)[EmotionKey][number];
+<<<<<<< HEAD:src/shared/config/emotionWordsMapper.ts
 export const DEFAULT_EMOTION: EmotionValue[number] = 'neutral' as const;
+=======
+export const DEFAULT_EMOTION = 'neutral' as const;
+>>>>>>> task:src/shared/config/emotionConstants.ts
 
 // The PortraitMap stores loaded image URLs, keyed by their valid EmotionKey (image number).
 // It's Partial because not every EmotionKey defined in numberToEmotionWordsMap

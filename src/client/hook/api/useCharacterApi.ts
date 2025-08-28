@@ -58,6 +58,21 @@ export const useCharacterApi = () => {
 		});
 
 	/**
+	 * Fetches characters by userId.
+	 * Query key: ['getCharactersByUserId', userId]
+	 */
+	const getCharactersByUserId = (userId: string) =>
+		useQuery<CharacterResponse, Error>({
+			queryKey: ['getCharactersByUserId', userId],
+			queryFn: async () => {
+				const url = genApiUrl(MODULE_NAME, 'getCharactersByUserId', [userId]);
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<CharacterResponse>(response.data.payload);
+			},
+			enabled: !!userId,
+		});
+
+	/**
 	 * Creates or updates a character.
 	 * Mutation key: 'storeCharacter'
 	 */
@@ -100,6 +115,7 @@ export const useCharacterApi = () => {
 		getAllCharacters,
 		getCharacter,
 		getCharactersByShowName,
+		getCharactersByUserId,
 		storeCharacter: storeCharacter.mutateAsync,
 		uploadCharacterImage: uploadCharacterImage.mutateAsync,
 		createCharacterFolder: createCharacterFolder.mutateAsync,

@@ -3,7 +3,7 @@ import {
 	EmotionKey,
 	EmotionValue,
 	DEFAULT_EMOTION,
-} from '#shared/config/emotionWordsMapper.js';
+} from '#shared/config/emotionConstants.js';
 
 // Create reverse mapping: specific emotion -> emotion category number
 const emotionToCategoryMap = new Map<string, EmotionKey>();
@@ -17,7 +17,7 @@ Object.entries(numberToEmotionWordsMap).forEach(([categoryNumber, emotions]) => 
 });
 
 // Category names mapping for human-readable output
-export const EMOTION_CATEGORY_NAMES: Record<EmotionKey, string> = {
+export const EMOTION_CATEGORY_NAMES: Record<EmotionKey, EmotionValue> = {
 	0: 'neutral',
 	1: 'happy',
 	2: 'angry',

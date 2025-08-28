@@ -15,7 +15,7 @@ import {
 	Stack,
 	Alert,
 } from '@mui/material';
-import { FC, useState, useRef, ChangeEvent } from 'react';
+import { FC, useState, useRef, ChangeEvent, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useForm, Controller } from 'react-hook-form';
 import { CloudUpload } from '@mui/icons-material';
@@ -32,28 +32,19 @@ import { useAuth } from '../../provider/AuthProvider.jsx';
 import { useToast } from '../../provider/ToastProvider.jsx';
 import { routeConstants } from '../../routeConstants.js';
 import { containerSpacing } from '../../style/index.js';
-import { getLangAlertText, getLangText } from '../../util/translateUtils.js';
-import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
-import { EMOTION_CATEGORY_NAMES } from '#shared/util/emotionUtils.js';
-import { BASE_IMAGE_DIR, LIMIT_5MB, REQUEST_CHARACTER_LIMIT } from '#shared/config/constants.js';
+import {
+	EMOTION_SELECT_MENUITEM,
+	GENDER_SELECT_MENUITEM,
+	getLangAlertText,
+	getLangText,
+	emotionToLangKey,
+} from '../../util/translateUtils.js';
+import { DEFAULT_EMOTION, EmotionValue } from '#shared/config/emotionConstants.js';
+import { LIMIT_5MB, REQUEST_CHARACTER_LIMIT } from '#shared/config/constants.js';
 import { SolidMetallicButton } from '../../layout/SolidMetallicButton.jsx';
-import { Swiper, SwiperSlide } from 'swiper/react';
+import { Swiper, SwiperClass, SwiperSlide } from 'swiper/react';
 import { PortraitWithChip } from '../../layout/PortraitWithChip.jsx';
 import { A11y, EffectFade, Mousewheel, Pagination } from 'swiper/modules';
-
-// Gender options
-
-const GENDER_OPTIONS = [
-	{ key: LANG_KEYS.MALE.toLowerCase(), label: getLangText(LANG_KEYS.MALE) },
-	{ key: LANG_KEYS.FEMALE.toLowerCase(), label: getLangText(LANG_KEYS.FEMALE) },
-	{ key: LANG_KEYS.OTHER.toLowerCase(), label: getLangText(LANG_KEYS.OTHER) },
-];
-
-export const EMOTION_OPTIONS = Object.entries(EMOTION_CATEGORY_NAMES).map(([key, value]) => ({
-	key: value,
-	label: getLangText(value.toUpperCase() as LangKey),
-	emotionKey: parseInt(key),
-}));
 
 interface UploadedImage {
 	file: File;
@@ -89,12 +80,22 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 	});
 
 	const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
-	const [selectedEmotion, setSelectedEmotion] = useState<string>(DEFAULT_EMOTION);
+	const [selectedEmotion, setSelectedEmotion] = useState<EmotionValue>(DEFAULT_EMOTION);
 
 	const getEmotionKey = (emotionName: string): number => {
-		const option = EMOTION_OPTIONS.find((opt) => opt.key === emotionName);
+		const option = EMOTION_SELECT_MENUITEM.find((opt) => opt.key === emotionName);
 		return option ? option.emotionKey : 0;
 	};
+	// ✅ 1. Create a ref to hold the Swiper instance
+	const swiperRef = useRef<SwiperClass | null>(null);
+
+	// ✅ 2. Use an effect to slide to the end when images change
+	useEffect(() => {
+		if (swiperRef.current && uploadedImages.length > 0) {
+			// The slideTo method animates to the specified slide index
+			swiperRef.current.slideTo(uploadedImages.length - 1);
+		}
+	}, [uploadedImages]); // This effect runs whenever the uploadedImages array changes
 
 	const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
 		const file = event.target.files?.[0];
@@ -127,7 +128,11 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 		});
 
 		if (fileInputRef.current) fileInputRef.current.value = '';
-		addToast(getLangAlertText(LANG_KEYS.IMAGE_UPLOADED_FOR), 'success');
+		addToast(
+			`${getLangText(emotionToLangKey(selectedEmotion))} ${getLangAlertText(LANG_KEYS.IMAGE_UPLOADED_FOR)}`,
+			'success',
+			1500
+		);
 	};
 
 	const handleRemoveImage = (emotion: string) => {
@@ -146,7 +151,7 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 					const formData = new FormData();
 					formData.append('image', image.file);
 					formData.append('characterId', characterId);
-					formData.append('emotion', image.emotion);
+					formData.append('emotionKey', image.emotionKey.toString());
 					return uploadCharacterImage(formData);
 				})
 			);
@@ -191,9 +196,14 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 									// ✅ Swiper logic is now directly in this component
 									<Box sx={{ width: '100%', height: '100%', overflow: 'visible' }}>
 										<Swiper
+											// ✅ 3. Capture the Swiper instance using the 'onSwiper' prop
+											onSwiper={(swiper) => {
+												swiperRef.current = swiper;
+											}}
 											modules={[Pagination, A11y, EffectFade, Mousewheel]}
 											slidesPerView={1}
-											loop={true}
+											// Loop is disabled to make sliding to a specific index reliable
+											loop={false}
 											effect="fade"
 											fadeEffect={{ crossFade: true }}
 											style={{ overflow: 'visible' }}
@@ -202,7 +212,7 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 										>
 											{uploadedImages.map((image) => {
 												const emotionLabel =
-													EMOTION_OPTIONS.find((e) => e.key === image.emotion)?.label || image.emotion;
+													EMOTION_SELECT_MENUITEM.find((e) => e.key === image.emotion)?.label || image.emotion;
 												return (
 													<SwiperSlide key={image.emotion}>
 														<PortraitWithChip imageUrl={image.preview} label={emotionLabel} />
@@ -237,9 +247,9 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 									<InputLabel>{getLangText(LANG_KEYS.EMOTION)}</InputLabel>
 									<GlassSelect
 										value={selectedEmotion}
-										onChange={(e) => setSelectedEmotion(e.target.value as string)}
+										onChange={(e) => setSelectedEmotion(e.target.value as EmotionValue)}
 									>
-										{EMOTION_OPTIONS.map((opt) => (
+										{EMOTION_SELECT_MENUITEM.map((opt) => (
 											<MenuItem key={opt.key} value={opt.key}>
 												{opt.label}
 											</MenuItem>
@@ -267,7 +277,7 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 										{uploadedImages.map((img) => (
 											<Chip
 												key={img.emotion}
-												label={EMOTION_OPTIONS.find((e) => e.key === img.emotion)?.label}
+												label={EMOTION_SELECT_MENUITEM.find((e) => e.key === img.emotion)?.label}
 												onDelete={() => handleRemoveImage(img.emotion)}
 												color="primary"
 												variant="outlined"
@@ -340,15 +350,15 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 											control={control}
 											rules={{ required: getLangText(LANG_KEYS.GENDER_REQUIRED) }}
 											render={({ field }) => (
-												<FormControl fullWidth error={!!errors.gender}>
+												<FormControl fullWidth required error={!!errors.gender}>
 													<InputLabel>{getLangText(LANG_KEYS.GENDER)}</InputLabel>
-													<GlassSelect {...field}>
-														{GENDER_OPTIONS.map((opt) => (
+													<Select {...field}>
+														{GENDER_SELECT_MENUITEM.map((opt) => (
 															<MenuItem key={opt.key} value={opt.key}>
-																{getLangText(opt.label as LangKey)}
+																{opt.label}
 															</MenuItem>
 														))}
-													</GlassSelect>
+													</Select>
 													{errors.gender && <FormHelperText>{errors.gender.message}</FormHelperText>}
 												</FormControl>
 											)}
@@ -406,9 +416,10 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 													fullWidth
 													label={getLangText(LANG_KEYS.DESCRIPTION)}
 													multiline
-													rows={3}
+													minRows={3}
+													maxRows={10}
 													error={!!errors.description}
-													helperText={errors.description?.message}
+													helperText={errors.description?.message || getLangText(LANG_KEYS.DESCRIPTION_HELPER)}
 													placeholder={getLangText(LANG_KEYS.DESCRIPTION_PLACEHOLDER)}
 													required
 												/>
@@ -426,11 +437,10 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 													fullWidth
 													label={getLangText(LANG_KEYS.INSTRUCTION)}
 													multiline
-													rows={3}
+													minRows={3}
+													maxRows={10}
 													error={!!errors.description}
-													helperText={
-														errors.instruction?.message || getLangText(LANG_KEYS.AI_INSTRUCTION_HELPER)
-													}
+													helperText={errors.instruction?.message || getLangText(LANG_KEYS.INSTRUCTION_HELPER)}
 													placeholder={getLangText(LANG_KEYS.INSTRUCTION_PLACEHOLDER)}
 													required
 												/>
@@ -448,7 +458,8 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 													fullWidth
 													label={getLangText(LANG_KEYS.FIRST_MESSAGE)}
 													multiline
-													rows={3}
+													minRows={3}
+													maxRows={10}
 													error={!!errors.firstMessage}
 													helperText={
 														errors.firstMessage?.message || getLangText(LANG_KEYS.FIRST_MESSAGE_HELPER)
