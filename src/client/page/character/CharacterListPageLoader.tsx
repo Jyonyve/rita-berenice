@@ -5,16 +5,27 @@ import { CharacterListPage } from './CharacterListPage.jsx';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
+import { useLocation } from 'react-router';
+import { useAuth } from '../../provider/AuthProvider.tsx';
 
 export function CharacterListPageLoader() {
-	const { data: characterRes, isLoading } = useCharacterApi().getAllCharacters();
+	const location = useLocation();
+	const { userId } = useAuth();
+	const { getAllCharacters, getCharactersByUserId } = useCharacterApi();
+
+	const isMine = !!location.state?.isMine;
+
+	// Always call hooks in the same order
+	const { data: characterRes, isLoading } = isMine
+		? getCharactersByUserId(userId)
+		: getAllCharacters();
 
 	if (isLoading) {
 		return (
 			<Container
 				sx={{
 					display: 'flex',
-					flexDirection: 'column', // <-- Add this line
+					flexDirection: 'column',
 					justifyContent: 'center',
 					alignItems: 'center',
 					height: '80vh',

@@ -200,8 +200,8 @@ export function RootLayout() {
 		}
 	}, []);
 
-	const goCharacterListPage = () => {
-		navigate(`/${routeConstants.CHARACTER}`);
+	const goMyCharacterListPage = () => {
+		navigate(`/${routeConstants.CHARACTER}`, { state: { isMine: true } });
 		handleMenuClose(); // Close menu after navigation
 	};
 
@@ -259,11 +259,21 @@ export function RootLayout() {
 								component="div"
 								onClick={() => navigate('/')}
 								role="button"
-								sx={{ paddingRight: 2 }}
+								sx={{ pr: 1 }}
 							>
 								{APPNAME}
 							</RomanticTitle>
 						)}
+						<RomanticTitle
+							variant="subtitle1"
+							colorVariant="silver"
+							component="div"
+							onClick={() => navigate(`/${routeConstants.CHARACTER}`)}
+							role="button"
+							sx={{ px: 1 }}
+						>
+							{getLangText(LANG_KEYS.CHARACTERS)}
+						</RomanticTitle>
 						{headerInfo && (
 							<Box
 								role="button"
@@ -293,13 +303,13 @@ export function RootLayout() {
 								<ImageIcon />
 							</IconButton>
 						)}
-						<Switch
+						{/* <Switch
 							checked={mode === 'dark'}
 							onChange={toggleMode}
 							color="default"
 							size="small"
 							aria-label="toggle theme"
-						/>
+						/> */}
 
 						{!isSessionLoading && (
 							<>
@@ -344,8 +354,8 @@ export function RootLayout() {
 										list: { sx: (theme) => ({ [theme.breakpoints.down('md')]: { padding: 0.5 } }) },
 									}}
 								>
-									<GlassMenuItem onClick={goCharacterListPage} colorVariant="silver">
-										{getLangText(LANG_KEYS.CHARACTERS)}
+									<GlassMenuItem onClick={goMyCharacterListPage} colorVariant="silver">
+										{getLangText(LANG_KEYS.MY_CHARACTERS)}
 									</GlassMenuItem>
 
 									<GlassMenuItem onClick={onLogout} colorVariant="silver">
