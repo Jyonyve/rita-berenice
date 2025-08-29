@@ -8,7 +8,7 @@ import { APPNAME } from '#shared/config/constants.js';
 import { RomanticTitle } from '../layout/RomanticTitle.jsx';
 import { GlassBox, GlassPaper } from '../layout/glass/index.js';
 
-export default function MainLandingPage() {
+export function MainLandingPage() {
 	const navigate = useNavigate();
 	const theme = useTheme();
 	const goCharacterPage = () => {

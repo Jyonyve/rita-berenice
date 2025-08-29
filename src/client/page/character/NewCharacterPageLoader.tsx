@@ -3,14 +3,21 @@ import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useCharacterApi } from '../../hook/index.js';
 import { useAuth } from '../../provider/index.js';
-import CharacterPage from './CharacterPage.tsx';
-import { GlassCircularProgress } from '../../layout/glass/index.js';
-import { getLangText } from '../../util/translateUtils.js';
-import { LANG_KEYS } from '#shared/config/langConstants.js';
-import NewCharacterPage from './NewCharacterPage.jsx';
+import { GlassPaper } from '../../layout/glass/index.js';
+import { routeConstants } from '../../routeConstants.js';
+import { CharacterForm } from './CharacterForm.jsx';
 
 export function NewCharacterPageLoader() {
 	const { userId } = useAuth();
-
-	return <NewCharacterPage userId={userId} />;
+	const navigate = useNavigate();
+	return (
+		<GlassPaper>
+			<CharacterForm
+				mode="create"
+				userId={userId}
+				onCancel={() => navigate(`/${routeConstants.CHARACTER}`)}
+				onSuccess={(id) => navigate(`/${routeConstants.CHARACTER}/${id}`)}
+			/>
+		</GlassPaper>
+	);
 }

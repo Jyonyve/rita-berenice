@@ -100,6 +100,14 @@ export const useCharacterApi = () => {
 		},
 	});
 
+	const deleteCharacterImage = useMutation<any, Error, { characterId: string; emotionKey: number }>({
+		mutationFn: async (data) => {
+			const url = genApiUrl(MODULE_NAME, 'deleteCharacterImage');
+			const response = await apiClient.delete(url, { data });
+			return response.data;
+		},
+	});
+
 	/**
 	 * Creates a character folder
 	 */
@@ -118,6 +126,7 @@ export const useCharacterApi = () => {
 		getCharactersByUserId,
 		storeCharacter: storeCharacter.mutateAsync,
 		uploadCharacterImage: uploadCharacterImage.mutateAsync,
+		deleteCharacterImage: deleteCharacterImage.mutateAsync,
 		createCharacterFolder: createCharacterFolder.mutateAsync,
 	};
 };
