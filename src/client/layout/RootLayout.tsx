@@ -159,13 +159,17 @@ const ImageModal: FC<ImageModalProps> = ({ open, onClose, imageUrl, characterId 
 	);
 };
 
-interface HeaderInfo {
+export interface HeaderInfo {
 	characterId: string;
-	showName: string;
+	profileShowName: string;
 	avatarUrl?: string;
 	mobileImageUrl?: string;
+	editModalOpen?: boolean;
 }
-export type HeaderContextType = (info?: HeaderInfo) => void;
+export type HeaderContextType = {
+	setHeaderInfo: (info?: HeaderInfo) => void;
+	headerInfo?: HeaderInfo;
+};
 
 export function RootLayout() {
 	const { mode, toggleMode } = useColorMode();
@@ -179,6 +183,7 @@ export function RootLayout() {
 
 	const [headerInfo, setHeaderInfo] = useState<HeaderInfo>();
 	const [imageModalOpen, setImageModalOpen] = useState(false);
+	const [editModalOpen, setProfileModalOpen] = useState(false);
 
 	// State for controlling the dropdown menu
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -246,6 +251,10 @@ export function RootLayout() {
 		setImageModalOpen(false);
 	};
 
+	const handleProfileModalOpen = () => {
+		setHeaderInfo((prev) => ({ ...prev!, editModalOpen: true }));
+	};
+
 	return (
 		<Box
 			sx={{
@@ -279,6 +288,29 @@ export function RootLayout() {
 								{APPNAME}
 							</RomanticTitle>
 						)}
+						{headerInfo && (
+							<Box sx={{ display: 'flex', alignItems: 'center', pr: 1, pt: 0.5, pb: 0.5 }} gap={1}>
+								<Box
+									role="button"
+									onClick={() => goCharacterPage(headerInfo.characterId)}
+									sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+								>
+									<Avatar src={headerInfo.avatarUrl} variant="circular">
+										<AccountCircle />
+									</Avatar>
+								</Box>
+
+								{/* Profile name - opens modal */}
+								<Typography
+									variant="caption"
+									role="button"
+									onClick={handleProfileModalOpen} // Triggers the modal open signal
+									sx={{ '&:hover': { textDecoration: 'underline' } }}
+								>
+									{headerInfo.profileShowName}
+								</Typography>
+							</Box>
+						)}
 						<RomanticTitle
 							variant="subtitle1"
 							colorVariant="silver"
@@ -289,19 +321,6 @@ export function RootLayout() {
 						>
 							{getLangText(LANG_KEYS.CHARACTERS)}
 						</RomanticTitle>
-						{headerInfo && (
-							<Box
-								role="button"
-								sx={{ display: 'flex', alignItems: 'center', pr: 1, pt: 0.5, pb: 0.5 }}
-								gap={1}
-								onClick={() => goCharacterPage(headerInfo.characterId)}
-							>
-								<Avatar src={headerInfo.avatarUrl} variant="circular">
-									<AccountCircle />
-								</Avatar>
-								<Typography variant="caption">{headerInfo.showName}</Typography>
-							</Box>
-						)}
 					</Box>
 
 					<Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -385,7 +404,7 @@ export function RootLayout() {
 
 			{/* main box */}
 			<Box component="main" sx={{ flex: 1, overflowY: 'auto' }}>
-				<Outlet context={setHeaderInfo satisfies HeaderContextType} />
+				<Outlet context={{ setHeaderInfo, headerInfo } satisfies HeaderContextType} />
 			</Box>
 
 			{/* Login Modal */}
