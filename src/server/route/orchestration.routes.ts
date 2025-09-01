@@ -61,8 +61,14 @@ router.post(
 				'profileInfo',
 				'aiModelInfo',
 			];
+			const tempTurnCdoField: (keyof TempChatTurnCdo)[] = [
+				'sessionId',
+				'sequence',
+				'userId',
+				'inputJsonString',
+			];
 			validateRequestData(req.body, 'body', requiredFields);
-			validateRequestData(tempChatTurnCdo, 'body', ['sessionId', 'sequence', 'userInput']);
+			validateRequestData(tempChatTurnCdo, 'body', tempTurnCdoField);
 			validateServiceId(tempChatTurnCdo.sessionId, COLLECTIONS.CHAT);
 
 			const path = genRoutePattern('receiveBotResponse');

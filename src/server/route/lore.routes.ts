@@ -70,21 +70,16 @@ router.get(
  */
 router.post(
 	genRoutePattern('storeLore'),
-	asyncHandler(
-		async (
-			req: Request<object, { message: string }, LoreInfo>,
-			res: Response<{ message: string }>
-		): Promise<void> => {
-			validateRequestData(req.body, 'body', ['characterId', 'content']);
-			const { characterId, loreId } = req.body;
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		validateRequestData(req.body, 'body', ['characterId', 'content']);
+		const { characterId, loreId } = req.body;
 
-			const path = genRoutePattern('storeLore');
-			console.log(`API HIT: POST ${path} for character ${characterId}, loreId ${loreId}`);
+		const path = genRoutePattern('storeLore');
+		console.log(`API HIT: POST ${path} for character ${characterId}, loreId ${loreId}`);
 
-			await loreStore.storeLore(req.body);
-			res.status(201).json({ message: 'Lore stored successfully.' });
-		}
-	)
+		const response = await loreStore.storeLore(req.body);
+		res.status(201).json(response);
+	})
 );
 
 // /**
@@ -142,21 +137,16 @@ router.get(
  */
 router.post(
 	genRoutePattern('storeHistory'),
-	asyncHandler(
-		async (
-			req: Request<object, { message: string }, HistoryInfo>,
-			res: Response<{ message: string }>
-		): Promise<void> => {
-			validateRequestData(req.body, 'body', ['characterId', 'content', 'sequence']);
-			const { characterId, historyId } = req.body;
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		validateRequestData(req.body, 'body', ['characterId', 'content', 'sequence']);
+		const { characterId, historyId } = req.body;
 
-			const path = genRoutePattern('storeHistory');
-			console.log(`API HIT: POST ${path} for character ${characterId}, historyId ${historyId}`);
+		const path = genRoutePattern('storeHistory');
+		console.log(`API HIT: POST ${path} for character ${characterId}, historyId ${historyId}`);
 
-			await loreStore.storeHistory(req.body);
-			res.status(201).json({ message: 'History stored successfully.' });
-		}
-	)
+		const response = await loreStore.storeHistory(req.body);
+		res.status(201).json(response);
+	})
 );
 
 /**

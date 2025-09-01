@@ -144,7 +144,9 @@ export const characterStore = {
 		}
 	},
 
-	storeCharacter: async (character: CharacterCdo | CharacterInfo): Promise<string> => {
+	storeCharacter: async (
+		character: CharacterCdo | CharacterInfo
+	): Promise<{ characterId: string }> => {
 		const collection = await characterStore._getCollection();
 		const now = new Date().toISOString();
 		const updatedCharacter: CharacterInfo = isCharacterInfo(character)
@@ -176,7 +178,7 @@ export const characterStore = {
 				updatedMetadata
 			);
 
-			return JSON.stringify({ characterId: updatedMetadata.characterId });
+			return { characterId: updatedMetadata.characterId };
 		} catch (error) {
 			handleServiceError(
 				error,

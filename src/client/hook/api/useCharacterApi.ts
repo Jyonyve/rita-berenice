@@ -1,7 +1,4 @@
-// src/client/hooks/useCharacter.ts
-
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-
 import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { CharacterResponse } from '#shared/api/ModuleResponse.js';
@@ -12,10 +9,6 @@ export const useCharacterApi = () => {
 	const MODULE_NAME = MODULE_NAMES.CHARACTER;
 	const queryClient = useQueryClient();
 
-	/**
-	 * Fetches all characters.
-	 * Query key: ['getAllCharacters']
-	 */
 	const getAllCharacters = () =>
 		useQuery<CharacterResponse, Error>({
 			queryKey: ['getAllCharacters'],
@@ -24,13 +17,8 @@ export const useCharacterApi = () => {
 				const response = await apiClient.get<Payload>(url);
 				return decompressData<CharacterResponse>(response.data.payload);
 			},
-			enabled: true,
 		});
 
-	/**
-	 * Fetches a single character by ID.
-	 * Query key: ['getCharacter', characterId]
-	 */
 	const getCharacter = (characterId: string) =>
 		useQuery<CharacterResponse, Error>({
 			queryKey: ['getCharacter', characterId],
@@ -42,10 +30,6 @@ export const useCharacterApi = () => {
 			enabled: !!characterId,
 		});
 
-	/**
-	 * Fetches characters by show name.
-	 * Query key: ['getCharactersByShowName', showName]
-	 */
 	const getCharactersByShowName = (showName: string) =>
 		useQuery<CharacterResponse, Error>({
 			queryKey: ['getCharactersByShowName', showName],
@@ -57,10 +41,6 @@ export const useCharacterApi = () => {
 			enabled: !!showName,
 		});
 
-	/**
-	 * Fetches characters by userId.
-	 * Query key: ['getCharactersByUserId', userId]
-	 */
 	const getCharactersByUserId = (userId: string) =>
 		useQuery<CharacterResponse, Error>({
 			queryKey: ['getCharactersByUserId', userId],
@@ -74,21 +54,30 @@ export const useCharacterApi = () => {
 
 	/**
 	 * Creates or updates a character.
-	 * Mutation key: 'storeCharacter'
+	 * REFACTORED: Now expects an object { characterId: string } from the server.
 	 */
-	const storeCharacter = useMutation<string, Error, CharacterCdo | CharacterInfo>({
+	const storeCharacter = useMutation<{ characterId: string }, Error, CharacterCdo | CharacterInfo>({
 		mutationFn: async (character) => {
 			const url = genApiUrl(MODULE_NAME, 'storeCharacter');
-			const response = await apiClient.post<string>(url, character);
+			// Expect the server to return a JSON object, not a raw string
+			const response = await apiClient.post<{ characterId: string }>(url, character);
 			return response.data;
 		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['getAllCharacters'] });
+		onSuccess: (data, variables) => {
+			// Invalidate all queries that could be affected by this change
+			Promise.all([
+				queryClient.invalidateQueries({ queryKey: ['getAllCharacters'] }),
+				queryClient.invalidateQueries({ queryKey: ['getCharacter', data.characterId] }),
+				// Assuming 'variables' has these properties to target specific lists
+				queryClient.invalidateQueries({ queryKey: ['getCharactersByShowName', variables.showName] }),
+				queryClient.invalidateQueries({ queryKey: ['getCharactersByUserId', variables.userId] }),
+			]);
 		},
 	});
 
 	/**
-	 * Uploads a character image
+	 * Uploads a character image. No invalidation needed as it's a file system change,
+	 * but the UI should refetch character data if image paths are stored in the character document.
 	 */
 	const uploadCharacterImage = useMutation<any, Error, FormData>({
 		mutationFn: async (formData) => {
@@ -101,7 +90,23 @@ export const useCharacterApi = () => {
 	});
 
 	/**
-	 * Creates a character folder
+	 * Deletes a character image.
+	 */
+	const deleteCharacterImage = useMutation<any, Error, { characterId: string; emotionKey: number }>({
+		mutationFn: async (data) => {
+			const url = genApiUrl(MODULE_NAME, 'deleteCharacterImage');
+			const response = await apiClient.delete(url, { data });
+			return response.data;
+		},
+		// Invalidate the specific character to update its image list
+		onSuccess: (_, variables) => {
+			queryClient.invalidateQueries({ queryKey: ['getCharacter', variables.characterId] });
+		},
+	});
+
+	/**
+	 * Creates a character folder on the server.
+	 * This is a pure side-effect and likely doesn't need to invalidate any data queries.
 	 */
 	const createCharacterFolder = useMutation<any, Error, { characterId: string }>({
 		mutationFn: async (data) => {
@@ -118,6 +123,7 @@ export const useCharacterApi = () => {
 		getCharactersByUserId,
 		storeCharacter: storeCharacter.mutateAsync,
 		uploadCharacterImage: uploadCharacterImage.mutateAsync,
+		deleteCharacterImage: deleteCharacterImage.mutateAsync,
 		createCharacterFolder: createCharacterFolder.mutateAsync,
 	};
 };

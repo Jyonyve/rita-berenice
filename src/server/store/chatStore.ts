@@ -387,7 +387,7 @@ export const chatStore = {
 	 * Stores a fully enriched chat turn and updates its search index.
 	 * This is the single, authoritative method for saving a finalized turn.
 	 */
-	storeChatTurn: async (turn: ChatTurn): Promise<void> => {
+	storeChatTurn: async (turn: ChatTurn): Promise<{ chatTurnId: string }> => {
 		try {
 			const collection = await chatStore._getChatCollection();
 
@@ -398,6 +398,7 @@ export const chatStore = {
 
 			// 2. Update the denormalized search index for this turn
 			await chatStore._updateSearchIndexForTurn(turn);
+			return { chatTurnId: turn.chatTurnId };
 		} catch (error) {
 			handleServiceError(
 				error,

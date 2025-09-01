@@ -28,6 +28,9 @@ import { DEFAULT_EMOTION } from '#shared/config/emotionConstants.js';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
+import { ProfileCdo, ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { ProfileForm } from '../character/ProfileForm.tsx';
+import { useResponsive } from '../../hook/useResponsive.js';
 
 // Create Emotion Context for ChatPage communication
 interface EmotionContextType {
@@ -52,25 +55,24 @@ export function ChatPageLoader() {
 	const navigate = useNavigate();
 	const { sessionId } = useParams();
 	const { isSessionLoading, userId } = useAuth();
-	const theme = useTheme();
-	const setHeaderInfo = useOutletContext<HeaderContextType>();
+	const { setHeaderInfo, headerInfo } = useOutletContext<HeaderContextType>();
 
 	// --- RESPONSIVE DETECTION (moved from ChatPage) ---
-	const isSmallScreen = useMediaQuery(theme.breakpoints.down('md'));
-	const isTabletPortrait = useMediaQuery(
-		'(min-width: 768px) and (max-width: 1024px) and (orientation: portrait)'
-	);
-	const hasEnoughSpaceForDesktop = useMediaQuery('(min-width: 1200px)');
-	const isWideTablet = useMediaQuery(
-		'(min-width: 1024px) and (max-width: 1199px) and (orientation: landscape)'
-	);
+	const { shouldUseMobileLayout } = useResponsive();
 
-	const shouldUseMobileLayout =
-		isSmallScreen || isTabletPortrait || (!hasEnoughSpaceForDesktop && !isWideTablet);
-
-	// --- EMOTION STATE (moved from ChatPage) ---
+	// --- EMOTION STATE  ---
 	const [currentEmotion, setCurrentEmotion] = useState<string>(DEFAULT_EMOTION);
 	const [showMobileImage, setShowMobileImage] = useState(false);
+	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+	const handleCloseEditModal = () => {
+		setIsEditModalOpen(false);
+	};
+
+	const handleEditSubmit = async (profileData: ProfileInfo | ProfileCdo) => {
+		await storeProfile(profileData);
+		handleCloseEditModal();
+	};
 
 	// ------------ Redirect Logic ------------
 	useEffect(() => {
@@ -90,6 +92,19 @@ export function ChatPageLoader() {
 		isError: isCharacterError,
 	} = useCharacterApi().getCharacter(characterId);
 
+	const { getProfileBySessionId, storeProfile } = useProfileApi();
+	const {
+		data: profileRes,
+		isLoading: isLoadingProfile,
+		isError: isProfileError,
+	} = getProfileBySessionId(sessionId);
+
+	const {
+		data: allTurnsRes,
+		isLoading: isLoadingTurns,
+		isError: isTurnsError,
+	} = useChatApi().getAllDisplayTurns(sessionId);
+
 	// Generate image URL based on current emotion
 	const imageUrl = useMemo(() => {
 		if (characterRes?.characterInfo) {
@@ -100,37 +115,31 @@ export function ChatPageLoader() {
 
 	// --- HEADER INFO MANAGEMENT (enhanced) ---
 	useEffect(() => {
-		if (characterRes?.characterInfo) {
+		if (characterRes?.characterInfo && profileRes?.profileInfo) {
 			const info = characterRes.characterInfo;
-			const avatarUrl = getDefaultImage(info.characterId);
+			const profile = profileRes.profileInfo;
 
-			const headerInfo = {
+			// This part remains the same. You are correctly creating a new object.
+			setHeaderInfo({
 				characterId: info.characterId,
-				showName: info.showName,
-				avatarUrl,
-				// Add mobile props only when in mobile layout
-				...(shouldUseMobileLayout && imageUrl && { mobileImageUrl: imageUrl }),
-			};
-
-			setHeaderInfo(headerInfo);
+				profileShowName: profile.showName,
+				avatarUrl: getDefaultImage(info.characterId),
+				mobileImageUrl: shouldUseMobileLayout ? imageUrl : undefined,
+			});
 		}
 
 		return () => {
-			setHeaderInfo();
+			setHeaderInfo(undefined);
 		};
-	}, [characterRes, setHeaderInfo, shouldUseMobileLayout, imageUrl]);
+	}, [characterRes, profileRes, setHeaderInfo, shouldUseMobileLayout, imageUrl]);
 
-	const {
-		data: profileRes,
-		isLoading: isLoadingProfile,
-		isError: isProfileError,
-	} = useProfileApi().getProfileBySessionId(sessionId);
-
-	const {
-		data: allTurnsRes,
-		isLoading: isLoadingTurns,
-		isError: isTurnsError,
-	} = useChatApi().getAllDisplayTurns(sessionId);
+	useEffect(() => {
+		if (headerInfo?.editModalOpen) {
+			setIsEditModalOpen(true);
+			// Immediately reset the signal to prevent re-triggering
+			setHeaderInfo({ ...headerInfo, editModalOpen: false });
+		}
+	}, [headerInfo, setHeaderInfo]);
 
 	useEffect(() => {
 		if (allTurnsRes?.displayTurns && allTurnsRes.displayTurns.length > 0) {
@@ -234,6 +243,17 @@ export function ChatPageLoader() {
 					</Box>
 				</DialogContent>
 			</Dialog>
+
+			{profileInfo && (
+				<ProfileForm
+					userId={userId}
+					mode="edit"
+					profile={profileInfo}
+					open={isEditModalOpen}
+					onClose={handleCloseEditModal}
+					onSubmit={handleEditSubmit}
+				/>
+			)}
 		</EmotionContext.Provider>
 	);
 }

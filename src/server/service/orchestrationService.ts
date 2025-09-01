@@ -194,35 +194,47 @@ async function _generateAndAppendResponse(
 	options: { signal?: AbortSignal; isScene?: boolean }
 ): Promise<TempChatTurn> {
 	// 1. Recall relevant memories for context.
-	let recalledMemories: MemoryResponse;
 	const langCode = detectLanguage(userConversation);
 	const recentChatTurn: ChatTurn[] = JSON.parse(recentChatTurnString);
-	try {
-		recalledMemories = await memoryEngine.recallRelevantMemories(
-			tempTurn.sessionId,
-			userConversation,
-			tempTurn.userId,
-			recentChatTurn,
-			langCode
-		);
-		// --- 2. LOG CHECKPOINT 2 ---
-		console.timeLog(timerLabel(tempTurn.sequence), 'Memory recall finish. completed.');
-	} catch (error: any) {
-		if (error instanceof ApiError && error.status === 404) {
-			console.warn(`[Orchestrator] No memories found for session. Proceeding with empty context.`);
-			recalledMemories = {
-				langCode,
-				shortTermHistory: recentChatTurn ?? [],
-				longTermHistory: [],
-				relevantLore: [],
-				relevantHistory: [],
-				factualRecapSummary: '',
-				relationshipRecapSummary: '',
-			};
-			console.timeLog(timerLabel(tempTurn.sequence), 'Memory recall finish. Empty memory.');
-		} else {
-			throw error; // Re-throw critical errors
+
+	// 1. Initialize with a default, empty memory context.
+	let recalledMemories: MemoryResponse = {
+		langCode,
+		shortTermHistory: recentChatTurn ?? [],
+		longTermHistory: [],
+		relevantLore: [],
+		relevantHistory: [],
+		factualRecapSummary: '',
+		relationshipRecapSummary: '',
+	};
+
+	if (recentChatTurn && recentChatTurn.length > 0) {
+		console.timeLog(timerLabel(tempTurn.sequence), 'Attempting memory recall...');
+		try {
+			// Overwrite the default memories with the actual recalled data.
+			recalledMemories = await memoryEngine.recallRelevantMemories(
+				tempTurn.sessionId,
+				userConversation,
+				tempTurn.userId,
+				recentChatTurn,
+				langCode
+			);
+			// --- 2. LOG CHECKPOINT 2 ---
+			console.timeLog(timerLabel(tempTurn.sequence), 'Memory recall finish. completed.');
+		} catch (error: any) {
+			// If recall fails with a 404, we log it and proceed.
+			// The `recalledMemories` object will correctly keep its default empty state.
+			if (error instanceof ApiError && error.status === 404) {
+				console.warn(`[Orchestrator] No memories found for session. Proceeding with default context.`);
+				console.timeLog(timerLabel(tempTurn.sequence), 'Memory recall finish. Empty memory.');
+			} else {
+				// For any other unexpected error, we re-throw to be handled by the caller.
+				throw error;
+			}
 		}
+	} else {
+		// If there is no history, log it and proceed with the default empty context.
+		console.log(`[Orchestrator] No recent chat history. Skipping memory recall.`);
 	}
 
 	// 2. Generate the new persona response.

@@ -83,7 +83,7 @@ export const useChatApi = () => {
 	// });
 
 	return {
-		storeChatTurn,
+		storeChatTurn: storeChatTurn.mutateAsync,
 		getAllDisplayTurns,
 		getChatTurnBySequence,
 		// queryChatTurns
