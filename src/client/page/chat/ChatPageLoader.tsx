@@ -55,7 +55,6 @@ export function ChatPageLoader() {
 	const navigate = useNavigate();
 	const { sessionId } = useParams();
 	const { isSessionLoading, userId } = useAuth();
-	const theme = useTheme();
 	const { setHeaderInfo, headerInfo } = useOutletContext<HeaderContextType>();
 
 	// --- RESPONSIVE DETECTION (moved from ChatPage) ---
@@ -116,26 +115,23 @@ export function ChatPageLoader() {
 
 	// --- HEADER INFO MANAGEMENT (enhanced) ---
 	useEffect(() => {
-		if (characterRes && profileRes) {
+		if (characterRes?.characterInfo && profileRes?.profileInfo) {
 			const info = characterRes.characterInfo;
-			const profile = profileRes?.profileInfo;
-			const avatarUrl = getDefaultImage(info.characterId);
+			const profile = profileRes.profileInfo;
 
-			const newHeaderInfo = {
+			// This part remains the same. You are correctly creating a new object.
+			setHeaderInfo({
 				characterId: info.characterId,
 				profileShowName: profile.showName,
-				avatarUrl,
-				// Add mobile props only when in mobile layout
-				...(shouldUseMobileLayout && imageUrl && { mobileImageUrl: imageUrl }),
-			};
-
-			setHeaderInfo(newHeaderInfo);
+				avatarUrl: getDefaultImage(info.characterId),
+				mobileImageUrl: shouldUseMobileLayout ? imageUrl : undefined,
+			});
 		}
 
 		return () => {
-			setHeaderInfo();
+			setHeaderInfo(undefined);
 		};
-	}, [characterRes, setHeaderInfo, shouldUseMobileLayout, imageUrl]);
+	}, [characterRes, profileRes, setHeaderInfo, shouldUseMobileLayout, imageUrl]);
 
 	useEffect(() => {
 		if (headerInfo?.editModalOpen) {

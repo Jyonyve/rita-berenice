@@ -153,12 +153,14 @@ export const ProfileForm: FC<ProfileFormProps> = ({
 					<Grid size={{ xs: 12, md: 4 }}>
 						<Controller
 							name="showName"
+							disabled={mode === 'edit'}
 							control={control}
 							rules={{ required: getLangText(LANG_KEYS.SHOW_NAME_REQUIRED) }}
 							render={({ field }) => (
 								<TextField
 									{...field}
 									fullWidth
+									disabled={mode === 'edit'}
 									label={getLangText(LANG_KEYS.SHOWNAME)}
 									error={!!errors.showName}
 									helperText={errors.showName?.message}
@@ -171,6 +173,7 @@ export const ProfileForm: FC<ProfileFormProps> = ({
 					<Grid size={{ xs: 12, md: 8 }}>
 						<Controller
 							name="name"
+							disabled={mode === 'edit'}
 							control={control}
 							rules={{ required: getLangText(LANG_KEYS.NAME_REQUIRED) }}
 							render={({ field }) => (
@@ -193,6 +196,7 @@ export const ProfileForm: FC<ProfileFormProps> = ({
 						<FormControl fullWidth required>
 							<Controller
 								name="gender"
+								disabled={mode === 'edit'}
 								control={control}
 								rules={{ required: getLangText(LANG_KEYS.GENDER_REQUIRED) }}
 								render={({ field }) => (
@@ -307,13 +311,8 @@ export const ProfileForm: FC<ProfileFormProps> = ({
 		};
 
 		return (
-			<Modal
-				open={open || false}
-				onClose={handleModalClose}
-				// This prop means the ESC key press will NOT trigger handleModalClose
-				disableEscapeKeyDown
-			>
-				<Box sx={modalStyle}>{formContent}</Box>
+			<Modal open={open || false} onClose={handleModalClose} disableEscapeKeyDown>
+				<Box sx={{ ...modalStyle, p: 1 }}> {formContent}</Box>
 			</Modal>
 		);
 	}

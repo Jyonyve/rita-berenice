@@ -54,7 +54,7 @@ export const sessionStore = {
 		userId: string,
 		characterId: string,
 		firstCharMessage: string,
-		title?: string
+		title: string
 	): Promise<{ sessionId: string }> {
 		const collection = await sessionStore._getCollection();
 		const now = new Date().toISOString();

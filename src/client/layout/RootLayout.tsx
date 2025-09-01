@@ -1,4 +1,12 @@
-import React, { FC, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, {
+	FC,
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+} from 'react';
 import { Outlet, useMatch, useNavigate } from 'react-router';
 import {
 	AppBar,
@@ -204,6 +212,19 @@ export function RootLayout() {
 		}
 	}, []);
 
+	const handleSetHeaderInfo = useCallback((info?: HeaderInfo) => {
+		setHeaderInfo(info);
+	}, []);
+
+	const outletContextValue = useMemo(
+		() => ({ setHeaderInfo: handleSetHeaderInfo, headerInfo }),
+		[headerInfo, handleSetHeaderInfo]
+	);
+
+	const handleProfileModalOpen = () => {
+		headerInfo && setHeaderInfo({ ...headerInfo, editModalOpen: true });
+	};
+
 	const goMyCharacterListPage = () => {
 		navigate(`/${routeConstants.CHARACTER}`, { state: { isMine: true } });
 		handleMenuClose(); // Close menu after navigation
@@ -249,10 +270,6 @@ export function RootLayout() {
 
 	const handleImageModalClose = () => {
 		setImageModalOpen(false);
-	};
-
-	const handleProfileModalOpen = () => {
-		setHeaderInfo((prev) => ({ ...prev!, editModalOpen: true }));
 	};
 
 	return (
@@ -404,7 +421,7 @@ export function RootLayout() {
 
 			{/* main box */}
 			<Box component="main" sx={{ flex: 1, overflowY: 'auto' }}>
-				<Outlet context={{ setHeaderInfo, headerInfo } satisfies HeaderContextType} />
+				<Outlet context={outletContextValue} />
 			</Box>
 
 			{/* Login Modal */}

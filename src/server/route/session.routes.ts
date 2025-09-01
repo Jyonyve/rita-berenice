@@ -27,17 +27,12 @@ const router = Router();
 router.post(
 	genRoutePattern('createSession'),
 	asyncHandler(async (req: Request, res: Response) => {
-		validateRequestData(req.body, 'body', ['userId', 'characterId', 'firstCharMessage']);
-		const { userId, characterId, firstCharMessage } = req.body;
+		validateRequestData(req.body, 'body', ['userId', 'characterId']);
+		const { userId, characterId, firstCharMessage = '', title = '' } = req.body;
 
 		console.log(`API HIT: POST /api/session/create-session for user ${userId}`);
 
-		const response = await sessionStore.createSession(
-			userId,
-			characterId,
-			firstCharMessage,
-			req.body?.title
-		);
+		const response = await sessionStore.createSession(userId, characterId, firstCharMessage, title);
 
 		res.status(201).json(response); // 201 for resource creation
 	})

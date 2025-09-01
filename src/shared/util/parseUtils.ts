@@ -105,9 +105,11 @@ export const parseMessageId = (
 
 export const parseProfileId = (profileId: string): { sessionId: string; userId: string } => {
 	const parts = profileId.split('_');
-	if (parts.length < 2) {
-		throw new Error(`Invalid message ID format: ${profileId}`);
+	if (parts.length < 4) {
+		throw new Error(
+			`Invalid profile ID format: Expected at least 4 parts, but got ${parts.length} for ID "${profileId}"`
+		);
 	}
 
-	return { sessionId: parts[0], userId: parts[1] };
+	return { sessionId: parts.slice(0, 3).join('_'), userId: parts[3] };
 };
