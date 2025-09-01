@@ -102,3 +102,14 @@ export const parseMessageId = (
 
 	return { sessionId: parts[0], sequence: parseInt(parts[1]), type: parts[2] as ChatMessageType };
 };
+
+export const parseProfileId = (profileId: string): { sessionId: string; userId: string } => {
+	const parts = profileId.split('_');
+	if (parts.length < 4) {
+		throw new Error(
+			`Invalid profile ID format: Expected at least 4 parts, but got ${parts.length} for ID "${profileId}"`
+		);
+	}
+
+	return { sessionId: parts.slice(0, 3).join('_'), userId: parts[3] };
+};

@@ -14,7 +14,7 @@ import {
 	LoreMetadata,
 } from '#shared/domain/lore/LoreInterfaces.js';
 import { metadataToHistory, metadataToLore } from '#shared/util/dbConvertUtils.js';
-import { buildLoreIndexId } from '#shared/util/buildIdUtils.js';
+import { buildHistoryId, buildLoreId, buildLoreIndexId } from '#shared/util/buildIdUtils.js';
 import { validateChromaResponse, handleServiceError } from '../util/serviceHelpers.js';
 import { FilterCriteria } from '../util/schemaUtils.js';
 import { reRankSemanticResults } from '../util/queryUtils.js';
@@ -56,12 +56,12 @@ export const loreStore = {
 	},
 
 	// --- LORE OPERATIONS ---
-	storeLore: async (loreInfo: LoreInfo): Promise<void> => {
+	storeLore: async (loreInfo: LoreInfo): Promise<{ loreId: string }> => {
 		try {
 			const collection = await loreStore._getCollection();
 			const loreMetadata: LoreMetadata = {
 				type: METADATA_TYPES.LORE,
-				loreId: loreInfo.loreId,
+				loreId: loreInfo.loreId || buildLoreId(loreInfo.loreId, loreInfo.category),
 				characterId: loreInfo.characterId,
 				userId: loreInfo.userId,
 				profileId: loreInfo.profileId,
@@ -75,6 +75,7 @@ export const loreStore = {
 			};
 			await upsertRecords(collection, [loreInfo.loreId], [loreInfo.content], [loreMetadata]);
 			await loreStore._updateSearchIndexForLore(loreInfo);
+			return { loreId: loreInfo.loreId };
 		} catch (error) {
 			handleServiceError(error, `Failed to store lore ${loreInfo.loreId}`);
 		}
@@ -296,12 +297,13 @@ export const loreStore = {
 	},
 
 	// --- HISTORY OPERATIONS (Corrected and aligned with Lore) ---
-	storeHistory: async (historyInfo: HistoryInfo): Promise<void> => {
+	storeHistory: async (historyInfo: HistoryInfo): Promise<{ historyId: string }> => {
 		try {
 			const collection = await loreStore._getCollection();
 			const historyMetadata: HistoryMetadata = {
 				type: METADATA_TYPES.HISTORY,
-				historyId: historyInfo.historyId,
+				historyId:
+					historyInfo.historyId || buildHistoryId(historyInfo.characterId, historyInfo.periodLabel),
 				characterId: historyInfo.characterId,
 				userId: historyInfo.userId,
 				profileId: historyInfo.profileId,
@@ -322,6 +324,7 @@ export const loreStore = {
 				[historyMetadata]
 			);
 			await loreStore._updateSearchIndexForHistory(historyInfo);
+			return { historyId: historyInfo.historyId };
 		} catch (error) {
 			handleServiceError(error, `Failed to store history ${historyInfo.historyId}`);
 		}

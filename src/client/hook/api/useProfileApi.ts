@@ -1,5 +1,3 @@
-// src/client/hooks/useProfileApi.ts
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
@@ -8,7 +6,7 @@ import { Payload } from '#shared/util/apiHelpers.js';
 import { ProfileResponse } from '#shared/api/ModuleResponse.js';
 
 /**
- * A client-side hook for interacting with the PROFILE API endpoints, refactored for TanStack Query.
+ * A client-side hook for interacting with the PROFILE API endpoints.
  */
 export const useProfileApi = () => {
 	const MODULE_NAME = MODULE_NAMES.PROFILE;
@@ -16,26 +14,32 @@ export const useProfileApi = () => {
 
 	/**
 	 * Creates or updates a user profile.
+	 * The mutationFn already correctly expects an object: { profileId: string }.
 	 */
-	const storeProfile = useMutation<string, Error, ProfileInfo | ProfileCdo>({
-		mutationFn: async (profileInfo: ProfileInfo | ProfileCdo) => {
+	const storeProfile = useMutation<{ profileId: string }, Error, ProfileInfo | ProfileCdo>({
+		mutationFn: async (profileData) => {
 			const url = genApiUrl(MODULE_NAME, 'storeProfile');
-			const response = await apiClient.post<string>(url, profileInfo);
-			return JSON.parse(response.data);
+			const response = await apiClient.post<{ profileId: string }>(url, profileData);
+			return response.data;
 		},
 		onSuccess: (data, variables) => {
-			// Invalidate queries that are now stale
-			queryClient.invalidateQueries({ queryKey: ['getAllProfilesByUserId'] });
+			// This mutation affects multiple queries, so we use Promise.all
+			// to invalidate them concurrently.
+			const invalidations = [
+				queryClient.invalidateQueries({ queryKey: ['getAllProfilesByUserId', variables.userId] }),
+				queryClient.invalidateQueries({ queryKey: ['getProfile', data.profileId] }),
+			];
+
 			if (variables.sessionId) {
-				queryClient.invalidateQueries({ queryKey: ['getProfileBySessionId', variables.sessionId] });
+				invalidations.push(
+					queryClient.invalidateQueries({ queryKey: ['getProfileBySessionId', variables.sessionId] })
+				);
 			}
+
+			Promise.all(invalidations);
 		},
 	});
 
-	/**
-	 * Fetches all user profiles.
-	 * TODO: add user Id to the query key if needed for multi-user support.
-	 */
 	const getAllProfilesByUserId = (userId: string) =>
 		useQuery<ProfileResponse, Error>({
 			queryKey: ['getAllProfilesByUserId', userId],
@@ -44,13 +48,9 @@ export const useProfileApi = () => {
 				const response = await apiClient.get<Payload>(url);
 				return decompressData<ProfileResponse>(response.data.payload);
 			},
-			// This query can run by default if needed on app load
-			enabled: !!userId, // Only run if userId is provided
+			enabled: !!userId,
 		});
 
-	/**
-	 * Fetches a single profile by its unique ID.
-	 */
 	const getProfile = (profileId: string) =>
 		useQuery<ProfileResponse, Error>({
 			queryKey: ['getProfile', profileId],
@@ -59,13 +59,9 @@ export const useProfileApi = () => {
 				const response = await apiClient.get<Payload>(url);
 				return decompressData<ProfileResponse>(response.data.payload);
 			},
-			enabled: !!profileId, // Only run if profileId is provided
+			enabled: !!profileId,
 		});
 
-	/**
-	 * Fetches a profile by its associated session ID.
-	 * Handles 404 errors gracefully by not showing a toast.
-	 */
 	const getProfileBySessionId = (sessionId: string) =>
 		useQuery<ProfileResponse, Error>({
 			queryKey: ['getProfileBySessionId', sessionId],
@@ -77,9 +73,6 @@ export const useProfileApi = () => {
 			enabled: !!sessionId,
 		});
 
-	/**
-	 * Fetches all profiles associated with a specific show name.
-	 */
 	const getProfilesByShowName = (showName: string) =>
 		useQuery<ProfileResponse, Error>({
 			queryKey: ['getProfilesByShowName', showName],
@@ -91,8 +84,6 @@ export const useProfileApi = () => {
 			enabled: !!showName,
 		});
 
-	// The hook returns the React Query hooks directly.
-	// `loading` and `error` states are now part of the individual hook results.
 	return {
 		storeProfile: storeProfile.mutateAsync,
 		getAllProfilesByUserId,

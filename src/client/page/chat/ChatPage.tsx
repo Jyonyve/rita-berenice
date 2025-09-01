@@ -201,7 +201,7 @@ export const ChatPage: FC<{
 				changeTempChatTurn(newTempTurnResult);
 				setFocusedTurnIndex(chatTurns.length); // The index of the new temp turn
 				setUserInput('');
-				updateSessionOnNewMessage.mutateAsync({
+				updateSessionOnNewMessage({
 					sessionId,
 					latestCharMessage: parseEntriesToText(newTempTurnResult.chatTurnSets[0].response.entries),
 				});
@@ -266,7 +266,7 @@ export const ChatPage: FC<{
 				changeTempChatTurn(result);
 				setCurrentTempSetNo(newSetIndex);
 				setFocusedTurnIndex(chatTurns.length);
-				updateSessionOnNewMessage.mutateAsync({
+				updateSessionOnNewMessage({
 					sessionId,
 					latestCharMessage: JSON.stringify(result.chatTurnSets[newSetIndex].response.entries),
 				});
@@ -309,7 +309,7 @@ export const ChatPage: FC<{
 		);
 		const updateTempTurn = { ...tempChatTurn, chatTurnSets: newChatTurnSets };
 
-		await saveTempChatTurn.mutateAsync(updateTempTurn);
+		await saveTempChatTurn(updateTempTurn);
 		changeTempChatTurn(updateTempTurn);
 		setUserEditInput('');
 		setBotEditInput('');

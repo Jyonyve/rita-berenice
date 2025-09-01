@@ -1,40 +1,31 @@
-// src/client/components/profile/ProfileCard.tsx
+// src/client/components/profile/ProfileForm.tsx
 
-import { LANG_KEYS, LangKey } from '#shared/config/langConstants.js';
+import { LANG_KEYS } from '#shared/config/langConstants.js';
 import { ProfileCdo, ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import {
 	Box,
-	CardActions,
+	TextField,
+	Button,
+	Typography,
+	Grid,
 	FormControl,
 	FormHelperText,
-	Grid,
 	InputLabel,
 	List,
 	MenuItem,
 	Modal,
 	Select,
 	Stack,
-	TextField,
-	Typography,
+	CardActions,
 } from '@mui/material';
 import { FC, useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { GlassButton, GlassCard } from '../../layout/glass/index.js';
-import { GlassSelect, SolidMetallicButton } from '../../layout/index.js';
+import { GlassButton, GlassCard, SolidMetallicButton } from '../../layout/index.js';
 import { innerSpacing } from '../../style/index.js';
 import { GENDER_SELECT_MENUITEM, getLangText } from '../../util/translateUtils.js';
 import { ProfilePreviewList } from './ProfilePreviewList.jsx';
 import { REQUEST_CHARACTER_LIMIT } from '#shared/config/constants.js';
-
-const getInitialFormData = (userId: string): ProfileCdo => ({
-	name: '',
-	gender: '',
-	title: '',
-	showName: '',
-	description: '',
-	userId,
-	sessionId: '',
-});
+import { useResponsive } from '../../hook/useResponsive.js';
 
 const modalStyle = {
 	position: 'absolute',
@@ -44,215 +35,288 @@ const modalStyle = {
 	width: { xs: '90%', sm: 600 },
 	maxHeight: '80vh',
 	overflowY: 'auto',
-	bgcolor: 'background.paper', // This can be replaced or extended
+	bgcolor: 'background.paper',
 	boxShadow: 24,
 	borderRadius: 2,
-	// Add these styles for a glassy, visible background:
-	background: 'rgba(255,255,255,0.18)', // Slight white tint, adjust alpha as needed
+	background: 'rgba(255,255,255,0.18)',
 	backdropFilter: 'blur(12px)',
 	WebkitBackdropFilter: 'blur(12px)',
 	border: '1px solid rgba(255,255,255,0.22)',
-	'&::-webkit-scrollbar': {
-		display: 'none', // Hide scrollbar for Chrome, Safari, and Edge
-	},
-	scrollbarWidth: 'none', // Hide scrollbar for Firefox
-	msOverflowStyle: 'none', // Hide scrollbar for Internet Explorer
+	'&::-webkit-scrollbar': { display: 'none' },
+	scrollbarWidth: 'none',
+	msOverflowStyle: 'none',
 };
 
-export const ProfileForm: FC<{ userId: string; onSubmit: (profileData: ProfileCdo) => void }> = ({
-	userId,
-	onSubmit,
-}) => {
-	const {
-		register,
-		handleSubmit,
-		control,
-		reset,
-		formState: { isSubmitting, errors },
-	} = useForm<ProfileCdo>({ defaultValues: getInitialFormData(userId), mode: 'onBlur' });
-
-	const [isModalOpen, setIsModalOpen] = useState(false);
-	const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
-
-	useEffect(() => {
-		reset(getInitialFormData(userId));
-	}, [userId, reset]);
-
-	const handleOpenModal = () => setIsModalOpen(true);
-	const handleCloseModal = () => setIsModalOpen(false);
-
-	// --- MODIFIED BEHAVIOR ---
-
-	// On single click, just set the ID to highlight the item in the list.
-	const handleClickProfile = (profileId: string) => {
-		setSelectedTemplateId(profileId);
-	};
-
-	// On double click, populate the form with the profile's data and close the modal.
-	const handleDoubleClickProfile = (profile: ProfileInfo) => {
-		reset({
+const getInitialFormData = (userId: string, profile?: ProfileInfo): ProfileCdo => {
+	if (profile) {
+		return {
 			name: profile.name,
 			gender: profile.gender,
 			title: profile.title,
 			showName: profile.showName,
 			description: profile.description,
 			userId,
-			sessionId: '',
-		});
-		handleCloseModal();
+			sessionId: profile.sessionId || '',
+		};
+	}
+
+	return { name: '', gender: '', title: '', showName: '', description: '', userId, sessionId: '' };
+};
+
+export interface ProfileFormProps {
+	userId: string;
+	mode: 'create' | 'edit';
+	profile?: ProfileInfo; // Required for edit mode
+	open?: boolean; // For modal mode (edit)
+	onClose?: () => void; // For modal mode (edit)
+	onSubmit: (profileData: ProfileCdo | ProfileInfo) => Promise<void>;
+	showTemplateSelector?: boolean; // Only for create mode
+}
+
+export const ProfileForm: FC<ProfileFormProps> = ({
+	userId,
+	mode,
+	profile,
+	open = true, // Default true for inline usage
+	onClose,
+	onSubmit,
+	showTemplateSelector = false,
+}) => {
+	const {
+		handleSubmit,
+		control,
+		reset,
+		formState: { isSubmitting, errors },
+	} = useForm<ProfileCdo>({ defaultValues: getInitialFormData(userId, profile), mode: 'onBlur' });
+
+	const { isSmallScreen } = useResponsive();
+	const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+	const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+
+	useEffect(() => {
+		reset(getInitialFormData(userId, profile));
+	}, [userId, profile, reset]);
+
+	const handleOpenTemplateModal = () => setIsTemplateModalOpen(true);
+	const handleCloseTemplateModal = () => setIsTemplateModalOpen(false);
+
+	const handleClickProfile = (profileId: string) => {
+		setSelectedTemplateId(profileId);
+	};
+
+	const handleDoubleClickProfile = (templateProfile: ProfileInfo) => {
+		reset(getInitialFormData(userId, templateProfile));
+		handleCloseTemplateModal();
 	};
 
 	const onFormSubmit = (data: ProfileCdo) => {
 		onSubmit(data);
 	};
 
-	return (
-		<>
-			<GlassCard variant="outlined">
-				<Box component="form" onSubmit={handleSubmit(onFormSubmit)} noValidate>
-					<Box
-						sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}
-						mb={1}
+	// Create the form content
+	const formContent = (
+		<Box component="form" onSubmit={handleSubmit(onFormSubmit)} noValidate>
+			<Box
+				sx={{
+					display: 'flex',
+					justifyContent: 'space-between',
+					alignItems: 'center',
+					width: '100%',
+					mb: 1,
+				}}
+			>
+				<Typography
+					variant="subtitle1"
+					color="text.secondary"
+					component="span" // Render as a <span> to be inline
+					sx={{ whiteSpace: 'nowrap', mb: isSmallScreen ? 0 : 1 }}
+				>
+					{mode === 'create'
+						? getLangText(LANG_KEYS.CREATE_NEW_PROFILE)
+						: getLangText(LANG_KEYS.EDIT_PROFILE)}
+				</Typography>
+
+				{mode === 'create' && showTemplateSelector && (
+					<GlassButton
+						colorVariant="silver"
+						variant="outlined"
+						onClick={handleOpenTemplateModal}
+						sx={{ whiteSpace: 'nowrap', flexShrink: 0 }}
 					>
-						<Typography variant="subtitle1" color="text.secondary" mb={1}>
-							{getLangText(LANG_KEYS.CREATE_NEW_PROFILE)}
-						</Typography>
-						<GlassButton colorVariant="silver" variant="outlined" onClick={handleOpenModal}>
-							{getLangText(LANG_KEYS.CHOOSE_EXISTING_PROFILE)}
-						</GlassButton>
-					</Box>
+						{getLangText(LANG_KEYS.CHOOSE_EXISTING_PROFILE)}
+					</GlassButton>
+				)}
+			</Box>
 
-					<Stack spacing={1}>
-						<Grid container spacing={innerSpacing}>
-							<Grid size={{ xs: 12, md: 4 }}>
-								<Controller
-									name="showName"
-									control={control}
-									rules={{ required: getLangText(LANG_KEYS.SHOW_NAME_REQUIRED) }}
-									render={({ field }) => (
-										<TextField
-											{...field}
-											fullWidth
-											label={getLangText(LANG_KEYS.SHOWNAME)}
-											error={!!errors.showName}
-											helperText={errors.showName?.message}
-											placeholder={getLangText(LANG_KEYS.SHOW_NAME_PLACEHOLDER)}
-											required
-										/>
-									)}
-								/>
-							</Grid>
-							<Grid size={{ xs: 12, md: 8 }}>
-								<Controller
-									name="name"
-									control={control}
-									rules={{ required: getLangText(LANG_KEYS.NAME_REQUIRED) }}
-									render={({ field }) => (
-										<TextField
-											{...field}
-											fullWidth
-											label={getLangText(LANG_KEYS.NAME)}
-											error={!!errors.name}
-											helperText={errors.name?.message}
-											placeholder={getLangText(LANG_KEYS.NAME_PLACEHOLDER)}
-											required
-										/>
-									)}
-								/>
-							</Grid>
-						</Grid>
-						<Grid container spacing={innerSpacing}>
-							<Grid size={{ xs: 12, md: 4 }}>
-								{/* Your existing Controller for Select is already correct */}
-								<FormControl fullWidth required>
-									<Controller
-										name="gender"
-										control={control}
-										rules={{ required: getLangText(LANG_KEYS.GENDER_REQUIRED) }}
-										render={({ field }) => (
-											<FormControl fullWidth required error={!!errors.gender}>
-												<InputLabel>{getLangText(LANG_KEYS.GENDER)}</InputLabel>
-												<Select {...field}>
-													{GENDER_SELECT_MENUITEM.map((opt) => (
-														<MenuItem key={opt.key} value={opt.key}>
-															{opt.label}
-														</MenuItem>
-													))}
-												</Select>
-												{errors.gender && <FormHelperText>{errors.gender.message}</FormHelperText>}
-											</FormControl>
-										)}
-									/>
-								</FormControl>
-							</Grid>
-							<Grid size={{ xs: 12, md: 8 }}>
-								{/* --- UPDATED TEXTFIELD --- */}
-								<Controller
-									name="title"
-									control={control}
-									rules={{ required: getLangText(LANG_KEYS.TITLE_REQUIRED) }}
-									render={({ field }) => (
-										<TextField
-											{...field}
-											fullWidth
-											label={getLangText(LANG_KEYS.TITLE)}
-											error={!!errors.title}
-											helperText={errors.title?.message}
-											placeholder={getLangText(LANG_KEYS.TITLE_PLACEHOLDER)}
-											required
-											slotProps={{ htmlInput: { maxLength: REQUEST_CHARACTER_LIMIT } }}
-										/>
-									)}
-								/>
-							</Grid>
-						</Grid>
-
-						{/* --- UPDATED TEXTFIELD --- */}
+			<Stack spacing={1}>
+				<Grid container spacing={innerSpacing}>
+					<Grid size={{ xs: 12, md: 4 }}>
 						<Controller
-							name="description"
+							name="showName"
+							disabled={mode === 'edit'}
 							control={control}
-							rules={{ required: getLangText(LANG_KEYS.DESCRIPTION_REQUIRED) }}
+							rules={{ required: getLangText(LANG_KEYS.SHOW_NAME_REQUIRED) }}
 							render={({ field }) => (
 								<TextField
 									{...field}
 									fullWidth
-									label={getLangText(LANG_KEYS.DESCRIPTION)}
-									multiline
-									minRows={3}
-									maxRows={10}
-									error={!!errors.description}
-									helperText={errors.description?.message || getLangText(LANG_KEYS.DESCRIPTION_HELPER)}
-									placeholder={getLangText(LANG_KEYS.DESCRIPTION_PLACEHOLDER)}
+									disabled={mode === 'edit'}
+									label={getLangText(LANG_KEYS.SHOWNAME)}
+									error={!!errors.showName}
+									helperText={errors.showName?.message}
+									placeholder={getLangText(LANG_KEYS.SHOW_NAME_PLACEHOLDER)}
 									required
 								/>
 							)}
 						/>
-					</Stack>
-					<CardActions sx={{ justifyContent: 'flex-end', p: 2, pb: 0 }}>
-						<SolidMetallicButton
-							colorVariant="gold"
-							type="submit"
-							variant="outlined"
-							disabled={isSubmitting}
-						>
-							{getLangText(LANG_KEYS.START_NEW_SESSION)}
-						</SolidMetallicButton>
-					</CardActions>
-				</Box>
-			</GlassCard>
-
-			<Modal open={isModalOpen} onClose={handleCloseModal}>
-				<Box sx={modalStyle}>
-					<List>
-						<ProfilePreviewList
-							userId={userId}
-							selectedProfileId={selectedTemplateId}
-							onClickProfile={handleClickProfile}
-							onDoubleClickProfile={handleDoubleClickProfile}
+					</Grid>
+					<Grid size={{ xs: 12, md: 8 }}>
+						<Controller
+							name="name"
+							disabled={mode === 'edit'}
+							control={control}
+							rules={{ required: getLangText(LANG_KEYS.NAME_REQUIRED) }}
+							render={({ field }) => (
+								<TextField
+									{...field}
+									fullWidth
+									label={getLangText(LANG_KEYS.NAME)}
+									error={!!errors.name}
+									helperText={errors.name?.message}
+									placeholder={getLangText(LANG_KEYS.NAME_PLACEHOLDER)}
+									required
+								/>
+							)}
 						/>
-					</List>
-				</Box>
-			</Modal>
-		</>
+					</Grid>
+				</Grid>
+
+				<Grid container spacing={innerSpacing}>
+					<Grid size={{ xs: 12, md: 4 }}>
+						<FormControl fullWidth required>
+							<Controller
+								name="gender"
+								disabled={mode === 'edit'}
+								control={control}
+								rules={{ required: getLangText(LANG_KEYS.GENDER_REQUIRED) }}
+								render={({ field }) => (
+									<FormControl fullWidth required error={!!errors.gender}>
+										<InputLabel>{getLangText(LANG_KEYS.GENDER)}</InputLabel>
+										<Select {...field}>
+											{GENDER_SELECT_MENUITEM.map((opt) => (
+												<MenuItem key={opt.key} value={opt.key}>
+													{opt.label}
+												</MenuItem>
+											))}
+										</Select>
+										{errors.gender && <FormHelperText>{errors.gender.message}</FormHelperText>}
+									</FormControl>
+								)}
+							/>
+						</FormControl>
+					</Grid>
+					<Grid size={{ xs: 12, md: 8 }}>
+						<Controller
+							name="title"
+							control={control}
+							rules={{ required: getLangText(LANG_KEYS.TITLE_REQUIRED) }}
+							render={({ field }) => (
+								<TextField
+									{...field}
+									fullWidth
+									label={getLangText(LANG_KEYS.TITLE)}
+									error={!!errors.title}
+									helperText={errors.title?.message}
+									placeholder={getLangText(LANG_KEYS.TITLE_PLACEHOLDER)}
+									required
+									slotProps={{ htmlInput: { maxLength: REQUEST_CHARACTER_LIMIT } }}
+								/>
+							)}
+						/>
+					</Grid>
+				</Grid>
+
+				<Controller
+					name="description"
+					control={control}
+					rules={{ required: getLangText(LANG_KEYS.DESCRIPTION_REQUIRED) }}
+					render={({ field }) => (
+						<TextField
+							{...field}
+							fullWidth
+							label={getLangText(LANG_KEYS.DESCRIPTION)}
+							multiline
+							minRows={3}
+							maxRows={10}
+							error={!!errors.description}
+							helperText={errors.description?.message || getLangText(LANG_KEYS.DESCRIPTION_HELPER)}
+							placeholder={getLangText(LANG_KEYS.DESCRIPTION_PLACEHOLDER)}
+							required
+						/>
+					)}
+				/>
+			</Stack>
+
+			<CardActions sx={{ justifyContent: 'flex-end', p: 2, pb: 0 }}>
+				{mode === 'edit' && onClose && (
+					<Button variant="outlined" onClick={onClose} disabled={isSubmitting} sx={{ mr: 1 }}>
+						{getLangText(LANG_KEYS.CANCEL)}
+					</Button>
+				)}
+				<SolidMetallicButton
+					colorVariant="gold"
+					type="submit"
+					variant="outlined"
+					disabled={isSubmitting}
+				>
+					{mode === 'create' ? getLangText(LANG_KEYS.START_NEW_SESSION) : getLangText(LANG_KEYS.UPDATE)}
+				</SolidMetallicButton>
+			</CardActions>
+
+			{/* Template Selection Modal - Only for create mode */}
+			{mode === 'create' && showTemplateSelector && (
+				<Modal open={isTemplateModalOpen} onClose={handleCloseTemplateModal}>
+					<Box sx={modalStyle}>
+						<Typography variant="h6" gutterBottom>
+							{getLangText(LANG_KEYS.CHOOSE_EXISTING_PROFILE)}
+						</Typography>
+						<List>
+							<ProfilePreviewList
+								userId={userId}
+								selectedProfileId={selectedTemplateId}
+								onClickProfile={handleClickProfile}
+								onDoubleClickProfile={handleDoubleClickProfile}
+							/>
+						</List>
+						<Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+							<Button onClick={handleCloseTemplateModal}>{getLangText(LANG_KEYS.CANCEL)}</Button>
+						</Box>
+					</Box>
+				</Modal>
+			)}
+		</Box>
 	);
+
+	// Render as modal for edit mode, inline for create mode
+	if (mode === 'edit') {
+		const handleModalClose = (event: {}, reason: 'backdropClick' | 'escapeKeyDown') => {
+			// This will prevent the modal from closing when the backdrop is clicked
+			if (reason && reason === 'backdropClick') {
+				return;
+			}
+
+			if (onClose) {
+				onClose();
+			}
+		};
+
+		return (
+			<Modal open={open || false} onClose={handleModalClose} disableEscapeKeyDown>
+				<Box sx={{ ...modalStyle, p: 1 }}> {formContent}</Box>
+			</Modal>
+		);
+	}
+
+	// Render inline for create mode
+	return formContent;
 };

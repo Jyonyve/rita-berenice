@@ -23,14 +23,14 @@ const TabPanel: FC<TabPanelProps> = ({ children, value, index, ...other }) => (
 		aria-labelledby={`profile-tab-${index}`}
 		{...other}
 	>
-		{value === index && <CardContent>{children}</CardContent>}
+		{value === index && <Box sx={{ p: { xs: 1, sm: 2 } }}>{children}</Box>}
 	</div>
 );
 
 export const ProfileHistoryTabs: FC<{
 	userId: string;
 	characterId: string;
-	onSubmit: (profileData: ProfileCdo) => void;
+	onSubmit: (profileData: ProfileCdo) => Promise<void>;
 	onHistory: (historyId: string) => void;
 }> = ({ userId, characterId, onSubmit, onHistory }) => {
 	const [tabValue, setTabValue] = useState(0);
@@ -53,7 +53,7 @@ export const ProfileHistoryTabs: FC<{
 			</Tabs>
 
 			<TabPanel value={tabValue} index={0}>
-				<ProfileForm userId={userId} onSubmit={onSubmit} />
+				<ProfileForm userId={userId} onSubmit={onSubmit} mode={'create'} showTemplateSelector={true} />
 			</TabPanel>
 
 			<TabPanel value={tabValue} index={1}>
