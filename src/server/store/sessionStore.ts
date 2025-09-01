@@ -53,9 +53,9 @@ export const sessionStore = {
 	async createSession(
 		userId: string,
 		characterId: string,
-		profileId: string,
-		firstCharMessage: string
-	): Promise<SessionInfo> {
+		firstCharMessage: string,
+		title?: string
+	): Promise<{ sessionId: string }> {
 		const collection = await sessionStore._getCollection();
 		const now = new Date().toISOString();
 		const newSessionId = buildSessionId(characterId);
@@ -64,8 +64,8 @@ export const sessionStore = {
 			sessionId: newSessionId,
 			userId,
 			characterId,
-			profileId,
-			title: 'New Conversation', // Default title
+			profileId: '',
+			title: title || 'New Conversation', // Default title
 			createdAt: now,
 			updatedAt: now,
 			messageCount: 1, // Starts with the first message
@@ -80,12 +80,39 @@ export const sessionStore = {
 
 		try {
 			await addRecord(collection, metadata.sessionId, documentForEmbedding, metadata);
-			return sessionInfo;
+			return { sessionId: metadata.sessionId };
 		} catch (error: any) {
 			handleServiceError(
 				error,
 				'An internal error occurred while creating a session.',
 				`Failed to create session ${metadata.sessionId} for user ${userId}`
+			);
+		}
+	},
+
+	/**
+	 * Updates a session's metadata
+	 * !IMPORTANT! No update MessageCount (use another method)
+	 */
+	async updateSession(sessionInfo: SessionInfo): Promise<void> {
+		const collection = await sessionStore._getCollection();
+		const now = new Date().toISOString();
+		try {
+			const { lastCharMessage, ...sessionMetadata } = sessionInfo;
+
+			const updatedMetadata: SessionMetadata = { ...sessionMetadata, updatedAt: now };
+
+			const newMessage = parseEntriesToConversation(JSON.parse(lastCharMessage));
+			const documentForEmbedding = flatSessionToDoc({
+				...updatedMetadata,
+				lastCharMessage: newMessage,
+			});
+			await updateRecord(collection, updatedMetadata.sessionId, documentForEmbedding, updatedMetadata);
+		} catch (error) {
+			handleServiceError(
+				error,
+				'An internal error occurred while do [updateSession].',
+				`Failed to update sessionInfo with ID ${sessionInfo.sessionId}:`
 			);
 		}
 	},
@@ -184,8 +211,29 @@ export const sessionStore = {
 		} catch (error) {
 			handleServiceError(
 				error,
-				'An internal error occurred while do [getSession].',
-				`Failed to get user with ID ${sessionId}:`
+				'An internal error occurred while do [updateSessionOnNewMessage].',
+				`Failed to update sessionInfo Message with ID ${sessionId}:`
+			);
+		}
+	},
+
+	/**
+	 * Updates a session's metadata, typically after a new message is added.
+	 */
+	async initSessionProfileId(sessionId: string, profileId: string): Promise<void> {
+		const collection = await sessionStore._getCollection();
+		const now = new Date().toISOString();
+		try {
+			const sessionInfo = (await sessionStore.getSession(sessionId)).sessionInfo;
+			const newSessionInfo: SessionInfo = { ...sessionInfo, profileId, updatedAt: now };
+			const documentForEmbedding = flatSessionToDoc(newSessionInfo);
+			const { lastCharMessage, ...updatedMetadata } = newSessionInfo;
+			await updateRecord(collection, updatedMetadata.sessionId, documentForEmbedding, updatedMetadata);
+		} catch (error) {
+			handleServiceError(
+				error,
+				'An internal error occurred while do [initSessionProfileId].',
+				`Failed to update sessionInfo Message with ID ${sessionId}:`
 			);
 		}
 	},

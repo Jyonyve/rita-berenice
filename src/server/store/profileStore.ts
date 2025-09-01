@@ -127,7 +127,7 @@ export const profileStore = {
 	},
 
 	// In profileService
-	storeProfile: async (profile: ProfileCdo | ProfileInfo): Promise<string> => {
+	storeProfile: async (profile: ProfileCdo | ProfileInfo): Promise<{ profileId: string }> => {
 		const collection = await profileStore._getCollection();
 		const now = new Date().toISOString();
 		const updatedProfile: ProfileInfo = isProfileInfo(profile)
@@ -146,7 +146,7 @@ export const profileStore = {
 
 		try {
 			await upsertRecord(collection, updatedMetadata.profileId, documentForEmbedding, updatedMetadata);
-			return JSON.stringify({ profileId: updatedMetadata.profileId });
+			return { profileId: updatedMetadata.profileId };
 		} catch (error) {
 			handleServiceError(
 				error,

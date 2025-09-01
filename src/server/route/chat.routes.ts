@@ -31,21 +31,19 @@ const collectionType = COLLECTIONS.CHAT;
  */
 router.post(
 	genRoutePattern('storeChatTurn'),
-	asyncHandler(
-		async (req: Request<object, string, ChatTurn>, res: Response<void>): Promise<void> => {
-			validateServiceId(req.body.sessionId, collectionType);
-			const requiredFields: (keyof ChatTurn)[] = ['sessionId', 'sequence', 'request', 'response'];
-			validateRequestData(req.body, 'body', requiredFields);
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		validateServiceId(req.body.sessionId, collectionType);
+		const requiredFields: (keyof ChatTurn)[] = ['sessionId', 'sequence', 'request', 'response'];
+		validateRequestData(req.body, 'body', requiredFields);
 
-			const path = genRoutePattern('storeChatTurn');
-			console.log(
-				`API HIT: POST ${path} for sessionId: ${req.body.sessionId}, sequence: ${req.body.sequence}`
-			);
+		const path = genRoutePattern('storeChatTurn');
+		console.log(
+			`API HIT: POST ${path} for sessionId: ${req.body.sessionId}, sequence: ${req.body.sequence}`
+		);
 
-			await chatStore.storeChatTurn(req.body);
-			res.status(201).json();
-		}
-	)
+		const response = await chatStore.storeChatTurn(req.body);
+		res.status(201).json(response);
+	})
 );
 
 router.get(

@@ -31,8 +31,6 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 	const characterId = characterInfo.characterId;
 
 	// Character state: portraits, loading, error
-	// profile state
-	const { storeProfile } = useProfileApi();
 
 	// Handlers
 	const handleHistory = (historyId: string) => {
@@ -42,7 +40,6 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 	const handleStartSession = (sessionId: string) => {
 		navigate(`/${routeConstants.CHAT}/${sessionId}`);
 	};
-
 	const handleStartNewSession = async (profileCdo: ProfileCdo) => {
 		if (import.meta.env.VITE_APP_MODE === 'static') {
 			addToast(getLangAlertText(LANG_KEYS.STATIC_SESSION_DISABLE), 'error');
@@ -53,19 +50,12 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 			return;
 		}
 
-		try {
-			const result = await storeProfile(profileCdo);
-			const { profileId } = JSON.parse(result);
-
-			if (profileId) {
-				navigate(`/${routeConstants.CHAT}`, { state: { characterId, profileId } });
-			} else {
-				alert('Failed to create a profile. Please try again.');
-			}
-		} catch (error) {
-			console.error('Error starting new session:', error);
-			alert('An error occurred while starting the session.');
-		}
+		// The only logic here is to navigate with the collected data.
+		navigate(`/${routeConstants.CHAT}`, {
+			// Assuming you have a route for this
+			replace: true,
+			state: { characterId: characterId, profileData: profileCdo },
+		});
 	};
 
 	// Portrait: pick default or first available

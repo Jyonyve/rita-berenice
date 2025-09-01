@@ -234,7 +234,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 					: { ...(data as CharacterCdo), userId };
 
 			const response = await storeCharacter(payload);
-			const { characterId } = JSON.parse(response);
+			const { characterId } = response;
 
 			if (mode === 'create') {
 				await uploadPortraits(characterId, uploadedImages);

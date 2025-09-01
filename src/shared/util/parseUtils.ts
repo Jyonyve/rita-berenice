@@ -102,3 +102,12 @@ export const parseMessageId = (
 
 	return { sessionId: parts[0], sequence: parseInt(parts[1]), type: parts[2] as ChatMessageType };
 };
+
+export const parseProfileId = (profileId: string): { sessionId: string; userId: string } => {
+	const parts = profileId.split('_');
+	if (parts.length < 2) {
+		throw new Error(`Invalid message ID format: ${profileId}`);
+	}
+
+	return { sessionId: parts[0], userId: parts[1] };
+};
