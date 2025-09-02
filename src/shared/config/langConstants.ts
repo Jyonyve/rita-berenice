@@ -52,6 +52,7 @@ export const LANG_KEYS = {
 	CONTACT: 'CONTACT',
 	INSTRUCTION: 'INSTRUCTION',
 	TITLE: 'TITLE',
+	SESSION_TITLE: 'SESSION_TITLE',
 	UPLOAD_IMAGE: 'UPLOAD_IMAGE',
 	CHARACTER_DETAIL: 'CHARACTER_DETAIL',
 	TITLE_GUIDANCE: 'TITLE_GUIDANCE',
@@ -60,6 +61,7 @@ export const LANG_KEYS = {
 	NO_SESSIONS: 'NO_SESSIONS',
 	NO_PROFILES: 'NO_PROFILES',
 	NO_HISTORIES: 'NO_HISTORIES',
+	ERROR_MAXLENGTH: 'ERROR_MAXLENGTH',
 
 	// --- [NEW] Emotion Keys ---
 	NEUTRAL: 'NEUTRAL',
@@ -162,6 +164,7 @@ export const langConstants: LangRecord = {
 	INSTRUCTION: { kor: '세계관 및 설정', eng: 'World & AI Instructions' },
 	UPLOAD_IMAGE: { kor: '이미지 업로드', eng: 'Upload Image' },
 	CHARACTER_DETAIL: { kor: '상세 정보', eng: 'Details' },
+	SESSION_TITLE: { kor: '대화방 이름', eng: 'Session Title' },
 	TITLE_GUIDANCE: {
 		kor: '한줄 소개는 다른 사람들에게 보이는 정보이며, AI 답변에 사용되지 않습니다.',
 		eng: 'This tagline is shown to other users and does not affect AI responses.',
@@ -212,17 +215,18 @@ export const langConstants: LangRecord = {
 		eng: "The character's first message when starting a new conversation.",
 	},
 	DESCRIPTION_HELPER: {
-		kor: '캐릭터의 자세한 정보를 서술해 주세요. 이 정보는 유저와 AI 양쪽에 제공됩니다.',
+		kor: 'AI에게 제공될 캐릭터의 자세한 정보를 서술해 주세요.',
 		eng: 'This is the character information provided to the AI.',
 	},
 	INSTRUCTION_HELPER: {
-		kor: '캐릭터의 세계관에 대해 서술해 주세요. 이 정보는 유저와 AI 양쪽에 제공됩니다.',
+		kor: 'AI에게 제공될 캐릭터의 세계관에 대해 서술해 주세요.',
 		eng: "This explains the character's world setting to the AI.",
 	},
 	FIRST_MESSAGE_HELPER: {
 		kor: '채팅창에 표시되는 캐릭터의 첫 대화입니다.',
 		eng: "This is the character's first line of dialogue shown in the chat window.",
 	},
+	ERROR_MAXLENGTH: { kor: '글자수 제한을 초과하였습니다.', eng: 'Too long texts.' },
 
 	// --- Emotion Translations ---
 	NEUTRAL: { kor: '중립', eng: 'Neutral' },
