@@ -11,6 +11,7 @@ import { METADATA_TYPES } from '#shared/config/constants.js';
 import { flatSessionToDoc, inflateSessionDoc } from '../util/documentUtils.js';
 import { metadataToSession } from '#shared/util/dbConvertUtils.js';
 import { parseEntriesToConversation } from '../util/chatParseUtils.js';
+import { ChatEntry } from '#shared/domain/chat/ChatInterfaces.js';
 
 // Destructure chromaDbClient methods
 const { getSessionCollection, addRecord, updateRecord, getRecordById, getRecords } = chromaDbClient; // Assume getSessionCollection is added to chromaDbClient
@@ -201,11 +202,11 @@ export const sessionStore = {
 				updatedAt: now,
 				messageCount: sessionMetadata.messageCount + 1,
 			};
-
-			const newMessage = parseEntriesToConversation(JSON.parse(latestCharMessage));
+			const entries: ChatEntry[] = JSON.parse(latestCharMessage);
+			const lastConversation = parseEntriesToConversation(entries);
 			const documentForEmbedding = flatSessionToDoc({
 				...updatedMetadata,
-				lastCharMessage: newMessage,
+				lastCharMessage: lastConversation,
 			});
 			await updateRecord(collection, updatedMetadata.sessionId, documentForEmbedding, updatedMetadata);
 		} catch (error) {

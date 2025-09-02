@@ -32,9 +32,9 @@
 .assistantDialogue {
 	composes: messageEntry;
 	font-weight: bold;
-	color: #bbbbbb; /* CHANGED: Brighter shade of gray */
+	color: #dcdcdc; /* CHANGED: Brighter shade of gray */
 	background-color: transparent;
-	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.15);
 	padding-bottom: 1em;
 	padding-top: 1em;
 }
@@ -43,9 +43,9 @@
 	composes: messageEntry;
 	font-weight: bold;
 	font-style: italic;
-	color: #b8860b;
+	color: #daaa2e;
 	background-color: transparent;
-	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 /* --- FIX FOR BUTTON POSITIONING --- */

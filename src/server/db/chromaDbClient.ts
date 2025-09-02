@@ -1,32 +1,29 @@
 // src/server/db/chromaDbClient.ts
 import { ChromaClient, Collection, IncludeEnum, Metadata, Where, WhereDocument } from 'chromadb';
-import { COLLECTIONS, CollectionType, EmbeddingFunction } from './ChromaInterfaces.js';
+import { COLLECTIONS, CollectionType } from './ChromaInterfaces.js';
 import { MetadataType } from '#shared/config/constants.js';
 import { ChromaResponse } from '#shared/api/ModuleResponse.js';
 import { OpenAIEmbeddingFunction } from '@chroma-core/openai';
 import { CohereEmbeddingFunction } from '@chroma-core/cohere';
-import { get_encoding } from 'tiktoken';
-import { getTokenCount } from '../util/queryUtils.js';
-
-const OPENAI_TOKEN_LIMIT = 8191; // text-embedding-3-small limit
-const COHERE_TOKEN_LIMIT = 512000; // embed-v4.0 limit
 
 const openAiApiKey = process.env.OPENAI_API_KEY;
 const cohereApiKey = process.env.COHERE_API_KEY;
+
 if (!cohereApiKey || !openAiApiKey) {
-	// This check is important. It will cause the server to crash on startup
-	// if the secret is not set, which is good practice (fail fast).
-	throw new Error('FATAL: COHERE_API_KEY secret is not set in the environment.');
+	throw new Error('FATAL: Both OPENAI_API_KEY and COHERE_API_KEY must be set in environment.');
 }
 
+// ✅ SIMPLIFIED: Direct embedding function assignments
 const embedFnOpenAi = new OpenAIEmbeddingFunction({
 	apiKey: openAiApiKey,
 	modelName: 'text-embedding-3-small',
 });
+
 const embedFnCohere = new CohereEmbeddingFunction({
 	apiKey: cohereApiKey,
-	modelName: 'embed-v4.0', // Latest version
+	modelName: 'embed-v4.0',
 	inputType: 'search_document',
+	// Cohere embed-v4.0 defaults to 1536 dimensions
 });
 
 const host = process.env.CHROMA_HOST;
@@ -37,23 +34,22 @@ if (!host || !port || isNaN(port) || ssl === undefined) {
 	throw new Error(
 		'ChromaDB environment variables (CHROMA_HOST, CHROMA_PORT, CHROMA_SSL) must be set.'
 	);
-} else {
-	// console.log(`host: ${host}, port: ${port}, ssl:${ssl}`);
-	console.log(`host: ${host}, port: ${port}`);
 }
-const chromaClient = new ChromaClient({ host, port, ssl });
 
-const logJsonPreview = (obj: any, length: number = 100): string => {
-	if (obj === null || typeof obj === 'undefined') {
-		return 'N/A'; // Or 'undefined'/'null' based on your preference
+const chromaClient = new ChromaClient({ host, port, ssl });
+const _collectionCache: Map<string, Collection> = new Map();
+
+// ✅ SIMPLIFIED: Direct mapping without chooseEmbeddingFunction
+const _getCollectionSpecificEmbedding = (collectionName: CollectionType) => {
+	// Only TEMP uses Cohere for high-token capacity
+	if (collectionName === COLLECTIONS.TEMP) {
+		return embedFnCohere;
 	}
-	const str = JSON.stringify(obj);
-	if (str.length <= length) {
-		return str;
-	}
-	return `${str.substring(0, length)}...`;
+
+	// All other collections use OpenAI
+	return embedFnOpenAi;
 };
-// Retry wrapper
+
 const _withRetry = async <T>(fn: () => Promise<T>, retries = 1, delay = 1500): Promise<T> => {
 	let lastError: unknown;
 	for (let i = 0; i < retries; i++) {
@@ -68,59 +64,17 @@ const _withRetry = async <T>(fn: () => Promise<T>, retries = 1, delay = 1500): P
 	throw lastError;
 };
 
-const chooseEmbeddingFunction = (type: EmbeddingFunction, text?: string) => {
-	// Direct selection without token counting
-	if (type === 'cohere') {
-		console.log('[ChromaClient] Using Cohere embedding function (explicit selection)');
-		return embedFnCohere;
+const _logJsonPreview = (obj: any, length: number = 100): string => {
+	if (obj === null || typeof obj === 'undefined') {
+		return 'N/A'; // Or 'undefined'/'null' based on your preference
 	}
-
-	if (type === 'openai') {
-		console.log('[ChromaClient] Using OpenAI embedding function (explicit selection)');
-		return embedFnOpenAi;
+	const str = JSON.stringify(obj);
+	if (str.length <= length) {
+		return str;
 	}
-
-	// Only perform token-based analysis for 'text' type
-	if (type === 'text') {
-		if (!text) {
-			console.log('[ChromaClient] No text provided for token analysis - defaulting to OpenAI');
-			return embedFnOpenAi;
-		}
-
-		const tokenCount = getTokenCount(text);
-		console.log(`[ChromaClient] Token count for dynamic selection: ${tokenCount}`);
-
-		// Use OpenAI if within limits (better semantic quality)
-		if (tokenCount <= OPENAI_TOKEN_LIMIT) {
-			console.log('[ChromaClient] Using OpenAI embedding function (within token limit)');
-			return embedFnOpenAi;
-		}
-
-		// Fallback to Cohere for large content
-		console.log('[ChromaClient] Using Cohere embedding function (OpenAI token limit exceeded)');
-		return embedFnCohere;
-	}
-
-	// Fallback case (shouldn't reach here with proper typing)
-	console.warn('[ChromaClient] Unknown type provided, defaulting to OpenAI');
-	return embedFnOpenAi;
+	return `${str.substring(0, length)}...`;
 };
 
-/**
- * A centralized Map to cache all singleton Collection objects.
- * This avoids repetitive caching logic for each collection type.
- * Structure: Map<collectionName, Collection>
- */
-const _collectionCache: Map<string, Collection> = new Map();
-
-/**
- * A generic, caching helper for retrieving singleton collections using ChromaDB's
- * `getOrCreateCollection` method. This is more efficient than the previous
- * get-then-create-on-error pattern. It checks a local cache first to minimize DB calls.
- *
- * @param collectionName The name of the collection from the COLLECTIONS enum.
- * @returns A Promise that resolves to the ChromaDB Collection object.
- */
 const _getOrCreateSingletonCollection = async (
 	collectionName: CollectionType
 ): Promise<Collection> => {
@@ -131,16 +85,12 @@ const _getOrCreateSingletonCollection = async (
 
 	console.log(`[ChromaClient] Cache MISS for ${collectionName}. Fetching or creating from DB...`);
 
-	// USE the collection-specific embedding function here!
 	const embeddingFunction = _getCollectionSpecificEmbedding(collectionName);
 
 	try {
 		console.log(`[ChromaClient] Attempting to GET collection: ${collectionName}`);
 		const collection = await _withRetry(() =>
-			chromaClient.getCollection({
-				name: collectionName,
-				embeddingFunction, // Use the collection-specific embedding
-			})
+			chromaClient.getCollection({ name: collectionName, embeddingFunction })
 		);
 		_collectionCache.set(collectionName, collection);
 		console.log(`[ChromaClient] Collection ${collectionName} retrieved and cached.`);
@@ -150,12 +100,13 @@ const _getOrCreateSingletonCollection = async (
 		const collection = await _withRetry(() =>
 			chromaClient.createCollection({
 				name: collectionName,
-				embeddingFunction, // Use the collection-specific embedding
+				embeddingFunction,
 				metadata: {
 					name: collectionName,
 					created: new Date().toString(),
 					embeddingModel:
-						embeddingFunction === embedFnOpenAi ? 'openai-text-embedding-3-small' : 'cohere-embed-v4.0',
+						collectionName === COLLECTIONS.TEMP ? 'cohere-embed-v4.0' : 'openai-text-embedding-3-small',
+					dimensions: 1536, // Both models use 1536 dimensions
 				},
 			})
 		);
@@ -163,29 +114,6 @@ const _getOrCreateSingletonCollection = async (
 		console.log(`[ChromaClient] Collection ${collectionName} created and cached.`);
 		return collection;
 	}
-};
-
-const _getCollectionSpecificEmbedding = (collectionName: CollectionType) => {
-	const strategies = {
-		// High-frequency collections - explicit Cohere selection
-		[COLLECTIONS.TEMP]: () => chooseEmbeddingFunction('cohere'),
-
-		// Character-critical collections - explicit OpenAI selection
-		[COLLECTIONS.CHARACTER]: () => chooseEmbeddingFunction('openai'),
-		[COLLECTIONS.PROFILE]: () => chooseEmbeddingFunction('openai'),
-		[COLLECTIONS.SESSION]: () => chooseEmbeddingFunction('openai'),
-		[COLLECTIONS.RECAP]: () => chooseEmbeddingFunction('openai'),
-		[COLLECTIONS.LORE]: () => chooseEmbeddingFunction('openai'),
-		[COLLECTIONS.TERM]: () => chooseEmbeddingFunction('openai'),
-		[COLLECTIONS.USER]: () => chooseEmbeddingFunction('openai'),
-		[COLLECTIONS.CREDENTIAL]: () => chooseEmbeddingFunction('openai'),
-
-		// CHAT collection defaults to OpenAI, dynamic selection in service layer
-		[COLLECTIONS.CHAT]: () => chooseEmbeddingFunction('openai'),
-	};
-
-	const strategy = strategies[collectionName];
-	return strategy ? strategy() : chooseEmbeddingFunction('openai');
 };
 
 const _returnResponse = (results: ChromaResponse): ChromaResponse => {
@@ -328,7 +256,7 @@ export const chromaDbClient = {
 	): Promise<ChromaResponse> => {
 		try {
 			console.log(
-				`[ChromaClient.getRecords] filter: ${logJsonPreview(where)}, document: ${logJsonPreview(whereDocument)}, limit: ${limit}`
+				`[ChromaClient.getRecords] filter: ${_logJsonPreview(where)}, document: ${_logJsonPreview(whereDocument)}, limit: ${limit}`
 			);
 			const MAX = await collection.count(); // Ensure the collection is initialized
 			const results = await collection.get({
@@ -354,7 +282,7 @@ export const chromaDbClient = {
 	): Promise<ChromaResponse[]> => {
 		try {
 			console.log(
-				`[ChromaClient.queryRecords] Querying with text: "${queryTexts[0].substring(0, 10)}...",\n filter: ${logJsonPreview(where)}, ${logJsonPreview(whereDocument)},\n limit: ${limit}`
+				`[ChromaClient.queryRecords] Querying with text: "${queryTexts[0].substring(0, 10)}...",\n filter: ${_logJsonPreview(where)}, ${_logJsonPreview(whereDocument)},\n limit: ${limit}`
 			);
 			const MAX = await collection.count(); // Ensure the collection is initialized
 			const results = await collection.query({
