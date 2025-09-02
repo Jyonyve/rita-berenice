@@ -257,20 +257,25 @@ export const ProfileForm: FC<ProfileFormProps> = ({
 				/>
 			</Stack>
 
-			<CardActions sx={{ justifyContent: 'flex-end', p: 2, pb: 0 }}>
-				{mode === 'edit' && onClose && (
-					<Button variant="outlined" onClick={onClose} disabled={isSubmitting} sx={{ mr: 1 }}>
-						{getLangText(LANG_KEYS.CANCEL)}
-					</Button>
-				)}
-				<SolidMetallicButton
-					colorVariant="gold"
-					type="submit"
-					variant="outlined"
-					disabled={isSubmitting}
-				>
-					{mode === 'create' ? getLangText(LANG_KEYS.START_NEW_SESSION) : getLangText(LANG_KEYS.UPDATE)}
-				</SolidMetallicButton>
+			<CardActions sx={{ justifyContent: 'space-between', px: 0 }}>
+				{mode === 'create' && <TextField fullWidth label={getLangText(LANG_KEYS.SESSION_TITLE)} />}
+
+				<>
+					{mode === 'edit' && onClose && (
+						<Button variant="outlined" onClick={onClose} disabled={isSubmitting} sx={{ mr: 1 }}>
+							{getLangText(LANG_KEYS.CANCEL)}
+						</Button>
+					)}
+					<SolidMetallicButton
+						colorVariant="gold"
+						type="submit"
+						variant="outlined"
+						disabled={isSubmitting}
+						sx={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+					>
+						{mode === 'create' ? getLangText(LANG_KEYS.START_NEW_SESSION) : getLangText(LANG_KEYS.UPDATE)}
+					</SolidMetallicButton>
+				</>
 			</CardActions>
 
 			{/* Template Selection Modal - Only for create mode */}

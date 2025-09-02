@@ -19,20 +19,28 @@ export const parseConversationToEntries = (text: string): ChatEntry[] => {
 		.replace(/[""‟"]/g, '"') // Double quotes
 		.replace(/[''‛']/g, "'"); // Single quotes and apostrophes
 
-	// Use normalizedText instead of text!
-	const regex = /"([^"]+)"|([^"]+)/g;
-	let match;
+	// ✅ NEW: Split text by line breaks into separate lines
+	const lines = normalizedText.split(/\r?\n/);
 
-	while ((match = regex.exec(normalizedText)) !== null) {
-		if (match[1]) {
-			// Quoted text is dialogue
-			entries.push({ type: 'dialogue', prompt: match[1].trim() });
-		} else if (match[2]) {
-			// Unquoted text is action
-			const actionText = match[2].trim();
-			if (actionText) {
-				// Only add non-empty text
-				entries.push({ type: 'action', prompt: actionText });
+	const regex = /"([^"]+)"|([^"]+)/g;
+
+	// ✅ NEW: Process each line separately
+	for (const line of lines) {
+		// Reset regex for each line
+		regex.lastIndex = 0;
+
+		let match;
+		while ((match = regex.exec(line)) !== null) {
+			if (match[1]) {
+				// Quoted text is dialogue
+				entries.push({ type: 'dialogue', prompt: match[1].trim() });
+			} else if (match[2]) {
+				// Unquoted text is action
+				const actionText = match[2].trim();
+				if (actionText) {
+					// Only add non-empty text
+					entries.push({ type: 'action', prompt: actionText });
+				}
 			}
 		}
 	}
