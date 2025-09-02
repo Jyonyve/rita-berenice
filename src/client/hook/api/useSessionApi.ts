@@ -104,6 +104,21 @@ export const useSessionApi = () => {
 	});
 
 	/**
+	 * Updates session on new message. Called frequently.
+	 * Only invalidates the specific session to avoid excessive refetching of lists.
+	 */
+	const updateSessionTitle = useMutation<void, Error, { sessionId: string; title: string }>({
+		mutationFn: async (variables) => {
+			const url = genApiUrl(MODULE_NAME, 'updateSessionTitle');
+			await apiClient.put(url, variables);
+		},
+		onSuccess: (_, variables) => {
+			// Only invalidate the specific session. This is a performance-critical optimization.
+			queryClient.invalidateQueries({ queryKey: ['getSession', variables.sessionId] });
+		},
+	});
+
+	/**
 	 * Performs a full update of a session's editable info.
 	 */
 	const updateSession = useMutation<void, Error, { sessionInfo: SessionInfo }>({
@@ -129,6 +144,7 @@ export const useSessionApi = () => {
 		initSessionProfileId: initSessionProfileId.mutateAsync,
 		updateSession: updateSession.mutateAsync,
 		updateSessionOnNewMessage: updateSessionOnNewMessage.mutateAsync,
+		updateSessionTitle: updateSessionTitle.mutateAsync,
 		getSessionsByUserIdAndCharacterId,
 	};
 };

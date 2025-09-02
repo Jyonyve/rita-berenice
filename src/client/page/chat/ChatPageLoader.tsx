@@ -1,6 +1,6 @@
 // src/client/page/ChatPageLoader.tsx
 import React, { useEffect, useMemo, useState, useCallback, createContext, useContext } from 'react';
-import { useNavigate, useOutletContext, useParams } from 'react-router';
+import { useLocation, useNavigate, useOutletContext, useParams } from 'react-router';
 import {
 	Typography,
 	CircularProgress,
@@ -54,6 +54,7 @@ export const useEmotionContext = () => {
 export function ChatPageLoader() {
 	const navigate = useNavigate();
 	const { sessionId } = useParams();
+	const { state } = useLocation();
 	const { isSessionLoading, userId } = useAuth();
 	const { setHeaderInfo, headerInfo } = useOutletContext<HeaderContextType>();
 
@@ -115,14 +116,17 @@ export function ChatPageLoader() {
 
 	// --- HEADER INFO MANAGEMENT (enhanced) ---
 	useEffect(() => {
-		if (characterRes?.characterInfo && profileRes?.profileInfo) {
+		if (characterRes?.characterInfo && profileRes?.profileInfo && state) {
 			const info = characterRes.characterInfo;
 			const profile = profileRes.profileInfo;
+			const sessionTitle = state.title as string;
 
 			// This part remains the same. You are correctly creating a new object.
 			setHeaderInfo({
 				characterId: info.characterId,
 				profileShowName: profile.showName,
+				sessionId,
+				sessionTitle,
 				avatarUrl: getDefaultImage(info.characterId),
 				mobileImageUrl: shouldUseMobileLayout ? imageUrl : undefined,
 			});
@@ -131,7 +135,7 @@ export function ChatPageLoader() {
 		return () => {
 			setHeaderInfo(undefined);
 		};
-	}, [characterRes, profileRes, setHeaderInfo, shouldUseMobileLayout, imageUrl]);
+	}, [characterRes, profileRes, setHeaderInfo, shouldUseMobileLayout, imageUrl, state, sessionId]);
 
 	useEffect(() => {
 		if (headerInfo?.editModalOpen) {
