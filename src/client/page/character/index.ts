@@ -8,4 +8,3 @@ export * from './HistoryPreviewList.jsx';
 export * from './NewCharacterPageLoader.jsx';
 export * from './EditCharacterPageLoader.jsx';
 export * from './CharacterForm.jsx';
-export * from './SessionTitleForm.jsx';

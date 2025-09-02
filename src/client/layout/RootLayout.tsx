@@ -48,6 +48,8 @@ import { LANG_KEYS } from '#shared/config/langConstants.js';
 import { useAuth } from '../provider/AuthProvider.jsx';
 import ImageIcon from '@mui/icons-material/Image';
 import CloseIcon from '@mui/icons-material/Close';
+import { useSessionApi } from '../hook/api/index.js';
+import { InlineEditableField } from './InlineEditableField.jsx';
 
 interface LoginModalProps {
 	loginOpen: boolean;
@@ -172,6 +174,8 @@ export interface HeaderInfo {
 	profileShowName: string;
 	avatarUrl?: string;
 	mobileImageUrl?: string;
+	sessionId?: string;
+	sessionTitle?: string;
 	editModalOpen?: boolean;
 }
 export type HeaderContextType = {
@@ -185,13 +189,12 @@ export function RootLayout() {
 	const navigate = useNavigate();
 	const { isSessionLoading, isLoggedIn, isLoginModalOpen, openLoginModal, closeLoginModal, logout } =
 		useAuth();
-
+	const { updateSessionTitle } = useSessionApi();
 	const headerRef = useRef<HTMLElement>(null);
 	const footerRef = useRef<HTMLElement>(null);
 
 	const [headerInfo, setHeaderInfo] = useState<HeaderInfo>();
 	const [imageModalOpen, setImageModalOpen] = useState(false);
-	const [editModalOpen, setProfileModalOpen] = useState(false);
 
 	// State for controlling the dropdown menu
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -211,6 +214,12 @@ export function RootLayout() {
 			);
 		}
 	}, []);
+
+	const handleSessionTitleSave = (sessionTitle: string) => {
+		if (headerInfo?.sessionId) {
+			updateSessionTitle({ sessionId: headerInfo.sessionId, title: sessionTitle });
+		}
+	};
 
 	const handleSetHeaderInfo = useCallback((info?: HeaderInfo) => {
 		setHeaderInfo(info);
@@ -292,7 +301,7 @@ export function RootLayout() {
 						},
 					})}
 				>
-					<Box sx={{ display: 'flex', alignItems: 'center' }}>
+					<Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, overflow: 'hidden' }}>
 						{!headerInfo?.mobileImageUrl && (
 							<RomanticTitle
 								logo
@@ -306,7 +315,17 @@ export function RootLayout() {
 							</RomanticTitle>
 						)}
 						{headerInfo && (
-							<Box sx={{ display: 'flex', alignItems: 'center', pr: 1, pt: 0.5, pb: 0.5 }} gap={1}>
+							<Box
+								sx={{
+									display: 'flex',
+									alignItems: 'center',
+									pr: 1,
+									pt: 0.5,
+									pb: 0.5,
+									gap: 1,
+									minWidth: 0, // Prevent overflow
+								}}
+							>
 								<Box
 									role="button"
 									onClick={() => goCharacterPage(headerInfo.characterId)}
@@ -317,15 +336,38 @@ export function RootLayout() {
 									</Avatar>
 								</Box>
 
-								{/* Profile name - opens modal */}
-								<Typography
-									variant="caption"
-									role="button"
-									onClick={handleProfileModalOpen} // Triggers the modal open signal
-									sx={{ '&:hover': { textDecoration: 'underline' } }}
+								{/* ✅ Responsive container for profile and session info */}
+								<Box
+									sx={{
+										display: 'flex',
+										// Stack vertically on mobile, horizontally on desktop
+										flexDirection: isSmallScreen ? 'column' : 'row',
+										alignItems: isSmallScreen ? 'flex-start' : 'center',
+										gap: isSmallScreen ? 0.2 : 1,
+										minWidth: 0, // Prevent overflow
+									}}
 								>
-									{headerInfo.profileShowName}
-								</Typography>
+									{/* Profile name - opens modal */}
+									<Typography
+										variant="caption"
+										role="button"
+										onClick={handleProfileModalOpen}
+										sx={{ '&:hover': { textDecoration: 'underline' }, whiteSpace: 'nowrap' }}
+									>
+										{headerInfo.profileShowName}
+									</Typography>
+									{headerInfo.sessionId && headerInfo.sessionTitle && (
+										<InlineEditableField
+											initialValue={headerInfo.sessionTitle}
+											onSave={handleSessionTitleSave}
+											typographyProps={{
+												variant: 'body2',
+												sx: { maxWidth: isSmallScreen ? '200px' : '150px' },
+											}}
+											textFieldProps={{ variant: 'standard', size: 'small' }}
+										/>
+									)}
+								</Box>
 							</Box>
 						)}
 						<RomanticTitle

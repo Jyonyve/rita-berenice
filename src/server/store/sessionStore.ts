@@ -221,6 +221,27 @@ export const sessionStore = {
 	/**
 	 * Updates a session's metadata, typically after a new message is added.
 	 */
+	async updateSessionTitle(sessionId: string, title: string): Promise<void> {
+		const collection = await sessionStore._getCollection();
+		const now = new Date().toISOString();
+		try {
+			const sessionInfo = (await sessionStore.getSession(sessionId)).sessionInfo;
+			const newSessionInfo: SessionInfo = { ...sessionInfo, title, updatedAt: now };
+			const documentForEmbedding = flatSessionToDoc(newSessionInfo);
+			const { lastCharMessage, ...updatedMetadata } = newSessionInfo;
+			await updateRecord(collection, updatedMetadata.sessionId, documentForEmbedding, updatedMetadata);
+		} catch (error) {
+			handleServiceError(
+				error,
+				'An internal error occurred while do [updateSessionOnNewMessage].',
+				`Failed to update sessionInfo Message with ID ${sessionId}:`
+			);
+		}
+	},
+
+	/**
+	 * Updates a session's metadata, typically after a new message is added.
+	 */
 	async initSessionProfileId(sessionId: string, profileId: string): Promise<void> {
 		const collection = await sessionStore._getCollection();
 		const now = new Date().toISOString();

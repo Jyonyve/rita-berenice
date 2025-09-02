@@ -30,15 +30,13 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 	const { addToast } = useToast();
 	const characterId = characterInfo.characterId;
 
-	// Character state: portraits, loading, error
-
 	// Handlers
 	const handleHistory = (historyId: string) => {
 		navigate(`/${routeConstants.HISTORY}/${historyId}`);
 	};
 
-	const handleStartSession = (sessionId: string) => {
-		navigate(`/${routeConstants.CHAT}/${sessionId}`);
+	const handleSessionStart = (sessionId: string, title: string) => {
+		navigate(`/${routeConstants.CHAT}/${sessionId}`, { state: { title } });
 	};
 	const handleStartNewSession = async (profileCdo: ProfileCdo) => {
 		if (import.meta.env.VITE_APP_MODE === 'static') {
@@ -143,7 +141,7 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 										<SessionPreviewList
 											userId={userId}
 											characterId={characterId}
-											handleSessionStart={handleStartSession}
+											handleSessionStart={handleSessionStart}
 										/>
 									</List>
 								</GlassCard>
