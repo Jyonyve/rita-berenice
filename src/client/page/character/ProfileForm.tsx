@@ -60,7 +60,15 @@ const getInitialFormData = (userId: string, profile?: ProfileInfo): ProfileCdo =
 		};
 	}
 
-	return { name: '', gender: '', title: '', showName: '', description: '', userId, sessionId: '' };
+	return {
+		name: '',
+		gender: 'other',
+		title: '',
+		showName: '',
+		description: '',
+		userId,
+		sessionId: '',
+	};
 };
 
 export interface ProfileFormProps {
