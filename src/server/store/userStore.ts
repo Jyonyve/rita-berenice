@@ -5,7 +5,6 @@ import { METADATA_TYPES } from '#shared/config/constants.js';
 import { UserInfo, UserMetadata } from '#shared/domain/user/UserInterfaces.js';
 import { ChromaResponse, UserResponse } from '#shared/api/ModuleResponse.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
-import { flatUserToDoc, inflateUserDoc } from '../util/documentUtils.js';
 import { metadataToUser } from '#shared/util/dbConvertUtils.js';
 
 const { getUserCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
@@ -28,11 +27,9 @@ export const userStore = {
 	_constructUser: (results: ChromaResponse): UserResponse => {
 		const { ids, documents, metadatas } = results;
 		const userInfos = ids.map((id, index) => {
-			// const metadata = metadatas[index] as unknown as UserMetadata;
-			const document = documents[index];
-			const inflatedDoc = inflateUserDoc(document!);
-			// const userInfo = metadataToUser(metadata!, inflatedDoc.sessionIds);
-			const userInfo = inflatedDoc.userInfo;
+			const metadata = metadatas[index] as unknown as UserMetadata;
+			// User data is entirely in metadata - no document parsing needed
+			const userInfo = metadataToUser(metadata);
 			return userInfo;
 		});
 		return { ids, documents, metadatas, userInfos, userInfo: userInfos[0] || null };
@@ -43,7 +40,7 @@ export const userStore = {
 		const collection = await userStore._getCollection();
 		try {
 			const rawResults = await collection.get({
-				include: [IncludeEnum.documents, IncludeEnum.metadatas],
+				include: [IncludeEnum.metadatas], // Only need metadatas for users
 				where: { type: METADATA_TYPES.USER },
 			});
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
@@ -52,7 +49,7 @@ export const userStore = {
 			handleServiceError(
 				error,
 				'An internal error occurred while do [getAllUsers].',
-				'Failed to get all users:'
+				'Failed to get all users'
 			);
 		}
 	},
@@ -67,15 +64,15 @@ export const userStore = {
 			handleServiceError(
 				error,
 				'An internal error occurred while do [getUser].',
-				`Failed to get user with ID ${userId}:`
+				`Failed to get user with ID ${userId}`
 			);
 		}
 	},
 
-	getUserByContact: async (contact: string): Promise<UserResponse> => {
+	getUserByShowName: async (showName: string): Promise<UserResponse> => {
 		const collection = await userStore._getCollection();
 		const where: Where = {
-			$and: [{ type: { $eq: METADATA_TYPES.USER } }, { contact: { $eq: contact } }],
+			$and: [{ type: { $eq: METADATA_TYPES.USER } }, { showName: { $eq: showName } }],
 		};
 		try {
 			const rawResults = await getRecords(collection, where, undefined, 1);
@@ -84,8 +81,8 @@ export const userStore = {
 		} catch (error) {
 			handleServiceError(
 				error,
-				'An internal error occurred while do [getUserByContact].',
-				`Failed to get user with contact ${contact}:`
+				'An internal error occurred while do [getUserByShowName].',
+				`Failed to get user with showName ${showName}`
 			);
 		}
 	},
@@ -103,12 +100,32 @@ export const userStore = {
 			handleServiceError(
 				error,
 				'An internal error occurred while do [getUserByEmail].',
-				`Failed to get user with email ${email}:`
+				`Failed to get user with email ${email}`
 			);
 		}
 	},
 
-	// Store or update a user
+	checkShowNameExists: async (showName: string): Promise<boolean> => {
+		const collection = await userStore._getCollection();
+		const where: Where = {
+			$and: [{ type: { $eq: METADATA_TYPES.USER } }, { showName: { $eq: showName } }],
+		};
+
+		try {
+			// Use limit 1 for maximum efficiency - we only care if ANY exists
+			const rawResults = await getRecords(collection, where, undefined, 1);
+			const results = validateChromaResponse(rawResults, 'getList', collectionType);
+
+			// Return true if any user found with this showName
+			return results.ids.length > 0;
+		} catch (error) {
+			// If error occurs, assume showName doesn't exist (conservative approach)
+			console.error('Error checking showName existence:', error);
+			return false;
+		}
+	},
+
+	// Store or update a user - no document needed!
 	storeUser: async (user: UserInfo): Promise<void> => {
 		const collection = await userStore._getCollection();
 		const now = new Date().toISOString();
@@ -118,9 +135,10 @@ export const userStore = {
 			createdAt: user.createdAt || now,
 			updatedAt: now,
 		};
-		const documentForEmbedding = flatUserToDoc(user);
+
 		try {
-			await upsertRecord(collection, updatedMetadata.userId, documentForEmbedding, updatedMetadata);
+			// Empty string for document since we only use metadata
+			await upsertRecord(collection, updatedMetadata.userId, '', updatedMetadata);
 		} catch (error) {
 			handleServiceError(
 				error,

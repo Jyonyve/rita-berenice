@@ -77,15 +77,6 @@ export const recapToDocument = (recap: RecapInfo) => {
 	return recap.content;
 };
 
-export const flatUserToDoc = (user: UserInfo) => {
-	return JSON.stringify(user).trim();
-};
-
-export const inflateUserDoc = (document: string): { userInfo: UserInfo } => {
-	const parsed = JSON.parse(document);
-	return { userInfo: parsed.userInfo };
-};
-
 export const flatSessionToDoc = (session: SessionInfo) => {
 	const document = { lastCharMessage: session.lastCharMessage };
 	return JSON.stringify(document).trim();
