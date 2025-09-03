@@ -1,7 +1,7 @@
 // src/shared/config/langConstants.ts
 
 export type LangCode = 'kor' | 'eng';
-export const DEFAULT_LANG: LangCode = 'kor';
+export const DEFAULT_LANG: LangCode = 'eng';
 type LanguageMap = Record<LangCode, string>;
 
 // The outer record now uses this dynamic LanguageMap type.
@@ -12,6 +12,7 @@ export const LANG_KEYS = {
 	SESSIONS_WITH_CHARACTER: 'SESSIONS_WITH_CHARACTER',
 	CREATE_NEW_PROFILE: 'CREATE_NEW_PROFILE',
 	START_NEW_SESSION: 'START_NEW_SESSION',
+	USER_TITLE: 'USER_TITLE',
 	CHOOSE_EXISTING_PROFILE: 'CHOOSE_EXISTING_PROFILE',
 	CREATE_PROFILE: 'CREATE_PROFILE',
 	EDIT_PROFILE: 'EDIT_PROFILE',
@@ -130,6 +131,7 @@ export const langConstants: LangRecord = {
 	UPDATING: { kor: '수정중...', eng: 'Updating...' },
 	CREATE: { kor: '생성', eng: 'Create' },
 	UPDATE: { kor: '수정', eng: 'Update' },
+	USER_TITLE: { kor: '나를 한마디로 소개해 봅시다.', eng: 'Sum me up in one line.' },
 	LOADING_CHARACTERS: { kor: '캐릭터를 불러오는 중입니다...', eng: 'Loading characters...' },
 	LOADING_SESSIONS: { kor: '지난 이야기를 불러오는 중입니다...', eng: 'Loading past sessions...' },
 	LOADING_STORIES: {

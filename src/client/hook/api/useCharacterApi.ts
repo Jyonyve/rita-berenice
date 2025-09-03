@@ -68,7 +68,6 @@ export const useCharacterApi = () => {
 			Promise.all([
 				queryClient.invalidateQueries({ queryKey: ['getAllCharacters'] }),
 				queryClient.invalidateQueries({ queryKey: ['getCharacter', data.characterId] }),
-				// Assuming 'variables' has these properties to target specific lists
 				queryClient.invalidateQueries({ queryKey: ['getCharactersByShowName', variables.showName] }),
 				queryClient.invalidateQueries({ queryKey: ['getCharactersByUserId', variables.userId] }),
 			]);

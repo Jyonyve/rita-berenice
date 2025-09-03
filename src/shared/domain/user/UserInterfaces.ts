@@ -17,16 +17,16 @@ export interface UserMetadata {
 	email: string;
 	/** User's preferred contact method (email, SNS, etc.) */
 	contact: string;
-	/** Optional URL to user's avatar image in public folder */
-	avatarUrl?: string;
 	/** Creation timestamp in ISO format */
 	createdAt: string;
 	/** Last update timestamp in ISO format */
 	updatedAt: string;
 	/** Document type identifier for ChromaDB */
 	type: typeof METADATA_TYPES.USER;
+	/** Optional URL to user's avatar image in public folder */
+	avatarUrl: string;
 }
 
 export type UserInfo = UserMetadata;
 
-export type UserCdo = Pick<UserInfo, 'userId' | 'showName' | 'gender' | 'contact'>;
+export type UserCdo = Pick<UserInfo, 'userId' | 'email'>;

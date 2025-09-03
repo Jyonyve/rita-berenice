@@ -2,12 +2,13 @@ import { Collection, IncludeEnum, Where } from 'chromadb';
 import { chromaDbClient } from '../db/chromaDbClient.js';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
-import { UserInfo, UserMetadata } from '#shared/domain/user/UserInterfaces.js';
+import { UserCdo, UserInfo, UserMetadata } from '#shared/domain/user/UserInterfaces.js';
 import { ChromaResponse, UserResponse } from '#shared/api/ModuleResponse.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import { metadataToUser } from '#shared/util/dbConvertUtils.js';
+import { createBasicUserInfo, isUserInfo } from '#shared/util/typeGuardUtils.js';
 
-const { getUserCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
+const { getUserCollection, upsertRecord, getRecordById, getRecords, countOption } = chromaDbClient;
 const collectionType = COLLECTIONS.USER;
 
 export const userStore = {
@@ -112,38 +113,27 @@ export const userStore = {
 		};
 
 		try {
-			// Use limit 1 for maximum efficiency - we only care if ANY exists
-			const rawResults = await getRecords(collection, where, undefined, 1);
-			const results = validateChromaResponse(rawResults, 'getList', collectionType);
-
-			// Return true if any user found with this showName
-			return results.ids.length > 0;
+			// Use your efficient count method - perfect for existence checks!
+			const count = await countOption(collection, where);
+			return count > 0;
 		} catch (error) {
-			// If error occurs, assume showName doesn't exist (conservative approach)
 			console.error('Error checking showName existence:', error);
-			return false;
+			return false; // Conservative approach
 		}
 	},
 
 	// Store or update a user - no document needed!
-	storeUser: async (user: UserInfo): Promise<void> => {
+	storeUser: async (user: UserCdo | UserInfo): Promise<void> => {
 		const collection = await userStore._getCollection();
-		const now = new Date().toISOString();
-
-		const updatedMetadata: UserMetadata = {
-			...user,
-			createdAt: user.createdAt || now,
-			updatedAt: now,
-		};
-
+		const updatedUser: UserInfo = isUserInfo(user) ? user : createBasicUserInfo(user);
 		try {
 			// Empty string for document since we only use metadata
-			await upsertRecord(collection, updatedMetadata.userId, '', updatedMetadata);
+			await upsertRecord(collection, updatedUser.userId, '', updatedUser);
 		} catch (error) {
 			handleServiceError(
 				error,
 				'An internal error occurred while do [storeUser].',
-				`Failed to store user: ${updatedMetadata.userId}`
+				`Failed to store user: ${updatedUser.userId}`
 			);
 		}
 	},

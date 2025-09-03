@@ -11,11 +11,13 @@ import { AuthProvider } from './provider/AuthProvider.jsx';
 import { LanguageProvider } from './provider/LanguageProvider.jsx';
 import { getTheme } from './style/globalStyle.js';
 import { initQueryClient } from '#shared/api/queryClient.js';
+import { LangCode } from '#shared/config/langConstants.js';
 
 // Define the props for our provider component
 interface AppProvidersProps {
 	children: ReactNode;
 	emotionCache: EmotionCache; // This prop makes the component reusable
+	initialLang?: LangCode;
 }
 
 // Helper component to bridge ColorModeContext to ThemeProvider
@@ -32,7 +34,7 @@ const ThemedAppContent: FC<{ children: ReactNode }> = ({ children }) => {
 };
 
 // This is the main provider component you will export and use.
-export const AppProviders: FC<AppProvidersProps> = ({ children, emotionCache }) => {
+export const AppProviders: FC<AppProvidersProps> = ({ children, emotionCache, initialLang }) => {
 	const [queryClient] = useState(initQueryClient);
 
 	return (
@@ -41,7 +43,7 @@ export const AppProviders: FC<AppProvidersProps> = ({ children, emotionCache }) 
 				<SuperTokensWrapper>
 					<AuthProvider>
 						<CacheProvider value={emotionCache}>
-							<LanguageProvider>
+							<LanguageProvider initialLang={initialLang}>
 								<ColorModeProvider>
 									<ToastProvider>
 										<ThemedAppContent>{children}</ThemedAppContent>

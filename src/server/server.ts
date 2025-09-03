@@ -39,6 +39,7 @@ const BASE = process.env.BASE || '/'; // Base path for the app
 const API_PATH = 'api';
 const AUTH_PATH = 'auth';
 const BASE_API = `/${API_PATH}`;
+const localhost = 'http://localhost:3000';
 
 // --- Helper Function to Resolve Project Root ---
 const resolve = (p: string) =>
@@ -62,8 +63,8 @@ async function createServer() {
 		supertokens: { connectionURI: SUPERTOKENS_DOMAIN, apiKey: process.env.SUPERTOKENS_API_KEY },
 		appInfo: {
 			appName: APPNAME,
-			websiteDomain: process.env.VITE_APP_DOMAIN || 'http://localhost:3000',
-			apiDomain: process.env.VITE_API_DOMAIN || 'http://localhost:3000',
+			websiteDomain: process.env.VITE_APP_DOMAIN || '',
+			apiDomain: process.env.VITE_API_DOMAIN || localhost,
 			apiBasePath: `/${API_PATH}/${AUTH_PATH}`,
 			websiteBasePath: `/${AUTH_PATH}`,
 		},
@@ -72,7 +73,7 @@ async function createServer() {
 
 	app.use(
 		cors({
-			origin: process.env.VITE_APP_DOMAIN || 'http://localhost:3000',
+			origin: process.env.VITE_APP_DOMAIN || localhost,
 			allowedHeaders: ['content-type', ...supertokens.getAllCORSHeaders()],
 			credentials: true,
 		})
@@ -81,6 +82,48 @@ async function createServer() {
 	app.use(middleware());
 	app.use(compression()); // Apply gzip compression
 	app.use(express.json()); // Parse JSON request bodies
+
+	// --- Language detection middleware (Korean-priority) ---
+	// --- Language detection middleware (Korean-priority) ---
+	const detectLanguageMiddleware = (req: Request, res: Response, next: NextFunction) => {
+		let detectedLang: 'kor' | 'eng' = 'eng';
+
+		// Priority 1: Use Express's built-in acceptsLanguages method (most reliable)
+		const acceptedLang = req.acceptsLanguages('ko', 'en') || 'en';
+
+		if (acceptedLang === 'ko') {
+			detectedLang = 'kor';
+		}
+
+		// Priority 2: Manual header check as fallback
+		if (detectedLang !== 'kor') {
+			const acceptLang = req.headers['accept-language'] || '';
+
+			if (acceptLang.toLowerCase().includes('ko')) {
+				detectedLang = 'kor';
+			}
+		}
+
+		// Priority 3: Check Cloudflare country header
+		if (detectedLang !== 'kor') {
+			const cfCountry = req.headers['cf-ipcountry'] as string;
+			if (cfCountry === 'KR') {
+				detectedLang = 'kor';
+			}
+		}
+
+		res.locals.detectedLang = detectedLang;
+		res.cookie('server-detected-lang', detectedLang, {
+			maxAge: 24 * 60 * 60 * 1000,
+			httpOnly: false,
+		});
+
+		next();
+	};
+
+	app.use(detectLanguageMiddleware);
+
+	app.use(detectLanguageMiddleware);
 
 	// --- Vite Development Server Middleware (Development ONLY) ---
 	let vite: ViteDevServer | undefined;
@@ -122,16 +165,6 @@ async function createServer() {
 
 	// --- API Routes ---
 	console.log('Mounting API routes...');
-	// Protect all /api/* routes except /api/character
-	// app.use(
-	// 	'/api',
-	// 	unless(
-	// 		verifySession(),
-	// 		/^\/character/, // Exclude all /api/character routes
-	// 		/^\/auth/ // Exclude /api/auth if you want public login/signup endpoints
-	// 		// Add more patterns as needed
-	// 	)
-	// );
 	app.use(`${BASE_API}/${MODULE_NAMES.CHARACTER}`, characterRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.CHAT}`, chatRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.LLM}`, llmRoutes);
@@ -180,6 +213,8 @@ async function createServer() {
 			// Type for the render function from entry-server (adjust if render signature changes)
 			let render: (url: string) => { html: string; emotionStyleTags: string };
 
+			const detectedLang = res.locals.detectedLang || 'eng';
+
 			if (!isProduction && vite) {
 				// DEVELOPMENT
 				template = await fs.readFile(templateDevHtmlFile, 'utf-8');
@@ -198,11 +233,11 @@ async function createServer() {
 			// Call the render function from entry-server (NO Helmet context needed now)
 			const { html: appHtml, emotionStyleTags } = render(req.originalUrl);
 
-			// --- Inject rendered content into the HTML template ---
-			// Replace placeholders with actual content
+			// 🎯 INJECT LANGUAGE DATA VIA HTML TEMPLATE
 			const finalHtml = template
-				.replace(`<!--app-html-->`, appHtml) // Inject main app HTML
-				.replace(`<!--emotion-styles-->`, emotionStyleTags); // Inject extracted Emotion styles
+				.replace(`<!--app-html-->`, appHtml)
+				.replace(`<!--emotion-styles-->`, emotionStyleTags)
+				.replace(`<!--server-data-->`, `<script>window.__INITIAL_LANG__="${detectedLang}"</script>`);
 
 			// --- Send the final HTML response ---
 			res.status(200).set({ 'Content-Type': 'text/html' }).end(finalHtml);
