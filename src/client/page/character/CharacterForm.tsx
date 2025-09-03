@@ -33,11 +33,11 @@ import { useToast } from '../../provider/ToastProvider.jsx';
 import { routeConstants } from '../../routeConstants.js';
 import { containerSpacing } from '../../style/index.js';
 import {
-	EMOTION_SELECT_MENUITEM,
-	GENDER_SELECT_MENUITEM,
+	getEmotionSelectMenuItems,
 	getLangAlertText,
 	getLangText,
 	emotionToLangKey,
+	getGenderSelectMenuItems,
 } from '../../util/translateUtils.js';
 import { DEFAULT_EMOTION, EmotionValue } from '#shared/config/emotionConstants.js';
 import { LIMIT_5MB, REQUEST_CHARACTER_LIMIT } from '#shared/config/constants.js';
@@ -105,19 +105,21 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 	const [selectedEmotion, setSelectedEmotion] = useState<EmotionValue>(DEFAULT_EMOTION);
 
 	const getEmotionKey = (emotionName: string): number => {
-		const option = EMOTION_SELECT_MENUITEM.find((opt) => opt.key === emotionName);
+		const option = getEmotionSelectMenuItems().find((opt) => opt.key === emotionName);
 		return option ? option.emotionKey : 0;
 	};
 
 	// Initialize images for edit mode
 	useEffect(() => {
 		if (mode === 'edit' && characterInfo?.characterId) {
-			const entries: UploadedImage[] = EMOTION_SELECT_MENUITEM.map((opt) => {
-				const url = getImageForEmotion(characterInfo.characterId, opt.key);
-				return url
-					? { file: undefined, emotion: opt.key, emotionKey: opt.emotionKey, preview: url }
-					: null;
-			}).filter(Boolean) as UploadedImage[];
+			const entries: UploadedImage[] = getEmotionSelectMenuItems()
+				.map((opt) => {
+					const url = getImageForEmotion(characterInfo.characterId, opt.key);
+					return url
+						? { file: undefined, emotion: opt.key, emotionKey: opt.emotionKey, preview: url }
+						: null;
+				})
+				.filter(Boolean) as UploadedImage[];
 			setUploadedImages(entries);
 		}
 	}, [mode, characterInfo]);
@@ -278,7 +280,8 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 												.filter((img) => !img?.toDelete)
 												.map((image) => {
 													const emotionLabel =
-														EMOTION_SELECT_MENUITEM.find((e) => e.key === image.emotion)?.label || image.emotion;
+														getEmotionSelectMenuItems().find((e) => e.key === image.emotion)?.label ||
+														image.emotion;
 													return (
 														<SwiperSlide key={image.emotion}>
 															<PortraitWithChip imageUrl={image.preview} label={emotionLabel} />
@@ -316,7 +319,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 										value={selectedEmotion}
 										onChange={(e) => setSelectedEmotion(e.target.value as EmotionValue)}
 									>
-										{EMOTION_SELECT_MENUITEM.map((opt) => (
+										{getEmotionSelectMenuItems().map((opt) => (
 											<MenuItem key={opt.key} value={opt.key}>
 												{opt.label}
 											</MenuItem>
@@ -346,7 +349,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 											.map((img) => (
 												<Chip
 													key={img.emotion}
-													label={EMOTION_SELECT_MENUITEM.find((e) => e.key === img.emotion)?.label}
+													label={getEmotionSelectMenuItems().find((e) => e.key === img.emotion)?.label}
 													onDelete={() => handleRemoveImage(img.emotion)}
 													color="primary"
 													variant="outlined"
@@ -426,7 +429,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 												<FormControl fullWidth required error={!!errors.gender}>
 													<InputLabel>{getLangText(LANG_KEYS.GENDER)}</InputLabel>
 													<Select {...field}>
-														{GENDER_SELECT_MENUITEM.map((opt) => (
+														{getGenderSelectMenuItems().map((opt) => (
 															<MenuItem key={opt.key} value={opt.key}>
 																{opt.label}
 															</MenuItem>

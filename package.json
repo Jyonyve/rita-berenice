@@ -1,7 +1,7 @@
 {
 	"name": "rita-berenice",
 	"homepage": "https://jyonyve.github.io/rita-berenice",
-	"version": "1.6.1",
+	"version": "1.7.0",
 	"type": "module",
 	"scripts": {
 		"clean": "rimraf dist && rimraf node_modules",
@@ -57,6 +57,7 @@
 		"supertokens-web-js": "^0.15.0",
 		"swiper": "^11.2.10",
 		"tiktoken": "^1.0.22",
+		"unique-names-generator": "^4.7.1",
 		"vite": "^6.3.5",
 		"vite-tsconfig-paths": "^5.1.4",
 		"zlib": "^1.0.5",

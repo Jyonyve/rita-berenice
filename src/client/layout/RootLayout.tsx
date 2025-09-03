@@ -30,7 +30,7 @@ import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpass
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import { AuthPage } from 'supertokens-auth-react/ui/index.js';
 import { APPNAME } from '#shared/config/constants.js';
-
+import { useLanguage } from '../provider/LanguageProvider.jsx';
 import {
 	GlassPaper,
 	GlassAppBar,
@@ -166,6 +166,43 @@ const ImageModal: FC<ImageModalProps> = ({ open, onClose, imageUrl, characterId 
 				</Box>
 			</DialogContent>
 		</Dialog>
+	);
+};
+
+// Add this component inside your RootLayout file
+const LanguageSwitch: FC = () => {
+	const { lang, toggleLang } = useLanguage();
+	const handleChange = (event: React.ChangeEvent<HTMLInputElement>, checked: boolean) => {
+		toggleLang(); // Call your toggle function
+	};
+	return (
+		<Switch
+			checked={lang === 'kor'}
+			onChange={handleChange}
+			color="default"
+			size="small"
+			aria-label="toggle language"
+			sx={{
+				'& .MuiSwitch-thumb': {
+					'&:before': {
+						content: lang === 'kor' ? '"한"' : '"EN"',
+						position: 'absolute',
+						width: '100%',
+						height: '100%',
+						left: 0,
+						top: 0,
+						backgroundRepeat: 'no-repeat',
+						backgroundPosition: 'center',
+						fontSize: '9px',
+						fontWeight: 'bold',
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						color: 'black',
+					},
+				},
+			}}
+		/>
 	);
 };
 
@@ -396,6 +433,7 @@ export function RootLayout() {
 								<ImageIcon />
 							</IconButton>
 						)}
+						<LanguageSwitch />
 						{/* <Switch
 							checked={mode === 'dark'}
 							onChange={toggleMode}

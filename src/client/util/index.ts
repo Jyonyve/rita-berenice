@@ -3,3 +3,4 @@ export * from './idbUtils.js';
 export * from './translateUtils.js';
 export * from './portraitUtils.js';
 export * from './chatParseUtils.js';
+export * from './fetchUtils.js';

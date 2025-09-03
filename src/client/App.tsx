@@ -20,10 +20,12 @@ import {
 	NotFoundPage,
 	HistoryPageLoader,
 } from './page/index.js';
+import { useLanguage } from './provider/LanguageProvider.jsx';
 
 export function App() {
 	const { CHARACTER, CHAT, ERROR, HISTORY } = routeConstants;
 	const { addToast } = useToast();
+	const { lang } = useLanguage();
 	const [hasMounted, setHasMounted] = useState(false);
 
 	useEffect(() => {

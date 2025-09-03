@@ -22,7 +22,7 @@ import { FC, useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { GlassButton, GlassCard, SolidMetallicButton } from '../../layout/index.js';
 import { innerSpacing } from '../../style/index.js';
-import { GENDER_SELECT_MENUITEM, getLangText } from '../../util/translateUtils.js';
+import { getGenderSelectMenuItems, getLangText } from '../../util/translateUtils.js';
 import { ProfilePreviewList } from './ProfilePreviewList.jsx';
 import { REQUEST_CHARACTER_LIMIT } from '#shared/config/constants.js';
 import { useResponsive } from '../../hook/useResponsive.js';
@@ -156,7 +156,7 @@ export const ProfileForm: FC<ProfileFormProps> = ({
 				)}
 			</Box>
 
-			<Stack spacing={1}>
+			<Stack spacing={innerSpacing}>
 				<Grid container spacing={innerSpacing}>
 					<Grid size={{ xs: 12, md: 4 }}>
 						<Controller
@@ -198,7 +198,6 @@ export const ProfileForm: FC<ProfileFormProps> = ({
 						/>
 					</Grid>
 				</Grid>
-
 				<Grid container spacing={innerSpacing}>
 					<Grid size={{ xs: 12, md: 4 }}>
 						<FormControl fullWidth required>
@@ -209,9 +208,9 @@ export const ProfileForm: FC<ProfileFormProps> = ({
 								rules={{ required: getLangText(LANG_KEYS.GENDER_REQUIRED) }}
 								render={({ field }) => (
 									<FormControl fullWidth required error={!!errors.gender}>
-										<InputLabel>{getLangText(LANG_KEYS.GENDER)}</InputLabel>
+										{/* <InputLabel>{getLangText(LANG_KEYS.GENDER)}</InputLabel> */}
 										<Select {...field}>
-											{GENDER_SELECT_MENUITEM.map((opt) => (
+											{getGenderSelectMenuItems().map((opt) => (
 												<MenuItem key={opt.key} value={opt.key}>
 													{opt.label}
 												</MenuItem>

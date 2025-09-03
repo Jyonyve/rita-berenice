@@ -1,44 +1,50 @@
 // src/client/hooks/useUserApi.ts
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../util/clientApiHelpers.js';
+import { apiClient, genApiUrl } from '../../util/clientApiHelpers.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
-import { UserInfo } from '#shared/domain/user/UserInterfaces.js';
-import { genApiUrl } from '#shared/util/apiHelpers.js';
+import { UserCdo, UserInfo } from '#shared/domain/user/UserInterfaces.js';
 import { UserResponse } from '#shared/api/ModuleResponse.js';
+import { isUserInfo } from '#shared/util/typeGuardUtils.js';
 
 export const useUserApi = () => {
 	const MODULE_NAME = MODULE_NAMES.USER;
 	const queryClient = useQueryClient();
 
-	// Create or update a user (POST returns void)
-	const storeUser = useMutation<void, Error, UserInfo>({
-		mutationFn: async (userInfo: UserInfo) => {
+	// Create or update a user
+	const storeUser = useMutation<{ userId: string }, Error, UserCdo | UserInfo>({
+		mutationFn: async (user) => {
 			const url = genApiUrl(MODULE_NAME, 'storeUser');
-			await apiClient.post<void>(url, userInfo);
-			// No return value needed
+			const response = await apiClient.post<{ userId: string }>(url, user);
+			return response.data;
 		},
 		onSuccess: (_data, variables) => {
-			queryClient.invalidateQueries({ queryKey: ['getAllUsers'] });
-			if (variables.userId) {
-				queryClient.invalidateQueries({ queryKey: ['getUser', variables.userId] });
+			Promise.all([
+				queryClient.invalidateQueries({ queryKey: ['getAllUsers'] }),
+				queryClient.invalidateQueries({ queryKey: ['getUser', variables.userId] }),
+				queryClient.invalidateQueries({ queryKey: ['getUserByEmail', variables.email] }),
+			]);
+
+			if (isUserInfo(variables)) {
+				queryClient.invalidateQueries({ queryKey: ['getUserByShowName', variables.showName] });
+				queryClient.invalidateQueries({ queryKey: ['checkShowNameExists', variables.showName] });
 			}
 		},
 	});
 
-	// Update sessionIds for a user (POST returns void)
-	const updateUserSessionIds = useMutation<void, Error, { userId: string; sessionId: string }>({
-		mutationFn: async ({ userId, sessionId }) => {
-			const url = genApiUrl(MODULE_NAME, 'updateUserSessionIds');
-			await apiClient.post<void>(url, { userId, sessionId });
-			// No return value needed
-		},
-		onSuccess: (_data, variables) => {
-			if (variables.userId) {
-				queryClient.invalidateQueries({ queryKey: ['getUser', variables.userId] });
-			}
-		},
-	});
+	// Check showName uniqueness - NEW METHOD
+	const checkShowNameExists = (showName: string) =>
+		useQuery<{ exists: boolean; available: boolean; showName: string }, Error>({
+			queryKey: ['checkShowNameExists', showName],
+			queryFn: async () => {
+				const url = genApiUrl(MODULE_NAME, 'checkShowNameExists', [showName]);
+				const response = await apiClient.get(url);
+				return response.data;
+			},
+			enabled: !!showName && showName.trim().length > 0,
+			// Cache for a short time since availability can change quickly
+			staleTime: 30000, // 30 seconds
+		});
 
 	// Fetch all users
 	const getAllUsers = () =>
@@ -49,7 +55,6 @@ export const useUserApi = () => {
 				const response = await apiClient.get<UserResponse>(url);
 				return response.data;
 			},
-			enabled: true,
 		});
 
 	// Fetch a single user by userId
@@ -64,16 +69,16 @@ export const useUserApi = () => {
 			enabled: !!userId,
 		});
 
-	// Fetch a user by contact
-	const getUserByContact = (contact: string) =>
+	// Fetch a user by showName - UPDATED METHOD NAME
+	const getUserByShowName = (showName: string) =>
 		useQuery<UserResponse, Error>({
-			queryKey: ['getUserByContact', contact],
+			queryKey: ['getUserByShowName', showName],
 			queryFn: async () => {
-				const url = genApiUrl(MODULE_NAME, 'getUserByContact', [contact]);
+				const url = genApiUrl(MODULE_NAME, 'getUserByShowName', [showName]);
 				const response = await apiClient.get<UserResponse>(url);
 				return response.data;
 			},
-			enabled: !!contact,
+			enabled: !!showName,
 		});
 
 	// Fetch a user by email
@@ -88,5 +93,12 @@ export const useUserApi = () => {
 			enabled: !!email,
 		});
 
-	return { storeUser, updateUserSessionIds, getAllUsers, getUser, getUserByContact, getUserByEmail };
+	return {
+		storeUser: storeUser.mutateAsync,
+		checkShowNameExists, // NEW: For username validation
+		getAllUsers,
+		getUser,
+		getUserByShowName, // UPDATED: Renamed from getUserByContact
+		getUserByEmail,
+	};
 };
