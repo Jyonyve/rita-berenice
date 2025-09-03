@@ -1,15 +1,16 @@
 // src/client/component/page/CharacterListPage.tsx
 
-import React, { useEffect, useState } from 'react';
-import { Typography, Box, CircularProgress, Grid, Theme } from '@mui/material';
+import React from 'react';
+import { Typography, Box, Grid } from '@mui/material';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { useNavigate } from 'react-router';
 import { GlassCard, GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
-import { RomanticTitle, useHoverState } from '../../layout/index.js';
+import { RomanticTitle } from '../../layout/index.js';
 import { containerSpacing } from '../../style/index.js';
 import { getDefaultImage } from '../../util/portraitUtils.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
+import { DEFAULT_CHARACTER_AVATAR } from '#shared/config/constants.js';
 
 const characterCardSx = {
 	display: 'flex',
@@ -85,7 +86,7 @@ const NewCharacterItem = () => {
 			<Box sx={{ width: '100%', display: 'flex', mb: 1 }}>
 				{/* Use GlassPortrait to display your new static image with consistent styling */}
 				<GlassPortrait
-					imageUrl="/assets/character/new_character.webp" // Path to your image in the public folder
+					imageUrl={DEFAULT_CHARACTER_AVATAR} // Path to your image in the public folder
 					alt="Add New Character"
 					fit="contain" // Use 'contain' to ensure the whole icon is visible
 					sx={{

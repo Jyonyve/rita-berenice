@@ -4,6 +4,8 @@ import { customAlphabet } from 'nanoid';
 import { _nanoid } from 'zod/v4/core';
 import { LoreIndexContentType } from '../domain/lore/LoreInterfaces.js';
 import { RecapIndexContentType } from '../domain/recap/RecapInterfaces.js';
+import { LangCode } from '../config/langConstants.js';
+import { generateNickName } from '../config/nicknameConstants.js';
 
 /* gen uuid (shortened)*/
 const _genNanoId = (length: number) => customAlphabet(ALPHANUMERIC_ALPHABET, length)();
@@ -29,6 +31,10 @@ export type SuffixType = (typeof SUFFIX)[keyof typeof SUFFIX];
 
 export const buildCredentialId = (userId: string) => {
 	return `${userId}_${SUFFIX.CREDENTIAL}`;
+};
+
+export const buildUserShowName = (langCode: LangCode = 'kor') => {
+	return generateNickName(langCode);
 };
 
 /* character id */

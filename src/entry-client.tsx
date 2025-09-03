@@ -25,12 +25,19 @@ SuperTokens.init({
 	recipeList: [EmailPassword.init(), Session.init()],
 });
 
+const getServerDetectedLang = () => {
+	if (typeof window !== 'undefined' && (window as any).__INITIAL_LANG__) {
+		return (window as any).__INITIAL_LANG__;
+	}
+	return 'eng';
+};
+
 function ClientApp() {
 	const clientSideEmotionCache = createEmotionCache();
-
+	const initialLang = getServerDetectedLang();
 	return (
 		<BrowserRouter basename={import.meta.env.BASE_URL}>
-			<AppProviders emotionCache={clientSideEmotionCache}>
+			<AppProviders emotionCache={clientSideEmotionCache} initialLang={initialLang}>
 				<App />
 			</AppProviders>
 		</BrowserRouter>

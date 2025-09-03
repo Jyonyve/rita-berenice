@@ -16,9 +16,8 @@ export function CharacterListPageLoader() {
 	const isMine = !!state?.isMine;
 
 	// Always call hooks in the same order
-	const { data: characterRes, isLoading } = isMine
-		? getCharactersByUserId(userId)
-		: getAllCharacters();
+	const { data: characterRes, isLoading } =
+		isMine && userId ? getCharactersByUserId(userId) : getAllCharacters();
 
 	if (isLoading) {
 		return (
