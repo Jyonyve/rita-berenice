@@ -215,6 +215,12 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 									title="Previous Response"
 									onClick={handlePrevSet}
 									disabled={currentTempSetNo === 0}
+									sx={{
+										transition: 'color 0.2s ease-in-out',
+										'&:hover': {
+											color: theme.palette.warning.light, // Green
+										},
+									}}
 								>
 									<NavigateBeforeIcon sx={{ fontSize: '14px' }} />
 								</IconButton>
@@ -235,6 +241,12 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 									title="Next Response"
 									onClick={handleNextSet}
 									disabled={currentTempSetNo === tempTurn.chatTurnSets.length - 1}
+									sx={{
+										transition: 'color 0.2s ease-in-out',
+										'&:hover': {
+											color: theme.palette.warning.light, // Green
+										},
+									}}
 								>
 									<NavigateNextIcon sx={{ fontSize: '14px' }} />
 								</IconButton>
@@ -242,19 +254,34 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 						)}
 						{currentSet.response && (
 							<>
+								{/* ✅ EDIT ICON - Turns blue on hover */}
 								<IconButton
 									size="small"
 									onClick={handleStartEdit}
 									disabled={isProcessing}
 									title="Edit this turn"
+									sx={{
+										transition: 'color 0.2s ease-in-out',
+										'&:hover': {
+											color: theme.palette.primary.dark, // Blue
+										},
+									}}
 								>
 									<EditIcon sx={{ fontSize: '14px' }} />
 								</IconButton>
+
+								{/* ✅ REGENERATE ICON - Turns green on hover */}
 								<IconButton
 									size="small"
 									onClick={onRegenerate}
 									disabled={isProcessing}
 									title="Regenerate Response"
+									sx={{
+										transition: 'color 0.2s ease-in-out',
+										'&:hover': {
+											color: theme.palette.success.main, // Green
+										},
+									}}
 								>
 									<ReplayIcon sx={{ fontSize: '14px' }} />
 								</IconButton>

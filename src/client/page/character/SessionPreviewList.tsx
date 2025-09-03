@@ -9,7 +9,7 @@ import { formatTimestamp } from '../../util/styleUtils.jsx';
 export const SessionPreviewList: FC<{
 	userId: string;
 	characterId: string;
-	handleSessionStart: (sessionId: string) => void;
+	handleSessionStart: (sessionId: string, title: string) => void;
 }> = ({ userId, characterId, handleSessionStart }) => {
 	const {
 		data: sessionRes,
@@ -70,7 +70,7 @@ export const SessionPreviewList: FC<{
 				// Use React.Fragment to provide a key for each looped item
 				<Fragment key={info.sessionId}>
 					<ListItem disablePadding>
-						<ListItemButton onClick={() => handleSessionStart(info.sessionId)}>
+						<ListItemButton onClick={() => handleSessionStart(info.sessionId, info.title)}>
 							<ListItemText
 								disableTypography
 								primary={

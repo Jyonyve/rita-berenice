@@ -178,4 +178,27 @@ router.put(
 	})
 );
 
+/**
+ * PUT /api/session/update-session-title
+ * Updates a session's metadata after a new message is added.
+ * @body {string} sessionId - The ID of the session to update.
+ * @body {string} title - The new last message from the character.
+ * @returns {204} No content on success.
+ * @throws {400} If required fields are missing.
+ * @throws {500} Internal server error.
+ */
+router.put(
+	genRoutePattern('updateSessionTitle'),
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		validateRequestData(req.body, 'body', ['sessionId', 'title']);
+		const { sessionId, title } = req.body;
+
+		console.log(`API HIT: PUT /api/session/update-session-title for session ${sessionId}`);
+
+		await sessionStore.updateSessionTitle(sessionId, title);
+
+		res.status(204).send(); // 204 No Content is appropriate for successful updates with no body
+	})
+);
+
 export default router;

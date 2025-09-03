@@ -10,6 +10,7 @@ import {
 } from '#shared/config/langConstants.js';
 import { EmotionValue } from '#shared/config/emotionConstants.js';
 import { EMOTION_CATEGORY_NAMES } from '#shared/util/emotionUtils.js';
+import { GENDER_OPTIONS } from '#shared/config/constants.js';
 
 /**
  * Retrieves the appropriate text for a given key based on the selected language.
@@ -60,8 +61,7 @@ export const EMOTION_SELECT_MENUITEM = Object.entries(EMOTION_CATEGORY_NAMES).ma
 	})
 );
 
-export const GENDER_SELECT_MENUITEM = [
-	{ key: LANG_KEYS.MALE.toLowerCase(), label: getLangText(LANG_KEYS.MALE) },
-	{ key: LANG_KEYS.FEMALE.toLowerCase(), label: getLangText(LANG_KEYS.FEMALE) },
-	{ key: LANG_KEYS.OTHER.toLowerCase(), label: getLangText(LANG_KEYS.OTHER) },
-];
+export const GENDER_SELECT_MENUITEM = GENDER_OPTIONS.map((option) => ({
+	key: option,
+	label: getLangText(LANG_KEYS[option.toUpperCase() as keyof typeof LANG_KEYS]),
+}));

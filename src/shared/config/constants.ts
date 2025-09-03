@@ -18,6 +18,8 @@ export const NA = 'N/A' as const;
 export const APPNAME = 'Rita-Berenice' as const;
 export const APPNAME_LOWERCASE = APPNAME.toLowerCase();
 export const LIMIT_5MB = 5 * 1024 * 1024;
+export const GENDER_OPTIONS = ['male', 'female', 'other'] as const;
+export type GENDER_OPTION = (typeof GENDER_OPTIONS)[number];
 
 // Default limit for querying chat logs
 export const DEFAULT_QUERY_LIMIT: number = 10 as const;

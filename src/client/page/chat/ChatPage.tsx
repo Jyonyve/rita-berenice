@@ -23,6 +23,7 @@ import {
 } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { useErrorDialog } from '../../util/styleUtils.jsx';
 import { parseEntriesToText, parseTextToEntries } from '../../util/chatParseUtils.js';
+import { useResponsive } from '../../hook/useResponsive.js';
 
 export const ChatPage: FC<{
 	characterInfo: CharacterInfo;
@@ -38,19 +39,7 @@ export const ChatPage: FC<{
 
 	// Get emotion context from Loader
 	const { setCurrentEmotion, imageUrl } = useEmotionContext();
-
-	// Responsive detection
-	const isSmallScreen = useMediaQuery(theme.breakpoints.down('md'));
-	const isTabletPortrait = useMediaQuery(
-		'(min-width: 768px) and (max-width: 1024px) and (orientation: portrait)'
-	);
-	const hasEnoughSpaceForDesktop = useMediaQuery('(min-width: 1200px)');
-	const isWideTablet = useMediaQuery(
-		'(min-width: 1024px) and (max-width: 1199px) and (orientation: landscape)'
-	);
-
-	const shouldUseMobileLayout =
-		isSmallScreen || isTabletPortrait || (!hasEnoughSpaceForDesktop && !isWideTablet);
+	const { shouldUseMobileLayout } = useResponsive();
 
 	// --- HOOKS ---
 	const {

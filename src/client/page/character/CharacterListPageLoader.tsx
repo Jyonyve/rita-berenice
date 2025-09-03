@@ -9,11 +9,11 @@ import { useLocation } from 'react-router';
 import { useAuth } from '../../provider/AuthProvider.tsx';
 
 export function CharacterListPageLoader() {
-	const location = useLocation();
+	const { state } = useLocation();
 	const { userId, isLoggedIn } = useAuth();
 	const { getAllCharacters, getCharactersByUserId } = useCharacterApi();
 
-	const isMine = !!location.state?.isMine;
+	const isMine = !!state?.isMine;
 
 	// Always call hooks in the same order
 	const { data: characterRes, isLoading } = isMine

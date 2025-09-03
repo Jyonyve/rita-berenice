@@ -83,7 +83,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 			contact: '',
 			description: '',
 			instruction: '',
-			gender: '',
+			gender: 'other',
 			name: '',
 			showName: '',
 			userId,
@@ -399,7 +399,77 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 											)}
 										/>
 									</Grid>
-									{/* Other form fields... */}
+									<Grid size={{ xs: 12, sm: 7 }}>
+										<Controller
+											name="name"
+											control={control}
+											rules={{ required: getLangText(LANG_KEYS.NAME_REQUIRED) }}
+											render={({ field }) => (
+												<TextField
+													{...field}
+													fullWidth
+													label={getLangText(LANG_KEYS.NAME)}
+													error={!!errors.name}
+													helperText={errors.name?.message}
+													placeholder={getLangText(LANG_KEYS.NAME_PLACEHOLDER)}
+													required
+												/>
+											)}
+										/>
+									</Grid>
+									<Grid size={{ xs: 12, sm: 5 }}>
+										<Controller
+											name="gender"
+											control={control}
+											rules={{ required: getLangText(LANG_KEYS.GENDER_REQUIRED) }}
+											render={({ field }) => (
+												<FormControl fullWidth required error={!!errors.gender}>
+													<InputLabel>{getLangText(LANG_KEYS.GENDER)}</InputLabel>
+													<Select {...field}>
+														{GENDER_SELECT_MENUITEM.map((opt) => (
+															<MenuItem key={opt.key} value={opt.key}>
+																{opt.label}
+															</MenuItem>
+														))}
+													</Select>
+													{errors.gender && <FormHelperText>{errors.gender.message}</FormHelperText>}
+												</FormControl>
+											)}
+										/>
+									</Grid>
+									<Grid size={{ xs: 12, sm: 7 }}>
+										<Controller
+											name="contact"
+											control={control}
+											render={({ field }) => (
+												<TextField
+													{...field}
+													fullWidth
+													label={getLangText(LANG_KEYS.CONTACT)}
+													placeholder={getLangText(LANG_KEYS.CONTACT_PLACEHOLDER)}
+												/>
+											)}
+										/>
+									</Grid>
+									<Grid size={{ xs: 12 }}>
+										<Controller
+											name="title"
+											control={control}
+											rules={{ required: getLangText(LANG_KEYS.TITLE_REQUIRED) }}
+											render={({ field }) => (
+												<TextField
+													{...field}
+													fullWidth
+													label={getLangText(LANG_KEYS.TITLE)}
+													error={!!errors.title}
+													helperText={errors.title?.message}
+													placeholder={getLangText(LANG_KEYS.TITLE_PLACEHOLDER)}
+													required
+													slotProps={{ htmlInput: { maxLength: REQUEST_CHARACTER_LIMIT } }}
+												/>
+											)}
+										/>
+									</Grid>
 								</Grid>
 							</GlassCard>
 
