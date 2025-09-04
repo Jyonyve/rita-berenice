@@ -1,19 +1,16 @@
 // src/client/component/page/CharacterListPage.tsx
 
-import React, { useEffect, useState } from 'react';
-import { Typography, Box, CircularProgress, Grid, Theme } from '@mui/material';
+import React from 'react';
+import { Typography, Box, Grid } from '@mui/material';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { useNavigate } from 'react-router';
 import { GlassCard, GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
-import { RomanticTitle, useHoverState } from '../../layout/index.js';
+import { RomanticTitle } from '../../layout/index.js';
 import { containerSpacing } from '../../style/index.js';
 import { getDefaultImage } from '../../util/portraitUtils.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
-<<<<<<< HEAD
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'; //
-=======
->>>>>>> task
+import { DEFAULT_CHARACTER_AVATAR } from '#shared/config/constants.js';
 
 const characterCardSx = {
 	display: 'flex',
@@ -33,20 +30,6 @@ const contentSx = {
 	justifyContent: 'space-between',
 	'&:last-child': { pb: 1 }, // Override MUI's default bottom padding
 };
-<<<<<<< HEAD
-
-const newCharacterCardSx = {
-	...characterCardSx,
-	flexShrink: 0, // Prevents the card from shrinking
-	minHeight: '250px', // Ensures a consistent minimum height
-	alignItems: 'center',
-	justifyContent: 'center',
-	textAlign: 'center',
-	cursor: 'pointer',
-	p: 2,
-};
-=======
->>>>>>> task
 
 // Helper Component: CharacterItem now uses GlassCard
 const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterInfo }) => {
@@ -103,7 +86,7 @@ const NewCharacterItem = () => {
 			<Box sx={{ width: '100%', display: 'flex', mb: 1 }}>
 				{/* Use GlassPortrait to display your new static image with consistent styling */}
 				<GlassPortrait
-					imageUrl="/assets/character/new_character.webp" // Path to your image in the public folder
+					imageUrl={DEFAULT_CHARACTER_AVATAR} // Path to your image in the public folder
 					alt="Add New Character"
 					fit="contain" // Use 'contain' to ensure the whole icon is visible
 					sx={{
@@ -118,11 +101,7 @@ const NewCharacterItem = () => {
 					{getLangText(LANG_KEYS.NEW_CHARACTER)}
 				</RomanticTitle>
 				<Typography variant="body2" noWrap>
-<<<<<<< HEAD
-					{'sample text'}
-=======
 					{getLangText(LANG_KEYS.NEW_CHARACTER_TITLE)}
->>>>>>> task
 				</Typography>
 			</Box>
 		</GlassCard>

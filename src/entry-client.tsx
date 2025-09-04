@@ -11,6 +11,10 @@ import { BrowserRouter } from 'react-router';
 import SuperTokens from 'supertokens-auth-react';
 import EmailPassword from 'supertokens-auth-react/recipe/emailpassword/index.js';
 import Session from 'supertokens-auth-react/recipe/session/index.js';
+import { encryptValue } from '#shared/util/cryptoUtils.js';
+
+const ENCRYPTION_KEY = import.meta.env.VITE_SECRET_ENCRYPTION_KEY;
+if (!ENCRYPTION_KEY) throw new Error('VITE_SECRET_ENCRYPTION_KEY is required.');
 
 SuperTokens.init({
 	appInfo: {
@@ -22,15 +26,42 @@ SuperTokens.init({
 	},
 	style: superTokenUiStyle,
 	enableDebugLogs: false,
-	recipeList: [EmailPassword.init(), Session.init()],
+	recipeList: [
+		EmailPassword.init({
+			override: {
+				functions: (originalImplementation) => ({
+					...originalImplementation,
+					signIn: async function (input) {
+						const passwordField = input.formFields.find((f) => f.id === 'password');
+						if (passwordField?.value) {
+							const encryptedPassword = await encryptValue(passwordField.value, ENCRYPTION_KEY);
+							const updatedFormFields = input.formFields.map((f) =>
+								f.id === 'password' ? { ...f, value: encryptedPassword } : f
+							);
+							return originalImplementation.signIn({ ...input, formFields: updatedFormFields });
+						}
+						return originalImplementation.signIn(input);
+					},
+				}),
+			},
+		}),
+		Session.init(),
+	],
 });
+
+const getServerDetectedLang = () => {
+	if (typeof window !== 'undefined' && (window as any).__INITIAL_LANG__) {
+		return (window as any).__INITIAL_LANG__;
+	}
+	return 'eng';
+};
 
 function ClientApp() {
 	const clientSideEmotionCache = createEmotionCache();
-
+	const initialLang = getServerDetectedLang();
 	return (
 		<BrowserRouter basename={import.meta.env.BASE_URL}>
-			<AppProviders emotionCache={clientSideEmotionCache}>
+			<AppProviders emotionCache={clientSideEmotionCache} initialLang={initialLang}>
 				<App />
 			</AppProviders>
 		</BrowserRouter>

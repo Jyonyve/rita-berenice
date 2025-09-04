@@ -1,4 +1,12 @@
-import React, { FC, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, {
+	FC,
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+} from 'react';
 import { Outlet, useMatch, useNavigate } from 'react-router';
 import {
 	AppBar,
@@ -22,7 +30,7 @@ import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpass
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import { AuthPage } from 'supertokens-auth-react/ui/index.js';
 import { APPNAME } from '#shared/config/constants.js';
-
+import { useLanguage } from '../provider/LanguageProvider.jsx';
 import {
 	GlassPaper,
 	GlassAppBar,
@@ -40,6 +48,8 @@ import { LANG_KEYS } from '#shared/config/langConstants.js';
 import { useAuth } from '../provider/AuthProvider.jsx';
 import ImageIcon from '@mui/icons-material/Image';
 import CloseIcon from '@mui/icons-material/Close';
+import { useSessionApi } from '../hook/api/index.js';
+import { InlineEditableField } from './InlineEditableField.jsx';
 
 interface LoginModalProps {
 	loginOpen: boolean;
@@ -159,13 +169,56 @@ const ImageModal: FC<ImageModalProps> = ({ open, onClose, imageUrl, characterId 
 	);
 };
 
-interface HeaderInfo {
+// Add this component inside your RootLayout file
+const LanguageSwitch: FC = () => {
+	const { lang, toggleLang } = useLanguage();
+	const handleChange = (event: React.ChangeEvent<HTMLInputElement>, checked: boolean) => {
+		toggleLang(); // Call your toggle function
+	};
+	return (
+		<Switch
+			checked={lang === 'kor'}
+			onChange={handleChange}
+			color="default"
+			size="small"
+			aria-label="toggle language"
+			sx={{
+				'& .MuiSwitch-thumb': {
+					'&:before': {
+						content: lang === 'kor' ? '"한"' : '"EN"',
+						position: 'absolute',
+						width: '100%',
+						height: '100%',
+						left: 0,
+						top: 0,
+						backgroundRepeat: 'no-repeat',
+						backgroundPosition: 'center',
+						fontSize: '9px',
+						fontWeight: 'bold',
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						color: 'black',
+					},
+				},
+			}}
+		/>
+	);
+};
+
+export interface HeaderInfo {
 	characterId: string;
-	showName: string;
+	profileShowName: string;
 	avatarUrl?: string;
 	mobileImageUrl?: string;
+	sessionId?: string;
+	sessionTitle?: string;
+	editModalOpen?: boolean;
 }
-export type HeaderContextType = (info?: HeaderInfo) => void;
+export type HeaderContextType = {
+	setHeaderInfo: (info?: HeaderInfo) => void;
+	headerInfo?: HeaderInfo;
+};
 
 export function RootLayout() {
 	const { mode, toggleMode } = useColorMode();
@@ -173,7 +226,7 @@ export function RootLayout() {
 	const navigate = useNavigate();
 	const { isSessionLoading, isLoggedIn, isLoginModalOpen, openLoginModal, closeLoginModal, logout } =
 		useAuth();
-
+	const { updateSessionTitle } = useSessionApi();
 	const headerRef = useRef<HTMLElement>(null);
 	const footerRef = useRef<HTMLElement>(null);
 
@@ -198,6 +251,25 @@ export function RootLayout() {
 			);
 		}
 	}, []);
+
+	const handleSessionTitleSave = (sessionTitle: string) => {
+		if (headerInfo?.sessionId) {
+			updateSessionTitle({ sessionId: headerInfo.sessionId, title: sessionTitle });
+		}
+	};
+
+	const handleSetHeaderInfo = useCallback((info?: HeaderInfo) => {
+		setHeaderInfo(info);
+	}, []);
+
+	const outletContextValue = useMemo(
+		() => ({ setHeaderInfo: handleSetHeaderInfo, headerInfo }),
+		[headerInfo, handleSetHeaderInfo]
+	);
+
+	const handleProfileModalOpen = () => {
+		headerInfo && setHeaderInfo({ ...headerInfo, editModalOpen: true });
+	};
 
 	const goMyCharacterListPage = () => {
 		navigate(`/${routeConstants.CHARACTER}`, { state: { isMine: true } });
@@ -266,7 +338,7 @@ export function RootLayout() {
 						},
 					})}
 				>
-					<Box sx={{ display: 'flex', alignItems: 'center' }}>
+					<Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, overflow: 'hidden' }}>
 						{!headerInfo?.mobileImageUrl && (
 							<RomanticTitle
 								logo
@@ -279,6 +351,62 @@ export function RootLayout() {
 								{APPNAME}
 							</RomanticTitle>
 						)}
+						{headerInfo && (
+							<Box
+								sx={{
+									display: 'flex',
+									alignItems: 'center',
+									pr: 1,
+									pt: 0.5,
+									pb: 0.5,
+									gap: 1,
+									minWidth: 0, // Prevent overflow
+								}}
+							>
+								<Box
+									role="button"
+									onClick={() => goCharacterPage(headerInfo.characterId)}
+									sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+								>
+									<Avatar src={headerInfo.avatarUrl} variant="circular">
+										<AccountCircle />
+									</Avatar>
+								</Box>
+
+								{/* ✅ Responsive container for profile and session info */}
+								<Box
+									sx={{
+										display: 'flex',
+										// Stack vertically on mobile, horizontally on desktop
+										flexDirection: isSmallScreen ? 'column' : 'row',
+										alignItems: isSmallScreen ? 'flex-start' : 'center',
+										gap: isSmallScreen ? 0.2 : 1,
+										minWidth: 0, // Prevent overflow
+									}}
+								>
+									{/* Profile name - opens modal */}
+									<Typography
+										variant="caption"
+										role="button"
+										onClick={handleProfileModalOpen}
+										sx={{ '&:hover': { textDecoration: 'underline' }, whiteSpace: 'nowrap' }}
+									>
+										{headerInfo.profileShowName}
+									</Typography>
+									{headerInfo.sessionId && headerInfo.sessionTitle && (
+										<InlineEditableField
+											initialValue={headerInfo.sessionTitle}
+											onSave={handleSessionTitleSave}
+											typographyProps={{
+												variant: 'body2',
+												sx: { maxWidth: isSmallScreen ? '200px' : '150px' },
+											}}
+											textFieldProps={{ variant: 'standard', size: 'small' }}
+										/>
+									)}
+								</Box>
+							</Box>
+						)}
 						<RomanticTitle
 							variant="subtitle1"
 							colorVariant="silver"
@@ -289,19 +417,6 @@ export function RootLayout() {
 						>
 							{getLangText(LANG_KEYS.CHARACTERS)}
 						</RomanticTitle>
-						{headerInfo && (
-							<Box
-								role="button"
-								sx={{ display: 'flex', alignItems: 'center', pr: 1, pt: 0.5, pb: 0.5 }}
-								gap={1}
-								onClick={() => goCharacterPage(headerInfo.characterId)}
-							>
-								<Avatar src={headerInfo.avatarUrl} variant="circular">
-									<AccountCircle />
-								</Avatar>
-								<Typography variant="caption">{headerInfo.showName}</Typography>
-							</Box>
-						)}
 					</Box>
 
 					<Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -318,6 +433,7 @@ export function RootLayout() {
 								<ImageIcon />
 							</IconButton>
 						)}
+						<LanguageSwitch />
 						{/* <Switch
 							checked={mode === 'dark'}
 							onChange={toggleMode}
@@ -385,7 +501,7 @@ export function RootLayout() {
 
 			{/* main box */}
 			<Box component="main" sx={{ flex: 1, overflowY: 'auto' }}>
-				<Outlet context={setHeaderInfo satisfies HeaderContextType} />
+				<Outlet context={outletContextValue} />
 			</Box>
 
 			{/* Login Modal */}

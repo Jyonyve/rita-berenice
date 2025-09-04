@@ -1,45 +1,38 @@
-// client/hooks/useSessionApi.ts
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { SessionInfo } from '#shared/domain/session/SessionInterfaces.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { Payload } from '#shared/util/apiHelpers.js';
 import { SessionResponse } from '#shared/api/ModuleResponse.js';
 import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
+import { parseProfileId } from '#shared/util/parseUtils.js';
 
-/**
- * A client-side hook for interacting with the SESSION API endpoints.
- * It encapsulates API logic, loading/error states, and query caching.
- */
 export const useSessionApi = () => {
 	const MODULE_NAME = MODULE_NAMES.SESSION;
 	const queryClient = useQueryClient();
 
-	/**
-	 * Creates a new session.
-	 * This is a useMutation hook as it modifies server state.
-	 */
+	/** Creates a new session */
 	const createSession = useMutation<
-		SessionInfo,
+		{ sessionId: string },
 		Error,
-		{ userId: string; characterId: string; profileId: string; firstCharMessage: string }
+		{ userId: string; characterId: string; firstCharMessage: string }
 	>({
 		mutationFn: async (variables) => {
 			const url = genApiUrl(MODULE_NAME, 'createSession');
-			const response = await apiClient.post<SessionInfo>(url, variables);
+			const response = await apiClient.post<{ sessionId: string }>(url, variables);
 			return response.data;
 		},
-		onSuccess: (newSession) => {
-			// Invalidate the query for the list of sessions to make it refetch
-			// with the new session included.
-			queryClient.invalidateQueries({ queryKey: ['getSessionsByUserId', newSession.userId] });
+		onSuccess: (data, variables) => {
+			// Use Promise.all to run invalidations concurrently for optimal performance
+			Promise.all([
+				queryClient.invalidateQueries({ queryKey: ['getSessionsByUserId', variables.userId] }),
+				queryClient.invalidateQueries({ queryKey: ['getSession', data.sessionId] }),
+				queryClient.invalidateQueries({
+					queryKey: ['getSessionsByUserIdAndCharacterId', variables.userId, variables.characterId],
+				}),
+			]);
 		},
 	});
 
-	/**
-	 * Fetches all sessions for a given user.
-	 * This is a useQuery hook as it fetches data.
-	 */
 	const getSessionsByUserId = (userId: string) =>
 		useQuery<SessionResponse, Error>({
 			queryKey: ['getSessionsByUserId', userId],
@@ -51,10 +44,6 @@ export const useSessionApi = () => {
 			enabled: !!userId,
 		});
 
-	/**
-	 * Fetches all sessions for a given user.
-	 * This is a useQuery hook as it fetches data.
-	 */
 	const getSessionsByUserIdAndCharacterId = (userId: string, characterId: string) =>
 		useQuery<SessionResponse, Error>({
 			queryKey: ['getSessionsByUserIdAndCharacterId', userId, characterId],
@@ -66,10 +55,6 @@ export const useSessionApi = () => {
 			enabled: !!userId && !!characterId,
 		});
 
-	/**
-	 * Fetches a single session by its ID.
-	 * This is a useQuery hook.
-	 */
 	const getSession = (sessionId: string) =>
 		useQuery<SessionResponse, Error>({
 			queryKey: ['getSession', sessionId],
@@ -78,12 +63,12 @@ export const useSessionApi = () => {
 				const response = await apiClient.get<Payload>(url);
 				return decompressData<SessionResponse>(response.data.payload);
 			},
-			enabled: !!sessionId, // The query will only run if a sessionId is provided.
+			enabled: !!sessionId,
 		});
 
 	/**
-	 * Updates a session after a new message.
-	 * This is a useMutation hook.
+	 * Updates session on new message. Called frequently.
+	 * Only invalidates the specific session to avoid excessive refetching of lists.
 	 */
 	const updateSessionOnNewMessage = useMutation<
 		void,
@@ -95,18 +80,71 @@ export const useSessionApi = () => {
 			await apiClient.put(url, variables);
 		},
 		onSuccess: (_, variables) => {
-			// Invalidate queries for the specific session and the session list
-			// to ensure the UI reflects the updated `updatedAt` time and message snippet.
+			// Only invalidate the specific session. This is a performance-critical optimization.
 			queryClient.invalidateQueries({ queryKey: ['getSession', variables.sessionId] });
-			queryClient.invalidateQueries({ queryKey: ['getSessionsByUserId'] }); // Invalidates all session lists
+		},
+	});
+
+	/**
+	 * Links a profileId to a session after creation.
+	 */
+	const initSessionProfileId = useMutation<void, Error, { sessionId: string; profileId: string }>({
+		mutationFn: async (variables) => {
+			const url = genApiUrl(MODULE_NAME, 'initSessionProfileId');
+			await apiClient.put(url, variables);
+		},
+		onSuccess: (_, variables) => {
+			const { userId } = parseProfileId(variables.profileId);
+			// Use Promise.all for consistency and correctness
+			Promise.all([
+				queryClient.invalidateQueries({ queryKey: ['getSession', variables.sessionId] }),
+				queryClient.invalidateQueries({ queryKey: ['getSessionsByUserId', userId] }),
+			]);
+		},
+	});
+
+	/**
+	 * Updates session on new message. Called frequently.
+	 * Only invalidates the specific session to avoid excessive refetching of lists.
+	 */
+	const updateSessionTitle = useMutation<void, Error, { sessionId: string; title: string }>({
+		mutationFn: async (variables) => {
+			const url = genApiUrl(MODULE_NAME, 'updateSessionTitle');
+			await apiClient.put(url, variables);
+		},
+		onSuccess: (_, variables) => {
+			// Only invalidate the specific session. This is a performance-critical optimization.
+			queryClient.invalidateQueries({ queryKey: ['getSession', variables.sessionId] });
+		},
+	});
+
+	/**
+	 * Performs a full update of a session's editable info.
+	 */
+	const updateSession = useMutation<void, Error, { sessionInfo: SessionInfo }>({
+		mutationFn: async (variables) => {
+			const url = genApiUrl(MODULE_NAME, 'updateSession');
+			await apiClient.put(url, variables);
+		},
+		onSuccess: (_, variables) => {
+			// Use Promise.all for consistency and correctness
+			Promise.all([
+				queryClient.invalidateQueries({ queryKey: ['getSession', variables.sessionInfo.sessionId] }),
+				queryClient.invalidateQueries({
+					queryKey: ['getSessionsByUserId', variables.sessionInfo.userId],
+				}),
+			]);
 		},
 	});
 
 	return {
-		createSession,
+		createSession: createSession.mutateAsync,
 		getSessionsByUserId,
 		getSession,
-		updateSessionOnNewMessage,
+		initSessionProfileId: initSessionProfileId.mutateAsync,
+		updateSession: updateSession.mutateAsync,
+		updateSessionOnNewMessage: updateSessionOnNewMessage.mutateAsync,
+		updateSessionTitle: updateSessionTitle.mutateAsync,
 		getSessionsByUserIdAndCharacterId,
 	};
 };

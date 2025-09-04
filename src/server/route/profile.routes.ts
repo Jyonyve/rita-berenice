@@ -115,7 +115,10 @@ router.get(
 router.post(
 	genRoutePattern('storeProfile'),
 	asyncHandler(
-		async (req: Request<object, string, ProfileInfo>, res: Response<string>): Promise<void> => {
+		async (
+			req: Request<object, string, ProfileInfo>,
+			res: Response<{ profileId: string }>
+		): Promise<void> => {
 			const requiredFields: (keyof ProfileMetadata)[] = ['name', 'sessionId', 'userId'];
 			validateRequestData(req.body, 'body', requiredFields);
 

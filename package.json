@@ -83,6 +83,7 @@
 		"supertokens-web-js": "^0.15.0",
 		"swiper": "^11.2.10",
 		"tiktoken": "^1.0.22",
+		"unique-names-generator": "^4.7.1",
 		"vite": "^6.3.5",
 		"vite-tsconfig-paths": "^5.1.4",
 		"zlib": "^1.0.5",
@@ -128,5 +129,5 @@
 		"#server/": "./src/server/",
 		"#shared/": "./src/shared/"
 	},
-	"packageManager": "pnpm@10.15.0"
+	"packageManager": "pnpm@10.15.1"
 }

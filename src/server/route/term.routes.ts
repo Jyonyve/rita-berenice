@@ -29,23 +29,18 @@ const collectionType = COLLECTIONS.TERM;
  */
 router.post(
 	genRoutePattern('storeSessionTerm'),
-	asyncHandler(
-		async (
-			req: Request<object, { message: string }, SessionTermCdo | SessionTermInfo>,
-			res: Response<{ message: string }>
-		): Promise<void> => {
-			const requiredFields: (keyof SessionTermInfo)[] = ['koreanTerm', 'sessionId'];
-			validateRequestData(req.body, 'body', requiredFields);
+	asyncHandler(async (req: Request, res: Response<{ termId: string }>): Promise<void> => {
+		const requiredFields: (keyof SessionTermInfo)[] = ['koreanTerm', 'sessionId'];
+		validateRequestData(req.body, 'body', requiredFields);
 
-			const path = genRoutePattern('storeSessionTerm');
-			console.log(
-				`API HIT: POST ${path} for session ${req.body.sessionId}, term "${req.body.koreanTerm}"`
-			);
+		const path = genRoutePattern('storeSessionTerm');
+		console.log(
+			`API HIT: POST ${path} for session ${req.body.sessionId}, term "${req.body.koreanTerm}"`
+		);
 
-			await termStore.storeSessionTerm(req.body);
-			res.status(201).json({ message: 'Session term stored successfully.' });
-		}
-	)
+		const response = await termStore.storeSessionTerm(req.body);
+		res.status(201).json(response);
+	})
 );
 
 /**
@@ -57,23 +52,18 @@ router.post(
  */
 router.post(
 	genRoutePattern('storeCharacterTerm'),
-	asyncHandler(
-		async (
-			req: Request<object, { message: string }, CharacterTermCdo | CharacterTermInfo>,
-			res: Response<{ message: string }>
-		): Promise<void> => {
-			const requiredFields: (keyof CharacterTermInfo)[] = ['koreanTerm', 'characterId'];
-			validateRequestData(req.body, 'body', requiredFields);
+	asyncHandler(async (req: Request, res: Response<{ termId: string }>): Promise<void> => {
+		const requiredFields: (keyof CharacterTermInfo)[] = ['koreanTerm', 'characterId'];
+		validateRequestData(req.body, 'body', requiredFields);
 
-			const path = genRoutePattern('storeCharacterTerm');
-			console.log(
-				`API HIT: POST ${path} for character ${req.body.characterId}, term "${req.body.koreanTerm}"`
-			);
+		const path = genRoutePattern('storeCharacterTerm');
+		console.log(
+			`API HIT: POST ${path} for character ${req.body.characterId}, term "${req.body.koreanTerm}"`
+		);
 
-			await termStore.storeCharacterTerm(req.body);
-			res.status(201).json({ message: 'Character term stored successfully.' });
-		}
-	)
+		const response = await termStore.storeCharacterTerm(req.body);
+		res.status(201).json(response);
+	})
 );
 
 /**
@@ -84,20 +74,15 @@ router.post(
  */
 router.post(
 	genRoutePattern('storeSessionTerms'),
-	asyncHandler(
-		async (
-			req: Request<object, { message: string }, { terms: (SessionTermCdo | SessionTermInfo)[] }>,
-			res: Response<{ message: string }>
-		): Promise<void> => {
-			validateRequestData(req.body, 'body', ['terms']);
+	asyncHandler(async (req: Request, res: Response<{ termIds: string[] }>): Promise<void> => {
+		validateRequestData(req.body, 'body', ['terms']);
 
-			const path = genRoutePattern('storeSessionTerms');
-			console.log(`API HIT: POST ${path} for bulk storing ${req.body.terms.length} session terms`);
+		const path = genRoutePattern('storeSessionTerms');
+		console.log(`API HIT: POST ${path} for bulk storing ${req.body.terms.length} session terms`);
 
-			await termStore.storeSessionTerms(req.body.terms);
-			res.status(201).json({ message: `${req.body.terms.length} session terms stored successfully.` });
-		}
-	)
+		const response = await termStore.storeSessionTerms(req.body.terms);
+		res.status(201).json(response);
+	})
 );
 
 /**
@@ -108,22 +93,15 @@ router.post(
  */
 router.post(
 	genRoutePattern('storeCharacterTerms'),
-	asyncHandler(
-		async (
-			req: Request<object, { message: string }, { terms: (CharacterTermCdo | CharacterTermInfo)[] }>,
-			res: Response<{ message: string }>
-		): Promise<void> => {
-			validateRequestData(req.body, 'body', ['terms']);
+	asyncHandler(async (req: Request, res: Response<{ termIds: string[] }>): Promise<void> => {
+		validateRequestData(req.body, 'body', ['terms']);
 
-			const path = genRoutePattern('storeCharacterTerms');
-			console.log(`API HIT: POST ${path} for bulk storing ${req.body.terms.length} character terms`);
+		const path = genRoutePattern('storeCharacterTerms');
+		console.log(`API HIT: POST ${path} for bulk storing ${req.body.terms.length} character terms`);
 
-			await termStore.storeCharacterTerms(req.body.terms);
-			res
-				.status(201)
-				.json({ message: `${req.body.terms.length} character terms stored successfully.` });
-		}
-	)
+		const response = await termStore.storeCharacterTerms(req.body.terms);
+		res.status(201).json(response);
+	})
 );
 
 /**

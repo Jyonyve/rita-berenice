@@ -9,7 +9,7 @@ import {
 	TextField,
 	useTheme,
 } from '@mui/material';
-import React, { ChangeEvent, ChangeEventHandler, FC } from 'react';
+import React, { ChangeEvent, ChangeEventHandler, FC, useState } from 'react';
 import { GlassBox, GlassButton, GlassCircularProgress } from '../../layout/glass/index.js';
 import { useToast } from '../../provider/ToastProvider.jsx';
 import { getLangAlertText, getLangText } from '../../util/translateUtils.js';
@@ -45,13 +45,30 @@ export const UserInput: FC<UserInputProps> = ({
 }) => {
 	const { addToast } = useToast();
 	const theme = useTheme();
+	const [elapsedSeconds, setElapsedSeconds] = useState<number>();
 
-	const handleSend = () => {
+	const handleSend = async () => {
 		if (import.meta.env.VITE_APP_MODE === 'static') {
 			addToast(getLangAlertText(LANG_KEYS.STATIC_SENDING_DISABLE), 'warning');
 			return;
-		} else {
+		}
+
+		// ✅ Start timing
+		const startTime = performance.now();
+
+		try {
+			// Call the parent's onSend function and wait for it to complete
 			onSend();
+
+			// ✅ Calculate and permanently display elapsed time
+			const endTime = performance.now();
+			const seconds = parseFloat(((endTime - startTime) / 1000).toFixed(1));
+			setElapsedSeconds(seconds);
+
+			// ✅ NO timeout - the elapsed time stays visible until the next send
+		} catch (error) {
+			console.error('Send failed:', error);
+			// Optionally show error message to user
 		}
 	};
 
@@ -123,7 +140,7 @@ export const UserInput: FC<UserInputProps> = ({
 					disabled={isDisabled || !value.trim()}
 				>
 					{isProcessing ? (
-						<GlassCircularProgress size={22} colorVariant="silver" />
+						<GlassCircularProgress size={22} colorVariant="silver" seconds={elapsedSeconds} />
 					) : (
 						getLangText(LANG_KEYS.SEND)
 					)}

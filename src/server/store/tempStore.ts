@@ -46,25 +46,34 @@ export const tempStore = {
 	},
 
 	// --- Temporary Turn Operations ---
-	saveTempChatTurn: async (tempData: TempChatTurn): Promise<void> => {
-		// shoould get the document to get whole temp data
-		const collection = await tempStore._getTempCollection();
-		const now = new Date().toISOString();
-		const updatedMetadata: TempChatTurnMetadata = {
-			type: METADATA_TYPES.TEMP,
-			userId: tempData.userId,
-			sequence: tempData.sequence,
-			sessionId: tempData.sessionId,
-			createdAt: tempData.createdAt || now,
-			updatedAt: now,
-			setCount: tempData.chatTurnSets.length || 0,
-			tempTurnId: tempData.tempTurnId || buildTempChatTurnId(tempData.sessionId, tempData.sequence),
-			fixedSetNo: tempData.fixedSetNo,
-		};
+	saveTempChatTurn: async (tempTurn: TempChatTurn): Promise<{ tempTurnId: string }> => {
+		try {
+			// shoould get the document to get whole temp data
+			const collection = await tempStore._getTempCollection();
+			const now = new Date().toISOString();
+			const updatedMetadata: TempChatTurnMetadata = {
+				type: METADATA_TYPES.TEMP,
+				userId: tempTurn.userId,
+				sequence: tempTurn.sequence,
+				sessionId: tempTurn.sessionId,
+				createdAt: tempTurn.createdAt || now,
+				updatedAt: now,
+				setCount: tempTurn.chatTurnSets.length || 0,
+				tempTurnId: tempTurn.tempTurnId || buildTempChatTurnId(tempTurn.sessionId, tempTurn.sequence),
+				fixedSetNo: tempTurn.fixedSetNo,
+			};
 
-		const documentObj: TempChatTurn = { ...updatedMetadata, chatTurnSets: tempData.chatTurnSets };
-		await upsertRecord(collection, tempData.tempTurnId, JSON.stringify(documentObj), updatedMetadata);
-		console.log(`Stored temp data for session ${tempData.sessionId}`);
+			const documentObj: TempChatTurn = { ...updatedMetadata, chatTurnSets: tempTurn.chatTurnSets };
+			await upsertRecord(
+				collection,
+				tempTurn.tempTurnId,
+				JSON.stringify(documentObj),
+				updatedMetadata
+			);
+			return { tempTurnId: tempTurn.tempTurnId };
+		} catch (error) {
+			handleServiceError(error, `Failed to store temp turn ${tempTurn.sessionId}`);
+		}
 	},
 
 	getTempChatTurn: async (sessionId: string, sequence: number): Promise<TempChatResponse> => {
@@ -99,9 +108,8 @@ export const tempStore = {
 				tempChatTurn: {} as TempChatTurn,
 			};
 		}
-
-		const collection = await tempStore._getTempCollection();
 		try {
+			const collection = await tempStore._getTempCollection();
 			const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
 			const where: Where = {

@@ -30,19 +30,14 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 	const { addToast } = useToast();
 	const characterId = characterInfo.characterId;
 
-	// Character state: portraits, loading, error
-	// profile state
-	const { storeProfile } = useProfileApi();
-
 	// Handlers
 	const handleHistory = (historyId: string) => {
 		navigate(`/${routeConstants.HISTORY}/${historyId}`);
 	};
 
-	const handleStartSession = (sessionId: string) => {
-		navigate(`/${routeConstants.CHAT}/${sessionId}`);
+	const handleSessionStart = (sessionId: string, title: string) => {
+		navigate(`/${routeConstants.CHAT}/${sessionId}`, { state: { title } });
 	};
-
 	const handleStartNewSession = async (profileCdo: ProfileCdo) => {
 		if (import.meta.env.VITE_APP_MODE === 'static') {
 			addToast(getLangAlertText(LANG_KEYS.STATIC_SESSION_DISABLE), 'error');
@@ -53,19 +48,12 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 			return;
 		}
 
-		try {
-			const result = await storeProfile(profileCdo);
-			const { profileId } = JSON.parse(result);
-
-			if (profileId) {
-				navigate(`/${routeConstants.CHAT}`, { state: { characterId, profileId } });
-			} else {
-				alert('Failed to create a profile. Please try again.');
-			}
-		} catch (error) {
-			console.error('Error starting new session:', error);
-			alert('An error occurred while starting the session.');
-		}
+		// The only logic here is to navigate with the collected data.
+		navigate(`/${routeConstants.CHAT}`, {
+			// Assuming you have a route for this
+			replace: true,
+			state: { characterId: characterId, profileData: profileCdo },
+		});
 	};
 
 	// Portrait: pick default or first available
@@ -153,7 +141,7 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 										<SessionPreviewList
 											userId={userId}
 											characterId={characterId}
-											handleSessionStart={handleStartSession}
+											handleSessionStart={handleSessionStart}
 										/>
 									</List>
 								</GlassCard>

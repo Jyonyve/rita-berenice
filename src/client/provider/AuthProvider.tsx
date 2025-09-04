@@ -11,6 +11,8 @@ import React, {
 } from 'react';
 import { useSessionContext } from 'supertokens-auth-react/recipe/session/index.js';
 import { signOut } from 'supertokens-auth-react/recipe/session/index.js';
+import { UserInfo, UserCdo } from '#shared/domain/user/UserInterfaces.js';
+import { useUserApi } from '../hook/api/useUserApi.js';
 
 // --- Define the shape of our unified context ---
 interface AuthContextType {
@@ -20,7 +22,11 @@ interface AuthContextType {
 	openLoginModal: () => void;
 	closeLoginModal: () => void;
 	logout: () => Promise<void>;
-	userId: string;
+	userId?: string;
+	userProfile?: UserInfo;
+	needsProfileSetup: boolean;
+	createUserProfile: (userData: UserCdo) => Promise<void>;
+	refetchProfile: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,29 +35,78 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 	// 1. Get the real session state from SuperTokens
 	const session = useSessionContext();
+	const { getUser, storeUser } = useUserApi();
 
 	// 2. Unify the session state into single variables
 	const isSessionLoading = session.loading;
 	const isLoggedIn = !session.loading && session.doesSessionExist;
-	const userId = !session.loading && session.doesSessionExist ? session.userId : '';
+	const userId = !session.loading && session.doesSessionExist ? session.userId : undefined;
 
 	// 3. Manage the modal state
 	const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 	const openLoginModal = () => setIsLoginModalOpen(true);
 	const closeLoginModal = () => setIsLoginModalOpen(false);
 
-	// 4. Add logout function that integrates with SuperTokens
+	// 4. New user profile state
+	const [userProfile, setUserProfile] = useState<UserInfo>();
+	const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
+
+	// 5. Function to create user profile using existing storeUser
+	const createUserProfile = async (): Promise<void> => {
+		const email = (!session.loading && session.accessTokenPayload?.email) || '';
+		if (!userId) throw new Error('No user ID available');
+		if (!email) throw new Error('No email available');
+		// Get email from SuperTokens session
+		// Use existing storeUser mutation
+		await storeUser({ userId, email });
+		const { data: userRes } = getUser(userId);
+		const info = userRes?.userInfo;
+
+		// Update local state
+		setUserProfile(info);
+		setNeedsProfileSetup(false);
+	};
+
+	// 6. Function to refetch profile
+	const refetchProfile = () => {
+		if (userId) {
+			checkUserProfile(userId);
+		}
+	};
+
+	// 7. Helper to check user profile
+	const checkUserProfile = async (currentUserId: string) => {
+		try {
+			const { data: userResponse } = getUser(currentUserId);
+			if (userResponse?.userInfo) {
+				setUserProfile(userResponse.userInfo);
+				setNeedsProfileSetup(false);
+			} else {
+				setUserProfile(undefined);
+				setNeedsProfileSetup(true);
+			}
+		} catch (error) {
+			// User doesn't exist in your database - needs setup
+			setUserProfile(undefined);
+			setNeedsProfileSetup(true);
+		}
+	};
+
+	// 8. Enhanced logout function
 	const logout = async (): Promise<void> => {
 		try {
 			await signOut();
 			closeLoginModal();
+			// Clear user profile state on logout
+			setUserProfile(undefined);
+			setNeedsProfileSetup(false);
 		} catch (error) {
 			console.error('Logout failed:', error);
 			throw error;
 		}
 	};
 
-	// 5. Auto-close modal upon login
+	// 9. Auto-close modal upon login (unchanged)
 	const prevIsLoggedIn = useRef(isLoggedIn);
 	useEffect(() => {
 		if (!prevIsLoggedIn.current && isLoggedIn && isLoginModalOpen) {
@@ -60,7 +115,16 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 		prevIsLoggedIn.current = isLoggedIn;
 	}, [isLoggedIn, isLoginModalOpen]);
 
-	// useEffect #7 REMOVED - no longer needed for production
+	// 10. Check user profile when session changes
+	useEffect(() => {
+		if (isLoggedIn && userId && !userProfile) {
+			checkUserProfile(userId);
+		} else if (!isLoggedIn) {
+			// Clear profile state when logged out
+			setUserProfile(undefined);
+			setNeedsProfileSetup(false);
+		}
+	}, [isLoggedIn, userId]);
 
 	const value: AuthContextType = {
 		isSessionLoading,
@@ -70,8 +134,11 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 		closeLoginModal,
 		logout,
 		userId,
+		userProfile,
+		needsProfileSetup,
+		createUserProfile,
+		refetchProfile,
 	};
-
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 

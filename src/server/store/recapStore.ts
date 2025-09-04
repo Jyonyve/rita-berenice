@@ -144,12 +144,12 @@ export const recapStore = {
 	 * Stores a recap and updates its search index.
 	 * This is the single, authoritative method for saving a recap.
 	 */
-	async storeRecap(recapInfo: RecapInfo): Promise<void> {
+	async storeRecap(recapInfo: RecapInfo): Promise<{ recapId: string }> {
 		if (!recapInfo.content || recapInfo.content.trim() === '') {
 			console.warn(
 				`[RecapStore] Received empty content. Skipping recap for session ${recapInfo.sessionId}.`
 			);
-			return;
+			return { recapId: '' };
 		}
 
 		try {
@@ -164,6 +164,7 @@ export const recapStore = {
 
 			// 4. Update its denormalized search indexes.
 			await recapStore._updateSearchIndexForRecap(recapInfo);
+			return { recapId: recapInfo.recapId };
 		} catch (error) {
 			handleServiceError(error, `Failed to store recap ${recapInfo.recapId}`);
 		}
@@ -207,7 +208,6 @@ export const recapStore = {
 			});
 		} catch (error) {
 			handleServiceError(error, `Failed to get recaps for session ${sessionId}`);
-			return [];
 		}
 	},
 

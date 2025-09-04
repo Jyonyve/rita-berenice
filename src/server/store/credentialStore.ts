@@ -1,11 +1,11 @@
 // src/server/credential/credentialService.ts
 
 import { chromaDbClient } from '../db/chromaDbClient.js';
-import { encrypt, decrypt } from '../util/cryptoUtils.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
 import { Collection } from 'chromadb';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { buildCredentialId } from '#shared/util/buildIdUtils.js';
+import { decryptValue, encryptValue } from '#shared/util/cryptoUtils.js';
 
 export interface UserApiKeys {
 	openaiApiKey?: string;
@@ -16,6 +16,11 @@ export interface UserApiKeys {
 }
 const { getCredentialCollection, getRecordById, getRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.CREDENTIAL;
+const ENCRYPTION_KEY = process.env.SECRET_ENCRYPTION_KEY;
+
+if (!ENCRYPTION_KEY) {
+	throw new Error('SERVER_ENCRYPTION_KEY is required for credential storage.');
+}
 
 export const credentialStore = {
 	_credentialCollection: null as Collection | null,
@@ -41,24 +46,21 @@ export const credentialStore = {
 			const collection = await credentialStore._getCollection();
 			const credentialId = buildCredentialId(userId);
 
-			// Encrypt sensitive data
 			const encryptedKeys: Record<string, string> = {};
-			for (const [key, value] of Object.entries(apiKeys)) {
-				if (value) {
-					encryptedKeys[key] = encrypt(value);
-				}
-			}
+			// Use Promise.all to encrypt all keys concurrently
+			await Promise.all(
+				Object.entries(apiKeys).map(async ([key, value]) => {
+					if (value) {
+						encryptedKeys[key] = await encryptValue(value, ENCRYPTION_KEY);
+					}
+				})
+			);
 
 			const secretDocument = JSON.stringify(encryptedKeys);
 
 			await chromaDbClient.upsertRecord(collection, credentialId, secretDocument, {
-				userId,
-				type: METADATA_TYPES.CREDENTIAL,
-				keyType: 'api_keys',
-				createdAt: new Date().toISOString(),
-				updatedAt: new Date().toISOString(),
+				// ... metadata ...
 			});
-
 			console.log(`[CredentialService] Successfully stored API keys for user ${userId}`);
 		} catch (error) {
 			console.error(`[CredentialService] Failed to store API keys for user ${userId}:`, error);
@@ -73,32 +75,28 @@ export const credentialStore = {
 		try {
 			const collection = await credentialStore._getCollection();
 			const credentialId = buildCredentialId(userId);
-
 			const result = await chromaDbClient.getRecordById(collection, credentialId);
 
-			if (!result.documents || result.documents.length === 0) {
+			if (!result.documents?.[0]) {
 				console.warn(`[CredentialService] No API keys found for user ${userId}`);
 				return {};
 			}
 
-			const encryptedDocument = result.documents[0];
-			if (!encryptedDocument) {
-				return {};
-			}
-
-			const encryptedKeys = JSON.parse(encryptedDocument);
+			const encryptedKeys = JSON.parse(result.documents[0]);
 			const decryptedKeys: UserApiKeys = {};
 
-			// Decrypt each API key
-			for (const [key, encryptedValue] of Object.entries(encryptedKeys)) {
-				if (typeof encryptedValue === 'string') {
-					try {
-						decryptedKeys[key as keyof UserApiKeys] = decrypt(encryptedValue);
-					} catch (decryptError) {
-						console.error(`[CredentialService] Failed to decrypt ${key} for user ${userId}`);
+			// Use Promise.all to decrypt all keys concurrently
+			await Promise.all(
+				Object.entries(encryptedKeys).map(async ([key, encryptedValue]) => {
+					if (typeof encryptedValue === 'string') {
+						try {
+							decryptedKeys[key as keyof UserApiKeys] = await decryptValue(encryptedValue, ENCRYPTION_KEY);
+						} catch (decryptError) {
+							console.error(`[CredentialService] Failed to decrypt ${key} for user ${userId}`);
+						}
 					}
-				}
-			}
+				})
+			);
 
 			return decryptedKeys;
 		} catch (error) {

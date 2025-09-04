@@ -116,7 +116,9 @@ export const termStore = {
 		return newTermMap;
 	},
 
-	storeCharacterTerm: async (termInfo: CharacterTermCdo | CharacterTermInfo): Promise<void> => {
+	storeCharacterTerm: async (
+		termInfo: CharacterTermCdo | CharacterTermInfo
+	): Promise<{ termId: string }> => {
 		const collection = await termStore._getCollection();
 		const now = new Date().toISOString();
 		const isTerm = isCharacterTermInfo(termInfo);
@@ -141,6 +143,7 @@ export const termStore = {
 			console.log(
 				`TermService: Updated cache for term "${metadata.koreanTerm}" in character ${metadata.characterId}.`
 			);
+			return { termId: metadata.termId };
 		} catch (error: any) {
 			handleServiceError(
 				error,
@@ -154,9 +157,11 @@ export const termStore = {
 	 * Stores multiple glossary terms in a single bulk operation.
 	 * @param terms An array of TermCdo or TermInfo objects.
 	 */
-	storeCharacterTerms: async (terms: (CharacterTermCdo | CharacterTermInfo)[]): Promise<void> => {
+	storeCharacterTerms: async (
+		terms: (CharacterTermCdo | CharacterTermInfo)[]
+	): Promise<{ termIds: string[] }> => {
 		if (!terms || terms.length === 0) {
-			return;
+			return { termIds: [] };
 		}
 		const collection = await termStore._getCollection();
 		const now = new Date().toISOString();
@@ -205,6 +210,7 @@ export const termStore = {
 					`TermService: Bulk updated cache for ${characterTerms.length} terms in session ${characterId}.`
 				);
 			}
+			return { termIds: recordsToUpsert.map((r) => r.id) };
 		} catch (error: any) {
 			handleServiceError(
 				error,
@@ -214,7 +220,9 @@ export const termStore = {
 		}
 	},
 
-	storeSessionTerm: async (termInfo: SessionTermCdo | SessionTermInfo): Promise<void> => {
+	storeSessionTerm: async (
+		termInfo: SessionTermCdo | SessionTermInfo
+	): Promise<{ termId: string }> => {
 		const collection = await termStore._getCollection();
 		const now = new Date().toISOString();
 		const isTerm = isSessionTermInfo(termInfo);
@@ -241,6 +249,7 @@ export const termStore = {
 			console.log(
 				`TermService: Updated cache for term "${metadata.koreanTerm}" in session ${metadata.sessionId}.`
 			);
+			return { termId: metadata.termId };
 		} catch (error: any) {
 			handleServiceError(
 				error,
@@ -254,9 +263,11 @@ export const termStore = {
 	 * Stores multiple glossary terms in a single bulk operation.
 	 * @param terms An array of TermCdo or TermInfo objects.
 	 */
-	storeSessionTerms: async (terms: (SessionTermCdo | SessionTermInfo)[]): Promise<void> => {
+	storeSessionTerms: async (
+		terms: (SessionTermCdo | SessionTermInfo)[]
+	): Promise<{ termIds: string[] }> => {
 		if (!terms || terms.length === 0) {
-			return;
+			return { termIds: [] };
 		}
 		const collection = await termStore._getCollection();
 		const now = new Date().toISOString();
@@ -307,6 +318,7 @@ export const termStore = {
 					`TermService: Bulk updated cache for ${sessionTerms.length} terms in session ${sessionId}.`
 				);
 			}
+			return { termIds: recordsToUpsert.map((r) => r.id) };
 		} catch (error: any) {
 			handleServiceError(
 				error,

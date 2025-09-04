@@ -74,6 +74,16 @@ ${formattedTurns}
 `;
 };
 
+const LANGUAGE_ENFORCEMENT_DIRECTIVES: Record<LangCode, string> = {
+	kor: `🌐 **중요**: 사용자의 입력 언어와 정확히 동일한 언어로 답변하세요. 다른 언어로 전환하지 마세요.`,
+	eng: `🌐 **CRITICAL**: Always respond in the same language as the user's input. Never switch languages.`,
+	// jpn: `🌐 **重要**: ユーザーの入力言語と全く同じ言語で返答してください。言語を切り替えないでください。`,
+	// chn: `🌐 **重要**: 必须使用与用户输入完全相同的语言回答。请勿切换语言。`,
+	// spa: `🌐 **CRÍTICO**: Responde siempre en el mismo idioma que la entrada del usuario. Nunca cambies de idioma.`,
+	// fra: `🌐 **CRITIQUE**: Répondez toujours dans la même langue que l'entrée de l'utilisateur. Ne changez jamais de langue.`,
+	// deu: `🌐 **KRITISCH**: Antworten Sie immer in derselben Sprache wie die Benutzereingabe. Wechseln Sie niemals die Sprache.`,
+} as const;
+
 /**
  * Token-optimized system prompt that preserves ALL content while maximizing structural efficiency.
  * Korean-aware optimization that respects sentence structure and meaning.
@@ -202,6 +212,10 @@ export const buildStaticSystemPrompt = (
 		profileInfo.showName
 	);
 
+	// === LANGUAGE ENFORCEMENT (DYNAMIC) ===
+	const languageEnforcement =
+		LANGUAGE_ENFORCEMENT_DIRECTIVES[langCode] || LANGUAGE_ENFORCEMENT_DIRECTIVES['eng'];
+
 	// === CORE DIRECTIVES (ULTRA-CONDENSED) ===
 	const coreRule =
 		langCode === 'kor'
@@ -223,16 +237,7 @@ export const buildStaticSystemPrompt = (
 • 행동, 환경, 움직임 상세 묘사
 • 모든 인물 외모 독창적이고 구체적으로 서술
 • 심리 상태 자연스럽고 현실적으로 표현
-${
-	isScene
-		? enhanceScenePrompt(userName, langCode)
-		: // 		`
-		  // **성애 장면:**
-		  // • 물리적 세부사항과 인과관계 묘사
-		  // • 성적 자극에 대한 창의적 반응 서술
-		  // • 해부학적 특수성과 감각적 사실주의 적용`
-		  ''
-}
+${isScene ? enhanceScenePrompt(userName, langCode) : ''}
 `
 			: `
 **Rules:**
@@ -257,7 +262,9 @@ ${
 }
 `;
 
-	return `${coreRule}
+	return `${languageEnforcement}
+
+${coreRule}
 
 **${charName}:**
 ${instructionForBackend}

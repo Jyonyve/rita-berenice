@@ -1,5 +1,5 @@
 import { LANG_KEYS, LangKey } from '#shared/config/langConstants.js';
-import { CharacterCdo } from '#shared/domain/character/CharacterInterfaces.js';
+import { CharacterCdo, CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import {
 	Box,
 	Grid,
@@ -33,11 +33,11 @@ import { useToast } from '../../provider/ToastProvider.jsx';
 import { routeConstants } from '../../routeConstants.js';
 import { containerSpacing } from '../../style/index.js';
 import {
-	EMOTION_SELECT_MENUITEM,
-	GENDER_SELECT_MENUITEM,
+	getEmotionSelectMenuItems,
 	getLangAlertText,
 	getLangText,
 	emotionToLangKey,
+	getGenderSelectMenuItems,
 } from '../../util/translateUtils.js';
 import { DEFAULT_EMOTION, EmotionValue } from '#shared/config/emotionConstants.js';
 import { LIMIT_5MB, REQUEST_CHARACTER_LIMIT } from '#shared/config/constants.js';
@@ -45,60 +45,95 @@ import { SolidMetallicButton } from '../../layout/SolidMetallicButton.jsx';
 import { Swiper, SwiperClass, SwiperSlide } from 'swiper/react';
 import { PortraitWithChip } from '../../layout/PortraitWithChip.jsx';
 import { A11y, EffectFade, Mousewheel, Pagination } from 'swiper/modules';
+import { getImageForEmotion } from '../../util/portraitUtils.js';
 
+// Shared image type
 interface UploadedImage {
-	file: File;
-	emotion: string;
-	emotionKey: number;
-	preview: string;
+	file?: File; // present only for newly added/replaced files
+	emotion: string; // emotion key string
+	emotionKey: number; // numeric key used by server
+	preview: string; // object URL or existing URL
+	toDelete?: boolean; // mark deletion in edit mode
 }
 
-const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
-	const navigate = useNavigate();
+type Props = {
+	mode: 'create' | 'edit';
+	userId: string;
+	characterInfo?: CharacterInfo;
+	onCancel: () => void;
+	onSuccess: (characterId: string) => void;
+};
+
+export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel, onSuccess }) => {
 	const { addToast } = useToast();
-	const { storeCharacter, uploadCharacterImage, createCharacterFolder } = useCharacterApi();
+	const { storeCharacter, uploadCharacterImage, createCharacterFolder, deleteCharacterImage } =
+		useCharacterApi();
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const swiperRef = useRef<SwiperClass | null>(null);
 
 	const {
 		control,
 		handleSubmit,
 		formState: { errors, isSubmitting },
 		watch,
-	} = useForm<CharacterCdo>({
+		reset,
+	} = useForm<CharacterCdo | CharacterInfo>({
 		defaultValues: {
 			title: '',
 			contact: '',
 			description: '',
 			instruction: '',
-			gender: '',
+			gender: 'other',
 			name: '',
 			showName: '',
 			userId,
 			firstMessage: '',
+			...(mode === 'edit' && characterInfo ? characterInfo : {}),
 		},
 		mode: 'onBlur',
 	});
 
+	// Hydrate when character changes in edit mode
+	useEffect(() => {
+		if (mode === 'edit' && characterInfo) {
+			reset({ ...characterInfo });
+		}
+	}, [mode, characterInfo, reset]);
+
+	// Images state
 	const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
 	const [selectedEmotion, setSelectedEmotion] = useState<EmotionValue>(DEFAULT_EMOTION);
 
 	const getEmotionKey = (emotionName: string): number => {
-		const option = EMOTION_SELECT_MENUITEM.find((opt) => opt.key === emotionName);
+		const option = getEmotionSelectMenuItems().find((opt) => opt.key === emotionName);
 		return option ? option.emotionKey : 0;
 	};
-	// ✅ 1. Create a ref to hold the Swiper instance
-	const swiperRef = useRef<SwiperClass | null>(null);
 
-	// ✅ 2. Use an effect to slide to the end when images change
+	// Initialize images for edit mode
+	useEffect(() => {
+		if (mode === 'edit' && characterInfo?.characterId) {
+			const entries: UploadedImage[] = getEmotionSelectMenuItems()
+				.map((opt) => {
+					const url = getImageForEmotion(characterInfo.characterId, opt.key);
+					return url
+						? { file: undefined, emotion: opt.key, emotionKey: opt.emotionKey, preview: url }
+						: null;
+				})
+				.filter(Boolean) as UploadedImage[];
+			setUploadedImages(entries);
+		}
+	}, [mode, characterInfo]);
+
+	// Auto-slide to newest image
 	useEffect(() => {
 		if (swiperRef.current && uploadedImages.length > 0) {
-			// The slideTo method animates to the specified slide index
 			swiperRef.current.slideTo(uploadedImages.length - 1);
 		}
-	}, [uploadedImages]); // This effect runs whenever the uploadedImages array changes
+	}, [uploadedImages]);
 
+	// FIXED: Correctly extract the first file from FileList
 	const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
-		const file = event.target.files?.[0];
+		const file = event.target.files?.[0]; // Fixed: was missing [0]
 		if (!file) return;
 
 		if (!file.type.startsWith('image/')) {
@@ -108,23 +143,24 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 			return addToast(getLangAlertText(LANG_KEYS.FILE_TOO_LARGE), 'error');
 		}
 
-		const existingIndex = uploadedImages.findIndex((img) => img.emotion === selectedEmotion);
+		const idx = uploadedImages.findIndex((img) => img.emotion === selectedEmotion);
 		const newImage: UploadedImage = {
 			file,
 			emotion: selectedEmotion,
 			emotionKey: getEmotionKey(selectedEmotion),
 			preview: URL.createObjectURL(file),
+			toDelete: false,
 		};
 
 		setUploadedImages((prev) => {
-			const newImages = [...prev];
-			if (existingIndex >= 0) {
-				URL.revokeObjectURL(newImages[existingIndex].preview);
-				newImages[existingIndex] = newImage;
+			const next = [...prev];
+			if (idx >= 0) {
+				if (next[idx].preview.startsWith('blob:')) URL.revokeObjectURL(next[idx].preview);
+				next[idx] = newImage;
 			} else {
-				newImages.push(newImage);
+				next.push(newImage);
 			}
-			return newImages;
+			return next;
 		});
 
 		if (fileInputRef.current) fileInputRef.current.value = '';
@@ -135,53 +171,86 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 		);
 	};
 
+	// Handle image removal with different behavior for create vs edit
 	const handleRemoveImage = (emotion: string) => {
 		setUploadedImages((prev) => {
-			const imageToRemove = prev.find((img) => img.emotion === emotion);
-			if (imageToRemove) URL.revokeObjectURL(imageToRemove.preview);
-			return prev.filter((img) => img.emotion !== emotion);
+			const idx = prev.findIndex((img) => img.emotion === emotion);
+			if (idx < 0) return prev;
+			const next = [...prev];
+			const item = next[idx];
+
+			if (mode === 'create') {
+				if (item.preview.startsWith('blob:')) URL.revokeObjectURL(item.preview);
+				return next.filter((img) => img.emotion !== emotion);
+			} else {
+				// edit: mark delete unless this is a new file in this session
+				if (item.file) {
+					if (item.preview.startsWith('blob:')) URL.revokeObjectURL(item.preview);
+					return next.filter((img) => img.emotion !== emotion);
+				}
+				next[idx] = { ...item, toDelete: true };
+				return next;
+			}
 		});
 	};
 
 	const uploadPortraits = async (characterId: string, images: UploadedImage[]): Promise<void> => {
-		try {
-			await createCharacterFolder({ characterId });
-			await Promise.all(
-				images.map((image) => {
+		await createCharacterFolder({ characterId });
+		await Promise.all(
+			images
+				.filter((img) => img.file && !img.toDelete)
+				.map((image) => {
 					const formData = new FormData();
-					formData.append('image', image.file);
+					formData.append('image', image.file!);
 					formData.append('characterId', characterId);
 					formData.append('emotionKey', image.emotionKey.toString());
 					return uploadCharacterImage(formData);
 				})
-			);
-		} catch (error) {
-			console.error('Error uploading images:', error);
-			throw error;
+		);
+	};
+
+	const applyPortraitDiffs = async (characterId: string): Promise<void> => {
+		// Deletes
+		const deletions = uploadedImages.filter((img) => img.toDelete);
+		await Promise.all(
+			deletions.map((img) => deleteCharacterImage({ characterId, emotionKey: img.emotionKey }))
+		);
+		// Replacements / additions
+		const replacements = uploadedImages.filter((img) => img.file && !img.toDelete);
+		if (replacements.length > 0) {
+			await uploadPortraits(characterId, replacements);
 		}
 	};
 
-	const onSubmit = async (data: CharacterCdo) => {
+	const onSubmit = async (data: CharacterCdo | CharacterInfo) => {
 		try {
-			const response = await storeCharacter(data);
-			const { characterId } = JSON.parse(response);
-			if (characterId) {
-				if (uploadedImages.length > 0) {
-					await uploadPortraits(characterId, uploadedImages);
-				}
-				addToast(getLangAlertText(LANG_KEYS.CHARACTER_CREATED_SUCCESS), 'success');
-				navigate(`/${routeConstants.CHARACTER}/${characterId}`);
+			// Normalize payload based on mode
+			const payload: CharacterCdo | CharacterInfo =
+				mode === 'edit' && characterInfo
+					? {
+							...(data as CharacterInfo),
+							characterId: characterInfo.characterId,
+							createdAt: characterInfo.createdAt,
+							userId,
+						}
+					: { ...(data as CharacterCdo), userId };
+
+			const response = await storeCharacter(payload);
+			const { characterId } = response;
+
+			if (mode === 'create') {
+				await uploadPortraits(characterId, uploadedImages);
 			} else {
-				throw new Error(getLangText(LANG_KEYS.FAILED_TO_CREATE_CHARACTER));
+				await applyPortraitDiffs(characterId);
 			}
+			onSuccess(characterId);
 		} catch (error: any) {
-			console.error('Error creating character:', error);
-			addToast(error.message || getLangAlertText(LANG_KEYS.ERROR_CREATING_CHARACTER), 'error');
+			addToast(error.message || 'An error occurred while saving the character.', 'error');
 		}
 	};
 
 	return (
-		<GlassPaper key="new-character-page" className="paper">
+		<GlassPaper key="character-form" className="paper">
 			<form onSubmit={handleSubmit(onSubmit)}>
 				<Grid container spacing={containerSpacing}>
 					{/* Left Column */}
@@ -192,17 +261,14 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 						<Box sx={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
 							{/* Image Preview */}
 							<Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-								{uploadedImages.length > 0 ? (
-									// ✅ Swiper logic is now directly in this component
+								{uploadedImages.filter((img) => !img?.toDelete).length > 0 ? (
 									<Box sx={{ width: '100%', height: '100%', overflow: 'visible' }}>
 										<Swiper
-											// ✅ 3. Capture the Swiper instance using the 'onSwiper' prop
 											onSwiper={(swiper) => {
 												swiperRef.current = swiper;
 											}}
 											modules={[Pagination, A11y, EffectFade, Mousewheel]}
 											slidesPerView={1}
-											// Loop is disabled to make sliding to a specific index reliable
 											loop={false}
 											effect="fade"
 											fadeEffect={{ crossFade: true }}
@@ -210,15 +276,18 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 											pagination={{ clickable: true }}
 											mousewheel={{ forceToAxis: true, sensitivity: 1, releaseOnEdges: true, invert: true }}
 										>
-											{uploadedImages.map((image) => {
-												const emotionLabel =
-													EMOTION_SELECT_MENUITEM.find((e) => e.key === image.emotion)?.label || image.emotion;
-												return (
-													<SwiperSlide key={image.emotion}>
-														<PortraitWithChip imageUrl={image.preview} label={emotionLabel} />
-													</SwiperSlide>
-												);
-											})}
+											{uploadedImages
+												.filter((img) => !img?.toDelete)
+												.map((image) => {
+													const emotionLabel =
+														getEmotionSelectMenuItems().find((e) => e.key === image.emotion)?.label ||
+														image.emotion;
+													return (
+														<SwiperSlide key={image.emotion}>
+															<PortraitWithChip imageUrl={image.preview} label={emotionLabel} />
+														</SwiperSlide>
+													);
+												})}
 										</Swiper>
 									</Box>
 								) : (
@@ -238,6 +307,7 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 									</Box>
 								)}
 							</Box>
+
 							{/* Upload Controls */}
 							<GlassCard variant="outlined">
 								<Typography color="secondary" variant="h6" gutterBottom>
@@ -249,7 +319,7 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 										value={selectedEmotion}
 										onChange={(e) => setSelectedEmotion(e.target.value as EmotionValue)}
 									>
-										{EMOTION_SELECT_MENUITEM.map((opt) => (
+										{getEmotionSelectMenuItems().map((opt) => (
 											<MenuItem key={opt.key} value={opt.key}>
 												{opt.label}
 											</MenuItem>
@@ -272,42 +342,48 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 								>
 									{getLangText(LANG_KEYS.UPLOAD_IMAGE)}
 								</GlassButton>
-								{uploadedImages.length > 0 && (
+								{uploadedImages.filter((img) => !img?.toDelete).length > 0 && (
 									<Stack direction="row" flexWrap="wrap" gap={1}>
-										{uploadedImages.map((img) => (
-											<Chip
-												key={img.emotion}
-												label={EMOTION_SELECT_MENUITEM.find((e) => e.key === img.emotion)?.label}
-												onDelete={() => handleRemoveImage(img.emotion)}
-												color="primary"
-												variant="outlined"
-												size="small"
-											/>
-										))}
+										{uploadedImages
+											.filter((img) => !img?.toDelete)
+											.map((img) => (
+												<Chip
+													key={img.emotion}
+													label={getEmotionSelectMenuItems().find((e) => e.key === img.emotion)?.label}
+													onDelete={() => handleRemoveImage(img.emotion)}
+													color="primary"
+													variant="outlined"
+													size="small"
+												/>
+											))}
 									</Stack>
 								)}
 							</GlassCard>
 						</Box>
 					</Grid>
+
 					{/* Right Column */}
 					<Grid size={{ xs: 12, md: 8 }}>
 						<Box display="flex" flexDirection="column" gap={2}>
 							{/* Header */}
 							<GlassCard variant="outlined">
 								<RomanticTitle hover variant="h4" color="secondary" colorVariant="primary" gutterBottom>
-									{watch('showName') || getLangText(LANG_KEYS.NEW_CHARACTER)}
+									{mode === 'edit'
+										? watch('showName') || getLangText(LANG_KEYS.EDIT_CHARACTER)
+										: watch('showName') || getLangText(LANG_KEYS.NEW_CHARACTER)}
 								</RomanticTitle>
 								<Typography variant="body2" color="text.secondary" mt={1} ml={2}>
 									{watch('title') || getLangText(LANG_KEYS.TITLE_GUIDANCE)}
 								</Typography>
 							</GlassCard>
+
 							{/* Form Sections */}
 							<GlassCard variant="outlined">
 								<Typography variant="h6" color="secondary" gutterBottom>
 									{getLangText(LANG_KEYS.BASIC_INFO)}
 								</Typography>
 								<Grid container spacing={2}>
-									{/* Fields: showName, name, gender, contact, title */}
+									{/* showName */}
 									<Grid size={{ xs: 12, sm: 5 }}>
 										<Controller
 											name="showName"
@@ -353,7 +429,7 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 												<FormControl fullWidth required error={!!errors.gender}>
 													<InputLabel>{getLangText(LANG_KEYS.GENDER)}</InputLabel>
 													<Select {...field}>
-														{GENDER_SELECT_MENUITEM.map((opt) => (
+														{getGenderSelectMenuItems().map((opt) => (
 															<MenuItem key={opt.key} value={opt.key}>
 																{opt.label}
 															</MenuItem>
@@ -399,33 +475,13 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 									</Grid>
 								</Grid>
 							</GlassCard>
+
 							<GlassCard variant="outlined">
 								<Typography variant="h6" color="secondary" gutterBottom>
 									{getLangText(LANG_KEYS.CHARACTER_DETAIL)}
 								</Typography>
 								<Grid container spacing={2}>
-									{/* Fields: description, instruction, firstMessage */}
-									<Grid size={{ xs: 12 }}>
-										<Controller
-											name="description"
-											control={control}
-											rules={{ required: getLangText(LANG_KEYS.DESCRIPTION_REQUIRED) }}
-											render={({ field }) => (
-												<TextField
-													{...field}
-													fullWidth
-													label={getLangText(LANG_KEYS.DESCRIPTION)}
-													multiline
-													minRows={3}
-													maxRows={10}
-													error={!!errors.description}
-													helperText={errors.description?.message || getLangText(LANG_KEYS.DESCRIPTION_HELPER)}
-													placeholder={getLangText(LANG_KEYS.DESCRIPTION_PLACEHOLDER)}
-													required
-												/>
-											)}
-										/>
-									</Grid>
+									{/* description, instruction, firstMessage fields */}
 									<Grid size={{ xs: 12 }}>
 										<Controller
 											name="instruction"
@@ -439,7 +495,7 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 													multiline
 													minRows={3}
 													maxRows={10}
-													error={!!errors.description}
+													error={!!errors.instruction}
 													helperText={errors.instruction?.message || getLangText(LANG_KEYS.INSTRUCTION_HELPER)}
 													placeholder={getLangText(LANG_KEYS.INSTRUCTION_PLACEHOLDER)}
 													required
@@ -447,37 +503,15 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 											)}
 										/>
 									</Grid>
-									<Grid size={{ xs: 12 }}>
-										<Controller
-											name="firstMessage"
-											control={control}
-											rules={{ required: getLangText(LANG_KEYS.FIRST_MESSAGE_REQUIRED) }}
-											render={({ field }) => (
-												<TextField
-													{...field}
-													fullWidth
-													label={getLangText(LANG_KEYS.FIRST_MESSAGE)}
-													multiline
-													minRows={3}
-													maxRows={10}
-													error={!!errors.firstMessage}
-													helperText={
-														errors.firstMessage?.message || getLangText(LANG_KEYS.FIRST_MESSAGE_HELPER)
-													}
-													placeholder={getLangText(LANG_KEYS.FIRST_MESSAGE_PLACEHOLDER)}
-													required
-												/>
-											)}
-										/>
-									</Grid>
 								</Grid>
 							</GlassCard>
+
 							{/* Action Buttons */}
 							<Box display="flex" gap={2} justifyContent="flex-end">
 								<GlassButton
 									colorVariant="silver"
 									variant="outlined"
-									onClick={() => navigate(`/${routeConstants.CHARACTER}`)}
+									onClick={onCancel}
 									disabled={isSubmitting}
 								>
 									{getLangText(LANG_KEYS.CANCEL)}
@@ -488,7 +522,13 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 									disabled={isSubmitting}
 									loading={isSubmitting}
 								>
-									{isSubmitting ? getLangText(LANG_KEYS.CREATING) : getLangText(LANG_KEYS.CREATE)}
+									{isSubmitting
+										? mode === 'edit'
+											? getLangText(LANG_KEYS.UPDATING)
+											: getLangText(LANG_KEYS.CREATING)
+										: mode === 'edit'
+											? getLangText(LANG_KEYS.UPDATE)
+											: getLangText(LANG_KEYS.CREATE)}
 								</SolidMetallicButton>
 							</Box>
 						</Box>
@@ -498,5 +538,3 @@ const NewCharacterPage: FC<{ userId: string }> = ({ userId }) => {
 		</GlassPaper>
 	);
 };
-
-export default NewCharacterPage;

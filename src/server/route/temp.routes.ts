@@ -28,22 +28,17 @@ const collectionType = COLLECTIONS.TEMP; // For validating sessionId if it were 
  */
 router.post(
 	genRoutePattern('saveTempChatTurn'),
-	asyncHandler(
-		async (
-			req: Request<object, { message: string }, TempChatTurn>,
-			res: Response<{ message: string }>
-		): Promise<void> => {
-			const { sessionId, sequence } = req.body;
-			validateServiceId(sessionId, collectionType);
-			validateRequestData(req.body, 'body', ['sessionId', 'sequence', 'chatTurnSets']);
+	asyncHandler(async (req: Request, res: Response<{ tempTurnId: string }>): Promise<void> => {
+		const { sessionId, sequence } = req.body;
+		validateServiceId(sessionId, collectionType);
+		validateRequestData(req.body, 'body', ['sessionId', 'sequence', 'chatTurnSets']);
 
-			const path = genRoutePattern('saveTempChatTurn');
-			console.log(`API HIT: POST ${path} for session ${sessionId}, sequence ${sequence}`);
+		const path = genRoutePattern('saveTempChatTurn');
+		console.log(`API HIT: POST ${path} for session ${sessionId}, sequence ${sequence}`);
 
-			await tempStore.saveTempChatTurn(req.body);
-			res.status(200).json({ message: 'Temporary chat turn saved successfully.' });
-		}
-	)
+		const response = await tempStore.saveTempChatTurn(req.body);
+		res.status(200).json(response);
+	})
 );
 
 /**
