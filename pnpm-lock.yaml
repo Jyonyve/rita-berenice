@@ -117,14 +117,14 @@ importers:
         specifier: ^3.0.1
         version: 3.0.1
       supertokens-auth-react:
-        specifier: ^0.49.1
-        version: 0.49.1(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(supertokens-web-js@0.15.0)
+        specifier: ^0.50.0
+        version: 0.50.0(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(supertokens-web-js@0.16.0)
       supertokens-node:
         specifier: ^23.0.1
         version: 23.0.1
       supertokens-web-js:
-        specifier: ^0.15.0
-        version: 0.15.0
+        specifier: ^0.16.0
+        version: 0.16.0
       swiper:
         specifier: ^11.2.10
         version: 11.2.10
@@ -3779,13 +3779,13 @@ packages:
   stylis@4.2.0:
     resolution: {integrity: sha512-Orov6g6BB1sDfYgzWfTHDOxamtX1bE/zo104Dh9e6fqJ3PooipYyfJ0pUmrZO2wAvO8YbEyeFrkV91XTsGMSrw==}
 
-  supertokens-auth-react@0.49.1:
-    resolution: {integrity: sha512-jjZHSBMW1Gg6rs8W4WY4HQ8fS75/+wBqfAiTaThkXiF+HujcCOc2ujm0y0kny5scwUziArMb0cHevPghaw1bSw==}
+  supertokens-auth-react@0.50.0:
+    resolution: {integrity: sha512-XEjpDY2kOhwoC7PNzjFZI/7XhABrzWVF90fS6LcsGiKQEGMqCKl9qGUqN+PrH6X8h1OLYxCGrlRBdVwKUgu4JA==}
     engines: {node: '>=16.0.0', npm: '>=8'}
     peerDependencies:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
-      supertokens-web-js: ^0.15
+      supertokens-web-js: ^0.16.0
 
   supertokens-js-override@0.0.4:
     resolution: {integrity: sha512-r0JFBjkMIdep3Lbk3JA+MpnpuOtw4RSyrlRAbrzMcxwiYco3GFWl/daimQZ5b1forOiUODpOlXbSOljP/oyurg==}
@@ -3793,8 +3793,8 @@ packages:
   supertokens-node@23.0.1:
     resolution: {integrity: sha512-cCuY9Y5Mj93Pg1ktbqilouWgAoQWniQauftB4Ef6rfOchogx13XTo1pNP14zezn2rSf7WIPb9iaZb5zif6TKtQ==}
 
-  supertokens-web-js@0.15.0:
-    resolution: {integrity: sha512-IJB1Z+SI5gsWwunvrLyhbpyVaetQt23QlMoD6Gy7+OcmJ8EaPO+knhZnqzQAppe4HiNhROAiGZb7gUTJgXonzg==}
+  supertokens-web-js@0.16.0:
+    resolution: {integrity: sha512-wuIdlVJtOsx4ZX0kCyl8lxmmAodXLlMAniZEHyVhsH2fhersh7bMrHpvgN9WoC470HYNC22qpHdlJngvyh/cSA==}
 
   supertokens-website@20.1.6:
     resolution: {integrity: sha512-WSehco2PsrFp4WY7h6tDutYyi2nPgJS8lahUadcL/cpBqgEuZ3pjnvN1NDASSNSTfXeO1smm3HrvvLZG5C7qHA==}
@@ -8455,7 +8455,7 @@ snapshots:
 
   stylis@4.2.0: {}
 
-  supertokens-auth-react@0.49.1(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(supertokens-web-js@0.15.0):
+  supertokens-auth-react@0.50.0(react-dom@19.1.1(react@19.1.1))(react@19.1.1)(supertokens-web-js@0.16.0):
     dependencies:
       '@simplewebauthn/types': 12.0.0
       intl-tel-input: 17.0.21
@@ -8464,7 +8464,7 @@ snapshots:
       react-dom: 19.1.1(react@19.1.1)
       react-qr-code: 2.0.18(react@19.1.1)
       supertokens-js-override: 0.0.4
-      supertokens-web-js: 0.15.0
+      supertokens-web-js: 0.16.0
 
   supertokens-js-override@0.0.4: {}
 
@@ -8489,7 +8489,7 @@ snapshots:
       - encoding
       - supports-color
 
-  supertokens-web-js@0.15.0:
+  supertokens-web-js@0.16.0:
     dependencies:
       '@simplewebauthn/browser': 13.1.2
       supertokens-js-override: 0.0.4

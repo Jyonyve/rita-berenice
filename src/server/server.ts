@@ -31,8 +31,9 @@ import loreRoutes from './route/lore.routes.js';
 import termRoutes from './route/term.routes.js';
 import personaRoutes from './route/persona.routes.js';
 import orchestrationRoutes from './route/orchestration.routes.js';
-import { ApiErrorResponse } from '#shared/api/ModuleResponse.js';
+import loginRoutes from './route/login.routes.js';
 import sessionRoutes from './route/session.routes.js';
+import { ApiErrorResponse } from '#shared/api/ModuleResponse.js';
 import { ApiError } from '#shared/domain/error/errors.js';
 import { decryptValue } from '#shared/util/cryptoUtils.js';
 
@@ -211,6 +212,7 @@ async function createServer() {
 	app.use(`${BASE_API}/${MODULE_NAMES.SESSION}`, sessionRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.PERSONA}`, personaRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.ORCHESTRATION}`, orchestrationRoutes);
+	app.use(`${BASE_API}/${MODULE_NAMES.LOGIN}`, loginRoutes);
 
 	// --- SSR Catch-all Handler ---
 	app.get('/{*splat}', async (req: Request, res: Response, next: NextFunction) => {
