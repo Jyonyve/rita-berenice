@@ -15,7 +15,10 @@ import supertokens from 'supertokens-node';
 import Session from 'supertokens-node/recipe/session';
 import EmailPassword from 'supertokens-node/recipe/emailpassword';
 import Dashboard from 'supertokens-node/recipe/dashboard';
-import { middleware, errorHandler } from 'supertokens-node/framework/express';
+import {
+	middleware as supertokensMiddleware,
+	errorHandler as supertokensErrorHandler,
+} from 'supertokens-node/framework/express';
 import cors from 'cors';
 import sirv from 'sirv';
 import { MODULE_NAMES, APPNAME } from '#shared/config/constants.js';
@@ -53,6 +56,40 @@ const templateProdHtmlBuilt = path.resolve(__dirname, '../client/index.html');
 const SUPERTOKENS_DOMAIN = process.env.SUPERTOKENS_DOMAIN;
 const DECRYPTION_KEY = process.env.SECRET_ENCRYPTION_KEY;
 if (!DECRYPTION_KEY) throw new Error('SECRET_ENCRYPTION_KEY is required.');
+
+// --- Language detection middleware (Korean-priority) ---
+const detectLanguageMiddleware = (req: Request, res: Response, next: NextFunction) => {
+	let detectedLang: 'kor' | 'eng' = 'eng';
+
+	// Priority 1: Use Express's built-in acceptsLanguages method (most reliable)
+	const acceptedLang = req.acceptsLanguages('ko', 'en') || 'en';
+
+	if (acceptedLang === 'ko') {
+		detectedLang = 'kor';
+	}
+
+	// Priority 2: Manual header check as fallback
+	if (detectedLang !== 'kor') {
+		const acceptLang = req.headers['accept-language'] || '';
+
+		if (acceptLang.toLowerCase().includes('ko')) {
+			detectedLang = 'kor';
+		}
+	}
+
+	// Priority 3: Check Cloudflare country header
+	if (detectedLang !== 'kor') {
+		const cfCountry = req.headers['cf-ipcountry'] as string;
+		if (cfCountry === 'KR') {
+			detectedLang = 'kor';
+		}
+	}
+
+	res.locals.detectedLang = detectedLang;
+	res.cookie('server-detected-lang', detectedLang, { maxAge: 24 * 60 * 60 * 1000, httpOnly: false });
+
+	next();
+};
 
 async function createServer() {
 	if (!SUPERTOKENS_DOMAIN) {
@@ -119,50 +156,9 @@ async function createServer() {
 		})
 	);
 	// --- Core Middleware ---
-	app.use(middleware());
+	app.use(supertokensMiddleware());
 	app.use(compression()); // Apply gzip compression
 	app.use(express.json()); // Parse JSON request bodies
-
-	// --- Language detection middleware (Korean-priority) ---
-	// --- Language detection middleware (Korean-priority) ---
-	const detectLanguageMiddleware = (req: Request, res: Response, next: NextFunction) => {
-		let detectedLang: 'kor' | 'eng' = 'eng';
-
-		// Priority 1: Use Express's built-in acceptsLanguages method (most reliable)
-		const acceptedLang = req.acceptsLanguages('ko', 'en') || 'en';
-
-		if (acceptedLang === 'ko') {
-			detectedLang = 'kor';
-		}
-
-		// Priority 2: Manual header check as fallback
-		if (detectedLang !== 'kor') {
-			const acceptLang = req.headers['accept-language'] || '';
-
-			if (acceptLang.toLowerCase().includes('ko')) {
-				detectedLang = 'kor';
-			}
-		}
-
-		// Priority 3: Check Cloudflare country header
-		if (detectedLang !== 'kor') {
-			const cfCountry = req.headers['cf-ipcountry'] as string;
-			if (cfCountry === 'KR') {
-				detectedLang = 'kor';
-			}
-		}
-
-		res.locals.detectedLang = detectedLang;
-		res.cookie('server-detected-lang', detectedLang, {
-			maxAge: 24 * 60 * 60 * 1000,
-			httpOnly: false,
-		});
-
-		next();
-	};
-
-	app.use(detectLanguageMiddleware);
-
 	app.use(detectLanguageMiddleware);
 
 	// --- Vite Development Server Middleware (Development ONLY) ---
@@ -215,7 +211,6 @@ async function createServer() {
 	app.use(`${BASE_API}/${MODULE_NAMES.SESSION}`, sessionRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.PERSONA}`, personaRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.ORCHESTRATION}`, orchestrationRoutes);
-	app.use(errorHandler());
 
 	// --- SSR Catch-all Handler ---
 	app.get('/{*splat}', async (req: Request, res: Response, next: NextFunction) => {
@@ -290,6 +285,8 @@ async function createServer() {
 			next(e); // Pass error to default handler
 		}
 	});
+
+	app.use(supertokensErrorHandler());
 
 	// --- Route-level 404 handler (MUST be after all routes and SSR) ---
 	app.use((req: Request, res: Response, next: NextFunction) => {
