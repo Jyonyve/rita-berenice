@@ -13,6 +13,7 @@ import { useSessionContext } from 'supertokens-auth-react/recipe/session/index.j
 import { signOut } from 'supertokens-auth-react/recipe/session/index.js';
 import { UserInfo, UserCdo } from '#shared/domain/user/UserInterfaces.js';
 import { useUserApi } from '../hook/api/useUserApi.js';
+import { cryptoState } from '../cryptoState.js';
 
 // --- Define the shape of our unified context ---
 interface AuthContextType {
@@ -51,18 +52,40 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 	const [userProfile, setUserProfile] = useState<UserInfo>();
 	const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
 
+	// --- NEW: Public Key State Management ---
+	useEffect(() => {
+		async function fetchAndStoreKey() {
+			try {
+				const response = await fetch('/api/login/get-public-key');
+				if (!response.ok) {
+					throw new Error(`Failed to fetch public key: ${response.statusText}`);
+				}
+				const jwk = await response.json();
+				const key = await window.crypto.subtle.importKey(
+					'jwk',
+					jwk,
+					{ name: 'RSA-OAEP', hash: 'SHA-256' },
+					true,
+					['encrypt']
+				);
+				// --- CRITICAL: Store the key in the shared state object ---
+				cryptoState.publicKey = key;
+			} catch (error) {
+				console.error('Failed to fetch public key:', error);
+			}
+		}
+		fetchAndStoreKey();
+	}, []);
+
 	// 5. Function to create user profile using existing storeUser
 	const createUserProfile = async (): Promise<void> => {
 		const email = (!session.loading && session.accessTokenPayload?.email) || '';
 		if (!userId) throw new Error('No user ID available');
 		if (!email) throw new Error('No email available');
-		// Get email from SuperTokens session
-		// Use existing storeUser mutation
 		await storeUser({ userId, email });
 		const { data: userRes } = getUser(userId);
 		const info = userRes?.userInfo;
 
-		// Update local state
 		setUserProfile(info);
 		setNeedsProfileSetup(false);
 	};

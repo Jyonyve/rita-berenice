@@ -41,6 +41,7 @@ export const MODULE_NAMES = {
 	PERSONA: 'persona',
 	ORCHESTRATION: 'orchestration',
 	USER: 'user',
+	LOGIN: 'login',
 } as const;
 export type MODULE_TYPES = (typeof MODULE_NAMES)[keyof typeof MODULE_NAMES];
 

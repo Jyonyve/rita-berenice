@@ -5,18 +5,32 @@ name: Fly Deploy Rita-Berenice
 on:
  push:
   branches:
-   - main # Change this to 'master' if that is your default branch
+   - main # Make sure this is your default branch
 
 jobs:
  deploy:
   name: Fly Deploy Rita-Berenice
   runs-on: ubuntu-latest
-  concurrency: deploy-group # Optional: Ensures only one deployment runs at a time
+
+  # 1. Associate the job with your 'production' environment
+  # This makes environment-specific vars and secrets available
+  environment: production
+
+  concurrency: deploy-group
+
   steps:
-   - uses: actions/checkout@v4
+   - name: Checkout repository
+     uses: actions/checkout@v4
 
-   - uses: superfly/flyctl-actions/setup-flyctl@master
+   - name: Setup Fly.io
+     uses: superfly/flyctl-actions/setup-flyctl@master
 
-   - run: flyctl deploy --remote-only -a rita-berenice
+   # 2. Update the deploy command with build arguments
+   - name: Deploy to Fly.io
+     run: |
+      flyctl deploy --remote-only -a rita-berenice \
+        --build-arg VITE_APP_ENV=production \
+        --build-arg VITE_API_DOMAIN='${{ vars.VITE_API_DOMAIN }}' \
+        --build-arg VITE_APP_DOMAIN='${{ vars.VITE_APP_DOMAIN }}' \
      env:
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
