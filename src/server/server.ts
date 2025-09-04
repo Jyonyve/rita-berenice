@@ -14,7 +14,11 @@ import { createServer as createViteServer, type ViteDevServer } from 'vite';
 import supertokens from 'supertokens-node';
 import Session from 'supertokens-node/recipe/session';
 import EmailPassword from 'supertokens-node/recipe/emailpassword';
-import { middleware, errorHandler } from 'supertokens-node/framework/express';
+import Dashboard from 'supertokens-node/recipe/dashboard';
+import {
+	middleware as supertokensMiddleware,
+	errorHandler as supertokensErrorHandler,
+} from 'supertokens-node/framework/express';
 import cors from 'cors';
 import sirv from 'sirv';
 import { MODULE_NAMES, APPNAME } from '#shared/config/constants.js';
@@ -30,6 +34,7 @@ import orchestrationRoutes from './route/orchestration.routes.js';
 import { ApiErrorResponse } from '#shared/api/ModuleResponse.js';
 import sessionRoutes from './route/session.routes.js';
 import { ApiError } from '#shared/domain/error/errors.js';
+import { decryptValue } from '#shared/util/cryptoUtils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url)); // src/server
 const isProduction = process.env.NODE_ENV === 'production';
@@ -48,8 +53,43 @@ const resolve = (p: string) =>
 // --- Template HTML paths ---
 const templateDevHtmlFile = path.resolve(__dirname, '../../index.html');
 const templateProdHtmlBuilt = path.resolve(__dirname, '../client/index.html');
-
 const SUPERTOKENS_DOMAIN = process.env.SUPERTOKENS_DOMAIN;
+const DECRYPTION_KEY = process.env.SECRET_ENCRYPTION_KEY;
+if (!DECRYPTION_KEY) throw new Error('SECRET_ENCRYPTION_KEY is required.');
+
+// --- Language detection middleware (Korean-priority) ---
+const detectLanguageMiddleware = (req: Request, res: Response, next: NextFunction) => {
+	let detectedLang: 'kor' | 'eng' = 'eng';
+
+	// Priority 1: Use Express's built-in acceptsLanguages method (most reliable)
+	const acceptedLang = req.acceptsLanguages('ko', 'en') || 'en';
+
+	if (acceptedLang === 'ko') {
+		detectedLang = 'kor';
+	}
+
+	// Priority 2: Manual header check as fallback
+	if (detectedLang !== 'kor') {
+		const acceptLang = req.headers['accept-language'] || '';
+
+		if (acceptLang.toLowerCase().includes('ko')) {
+			detectedLang = 'kor';
+		}
+	}
+
+	// Priority 3: Check Cloudflare country header
+	if (detectedLang !== 'kor') {
+		const cfCountry = req.headers['cf-ipcountry'] as string;
+		if (cfCountry === 'KR') {
+			detectedLang = 'kor';
+		}
+	}
+
+	res.locals.detectedLang = detectedLang;
+	res.cookie('server-detected-lang', detectedLang, { maxAge: 24 * 60 * 60 * 1000, httpOnly: false });
+
+	next();
+};
 
 async function createServer() {
 	if (!SUPERTOKENS_DOMAIN) {
@@ -68,7 +108,44 @@ async function createServer() {
 			apiBasePath: `/${API_PATH}/${AUTH_PATH}`,
 			websiteBasePath: `/${AUTH_PATH}`,
 		},
-		recipeList: [EmailPassword.init(), Session.init()],
+		recipeList: [
+			Dashboard.init(),
+			EmailPassword.init({
+				override: {
+					apis: (originalImplementation) => ({
+						...originalImplementation,
+						signInPOST: async function (input) {
+							const passwordField = input.formFields.find((f) => f.id === 'password');
+
+							// Check if the password field exists AND its value is a string
+							if (passwordField && typeof passwordField.value === 'string' && DECRYPTION_KEY) {
+								try {
+									// Now TypeScript knows passwordField.value is a string, so this is safe
+									const decryptedPassword = await decryptValue(passwordField.value, DECRYPTION_KEY);
+
+									const updatedFormFields = input.formFields.map((f) =>
+										f.id === 'password' ? { ...f, value: decryptedPassword } : f
+									);
+
+									return originalImplementation.signInPOST!({ ...input, formFields: updatedFormFields });
+								} catch (err) {
+									console.error('Server-side password decryption failed:', err);
+									return {
+										status: 'GENERAL_ERROR',
+										message: 'Internal security error occurred. Please try again.',
+									};
+								}
+							}
+
+							// If the password field is missing or not a string, return an error
+							console.error('Password field is missing or is not a string.');
+							return { status: 'GENERAL_ERROR', message: 'Invalid request. Please check your inputs.' };
+						},
+					}),
+				},
+			}),
+			Session.init(),
+		],
 	});
 
 	app.use(
@@ -79,50 +156,9 @@ async function createServer() {
 		})
 	);
 	// --- Core Middleware ---
-	app.use(middleware());
+	app.use(supertokensMiddleware());
 	app.use(compression()); // Apply gzip compression
 	app.use(express.json()); // Parse JSON request bodies
-
-	// --- Language detection middleware (Korean-priority) ---
-	// --- Language detection middleware (Korean-priority) ---
-	const detectLanguageMiddleware = (req: Request, res: Response, next: NextFunction) => {
-		let detectedLang: 'kor' | 'eng' = 'eng';
-
-		// Priority 1: Use Express's built-in acceptsLanguages method (most reliable)
-		const acceptedLang = req.acceptsLanguages('ko', 'en') || 'en';
-
-		if (acceptedLang === 'ko') {
-			detectedLang = 'kor';
-		}
-
-		// Priority 2: Manual header check as fallback
-		if (detectedLang !== 'kor') {
-			const acceptLang = req.headers['accept-language'] || '';
-
-			if (acceptLang.toLowerCase().includes('ko')) {
-				detectedLang = 'kor';
-			}
-		}
-
-		// Priority 3: Check Cloudflare country header
-		if (detectedLang !== 'kor') {
-			const cfCountry = req.headers['cf-ipcountry'] as string;
-			if (cfCountry === 'KR') {
-				detectedLang = 'kor';
-			}
-		}
-
-		res.locals.detectedLang = detectedLang;
-		res.cookie('server-detected-lang', detectedLang, {
-			maxAge: 24 * 60 * 60 * 1000,
-			httpOnly: false,
-		});
-
-		next();
-	};
-
-	app.use(detectLanguageMiddleware);
-
 	app.use(detectLanguageMiddleware);
 
 	// --- Vite Development Server Middleware (Development ONLY) ---
@@ -175,7 +211,6 @@ async function createServer() {
 	app.use(`${BASE_API}/${MODULE_NAMES.SESSION}`, sessionRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.PERSONA}`, personaRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.ORCHESTRATION}`, orchestrationRoutes);
-	app.use(errorHandler());
 
 	// --- SSR Catch-all Handler ---
 	app.get('/{*splat}', async (req: Request, res: Response, next: NextFunction) => {
@@ -250,6 +285,8 @@ async function createServer() {
 			next(e); // Pass error to default handler
 		}
 	});
+
+	app.use(supertokensErrorHandler());
 
 	// --- Route-level 404 handler (MUST be after all routes and SSR) ---
 	app.use((req: Request, res: Response, next: NextFunction) => {

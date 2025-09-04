@@ -46,6 +46,7 @@ export type MODULE_TYPES = (typeof MODULE_NAMES)[keyof typeof MODULE_NAMES];
 
 export const METADATA_TYPES = {
 	CREDENTIAL: 'credential',
+	APIKEY: 'apikey',
 	CHARACTER: 'character',
 	PROFILE: 'profile',
 	SESSION: 'session',
