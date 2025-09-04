@@ -14,8 +14,8 @@ export interface UserApiKeys {
 	openrouterApiKey?: string;
 	groqApiKey?: string;
 }
-const { getCredentialCollection, getRecordById, getRecords } = chromaDbClient;
-const collectionType = COLLECTIONS.CREDENTIAL;
+
+const { getCredentialCollection, upsertRecord, getRecordById } = chromaDbClient;
 const ENCRYPTION_KEY = process.env.SECRET_ENCRYPTION_KEY;
 
 if (!ENCRYPTION_KEY) {
@@ -27,41 +27,49 @@ export const credentialStore = {
 
 	// Get collection with caching
 	_getCollection: async (): Promise<Collection> => {
-		// First check if it's in the cache (non-async operation)
 		if (credentialStore._credentialCollection) {
 			return credentialStore._credentialCollection;
 		}
-
-		// If not in cache, fetch it (async operation)
 		const collection = await getCredentialCollection();
 		credentialStore._credentialCollection = collection;
 		return collection;
 	},
 
 	/**
-	 * Stores encrypted API keys for a user
+	 * Creates or updates a user's encrypted API keys.
 	 */
 	storeUserApiKeys: async (userId: string, apiKeys: UserApiKeys): Promise<void> => {
 		try {
 			const collection = await credentialStore._getCollection();
 			const credentialId = buildCredentialId(userId);
+			const now = new Date().toISOString();
+
+			// --- Logic to preserve createdAt on update ---
+			const existingRecord = await getRecordById(collection, credentialId).catch(() => null);
+
+			const metadata = {
+				userId,
+				type: METADATA_TYPES.CREDENTIAL,
+				keyType: METADATA_TYPES.APIKEY,
+				createdAt: existingRecord?.metadatas?.[0]?.createdAt || now,
+				updatedAt: now,
+			};
+			// --- End of new logic ---
 
 			const encryptedKeys: Record<string, string> = {};
-			// Use Promise.all to encrypt all keys concurrently
 			await Promise.all(
 				Object.entries(apiKeys).map(async ([key, value]) => {
 					if (value) {
-						encryptedKeys[key] = await encryptValue(value, ENCRYPTION_KEY);
+						encryptedKeys[key] = await encryptValue(value, ENCRYPTION_KEY!);
 					}
 				})
 			);
 
 			const secretDocument = JSON.stringify(encryptedKeys);
 
-			await chromaDbClient.upsertRecord(collection, credentialId, secretDocument, {
-				// ... metadata ...
-			});
-			console.log(`[CredentialService] Successfully stored API keys for user ${userId}`);
+			await upsertRecord(collection, credentialId, secretDocument, metadata);
+
+			console.log(`[CredentialService] Successfully stored/updated API keys for user ${userId}`);
 		} catch (error) {
 			console.error(`[CredentialService] Failed to store API keys for user ${userId}:`, error);
 			throw error;
@@ -69,13 +77,13 @@ export const credentialStore = {
 	},
 
 	/**
-	 * Retrieves and decrypts API keys for a user
+	 * Retrieves and decrypts API keys for a user.
 	 */
 	getUserApiKeys: async (userId: string): Promise<UserApiKeys> => {
 		try {
 			const collection = await credentialStore._getCollection();
 			const credentialId = buildCredentialId(userId);
-			const result = await chromaDbClient.getRecordById(collection, credentialId);
+			const result = await getRecordById(collection, credentialId);
 
 			if (!result.documents?.[0]) {
 				console.warn(`[CredentialService] No API keys found for user ${userId}`);
@@ -85,14 +93,19 @@ export const credentialStore = {
 			const encryptedKeys = JSON.parse(result.documents[0]);
 			const decryptedKeys: UserApiKeys = {};
 
-			// Use Promise.all to decrypt all keys concurrently
 			await Promise.all(
 				Object.entries(encryptedKeys).map(async ([key, encryptedValue]) => {
 					if (typeof encryptedValue === 'string') {
 						try {
-							decryptedKeys[key as keyof UserApiKeys] = await decryptValue(encryptedValue, ENCRYPTION_KEY);
+							decryptedKeys[key as keyof UserApiKeys] = await decryptValue(
+								encryptedValue,
+								ENCRYPTION_KEY!
+							);
 						} catch (decryptError) {
-							console.error(`[CredentialService] Failed to decrypt ${key} for user ${userId}`);
+							console.error(
+								`[CredentialService] Failed to decrypt ${key} for user ${userId}:`,
+								decryptError
+							);
 						}
 					}
 				})
@@ -106,7 +119,7 @@ export const credentialStore = {
 	},
 
 	/**
-	 * Updates specific API keys for a user
+	 * Updates a single API key for a user.
 	 */
 	updateUserApiKey: async (
 		userId: string,
@@ -124,7 +137,7 @@ export const credentialStore = {
 	},
 
 	/**
-	 * Initializes default API keys from environment variables
+	 * Initializes default API keys for a user from environment variables.
 	 */
 	initializeDefaultApiKeys: async (userId: string): Promise<void> => {
 		const defaultKeys: UserApiKeys = {
@@ -135,13 +148,9 @@ export const credentialStore = {
 			groqApiKey: process.env.GROQ_API_KEY,
 		};
 
-		// Filter out undefined values
-		const validKeys: UserApiKeys = {};
-		for (const [key, value] of Object.entries(defaultKeys)) {
-			if (value) {
-				validKeys[key as keyof UserApiKeys] = value;
-			}
-		}
+		const validKeys = Object.fromEntries(
+			Object.entries(defaultKeys).filter(([, value]) => value)
+		) as UserApiKeys;
 
 		if (Object.keys(validKeys).length > 0) {
 			await credentialStore.storeUserApiKeys(userId, validKeys);

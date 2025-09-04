@@ -14,6 +14,7 @@ import { createServer as createViteServer, type ViteDevServer } from 'vite';
 import supertokens from 'supertokens-node';
 import Session from 'supertokens-node/recipe/session';
 import EmailPassword from 'supertokens-node/recipe/emailpassword';
+import Dashboard from 'supertokens-node/recipe/dashboard';
 import { middleware, errorHandler } from 'supertokens-node/framework/express';
 import cors from 'cors';
 import sirv from 'sirv';
@@ -71,6 +72,7 @@ async function createServer() {
 			websiteBasePath: `/${AUTH_PATH}`,
 		},
 		recipeList: [
+			Dashboard.init(),
 			EmailPassword.init({
 				override: {
 					apis: (originalImplementation) => ({
