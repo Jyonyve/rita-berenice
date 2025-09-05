@@ -59,6 +59,8 @@ const dashboardAdmins = process.env.DASHBOARD_ADMIN_EMAILS
 	? process.env.DASHBOARD_ADMIN_EMAILS.split(',').map((email) => email.trim())
 	: [];
 
+console.log('Dashboard admins configured:', dashboardAdmins); // Add this line
+
 // --- Language detection middleware (Korean-priority) ---
 const detectLanguageMiddleware = (req: Request, res: Response, next: NextFunction) => {
 	let detectedLang: 'kor' | 'eng' = 'eng';
@@ -154,6 +156,23 @@ async function createServer() {
 			credentials: true,
 		})
 	);
+
+	app.use((req, res, next) => {
+		if (req.path.includes('/dashboard')) {
+			res.setHeader(
+				'Content-Security-Policy',
+				"default-src 'self'; " +
+					"script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
+					"style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
+					"img-src 'self' data: https://cdn.jsdelivr.net; " +
+					"font-src 'self' https://cdn.jsdelivr.net; " +
+					"connect-src 'self' " +
+					process.env.SUPERTOKENS_DOMAIN
+			);
+		}
+		next();
+	});
+
 	// --- Core Middleware ---
 	app.use(supertokensMiddleware());
 	app.use(compression()); // Apply gzip compression
