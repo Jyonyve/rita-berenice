@@ -3,25 +3,26 @@
 import path from 'node:path';
 import fs from 'node:fs/promises'; // Use promises for async file reading
 import { fileURLToPath } from 'node:url';
-import express, {
-	type Request,
-	type Response,
-	type NextFunction,
-	type RequestHandler,
-} from 'express';
+import express, { type Request, type Response, type NextFunction } from 'express';
 import compression from 'compression'; // Add compression middleware
 import { createServer as createViteServer, type ViteDevServer } from 'vite';
+
 import supertokens from 'supertokens-node';
 import Session from 'supertokens-node/recipe/session';
 import EmailPassword from 'supertokens-node/recipe/emailpassword';
 import Dashboard from 'supertokens-node/recipe/dashboard';
+import UserRoles from 'supertokens-node/recipe/userroles';
+import { verifySession } from 'supertokens-node/recipe/session/framework/express';
+import { SessionRequest } from 'supertokens-node/framework/express';
 import {
 	middleware as supertokensMiddleware,
 	errorHandler as supertokensErrorHandler,
 } from 'supertokens-node/framework/express';
+
 import cors from 'cors';
 import sirv from 'sirv';
-import { MODULE_NAMES, APPNAME } from '#shared/config/constants.js';
+
+import { MODULE_NAMES, APPNAME, DEFAULT_TENANT_ID } from '#shared/config/constants.js';
 import characterRoutes from './route/character.routes.js';
 import chatRoutes from './route/chat.routes.js';
 import llmRoutes from './route/llm.routes.js';
@@ -92,6 +93,33 @@ const detectLanguageMiddleware = (req: Request, res: Response, next: NextFunctio
 	next();
 };
 
+const requireAdmin = async (req: SessionRequest, res: Response, next: NextFunction) => {
+	try {
+		// Use verifySession as middleware, then continue with role check
+		await new Promise<void>((resolve, reject) => {
+			verifySession()(req, res, (err?: any) => {
+				if (err) reject(err);
+				else resolve();
+			});
+		});
+
+		// Session is verified, now check admin role
+		const userId = req.session!.getUserId();
+
+		// Correct parameter order: userId first, then tenantId
+		const { roles } = await UserRoles.getRolesForUser(DEFAULT_TENANT_ID, userId);
+
+		if (!roles.includes('admin')) {
+			return res.status(403).json({ status: 'error', message: 'Access denied: Admin role required.' });
+		}
+
+		next();
+	} catch (error) {
+		console.error('Admin middleware error:', error);
+		res.status(401).json({ status: 'error', message: 'Unauthorized' });
+	}
+};
+
 async function createServer() {
 	if (!SUPERTOKENS_DOMAIN) {
 		throw new Error('invalid supertokens login domain');
@@ -110,6 +138,7 @@ async function createServer() {
 			websiteBasePath: `/${AUTH_PATH}`,
 		},
 		recipeList: [
+			UserRoles.init(),
 			Dashboard.init(),
 			EmailPassword.init({
 				override: {
@@ -288,6 +317,20 @@ async function createServer() {
 		}
 	});
 
+	app.get(
+		`${BASE_API}/${AUTH_PATH}/dashboard`,
+		requireAdmin,
+		(req: SessionRequest, res: Response) => {
+			const adminUserId = req.session!.getUserId();
+			res.json({
+				message: 'Welcome to the admin dashboard!',
+				adminUser: adminUserId,
+				timestamp: new Date().toISOString(),
+			});
+		}
+	);
+
+	// --- SuperTokens Error Handler (should come after routes but before custom error handlers) ---
 	app.use(supertokensErrorHandler());
 
 	// --- Route-level 404 handler (MUST be after all routes and SSR) ---

@@ -1,7 +1,9 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import EmailPassword from 'supertokens-node/recipe/emailpassword';
+import Session from 'supertokens-node/recipe/session';
 import { webcrypto } from 'node:crypto';
 import { asyncHandler, genRoutePattern, validateRequestData } from '../util/routeHelpers.js'; // Assuming routeHelpers are in this path
+import { DEFAULT_TENANT_ID } from '#shared/config/constants.js';
 
 const router = Router();
 
@@ -65,10 +67,26 @@ router.post(
 			const { email, password } = JSON.parse(decryptedString);
 
 			// 3. Call SuperTokens' original signIn function
-			const response = await EmailPassword.signIn('public', email, password);
+			const signInResponse = await EmailPassword.signIn(DEFAULT_TENANT_ID, email, password);
 
-			// 4. Send the SuperTokens response back to the client
-			return res.status(200).json(response);
+			if (signInResponse.status === 'OK') {
+				// --- THE FINAL, CORRECT FIX ---
+				// Manually create a new session for the user
+				await Session.createNewSession(
+					req,
+					res,
+					DEFAULT_TENANT_ID, // tenantId
+					signInResponse.recipeUserId // recipeUserId
+				);
+
+				// We don't need to return the full user object.
+				// The session cookies are now set on the response by createNewSession.
+				// The frontend will see the "OK" status and know the login was successful.
+				return res.status(200).json({ status: 'OK' });
+			} else {
+				// If signIn failed (e.g., wrong credentials), return the error status.
+				return res.status(200).json({ status: signInResponse.status });
+			}
 		} catch (err) {
 			// Forward errors to SuperTokens' error handler or your custom error middleware
 			next(err);
