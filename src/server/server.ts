@@ -36,7 +36,6 @@ import loginRoutes from './route/login.routes.js';
 import sessionRoutes from './route/session.routes.js';
 import { ApiErrorResponse } from '#shared/api/ModuleResponse.js';
 import { ApiError } from '#shared/domain/error/errors.js';
-import { decryptValue } from '#shared/util/cryptoUtils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url)); // src/server
 const isProduction = process.env.NODE_ENV === 'production';
@@ -56,8 +55,9 @@ const resolve = (p: string) =>
 const templateDevHtmlFile = path.resolve(__dirname, '../../index.html');
 const templateProdHtmlBuilt = path.resolve(__dirname, '../client/index.html');
 const SUPERTOKENS_DOMAIN = process.env.SUPERTOKENS_DOMAIN;
-const DECRYPTION_KEY = process.env.SECRET_ENCRYPTION_KEY;
-if (!DECRYPTION_KEY) throw new Error('SECRET_ENCRYPTION_KEY is required.');
+const dashboardAdmins = process.env.DASHBOARD_ADMIN_EMAILS
+	? process.env.DASHBOARD_ADMIN_EMAILS.split(',').map((email) => email.trim())
+	: [];
 
 // --- Language detection middleware (Korean-priority) ---
 const detectLanguageMiddleware = (req: Request, res: Response, next: NextFunction) => {
@@ -139,41 +139,10 @@ async function createServer() {
 		},
 		recipeList: [
 			UserRoles.init(),
-			Dashboard.init(),
-			EmailPassword.init({
-				override: {
-					apis: (originalImplementation) => ({
-						...originalImplementation,
-						signInPOST: async function (input) {
-							const passwordField = input.formFields.find((f) => f.id === 'password');
-
-							// Check if the password field exists AND its value is a string
-							if (passwordField && typeof passwordField.value === 'string' && DECRYPTION_KEY) {
-								try {
-									// Now TypeScript knows passwordField.value is a string, so this is safe
-									const decryptedPassword = await decryptValue(passwordField.value, DECRYPTION_KEY);
-
-									const updatedFormFields = input.formFields.map((f) =>
-										f.id === 'password' ? { ...f, value: decryptedPassword } : f
-									);
-
-									return originalImplementation.signInPOST!({ ...input, formFields: updatedFormFields });
-								} catch (err) {
-									console.error('Server-side password decryption failed:', err);
-									return {
-										status: 'GENERAL_ERROR',
-										message: 'Internal security error occurred. Please try again.',
-									};
-								}
-							}
-
-							// If the password field is missing or not a string, return an error
-							console.error('Password field is missing or is not a string.');
-							return { status: 'GENERAL_ERROR', message: 'Invalid request. Please check your inputs.' };
-						},
-					}),
-				},
+			Dashboard.init({
+				admins: dashboardAdmins, // Use the environment variable
 			}),
+			EmailPassword.init(),
 			Session.init(),
 		],
 	});
