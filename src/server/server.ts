@@ -95,33 +95,6 @@ const detectLanguageMiddleware = (req: Request, res: Response, next: NextFunctio
 	next();
 };
 
-const requireAdmin = async (req: SessionRequest, res: Response, next: NextFunction) => {
-	try {
-		// Use verifySession as middleware, then continue with role check
-		await new Promise<void>((resolve, reject) => {
-			verifySession()(req, res, (err?: any) => {
-				if (err) reject(err);
-				else resolve();
-			});
-		});
-
-		// Session is verified, now check admin role
-		const userId = req.session!.getUserId();
-
-		// Correct parameter order: userId first, then tenantId
-		const { roles } = await UserRoles.getRolesForUser(DEFAULT_TENANT_ID, userId);
-
-		if (!roles.includes('admin')) {
-			return res.status(403).json({ status: 'error', message: 'Access denied: Admin role required.' });
-		}
-
-		next();
-	} catch (error) {
-		console.error('Admin middleware error:', error);
-		res.status(401).json({ status: 'error', message: 'Unauthorized' });
-	}
-};
-
 async function createServer() {
 	if (!SUPERTOKENS_DOMAIN) {
 		throw new Error('invalid supertokens login domain');
@@ -167,10 +140,7 @@ async function createServer() {
 					"font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; " +
 					"img-src 'self' data: https://cdn.jsdelivr.net; " +
 					"connect-src 'self' " +
-					process.env.SUPERTOKENS_DOMAIN +
-					'; ' +
-					"frame-src 'none'; " +
-					"object-src 'none'"
+					process.env.SUPERTOKENS_DOMAIN
 			);
 		}
 		next();
@@ -237,7 +207,7 @@ async function createServer() {
 	// --- SSR Catch-all Handler ---
 	app.get('/{*splat}', async (req: Request, res: Response, next: NextFunction) => {
 		// Skip SSR for API routes
-		if (req.originalUrl.startsWith(`${API_PATH}`) || req.originalUrl.startsWith(`${AUTH_PATH}`)) {
+		if (req.originalUrl.startsWith(`${BASE_API}`) || req.originalUrl.startsWith(`/${AUTH_PATH}`)) {
 			return next();
 		}
 		// Optional: Skip potential static files (basic check)
@@ -307,19 +277,6 @@ async function createServer() {
 			next(e); // Pass error to default handler
 		}
 	});
-
-	app.get(
-		`${BASE_API}/${AUTH_PATH}/dashboard`,
-		requireAdmin,
-		(req: SessionRequest, res: Response) => {
-			const adminUserId = req.session!.getUserId();
-			res.json({
-				message: 'Welcome to the admin dashboard!',
-				adminUser: adminUserId,
-				timestamp: new Date().toISOString(),
-			});
-		}
-	);
 
 	// --- SuperTokens Error Handler (should come after routes but before custom error handlers) ---
 	app.use(supertokensErrorHandler());
