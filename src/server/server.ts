@@ -128,26 +128,26 @@ async function createServer() {
 	);
 
 	// --- Dashboard Headers Middleware ---
-	app.use((req, res, next) => {
-		if (req.path.includes('/dashboard')) {
-			console.log('Setting headers for dashboard request:', req.path);
-			res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-			res.setHeader('Pragma', 'no-cache');
-			res.setHeader('Expires', '0');
-			res.setHeader(
-				'Content-Security-Policy',
-				"default-src 'self'; " +
-					"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; " + // Added 'unsafe-eval'
-					"style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
-					"font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; " +
-					"img-src 'self' data: https://cdn.jsdelivr.net; " +
-					"connect-src 'self' " +
-					process.env.SUPERTOKENS_DOMAIN +
-					' https://fonts.googleapis.com https://fonts.gstatic.com'
-			);
-		}
-		next();
-	});
+	// app.use((req, res, next) => {
+	// 	if (req.path.includes('/dashboard')) {
+	// 		console.log('Setting headers for dashboard request:', req.path);
+	// 		res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+	// 		res.setHeader('Pragma', 'no-cache');
+	// 		res.setHeader('Expires', '0');
+	// 		res.setHeader(
+	// 			'Content-Security-Policy',
+	// 			"default-src 'self'; " +
+	// 				"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; " + // Added 'unsafe-eval'
+	// 				"style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
+	// 				"font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; " +
+	// 				"img-src 'self' data: https://cdn.jsdelivr.net; " +
+	// 				"connect-src 'self' " +
+	// 				process.env.SUPERTOKENS_DOMAIN +
+	// 				' https://fonts.googleapis.com https://fonts.gstatic.com'
+	// 		);
+	// 	}
+	// 	next();
+	// });
 
 	app.use(supertokensMiddleware());
 	app.use(compression());
