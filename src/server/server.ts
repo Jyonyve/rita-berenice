@@ -59,8 +59,6 @@ const dashboardAdmins = process.env.DASHBOARD_ADMIN_EMAILS
 	? process.env.DASHBOARD_ADMIN_EMAILS.split(',').map((email) => email.trim())
 	: [];
 
-console.log('Dashboard admins configured:', dashboardAdmins); // Add this line
-
 // --- Language detection middleware (Korean-priority) ---
 const detectLanguageMiddleware = (req: Request, res: Response, next: NextFunction) => {
 	let detectedLang: 'kor' | 'eng' = 'eng';
@@ -95,33 +93,6 @@ const detectLanguageMiddleware = (req: Request, res: Response, next: NextFunctio
 	next();
 };
 
-const requireAdmin = async (req: SessionRequest, res: Response, next: NextFunction) => {
-	try {
-		// Use verifySession as middleware, then continue with role check
-		await new Promise<void>((resolve, reject) => {
-			verifySession()(req, res, (err?: any) => {
-				if (err) reject(err);
-				else resolve();
-			});
-		});
-
-		// Session is verified, now check admin role
-		const userId = req.session!.getUserId();
-
-		// Correct parameter order: userId first, then tenantId
-		const { roles } = await UserRoles.getRolesForUser(DEFAULT_TENANT_ID, userId);
-
-		if (!roles.includes('admin')) {
-			return res.status(403).json({ status: 'error', message: 'Access denied: Admin role required.' });
-		}
-
-		next();
-	} catch (error) {
-		console.error('Admin middleware error:', error);
-		res.status(401).json({ status: 'error', message: 'Unauthorized' });
-	}
-};
-
 async function createServer() {
 	if (!SUPERTOKENS_DOMAIN) {
 		throw new Error('invalid supertokens login domain');
@@ -134,21 +105,20 @@ async function createServer() {
 		supertokens: { connectionURI: SUPERTOKENS_DOMAIN, apiKey: process.env.SUPERTOKENS_API_KEY },
 		appInfo: {
 			appName: APPNAME,
-			websiteDomain: process.env.VITE_APP_DOMAIN || '',
+			websiteDomain: process.env.VITE_APP_DOMAIN || localhost,
 			apiDomain: process.env.VITE_API_DOMAIN || localhost,
 			apiBasePath: `/${API_PATH}/${AUTH_PATH}`,
 			websiteBasePath: `/${AUTH_PATH}`,
 		},
 		recipeList: [
 			UserRoles.init(),
-			Dashboard.init({
-				admins: dashboardAdmins, // Use the environment variable
-			}),
+			Dashboard.init({ admins: dashboardAdmins }),
 			EmailPassword.init(),
 			Session.init(),
 		],
 	});
 
+	// --- Core Middleware (Order is important) ---
 	app.use(
 		cors({
 			origin: process.env.VITE_APP_DOMAIN || localhost,
@@ -157,29 +127,31 @@ async function createServer() {
 		})
 	);
 
+	// --- Dashboard Headers Middleware ---
 	app.use((req, res, next) => {
 		if (req.path.includes('/dashboard')) {
+			console.log('Setting headers for dashboard request:', req.path);
+			res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+			res.setHeader('Pragma', 'no-cache');
+			res.setHeader('Expires', '0');
 			res.setHeader(
 				'Content-Security-Policy',
 				"default-src 'self'; " +
-					"script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
+					"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; " + // Added 'unsafe-eval'
 					"style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
 					"font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; " +
 					"img-src 'self' data: https://cdn.jsdelivr.net; " +
 					"connect-src 'self' " +
 					process.env.SUPERTOKENS_DOMAIN +
-					'; ' +
-					"frame-src 'none'; " +
-					"object-src 'none'"
+					' https://fonts.googleapis.com https://fonts.gstatic.com'
 			);
 		}
 		next();
 	});
 
-	// --- Core Middleware ---
 	app.use(supertokensMiddleware());
-	app.use(compression()); // Apply gzip compression
-	app.use(express.json()); // Parse JSON request bodies
+	app.use(compression());
+	app.use(express.json());
 	app.use(detectLanguageMiddleware);
 
 	// --- Vite Development Server Middleware (Development ONLY) ---
@@ -237,7 +209,7 @@ async function createServer() {
 	// --- SSR Catch-all Handler ---
 	app.get('/{*splat}', async (req: Request, res: Response, next: NextFunction) => {
 		// Skip SSR for API routes
-		if (req.originalUrl.startsWith(`${API_PATH}`) || req.originalUrl.startsWith(`${AUTH_PATH}`)) {
+		if (req.originalUrl.startsWith(`${BASE_API}`) || req.originalUrl.startsWith(`/${AUTH_PATH}`)) {
 			return next();
 		}
 		// Optional: Skip potential static files (basic check)
@@ -307,19 +279,6 @@ async function createServer() {
 			next(e); // Pass error to default handler
 		}
 	});
-
-	app.get(
-		`${BASE_API}/${AUTH_PATH}/dashboard`,
-		requireAdmin,
-		(req: SessionRequest, res: Response) => {
-			const adminUserId = req.session!.getUserId();
-			res.json({
-				message: 'Welcome to the admin dashboard!',
-				adminUser: adminUserId,
-				timestamp: new Date().toISOString(),
-			});
-		}
-	);
 
 	// --- SuperTokens Error Handler (should come after routes but before custom error handlers) ---
 	app.use(supertokensErrorHandler());
