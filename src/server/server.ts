@@ -167,7 +167,10 @@ async function createServer() {
 					"font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; " +
 					"img-src 'self' data: https://cdn.jsdelivr.net; " +
 					"connect-src 'self' " +
-					process.env.SUPERTOKENS_DOMAIN
+					process.env.SUPERTOKENS_DOMAIN +
+					'; ' +
+					"frame-src 'none'; " +
+					"object-src 'none'"
 			);
 		}
 		next();
