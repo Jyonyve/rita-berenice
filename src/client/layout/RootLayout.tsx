@@ -48,7 +48,7 @@ import { LANG_KEYS } from '#shared/config/langConstants.js';
 import { useAuth } from '../provider/AuthProvider.jsx';
 import ImageIcon from '@mui/icons-material/Image';
 import CloseIcon from '@mui/icons-material/Close';
-import { useSessionApi } from '../hook/api/index.js';
+import { useSessionApi, useUserApi } from '../hook/api/index.js';
 import { InlineEditableField } from './InlineEditableField.jsx';
 
 interface LoginModalProps {
@@ -224,9 +224,17 @@ export function RootLayout() {
 	const { mode, toggleMode } = useColorMode();
 	const isSmallScreen = useMediaQuery((theme) => theme.breakpoints.down('md'));
 	const navigate = useNavigate();
-	const { isSessionLoading, isLoggedIn, isLoginModalOpen, openLoginModal, closeLoginModal, logout } =
-		useAuth();
+	const {
+		isSessionLoading,
+		isLoggedIn,
+		isLoginModalOpen,
+		openLoginModal,
+		closeLoginModal,
+		logout,
+		userId,
+	} = useAuth();
 	const { updateSessionTitle } = useSessionApi();
+	const { data: userRes } = useUserApi().getUser(userId || '');
 	const headerRef = useRef<HTMLElement>(null);
 	const footerRef = useRef<HTMLElement>(null);
 
@@ -486,9 +494,12 @@ export function RootLayout() {
 									}}
 								>
 									<GlassMenuItem onClick={goMyCharacterListPage} colorVariant="silver">
+										<Avatar src={userRes?.userInfo.avatarUrl} variant="circular" />
 										{getLangText(LANG_KEYS.MY_CHARACTERS)}
 									</GlassMenuItem>
-
+									<GlassMenuItem onClick={goMyCharacterListPage} colorVariant="silver">
+										{getLangText(LANG_KEYS.MY_CHARACTERS)}
+									</GlassMenuItem>
 									<GlassMenuItem onClick={onLogout} colorVariant="silver">
 										{getLangText(LANG_KEYS.LOGOUT)}
 									</GlassMenuItem>

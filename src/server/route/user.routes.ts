@@ -106,20 +106,15 @@ router.get(
  */
 router.post(
 	genRoutePattern('storeUser'),
-	asyncHandler(
-		async (req: Request<object, string, UserInfo>, res: Response<string>): Promise<void> => {
-			const requiredFields: (keyof UserInfo)[] = ['userId', 'showName', 'email', 'gender'];
-			validateRequestData(req.body, 'body', requiredFields);
+	asyncHandler(async (req: Request, res: Response<{ userId: string }>): Promise<void> => {
+		const requiredFields: (keyof UserInfo)[] = ['userId', 'showName', 'email', 'gender'];
+		validateRequestData(req.body, 'body', requiredFields);
+		const path = genRoutePattern('storeUser');
+		console.log(`API HIT: POST ${path} for user: ${req.body?.userId}`);
 
-			const path = genRoutePattern('storeUser');
-			console.log(`API HIT: POST ${path} for user: ${req.body?.userId}`);
-
-			await userStore.storeUser(req.body);
-			res
-				.status(201)
-				.json(JSON.stringify({ message: 'User stored successfully.', userId: req.body.userId }));
-		}
-	)
+		const response = await userStore.storeUser(req.body);
+		res.status(201).json(response);
+	})
 );
 
 export default router;

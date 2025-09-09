@@ -23,7 +23,7 @@ import {
 import { useLanguage } from './provider/LanguageProvider.jsx';
 
 export function App() {
-	const { CHARACTER, CHAT, ERROR, HISTORY } = routeConstants;
+	const { CHARACTER, CHAT, AUTH, HISTORY } = routeConstants;
 	const { addToast } = useToast();
 	const { lang } = useLanguage();
 	const [hasMounted, setHasMounted] = useState(false);

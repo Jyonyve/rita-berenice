@@ -10,3 +10,4 @@ export { default as orchestrationRoutes } from './orchestration.routes.js';
 export { default as sessionRoutes } from './session.routes.js';
 export { default as recapRoutes } from './recap.routes.js';
 export { default as loginRoutes } from './login.routes.js';
+export { default as userRoutes } from './user.routes.js';

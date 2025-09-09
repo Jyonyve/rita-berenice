@@ -12,8 +12,6 @@ import Session from 'supertokens-node/recipe/session';
 import EmailPassword from 'supertokens-node/recipe/emailpassword';
 import Dashboard from 'supertokens-node/recipe/dashboard';
 import UserRoles from 'supertokens-node/recipe/userroles';
-import { verifySession } from 'supertokens-node/recipe/session/framework/express';
-import { SessionRequest } from 'supertokens-node/framework/express';
 import {
 	middleware as supertokensMiddleware,
 	errorHandler as supertokensErrorHandler,
@@ -34,6 +32,7 @@ import personaRoutes from './route/persona.routes.js';
 import orchestrationRoutes from './route/orchestration.routes.js';
 import loginRoutes from './route/login.routes.js';
 import sessionRoutes from './route/session.routes.js';
+import userRoutes from './route/user.routes.js';
 import { ApiErrorResponse } from '#shared/api/ModuleResponse.js';
 import { ApiError } from '#shared/domain/error/errors.js';
 
@@ -128,26 +127,26 @@ async function createServer() {
 	);
 
 	// --- Dashboard Headers Middleware ---
-	app.use((req, res, next) => {
-		if (req.path.includes('/dashboard')) {
-			console.log('Setting headers for dashboard request:', req.path);
-			res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-			res.setHeader('Pragma', 'no-cache');
-			res.setHeader('Expires', '0');
-			res.setHeader(
-				'Content-Security-Policy',
-				"default-src 'self'; " +
-					"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; " + // Added 'unsafe-eval'
-					"style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
-					"font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; " +
-					"img-src 'self' data: https://cdn.jsdelivr.net; " +
-					"connect-src 'self' " +
-					process.env.SUPERTOKENS_DOMAIN +
-					' https://fonts.googleapis.com https://fonts.gstatic.com'
-			);
-		}
-		next();
-	});
+	// app.use((req, res, next) => {
+	// 	if (req.path.includes('/dashboard')) {
+	// 		console.log('Setting headers for dashboard request:', req.path);
+	// 		res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+	// 		res.setHeader('Pragma', 'no-cache');
+	// 		res.setHeader('Expires', '0');
+	// 		res.setHeader(
+	// 			'Content-Security-Policy',
+	// 			"default-src 'self'; " +
+	// 				"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; " + // Added 'unsafe-eval'
+	// 				"style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
+	// 				"font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; " +
+	// 				"img-src 'self' data: https://cdn.jsdelivr.net; " +
+	// 				"connect-src 'self' " +
+	// 				process.env.SUPERTOKENS_DOMAIN +
+	// 				' https://fonts.googleapis.com https://fonts.gstatic.com'
+	// 		);
+	// 	}
+	// 	next();
+	// });
 
 	app.use(supertokensMiddleware());
 	app.use(compression());
@@ -205,6 +204,33 @@ async function createServer() {
 	app.use(`${BASE_API}/${MODULE_NAMES.PERSONA}`, personaRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.ORCHESTRATION}`, orchestrationRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.LOGIN}`, loginRoutes);
+	app.use(`${BASE_API}/${MODULE_NAMES.USER}`, userRoutes);
+
+	// ✅ CORRECT for Express v5 - matches /auth, /auth/reset-password, etc.
+	app.get(`/${AUTH_PATH}{*splat}`, async (req: Request, res: Response) => {
+		try {
+			let template: string;
+
+			if (!isProduction && vite) {
+				template = await fs.readFile(templateDevHtmlFile, 'utf-8');
+				template = await vite.transformIndexHtml(req.originalUrl, template);
+			} else {
+				template = await fs.readFile(templateProdHtmlBuilt, 'utf-8');
+			}
+
+			const detectedLang = res.locals.detectedLang || 'eng';
+
+			const finalHtml = template
+				.replace(`<!--app-html-->`, '<div id="root"></div>')
+				.replace(`<!--emotion-styles-->`, '')
+				.replace(`<!--server-data-->`, `<script>window.__INITIAL_LANG__="${detectedLang}"</script>`);
+
+			res.status(200).set({ 'Content-Type': 'text/html' }).end(finalHtml);
+		} catch (error) {
+			console.error('Error serving auth route:', error);
+			res.status(500).send('Internal Server Error');
+		}
+	});
 
 	// --- SSR Catch-all Handler ---
 	app.get('/{*splat}', async (req: Request, res: Response, next: NextFunction) => {
