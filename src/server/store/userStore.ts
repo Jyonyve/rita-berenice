@@ -123,12 +123,14 @@ export const userStore = {
 	},
 
 	// Store or update a user - no document needed!
-	storeUser: async (user: UserCdo | UserInfo): Promise<void> => {
+	storeUser: async (user: UserCdo | UserInfo): Promise<{ userId: string }> => {
 		const collection = await userStore._getCollection();
+		console.log('✅ [userStore.storeUser] Got collection:', collection?.name);
 		const updatedUser: UserInfo = isUserInfo(user) ? user : createBasicUserInfo(user);
 		try {
 			// Empty string for document since we only use metadata
 			await upsertRecord(collection, updatedUser.userId, '', updatedUser);
+			return { userId: updatedUser.userId };
 		} catch (error) {
 			handleServiceError(
 				error,

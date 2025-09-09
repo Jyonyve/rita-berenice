@@ -38,10 +38,6 @@ export function App() {
 			<Route path="/" element={<RootLayout />}>
 				<Route index element={<MainLandingPage />} />
 				{hasMounted && getSuperTokensRoutesForReactRouterDom(reactRouter, [EmailPasswordPreBuiltUI])}
-				<Route
-					path={`${AUTH}/reset-password`}
-					element={<EmailPasswordPreBuiltUI.ResetPasswordUsingToken />}
-				/>
 				{/* character  */}
 				<Route path={`${CHARACTER}`} element={<CharacterListPageLoader />} />
 				<Route path={`${CHARACTER}/:characterId`} element={<CharacterPageLoader />} />

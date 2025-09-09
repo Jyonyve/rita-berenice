@@ -12,8 +12,6 @@ import Session from 'supertokens-node/recipe/session';
 import EmailPassword from 'supertokens-node/recipe/emailpassword';
 import Dashboard from 'supertokens-node/recipe/dashboard';
 import UserRoles from 'supertokens-node/recipe/userroles';
-import { verifySession } from 'supertokens-node/recipe/session/framework/express';
-import { SessionRequest } from 'supertokens-node/framework/express';
 import {
 	middleware as supertokensMiddleware,
 	errorHandler as supertokensErrorHandler,
@@ -34,6 +32,7 @@ import personaRoutes from './route/persona.routes.js';
 import orchestrationRoutes from './route/orchestration.routes.js';
 import loginRoutes from './route/login.routes.js';
 import sessionRoutes from './route/session.routes.js';
+import userRoutes from './route/user.routes.js';
 import { ApiErrorResponse } from '#shared/api/ModuleResponse.js';
 import { ApiError } from '#shared/domain/error/errors.js';
 
@@ -205,6 +204,33 @@ async function createServer() {
 	app.use(`${BASE_API}/${MODULE_NAMES.PERSONA}`, personaRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.ORCHESTRATION}`, orchestrationRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.LOGIN}`, loginRoutes);
+	app.use(`${BASE_API}/${MODULE_NAMES.USER}`, userRoutes);
+
+	// ✅ CORRECT for Express v5 - matches /auth, /auth/reset-password, etc.
+	app.get(`/${AUTH_PATH}{*splat}`, async (req: Request, res: Response) => {
+		try {
+			let template: string;
+
+			if (!isProduction && vite) {
+				template = await fs.readFile(templateDevHtmlFile, 'utf-8');
+				template = await vite.transformIndexHtml(req.originalUrl, template);
+			} else {
+				template = await fs.readFile(templateProdHtmlBuilt, 'utf-8');
+			}
+
+			const detectedLang = res.locals.detectedLang || 'eng';
+
+			const finalHtml = template
+				.replace(`<!--app-html-->`, '<div id="root"></div>')
+				.replace(`<!--emotion-styles-->`, '')
+				.replace(`<!--server-data-->`, `<script>window.__INITIAL_LANG__="${detectedLang}"</script>`);
+
+			res.status(200).set({ 'Content-Type': 'text/html' }).end(finalHtml);
+		} catch (error) {
+			console.error('Error serving auth route:', error);
+			res.status(500).send('Internal Server Error');
+		}
+	});
 
 	// --- SSR Catch-all Handler ---
 	app.get('/{*splat}', async (req: Request, res: Response, next: NextFunction) => {

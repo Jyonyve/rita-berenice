@@ -8,6 +8,7 @@ import React, {
 	ReactNode,
 	useEffect,
 	useRef,
+	useCallback,
 } from 'react';
 import { useSessionContext } from 'supertokens-auth-react/recipe/session/index.js';
 import { signOut } from 'supertokens-auth-react/recipe/session/index.js';
@@ -26,7 +27,7 @@ interface AuthContextType {
 	userId?: string;
 	userProfile?: UserInfo;
 	needsProfileSetup: boolean;
-	createUserProfile: (userData: UserCdo) => Promise<void>;
+	createUserProfile: () => Promise<void>;
 	refetchProfile: () => void;
 }
 
@@ -34,25 +35,96 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // --- Create the single, intelligent provider ---
 export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
-	// 1. Get the real session state from SuperTokens
+	// 1. Hooks and State
 	const session = useSessionContext();
 	const { getUser, storeUser } = useUserApi();
 
-	// 2. Unify the session state into single variables
+	// Session-derived state
 	const isSessionLoading = session.loading;
 	const isLoggedIn = !session.loading && session.doesSessionExist;
-	const userId = !session.loading && session.doesSessionExist ? session.userId : undefined;
+	const userId = isLoggedIn ? session.userId : undefined;
 
-	// 3. Manage the modal state
+	// Modal state
 	const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 	const openLoginModal = () => setIsLoginModalOpen(true);
 	const closeLoginModal = () => setIsLoginModalOpen(false);
 
-	// 4. New user profile state
+	// Profile state
 	const [userProfile, setUserProfile] = useState<UserInfo>();
 	const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
 
-	// --- NEW: Public Key State Management ---
+	// --- React Query for User Data ---
+	// This hook is the single source of truth for the current user's profile data.
+	const {
+		data: userQueryData,
+		refetch: refetchUserQuery,
+		isLoading: isUserQueryLoading, // Use this to track loading state
+	} = getUser(userId || ''); // Pass userId, or empty string to keep it disabled until userId is available
+
+	// 2. Core Logic Functions
+
+	// This is now the primary function to get the latest user profile and update the auth state.
+	const fetchAndSetUserProfile = useCallback(
+		async (currentUserId: string) => {
+			console.log(`🔵 [Auth] Fetching profile for userId: ${currentUserId}`);
+			try {
+				// Use the refetch function from useQuery to guarantee fresh data
+				const { data: freshUserData } = await refetchUserQuery();
+				console.log('✅ [Auth] Fetched user data:', freshUserData);
+
+				if (freshUserData?.userInfo) {
+					console.log('✅ [Auth] User profile found. Setting state.');
+					setUserProfile(freshUserData.userInfo);
+					setNeedsProfileSetup(false);
+				} else {
+					console.log('🟡 [Auth] User profile NOT found in DB. User needs profile setup.');
+					setUserProfile(undefined);
+					setNeedsProfileSetup(true);
+				}
+			} catch (error) {
+				console.error('❌ [Auth] Error fetching user profile:', error);
+				setUserProfile(undefined);
+				setNeedsProfileSetup(true); // Assume setup is needed on error
+			}
+		},
+		[refetchUserQuery]
+	);
+
+	// This function now only triggers the mutation. The state update is handled by the useEffect hook.
+	const createUserProfile = async (): Promise<void> => {
+		const email = !session.loading && session.accessTokenPayload?.email;
+		if (!userId || !email) {
+			console.error('❌ [Auth] Cannot create profile: Missing userId or email.');
+			throw new Error('User ID or email is not available to create a profile.');
+		}
+
+		console.log(`🔵 [Auth] Creating/storing profile for userId: ${userId} with email: ${email}`);
+		try {
+			await storeUser({ userId, email });
+			console.log(
+				'✅ [Auth] storeUser mutation successful. The `onSuccess` callback will invalidate and trigger a refetch.'
+			);
+			// We don't need to manually refetch here if the mutation's onSuccess invalidates the query.
+			// The useEffect will catch the data change.
+		} catch (error) {
+			console.error('❌ [Auth] Failed to store user profile:', error);
+		}
+	};
+
+	// Exposed function to allow other parts of the app to trigger a manual refresh.
+	const refetchProfile = useCallback(() => {
+		if (userId) {
+			fetchAndSetUserProfile(userId);
+		}
+	}, [userId, fetchAndSetUserProfile]);
+
+	const logout = async (): Promise<void> => {
+		console.log('🔵 [Auth] Logging out user...');
+		await signOut();
+		// State cleanup is handled by the main useEffect below when `isLoggedIn` becomes false.
+	};
+
+	// 3. Effects
 	useEffect(() => {
 		async function fetchAndStoreKey() {
 			try {
@@ -77,59 +149,33 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 		fetchAndStoreKey();
 	}, []);
 
-	// 5. Function to create user profile using existing storeUser
-	const createUserProfile = async (): Promise<void> => {
-		const email = (!session.loading && session.accessTokenPayload?.email) || '';
-		if (!userId) throw new Error('No user ID available');
-		if (!email) throw new Error('No email available');
-		await storeUser({ userId, email });
-		const { data: userRes } = getUser(userId);
-		const info = userRes?.userInfo;
-
-		setUserProfile(info);
-		setNeedsProfileSetup(false);
-	};
-
-	// 6. Function to refetch profile
-	const refetchProfile = () => {
-		if (userId) {
-			checkUserProfile(userId);
-		}
-	};
-
-	// 7. Helper to check user profile
-	const checkUserProfile = async (currentUserId: string) => {
-		try {
-			const { data: userResponse } = getUser(currentUserId);
-			if (userResponse?.userInfo) {
-				setUserProfile(userResponse.userInfo);
+	// Main effect to sync the user profile with the React Query data source
+	useEffect(() => {
+		console.log('🔵 [Auth] Query data changed:', userQueryData);
+		if (isLoggedIn && !isUserQueryLoading) {
+			if (userQueryData?.userInfo) {
+				setUserProfile(userQueryData.userInfo);
 				setNeedsProfileSetup(false);
-			} else {
-				setUserProfile(undefined);
+			} else if (!userQueryData) {
+				// This handles the case where the user is logged in but has no profile in our DB
 				setNeedsProfileSetup(true);
 			}
-		} catch (error) {
-			// User doesn't exist in your database - needs setup
-			setUserProfile(undefined);
-			setNeedsProfileSetup(true);
 		}
-	};
+	}, [userQueryData, isLoggedIn, isUserQueryLoading]);
 
-	// 8. Enhanced logout function
-	const logout = async (): Promise<void> => {
-		try {
-			await signOut();
-			closeLoginModal();
-			// Clear user profile state on logout
+	// Effect to check the profile when the session is first established
+	useEffect(() => {
+		if (isLoggedIn && userId) {
+			console.log('🔵 [Auth] Session is active. Initial check/fetch of profile.');
+			fetchAndSetUserProfile(userId);
+		} else if (!isLoggedIn && !isSessionLoading) {
+			console.log('🔵 [Auth] Session ended. Clearing profile state.');
 			setUserProfile(undefined);
 			setNeedsProfileSetup(false);
-		} catch (error) {
-			console.error('Logout failed:', error);
-			throw error;
 		}
-	};
+	}, [isLoggedIn, userId, isSessionLoading, fetchAndSetUserProfile]);
 
-	// 9. Auto-close modal upon login (unchanged)
+	// Effect to close login modal automatically
 	const prevIsLoggedIn = useRef(isLoggedIn);
 	useEffect(() => {
 		if (!prevIsLoggedIn.current && isLoggedIn && isLoginModalOpen) {
@@ -138,19 +184,10 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 		prevIsLoggedIn.current = isLoggedIn;
 	}, [isLoggedIn, isLoginModalOpen]);
 
-	// 10. Check user profile when session changes
-	useEffect(() => {
-		if (isLoggedIn && userId && !userProfile) {
-			checkUserProfile(userId);
-		} else if (!isLoggedIn) {
-			// Clear profile state when logged out
-			setUserProfile(undefined);
-			setNeedsProfileSetup(false);
-		}
-	}, [isLoggedIn, userId]);
-
+	// 4. Context Value and Provider
 	const value: AuthContextType = {
-		isSessionLoading,
+		// Combine SuperTokens loading state with our profile loading state
+		isSessionLoading: isSessionLoading || (isLoggedIn && isUserQueryLoading),
 		isLoggedIn,
 		isLoginModalOpen,
 		openLoginModal,
@@ -162,6 +199,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 		createUserProfile,
 		refetchProfile,
 	};
+
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
