@@ -19,11 +19,12 @@ import {
 	NewChatPageLoader,
 	NotFoundPage,
 	HistoryPageLoader,
+	UserPageLoader,
 } from './page/index.js';
 import { useLanguage } from './provider/LanguageProvider.jsx';
 
 export function App() {
-	const { CHARACTER, CHAT, AUTH, HISTORY } = routeConstants;
+	const { CHARACTER, CHAT, USER, HISTORY } = routeConstants;
 	const { addToast } = useToast();
 	const { lang } = useLanguage();
 	const [hasMounted, setHasMounted] = useState(false);
@@ -38,6 +39,15 @@ export function App() {
 			<Route path="/" element={<RootLayout />}>
 				<Route index element={<MainLandingPage />} />
 				{hasMounted && getSuperTokensRoutesForReactRouterDom(reactRouter, [EmailPasswordPreBuiltUI])}
+				{/* User */}
+				<Route
+					path={`${USER}`}
+					element={
+						<SessionAuth>
+							<UserPageLoader />
+						</SessionAuth>
+					}
+				/>
 				{/* character  */}
 				<Route path={`${CHARACTER}`} element={<CharacterListPageLoader />} />
 				<Route path={`${CHARACTER}/:characterId`} element={<CharacterPageLoader />} />

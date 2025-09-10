@@ -7,6 +7,7 @@ import { ChromaResponse, UserResponse } from '#shared/api/ModuleResponse.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import { metadataToUser } from '#shared/util/dbConvertUtils.js';
 import { createBasicUserInfo, isUserInfo } from '#shared/util/typeGuardUtils.js';
+import { flatUserToDoc } from '../util/documentUtils.js';
 
 const { getUserCollection, upsertRecord, getRecordById, getRecords, countOption } = chromaDbClient;
 const collectionType = COLLECTIONS.USER;
@@ -128,8 +129,8 @@ export const userStore = {
 		console.log('✅ [userStore.storeUser] Got collection:', collection?.name);
 		const updatedUser: UserInfo = isUserInfo(user) ? user : createBasicUserInfo(user);
 		try {
-			// Empty string for document since we only use metadata
-			await upsertRecord(collection, updatedUser.userId, '', updatedUser);
+			const documentForEmbedding = flatUserToDoc(updatedUser);
+			await upsertRecord(collection, updatedUser.userId, documentForEmbedding, updatedUser);
 			return { userId: updatedUser.userId };
 		} catch (error) {
 			handleServiceError(

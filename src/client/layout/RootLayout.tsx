@@ -50,6 +50,7 @@ import ImageIcon from '@mui/icons-material/Image';
 import CloseIcon from '@mui/icons-material/Close';
 import { useSessionApi, useUserApi } from '../hook/api/index.js';
 import { InlineEditableField } from './InlineEditableField.jsx';
+import ReloadToHome from './ReloadToHome.jsx';
 
 interface LoginModalProps {
 	loginOpen: boolean;
@@ -279,6 +280,11 @@ export function RootLayout() {
 		headerInfo && setHeaderInfo({ ...headerInfo, editModalOpen: true });
 	};
 
+	const goUserPage = () => {
+		navigate(`/${routeConstants.USER}`);
+		handleMenuClose(); // Close menu after navigation
+	};
+
 	const goMyCharacterListPage = () => {
 		navigate(`/${routeConstants.CHARACTER}`, { state: { isMine: true } });
 		handleMenuClose(); // Close menu after navigation
@@ -286,6 +292,7 @@ export function RootLayout() {
 
 	const goCharacterPage = (characterId: string) => {
 		navigate(`/${routeConstants.CHARACTER}/${characterId}`);
+		handleMenuClose();
 	};
 	// In RootLayout component
 	const onLogout = async () => {
@@ -493,9 +500,13 @@ export function RootLayout() {
 										list: { sx: (theme) => ({ [theme.breakpoints.down('md')]: { padding: 0.5 } }) },
 									}}
 								>
-									<GlassMenuItem onClick={goMyCharacterListPage} colorVariant="silver">
-										<Avatar src={userRes?.userInfo.avatarUrl} variant="circular" />
-										{getLangText(LANG_KEYS.MY_CHARACTERS)}
+									<GlassMenuItem
+										onClick={goUserPage}
+										colorVariant="silver"
+										sx={{ alignItems: 'center', my: 1 }}
+									>
+										<Avatar src={userRes?.userInfo?.avatarUrl} variant="circular" sx={{ mr: 2 }} />
+										<Typography variant="subtitle1">{getLangText(LANG_KEYS.USER_INFO)}</Typography>
 									</GlassMenuItem>
 									<GlassMenuItem onClick={goMyCharacterListPage} colorVariant="silver">
 										{getLangText(LANG_KEYS.MY_CHARACTERS)}
@@ -509,6 +520,8 @@ export function RootLayout() {
 					</Box>
 				</Toolbar>
 			</GlassAppBar>
+			{/* Reload detector */}
+			<ReloadToHome />
 
 			{/* main box */}
 			<Box component="main" sx={{ flex: 1, overflowY: 'auto' }}>

@@ -41,5 +41,5 @@ export function CharacterPageLoader() {
 		);
 	}
 
-	return <CharacterPage characterInfo={characterRes?.characterInfo} userId={userId} />;
+	return <CharacterPage characterInfo={characterRes?.characterInfo} userId={userId || ''} />;
 }
