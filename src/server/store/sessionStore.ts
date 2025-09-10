@@ -202,7 +202,7 @@ export const sessionStore = {
 				updatedAt: now,
 				messageCount: sessionMetadata.messageCount + 1,
 			};
-			const entries: ChatEntry[] = JSON.parse(latestCharMessage);
+			const { latestCharMessage: entries } = JSON.parse(latestCharMessage);
 			const lastConversation = parseEntriesToConversation(entries);
 			const documentForEmbedding = flatSessionToDoc({
 				...updatedMetadata,

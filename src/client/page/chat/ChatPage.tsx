@@ -192,7 +192,9 @@ export const ChatPage: FC<{
 				setUserInput('');
 				updateSessionOnNewMessage({
 					sessionId,
-					latestCharMessage: parseEntriesToText(newTempTurnResult.chatTurnSets[0].response.entries),
+					latestCharMessage: JSON.stringify({
+						latestCharMessage: newTempTurnResult.chatTurnSets[0].response.entries,
+					}),
 				});
 			}
 		} catch (err: any) {
@@ -257,7 +259,9 @@ export const ChatPage: FC<{
 				setFocusedTurnIndex(chatTurns.length);
 				updateSessionOnNewMessage({
 					sessionId,
-					latestCharMessage: JSON.stringify(result.chatTurnSets[newSetIndex].response.entries),
+					latestCharMessage: JSON.stringify({
+						latestCharMessage: result.chatTurnSets[newSetIndex].response.entries,
+					}),
 				});
 			}
 		} catch (err: any) {

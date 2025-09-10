@@ -86,3 +86,13 @@ export const inflateSessionDoc = (document: string): { lastCharMessage: string }
 	const parsed = JSON.parse(document);
 	return { lastCharMessage: parsed.lastCharMessage };
 };
+
+export const flatUserToDoc = (user: UserInfo) => {
+	const document = { email: user.email, userId: user.userId };
+	return JSON.stringify(document).trim();
+};
+
+export const inflateUserDoc = (document: string): { email: string; userId: string } => {
+	const parsed = JSON.parse(document);
+	return { email: parsed.email, userId: parsed.userId };
+};

@@ -34,6 +34,7 @@ export const LANG_KEYS = {
 	LOADING_SESSIONS: 'LOADING_SESSIONS',
 	LOADING_STORIES: 'LOADING_STORIES',
 	LOADING_STORY: 'LOADING_STORY',
+	LOADING_USER: 'LOADING_USER',
 	FAILED_LOAD_CHAT: 'FAILED_LOAD_CHAT',
 	CREATING_SESSION: 'CREATING_SESSION',
 	GEN_RESPONSE: 'GEN_RESPONSE',
@@ -141,6 +142,7 @@ export const langConstants: LangRecord = {
 		eng: 'Loading character stories...',
 	},
 	LOADING_STORY: { kor: '스토리를 불러오는 중입니다...', eng: 'Loading story...' },
+	LOADING_USER: { kor: '내 정보를 불러오는 중입니다...', eng: 'Loading user info...' },
 	CREATING_SESSION: { kor: '새 이야기를 시작하는 중입니다...', eng: 'Starting a new session...' },
 	FAILED_LOAD_CHAT: {
 		kor: '채팅을 불러오는 데 실패했습니다. 다시 시도해 주세요.',
