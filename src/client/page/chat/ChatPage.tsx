@@ -5,11 +5,10 @@ import { ChatLog } from './ChatLog.jsx';
 import { UserInput } from './UserInput.jsx';
 
 // MUI Components
-import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
+import { DEFAULT_EMOTION } from '#shared/config/emotionConstants.js';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { ChatTurnCdo, TempChatTurn, TempChatTurnCdo } from '#shared/domain/chat/ChatInterfaces.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
-import { parseEntriesToText, parseTextToEntries } from '#shared/util/chatParseUtils.js';
 import { Box, Grid, useMediaQuery, useTheme } from '@mui/material';
 import { useOrchestrationApi, useTempChatApi, useSessionApi } from '../../hook/api/index.js';
 import { useChatState } from '../../hook/state/useChatState.js';
@@ -20,9 +19,11 @@ import { getAiModelInfo, isValidAiModelInfo } from '#shared/util/aiModelUtils.js
 import {
 	AiModelInfo,
 	AllModelNames,
-	DEFAULT_CHAT_MODEL_FREE,
+	DEFAULT_EXTRACTION_MODEL,
 } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { useErrorDialog } from '../../util/styleUtils.jsx';
+import { parseEntriesToText, parseTextToEntries } from '../../util/chatParseUtils.js';
+import { useResponsive } from '../../hook/useResponsive.js';
 
 export const ChatPage: FC<{
 	characterInfo: CharacterInfo;
@@ -38,19 +39,7 @@ export const ChatPage: FC<{
 
 	// Get emotion context from Loader
 	const { setCurrentEmotion, imageUrl } = useEmotionContext();
-
-	// Responsive detection
-	const isSmallScreen = useMediaQuery(theme.breakpoints.down('md'));
-	const isTabletPortrait = useMediaQuery(
-		'(min-width: 768px) and (max-width: 1024px) and (orientation: portrait)'
-	);
-	const hasEnoughSpaceForDesktop = useMediaQuery('(min-width: 1200px)');
-	const isWideTablet = useMediaQuery(
-		'(min-width: 1024px) and (max-width: 1199px) and (orientation: landscape)'
-	);
-
-	const shouldUseMobileLayout =
-		isSmallScreen || isTabletPortrait || (!hasEnoughSpaceForDesktop && !isWideTablet);
+	const { shouldUseMobileLayout } = useResponsive();
 
 	// --- HOOKS ---
 	const {
@@ -75,7 +64,8 @@ export const ChatPage: FC<{
 
 	useEffect(() => {
 		if (tempTurnRes?.tempChatTurn) {
-			changeTempChatTurn(tempTurnRes.tempChatTurn);
+			changeTempChatTurn(tempTurnRes?.tempChatTurn);
+			setCurrentTempSetNo(tempTurnRes?.tempChatTurn.chatTurnSets.length - 1);
 		}
 	}, [tempTurnRes]);
 
@@ -86,7 +76,7 @@ export const ChatPage: FC<{
 	const [pageError, setPageError] = useState<string>();
 	const [userEditInput, setUserEditInput] = useState('');
 	const [botEditInput, setBotEditInput] = useState('');
-	const [aiModelInfo, setAiModelInfo] = useState<AiModelInfo>(DEFAULT_CHAT_MODEL_FREE);
+	const [aiModelInfo, setAiModelInfo] = useState<AiModelInfo>(DEFAULT_EXTRACTION_MODEL);
 	const [focusedTurnIndex, setFocusedTurnIndex] = useState(-1);
 	const [isScene, setIsScene] = useState(false);
 
@@ -167,12 +157,14 @@ export const ChatPage: FC<{
 		// This promise generates the *new* temp turn
 		const generatePromise = (async () => {
 			if (!userInput.trim()) return null;
+			const inputJsonString = JSON.stringify(parseTextToEntries(userInput));
 			const recentChatTurnString = JSON.stringify(getRecentTurnsForMemory());
 			const newTempSequence = getNextSequence();
+
 			const tempChatTurnCdo: TempChatTurnCdo = {
 				sessionId,
 				sequence: newTempSequence,
-				userInput,
+				inputJsonString,
 				userId,
 			};
 			return receiveBotResponse.mutateAsync({
@@ -198,9 +190,11 @@ export const ChatPage: FC<{
 				changeTempChatTurn(newTempTurnResult);
 				setFocusedTurnIndex(chatTurns.length); // The index of the new temp turn
 				setUserInput('');
-				updateSessionOnNewMessage.mutateAsync({
+				updateSessionOnNewMessage({
 					sessionId,
-					latestCharMessage: parseEntriesToText(newTempTurnResult.chatTurnSets[0].response.entries),
+					latestCharMessage: JSON.stringify({
+						latestCharMessage: newTempTurnResult.chatTurnSets[0].response.entries,
+					}),
 				});
 			}
 		} catch (err: any) {
@@ -241,11 +235,14 @@ export const ChatPage: FC<{
 		setPageError(undefined);
 		try {
 			const sequence = tempChatTurn.sequence;
-			const userInput = parseEntriesToText(
-				tempChatTurn.chatTurnSets[currentTempSetNo].request.entries
-			);
+			const userInput = JSON.stringify(tempChatTurn.chatTurnSets[currentTempSetNo].request.entries);
 			const recentChatTurnString = JSON.stringify(getRecentTurnsForMemory());
-			const tempChatTurnCdo: TempChatTurnCdo = { sessionId, sequence, userInput, userId };
+			const tempChatTurnCdo: TempChatTurnCdo = {
+				sessionId,
+				sequence,
+				inputJsonString: userInput,
+				userId,
+			};
 			const result: TempChatTurn = await receiveBotResponse.mutateAsync({
 				tempChatTurnCdo,
 				characterInfo,
@@ -260,9 +257,11 @@ export const ChatPage: FC<{
 				changeTempChatTurn(result);
 				setCurrentTempSetNo(newSetIndex);
 				setFocusedTurnIndex(chatTurns.length);
-				updateSessionOnNewMessage.mutateAsync({
+				updateSessionOnNewMessage({
 					sessionId,
-					latestCharMessage: parseEntriesToText(result.chatTurnSets[newSetIndex].response.entries),
+					latestCharMessage: JSON.stringify({
+						latestCharMessage: result.chatTurnSets[newSetIndex].response.entries,
+					}),
 				});
 			}
 		} catch (err: any) {
@@ -303,7 +302,7 @@ export const ChatPage: FC<{
 		);
 		const updateTempTurn = { ...tempChatTurn, chatTurnSets: newChatTurnSets };
 
-		await saveTempChatTurn.mutateAsync(updateTempTurn);
+		await saveTempChatTurn(updateTempTurn);
 		changeTempChatTurn(updateTempTurn);
 		setUserEditInput('');
 		setBotEditInput('');
@@ -393,10 +392,8 @@ export const ChatPage: FC<{
 							height: '100%',
 							position: 'relative',
 							zIndex: 10,
-							padding: theme.spacing(2), // Proper padding
-							gap: theme.spacing(2),
-							paddingTop: 'env(safe-area-inset-top)',
-							paddingBottom: 'env(safe-area-inset-bottom)',
+							// paddingTop: 'env(safe-area-inset-top)',
+							// paddingBottom: 'env(safe-area-inset-bottom)',
 						}}
 					>
 						{/* Mobile Chat */}
@@ -404,11 +401,8 @@ export const ChatPage: FC<{
 							sx={{
 								flexGrow: 1,
 								overflow: 'hidden',
-								borderRadius: theme.spacing(2),
 								backdropFilter: 'blur(2px)',
 								WebkitBackdropFilter: 'blur(2px)',
-								border: '1px solid rgba(255, 255, 255, 0.2)',
-								boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
 								WebkitOverflowScrolling: 'touch',
 								overscrollBehavior: 'contain',
 							}}
@@ -422,7 +416,7 @@ export const ChatPage: FC<{
 								flexShrink: 0,
 								backdropFilter: 'blur(10px)',
 								WebkitBackdropFilter: 'blur(10px)',
-								'& input': { fontSize: '16px' },
+								'& input': { fontSize: '16px' }, // avoid iOS zoom
 							}}
 						>
 							<UserInput {...userInputProps} />
@@ -434,14 +428,7 @@ export const ChatPage: FC<{
 				<GlassPaper
 					key="chat-page"
 					className="paper"
-					sx={{
-						position: 'relative',
-						zIndex: 3,
-						// FIXED: Remove overflow hidden - content should naturally fit
-						padding: theme.spacing(2), // Proper inner padding
-						display: 'flex',
-						flexDirection: 'column',
-					}}
+					sx={{ position: 'relative', zIndex: 3, display: 'flex', flexDirection: 'column' }}
 				>
 					<Grid
 						container

@@ -13,7 +13,7 @@ import {
 	InputLabel,
 } from '@mui/material';
 import styles from '#client/asset/style/ChatComp.module.scss';
-import { supportAiModelInfo } from '#shared/config/supportAiModelInfo.js';
+import { SUPPORTED_MODEL_INFO } from '#shared/config/supportAiModelInfo.js';
 import { ChatRoleType } from '#shared/domain/chat/ChatInterfaces.js';
 
 export const useErrorDialog = (initialMessage?: string) => {
@@ -48,7 +48,7 @@ export const useErrorDialog = (initialMessage?: string) => {
 export const SelectAiModel = ({ id }: { id?: string }) => {
 	// Generate select options based on the supportingAiInfo record
 	const extractAiModelSelect = () => {
-		return Object.entries(supportAiModelInfo).map(([category, models], idx) => (
+		return Object.entries(SUPPORTED_MODEL_INFO).map(([category, models], idx) => (
 			<Fragment key={category}>
 				<ListSubheader>
 					<em>{category}</em>

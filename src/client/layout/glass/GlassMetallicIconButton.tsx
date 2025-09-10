@@ -52,7 +52,7 @@ export const GlassMetallicIconButton = styled(IconButton, {
 
 		// --- Hover State ---
 		'&:hover': {
-			...baseGlassStyle['&:hover'],
+			...baseGlassStyle['&:hover']!,
 			// The glow now correctly uses the independent glowColors
 			boxShadow: `0 0 16px ${glowColors.shadow}`,
 

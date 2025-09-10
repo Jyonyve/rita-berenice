@@ -10,7 +10,7 @@ import {
 import { ChromaResponse, ProfileResponse } from '#shared/api/ModuleResponse.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import { buildProfileId } from '../../shared/util/buildIdUtils.js';
-import { flatProfileToDoc, inflateProfileDoc } from '../../shared/util/documentUtils.js';
+import { flatProfileToDoc, inflateProfileDoc } from '../util/documentUtils.js';
 import { metadataToProfile } from '#shared/util/dbConvertUtils.js';
 import { createBasicProfileInfo, isProfileInfo } from '#shared/util/typeGuardUtils.js';
 
@@ -127,7 +127,7 @@ export const profileStore = {
 	},
 
 	// In profileService
-	storeProfile: async (profile: ProfileCdo | ProfileInfo): Promise<string> => {
+	storeProfile: async (profile: ProfileCdo | ProfileInfo): Promise<{ profileId: string }> => {
 		const collection = await profileStore._getCollection();
 		const now = new Date().toISOString();
 		const updatedProfile: ProfileInfo = isProfileInfo(profile)
@@ -146,7 +146,7 @@ export const profileStore = {
 
 		try {
 			await upsertRecord(collection, updatedMetadata.profileId, documentForEmbedding, updatedMetadata);
-			return JSON.stringify({ profileId: updatedMetadata.profileId });
+			return { profileId: updatedMetadata.profileId };
 		} catch (error) {
 			handleServiceError(
 				error,

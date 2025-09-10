@@ -5,7 +5,7 @@ on:
  # Runs on pushes targeting your main and develop branches
  push:
   branches:
-   - 'develop' # Or any other branches you want to deploy from
+   - 'mock' # Or any other branches you want to deploy from
 
  # Allows you to run this workflow manually from the Actions tab
  workflow_dispatch:

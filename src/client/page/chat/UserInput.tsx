@@ -9,10 +9,10 @@ import {
 	TextField,
 	useTheme,
 } from '@mui/material';
-import React, { ChangeEvent, ChangeEventHandler, FC } from 'react';
+import React, { ChangeEvent, ChangeEventHandler, FC, useState } from 'react';
 import { GlassBox, GlassButton, GlassCircularProgress } from '../../layout/glass/index.js';
 import { useToast } from '../../provider/ToastProvider.jsx';
-import { getLangAlertText } from '../../util/translateUtils.js';
+import { getLangAlertText, getLangText } from '../../util/translateUtils.js';
 import { AiModelSelector } from './AiModelSelector.jsx';
 import { AllModelNames } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { REQUEST_CHARACTER_LIMIT } from '#shared/config/constants.js';
@@ -45,28 +45,49 @@ export const UserInput: FC<UserInputProps> = ({
 }) => {
 	const { addToast } = useToast();
 	const theme = useTheme();
+	const [elapsedSeconds, setElapsedSeconds] = useState<number>();
 
-	const handleSend = () => {
+	const handleSend = async () => {
 		if (import.meta.env.VITE_APP_MODE === 'static') {
 			addToast(getLangAlertText(LANG_KEYS.STATIC_SENDING_DISABLE), 'warning');
 			return;
-		} else {
+		}
+
+		// ✅ Start timing
+		const startTime = performance.now();
+
+		try {
+			// Call the parent's onSend function and wait for it to complete
 			onSend();
+
+			// ✅ Calculate and permanently display elapsed time
+			const endTime = performance.now();
+			const seconds = parseFloat(((endTime - startTime) / 1000).toFixed(1));
+			setElapsedSeconds(seconds);
+
+			// ✅ NO timeout - the elapsed time stays visible until the next send
+		} catch (error) {
+			console.error('Send failed:', error);
+			// Optionally show error message to user
 		}
 	};
-	// Function to handle Enter key press for sending the message
+
 	const handleKeyDown = (event: React.KeyboardEvent) => {
-		if (event.key === 'Enter' && !event.shiftKey) {
-			event.preventDefault(); // Prevents adding a new line
-			if (!isDisabled && value.trim()) {
-				handleSend();
+		if (event.key === 'Enter') {
+			if (event.ctrlKey || event.metaKey) {
+				// Ctrl+Enter (Windows/Linux) or Cmd+Enter (Mac) sends message
+				event.preventDefault();
+				if (!isDisabled && value.trim()) {
+					handleSend();
+				}
 			}
+			// else: Allow default behavior (Enter adds new line)
 		}
 	};
 
 	return (
-		<Box>
-			<Box margin={1}>
+		<Box margin={1}>
+			<Box>
 				<TextField
 					placeholder="Enter your message"
 					variant="outlined"
@@ -93,7 +114,14 @@ export const UserInput: FC<UserInputProps> = ({
 				/>
 			</Box>
 			{/* Row 2: Model Selector and Send Button */}
-			<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginX: 1 }}>
+			<Box
+				sx={{
+					display: 'flex',
+					justifyContent: 'space-between',
+					alignItems: 'center',
+					[theme.breakpoints.down('md')]: { pb: 1 },
+				}}
+			>
 				<Box sx={{ display: 'flex', alignItems: 'center' }}>
 					<AiModelSelector modelName={modelName} onAiModel={onAiModel} />
 					<AdultSwitch
@@ -111,7 +139,11 @@ export const UserInput: FC<UserInputProps> = ({
 					onClick={handleSend}
 					disabled={isDisabled || !value.trim()}
 				>
-					{isProcessing ? <GlassCircularProgress colorVariant="silver" /> : 'Send'}
+					{isProcessing ? (
+						<GlassCircularProgress size={22} colorVariant="silver" seconds={elapsedSeconds} />
+					) : (
+						getLangText(LANG_KEYS.SEND)
+					)}
 				</GlassButton>
 			</Box>
 		</Box>

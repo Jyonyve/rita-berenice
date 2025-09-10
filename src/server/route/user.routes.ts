@@ -1,13 +1,14 @@
-// src/server/routes/user.routes.ts
-
 import express, { type Request, type Response } from 'express';
 import { userStore } from '../store/userStore.js';
-import { genRoutePattern } from '#shared/util/apiHelpers.js';
-
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { UserResponse } from '#shared/api/ModuleResponse.js';
-import { asyncHandler, validateRequestData, validateServiceId } from '../util/routeHelpers.js';
-import { UserInfo, UserMetadata } from '#shared/domain/user/UserInterfaces.js';
+import {
+	asyncHandler,
+	genRoutePattern,
+	validateRequestData,
+	validateServiceId,
+} from '../util/routeHelpers.js';
+import { UserInfo } from '#shared/domain/user/UserInterfaces.js';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.USER;
@@ -15,8 +16,6 @@ const collectionType = COLLECTIONS.USER;
 /**
  * GET /api/user/get-all-users
  * Retrieves all registered users from the database.
- * @returns {UserResponse} An object containing an array of all user objects.
- * @throws {500} Internal server error if the database fetch fails.
  */
 router.get(
 	genRoutePattern('getAllUsers'),
@@ -32,10 +31,6 @@ router.get(
 /**
  * GET /api/user/get-user/:userId
  * Retrieves a specific user by their unique identifier.
- * @param {string} userId - The unique ID of the user to retrieve.
- * @returns {UserResponse} An object containing the requested user data.
- * @throws {404} User not found for the specified ID.
- * @throws {500} Internal server error.
  */
 router.get(
 	genRoutePattern('getUser', ['userId']),
@@ -52,34 +47,44 @@ router.get(
 );
 
 /**
- * GET /api/user/get-user-by-contact/:contact
- * Retrieves a user by their contact information.
- * @param {string} contact - The contact info of the user to retrieve.
- * @returns {UserResponse} An object containing the requested user data.
- * @throws {404} User not found for the specified contact.
- * @throws {500} Internal server error.
+ * GET /api/user/get-user-by-showname/:showName
+ * Retrieves a user by their unique showName.
  */
 router.get(
-	genRoutePattern('getUserByContact', ['contact']),
+	genRoutePattern('getUserByShowName', ['showName']),
 	asyncHandler(async (req: Request, res: Response<UserResponse>): Promise<void> => {
-		const { contact } = req.params;
-		validateRequestData(req.params, 'params', ['contact']);
+		const { showName } = req.params;
+		validateRequestData(req.params, 'params', ['showName']);
 
-		const path = genRoutePattern('getUserByContact', ['contact']);
-		console.log(`API HIT: GET ${path.replace(':contact', contact)}`);
+		const path = genRoutePattern('getUserByShowName', ['showName']);
+		console.log(`API HIT: GET ${path.replace(':showName', showName)}`);
 
-		const response = await userStore.getUserByContact(contact);
+		const response = await userStore.getUserByShowName(showName);
 		res.status(200).json(response);
+	})
+);
+
+/**
+ * GET /api/user/check-show-name-exists/:showName
+ * Checks if a showName is already taken.
+ */
+router.get(
+	genRoutePattern('checkShowNameExists', ['showName']),
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		const { showName } = req.params;
+		validateRequestData(req.params, 'params', ['showName']);
+
+		const path = genRoutePattern('checkShowNameExists', ['showName']);
+		console.log(`API HIT: GET ${path.replace(':showName', showName)}`);
+
+		const exists = await userStore.checkShowNameExists(showName);
+		res.status(200).json({ exists, available: !exists, showName });
 	})
 );
 
 /**
  * GET /api/user/get-user-by-email/:email
  * Retrieves a user by their email address.
- * @param {string} email - The email of the user to retrieve.
- * @returns {UserResponse} An object containing the requested user data.
- * @throws {404} User not found for the specified email.
- * @throws {500} Internal server error.
  */
 router.get(
 	genRoutePattern('getUserByEmail', ['email']),
@@ -98,27 +103,18 @@ router.get(
 /**
  * POST /api/user/store-user
  * Creates or updates a user record in the database.
- * @param {UserInfo} req.body - The complete user data payload.
- * @returns {string} A JSON string with a success message, userId, and timestamp.
- * @throws {400} Invalid request body structure.
- * @throws {500} Internal server error if the database operation fails.
  */
 router.post(
 	genRoutePattern('storeUser'),
-	asyncHandler(
-		async (req: Request<object, string, UserInfo>, res: Response<string>): Promise<void> => {
-			const requiredFields: (keyof UserInfo)[] = ['userId', 'contact'];
-			validateRequestData(req.body, 'body', requiredFields);
+	asyncHandler(async (req: Request, res: Response<{ userId: string }>): Promise<void> => {
+		const requiredFields: (keyof UserInfo)[] = ['userId', 'showName', 'email', 'gender'];
+		validateRequestData(req.body, 'body', requiredFields);
+		const path = genRoutePattern('storeUser');
+		console.log(`API HIT: POST ${path} for user: ${req.body?.userId}`);
 
-			const path = genRoutePattern('storeUser');
-			console.log(`API HIT: POST ${path} for user: ${req.body?.userId}`);
-
-			await userStore.storeUser(req.body);
-			res
-				.status(201)
-				.json(JSON.stringify({ message: 'user stored successfully.', userId: req.body.userId }));
-		}
-	)
+		const response = await userStore.storeUser(req.body);
+		res.status(201).json(response);
+	})
 );
 
 export default router;

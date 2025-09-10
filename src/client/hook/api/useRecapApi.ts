@@ -2,108 +2,53 @@
 
 import type { Where, WhereDocument } from 'chromadb';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../util/clientApiHelpers.js';
-import { MODULE_NAMES } from '#shared/config/constants.js';
-import { genApiUrl } from '#shared/util/apiHelpers.js';
+import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
+import { MODULE_NAMES, METADATA_TYPES } from '#shared/config/constants.js';
 import { RecapInfo } from '#shared/domain/recap/RecapInterfaces.js';
-import { RecapResponse } from '#shared/api/ModuleResponse.js';
+import { Payload } from '#shared/util/apiHelpers.js';
 
-const RecapType = { RECAP: 'recap', RELATIONSHIP: 'relationship' } as const;
 /**
- * A client-side hook for interacting with the RECAP API endpoints, refactored for TanStack Query.
+ * A client-side hook for interacting with the RECAP API endpoints,
+ * fully refactored to match the new store and routes.
  */
 export const useRecapApi = () => {
 	const MODULE_NAME = MODULE_NAMES.RECAP;
 	const queryClient = useQueryClient();
 
 	/**
-	 * Stores a new factual recap entry.
-	 * Mutation key: 'storeFactualRecap'
+	 * Stores a new or updated recap entry.
+	 * This single mutation handles both factual and relationship recaps.
 	 */
-	const storeFactualRecap = useMutation<boolean, Error, RecapInfo>({
-		mutationFn: async (recapInfo: RecapInfo) => {
-			const url = genApiUrl(MODULE_NAME, 'storeFactualRecap');
-			await apiClient.post(url, recapInfo);
-			return true;
-		},
-		onSuccess: (_, variables) => {
-			queryClient.invalidateQueries({
-				queryKey: ['getRecapWholeDoc', variables.sessionId, RecapType.RECAP],
-			});
-			queryClient.invalidateQueries({
-				queryKey: ['queryRecaps', variables.sessionId, RecapType.RECAP],
-			});
-		},
-	});
-
-	/**
-	 * Stores a new relationship recap entry.
-	 * Mutation key: 'storeRelationshipRecap'
-	 */
-	const storeRelationshipRecap = useMutation<boolean, Error, RecapInfo>({
-		mutationFn: async (recapInfo: RecapInfo) => {
-			const url = genApiUrl(MODULE_NAME, 'storeRelationshipRecap');
-			await apiClient.post(url, recapInfo);
-			return true;
-		},
-		onSuccess: (_, variables) => {
-			// Invalidate relevant queries for this session's relationship docs
-			queryClient.invalidateQueries({
-				queryKey: ['getRecapWholeDoc', variables.sessionId, RecapType.RELATIONSHIP],
-			});
-			queryClient.invalidateQueries({
-				queryKey: ['queryRecaps', variables.sessionId, RecapType.RELATIONSHIP],
-			});
-		},
-	});
-
-	/**
-	 * Fetches the entire concatenated recap document for a session.
-	 * Query key: ['getRecapWholeDoc']
-	 */
-	const getRecapWholeDoc = (
-		sessionId: string,
-		type: typeof RecapType.RECAP | typeof RecapType.RELATIONSHIP
-	) =>
-		useQuery<string | null, Error>({
-			queryKey: ['getRecapWholeDoc', sessionId, type], // Ensure type is part of the query key
-			queryFn: async () => {
-				const url = genApiUrl(MODULE_NAME, 'getRecapWholeDoc', [sessionId]);
-				const response = await apiClient.get<string>(url, { params: { type } });
-				return response.data;
-			},
-			enabled: !!sessionId,
-		});
-
-	/**
-	 * Performs a semantic search for recap entries.
-	 * Mutation key: 'queryRecaps'
-	 */
-	const queryRecaps = useMutation<
-		RecapResponse,
-		Error,
-		{
-			sessionId: string;
-			queryTexts: string[];
-			type: typeof RecapType.RECAP | typeof RecapType.RELATIONSHIP;
-			where?: Where;
-			whereDocument?: WhereDocument;
-			limit?: number;
-		}
-	>({
-		mutationFn: async ({ sessionId, queryTexts, type, where, whereDocument, limit }) => {
-			const url = genApiUrl(MODULE_NAMES.RECAP, 'queryRecaps');
-			const response = await apiClient.post<RecapResponse>(url, {
-				sessionId,
-				queryTexts,
-				type,
-				where,
-				whereDocument,
-				limit,
-			});
+	const storeRecap = useMutation<{ recapId: string }, Error, RecapInfo>({
+		mutationFn: async (recapInfo) => {
+			const url = genApiUrl(MODULE_NAME, 'storeRecap');
+			const response = await apiClient.post<{ recapId: string }>(url, recapInfo);
 			return response.data;
 		},
+		onSuccess: (_, variables) => {
+			// After storing a recap, invalidate the list of recaps for that session and type.
+			queryClient.invalidateQueries({
+				queryKey: ['getRecapsBySessionId', variables.sessionId, variables.type],
+			});
+		},
 	});
 
-	return { storeFactualRecap, storeRelationshipRecap, getRecapWholeDoc, queryRecaps };
+	/**
+	 * Fetches all recap entries for a session, filtered by type.
+	 */
+	const getRecapsBySessionId = (
+		sessionId: string,
+		type: typeof METADATA_TYPES.RECAP | typeof METADATA_TYPES.RELATIONSHIP
+	) =>
+		useQuery<RecapInfo[], Error>({
+			queryKey: ['getRecapsBySessionId', sessionId, type],
+			queryFn: async () => {
+				const url = genApiUrl(MODULE_NAME, 'getRecapsBySessionId', [sessionId, type]);
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<RecapInfo[]>(response.data.payload);
+			},
+			enabled: !!sessionId && !!type,
+		});
+
+	return { storeRecap: storeRecap.mutateAsync, getRecapsBySessionId };
 };

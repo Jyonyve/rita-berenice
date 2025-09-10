@@ -1,21 +1,21 @@
 // src/client/component/page/chat/TempTurnDisplay.tsx
 
 import { ChatMessageSet, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
-import { parseEntriesToText } from '#shared/util/chatParseUtils.js';
 import CancelIcon from '@mui/icons-material/Cancel';
 import EditIcon from '@mui/icons-material/Edit';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import ReplayIcon from '@mui/icons-material/Replay';
 import SaveIcon from '@mui/icons-material/Save';
-import { Box, CircularProgress, IconButton, TextField, Typography, useTheme } from '@mui/material';
+import { Box, IconButton, TextField, Typography, useTheme } from '@mui/material';
 import { FC, useEffect, useState } from 'react';
 import { commonStyle, styleEntryFont } from '../../util/styleUtils.jsx';
-import { REQUEST_CHARACTER_LIMIT, RESPONSE_CHARACTER_LIMIT } from '#shared/config/constants.js';
+import { REQUEST_CHARACTER_LIMIT } from '#shared/config/constants.js';
 import { GlassBox } from '../../layout/glass/GlassBox.jsx';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
-import { getLangText } from '../../util/translateUtils.ts';
+import { getLangText } from '../../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
+import { parseEntriesToText } from '../../util/chatParseUtils.js';
 
 /**
  * Props for the TempTurnDisplay component.
@@ -73,7 +73,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 	const handleNextSet = () => changeTempSetNo(currentTempSetNo + 1);
 
 	const isUserTextOverflow = userEditInput.length > REQUEST_CHARACTER_LIMIT;
-	const isBotTextOverflow = botEditInput.length > RESPONSE_CHARACTER_LIMIT;
+	// const isBotTextOverflow = botEditInput.length > RESPONSE_CHARACTER_LIMIT;
 
 	return (
 		<Box
@@ -128,7 +128,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 						onChange={(e) => onEditTempTurnText(e.target.value, false)}
 						disabled={isProcessing}
 						slotProps={{
-							htmlInput: { maxLength: REQUEST_CHARACTER_LIMIT },
+							htmlInput: { maxLength: parseEntriesToText(currentSet.response.entries).length + 100 },
 							input: { sx: { fontSize: theme.typography.body2.fontSize } },
 						}}
 						error={isUserTextOverflow} // Use the built-in error prop
@@ -198,11 +198,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 							size="small"
 							onClick={handleSaveAndExitEdit}
 							disabled={
-								isProcessing ||
-								!userEditInput.trim() ||
-								!botEditInput.trim() ||
-								isUserTextOverflow ||
-								isBotTextOverflow
+								isProcessing || !userEditInput.trim() || !botEditInput.trim() || isUserTextOverflow
 							}
 							title="Save Changes"
 							color="secondary"
@@ -218,7 +214,13 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 									size="small"
 									title="Previous Response"
 									onClick={handlePrevSet}
-									disabled={currentTempSetNo === 0 || isProcessing}
+									disabled={currentTempSetNo === 0}
+									sx={{
+										transition: 'color 0.2s ease-in-out',
+										'&:hover': {
+											color: theme.palette.warning.light, // Green
+										},
+									}}
 								>
 									<NavigateBeforeIcon sx={{ fontSize: '14px' }} />
 								</IconButton>
@@ -238,7 +240,13 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 									size="small"
 									title="Next Response"
 									onClick={handleNextSet}
-									disabled={currentTempSetNo === tempTurn.chatTurnSets.length - 1 || isProcessing}
+									disabled={currentTempSetNo === tempTurn.chatTurnSets.length - 1}
+									sx={{
+										transition: 'color 0.2s ease-in-out',
+										'&:hover': {
+											color: theme.palette.warning.light, // Green
+										},
+									}}
 								>
 									<NavigateNextIcon sx={{ fontSize: '14px' }} />
 								</IconButton>
@@ -246,19 +254,34 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 						)}
 						{currentSet.response && (
 							<>
+								{/* ✅ EDIT ICON - Turns blue on hover */}
 								<IconButton
 									size="small"
 									onClick={handleStartEdit}
 									disabled={isProcessing}
 									title="Edit this turn"
+									sx={{
+										transition: 'color 0.2s ease-in-out',
+										'&:hover': {
+											color: theme.palette.primary.dark, // Blue
+										},
+									}}
 								>
 									<EditIcon sx={{ fontSize: '14px' }} />
 								</IconButton>
+
+								{/* ✅ REGENERATE ICON - Turns green on hover */}
 								<IconButton
 									size="small"
 									onClick={onRegenerate}
 									disabled={isProcessing}
 									title="Regenerate Response"
+									sx={{
+										transition: 'color 0.2s ease-in-out',
+										'&:hover': {
+											color: theme.palette.success.main, // Green
+										},
+									}}
 								>
 									<ReplayIcon sx={{ fontSize: '14px' }} />
 								</IconButton>

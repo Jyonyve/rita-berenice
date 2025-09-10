@@ -3,6 +3,18 @@
 import { ColorMode } from '../provider/ColorModeProvider.jsx';
 
 // src/styles/effects.ts
+type GlassEffectType = {
+	// --- Base Glass Styles ---
+	background: string;
+	backdropFilter: string;
+	WebkitBackdropFilter: string;
+	border: string;
+	boxShadow: string;
+	transition: string;
+
+	// --- Hover State (Subtly Dimmed) ---
+	'&:hover'?: { background: string; boxShadow: string };
+};
 
 /**
  * A reusable style object for creating a DARK MODE glassmorphism effect.
@@ -60,7 +72,10 @@ export const glassEffectLight = {
 	},
 };
 
-export function getGlassEffect(mode: ColorMode, options?: { withHover?: boolean }) {
+export function getGlassEffect(
+	mode: ColorMode,
+	options?: { withHover?: boolean }
+): GlassEffectType {
 	// Default to including the hover effect if not specified
 	const { withHover = true } = options || {};
 

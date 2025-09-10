@@ -11,8 +11,9 @@ import {
 } from '@mui/material';
 import { FC, Fragment } from 'react';
 import { useProfileApi } from '../../hook/api/index.js';
-import { notFoundMessage } from '../../util/translateUtils.js';
+import { getLangText } from '../../util/translateUtils.js';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
+import { LANG_KEYS } from '#shared/config/langConstants.js';
 
 // The props are updated to handle two separate click events
 export const ProfilePreviewList: FC<{
@@ -49,7 +50,7 @@ export const ProfilePreviewList: FC<{
 				<ListItemText
 					primary={
 						<Typography variant="body2" color="text.secondary">
-							{notFoundMessage('profiles')}
+							{getLangText(LANG_KEYS.NO_PROFILES)}
 						</Typography>
 					}
 				/>

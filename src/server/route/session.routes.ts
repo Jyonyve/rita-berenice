@@ -1,9 +1,15 @@
 // server/route/session.routes.ts
 
 import { Router, Request, Response } from 'express';
-import { asyncHandler, validateRequestData } from '../util/routeHelpers.js';
-import { genRoutePattern } from '#shared/util/apiHelpers.js';
+import {
+	asyncHandler,
+	compressData,
+	genRoutePattern,
+	validateRequestData,
+} from '../util/routeHelpers.js';
+import { Payload } from '#shared/util/apiHelpers.js';
 import { sessionStore } from '../store/sessionStore.js';
+import { SessionInfo } from '#shared/domain/session/SessionInterfaces.js';
 
 const router = Router();
 
@@ -14,26 +20,47 @@ const router = Router();
  * @body {string} characterId - ID of the character for the session.
  * @body {string} profileId - ID of the user profile for the session.
  * @body {string} firstCharMessage - The initial message from the character to start the session.
- * @returns {SessionInfo} The newly created session information.
+ * @returns {string} The newly created session information.
  * @throws {400} If required fields are missing in the request body.
  * @throws {500} Internal server error.
  */
 router.post(
 	genRoutePattern('createSession'),
 	asyncHandler(async (req: Request, res: Response) => {
-		validateRequestData(req.body, 'body', ['userId', 'characterId', 'profileId', 'firstCharMessage']);
-		const { userId, characterId, profileId, firstCharMessage } = req.body;
+		validateRequestData(req.body, 'body', ['userId', 'characterId']);
+		const { userId, characterId, firstCharMessage = '', title = '' } = req.body;
 
 		console.log(`API HIT: POST /api/session/create-session for user ${userId}`);
 
-		const newSessionInfo = await sessionStore.createSession(
-			userId,
-			characterId,
-			profileId,
-			firstCharMessage
-		);
+		const response = await sessionStore.createSession(userId, characterId, firstCharMessage, title);
 
-		res.status(201).json(newSessionInfo); // 201 for resource creation
+		res.status(201).json(response); // 201 for resource creation
+	})
+);
+
+/**
+ * PUT /api/session/update-session
+ * Updates a session's metadata but no last message
+ * @body {string} sessionId - The ID of the session to update.
+ * @body {string} latestCharMessage - The new last message from the character.
+ * @returns {204} No content on success.
+ * @throws {400} If required fields are missing.
+ * @throws {500} Internal server error.
+ */
+router.put(
+	genRoutePattern('updateSession'),
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		const requiredFields = Object.keys({} as SessionInfo);
+		validateRequestData(req.body, 'body', requiredFields);
+
+		// Now you can safely destructure knowing all fields are present
+		const sessionInfo: SessionInfo = req.body;
+
+		console.log(`API HIT: PUT /api/session/update-session-on for session ${sessionInfo.sessionId}`);
+
+		await sessionStore.updateSession(sessionInfo);
+
+		res.status(204).send();
 	})
 );
 
@@ -47,14 +74,15 @@ router.post(
  */
 router.get(
 	genRoutePattern('getSessionsByUserId', ['userId']),
-	asyncHandler(async (req: Request, res: Response) => {
+	asyncHandler(async (req: Request, res: Response<Payload>) => {
 		validateRequestData(req.params, 'params', ['userId']);
 		const { userId } = req.params;
 
 		console.log(`API HIT: GET /api/session/get-sessions-by-user-id/${userId}`);
 
 		const response = await sessionStore.getSessionsByUserId(userId);
-		res.status(200).json(response);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
 	})
 );
 
@@ -68,7 +96,7 @@ router.get(
  */
 router.get(
 	genRoutePattern('getSessionsByUserIdAndCharacterId', ['userId', 'characterId']),
-	asyncHandler(async (req: Request, res: Response) => {
+	asyncHandler(async (req: Request, res: Response<Payload>) => {
 		validateRequestData(req.params, 'params', ['userId', 'characterId']);
 		const { userId, characterId } = req.params;
 
@@ -77,7 +105,8 @@ router.get(
 		);
 
 		const response = await sessionStore.getSessionsByUserIdAndCharacterId(userId, characterId);
-		res.status(200).json(response);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
 	})
 );
 
@@ -91,14 +120,15 @@ router.get(
  */
 router.get(
 	genRoutePattern('getSession', ['sessionId']),
-	asyncHandler(async (req: Request, res: Response) => {
+	asyncHandler(async (req: Request, res: Response<Payload>) => {
 		validateRequestData(req.params, 'params', ['sessionId']);
 		const { sessionId } = req.params;
 
 		console.log(`API HIT: GET /api/session/get-session/${sessionId}`);
 
 		const response = await sessionStore.getSession(sessionId);
-		res.status(200).json(response);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
 	})
 );
 
@@ -120,6 +150,52 @@ router.put(
 		console.log(`API HIT: PUT /api/session/update-session-on-new-message for session ${sessionId}`);
 
 		await sessionStore.updateSessionOnNewMessage(sessionId, latestCharMessage);
+
+		res.status(204).send(); // 204 No Content is appropriate for successful updates with no body
+	})
+);
+
+/**
+ * PUT /api/session/update-session-on-new-message
+ * Updates a session's metadata after a new message is added.
+ * @body {string} sessionId - The ID of the session to update.
+ * @body {string} profileId - The new last message from the character.
+ * @returns {204} No content on success.
+ * @throws {400} If required fields are missing.
+ * @throws {500} Internal server error.
+ */
+router.put(
+	genRoutePattern('initSessionProfileId'),
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		validateRequestData(req.body, 'body', ['sessionId', 'profileId']);
+		const { sessionId, profileId } = req.body;
+
+		console.log(`API HIT: PUT /api/session/init-session-profile-id for session ${sessionId}`);
+
+		await sessionStore.initSessionProfileId(sessionId, profileId);
+
+		res.status(204).send(); // 204 No Content is appropriate for successful updates with no body
+	})
+);
+
+/**
+ * PUT /api/session/update-session-title
+ * Updates a session's metadata after a new message is added.
+ * @body {string} sessionId - The ID of the session to update.
+ * @body {string} title - The new last message from the character.
+ * @returns {204} No content on success.
+ * @throws {400} If required fields are missing.
+ * @throws {500} Internal server error.
+ */
+router.put(
+	genRoutePattern('updateSessionTitle'),
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		validateRequestData(req.body, 'body', ['sessionId', 'title']);
+		const { sessionId, title } = req.body;
+
+		console.log(`API HIT: PUT /api/session/update-session-title for session ${sessionId}`);
+
+		await sessionStore.updateSessionTitle(sessionId, title);
 
 		res.status(204).send(); // 204 No Content is appropriate for successful updates with no body
 	})

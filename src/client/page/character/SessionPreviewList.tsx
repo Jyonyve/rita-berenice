@@ -1,7 +1,7 @@
 import { Box, Divider, ListItem, ListItemButton, ListItemText, Typography } from '@mui/material';
 import React, { FC, Fragment } from 'react'; // Import Fragment
 import { useSessionApi } from '../../hook/api/index.js';
-import { getLangText, notFoundMessage } from '../../util/translateUtils.js';
+import { getLangText } from '../../util/translateUtils.js';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
 import { formatTimestamp } from '../../util/styleUtils.jsx';
@@ -9,7 +9,7 @@ import { formatTimestamp } from '../../util/styleUtils.jsx';
 export const SessionPreviewList: FC<{
 	userId: string;
 	characterId: string;
-	handleSessionStart: (sessionId: string) => void;
+	handleSessionStart: (sessionId: string, title: string) => void;
 }> = ({ userId, characterId, handleSessionStart }) => {
 	const {
 		data: sessionRes,
@@ -56,7 +56,7 @@ export const SessionPreviewList: FC<{
 				<ListItemText
 					primary={
 						<Typography variant="body2" color="text.secondary">
-							{notFoundMessage('sessions')}
+							{getLangText(LANG_KEYS.NO_SESSIONS)}
 						</Typography>
 					}
 				/>
@@ -70,7 +70,7 @@ export const SessionPreviewList: FC<{
 				// Use React.Fragment to provide a key for each looped item
 				<Fragment key={info.sessionId}>
 					<ListItem disablePadding>
-						<ListItemButton onClick={() => handleSessionStart(info.sessionId)}>
+						<ListItemButton onClick={() => handleSessionStart(info.sessionId, info.title)}>
 							<ListItemText
 								disableTypography
 								primary={
@@ -84,13 +84,18 @@ export const SessionPreviewList: FC<{
 												width: '100%',
 											}}
 										>
-											<Typography variant="subtitle2" sx={{ overflow: 'hidden', whiteSpace: 'nowrap', pr: 2 }}>
+											<Typography variant="subtitle2" sx={{ flexShrink: 0, pr: 2 }}>
 												{info.title}
 											</Typography>
 											<Typography
 												variant="body2"
 												color="text.secondary"
-												sx={{ flexShrink: 0, textOverflow: 'ellipsis' }}
+												sx={{
+													whiteSpace: 'nowrap',
+													overflow: 'hidden',
+													textOverflow: 'ellipsis',
+													textAlign: 'right',
+												}}
 											>
 												{formatTimestamp(info.updatedAt)}
 											</Typography>

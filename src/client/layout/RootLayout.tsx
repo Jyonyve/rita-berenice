@@ -1,4 +1,12 @@
-import React, { FC, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, {
+	FC,
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+} from 'react';
 import { Outlet, useMatch, useNavigate } from 'react-router';
 import {
 	AppBar,
@@ -15,14 +23,14 @@ import {
 	Dialog,
 	DialogContent,
 	useTheme,
+	useMediaQuery,
 } from '@mui/material';
 import { useColorMode } from '../provider/ColorModeProvider.jsx';
 import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpassword/prebuiltui.js';
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import { AuthPage } from 'supertokens-auth-react/ui/index.js';
-import { signOut } from 'supertokens-auth-react/recipe/session/index.js';
 import { APPNAME } from '#shared/config/constants.js';
-
+import { useLanguage } from '../provider/LanguageProvider.jsx';
 import {
 	GlassPaper,
 	GlassAppBar,
@@ -40,6 +48,9 @@ import { LANG_KEYS } from '#shared/config/langConstants.js';
 import { useAuth } from '../provider/AuthProvider.jsx';
 import ImageIcon from '@mui/icons-material/Image';
 import CloseIcon from '@mui/icons-material/Close';
+import { useSessionApi, useUserApi } from '../hook/api/index.js';
+import { InlineEditableField } from './InlineEditableField.jsx';
+import ReloadToHome from './ReloadToHome.jsx';
 
 interface LoginModalProps {
 	loginOpen: boolean;
@@ -87,24 +98,27 @@ const ImageModal: FC<ImageModalProps> = ({ open, onClose, imageUrl, characterId 
 		<Dialog
 			open={open}
 			onClose={onClose}
-			maxWidth="md"
 			fullWidth
 			slotProps={{
 				paper: {
 					sx: {
 						backgroundColor: 'rgba(0, 0, 0, 0.6)', // Semi-transparent background
 						boxShadow: 'none',
+						maxWidth: 'unset',
 						maxHeight: '90vh',
 						overflow: 'visible',
 						display: 'flex',
 						alignItems: 'center',
 						justifyContent: 'center',
+						p: 0,
 					},
 				},
 			}}
 		>
 			<DialogContent
 				sx={{
+					p: 0,
+					m: 0,
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'center',
@@ -128,8 +142,8 @@ const ImageModal: FC<ImageModalProps> = ({ open, onClose, imageUrl, characterId 
 				>
 					<GlassPortrait
 						imageUrl={imageUrl}
-						colorVariant="secondary"
 						alt={`${characterId} portrait`}
+						hover={false}
 						sx={{
 							width: '100%',
 							height: 'auto',
@@ -142,8 +156,8 @@ const ImageModal: FC<ImageModalProps> = ({ open, onClose, imageUrl, characterId 
 						onClick={onClose}
 						sx={{
 							position: 'absolute',
-							top: theme.spacing(1),
-							right: theme.spacing(1),
+							top: theme.spacing(0.5),
+							right: theme.spacing(0.5),
 							color: 'white',
 							transition: 'all 0.2s ease-in-out',
 						}}
@@ -156,20 +170,72 @@ const ImageModal: FC<ImageModalProps> = ({ open, onClose, imageUrl, characterId 
 	);
 };
 
-interface HeaderInfo {
+// Add this component inside your RootLayout file
+const LanguageSwitch: FC = () => {
+	const { lang, toggleLang } = useLanguage();
+	const handleChange = (event: React.ChangeEvent<HTMLInputElement>, checked: boolean) => {
+		toggleLang(); // Call your toggle function
+	};
+	return (
+		<Switch
+			checked={lang === 'kor'}
+			onChange={handleChange}
+			color="default"
+			size="small"
+			aria-label="toggle language"
+			sx={{
+				'& .MuiSwitch-thumb': {
+					'&:before': {
+						content: lang === 'kor' ? '"한"' : '"EN"',
+						position: 'absolute',
+						width: '100%',
+						height: '100%',
+						left: 0,
+						top: 0,
+						backgroundRepeat: 'no-repeat',
+						backgroundPosition: 'center',
+						fontSize: '9px',
+						fontWeight: 'bold',
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						color: 'black',
+					},
+				},
+			}}
+		/>
+	);
+};
+
+export interface HeaderInfo {
 	characterId: string;
-	showName: string;
+	profileShowName: string;
 	avatarUrl?: string;
 	mobileImageUrl?: string;
+	sessionId?: string;
+	sessionTitle?: string;
+	editModalOpen?: boolean;
 }
-export type HeaderContextType = (info?: HeaderInfo) => void;
+export type HeaderContextType = {
+	setHeaderInfo: (info?: HeaderInfo) => void;
+	headerInfo?: HeaderInfo;
+};
 
 export function RootLayout() {
 	const { mode, toggleMode } = useColorMode();
+	const isSmallScreen = useMediaQuery((theme) => theme.breakpoints.down('md'));
 	const navigate = useNavigate();
-	const { isSessionLoading, isLoggedIn, isLoginModalOpen, openLoginModal, closeLoginModal } =
-		useAuth();
-
+	const {
+		isSessionLoading,
+		isLoggedIn,
+		isLoginModalOpen,
+		openLoginModal,
+		closeLoginModal,
+		logout,
+		userId,
+	} = useAuth();
+	const { updateSessionTitle } = useSessionApi();
+	const { data: userRes } = useUserApi().getUser(userId || '');
 	const headerRef = useRef<HTMLElement>(null);
 	const footerRef = useRef<HTMLElement>(null);
 
@@ -195,19 +261,60 @@ export function RootLayout() {
 		}
 	}, []);
 
-	const goCharacterListPage = () => {
-		navigate(`/${routeConstants.CHARACTER}`);
+	const handleSessionTitleSave = (sessionTitle: string) => {
+		if (headerInfo?.sessionId) {
+			updateSessionTitle({ sessionId: headerInfo.sessionId, title: sessionTitle });
+		}
+	};
+
+	const handleSetHeaderInfo = useCallback((info?: HeaderInfo) => {
+		setHeaderInfo(info);
+	}, []);
+
+	const outletContextValue = useMemo(
+		() => ({ setHeaderInfo: handleSetHeaderInfo, headerInfo }),
+		[headerInfo, handleSetHeaderInfo]
+	);
+
+	const handleProfileModalOpen = () => {
+		headerInfo && setHeaderInfo({ ...headerInfo, editModalOpen: true });
+	};
+
+	const goUserPage = () => {
+		navigate(`/${routeConstants.USER}`);
+		handleMenuClose(); // Close menu after navigation
+	};
+
+	const goMyCharacterListPage = () => {
+		navigate(`/${routeConstants.CHARACTER}`, { state: { isMine: true } });
 		handleMenuClose(); // Close menu after navigation
 	};
 
 	const goCharacterPage = (characterId: string) => {
 		navigate(`/${routeConstants.CHARACTER}/${characterId}`);
+		handleMenuClose();
 	};
-
+	// In RootLayout component
 	const onLogout = async () => {
-		await signOut();
-		navigate('/');
-		handleMenuClose(); // Close menu after logout
+		try {
+			await logout();
+			const currentPath = location.pathname;
+			const sessionAuthPaths = ['/character/new', '/chat', '/history/'];
+
+			const needsRedirect = sessionAuthPaths.some((path) => {
+				if (path.endsWith('/')) return currentPath.startsWith(path);
+
+				return currentPath === path || currentPath.startsWith(path + '/');
+			});
+
+			if (needsRedirect) {
+				navigate('/');
+			}
+
+			handleMenuClose();
+		} catch (error) {
+			console.error('Logout failed:', error);
+		}
 	};
 
 	const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -238,8 +345,15 @@ export function RootLayout() {
 		>
 			<CssBaseline />
 			<GlassAppBar sx={{ width: '100%', position: 'sticky' }} ref={headerRef}>
-				<Toolbar sx={{ justifyContent: 'space-between' }}>
-					<Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+				<Toolbar
+					sx={(theme) => ({
+						justifyContent: 'space-between',
+						[theme.breakpoints.down('md')]: {
+							pr: 1, // bring left/right content closer
+						},
+					})}
+				>
+					<Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, overflow: 'hidden' }}>
 						{!headerInfo?.mobileImageUrl && (
 							<RomanticTitle
 								logo
@@ -247,27 +361,80 @@ export function RootLayout() {
 								component="div"
 								onClick={() => navigate('/')}
 								role="button"
-								sx={{ paddingRight: 1 }}
+								sx={{ pr: 1 }}
 							>
 								{APPNAME}
 							</RomanticTitle>
 						)}
 						{headerInfo && (
 							<Box
-								role="button"
-								sx={{ display: 'flex', alignItems: 'center', pr: 1, pt: 0.5, pb: 0.5 }}
-								gap={1}
-								onClick={() => goCharacterPage(headerInfo.characterId)}
+								sx={{
+									display: 'flex',
+									alignItems: 'center',
+									pr: 1,
+									pt: 0.5,
+									pb: 0.5,
+									gap: 1,
+									minWidth: 0, // Prevent overflow
+								}}
 							>
-								<Avatar src={headerInfo.avatarUrl} variant="circular">
-									<AccountCircle />
-								</Avatar>
-								<Typography variant="caption">{headerInfo.showName}</Typography>
+								<Box
+									role="button"
+									onClick={() => goCharacterPage(headerInfo.characterId)}
+									sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+								>
+									<Avatar src={headerInfo.avatarUrl} variant="circular">
+										<AccountCircle />
+									</Avatar>
+								</Box>
+
+								{/* ✅ Responsive container for profile and session info */}
+								<Box
+									sx={{
+										display: 'flex',
+										// Stack vertically on mobile, horizontally on desktop
+										flexDirection: isSmallScreen ? 'column' : 'row',
+										alignItems: isSmallScreen ? 'flex-start' : 'center',
+										gap: isSmallScreen ? 0.2 : 1,
+										minWidth: 0, // Prevent overflow
+									}}
+								>
+									{/* Profile name - opens modal */}
+									<Typography
+										variant="caption"
+										role="button"
+										onClick={handleProfileModalOpen}
+										sx={{ '&:hover': { textDecoration: 'underline' }, whiteSpace: 'nowrap' }}
+									>
+										{headerInfo.profileShowName}
+									</Typography>
+									{headerInfo.sessionId && headerInfo.sessionTitle && (
+										<InlineEditableField
+											initialValue={headerInfo.sessionTitle}
+											onSave={handleSessionTitleSave}
+											typographyProps={{
+												variant: 'body2',
+												sx: { maxWidth: isSmallScreen ? '200px' : '150px' },
+											}}
+											textFieldProps={{ variant: 'standard', size: 'small' }}
+										/>
+									)}
+								</Box>
 							</Box>
 						)}
+						<RomanticTitle
+							variant="subtitle1"
+							colorVariant="silver"
+							component="div"
+							onClick={() => navigate(`/${routeConstants.CHARACTER}`)}
+							role="button"
+							sx={{ px: 1 }}
+						>
+							{getLangText(LANG_KEYS.CHARACTERS)}
+						</RomanticTitle>
 					</Box>
 
-					<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+					<Box sx={{ display: 'flex', alignItems: 'center' }}>
 						{headerInfo && headerInfo.mobileImageUrl && (
 							<IconButton
 								onClick={handleImageModalOpen}
@@ -281,13 +448,14 @@ export function RootLayout() {
 								<ImageIcon />
 							</IconButton>
 						)}
-						<Switch
+						<LanguageSwitch />
+						{/* <Switch
 							checked={mode === 'dark'}
 							onChange={toggleMode}
 							color="default"
 							size="small"
 							aria-label="toggle theme"
-						/>
+						/> */}
 
 						{!isSessionLoading && (
 							<>
@@ -313,23 +481,36 @@ export function RootLayout() {
 									onClick={handleMenuClose}
 									transformOrigin={{ horizontal: 'right', vertical: 'top' }}
 									anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-									// Apply the permanent "hovered" glass style to the menu's background
+									disableAutoFocusItem={true} // <-- This prevents auto-focus on first item
 									slotProps={{
 										paper: {
 											className: 'hide-scrollbar',
 											sx: (theme) => {
 												const styleObject = theme.palette.mode === 'dark' ? glassEffect : glassEffectLight;
 												const { '&:hover': hoverStyles, ...baseStyles } = styleObject;
-												return { ...baseStyles, ...hoverStyles };
+
+												return {
+													...baseStyles,
+													// Apply hover styles only on non-mobile devices
+													[theme.breakpoints.up('md')]: { ...hoverStyles },
+												};
 											},
 										},
+										// Remove list padding on mobile
+										list: { sx: (theme) => ({ [theme.breakpoints.down('md')]: { padding: 0.5 } }) },
 									}}
 								>
-									<GlassMenuItem onClick={goCharacterListPage} colorVariant="silver">
-										{getLangText(LANG_KEYS.CHARACTERS)}
+									<GlassMenuItem
+										onClick={goUserPage}
+										colorVariant="silver"
+										sx={{ alignItems: 'center', my: 1 }}
+									>
+										<Avatar src={userRes?.userInfo?.avatarUrl} variant="circular" sx={{ mr: 2 }} />
+										<Typography variant="subtitle1">{getLangText(LANG_KEYS.USER_INFO)}</Typography>
 									</GlassMenuItem>
-
-									{/* Custom glow using the colorVariant prop */}
+									<GlassMenuItem onClick={goMyCharacterListPage} colorVariant="silver">
+										{getLangText(LANG_KEYS.MY_CHARACTERS)}
+									</GlassMenuItem>
 									<GlassMenuItem onClick={onLogout} colorVariant="silver">
 										{getLangText(LANG_KEYS.LOGOUT)}
 									</GlassMenuItem>
@@ -339,10 +520,12 @@ export function RootLayout() {
 					</Box>
 				</Toolbar>
 			</GlassAppBar>
+			{/* Reload detector */}
+			<ReloadToHome />
 
 			{/* main box */}
 			<Box component="main" sx={{ flex: 1, overflowY: 'auto' }}>
-				<Outlet context={setHeaderInfo satisfies HeaderContextType} />
+				<Outlet context={outletContextValue} />
 			</Box>
 
 			{/* Login Modal */}
@@ -356,18 +539,20 @@ export function RootLayout() {
 			/>
 
 			{/* Footer */}
-			<GlassFooter
-				ref={footerRef}
-				sx={{ width: '100%', position: 'sticky', bottom: 0, zIndex: (theme) => theme.zIndex.appBar }}
-			>
-				<Container maxWidth="sm">
-					<Typography variant="body2" color="text.secondary" align="center">
-						{`Copyright © ${APPNAME} `}
-						{new Date().getFullYear()}
-						{'.'}
-					</Typography>
-				</Container>
-			</GlassFooter>
+			{!isSmallScreen && (
+				<GlassFooter
+					ref={footerRef}
+					sx={{ width: '100%', position: 'sticky', bottom: 0, zIndex: (theme) => theme.zIndex.appBar }}
+				>
+					<Container maxWidth="sm">
+						<Typography variant="body2" color="text.secondary" align="center">
+							{`Copyright © ${APPNAME} `}
+							{'2025'}
+							{'.'}
+						</Typography>
+					</Container>
+				</GlassFooter>
+			)}
 		</Box>
 	);
 }

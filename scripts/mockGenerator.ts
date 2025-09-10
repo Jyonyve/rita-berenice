@@ -1,7 +1,12 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { chatStore, characterStore, profileStore, sessionStore } from '../src/server/store/index.js';
+import {
+	chatStore,
+	characterStore,
+	profileStore,
+	sessionStore,
+} from '../src/server/store/index.js';
 
 // ESM-compatible way to get the current directory path
 const __filename = fileURLToPath(import.meta.url);
@@ -13,7 +18,7 @@ const __dirname = path.dirname(__filename);
 const generateMockChatData = async (sessionId: string) => {
 	console.log(`🚀 Starting MOCK-CHAT generation for session: ${sessionId}`);
 	try {
-		const response = await chatStore.getAllChatTurns(sessionId);
+		const response = await chatStore.getAllDisplayTurns(sessionId);
 		if (!response || response.ids.length === 0) {
 			console.error(`❌ No chat turns found for session ID: ${sessionId}`);
 			return;

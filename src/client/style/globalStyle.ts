@@ -1,6 +1,6 @@
 // src/styles/theme.ts
 
-import { createTheme } from '@mui/material/styles';
+import { createTheme, Theme } from '@mui/material/styles';
 import { typography } from './typography.js';
 
 // --- PALETTES ---
@@ -21,18 +21,54 @@ const lightPalette = {
 
 // --- THEME CREATION ---
 
-export const getTheme = (mode: 'light' | 'dark') =>
-	createTheme({
+export const getTheme = (mode: 'light' | 'dark') => {
+	const theme = createTheme({
 		palette: { mode, ...(mode === 'dark' ? darkPalette : lightPalette) },
-		typography: typography,
+		typography,
+	});
+
+	return createTheme(theme, {
 		components: {
-			MuiTextField: { defaultProps: { size: 'small' } },
+			MuiTextField: {
+				defaultProps: { size: 'small', variant: 'outlined' },
+				styleOverrides: {
+					root: {
+						'& .MuiInputBase-input': {
+							fontSize: theme.typography.body2.fontSize, // Uses body2 from your theme
+						},
+						'& .MuiInputBase-input::placeholder': {
+							fontSize: theme.typography.body2.fontSize,
+							opacity: 0.7,
+						},
+
+						// MUI 충돌로 TextField 크기조정 제외
+						// '& .MuiInputBase-root.MuiInputBase-multiline textarea': {
+						// 	resize: 'vertical',
+						// 	// Use !important to override inline styles
+
+						// 	// On mobile, disable resizing
+						// 	[theme.breakpoints.down('md')]: { resize: 'none' },
+						// },
+					},
+				},
+			},
 			MuiFormControl: { defaultProps: { size: 'small' } },
+			MuiSelect: { styleOverrides: { select: { fontSize: theme.typography.body2.fontSize } } },
+			MuiMenuItem: { styleOverrides: { root: { fontSize: theme.typography.body2.fontSize } } },
+			MuiAutocomplete: {
+				styleOverrides: {
+					input: { fontSize: theme.typography.body2.fontSize },
+					option: { fontSize: theme.typography.body2.fontSize },
+				},
+			},
 			MuiInputLabel: {
-				styleOverrides: { shrink: ({ theme }) => ({ fontSize: theme.typography.body2.fontSize }) },
+				styleOverrides: {
+					root: { fontSize: theme.typography.body2.fontSize },
+					shrink: { fontSize: theme.typography.body2.fontSize },
+				},
 			},
 			MuiCssBaseline: {
-				styleOverrides: (theme) => ({
+				styleOverrides: {
 					// --- BASE & BOX-SIZING ---
 					'*, *::before, *::after': { boxSizing: 'border-box' },
 					html: { height: '100%', margin: 0, padding: 0 },
@@ -45,6 +81,7 @@ export const getTheme = (mode: 'light' | 'dark') =>
 						// Apply padding here. This creates the permanent 16px gap that
 						// will always be visible around the scrolling .paper.
 						padding: theme.spacing(2),
+						[theme.breakpoints.down('md')]: { padding: 0 },
 
 						// Hide the scrollbar visuals on the main element itself
 						'&::-webkit-scrollbar': { display: 'none' },
@@ -81,7 +118,8 @@ export const getTheme = (mode: 'light' | 'dark') =>
 						msOverflowStyle: 'none', // Correct: camelCase for -ms-overflow-style
 						scrollbarWidth: 'none', // Correct: camelCase for scrollbar-width
 					},
-				}),
+				},
 			},
 		},
 	});
+};

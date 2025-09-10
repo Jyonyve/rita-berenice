@@ -1,9 +1,9 @@
 // src/client/page/ChatPageLoader.tsx
 
-import { DEFAULT_EMOTION } from '#shared/config/emotionWordsMapper.js';
+import { DEFAULT_EMOTION } from '#shared/config/emotionConstants.js';
 import { ChatMessage, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { buildMessageId } from '#shared/util/buildIdUtils.js';
-import { parseTextToEntries } from '#shared/util/chatParseUtils.js';
+import { parseTextToEntries } from '../../util/chatParseUtils.js';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
@@ -18,16 +18,18 @@ import { routeConstants } from '../../routeConstants.js';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
+import { ProfileCdo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { SessionInfo } from '#shared/domain/session/SessionInterfaces.js';
 
 export function NewChatPageLoader() {
 	const navigate = useNavigate();
 	const { state } = useLocation();
 	const { isSessionLoading, userId } = useAuth();
-	const [error, setError] = useState<string | null>(null);
+	const [error, setError] = useState<string>();
 
 	// Ensure state exists before destructuring
 	const characterId: string = state?.characterId || '';
-	const profileId: string = state?.profileId || '';
+	const profileData: ProfileCdo | undefined = state?.profileData;
 
 	// --- API and State Hooks ---
 	const {
@@ -35,31 +37,31 @@ export function NewChatPageLoader() {
 		isLoading: isLoadingCharacter,
 		isError: isCharacterError,
 	} = useCharacterApi().getCharacter(characterId);
-	const { createSession } = useSessionApi();
-	const { data: profileRes, isLoading: isProfileLoading } = useProfileApi().getProfile(profileId);
+	const { createSession, initSessionProfileId } = useSessionApi();
+	const { storeProfile } = useProfileApi();
 	const { saveTempChatTurn } = useTempChatApi();
 
 	useEffect(() => {
 		// This function will be defined and then called within the effect
 		const initializeSession = async () => {
-			// **Guard Clause**: Wait until all dependencies are loaded and valid
-			if (
-				isSessionLoading ||
-				isProfileLoading ||
-				!profileRes?.profileInfo ||
-				!characterRes?.characterInfo
-			) {
-				return; // Do nothing until all data is ready
+			if (isSessionLoading || isLoadingCharacter || !characterRes?.characterInfo || !profileData) {
+				return; // Wait for all required data
 			}
 
 			try {
-				// **Create Session**
-				const sessionInfo = await createSession.mutateAsync({
+				// Step 1: Create Session (without profileId)
+				const { sessionId } = await createSession({
 					userId,
 					characterId: characterRes.characterInfo.characterId,
-					profileId: profileRes.profileInfo.profileId,
 					firstCharMessage: characterRes.characterInfo.firstMessage,
 				});
+
+				// Step 2: Create Profile with the new sessionId
+				const profileCdo: ProfileCdo = { ...profileData, sessionId };
+				const { profileId } = await storeProfile(profileCdo);
+
+				// Step 3: Update the Session with the new profileId to link them
+				await initSessionProfileId({ sessionId, profileId });
 
 				// **Create and Save the First Chat Turn (if applicable)**
 				if (characterRes.characterInfo.firstMessage) {
@@ -67,12 +69,12 @@ export function NewChatPageLoader() {
 					const sequence = 0;
 					const request: ChatMessage = {
 						entries: [],
-						sessionId: sessionInfo.sessionId,
+						sessionId,
 						sequence,
 						messageType: 'request',
 						role: 'user',
-						showName: profileRes.profileInfo.showName,
-						messageId: buildMessageId(sessionInfo.sessionId, sequence, 'request'),
+						showName: profileCdo.showName,
+						messageId: buildMessageId(sessionId, sequence, 'request'),
 						createdAt: now,
 						updatedAt: now,
 						emotion: DEFAULT_EMOTION,
@@ -81,12 +83,12 @@ export function NewChatPageLoader() {
 					};
 					const response: ChatMessage = {
 						entries: parseTextToEntries(characterRes.characterInfo.firstMessage),
-						sessionId: sessionInfo.sessionId,
+						sessionId: sessionId,
 						sequence,
 						messageType: 'response',
 						role: 'assistant',
 						showName: characterRes.characterInfo.showName,
-						messageId: buildMessageId(sessionInfo.sessionId, sequence, 'response'),
+						messageId: buildMessageId(sessionId, sequence, 'response'),
 						createdAt: now,
 						updatedAt: now,
 						emotion: DEFAULT_EMOTION, // Or a specific first emotion from characterInfo
@@ -95,7 +97,7 @@ export function NewChatPageLoader() {
 					};
 					const firstTurn: TempChatTurn = {
 						userId,
-						sessionId: sessionInfo.sessionId,
+						sessionId: sessionId,
 						sequence,
 						chatTurnSets: [{ request, response, setNo: 0 }],
 						type: 'temp',
@@ -106,11 +108,11 @@ export function NewChatPageLoader() {
 						fixedSetNo: 0,
 					};
 
-					await saveTempChatTurn.mutateAsync(firstTurn);
+					await saveTempChatTurn(firstTurn);
 				}
 
 				// **Redirect to the new chat session**
-				navigate(`/${routeConstants.CHAT}/${sessionInfo.sessionId}`, { replace: true });
+				navigate(`/${routeConstants.CHAT}/${sessionId}`, { replace: true });
 			} catch (e: any) {
 				console.error('Failed to create session and first chat turn:', e);
 				setError('Could not create the new chat session. Please try again.');
@@ -121,7 +123,7 @@ export function NewChatPageLoader() {
 		if (isSessionLoading) {
 			return; // Wait for session to load
 		}
-		if (!userId || !characterId || !profileId) {
+		if (!userId || !characterId || !profileData) {
 			navigate('/create-session-error', { replace: true });
 			return;
 		}
@@ -132,11 +134,9 @@ export function NewChatPageLoader() {
 		// This ensures we always work with the latest data and avoids race conditions.
 		isSessionLoading,
 		userId,
-		isProfileLoading,
-		profileRes,
 		characterRes,
 		characterId,
-		profileId,
+		profileData,
 		navigate,
 		createSession,
 		saveTempChatTurn,

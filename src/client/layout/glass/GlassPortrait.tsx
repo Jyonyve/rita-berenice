@@ -1,30 +1,47 @@
 import React, { useState, useEffect, useRef, FC } from 'react';
-import { Box, SxProps, Theme, useTheme } from '@mui/material';
+import { Box, BoxProps, SxProps, Theme, useTheme } from '@mui/material';
 import { ColorVariant, getColor } from '../../style/colors.js';
+import { useHoverState } from '../index.js';
 
-interface GlassPortraitProps {
+export interface GlassPortraitProps extends BoxProps {
 	imageUrl: string;
 	alt?: string;
-	className?: string;
 	colorVariant?: ColorVariant;
-	sx?: SxProps<Theme>;
 	fit?: 'cover' | 'contain';
-	hover?: boolean;
+	hover?: boolean; // The custom prop for controlling hover state
 }
 
-export const GlassPortrait: FC<GlassPortraitProps> = ({
-	imageUrl,
-	alt = 'Character',
-	colorVariant = 'silver',
-	className,
-	sx = {},
-	fit = 'cover',
-	hover = false,
-}) => {
+export const GlassPortrait: FC<GlassPortraitProps> = (props) => {
+	const {
+		imageUrl,
+		alt = 'Character',
+		colorVariant = 'silver',
+		fit = 'cover',
+		hover,
+		sx = {}, // sx is also destructured to be merged manually
+		onMouseEnter,
+		onMouseLeave,
+		...rest // All other valid BoxProps (like 'className') are in here
+	} = props;
+
+	const [isSelfHovering, setIsSelfHovering] = useState(false);
+	const hoverFromContext = useHoverState();
+	const isHovering = hover !== undefined ? hover : hoverFromContext || isSelfHovering;
+
 	const theme = useTheme();
 	const glowColor = getColor(theme, colorVariant);
 	const imgRef = useRef<HTMLImageElement>(null);
 	const [glowSize, setGlowSize] = useState(18);
+
+	const handleMouseEnter = (event: React.MouseEvent<HTMLDivElement>) => {
+		setIsSelfHovering(true); // Internal logic
+		if (onMouseEnter) onMouseEnter(event); // Call handler from props if it exists
+	};
+
+	const handleMouseLeave = (event: React.MouseEvent<HTMLDivElement>) => {
+		setIsSelfHovering(false); // Internal logic
+		if (onMouseLeave) onMouseLeave(event); // Call handler from props if it exists
+	};
 
 	useEffect(() => {
 		function updateGlowSize() {
@@ -64,8 +81,8 @@ export const GlassPortrait: FC<GlassPortraitProps> = ({
       inset 1px 1px 2px rgba(255, 255, 255, 0.15)
     `,
 		transition: 'box-shadow 0.5s ease-in-out',
-		...(hover && glowStyles),
-		'&:hover': glowStyles,
+		// The conditional styling now uses the clean 'hover' variable.
+		...(isHovering && glowStyles),
 		...sx,
 	};
 
@@ -79,7 +96,7 @@ export const GlassPortrait: FC<GlassPortraitProps> = ({
 	};
 
 	return (
-		<Box className={className} sx={containerSx}>
+		<Box sx={containerSx} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} {...rest}>
 			<Box
 				component="img"
 				className="image-container"

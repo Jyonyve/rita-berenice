@@ -3,10 +3,9 @@
 import express, { type Request, type Response } from 'express';
 
 import { personaEngine } from '../service/personaEngine.js';
-import { genRoutePattern } from '#shared/util/apiHelpers.js';
 import { ChatMessage } from '#shared/domain/chat/ChatInterfaces.js';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
-import { asyncHandler, validateRequestData } from '../util/routeHelpers.js';
+import { asyncHandler, genRoutePattern, validateRequestData } from '../util/routeHelpers.js';
 import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { MemoryResponse } from '#shared/api/ModuleResponse.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';

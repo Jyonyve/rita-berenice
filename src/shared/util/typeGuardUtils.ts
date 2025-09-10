@@ -1,21 +1,34 @@
 import { CharacterCdo, CharacterInfo } from '../domain/character/CharacterInterfaces.js';
 import { ProfileCdo, ProfileInfo } from '../domain/profile/ProfileInterfaces.js';
-import { TermCdo, TermInfo } from '../domain/term/TermInterfaces.js';
+import {
+	CharacterTermCdo,
+	CharacterTermInfo,
+	SessionTermCdo,
+	SessionTermInfo,
+} from '../domain/term/TermInterfaces.js';
 import {
 	buildCharacterId,
 	buildChatTurnId,
 	buildHistoryId,
 	buildProfileId,
+	buildUserShowName,
 } from './buildIdUtils.js';
 import { ChatTurn, ChatTurnCdo } from '../domain/chat/ChatInterfaces.js';
-import { parseSessionId } from './chatParseUtils.js';
+import { parseSessionId } from './parseUtils.js';
 import { HistoryCdo, HistoryInfo, LoreCdo, LoreInfo } from '../domain/lore/LoreInterfaces.js';
-import { NA } from '../config/constants.js';
-import { DEFAULT_EMOTION } from '../config/emotionWordsMapper.js';
+import { DEFAULT_USER_AVATAR, NA } from '../config/constants.js';
+import { DEFAULT_EMOTION } from '../config/emotionConstants.js';
+import { UserCdo, UserInfo } from '../domain/user/UserInterfaces.js';
 
 //type guard
-export function isTermInfo(term: TermCdo | TermInfo): term is TermInfo {
-	return (term as TermInfo).englishTerm !== undefined;
+export function isCharacterTermInfo(
+	term: CharacterTermCdo | CharacterTermInfo
+): term is CharacterTermInfo {
+	return (term as CharacterTermInfo).englishTerm !== undefined;
+}
+
+export function isSessionTermInfo(term: SessionTermCdo | SessionTermInfo): term is SessionTermInfo {
+	return (term as SessionTermInfo).englishTerm !== undefined;
 }
 
 export function isCharacterInfo(
@@ -26,6 +39,10 @@ export function isCharacterInfo(
 
 export function isProfileInfo(profile: ProfileCdo | ProfileInfo): profile is ProfileInfo {
 	return (profile as ProfileInfo).profileId !== undefined;
+}
+
+export function isUserInfo(user: UserCdo | UserInfo): user is UserInfo {
+	return (user as UserInfo).type !== undefined;
 }
 
 export function isHistoryInfo(history: HistoryCdo | HistoryInfo): history is HistoryInfo {
@@ -48,6 +65,23 @@ export const createBasicProfileInfo = (cdo: ProfileCdo): ProfileInfo => {
 	const now = new Date().toISOString();
 	const profileId = buildProfileId(cdo.sessionId, cdo.userId);
 	return { ...cdo, profileId, type: 'profile', createdAt: now, updatedAt: now };
+};
+
+export const createBasicUserInfo = (cdo: UserCdo): UserInfo => {
+	const now = new Date().toISOString();
+
+	return {
+		title: '(•‿•)',
+		showName: buildUserShowName(),
+		email: cdo.email,
+		contact: cdo.email,
+		createdAt: now,
+		updatedAt: now,
+		type: 'user',
+		userId: cdo.userId,
+		gender: 'other',
+		avatarUrl: DEFAULT_USER_AVATAR,
+	};
 };
 
 export const createBasicChatTurn = (cdo: ChatTurnCdo): ChatTurn => {
@@ -90,7 +124,7 @@ export const createBasicHistory = (cdo: HistoryCdo): HistoryInfo => {
 		historyId: '',
 		type: 'history',
 		generatedTitle: '',
-		category: 'character_history',
+		category: 'Other',
 		summary: '',
 		periodLabel: 'Unknown',
 		eventDateValue: 'Unknown',

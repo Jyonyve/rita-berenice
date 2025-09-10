@@ -1,9 +1,11 @@
-import { ALPHANUMERIC_ALPHABET } from '#shared/config/constants.js';
+import { ALPHANUMERIC_ALPHABET, METADATA_TYPES } from '#shared/config/constants.js';
 import { ChatIndexContentType, ChatMessageType } from '#shared/domain/chat/ChatInterfaces.js';
 import { customAlphabet } from 'nanoid';
 import { _nanoid } from 'zod/v4/core';
 import { LoreIndexContentType } from '../domain/lore/LoreInterfaces.js';
 import { RecapIndexContentType } from '../domain/recap/RecapInterfaces.js';
+import { LangCode } from '../config/langConstants.js';
+import { generateNickName } from '../config/nicknameConstants.js';
 
 /* gen uuid (shortened)*/
 const _genNanoId = (length: number) => customAlphabet(ALPHANUMERIC_ALPHABET, length)();
@@ -29,6 +31,10 @@ export type SuffixType = (typeof SUFFIX)[keyof typeof SUFFIX];
 
 export const buildCredentialId = (userId: string) => {
 	return `${userId}_${SUFFIX.CREDENTIAL}`;
+};
+
+export const buildUserShowName = (langCode: LangCode = 'kor') => {
+	return generateNickName(langCode);
 };
 
 /* character id */
@@ -91,8 +97,12 @@ export const buildRecapId = (sessionId: string, turnStart: number, turnEnd: numb
 	return `${sessionId}_${turnStart}_${turnEnd}_${SUFFIX.RECAP}`;
 };
 
-export const buildTermId = (sessionId: string): string => {
-	return `${sessionId}_${_genNanoId(8)}_${SUFFIX.TERM}`;
+export const buildCharacterTermId = (characterId: string): string => {
+	return `${characterId}_${_genNanoId(4)}_${METADATA_TYPES.CHARACTER}_${SUFFIX.TERM}`;
+};
+
+export const buildSessionTermId = (sessionId: string): string => {
+	return `${sessionId}_${_genNanoId(4)}_${METADATA_TYPES.SESSION}_${SUFFIX.TERM}`;
 };
 
 export const buildRelationshipRecapId = (

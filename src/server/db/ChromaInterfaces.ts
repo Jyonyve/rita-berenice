@@ -47,6 +47,7 @@ export interface CredentialData {
 	// Match the structure used in credentialService
 	CHROMA_API_URL?: string;
 	OPENAI_API_KEY?: string;
+	COHERE_API_KEY?: string;
 	GROQ_API_KEY?: string;
 	OPENROUTER_API_KEY?: string;
 	PERPLEXITY_API_KEY?: string;
@@ -64,3 +65,5 @@ export interface CredentialData {
 }
 
 export type CredentialDataType = keyof CredentialData;
+
+export type EmbeddingFunction = 'openai' | 'cohere' | 'text';

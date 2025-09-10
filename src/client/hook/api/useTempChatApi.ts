@@ -1,48 +1,53 @@
-// src/client/hooks/useTempChatApi.ts
-
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { apiClient } from '../../util/clientApiHelpers.js';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
 import { TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
-import { genApiUrl } from '#shared/util/apiHelpers.js';
-import { ChatResponse, TempChatResponse } from '#shared/api/ModuleResponse.js';
+import { Payload } from '#shared/util/apiHelpers.js';
+import { TempChatResponse } from '#shared/api/ModuleResponse.js';
 
 /**
- * A client-side hook for interacting with the CHAT and TEMP_CHAT API endpoints.
- * It encapsulates API logic, loading/error states, and user notifications via a toast system.
+ * A client-side hook for interacting with the TEMP_CHAT API endpoints.
  */
 export const useTempChatApi = () => {
-	// --- Temporary Chat Turn Operations ---
+	const queryClient = useQueryClient();
 
 	/**
 	 * Saves a temporary chat turn object.
-	 * Query Key: ['saveTempChatTurn']
+	 * REFACTORED: Now expects an object { tempTurnId: string } from the server.
 	 */
-	const saveTempChatTurn = useMutation<void, Error, TempChatTurn>({
-		mutationFn: async (tempData: TempChatTurn) => {
+	const saveTempChatTurn = useMutation<{ tempTurnId: string }, Error, TempChatTurn>({
+		mutationFn: async (tempData) => {
 			const url = genApiUrl(MODULE_NAMES.TEMP, 'saveTempChatTurn');
-			await apiClient.post(url, tempData);
+			const response = await apiClient.post<{ tempTurnId: string }>(url, tempData);
+			return response.data;
+		},
+		onSuccess: (data, variables) => {
+			// After saving a temp turn, invalidate the query for that specific turn.
+			// This ensures that any component displaying this turn will get the latest data,
+			// including the server-generated tempTurnId, createdAt, and updatedAt fields.
+			queryClient.invalidateQueries({
+				queryKey: ['getTempChatTurn', variables.sessionId, variables.sequence],
+			});
 		},
 	});
 
 	/**
 	 * Fetches a temporary chat turn.
-	 * Query Key: ['getTempChatTurn']
 	 */
 	const getTempChatTurn = (sessionId: string, sequence: number, isHistoryLoading: boolean) =>
 		useQuery<TempChatResponse, Error>({
-			queryKey: ['getTempChatTurn', sessionId, sequence], // The query key now reflects the method name
+			queryKey: ['getTempChatTurn', sessionId, sequence],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAMES.TEMP, 'getTempChatTurn', [sessionId, sequence]);
-				const response = await apiClient.get(url, {
-					_suppressToast: true, // This flag is still useful
-					_suppress404Error: true, // NEW: This will prevent console logs for 404s
+				const response = await apiClient.get<Payload>(url, {
+					_suppressToast: true,
+					_suppress404Error: true,
 				});
-				return response.data;
+				return decompressData<TempChatResponse>(response.data.payload);
 			},
-			enabled: !isHistoryLoading && !!sessionId && sequence >= 0, // Only run if both are available
-			retry: (failureCount, error) => (error.name === '404' ? false : failureCount < 1),
+			enabled: !isHistoryLoading && !!sessionId && sequence >= 0,
+			retry: false,
 		});
 
-	return { saveTempChatTurn, getTempChatTurn };
+	return { saveTempChatTurn: saveTempChatTurn.mutateAsync, getTempChatTurn };
 };

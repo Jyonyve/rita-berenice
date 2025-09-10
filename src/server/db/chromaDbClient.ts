@@ -1,34 +1,56 @@
 // src/server/db/chromaDbClient.ts
-import { ChromaClient, Collection, IncludeEnum, Where, WhereDocument } from 'chromadb';
-import { COLLECTIONS } from './ChromaInterfaces.js';
+import { ChromaClient, Collection, IncludeEnum, Metadata, Where, WhereDocument } from 'chromadb';
+import { COLLECTIONS, CollectionType } from './ChromaInterfaces.js';
 import { MetadataType } from '#shared/config/constants.js';
 import { ChromaResponse } from '#shared/api/ModuleResponse.js';
 import { OpenAIEmbeddingFunction } from '@chroma-core/openai';
+import { CohereEmbeddingFunction } from '@chroma-core/cohere';
 
-const apiKey = process.env.OPENAI_API_KEY;
-if (!apiKey) {
-	// This check is important. It will cause the server to crash on startup
-	// if the secret is not set, which is good practice (fail fast).
-	throw new Error('FATAL: OPENAI_API_KEY secret is not set in the environment.');
+const openAiApiKey = process.env.OPENAI_API_KEY;
+const cohereApiKey = process.env.COHERE_API_KEY;
+
+if (!cohereApiKey || !openAiApiKey) {
+	throw new Error('FATAL: Both OPENAI_API_KEY and COHERE_API_KEY must be set in environment.');
 }
 
-const embedFnOpenAi = new OpenAIEmbeddingFunction({ apiKey, modelName: 'text-embedding-3-small' });
+// ✅ SIMPLIFIED: Direct embedding function assignments
+const embedFnOpenAi = new OpenAIEmbeddingFunction({
+	apiKey: openAiApiKey,
+	modelName: 'text-embedding-3-small',
+});
+
+const embedFnCohere = new CohereEmbeddingFunction({
+	apiKey: cohereApiKey,
+	modelName: 'embed-v4.0',
+	inputType: 'search_document',
+	// Cohere embed-v4.0 defaults to 1536 dimensions
+});
+
 const host = process.env.CHROMA_HOST;
-const port = process.env.CHROMA_PORT;
+const port = Number(process.env.CHROMA_PORT);
 const ssl = process.env.CHROMA_SSL === 'true';
 
-if (!host || !port || process.env.CHROMA_SSL === undefined) {
+if (!host || !port || isNaN(port) || ssl === undefined) {
 	throw new Error(
 		'ChromaDB environment variables (CHROMA_HOST, CHROMA_PORT, CHROMA_SSL) must be set.'
 	);
 }
-const chromaClient = new ChromaClient({
-	host,
-	port: parseInt(port, 10), // Ensure port is a number
-	ssl,
-});
-// Retry wrapper
-const withRetry = async <T>(fn: () => Promise<T>, retries = 3, delay = 1500): Promise<T> => {
+
+const chromaClient = new ChromaClient({ host, port, ssl });
+const _collectionCache: Map<string, Collection> = new Map();
+
+// ✅ SIMPLIFIED: Direct mapping without chooseEmbeddingFunction
+const _getCollectionSpecificEmbedding = (collectionName: CollectionType) => {
+	// Only TEMP uses Cohere for high-token capacity
+	if (collectionName === COLLECTIONS.TEMP) {
+		return embedFnCohere;
+	}
+
+	// All other collections use OpenAI
+	return embedFnOpenAi;
+};
+
+const _withRetry = async <T>(fn: () => Promise<T>, retries = 1, delay = 1500): Promise<T> => {
 	let lastError: unknown;
 	for (let i = 0; i < retries; i++) {
 		try {
@@ -42,43 +64,50 @@ const withRetry = async <T>(fn: () => Promise<T>, retries = 3, delay = 1500): Pr
 	throw lastError;
 };
 
-/**
- * A centralized Map to cache all singleton Collection objects.
- * This avoids repetitive caching logic for each collection type.
- * Structure: Map<collectionName, Collection>
- */
-const _collectionCache: Map<string, Collection> = new Map();
+const _logJsonPreview = (obj: any, length: number = 100): string => {
+	if (obj === null || typeof obj === 'undefined') {
+		return 'N/A'; // Or 'undefined'/'null' based on your preference
+	}
+	const str = JSON.stringify(obj);
+	if (str.length <= length) {
+		return str;
+	}
+	return `${str.substring(0, length)}...`;
+};
 
-/**
- * A generic, caching helper for retrieving singleton collections using ChromaDB's
- * `getOrCreateCollection` method. This is more efficient than the previous
- * get-then-create-on-error pattern. It checks a local cache first to minimize DB calls.
- *
- * @param collectionName The name of the collection from the COLLECTIONS enum.
- * @returns A Promise that resolves to the ChromaDB Collection object.
- */
-const _getOrCreateSingletonCollection = async (collectionName: string): Promise<Collection> => {
+const _getOrCreateSingletonCollection = async (
+	collectionName: CollectionType
+): Promise<Collection> => {
 	if (_collectionCache.has(collectionName)) {
 		console.log(`[ChromaClient] Cache HIT for collection: ${collectionName}`);
 		return _collectionCache.get(collectionName)!;
 	}
 
 	console.log(`[ChromaClient] Cache MISS for ${collectionName}. Fetching or creating from DB...`);
+
+	const embeddingFunction = _getCollectionSpecificEmbedding(collectionName);
+
 	try {
 		console.log(`[ChromaClient] Attempting to GET collection: ${collectionName}`);
-		const collection = await withRetry(() =>
-			chromaClient.getCollection({ name: collectionName, embeddingFunction: embedFnOpenAi })
+		const collection = await _withRetry(() =>
+			chromaClient.getCollection({ name: collectionName, embeddingFunction })
 		);
 		_collectionCache.set(collectionName, collection);
-		console.log(`[ChromaClient] Cache HIT for existing collection: ${collectionName}`);
+		console.log(`[ChromaClient] Collection ${collectionName} retrieved and cached.`);
 		return collection;
 	} catch (error) {
-		console.log(`[ChromaClient] Collection ${collectionName} not found or fetch failed. Creating...`);
-		const collection = await withRetry(() =>
+		console.log(`[ChromaClient] Collection ${collectionName} not found. Creating...`);
+		const collection = await _withRetry(() =>
 			chromaClient.createCollection({
 				name: collectionName,
-				embeddingFunction: embedFnOpenAi,
-				metadata: { name: collectionName, created: new Date().toString() },
+				embeddingFunction,
+				metadata: {
+					name: collectionName,
+					created: new Date().toString(),
+					embeddingModel:
+						collectionName === COLLECTIONS.TEMP ? 'cohere-embed-v4.0' : 'openai-text-embedding-3-small',
+					dimensions: 1536, // Both models use 1536 dimensions
+				},
 			})
 		);
 		_collectionCache.set(collectionName, collection);
@@ -131,48 +160,47 @@ export const chromaDbClient = {
 		}
 	},
 
-	// Enhanced CRUD operations with embedding support
 	addRecord: async (
 		collection: Collection,
 		id: string,
 		document: string,
-		metadata: Record<string, any>,
-		embedding?: number[] // Optional embedding
+		metadata: Record<string, any>
 	): Promise<void> => {
-		const params: any = { ids: [id], documents: [document], metadatas: [metadata] };
-		if (embedding) {
-			params.embeddings = [embedding];
-		}
+		const params = { ids: [id], documents: [document], metadatas: [metadata] };
 		await collection.add(params);
 	},
 
+	// Update
 	updateRecord: async (
 		collection: Collection,
 		id: string,
 		document: string,
-		metadata: Record<string, any>,
-		embedding?: number[] // Optional embedding
+		metadata: Record<string, any>
 	): Promise<void> => {
-		const params: any = { ids: [id], documents: [document], metadatas: [metadata] };
-		if (embedding) {
-			params.embeddings = [embedding];
-		}
+		const params = { ids: [id], documents: [document], metadatas: [metadata] };
 		await collection.update(params);
 	},
 
+	// Upsert (single)
 	upsertRecord: async (
 		collection: Collection,
 		id: string,
 		document: string,
-		metadata: Record<string, any>,
-		embedding?: number[] // Optional embedding
+		metadata: Record<string, any>
 	): Promise<void> => {
-		const params: any = { ids: [id], documents: [document], metadatas: [metadata] };
+		const params = { ids: [id], documents: [document], metadatas: [metadata] };
+		await collection.upsert(params);
+	},
 
-		if (embedding) {
-			params.embeddings = [embedding];
-		}
-
+	// Upsert (batch)
+	upsertRecords: async (
+		collection: Collection,
+		ids: string[],
+		documents: string[],
+		metadatas: Record<string, any>[],
+		options?: { logTokenStats?: boolean } // keep optional logging if you like
+	): Promise<void> => {
+		const params = { ids, documents, metadatas };
 		await collection.upsert(params);
 	},
 
@@ -228,7 +256,7 @@ export const chromaDbClient = {
 	): Promise<ChromaResponse> => {
 		try {
 			console.log(
-				`[ChromaClient.queryRecords] filter: ${JSON.stringify(where).slice(0, 10)}, document: ${JSON.stringify(whereDocument).slice(0, 10)}, limit: ${limit}`
+				`[ChromaClient.getRecords] filter: ${_logJsonPreview(where)}, document: ${_logJsonPreview(whereDocument)}, limit: ${limit}`
 			);
 			const MAX = await collection.count(); // Ensure the collection is initialized
 			const results = await collection.get({
@@ -238,7 +266,7 @@ export const chromaDbClient = {
 			});
 			return _returnResponse(results);
 		} catch (error) {
-			console.error(`[ChromaClient.queryRecords] Failed to query records:`, error);
+			console.error(`[ChromaClient.getRecords] Failed to query records:`, error);
 			throw new Error(
 				`ChromaDB get failed for where ${JSON.stringify(where)}: ${(error as Error).message}`
 			);
@@ -254,7 +282,7 @@ export const chromaDbClient = {
 	): Promise<ChromaResponse[]> => {
 		try {
 			console.log(
-				`[ChromaClient.queryRecords] Querying with text: "${queryTexts.join('\n').slice(0, 50)}...",\n filter: ${JSON.stringify(where)}, ${JSON.stringify(whereDocument)},\n limit: ${limit}`
+				`[ChromaClient.queryRecords] Querying with text: "${queryTexts[0].substring(0, 10)}...",\n filter: ${_logJsonPreview(where)}, ${_logJsonPreview(whereDocument)},\n limit: ${limit}`
 			);
 			const MAX = await collection.count(); // Ensure the collection is initialized
 			const results = await collection.query({
@@ -277,9 +305,7 @@ export const chromaDbClient = {
 				.filter((r): r is ChromaResponse => r !== null);
 		} catch (error) {
 			console.error(`[ChromaClient.queryRecords] Failed to query records:`, error);
-			throw new Error(
-				`ChromaDB get failed for queryText ${queryTexts.slice(0, 3)}: ${(error as Error).message}`
-			);
+			throw new Error(`ChromaDB get failed for queryText ${queryTexts}: ${(error as Error).message}`);
 		}
 	},
 
@@ -298,26 +324,6 @@ export const chromaDbClient = {
 		}
 
 		await collection.add(params);
-	},
-
-	/**
-	 * Upserts multiple records into a collection in a single batch operation.
-	 * This is highly efficient for creating or updating many records at once.
-	 */
-	upsertRecords: async (
-		collection: Collection,
-		ids: string[],
-		documents: string[],
-		metadatas: Record<string, any>[],
-		embeddings?: number[][] // Optional pre-computed embeddings
-	): Promise<void> => {
-		const params: any = { ids, documents, metadatas };
-
-		if (embeddings) {
-			params.embeddings = embeddings;
-		}
-
-		await collection.upsert(params);
 	},
 
 	deleteRecordById: async (collection: Collection, id: string): Promise<void> => {
@@ -350,5 +356,10 @@ export const chromaDbClient = {
 		// 3. Call the native delete method with the constructed options.
 		console.log('[ChromaClient.deleteRecords] Deleting with options:', deleteOptions);
 		return await collection.delete(deleteOptions);
+	},
+
+	countOption: async (collection: Collection, where: Where): Promise<number> => {
+		const result = await collection.get({ where: where, include: [] });
+		return result.ids.length;
 	},
 };

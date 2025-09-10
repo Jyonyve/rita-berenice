@@ -2,12 +2,16 @@
 
 import express, { type Request, type Response } from 'express';
 import { profileStore } from '../store/profileStore.js';
-import { genRoutePattern } from '#shared/util/apiHelpers.js';
-
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
-import { ProfileResponse } from '#shared/api/ModuleResponse.js';
-import { asyncHandler, validateRequestData, validateServiceId } from '../util/routeHelpers.js';
+import {
+	asyncHandler,
+	compressData,
+	genRoutePattern,
+	validateRequestData,
+	validateServiceId,
+} from '../util/routeHelpers.js';
 import { ProfileInfo, ProfileMetadata } from '#shared/domain/profile/ProfileInterfaces.js';
+import { Payload } from '#shared/util/apiHelpers.js';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.PROFILE;
@@ -20,13 +24,14 @@ const collectionType = COLLECTIONS.PROFILE;
  */
 router.get(
 	genRoutePattern('getAllProfilesByUserId', ['userId']),
-	asyncHandler(async (req: Request, res: Response<ProfileResponse>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
 		const { userId } = req.params;
 		const path = genRoutePattern('getAllProfilesByUserId', ['userId']);
 		console.log(`API HIT: GET ${path}`);
 
 		const response = await profileStore.getAllProfilesByUserId(userId);
-		res.status(200).json(response);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
 	})
 );
 
@@ -40,7 +45,7 @@ router.get(
  */
 router.get(
 	genRoutePattern('getProfile', ['profileId']),
-	asyncHandler(async (req: Request, res: Response<ProfileResponse>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
 		const { profileId } = req.params;
 		validateServiceId(profileId, collectionType);
 
@@ -48,7 +53,8 @@ router.get(
 		console.log(`API HIT: GET ${path.replace(':profileId', profileId)}`);
 
 		const response = await profileStore.getProfile(profileId);
-		res.status(200).json(response);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
 	})
 );
 
@@ -62,7 +68,7 @@ router.get(
  */
 router.get(
 	genRoutePattern('getProfileBySessionId', ['sessionId']),
-	asyncHandler(async (req: Request, res: Response<ProfileResponse>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
 		const { sessionId } = req.params;
 		validateServiceId(sessionId, collectionType);
 
@@ -70,7 +76,8 @@ router.get(
 		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
 
 		const response = await profileStore.getProfileBySessionId(sessionId);
-		res.status(200).json(response);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
 	})
 );
 
@@ -84,7 +91,7 @@ router.get(
  */
 router.get(
 	genRoutePattern('getProfilesByShowName', ['showName']),
-	asyncHandler(async (req: Request, res: Response<ProfileResponse>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
 		const { showName } = req.params;
 		validateRequestData(req.params, 'params', ['showName']);
 
@@ -92,7 +99,8 @@ router.get(
 		console.log(`API HIT: GET ${path.replace(':showName', showName)}`);
 
 		const response = await profileStore.getProfilesByShowName(showName);
-		res.status(200).json(response);
+		const payload = compressData(response);
+		res.status(200).json({ payload });
 	})
 );
 
@@ -107,7 +115,10 @@ router.get(
 router.post(
 	genRoutePattern('storeProfile'),
 	asyncHandler(
-		async (req: Request<object, string, ProfileInfo>, res: Response<string>): Promise<void> => {
+		async (
+			req: Request<object, string, ProfileInfo>,
+			res: Response<{ profileId: string }>
+		): Promise<void> => {
 			const requiredFields: (keyof ProfileMetadata)[] = ['name', 'sessionId', 'userId'];
 			validateRequestData(req.body, 'body', requiredFields);
 

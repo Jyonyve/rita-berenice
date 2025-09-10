@@ -1,6 +1,8 @@
-import { ApiError } from '#server/util/serviceHelpers.js';
 import Session from 'supertokens-web-js/recipe/session/index.js';
 import axios from 'axios';
+import { ApiError } from '#shared/domain/error/errors.js';
+import { toKebabCase } from '#shared/util/apiHelpers.js';
+import { gunzipSync } from 'zlib';
 
 // API 클라이언트 인스턴스 생성
 export const apiClient = axios.create({
@@ -14,8 +16,6 @@ export function setupApiClient(
 ) {
 	// 요청 인터셉터: 요청 로그 출력
 	apiClient.interceptors.request.use(async (config) => {
-		console.log('API 요청:', config.method?.toUpperCase(), config.url);
-
 		// First, check if a session exists. This is a cheap, non-network call.
 		if (await Session.doesSessionExist()) {
 			// Only if a session exists, get the token and attach it.
@@ -28,71 +28,131 @@ export function setupApiClient(
 	});
 	// 응답 인터셉터: 에러 처리
 	// In your apiClient setup file
-
 	apiClient.interceptors.response.use(
 		(response) => response,
 		async (error) => {
 			const originalRequest = error.config as any;
-
-			// Gracefully handle 404 errors when the custom flag is set
+			// 1. The Suppression Override: This is the most important check.
+			// It runs before any other logic.
 			if (error?.response?.status === 404 && originalRequest._suppress404Error) {
-				// By rejecting the promise directly here, we bypass the logging and toasting logic below,
-				// allowing the calling code (e.g., React Query's `retry` function) to handle it silently.
+				console.log(
+					'%cINTERCEPTOR: Suppressing expected 404 as requested. Please ignore the 404 error console.',
+					'color: green; font-weight: bold;'
+				);
 				return Promise.resolve({ data: null });
 			}
 
-			// Handle 401 Unauthorized for session refresh
+			// 2. Session Refresh Logic: This runs only for non-suppressed errors.
 			if (error?.response?.status === 401 && !originalRequest._retry) {
 				originalRequest._retry = true;
 				const refreshResult = await Session.attemptRefreshingSession();
 				if (refreshResult) {
-					return apiClient(originalRequest); // Retry ONCE
+					return apiClient(originalRequest);
 				} else {
 					addToast('Your session has expired. Please log in again.', 'error');
 				}
-				return Promise.reject(error);
 			}
 
-			// For all other errors, process and show a toast unless suppressed
+			// 3. General Error Processing: For all other errors, standardize them.
 			const processedError = processApiError(error);
 			if (!originalRequest._suppressToast) {
 				addToast(processedError.clientMessage || 'An unexpected error occurred.', 'error');
 			}
+			// Reject with the standardized error for TanStack Query's retry logic to use.
 			return Promise.reject(processedError);
 		}
 	);
 }
 
 export const processApiError = (err: unknown): ApiError => {
-	// Log the raw error for developer debugging. This is the only place you need to console.error.
+	// Log the raw error for developer debugging
 	console.error('API Error Intercepted:', err);
 
-	// Case 1: The server responded with an error (status code outside 2xx)
+	// This is the key part that handles the translation
 	if (axios.isAxiosError(err) && err.response?.data) {
 		const serverError = err.response.data;
-		// Re-construct the ApiError object to ensure it has the correct class instance on the client.
+
+		// Correctly read the "code" from the server's JSON payload
+		// and map it to the "status" of the client-side ApiError.
+		const statusCode = serverError.code || err.response.status || 500;
+
 		return new ApiError(
-			serverError.status || 500,
+			statusCode,
 			serverError.message || 'An error occurred on the server.',
 			serverError.clientMessage,
 			serverError.details
 		);
 	}
 
-	// Case 2: It's a network request error (e.g., server is down, CORS)
+	// Fallback cases for network errors or unexpected client errors
 	if (axios.isAxiosError(err) && !err.response) {
-		return new ApiError(
-			503, // Service Unavailable is a fitting status code
-			'Network Error',
-			'The server is currently unavailable. Please try again later.'
-		);
+		return new ApiError(503, 'Network Error', 'The server is currently unavailable.');
 	}
-
-	// Case 3: A non-API, unexpected client-side error occurred during the request setup
 	if (err instanceof Error) {
 		return new ApiError(500, err.message, 'An unexpected application error occurred.');
 	}
 
-	// Fallback for non-Error exceptions
 	return new ApiError(500, 'An unknown error occurred.');
+};
+
+/**
+ * Generates a concrete API URL path suitable for client-side API calls.
+ * Inserts actual parameter values into the path.
+ *
+ * @param moduleName - The resource name (e.g., 'chroma', 'character', 'chat'). Should be singular.
+ * @param methodName - The operation being performed (e.g., 'storeChatTurn', 'getSummary').
+ * @param paramValues - Optional array of parameter values to insert into the path (e.g., ['session123', 5]). Values are URI encoded.
+ * @returns The concrete API URL path string (e.g., '/api/chroma/store-chat-turn/session123'). Note: Base URL (domain) is added by apiClient.
+ */
+export function genApiUrl(
+	moduleName: string,
+	methodName: string,
+	paramValues: (string | number)[] = []
+): string {
+	const kebabMethod = toKebabCase(methodName);
+	let path = `/${moduleName}/${kebabMethod}`; // Base path
+
+	// Append encoded parameter values if any are provided
+	if (paramValues.length > 0) {
+		const encodedValues = paramValues.map((val) => encodeURIComponent(String(val))).join('/');
+		path += `/${encodedValues}`;
+	}
+
+	return path;
+}
+
+// src/client/util/compressionUtils.ts
+
+/**
+ * Decompresses a gzipped, Base64-encoded string using only native browser APIs.
+ * This is the most reliable method, avoiding all Node.js polyfill issues.
+ */
+export const decompressData = async <T>(compressedBase64: string): Promise<T> => {
+	try {
+		// Step 1: Decode the Base64 string into a byte stream (Uint8Array).
+		// This is the correct, modern way to handle this, despite the legacy name of `atob`.
+		const compressedBytes = Uint8Array.from(atob(compressedBase64), (c) => c.charCodeAt(0));
+
+		// Step 2: Create a readable stream from the compressed data.
+		const compressedStream = new ReadableStream({
+			start(controller) {
+				controller.enqueue(compressedBytes);
+				controller.close();
+			},
+		});
+
+		// Step 3: Pipe the data through the native DecompressionStream.
+		const decompressionStream = compressedStream.pipeThrough(new DecompressionStream('gzip'));
+
+		// Step 4: Use the Response API to easily read the entire decompressed stream.
+		// This is a robust way to handle the stream and get the final result.
+		const decompressedBlob = await new Response(decompressionStream).blob();
+		const decompressedText = await decompressedBlob.text();
+
+		// Step 5: Parse the resulting JSON text.
+		return JSON.parse(decompressedText);
+	} catch (error) {
+		console.error('Client-side decompression failed:', error);
+		throw new Error('Failed to decompress data on the client.');
+	}
 };

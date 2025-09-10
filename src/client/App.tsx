@@ -1,24 +1,32 @@
 // src/client/App.tsx
 import { Routes, Route } from 'react-router';
-import { CharacterListPageLoader } from './page/character/CharacterListPageLoader.jsx';
-import { NotFoundPage } from './page/error/NotFoundPage.jsx';
 import { RootLayout } from './layout/RootLayout.jsx';
-import { CharacterPageLoader } from './page/character/CharacterPageLoader.jsx';
 import { routeConstants } from './routeConstants.js';
-import { ChatPageLoader } from './page/chat/ChatPageLoader.jsx';
-import MainLandingPage from './page/MainLandingPage.jsx';
 import { getSuperTokensRoutesForReactRouterDom } from 'supertokens-auth-react/ui/index.js';
 import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpassword/prebuiltui.js';
 import * as reactRouter from 'react-router';
 import { useEffect, useState } from 'react';
 import { useToast } from './provider/ToastProvider.jsx';
 import { setupApiClient } from './util/clientApiHelpers.js';
-import { NewChatPageLoader } from './page/chat/NewChatPageLoader.jsx';
 import { SessionAuth } from 'supertokens-auth-react/recipe/session/index.js';
+import {
+	CharacterListPageLoader,
+	CharacterPageLoader,
+	ChatPageLoader,
+	EditCharacterPageLoader,
+	MainLandingPage,
+	NewCharacterPageLoader,
+	NewChatPageLoader,
+	NotFoundPage,
+	HistoryPageLoader,
+	UserPageLoader,
+} from './page/index.js';
+import { useLanguage } from './provider/LanguageProvider.jsx';
 
 export function App() {
-	const { CHARACTER, CHAT, ERROR, AUTH } = routeConstants;
+	const { CHARACTER, CHAT, USER, HISTORY } = routeConstants;
 	const { addToast } = useToast();
+	const { lang } = useLanguage();
 	const [hasMounted, setHasMounted] = useState(false);
 
 	useEffect(() => {
@@ -31,8 +39,44 @@ export function App() {
 			<Route path="/" element={<RootLayout />}>
 				<Route index element={<MainLandingPage />} />
 				{hasMounted && getSuperTokensRoutesForReactRouterDom(reactRouter, [EmailPasswordPreBuiltUI])}
+				{/* User */}
+				<Route
+					path={`${USER}`}
+					element={
+						<SessionAuth>
+							<UserPageLoader />
+						</SessionAuth>
+					}
+				/>
+				{/* character  */}
 				<Route path={`${CHARACTER}`} element={<CharacterListPageLoader />} />
 				<Route path={`${CHARACTER}/:characterId`} element={<CharacterPageLoader />} />
+				<Route
+					path={`${CHARACTER}/new`}
+					element={
+						<SessionAuth>
+							<NewCharacterPageLoader />
+						</SessionAuth>
+					}
+				/>
+				<Route
+					path={`${CHARACTER}/edit/:characterId`}
+					element={
+						<SessionAuth>
+							<EditCharacterPageLoader />
+						</SessionAuth>
+					}
+				/>
+				{/* character history */}
+				<Route
+					path={`${HISTORY}/:historyId`}
+					element={
+						<SessionAuth>
+							<HistoryPageLoader />
+						</SessionAuth>
+					}
+				/>
+				{/* chat */}
 				<Route
 					path={`${CHAT}`}
 					element={

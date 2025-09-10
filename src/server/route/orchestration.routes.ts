@@ -1,16 +1,25 @@
 // src/server/routes/orchestration.routes.ts
 
 import express, { type Request, type Response } from 'express';
-
-import { genRoutePattern } from '#shared/util/apiHelpers.js';
-
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
-import { asyncHandler, validateRequestData, validateServiceId } from '../util/routeHelpers.js';
-import { TempChatTurn, TempChatTurnCdo } from '#shared/domain/chat/ChatInterfaces.js';
-import { receiveBotResponse } from '../service/orchestrationService.js';
+import {
+	asyncHandler,
+	compressData,
+	genRoutePattern,
+	validateRequestData,
+	validateServiceId,
+} from '../util/routeHelpers.js';
+import {
+	ChatTurn,
+	ChatTurnCdo,
+	TempChatTurn,
+	TempChatTurnCdo,
+} from '#shared/domain/chat/ChatInterfaces.js';
+import { finalizeChatTurn, receiveBotResponse } from '../service/orchestrationService.js';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { Payload } from '#shared/util/apiHelpers.js';
 
 const router = express.Router();
 
@@ -34,7 +43,7 @@ router.post(
 	asyncHandler(
 		async (
 			req: Request<object, TempChatTurn, ReceiveBotResponseBody>,
-			res: Response<TempChatTurn>
+			res: Response<Payload>
 		): Promise<void> => {
 			const {
 				tempChatTurnCdo,
@@ -52,8 +61,14 @@ router.post(
 				'profileInfo',
 				'aiModelInfo',
 			];
+			const tempTurnCdoField: (keyof TempChatTurnCdo)[] = [
+				'sessionId',
+				'sequence',
+				'userId',
+				'inputJsonString',
+			];
 			validateRequestData(req.body, 'body', requiredFields);
-			validateRequestData(tempChatTurnCdo, 'body', ['sessionId', 'sequence', 'userInput']);
+			validateRequestData(tempChatTurnCdo, 'body', tempTurnCdoField);
 			validateServiceId(tempChatTurnCdo.sessionId, COLLECTIONS.CHAT);
 
 			const path = genRoutePattern('receiveBotResponse');
@@ -71,9 +86,45 @@ router.post(
 				isScene
 			);
 
-			res.status(200).json(response);
+			const payload = compressData(response);
+			res.status(200).json({ payload });
 		}
 	)
 );
 
+/**
+ * POST /api/orchestration/finalize-chat-turn
+ * Finalizes a temporary chat turn by enriching its metadata via LLM and storing it
+ * as a permanent ChatTurn in the main chat history.
+ */
+router.post(
+	genRoutePattern('finalizeChatTurn'),
+	asyncHandler(
+		async (req: Request<object, ChatTurn, ChatTurnCdo>, res: Response<Payload>): Promise<void> => {
+			const chatTurnCdo = req.body;
+
+			// Validate the incoming request payload
+			const requiredFields: (keyof ChatTurnCdo)[] = [
+				'userId',
+				'sessionId',
+				'sequence',
+				'request',
+				'response',
+			];
+			validateRequestData(req.body, 'body', requiredFields);
+			validateServiceId(chatTurnCdo.sessionId, COLLECTIONS.CHAT);
+
+			const path = genRoutePattern('finalizeChatTurn');
+			console.log(
+				`API HIT: POST ${path} for session ${chatTurnCdo.sessionId}, sequence ${chatTurnCdo.sequence}`
+			);
+
+			// Call the finalization service function
+			const enrichedChatTurn = await finalizeChatTurn(chatTurnCdo);
+
+			const payload = compressData(enrichedChatTurn);
+			res.status(200).json({ payload });
+		}
+	)
+);
 export default router;

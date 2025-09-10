@@ -1,125 +1,182 @@
 // src/client/hooks/useGlossaryApi.ts
 
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
-import { apiClient } from '../../util/clientApiHelpers.js';
+import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
-import { TermCdo, TermInfo } from '#shared/domain/term/TermInterfaces.js';
-import { genApiUrl } from '#shared/util/apiHelpers.js';
+import {
+	SessionTermCdo,
+	SessionTermInfo,
+	CharacterTermCdo,
+	CharacterTermInfo,
+	TermType,
+} from '#shared/domain/term/TermInterfaces.js';
+import { Payload } from '#shared/util/apiHelpers.js';
 import { TermResponse } from '#shared/api/ModuleResponse.js';
 
 /**
- * A client-side hook for interacting with the GLOSSARY API endpoints.
- * It encapsulates API logic, loading/error states, and user notifications via a toast system.
+ * A client-side hook for interacting with the GLOSSARY (TERM) API endpoints.
  */
 export const useTermApi = () => {
 	const MODULE_NAME = MODULE_NAMES.TERM;
 	const queryClient = useQueryClient();
 
-	/**
-	 * Stores a new or updated term in the glossary for a specific session.
-	 * Mutation key: 'storeTerm'
-	 */
-	const storeTerm = useMutation<boolean, Error, TermCdo | TermInfo>({
-		mutationFn: async (termInfo: TermCdo | TermInfo) => {
-			const url = genApiUrl(MODULE_NAME, 'storeTerm');
-			await apiClient.post(url, termInfo);
-			return true;
+	// --- Mutations ---
+
+	const storeSessionTerm = useMutation<{ termId: string }, Error, SessionTermCdo | SessionTermInfo>({
+		mutationFn: async (termInfo) => {
+			const url = genApiUrl(MODULE_NAME, 'storeSessionTerm');
+			const response = await apiClient.post<{ termId: string }>(url, termInfo);
+			return response.data;
 		},
-		onSuccess: (_, variables) => {
-			// addToast(
-			// 	`Term "${(variables as TermInfo).koreanTerm || (variables as TermCdo).koreanTerm}" saved.`,
-			// 	'success'
-			// );
-			// Invalidate queries that fetch terms for this session
-			queryClient.invalidateQueries({ queryKey: ['getTermsBySessionId', variables.sessionId] });
-			queryClient.invalidateQueries({
-				queryKey: [
-					'getTermByKorean',
-					variables.sessionId,
-					(variables as TermInfo).koreanTerm || (variables as TermCdo).koreanTerm,
-				],
-			});
+		onSuccess: (data, variables) => {
+			Promise.all([
+				queryClient.invalidateQueries({ queryKey: ['getTermsBySessionId', variables.sessionId] }),
+				queryClient.invalidateQueries({
+					queryKey: ['getTermByKorean', variables.sessionId, variables.koreanTerm, 'session'],
+				}),
+			]);
 		},
 	});
 
-	/**
-	 * Fetches a specific term by its Korean name for a given session.
-	 * Query key: ['getTermByKorean']
-	 */
-	const getTermByKorean = (sessionId: string, koreanTerm: string) =>
+	const storeCharacterTerm = useMutation<
+		{ termId: string },
+		Error,
+		CharacterTermCdo | CharacterTermInfo
+	>({
+		mutationFn: async (termInfo) => {
+			const url = genApiUrl(MODULE_NAME, 'storeCharacterTerm');
+			const response = await apiClient.post<{ termId: string }>(url, termInfo);
+			return response.data;
+		},
+		onSuccess: (data, variables) => {
+			Promise.all([
+				queryClient.invalidateQueries({ queryKey: ['getTermsByCharacterId', variables.characterId] }),
+				queryClient.invalidateQueries({
+					queryKey: ['getTermByKorean', variables.characterId, variables.koreanTerm, 'character'],
+				}),
+			]);
+		},
+	});
+
+	const storeSessionTerms = useMutation<
+		{ termIds: string[] },
+		Error,
+		{ terms: (SessionTermCdo | SessionTermInfo)[] }
+	>({
+		mutationFn: async (variables) => {
+			const url = genApiUrl(MODULE_NAME, 'storeSessionTerms');
+			const response = await apiClient.post(url, variables);
+			return response.data;
+		},
+		onSuccess: (_, variables) => {
+			const sessionIds = [...new Set(variables.terms.map((t) => t.sessionId))];
+			const invalidations = sessionIds.map((id) =>
+				queryClient.invalidateQueries({ queryKey: ['getTermsBySessionId', id] })
+			);
+			Promise.all(invalidations);
+		},
+	});
+
+	const storeCharacterTerms = useMutation<
+		{ termIds: string[] },
+		Error,
+		{ terms: (CharacterTermCdo | CharacterTermInfo)[] }
+	>({
+		mutationFn: async (variables) => {
+			const url = genApiUrl(MODULE_NAME, 'storeCharacterTerms');
+			const response = await apiClient.post(url, variables);
+			return response.data;
+		},
+		onSuccess: (_, variables) => {
+			const characterIds = [...new Set(variables.terms.map((t) => t.characterId))];
+			const invalidations = characterIds.map((id) =>
+				queryClient.invalidateQueries({ queryKey: ['getTermsByCharacterId', id] })
+			);
+			Promise.all(invalidations);
+		},
+	});
+
+	const ensureAndGetTermsForPrompt = useMutation<
+		Record<string, string>,
+		Error,
+		{ sessionId: string; userId: string; koreanTermsToEnsure: string[] }
+	>({
+		mutationFn: async (variables) => {
+			const url = genApiUrl(MODULE_NAME, 'ensureAndGetTermsForPrompt');
+			const response = await apiClient.post<Record<string, string>>(url, variables);
+			return response.data;
+		},
+		onSuccess: (_, variables) => {
+			queryClient.invalidateQueries({ queryKey: ['getTermsBySessionId', variables.sessionId] });
+		},
+	});
+
+	const clearSessionCache = useMutation<void, Error, string>({
+		mutationFn: async (sessionId) => {
+			const url = genApiUrl(MODULE_NAME, 'clearSessionCache', [sessionId]);
+			await apiClient.delete(url);
+		},
+		onSuccess: (_, sessionId) => {
+			queryClient.invalidateQueries({ queryKey: ['getTermsBySessionId', sessionId] });
+		},
+	});
+
+	const clearCharacterCache = useMutation<void, Error, string>({
+		mutationFn: async (characterId) => {
+			const url = genApiUrl(MODULE_NAME, 'clearCharacterCache', [characterId]);
+			await apiClient.delete(url);
+		},
+		onSuccess: (_, characterId) => {
+			queryClient.invalidateQueries({ queryKey: ['getTermsByCharacterId', characterId] });
+		},
+	});
+
+	// --- Queries ---
+
+	const getTermByKorean = (id: string, koreanTerm: string, type: TermType) =>
 		useQuery<TermResponse | null, Error>({
-			queryKey: ['getTermByKorean', sessionId, koreanTerm],
+			queryKey: ['getTermByKorean', id, koreanTerm, type],
 			queryFn: async () => {
-				const url = genApiUrl(MODULE_NAME, 'getTermByKorean', [sessionId, koreanTerm]);
-				const response = await apiClient.get<TermResponse>(url);
-				return response.data;
+				const url = genApiUrl(MODULE_NAME, 'getTermByKorean', [id, koreanTerm, type]);
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<TermResponse>(response.data.payload);
 			},
-			enabled: !!sessionId && !!koreanTerm,
-			// Custom retry logic for 404 (not found is expected)
-			retry: (failureCount, error) => (error.name === '404' ? false : failureCount < 3),
+			enabled: !!id && !!koreanTerm && !!type,
+			retry: (failureCount, error: any) => (error.response?.status === 404 ? false : failureCount < 3),
 		});
 
-	/**
-	 * Fetches all glossary terms associated with a specific session.
-	 * Query key: ['getTermsBySessionId']
-	 */
 	const getTermsBySessionId = (sessionId: string) =>
 		useQuery<TermResponse | null, Error>({
 			queryKey: ['getTermsBySessionId', sessionId],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getTermsBySessionId', [sessionId]);
-				const response = await apiClient.get<TermResponse>(url);
-				return response.data;
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<TermResponse>(response.data.payload);
 			},
 			enabled: !!sessionId,
 		});
 
-	/**
-	 * Ensures terms exist for a prompt, auto-translating and storing any that are missing.
-	 * Mutation key: 'ensureAndGetTermsForPrompt'
-	 */
-	const ensureAndGetTermsForPrompt = useMutation<
-		Record<string, string> | null,
-		Error,
-		{ sessionId: string; koreanTermsToEnsure: string[] }
-	>({
-		mutationFn: async ({ sessionId, koreanTermsToEnsure }) => {
-			const url = genApiUrl(MODULE_NAME, 'ensureAndGetTermsForPrompt');
-			const response = await apiClient.post<Record<string, string>>(url, {
-				sessionId,
-				koreanTermsToEnsure,
-			});
-			return response.data;
-		},
-		onSuccess: (_, variables) => {
-			// Invalidate all terms for this session, as new ones might have been added
-			queryClient.invalidateQueries({ queryKey: ['getTermsBySessionId', variables.sessionId] });
-		},
-	});
-
-	/**
-	 * Clears the server's in-memory cache for a specific session's glossary.
-	 * Mutation key: 'clearSessionCache'
-	 */
-	const clearSessionCache = useMutation<boolean, Error, string>({
-		mutationFn: async (sessionId: string) => {
-			const url = genApiUrl(MODULE_NAME, 'clearSessionCache', [sessionId]);
-			await apiClient.delete(url);
-			return true;
-		},
-		onSuccess: (_, sessionId) => {
-			// Invalidate all term queries for this session
-			queryClient.invalidateQueries({ queryKey: ['getTermsBySessionId', sessionId] });
-			queryClient.invalidateQueries({ queryKey: ['getTermByKorean', sessionId] });
-			queryClient.invalidateQueries({ queryKey: ['ensureAndGetTermsForPrompt', sessionId] });
-		},
-	});
+	const getTermsByCharacterId = (characterId: string) =>
+		useQuery<TermResponse | null, Error>({
+			queryKey: ['getTermsByCharacterId', characterId],
+			queryFn: async () => {
+				const url = genApiUrl(MODULE_NAME, 'getTermsByCharacterId', [characterId]);
+				const response = await apiClient.get<Payload>(url);
+				return decompressData<TermResponse>(response.data.payload);
+			},
+			enabled: !!characterId,
+		});
 
 	return {
-		storeTerm,
+		storeSessionTerm: storeSessionTerm.mutateAsync,
+		storeCharacterTerm: storeCharacterTerm.mutateAsync,
+		storeSessionTerms: storeSessionTerms.mutateAsync,
+		storeCharacterTerms: storeCharacterTerms.mutateAsync,
 		getTermByKorean,
 		getTermsBySessionId,
-		ensureAndGetTermsForPrompt,
-		clearSessionCache,
+		getTermsByCharacterId,
+		ensureAndGetTermsForPrompt: ensureAndGetTermsForPrompt.mutateAsync,
+		clearSessionCache: clearSessionCache.mutateAsync,
+		clearCharacterCache: clearCharacterCache.mutateAsync,
 	};
 };

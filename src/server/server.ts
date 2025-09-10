@@ -3,22 +3,24 @@
 import path from 'node:path';
 import fs from 'node:fs/promises'; // Use promises for async file reading
 import { fileURLToPath } from 'node:url';
-import express, {
-	type Request,
-	type Response,
-	type NextFunction,
-	type RequestHandler,
-} from 'express';
+import express, { type Request, type Response, type NextFunction } from 'express';
 import compression from 'compression'; // Add compression middleware
 import { createServer as createViteServer, type ViteDevServer } from 'vite';
+
 import supertokens from 'supertokens-node';
 import Session from 'supertokens-node/recipe/session';
 import EmailPassword from 'supertokens-node/recipe/emailpassword';
-import { middleware, errorHandler } from 'supertokens-node/framework/express';
-import { verifySession } from 'supertokens-node/recipe/session/framework/express';
+import Dashboard from 'supertokens-node/recipe/dashboard';
+import UserRoles from 'supertokens-node/recipe/userroles';
+import {
+	middleware as supertokensMiddleware,
+	errorHandler as supertokensErrorHandler,
+} from 'supertokens-node/framework/express';
+
 import cors from 'cors';
 import sirv from 'sirv';
-import { MODULE_NAMES, APPNAME } from '#shared/config/constants.js';
+
+import { MODULE_NAMES, APPNAME, DEFAULT_TENANT_ID } from '#shared/config/constants.js';
 import characterRoutes from './route/character.routes.js';
 import chatRoutes from './route/chat.routes.js';
 import llmRoutes from './route/llm.routes.js';
@@ -28,96 +30,169 @@ import loreRoutes from './route/lore.routes.js';
 import termRoutes from './route/term.routes.js';
 import personaRoutes from './route/persona.routes.js';
 import orchestrationRoutes from './route/orchestration.routes.js';
-import { ApiErrorResponse } from '#shared/api/ModuleResponse.js';
-import { ApiError } from './util/serviceHelpers.js';
+import loginRoutes from './route/login.routes.js';
 import sessionRoutes from './route/session.routes.js';
+import userRoutes from './route/user.routes.js';
+import { ApiErrorResponse } from '#shared/api/ModuleResponse.js';
+import { ApiError } from '#shared/domain/error/errors.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url)); // src/server
 const isProduction = process.env.NODE_ENV === 'production';
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
+const host = process.env.HOST || '0.0.0.0';
 const BASE = process.env.BASE || '/'; // Base path for the app
 const API_PATH = 'api';
 const AUTH_PATH = 'auth';
 const BASE_API = `/${API_PATH}`;
+const localhost = 'http://localhost:3000';
 
 // --- Helper Function to Resolve Project Root ---
-const resolve = (p: string) => path.resolve(__dirname, p);
-function unless(middleware: RequestHandler, ...excludedPaths: RegExp[]): RequestHandler {
-	return function (req, res, next) {
-		if (excludedPaths.some((regex) => regex.test(req.path))) {
-			return next();
-		}
-		return middleware(req, res, next);
-	};
-}
+const resolve = (p: string) =>
+	isProduction ? path.resolve(__dirname, '../..', p) : path.resolve(__dirname, p);
 
 // --- Template HTML paths ---
 const templateDevHtmlFile = path.resolve(__dirname, '../../index.html');
 const templateProdHtmlBuilt = path.resolve(__dirname, '../client/index.html');
-// --- SSR Manifest path (Production ONLY) ---
-// Optional: for production preload hints, less critical for basic SSR
-// const ssrManifestProd = resolve('dist/client/ssr-manifest.json');
+const SUPERTOKENS_DOMAIN = process.env.SUPERTOKENS_DOMAIN;
+const dashboardAdmins = process.env.DASHBOARD_ADMIN_EMAILS
+	? process.env.DASHBOARD_ADMIN_EMAILS.split(',').map((email) => email.trim())
+	: [];
+
+// --- Language detection middleware (Korean-priority) ---
+const detectLanguageMiddleware = (req: Request, res: Response, next: NextFunction) => {
+	let detectedLang: 'kor' | 'eng' = 'eng';
+
+	// Priority 1: Use Express's built-in acceptsLanguages method (most reliable)
+	const acceptedLang = req.acceptsLanguages('ko', 'en') || 'en';
+
+	if (acceptedLang === 'ko') {
+		detectedLang = 'kor';
+	}
+
+	// Priority 2: Manual header check as fallback
+	if (detectedLang !== 'kor') {
+		const acceptLang = req.headers['accept-language'] || '';
+
+		if (acceptLang.toLowerCase().includes('ko')) {
+			detectedLang = 'kor';
+		}
+	}
+
+	// Priority 3: Check Cloudflare country header
+	if (detectedLang !== 'kor') {
+		const cfCountry = req.headers['cf-ipcountry'] as string;
+		if (cfCountry === 'KR') {
+			detectedLang = 'kor';
+		}
+	}
+
+	res.locals.detectedLang = detectedLang;
+	res.cookie('server-detected-lang', detectedLang, { maxAge: 24 * 60 * 60 * 1000, httpOnly: false });
+
+	next();
+};
 
 async function createServer() {
+	if (!SUPERTOKENS_DOMAIN) {
+		throw new Error('invalid supertokens login domain');
+	}
+
 	const app = express();
 
 	supertokens.init({
 		framework: 'express',
-		supertokens: {
-			connectionURI: process.env.VITE_SUPERTOKENS_DOMAIN || 'https://try.supertokens.com',
-			apiKey: process.env.SUPERTOKENS_API_KEY,
-		},
+		supertokens: { connectionURI: SUPERTOKENS_DOMAIN, apiKey: process.env.SUPERTOKENS_API_KEY },
 		appInfo: {
 			appName: APPNAME,
-			websiteDomain: process.env.VITE_APP_DOMAIN || 'http://localhost:3000',
-			apiDomain: process.env.VITE_API_DOMAIN || 'http://localhost:3000',
+			websiteDomain: process.env.VITE_APP_DOMAIN || localhost,
+			apiDomain: process.env.VITE_API_DOMAIN || localhost,
 			apiBasePath: `/${API_PATH}/${AUTH_PATH}`,
 			websiteBasePath: `/${AUTH_PATH}`,
 		},
-		recipeList: [EmailPassword.init(), Session.init()],
+		recipeList: [
+			UserRoles.init(),
+			Dashboard.init({ admins: dashboardAdmins }),
+			EmailPassword.init(),
+			Session.init(),
+		],
 	});
 
+	// --- Core Middleware (Order is important) ---
 	app.use(
 		cors({
-			origin: process.env.VITE_APP_DOMAIN || 'http://localhost:3000',
+			origin: process.env.VITE_APP_DOMAIN || localhost,
 			allowedHeaders: ['content-type', ...supertokens.getAllCORSHeaders()],
 			credentials: true,
 		})
 	);
-	// --- Core Middleware ---
-	app.use(middleware());
-	app.use(compression()); // Apply gzip compression
-	app.use(express.json()); // Parse JSON request bodies
+
+	// --- Dashboard Headers Middleware ---
+	// app.use((req, res, next) => {
+	// 	if (req.path.includes('/dashboard')) {
+	// 		console.log('Setting headers for dashboard request:', req.path);
+	// 		res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+	// 		res.setHeader('Pragma', 'no-cache');
+	// 		res.setHeader('Expires', '0');
+	// 		res.setHeader(
+	// 			'Content-Security-Policy',
+	// 			"default-src 'self'; " +
+	// 				"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; " + // Added 'unsafe-eval'
+	// 				"style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
+	// 				"font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; " +
+	// 				"img-src 'self' data: https://cdn.jsdelivr.net; " +
+	// 				"connect-src 'self' " +
+	// 				process.env.SUPERTOKENS_DOMAIN +
+	// 				' https://fonts.googleapis.com https://fonts.gstatic.com'
+	// 		);
+	// 	}
+	// 	next();
+	// });
+
+	app.use(supertokensMiddleware());
+	app.use(compression());
+	app.use(express.json());
+	app.use(detectLanguageMiddleware);
 
 	// --- Vite Development Server Middleware (Development ONLY) ---
 	let vite: ViteDevServer | undefined;
 	if (!isProduction) {
 		vite = await createViteServer({
-			server: { middlewareMode: true },
+			server: {
+				middlewareMode: true,
+				// Add performance optimizations
+				hmr: { port: 3001 },
+			},
 			appType: 'custom',
 			base: BASE,
-			root: path.resolve(__dirname, '../..'), // root .
+			root: path.resolve(__dirname, '../..'),
+			// Add SSR optimizations
+			optimizeDeps: {
+				// Pre-bundle during server start for SSR
+				force: true,
+			},
+			ssr: {
+				// Optimize SSR deps
+				noExternal: ['@mui/material', '@mui/system', '@emotion/react', '@emotion/styled'],
+			},
 		});
+
 		app.use(vite.middlewares);
 		console.log('Vite development server middleware attached.');
 	} else {
-		// --- Production Static Asset Serving ---
-		console.log(`Serving static files from ${resolve('dist/client')}`);
-		app.use(BASE, sirv(resolve('dist/client'), { dev: false, immutable: true, maxAge: 31536000 }));
+		// Production optimizations
+		const serveOptions = {
+			dev: false,
+			immutable: true,
+			maxAge: 31536000,
+			// Add compression
+			gzip: true,
+			brotli: true,
+		};
+		app.use(BASE, sirv(resolve('dist/client'), serveOptions));
 	}
 
 	// --- API Routes ---
 	console.log('Mounting API routes...');
-	// Protect all /api/* routes except /api/character
-	// app.use(
-	// 	'/api',
-	// 	unless(
-	// 		verifySession(),
-	// 		/^\/character/, // Exclude all /api/character routes
-	// 		/^\/auth/ // Exclude /api/auth if you want public login/signup endpoints
-	// 		// Add more patterns as needed
-	// 	)
-	// );
 	app.use(`${BASE_API}/${MODULE_NAMES.CHARACTER}`, characterRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.CHAT}`, chatRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.LLM}`, llmRoutes);
@@ -128,12 +203,39 @@ async function createServer() {
 	app.use(`${BASE_API}/${MODULE_NAMES.SESSION}`, sessionRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.PERSONA}`, personaRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.ORCHESTRATION}`, orchestrationRoutes);
-	app.use(errorHandler());
+	app.use(`${BASE_API}/${MODULE_NAMES.LOGIN}`, loginRoutes);
+	app.use(`${BASE_API}/${MODULE_NAMES.USER}`, userRoutes);
+
+	// ✅ CORRECT for Express v5 - matches /auth, /auth/reset-password, etc.
+	app.get(`/${AUTH_PATH}{*splat}`, async (req: Request, res: Response) => {
+		try {
+			let template: string;
+
+			if (!isProduction && vite) {
+				template = await fs.readFile(templateDevHtmlFile, 'utf-8');
+				template = await vite.transformIndexHtml(req.originalUrl, template);
+			} else {
+				template = await fs.readFile(templateProdHtmlBuilt, 'utf-8');
+			}
+
+			const detectedLang = res.locals.detectedLang || 'eng';
+
+			const finalHtml = template
+				.replace(`<!--app-html-->`, '<div id="root"></div>')
+				.replace(`<!--emotion-styles-->`, '')
+				.replace(`<!--server-data-->`, `<script>window.__INITIAL_LANG__="${detectedLang}"</script>`);
+
+			res.status(200).set({ 'Content-Type': 'text/html' }).end(finalHtml);
+		} catch (error) {
+			console.error('Error serving auth route:', error);
+			res.status(500).send('Internal Server Error');
+		}
+	});
 
 	// --- SSR Catch-all Handler ---
 	app.get('/{*splat}', async (req: Request, res: Response, next: NextFunction) => {
 		// Skip SSR for API routes
-		if (req.originalUrl.startsWith(API_PATH)) {
+		if (req.originalUrl.startsWith(`${BASE_API}`) || req.originalUrl.startsWith(`/${AUTH_PATH}`)) {
 			return next();
 		}
 		// Optional: Skip potential static files (basic check)
@@ -160,40 +262,37 @@ async function createServer() {
 		}
 
 		console.log(`Attempting SSR for: ${req.originalUrl}`);
-		const url = req.originalUrl;
 
 		try {
 			let template: string;
 			// Type for the render function from entry-server (adjust if render signature changes)
 			let render: (url: string) => { html: string; emotionStyleTags: string };
 
+			const detectedLang = res.locals.detectedLang || 'eng';
+
 			if (!isProduction && vite) {
-				// == DEVELOPMENT ==
+				// DEVELOPMENT
 				template = await fs.readFile(templateDevHtmlFile, 'utf-8');
-				// Apply Vite HTML transforms (injects HMR client, plugins, etc.)
-				template = await vite.transformIndexHtml(url, template);
-				// Load server entry via Vite for HMR
-				const serverEntry = await vite.ssrLoadModule('/src/entry-server.jsx');
+				template = await vite.transformIndexHtml(req.originalUrl, template);
+				const serverEntry = await vite.ssrLoadModule('/src/entry-server.tsx');
 				render = serverEntry.render;
 			} else {
-				// == PRODUCTION ==
-				// In production, read the built index.html as it might contain link/script tags added by the build
+				// PRODUCTION
 				template = await fs.readFile(templateProdHtmlBuilt, 'utf-8');
 				const serverEntryPath = resolve('dist/server/entry-server.js');
 				const serverEntry = await import(serverEntryPath);
 				render = serverEntry.render;
-				// ssrManifest logic could be added here if needed for preloading
 			}
 
 			// --- Render the React application ---
 			// Call the render function from entry-server (NO Helmet context needed now)
-			const { html: appHtml, emotionStyleTags } = render(url); // Get HTML and Emotion styles
+			const { html: appHtml, emotionStyleTags } = render(req.originalUrl);
 
-			// --- Inject rendered content into the HTML template ---
-			// Replace placeholders with actual content
+			// 🎯 INJECT LANGUAGE DATA VIA HTML TEMPLATE
 			const finalHtml = template
-				.replace(`<!--app-html-->`, appHtml) // Inject main app HTML
-				.replace(`<!--emotion-styles-->`, emotionStyleTags); // Inject extracted Emotion styles
+				.replace(`<!--app-html-->`, appHtml)
+				.replace(`<!--emotion-styles-->`, emotionStyleTags)
+				.replace(`<!--server-data-->`, `<script>window.__INITIAL_LANG__="${detectedLang}"</script>`);
 
 			// --- Send the final HTML response ---
 			res.status(200).set({ 'Content-Type': 'text/html' }).end(finalHtml);
@@ -206,6 +305,9 @@ async function createServer() {
 			next(e); // Pass error to default handler
 		}
 	});
+
+	// --- SuperTokens Error Handler (should come after routes but before custom error handlers) ---
+	app.use(supertokensErrorHandler());
 
 	// --- Route-level 404 handler (MUST be after all routes and SSR) ---
 	app.use((req: Request, res: Response, next: NextFunction) => {
@@ -239,11 +341,10 @@ async function createServer() {
 		res.status(apiErrorResponse.code).json(apiErrorResponse);
 	});
 
-	// --- Start HTTP Server ---
-	app.listen(PORT, () => {
+	app.listen(PORT, host, () => {
 		console.log(`Server started successfully.`);
 		console.log(`Mode: ${isProduction ? 'Production' : 'Development'}`);
-		console.log(`Listening on: http://localhost:${PORT}${BASE}`);
+		console.log(`Listening on http://${host}:${PORT}${BASE}`);
 	});
 }
 
