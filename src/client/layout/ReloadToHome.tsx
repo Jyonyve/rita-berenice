@@ -7,13 +7,18 @@ export default function ReloadToHome() {
 	const loc = useLocation();
 
 	useEffect(() => {
-		// Detect hard reloads
-		const isReload =
+		// If we've already handled a reload in this session, do nothing
+		if (sessionStorage.getItem('rb:handledReload') === '1') return;
+
+		// Detect true hard reloads only
+		// 1) Legacy: performance.navigation.type === 1
+		// 2) NT2: any navigation entry with type === 'reload'
+		const isHardReload =
 			(performance as any).navigation?.type === 1 ||
 			performance.getEntriesByType?.('navigation')?.some?.((e: any) => e.type === 'reload');
 
-		if (isReload) {
-			// Avoid redirect loop on home
+		if (isHardReload) {
+			sessionStorage.setItem('rb:handledReload', '1');
 			if (loc.pathname !== '/') {
 				nav('/', { replace: true });
 			}
