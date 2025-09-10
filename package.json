@@ -35,12 +35,14 @@
 		"check:his": "tsx --env-file .env ./src/migration/lore/checkHistory.ts",
 		"link:chat": "tsx ./src/migration/lore/linkChatToHistory.ts",
 		"extract:lore": "tsx --env-file .env ./src/migration/source/htmlParserCheerio.ts",
+		"init:user": "tsx --env-file .env ./src/migration/user/initUser.ts",
 		"drop": "tsx --env-file .env ./src/migration/dropCollection.ts",
 		"collection": "tsx --env-file .env ./src/migration/checkCollection.ts",
 		"delete": "tsx --env-file .env ./scripts/deleteUser.ts",
 		"verify": "tsx --env-file .env ./scripts/verifyUser.ts",
 		"temp": "tsx --env-file .env ./scripts/migUser.ts",
-		"mig": "tsx --env-file .env ./src/migration/migDB.ts"
+		"mig": "tsx --env-file .env ./src/migration/migDB.ts",
+		"generate-keys": "tsx src/migration/credential/crypto-keys.ts"
 	},
 	"dependencies": {
 		"@chroma-core/cohere": "^0.1.7",
@@ -70,6 +72,7 @@
 		"multer": "^2.0.2",
 		"nanoid": "^5.1.5",
 		"openai": "^5.16.0",
+		"puppeteer": "^24.19.0",
 		"react": "^19.1.1",
 		"react-dom": "^19.1.1",
 		"react-hook-form": "^7.62.0",
@@ -110,6 +113,7 @@
 		"prettier": "^3.6.2",
 		"rimraf": "^6.0.1",
 		"sass": "^1.91.0",
+		"ts-node": "^10.9.2",
 		"tsc-alias": "^1.8.16",
 		"tsx": "^4.20.5",
 		"typescript": "^5.9.2",

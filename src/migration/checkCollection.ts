@@ -4,9 +4,8 @@ import { OpenAIEmbeddingFunction } from '@chroma-core/openai';
 import { ChromaClient, Collection } from 'chromadb';
 
 // --- Configuration ---
-const CHROMA_HOST = process.env.CHROMA_HOST;
-const CHROMA_PORT = 443;
-const CHROMA_SSL = true;
+// const DESTINATION_CONFIG = { host: 'rita-berenice-chromadb.fly.dev', port: 443, ssl: true };
+const DESTINATION_CONFIG = { host: 'localhost', port: 8000 };
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const TARGET_COLLECTION_NAME = process.argv[2];
 
@@ -22,7 +21,7 @@ async function checkCollection() {
 
 	try {
 		// 2. Create a new, dedicated client instance for this script.
-		const chromaClient = new ChromaClient({ host: CHROMA_HOST, port: CHROMA_PORT, ssl: CHROMA_SSL });
+		const chromaClient = new ChromaClient({ ...DESTINATION_CONFIG });
 
 		console.log(`Accessing collection "${TARGET_COLLECTION_NAME}" ...`);
 

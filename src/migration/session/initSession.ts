@@ -1,10 +1,9 @@
 // Save this file as scripts/initSession.ts
 
 import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
-import { chromaDbClient, sessionStore } from '#server/index.js';
+import { chromaDbClient, flatSessionToDoc } from '#server/index.js';
 import { SessionInfo, SessionMetadata } from '#shared/domain/index.js';
 import { buildProfileId, METADATA_TYPES } from '#shared/index.js';
-import { flatSessionToDoc } from '#shared/util/documentUtils.js';
 
 const userId = '6b335673-c837-43f9-a1c7-0b92c90edefb';
 const getTarionOriginalSessionTemplate = (sessionId: string): SessionInfo => {
@@ -97,4 +96,4 @@ async function initSession() {
 }
 
 // --- Run the script ---
-initSession();
+// initSession();

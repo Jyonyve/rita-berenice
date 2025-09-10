@@ -14,7 +14,7 @@ import {
 } from '#shared/util/index.js';
 import { parseConversationToEntries } from '#server/util/chatParseUtils.js';
 import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
-import { DEFAULT_EMOTION, EmotionValue, validEmotions } from '#shared/config/emotionWordsMapper.js';
+
 import { APPNAME, METADATA_TYPES, NA } from '#shared/config/constants.js';
 import { chatStore } from '#server/store/chatStore.js';
 import { buildChatTurnMetadataPrompt } from '#server/util/templateUtils.js';
@@ -41,6 +41,7 @@ import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { ChatOpenAI } from '@langchain/openai';
 import { USER_ID } from '../userId.js';
 import { getSessionTerms } from '../term/initTerm.ts';
+import { DEFAULT_EMOTION, EmotionValue, validEmotions } from '#shared/config/emotionConstants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -243,10 +244,7 @@ const enrichChatTurnWithMetadata = async (
 			maxTokens,
 			configuration: {
 				baseURL: 'https://openrouter.ai/api/v1',
-				defaultHeaders: {
-					'HTTP-Referer': 'https://rita-berenice.fly.dev',
-					'X-Title': APPNAME,
-				},
+				defaultHeaders: { 'HTTP-Referer': 'https://rita-berenice.fly.dev', 'X-Title': APPNAME },
 			},
 		});
 		const structuredClient = openRouterClient.withStructuredOutput(chatTurnSchema);

@@ -3,14 +3,16 @@ import { ChromaClient } from 'chromadb';
 import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
 import { chromaDbClient } from '../server/index.ts';
 // --- Configuration ---
-const CHROMA_HOST = process.env.CHROMA_HOST;
-const CHROMA_PORT = Number(process.env.CHROMA_PORT) || 443;
-const CHROMA_SSL = true; // Your URL starts with https://
-const COLLECTION_TO_DROP = COLLECTIONS.LORE;
 
+const COLLECTION_TO_DROP = COLLECTIONS.CREDENTIAL;
+
+// Destination DB: Your new Fly.io Chroma instance
+// const DESTINATION_CONFIG = { host: 'rita-berenice-chromadb.fly.dev', port: 443, ssl: true };
+const DESTINATION_CONFIG = { host: 'localhost', port: 8000 };
+// --- Configuration ---
 // --- Main Deletion Logic ---
 async function dropCollection() {
-	const chromaClient = new ChromaClient({ host: CHROMA_HOST, port: CHROMA_PORT, ssl: CHROMA_SSL });
+	const chromaClient = new ChromaClient({ ...DESTINATION_CONFIG });
 	const list = await chromaClient.listCollections();
 	console.log(list);
 	try {
@@ -18,12 +20,12 @@ async function dropCollection() {
 		const collection = await chromaClient.getCollection({ name: COLLECTION_TO_DROP });
 		console.log(collection);
 
-		const allIds = (await collection.get()).ids;
-		if (allIds && allIds.length > 0) {
-			await collection.delete({ ids: allIds });
-		}
+		// const allIds = (await collection.get()).ids;
+		// if (allIds && allIds.length > 0) {
+		// 	await collection.delete({ ids: allIds });
+		// }
 
-		// await chromaClient.deleteCollection({ name: COLLECTION_TO_DROP });
+		await chromaClient.deleteCollection({ name: COLLECTION_TO_DROP });
 
 		console.log(`Successfully deleted collection Data "${COLLECTION_TO_DROP}".`);
 		console.log(
@@ -52,10 +54,10 @@ async function dropCollection() {
 console.warn(
 	`🚨 WARNING: About to delete the ENTIRE "${COLLECTION_TO_DROP}" collection . This is irreversible.`
 );
-console.warn('Press Ctrl+C within 3 seconds to cancel, or wait to proceed...');
+console.warn('Press Ctrl+C within 5 seconds to cancel, or wait to proceed...');
 
 // Simple delay to allow cancellation
 setTimeout(() => {
 	console.log('Proceeding with deletion...');
 	dropCollection();
-}, 3000); // 5-second delay
+}, 5000); // 5-second delay
