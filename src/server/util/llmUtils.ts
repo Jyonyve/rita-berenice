@@ -22,6 +22,29 @@ export const extractValidOpenAiContent = (response: ChatCompletion): string => {
 };
 
 /**
+ * Extracts a clean JSON string from a raw LLM response that might be
+ * wrapped in markdown code fences (e.g., ``````).
+ * @param rawResponse The raw string response from the LLM.
+ * @returns A clean string ready for JSON.parse().
+ * @throws If the input is empty or no JSON can be extracted.
+ */
+export const extractJsonFromLlmResponse = (rawResponse: string): string => {
+	if (!rawResponse) return '';
+	// Look for a JSON block within ``````
+	const jsonMatch = rawResponse.match(/``````/);
+	if (jsonMatch && jsonMatch[1]) {
+		return jsonMatch[1].trim();
+	}
+	// Fallback for a simple `````` block
+	const genericMatch = rawResponse.match(/``````/);
+	if (genericMatch && genericMatch[1]) {
+		return genericMatch[1].trim();
+	}
+	// If no markdown, return the raw string, which might be a valid JSON object itself
+	return rawResponse.trim();
+};
+
+/**
  * Sanitizes, normalizes, and parses raw LLM response text into structured ChatEntry objects.
  * This comprehensive function performs the following steps:
  * 1.  Normalizes all line break styles (CRLF, CR) to a single LF (`\n`).

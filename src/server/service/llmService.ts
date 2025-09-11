@@ -19,30 +19,7 @@ import { logFlow } from '../util/jsonlLogger.js';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { ChatOpenAI } from '@langchain/openai';
-import { buildChatCompletion } from '../util/llmUtils.js';
-
-// --- 저수준 유틸리티 함수 ---
-// 이 함수들은 데이터의 '내용'을 변경하지 않고, '형식'을 보장하는 역할만 합니다.
-const _extractJsonFromString = (text: string): string | null => {
-	if (!text) return null;
-
-	// Most reliable: find JSON within `````` markdown block
-	let match = text.match(/``````/);
-	if (match) return match[1];
-
-	// Next best: find any JSON object
-	match = text.match(/\{[\s\S]*\}/);
-	if (match) {
-		try {
-			// Verify it's valid JSON before returning
-			JSON.parse(match[0]);
-			return match[0];
-		} catch {
-			// It might be an incomplete object, so we continue
-		}
-	}
-	return null;
-};
+import { buildChatCompletion, extractJsonFromLlmResponse } from '../util/llmUtils.js';
 
 const normalizeMessageContent = (content: unknown): string => {
 	if (!content) return '';
@@ -187,17 +164,21 @@ export const llmService = {
 		options?: { signal?: AbortSignal },
 		zodSchema?: ZodObject
 	): Promise<string> => {
-		const useStructuredOutput = zodSchema && aiModelInfo.provider === 'google';
+		// This flag determines if we should attempt to sanitize the output as JSON.
+		const expectsJson = !!zodSchema;
+
+		const useStructuredOutput =
+			expectsJson && aiModelInfo.provider === 'google' && aiModelInfo.platform !== 'openrouter';
 
 		try {
 			const llmClient = await llmService.createLlmInstance(aiModelInfo, userId);
-			const langChainMessages = convertToLangChainMessages(messages);
+			let langChainMessages = convertToLangChainMessages(messages);
+
+			let rawOutput: string; // This will hold the raw string from the LLM
 
 			if (useStructuredOutput) {
 				// --- STRATEGY 1: For Strict Models (Gemini) ---
-				console.log(
-					`[llmService] Using withStructuredOutput for compliant model: ${aiModelInfo.model}`
-				);
+				console.log(`[llmService] Using withStructuredOutput for model: ${aiModelInfo.model}`);
 				const structuredLlm = llmClient.withStructuredOutput(zodSchema, {
 					name: 'json_output_tool',
 					includeRaw: true,
@@ -205,18 +186,16 @@ export const llmService = {
 				const result = await structuredLlm.invoke(langChainMessages, { signal: options?.signal });
 
 				if (result.parsed) {
-					return JSON.stringify(result.parsed);
+					rawOutput = JSON.stringify(result.parsed);
 				} else {
 					const raw: AIMessage = result.raw;
 					console.warn('[llmService] Compliant model failed parsing. Falling back to raw text.');
-					return convertMessageContentToString(JSON.stringify(raw.tool_calls?.[0].args));
+					// The raw message content is the most likely place for the unparsed text
+					rawOutput = convertMessageContentToString(raw.content);
 				}
 			} else {
 				// --- STRATEGY 2: Manual Handling for Creative Models (Claude/GPT) ---
-				console.log(`[llmService] Using manual parsing for creative model: ${aiModelInfo.model}`);
-
-				let langChainMessages = convertToLangChainMessages(messages);
-
+				console.log(`[llmService] Using manual parsing for model: ${aiModelInfo.model}`);
 				if (zodSchema) {
 					const parser = StructuredOutputParser.fromZodSchema(zodSchema as any);
 					const formatInstructions = parser.getFormatInstructions();
@@ -227,16 +206,17 @@ export const llmService = {
 				}
 
 				const responseMessage = await llmClient.invoke(langChainMessages, { signal: options?.signal });
-				const rawOutput = convertMessageContentToString(responseMessage.content);
-
-				// Attempt to parse. personaEngine will handle the failure.
-				try {
-					JSON.parse(rawOutput);
-					return rawOutput; // Return the valid JSON string
-				} catch {
-					return rawOutput; // Return the invalid raw text for correction
-				}
+				rawOutput = convertMessageContentToString(responseMessage.content);
 			}
+
+			// --- 2. CENTRALIZED SANITIZATION ---
+			// If we expected JSON, clean the output. Otherwise, return it as is.
+			// This is the single point of sanitization for the entire application.
+			if (expectsJson) {
+				return extractJsonFromLlmResponse(rawOutput);
+			}
+
+			return rawOutput; // Return the raw text for non-JSON calls
 		} catch (error: any) {
 			console.error(
 				`[llmService.invokeLlm] A critical, non-recoverable error occurred:`,
