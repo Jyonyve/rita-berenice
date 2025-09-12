@@ -21,7 +21,7 @@ export const EditCharacterPageLoader = () => {
 		}
 	}, [characterId, navigate]);
 
-	if (!characterId) return;
+	if (!characterId || !userId) return;
 
 	const { data: characterRes, isLoading } = useCharacterApi().getCharacter(characterId);
 
