@@ -6,14 +6,15 @@ import { getLangText } from '../../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
 import { useAuth } from '../../provider/AuthProvider.jsx';
 import UserPage from './UserPage.jsx';
-import { useUserApi } from '../../hook/index.js';
+import { useCharacterApi, useUserApi } from '../../hook/index.js';
 
 export function UserPageLoader() {
 	const { userId } = useAuth();
 	if (!userId) return null;
 	const { data: userRes, isLoading } = useUserApi().getUser(userId);
+	const { data: charRes } = useCharacterApi().getCharactersByUserId(userId);
 
-	if (isLoading || !userRes) {
+	if (isLoading || !userRes || !charRes) {
 		return (
 			<Container
 				sx={{
@@ -30,7 +31,13 @@ export function UserPageLoader() {
 		);
 	}
 
-	return <UserPage userInfo={userRes.userInfo} />;
+	return (
+		<UserPage
+			userInfo={userRes.userInfo}
+			myCharacters={charRes?.characterInfos || []}
+			isOwnProfile={userRes.userInfo.userId === userId}
+		/>
+	);
 }
 
 export default UserPageLoader;
