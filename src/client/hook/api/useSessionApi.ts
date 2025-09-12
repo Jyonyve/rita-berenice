@@ -4,7 +4,6 @@ import { MODULE_NAMES } from '#shared/config/constants.js';
 import { Payload } from '#shared/util/apiHelpers.js';
 import { SessionResponse } from '#shared/api/ModuleResponse.js';
 import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
-import { parseProfileId } from '#shared/util/parseUtils.js';
 
 export const useSessionApi = () => {
 	const MODULE_NAME = MODULE_NAMES.SESSION;
@@ -21,21 +20,15 @@ export const useSessionApi = () => {
 			const response = await apiClient.post<{ sessionId: string }>(url, variables);
 			return response.data;
 		},
-		onSuccess: (data, variables) => {
-			// Use Promise.all to run invalidations concurrently for optimal performance
-			Promise.all([
-				queryClient.invalidateQueries({ queryKey: ['getSessionsByUserId', variables.userId] }),
-				queryClient.invalidateQueries({ queryKey: ['getSession', data.sessionId] }),
-				queryClient.invalidateQueries({
-					queryKey: ['getSessionsByUserIdAndCharacterId', variables.userId, variables.characterId],
-				}),
-			]);
+		onSuccess: () => {
+			// Invalidate all session-related queries since a new session affects all lists
+			queryClient.invalidateQueries({ queryKey: ['sessions'] });
 		},
 	});
 
 	const getSessionsByUserId = (userId: string) =>
 		useQuery<SessionResponse, Error>({
-			queryKey: ['getSessionsByUserId', userId],
+			queryKey: ['sessions', 'list', 'getSessionsByUserId', userId], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getSessionsByUserId', [userId]);
 				const response = await apiClient.get<Payload>(url);
@@ -46,7 +39,7 @@ export const useSessionApi = () => {
 
 	const getSessionsByUserIdAndCharacterId = (userId: string, characterId: string) =>
 		useQuery<SessionResponse, Error>({
-			queryKey: ['getSessionsByUserIdAndCharacterId', userId, characterId],
+			queryKey: ['sessions', 'list', 'getSessionsByUserIdAndCharacterId', userId, characterId], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getSessionsByUserIdAndCharacterId', [userId, characterId]);
 				const response = await apiClient.get<Payload>(url);
@@ -57,7 +50,7 @@ export const useSessionApi = () => {
 
 	const getSession = (sessionId: string) =>
 		useQuery<SessionResponse, Error>({
-			queryKey: ['getSession', sessionId],
+			queryKey: ['sessions', 'detail', 'getSession', sessionId], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getSession', [sessionId]);
 				const response = await apiClient.get<Payload>(url);
@@ -68,7 +61,7 @@ export const useSessionApi = () => {
 
 	/**
 	 * Updates session on new message. Called frequently.
-	 * Only invalidates the specific session to avoid excessive refetching of lists.
+	 * Now efficiently invalidates both the specific session AND related lists.
 	 */
 	const updateSessionOnNewMessage = useMutation<
 		void,
@@ -80,8 +73,11 @@ export const useSessionApi = () => {
 			await apiClient.put(url, variables);
 		},
 		onSuccess: (_, variables) => {
-			// Only invalidate the specific session. This is a performance-critical optimization.
-			queryClient.invalidateQueries({ queryKey: ['getSession', variables.sessionId] });
+			// Invalidate the specific session detail
+			queryClient.invalidateQueries({ queryKey: ['sessions', 'detail', variables.sessionId] });
+
+			// Also invalidate all session lists since the "latest message" affects list ordering/preview
+			queryClient.invalidateQueries({ queryKey: ['sessions', 'list'] });
 		},
 	});
 
@@ -94,18 +90,14 @@ export const useSessionApi = () => {
 			await apiClient.put(url, variables);
 		},
 		onSuccess: (_, variables) => {
-			const { userId } = parseProfileId(variables.profileId);
-			// Use Promise.all for consistency and correctness
-			Promise.all([
-				queryClient.invalidateQueries({ queryKey: ['getSession', variables.sessionId] }),
-				queryClient.invalidateQueries({ queryKey: ['getSessionsByUserId', userId] }),
-			]);
+			// Invalidate the specific session and all related lists
+			queryClient.invalidateQueries({ queryKey: ['sessions', 'detail', variables.sessionId] });
+			queryClient.invalidateQueries({ queryKey: ['sessions', 'list'] });
 		},
 	});
 
 	/**
-	 * Updates session on new message. Called frequently.
-	 * Only invalidates the specific session to avoid excessive refetching of lists.
+	 * Updates session title. Called less frequently.
 	 */
 	const updateSessionTitle = useMutation<void, Error, { sessionId: string; title: string }>({
 		mutationFn: async (variables) => {
@@ -113,8 +105,9 @@ export const useSessionApi = () => {
 			await apiClient.put(url, variables);
 		},
 		onSuccess: (_, variables) => {
-			// Only invalidate the specific session. This is a performance-critical optimization.
-			queryClient.invalidateQueries({ queryKey: ['getSession', variables.sessionId] });
+			// Title changes affect both detail view and list previews
+			queryClient.invalidateQueries({ queryKey: ['sessions', 'detail', variables.sessionId] });
+			queryClient.invalidateQueries({ queryKey: ['sessions', 'list'] });
 		},
 	});
 
@@ -127,13 +120,11 @@ export const useSessionApi = () => {
 			await apiClient.put(url, variables);
 		},
 		onSuccess: (_, variables) => {
-			// Use Promise.all for consistency and correctness
-			Promise.all([
-				queryClient.invalidateQueries({ queryKey: ['getSession', variables.sessionInfo.sessionId] }),
-				queryClient.invalidateQueries({
-					queryKey: ['getSessionsByUserId', variables.sessionInfo.userId],
-				}),
-			]);
+			// Full update affects everything
+			queryClient.invalidateQueries({
+				queryKey: ['sessions', 'detail', variables.sessionInfo.sessionId],
+			});
+			queryClient.invalidateQueries({ queryKey: ['sessions', 'list'] });
 		},
 	});
 

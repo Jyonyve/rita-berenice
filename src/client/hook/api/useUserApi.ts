@@ -18,24 +18,18 @@ export const useUserApi = () => {
 			const response = await apiClient.post<{ userId: string }>(url, user);
 			return response.data;
 		},
-		onSuccess: (_data, variables) => {
-			Promise.all([
-				queryClient.invalidateQueries({ queryKey: ['getAllUsers'] }),
-				queryClient.invalidateQueries({ queryKey: ['getUser', variables.userId] }),
-				queryClient.invalidateQueries({ queryKey: ['getUserByEmail', variables.email] }),
-			]);
-
-			if (isUserInfo(variables)) {
-				queryClient.invalidateQueries({ queryKey: ['getUserByShowName', variables.showName] });
-				queryClient.invalidateQueries({ queryKey: ['checkShowNameExists', variables.showName] });
-			}
+		onSuccess: () => {
+			// Simple invalidation - covers all cases
+			queryClient.invalidateQueries({ queryKey: ['users', 'list'] });
+			queryClient.invalidateQueries({ queryKey: ['users', 'detail'] });
+			queryClient.invalidateQueries({ queryKey: ['users', 'validation'] });
 		},
 	});
 
-	// Check showName uniqueness - NEW METHOD
+	// Check showName uniqueness - Validation operation
 	const checkShowNameExists = (showName: string) =>
 		useQuery<{ exists: boolean; available: boolean; showName: string }, Error>({
-			queryKey: ['checkShowNameExists', showName],
+			queryKey: ['users', 'validation', 'checkShowNameExists', showName],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'checkShowNameExists', [showName]);
 				const response = await apiClient.get(url);
@@ -46,10 +40,10 @@ export const useUserApi = () => {
 			staleTime: 30000, // 30 seconds
 		});
 
-	// Fetch all users
+	// Fetch all users - List operation
 	const getAllUsers = () =>
 		useQuery<UserResponse, Error>({
-			queryKey: ['getAllUsers'],
+			queryKey: ['users', 'list', 'getAllUsers'],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getAllUsers');
 				const response = await apiClient.get<UserResponse>(url);
@@ -57,10 +51,10 @@ export const useUserApi = () => {
 			},
 		});
 
-	// Fetch a single user by userId
+	// Fetch a single user by userId - Detail operation
 	const getUser = (userId: string) =>
 		useQuery<UserResponse, Error>({
-			queryKey: ['getUser', userId],
+			queryKey: ['users', 'detail', 'getUser', userId],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getUser', [userId]);
 				const response = await apiClient.get<UserResponse>(url);
@@ -69,10 +63,10 @@ export const useUserApi = () => {
 			enabled: !!userId,
 		});
 
-	// Fetch a user by showName - UPDATED METHOD NAME
+	// Fetch a user by showName - Lookup operation
 	const getUserByShowName = (showName: string) =>
 		useQuery<UserResponse, Error>({
-			queryKey: ['getUserByShowName', showName],
+			queryKey: ['users', 'detail', 'getUserByShowName', showName],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getUserByShowName', [showName]);
 				const response = await apiClient.get<UserResponse>(url);
@@ -81,10 +75,10 @@ export const useUserApi = () => {
 			enabled: !!showName,
 		});
 
-	// Fetch a user by email
+	// Fetch a user by email - Lookup operation
 	const getUserByEmail = (email: string) =>
 		useQuery<UserResponse, Error>({
-			queryKey: ['getUserByEmail', email],
+			queryKey: ['users', 'detail', 'getUserByEmail', email],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getUserByEmail', [email]);
 				const response = await apiClient.get<UserResponse>(url);

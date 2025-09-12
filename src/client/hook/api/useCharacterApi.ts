@@ -11,7 +11,7 @@ export const useCharacterApi = () => {
 
 	const getAllCharacters = () =>
 		useQuery<CharacterResponse, Error>({
-			queryKey: ['getAllCharacters'],
+			queryKey: ['characters', 'list', 'getAllCharacters'], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getAllCharacters');
 				const response = await apiClient.get<Payload>(url);
@@ -21,7 +21,7 @@ export const useCharacterApi = () => {
 
 	const getCharacter = (characterId: string) =>
 		useQuery<CharacterResponse, Error>({
-			queryKey: ['getCharacter', characterId],
+			queryKey: ['characters', 'detail', 'getCharacter', characterId], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getCharacter', [characterId]);
 				const response = await apiClient.get<Payload>(url);
@@ -32,7 +32,7 @@ export const useCharacterApi = () => {
 
 	const getCharactersByShowName = (showName: string) =>
 		useQuery<CharacterResponse, Error>({
-			queryKey: ['getCharactersByShowName', showName],
+			queryKey: ['characters', 'list', 'getCharactersByShowName', showName], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getCharactersByShowName', [showName]);
 				const response = await apiClient.get<Payload>(url);
@@ -43,7 +43,7 @@ export const useCharacterApi = () => {
 
 	const getCharactersByUserId = (userId: string) =>
 		useQuery<CharacterResponse, Error>({
-			queryKey: ['getCharactersByUserId', userId],
+			queryKey: ['characters', 'list', 'getCharactersByUserId', userId], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getCharactersByUserId', [userId]);
 				const response = await apiClient.get<Payload>(url);
@@ -59,24 +59,23 @@ export const useCharacterApi = () => {
 	const storeCharacter = useMutation<{ characterId: string }, Error, CharacterCdo | CharacterInfo>({
 		mutationFn: async (character) => {
 			const url = genApiUrl(MODULE_NAME, 'storeCharacter');
-			// Expect the server to return a JSON object, not a raw string
 			const response = await apiClient.post<{ characterId: string }>(url, character);
 			return response.data;
 		},
 		onSuccess: (data, variables) => {
-			// Invalidate all queries that could be affected by this change
-			Promise.all([
-				queryClient.invalidateQueries({ queryKey: ['getAllCharacters'] }),
-				queryClient.invalidateQueries({ queryKey: ['getCharacter', data.characterId] }),
-				queryClient.invalidateQueries({ queryKey: ['getCharactersByShowName', variables.showName] }),
-				queryClient.invalidateQueries({ queryKey: ['getCharactersByUserId', variables.userId] }),
-			]);
+			// Invalidate the specific character detail
+			queryClient.invalidateQueries({
+				queryKey: ['characters', 'detail', 'getCharacter', data.characterId],
+			});
+
+			// Invalidate all character lists since a new/updated character affects all lists
+			queryClient.invalidateQueries({ queryKey: ['characters', 'list'] });
 		},
 	});
 
 	/**
-	 * Uploads a character image. No invalidation needed as it's a file system change,
-	 * but the UI should refetch character data if image paths are stored in the character document.
+	 * Uploads a character image.
+	 * This affects the character's data (image paths), so we invalidate the character detail.
 	 */
 	const uploadCharacterImage = useMutation<any, Error, FormData>({
 		mutationFn: async (formData) => {
@@ -85,6 +84,14 @@ export const useCharacterApi = () => {
 				headers: { 'Content-Type': 'multipart/form-data' },
 			});
 			return response.data;
+		},
+		onSuccess: (data, variables) => {
+			// If the response includes characterId, invalidate that specific character
+			if (data?.characterId) {
+				queryClient.invalidateQueries({
+					queryKey: ['characters', 'detail', 'getCharacter', data.characterId],
+				});
+			}
 		},
 	});
 
@@ -97,15 +104,17 @@ export const useCharacterApi = () => {
 			const response = await apiClient.delete(url, { data });
 			return response.data;
 		},
-		// Invalidate the specific character to update its image list
 		onSuccess: (_, variables) => {
-			queryClient.invalidateQueries({ queryKey: ['getCharacter', variables.characterId] });
+			// Invalidate the specific character to update its image list
+			queryClient.invalidateQueries({
+				queryKey: ['characters', 'detail', 'getCharacter', variables.characterId],
+			});
 		},
 	});
 
 	/**
 	 * Creates a character folder on the server.
-	 * This is a pure side-effect and likely doesn't need to invalidate any data queries.
+	 * This is a pure side-effect and doesn't affect character data queries.
 	 */
 	const createCharacterFolder = useMutation<any, Error, { characterId: string }>({
 		mutationFn: async (data) => {

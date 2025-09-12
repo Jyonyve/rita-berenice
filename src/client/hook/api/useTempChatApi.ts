@@ -22,11 +22,16 @@ export const useTempChatApi = () => {
 			return response.data;
 		},
 		onSuccess: (data, variables) => {
-			// After saving a temp turn, invalidate the query for that specific turn.
-			// This ensures that any component displaying this turn will get the latest data,
-			// including the server-generated tempTurnId, createdAt, and updatedAt fields.
+			// Invalidate the specific temp chat turn that was saved
 			queryClient.invalidateQueries({
-				queryKey: ['getTempChatTurn', variables.sessionId, variables.sequence],
+				queryKey: [
+					'tempChat',
+					'detail',
+					'getTempChatTurn',
+					variables.sessionId,
+					variables.sequence,
+					variables.setCount,
+				],
 			});
 		},
 	});
@@ -34,9 +39,17 @@ export const useTempChatApi = () => {
 	/**
 	 * Fetches a temporary chat turn.
 	 */
-	const getTempChatTurn = (sessionId: string, sequence: number, isHistoryLoading: boolean) =>
+	/**
+	 * Fetches a temporary chat turn.
+	 */
+	const getTempChatTurn = (
+		sessionId: string,
+		sequence: number,
+		setCount: number,
+		isHistoryLoading: boolean
+	) =>
 		useQuery<TempChatResponse, Error>({
-			queryKey: ['getTempChatTurn', sessionId, sequence],
+			queryKey: ['tempChat', 'detail', 'getTempChatTurn', sessionId, sequence, setCount],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAMES.TEMP, 'getTempChatTurn', [sessionId, sequence]);
 				const response = await apiClient.get<Payload>(url, {

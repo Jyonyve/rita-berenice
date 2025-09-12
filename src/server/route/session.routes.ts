@@ -156,7 +156,7 @@ router.put(
 );
 
 /**
- * PUT /api/session/update-session-on-new-message
+ * PUT /api/session/init-session-profileid
  * Updates a session's metadata after a new message is added.
  * @body {string} sessionId - The ID of the session to update.
  * @body {string} profileId - The new last message from the character.
