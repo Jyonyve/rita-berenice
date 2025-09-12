@@ -29,18 +29,16 @@ export const extractValidOpenAiContent = (response: ChatCompletion): string => {
  * @throws If the input is empty or no JSON can be extracted.
  */
 export const extractJsonFromLlmResponse = (rawResponse: string): string => {
-	if (!rawResponse) return '';
-	// Look for a JSON block within ``````
-	const jsonMatch = rawResponse.match(/``````/);
-	if (jsonMatch && jsonMatch[1]) {
-		return jsonMatch[1].trim();
+	if (!rawResponse) {
+		return '{}';
 	}
-	// Fallback for a simple `````` block
-	const genericMatch = rawResponse.match(/``````/);
-	if (genericMatch && genericMatch[1]) {
-		return genericMatch[1].trim();
+
+	const match = rawResponse.match(/```(?:json)?\n([\s\S]*?)\n```/);
+
+	if (match && match[1]) {
+		return match[1].trim();
 	}
-	// If no markdown, return the raw string, which might be a valid JSON object itself
+
 	return rawResponse.trim();
 };
 
