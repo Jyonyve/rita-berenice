@@ -17,7 +17,6 @@ export const useChatApi = () => {
 
 	/**
 	 * Stores a finalized chat turn.
-	 * Query Key: ['storeChatTurn']
 	 */
 	const storeChatTurn = useMutation<void, Error, ChatTurn>({
 		mutationFn: async (chatTurn: ChatTurn) => {
@@ -27,7 +26,15 @@ export const useChatApi = () => {
 		onSuccess: (data, variables) => {
 			// addToast('Chat turn saved.', 'success');
 			if (variables) {
-				queryClient.invalidateQueries({ queryKey: ['getAllChatTurns', variables.sessionId] });
+				// Invalidate the specific chat turn that was stored
+				queryClient.invalidateQueries({
+					queryKey: ['chat', 'detail', 'getChatTurnBySequence', variables.sessionId, variables.sequence],
+				});
+
+				// Invalidate all chat lists for this session since a new turn was added
+				queryClient.invalidateQueries({
+					queryKey: ['chat', 'list', 'getAllDisplayTurns', variables.sessionId],
+				});
 			}
 		},
 	});
@@ -35,14 +42,12 @@ export const useChatApi = () => {
 	/**
 	 * Fetches all chat turns for history loading.
 	 * Uses useQuery because the API returns all data at once.
-	 * Query Key: ['getAllDisplayTurns']
 	 */
 	const getAllDisplayTurns = (sessionId: string) =>
 		useQuery<ChatResponse, Error>({
-			queryKey: ['getAllDisplayTurns', sessionId], // The query key now reflects the method name
+			queryKey: ['chat', 'list', 'getAllDisplayTurns', sessionId], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAMES.CHAT, 'getAllDisplayTurns', [sessionId]);
-				// No `beforeSequence` param if the API fetches all data at once
 				const response = await apiClient.get<Payload>(url);
 				return decompressData<ChatResponse>(response.data.payload);
 			},
@@ -51,11 +56,10 @@ export const useChatApi = () => {
 
 	/**
 	 * Fetches a single, specific chat turn by its sequence number.
-	 * Query Key: ['getChatTurnBySequence']
 	 */
 	const getChatTurnBySequence = (sessionId: string, sequence: number) =>
 		useQuery<ChatResponse, Error>({
-			queryKey: ['getChatTurnBySequence', sessionId, sequence], // The query key now reflects the method name
+			queryKey: ['chat', 'detail', 'getChatTurnBySequence', sessionId, sequence], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAMES.CHAT, 'getChatTurnBySequence', [sessionId, sequence]);
 				const response = await apiClient.get<Payload>(url);
@@ -68,18 +72,17 @@ export const useChatApi = () => {
 	//  * Performs a semantic search over finalized chat turns.
 	//  * Uses useMutation because it's a POST request (search/query) and does not represent
 	//  * a continuously available piece of data.
-	//  * Query Key: ['queryChatTurns']
 	//  */
 	// const queryChatTurns = useMutation<
-	// 	ChatResponse,
-	// 	Error,
-	// 	{ sessionId: string; queryTexts: string[]; where?: Where }
+	//     ChatResponse,
+	//     Error,
+	//     { sessionId: string; queryTexts: string[]; where?: Where }
 	// >({
-	// 	mutationFn: async ({ sessionId, queryTexts, where }) => {
-	// 		const url = genApiUrl(MODULE_NAMES.CHAT, 'queryChatTurns');
-	// 		const response = await apiClient.post<Payload>(url, { sessionId, queryTexts, where });
-	// 		return decompressData<ChatResponse>(response.data.payload);
-	// 	},
+	//     mutationFn: async ({ sessionId, queryTexts, where }) => {
+	//         const url = genApiUrl(MODULE_NAMES.CHAT, 'queryChatTurns');
+	//         const response = await apiClient.post<Payload>(url, { sessionId, queryTexts, where });
+	//         return decompressData<ChatResponse>(response.data.payload);
+	//     },
 	// });
 
 	return {

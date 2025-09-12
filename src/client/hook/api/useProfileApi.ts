@@ -14,7 +14,6 @@ export const useProfileApi = () => {
 
 	/**
 	 * Creates or updates a user profile.
-	 * The mutationFn already correctly expects an object: { profileId: string }.
 	 */
 	const storeProfile = useMutation<{ profileId: string }, Error, ProfileInfo | ProfileCdo>({
 		mutationFn: async (profileData) => {
@@ -23,26 +22,19 @@ export const useProfileApi = () => {
 			return response.data;
 		},
 		onSuccess: (data, variables) => {
-			// This mutation affects multiple queries, so we use Promise.all
-			// to invalidate them concurrently.
-			const invalidations = [
-				queryClient.invalidateQueries({ queryKey: ['getAllProfilesByUserId', variables.userId] }),
-				queryClient.invalidateQueries({ queryKey: ['getProfile', data.profileId] }),
-			];
+			// Invalidate the specific profile
+			queryClient.invalidateQueries({
+				queryKey: ['profiles', 'detail', 'getProfile', data.profileId],
+			});
 
-			if (variables.sessionId) {
-				invalidations.push(
-					queryClient.invalidateQueries({ queryKey: ['getProfileBySessionId', variables.sessionId] })
-				);
-			}
-
-			Promise.all(invalidations);
+			// Invalidate all profile lists since a new/updated profile affects all lists
+			queryClient.invalidateQueries({ queryKey: ['profiles', 'list'] });
 		},
 	});
 
 	const getAllProfilesByUserId = (userId: string) =>
 		useQuery<ProfileResponse, Error>({
-			queryKey: ['getAllProfilesByUserId', userId],
+			queryKey: ['profiles', 'list', 'getAllProfilesByUserId', userId], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getAllProfilesByUserId', [userId]);
 				const response = await apiClient.get<Payload>(url);
@@ -53,7 +45,7 @@ export const useProfileApi = () => {
 
 	const getProfile = (profileId: string) =>
 		useQuery<ProfileResponse, Error>({
-			queryKey: ['getProfile', profileId],
+			queryKey: ['profiles', 'detail', 'getProfile', profileId], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getProfile', [profileId]);
 				const response = await apiClient.get<Payload>(url);
@@ -64,7 +56,7 @@ export const useProfileApi = () => {
 
 	const getProfileBySessionId = (sessionId: string) =>
 		useQuery<ProfileResponse, Error>({
-			queryKey: ['getProfileBySessionId', sessionId],
+			queryKey: ['profiles', 'detail', 'getProfileBySessionId', sessionId], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getProfileBySessionId', [sessionId]);
 				const response = await apiClient.get<Payload>(url);
@@ -75,7 +67,7 @@ export const useProfileApi = () => {
 
 	const getProfilesByShowName = (showName: string) =>
 		useQuery<ProfileResponse, Error>({
-			queryKey: ['getProfilesByShowName', showName],
+			queryKey: ['profiles', 'list', 'getProfilesByShowName', showName], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getProfilesByShowName', [showName]);
 				const response = await apiClient.get<Payload>(url);

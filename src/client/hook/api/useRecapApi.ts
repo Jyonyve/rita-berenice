@@ -9,7 +9,7 @@ import { Payload } from '#shared/util/apiHelpers.js';
 
 /**
  * A client-side hook for interacting with the RECAP API endpoints,
- * fully refactored to match the new store and routes.
+ * fully refactored with hierarchical query keys.
  */
 export const useRecapApi = () => {
 	const MODULE_NAME = MODULE_NAMES.RECAP;
@@ -26,9 +26,9 @@ export const useRecapApi = () => {
 			return response.data;
 		},
 		onSuccess: (_, variables) => {
-			// After storing a recap, invalidate the list of recaps for that session and type.
+			// Invalidate the specific recap list for this session and type
 			queryClient.invalidateQueries({
-				queryKey: ['getRecapsBySessionId', variables.sessionId, variables.type],
+				queryKey: ['recaps', 'list', 'getRecapsBySessionId', variables.sessionId, variables.type],
 			});
 		},
 	});
@@ -41,7 +41,7 @@ export const useRecapApi = () => {
 		type: typeof METADATA_TYPES.RECAP | typeof METADATA_TYPES.RELATIONSHIP
 	) =>
 		useQuery<RecapInfo[], Error>({
-			queryKey: ['getRecapsBySessionId', sessionId, type],
+			queryKey: ['recaps', 'list', 'getRecapsBySessionId', sessionId, type], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getRecapsBySessionId', [sessionId, type]);
 				const response = await apiClient.get<Payload>(url);

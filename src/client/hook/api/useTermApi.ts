@@ -20,7 +20,7 @@ export const useTermApi = () => {
 	const MODULE_NAME = MODULE_NAMES.TERM;
 	const queryClient = useQueryClient();
 
-	// --- Mutations ---
+	// --- SESSION TERM MUTATIONS ---
 
 	const storeSessionTerm = useMutation<{ termId: string }, Error, SessionTermCdo | SessionTermInfo>({
 		mutationFn: async (termInfo) => {
@@ -29,32 +29,21 @@ export const useTermApi = () => {
 			return response.data;
 		},
 		onSuccess: (data, variables) => {
-			Promise.all([
-				queryClient.invalidateQueries({ queryKey: ['getTermsBySessionId', variables.sessionId] }),
-				queryClient.invalidateQueries({
-					queryKey: ['getTermByKorean', variables.sessionId, variables.koreanTerm, 'session'],
-				}),
-			]);
-		},
-	});
+			// Invalidate the specific term lookup
+			queryClient.invalidateQueries({
+				queryKey: [
+					'sessionTerms',
+					'detail',
+					'getTermByKorean',
+					variables.sessionId,
+					variables.koreanTerm,
+				],
+			});
 
-	const storeCharacterTerm = useMutation<
-		{ termId: string },
-		Error,
-		CharacterTermCdo | CharacterTermInfo
-	>({
-		mutationFn: async (termInfo) => {
-			const url = genApiUrl(MODULE_NAME, 'storeCharacterTerm');
-			const response = await apiClient.post<{ termId: string }>(url, termInfo);
-			return response.data;
-		},
-		onSuccess: (data, variables) => {
-			Promise.all([
-				queryClient.invalidateQueries({ queryKey: ['getTermsByCharacterId', variables.characterId] }),
-				queryClient.invalidateQueries({
-					queryKey: ['getTermByKorean', variables.characterId, variables.koreanTerm, 'character'],
-				}),
-			]);
+			// Invalidate all session terms for this session
+			queryClient.invalidateQueries({
+				queryKey: ['sessionTerms', 'list', 'getTermsBySessionId', variables.sessionId],
+			});
 		},
 	});
 
@@ -70,10 +59,44 @@ export const useTermApi = () => {
 		},
 		onSuccess: (_, variables) => {
 			const sessionIds = [...new Set(variables.terms.map((t) => t.sessionId))];
-			const invalidations = sessionIds.map((id) =>
-				queryClient.invalidateQueries({ queryKey: ['getTermsBySessionId', id] })
-			);
-			Promise.all(invalidations);
+
+			// Invalidate all affected session term lists
+			sessionIds.forEach((sessionId) => {
+				queryClient.invalidateQueries({
+					queryKey: ['sessionTerms', 'list', 'getTermsBySessionId', sessionId],
+				});
+			});
+		},
+	});
+
+	// --- CHARACTER TERM MUTATIONS ---
+
+	const storeCharacterTerm = useMutation<
+		{ termId: string },
+		Error,
+		CharacterTermCdo | CharacterTermInfo
+	>({
+		mutationFn: async (termInfo) => {
+			const url = genApiUrl(MODULE_NAME, 'storeCharacterTerm');
+			const response = await apiClient.post<{ termId: string }>(url, termInfo);
+			return response.data;
+		},
+		onSuccess: (data, variables) => {
+			// Invalidate the specific character term lookup
+			queryClient.invalidateQueries({
+				queryKey: [
+					'characterTerms',
+					'detail',
+					'getTermByKorean',
+					variables.characterId,
+					variables.koreanTerm,
+				],
+			});
+
+			// Invalidate all character terms for this character
+			queryClient.invalidateQueries({
+				queryKey: ['characterTerms', 'list', 'getTermsByCharacterId', variables.characterId],
+			});
 		},
 	});
 
@@ -89,12 +112,17 @@ export const useTermApi = () => {
 		},
 		onSuccess: (_, variables) => {
 			const characterIds = [...new Set(variables.terms.map((t) => t.characterId))];
-			const invalidations = characterIds.map((id) =>
-				queryClient.invalidateQueries({ queryKey: ['getTermsByCharacterId', id] })
-			);
-			Promise.all(invalidations);
+
+			// Invalidate all affected character term lists
+			characterIds.forEach((characterId) => {
+				queryClient.invalidateQueries({
+					queryKey: ['characterTerms', 'list', 'getTermsByCharacterId', characterId],
+				});
+			});
 		},
 	});
+
+	// --- UTILITY MUTATIONS ---
 
 	const ensureAndGetTermsForPrompt = useMutation<
 		Record<string, string>,
@@ -107,7 +135,10 @@ export const useTermApi = () => {
 			return response.data;
 		},
 		onSuccess: (_, variables) => {
-			queryClient.invalidateQueries({ queryKey: ['getTermsBySessionId', variables.sessionId] });
+			// This might create new session terms, so invalidate session term lists
+			queryClient.invalidateQueries({
+				queryKey: ['sessionTerms', 'list', 'getTermsBySessionId', variables.sessionId],
+			});
 		},
 	});
 
@@ -117,7 +148,10 @@ export const useTermApi = () => {
 			await apiClient.delete(url);
 		},
 		onSuccess: (_, sessionId) => {
-			queryClient.invalidateQueries({ queryKey: ['getTermsBySessionId', sessionId] });
+			// Clear all session term queries for this session
+			queryClient.invalidateQueries({
+				queryKey: ['sessionTerms', 'list', 'getTermsBySessionId', sessionId],
+			});
 		},
 	});
 
@@ -127,15 +161,21 @@ export const useTermApi = () => {
 			await apiClient.delete(url);
 		},
 		onSuccess: (_, characterId) => {
-			queryClient.invalidateQueries({ queryKey: ['getTermsByCharacterId', characterId] });
+			// Clear all character term queries for this character
+			queryClient.invalidateQueries({
+				queryKey: ['characterTerms', 'list', 'getTermsByCharacterId', characterId],
+			});
 		},
 	});
 
-	// --- Queries ---
+	// --- QUERIES ---
 
 	const getTermByKorean = (id: string, koreanTerm: string, type: TermType) =>
 		useQuery<TermResponse | null, Error>({
-			queryKey: ['getTermByKorean', id, koreanTerm, type],
+			queryKey:
+				type === 'session'
+					? ['sessionTerms', 'detail', 'getTermByKorean', id, koreanTerm]
+					: ['characterTerms', 'detail', 'getTermByKorean', id, koreanTerm], // Separate hierarchies
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getTermByKorean', [id, koreanTerm, type]);
 				const response = await apiClient.get<Payload>(url);
@@ -147,7 +187,7 @@ export const useTermApi = () => {
 
 	const getTermsBySessionId = (sessionId: string) =>
 		useQuery<TermResponse | null, Error>({
-			queryKey: ['getTermsBySessionId', sessionId],
+			queryKey: ['sessionTerms', 'list', 'getTermsBySessionId', sessionId], // Session terms hierarchy
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getTermsBySessionId', [sessionId]);
 				const response = await apiClient.get<Payload>(url);
@@ -158,7 +198,7 @@ export const useTermApi = () => {
 
 	const getTermsByCharacterId = (characterId: string) =>
 		useQuery<TermResponse | null, Error>({
-			queryKey: ['getTermsByCharacterId', characterId],
+			queryKey: ['characterTerms', 'list', 'getTermsByCharacterId', characterId], // Character terms hierarchy
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getTermsByCharacterId', [characterId]);
 				const response = await apiClient.get<Payload>(url);
