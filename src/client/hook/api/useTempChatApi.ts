@@ -42,14 +42,9 @@ export const useTempChatApi = () => {
 	/**
 	 * Fetches a temporary chat turn.
 	 */
-	const getTempChatTurn = (
-		sessionId: string,
-		sequence: number,
-		setCount: number,
-		isHistoryLoading: boolean
-	) =>
+	const getTempChatTurn = (sessionId: string, sequence: number) =>
 		useQuery<TempChatResponse, Error>({
-			queryKey: ['tempChat', 'detail', 'getTempChatTurn', sessionId, sequence, setCount],
+			queryKey: ['tempChat', 'detail', 'getTempChatTurn', sessionId, sequence],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAMES.TEMP, 'getTempChatTurn', [sessionId, sequence]);
 				const response = await apiClient.get<Payload>(url, {
@@ -58,7 +53,7 @@ export const useTempChatApi = () => {
 				});
 				return decompressData<TempChatResponse>(response.data.payload);
 			},
-			enabled: !isHistoryLoading && !!sessionId && sequence >= 0,
+			enabled: !!sessionId && sequence >= 0,
 			retry: false,
 		});
 
