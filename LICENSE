@@ -1,0 +1,90 @@
+Rita-Berenice Enhanced Use License v1.0
+
+Copyright (c) 2025 EUNJIN KIM
+
+Permission is hereby granted, free of charge, to any person or entity
+obtaining a copy of this software and associated documentation files
+(the "Software"), to use, copy, modify, and distribute the Software
+subject to the following conditions:
+
+PERMITTED USES:
+
+1. Non-commercial use by individuals for personal, educational, or
+   research purposes
+2. Non-commercial use by organizations for internal testing,
+   development, or evaluation purposes
+3. Commercial use ONLY if the user has made Substantial Modifications
+   to the Software's functionality
+
+SUBSTANTIAL MODIFICATIONS DEFINED:
+For commercial use, at least ONE of the following must be true:
+
+- Addition of new core features that extend the Software's capabilities
+- Resolution of critical bugs that significantly improve functionality
+- Architectural improvements that enhance performance or security
+- Integration of new technologies or APIs that add meaningful value
+- Other modifications that, in the sole discretion of the copyright
+  holder, constitute substantial functional improvements to the Software
+
+EXCLUDED FROM SUBSTANTIAL MODIFICATIONS:
+
+- Simple variable or method name changes
+- Minor styling or UI cosmetic changes
+- Configuration file modifications
+- Translation to other human languages
+- Basic parameter adjustments
+- Trivial changes that do not materially alter the Software's
+  core functionality
+- Any modifications that the copyright holder reasonably determines
+  to be primarily cosmetic or administrative in nature
+
+PROHIBITED USES:
+
+- Commercial deployment, distribution, or offering as a service of
+  the unmodified or trivially modified Software
+- Sublicensing the original Software for commercial purposes without
+  Substantial Modifications
+- Any use that the copyright holder determines circumvents the intent
+  of this license
+
+REQUIREMENTS FOR ALL USES:
+
+- This license notice must be included in all copies
+- Modified versions must clearly indicate changes made
+- Attribution to the original author must be maintained
+
+DISCRETIONARY ENFORCEMENT:
+The copyright holder reserves the right to make final determinations
+regarding what constitutes "Substantial Modifications" and whether any
+particular use complies with this license. Such determinations shall
+be made reasonably and in good faith.
+
+DISCLAIMER AND LIMITATION OF LIABILITY:
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES
+OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+THE COPYRIGHT HOLDER EXPRESSLY DISCLAIMS ALL RESPONSIBILITY FOR:
+
+- Any direct, indirect, incidental, special, consequential, or punitive damages
+- Loss of data, profits, business opportunities, or business interruption
+- Any malfunction, error, or failure of the Software
+- Security vulnerabilities or data breaches
+- Compatibility issues with other software or systems
+- Any harm caused by user modifications or third-party integrations
+
+YOU USE THIS SOFTWARE ENTIRELY AT YOUR OWN RISK. THE COPYRIGHT HOLDER
+MAKES NO REPRESENTATIONS OR WARRANTIES REGARDING THE SOFTWARE'S
+PERFORMANCE, RELIABILITY, OR SUITABILITY FOR ANY PURPOSE.
+
+MAXIMUM LIABILITY: In jurisdictions where liability cannot be completely
+excluded, the copyright holder's total liability shall not exceed the
+amount you paid for the Software (which is $0 for free licenses).
+
+For questions about licensing compliance, contact: [nthpopuptown@gmail.com]
