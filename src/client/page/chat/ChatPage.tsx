@@ -60,7 +60,7 @@ export const ChatPage: FC<{
 		return chatTurns.length > 0 ? getNextSequence() : 0;
 	}, [isLoadingHistory, chatTurns, getNextSequence]);
 
-	const { data: tempTurnRes } = getTempChatTurn(sessionId, tempSequence, isLoadingHistory);
+	const { data: tempTurnRes } = getTempChatTurn(sessionId, tempSequence);
 
 	useEffect(() => {
 		if (tempTurnRes?.tempChatTurn) {
@@ -133,63 +133,71 @@ export const ChatPage: FC<{
 		},
 		[showError]
 	);
-
 	const handleSendMessage = useCallback(async () => {
 		setPageError(undefined);
 		setIsProcessing(true);
 
-		// This promise will finalize the *previous* temp turn
-		const finalizePromise = (async () => {
-			if (!tempChatTurn || tempChatTurn.chatTurnSets.length === 0) return null;
-			const pickedTurnSet = tempChatTurn.chatTurnSets[currentTempSetNo];
-			if (!pickedTurnSet) return null;
-
-			const finalizedTurnCdo: ChatTurnCdo = {
-				userId,
-				sessionId: tempChatTurn.sessionId,
-				sequence: tempChatTurn.sequence,
-				request: pickedTurnSet.request,
-				response: pickedTurnSet.response,
-			};
-			return finalizeChatTurn.mutateAsync(finalizedTurnCdo);
-		})();
-
-		// This promise generates the *new* temp turn
-		const generatePromise = (async () => {
-			if (!userInput.trim()) return null;
-			const inputJsonString = JSON.stringify(parseTextToEntries(userInput));
-			const recentChatTurnString = JSON.stringify(getRecentTurnsForMemory());
-			const newTempSequence = getNextSequence();
-
-			const tempChatTurnCdo: TempChatTurnCdo = {
-				sessionId,
-				sequence: newTempSequence,
-				inputJsonString,
-				userId,
-			};
-			return receiveBotResponse.mutateAsync({
-				tempChatTurnCdo,
-				characterInfo,
-				profileInfo,
-				aiModelInfo,
-				recentChatTurnString,
-				isScene,
-			});
-		})();
+		let newTempTurnResult = null;
 
 		try {
-			// First, finalize the old turn
-			const savedTurn = await finalizePromise;
-			if (savedTurn) {
-				addChatTurn(savedTurn);
+			// 1. FIRST: Generate the new temp turn (AI response)
+			if (userInput.trim()) {
+				const inputJsonString = JSON.stringify(parseTextToEntries(userInput));
+				const recentChatTurnString = JSON.stringify(getRecentTurnsForMemory());
+				const newTempSequence = getNextSequence();
+
+				const tempChatTurnCdo: TempChatTurnCdo = {
+					sessionId,
+					sequence: newTempSequence,
+					inputJsonString,
+					userId,
+				};
+
+				newTempTurnResult = await receiveBotResponse.mutateAsync({
+					tempChatTurnCdo,
+					characterInfo,
+					profileInfo,
+					aiModelInfo,
+					recentChatTurnString,
+					isScene,
+				});
 			}
 
-			// Then, generate and process the new turn
-			const newTempTurnResult = await generatePromise;
+			// 2. SECOND: Only if AI response succeeded, finalize the previous temp turn
 			if (newTempTurnResult) {
+				// Finalize the old turn if it exists
+				if (tempChatTurn && tempChatTurn.chatTurnSets.length > 0) {
+					const pickedTurnSet = tempChatTurn.chatTurnSets[currentTempSetNo];
+					if (pickedTurnSet) {
+						const finalizedTurnCdo: ChatTurnCdo = {
+							userId,
+							sessionId: tempChatTurn.sessionId,
+							sequence: tempChatTurn.sequence,
+							request: pickedTurnSet.request,
+							response: pickedTurnSet.response,
+						};
+
+						try {
+							const savedTurn = await finalizeChatTurn.mutateAsync(finalizedTurnCdo);
+							if (savedTurn) {
+								addChatTurn(savedTurn);
+							}
+						} catch (finalizeError: any) {
+							console.warn(
+								'Failed to finalize previous turn, but continuing with new turn:',
+								finalizeError
+							);
+							// Don't throw - we still want to show the new temp turn
+						}
+					}
+				}
+
+				// 3. THIRD: Update UI state with the new temp turn
 				changeTempChatTurn(newTempTurnResult);
 				setFocusedTurnIndex(chatTurns.length); // The index of the new temp turn
 				setUserInput('');
+
+				// Update session with latest character message
 				updateSessionOnNewMessage({
 					sessionId,
 					latestCharMessage: JSON.stringify({
@@ -227,22 +235,22 @@ export const ChatPage: FC<{
 			setPageError('Cannot regenerate: Missing data or AI model info.');
 			return;
 		}
-		if (!tempChatTurn || !tempChatTurn.chatTurnSets[0]?.request) {
-			setPageError('Cannot regenerate: No curretn Temp chat turn.');
+		if (!tempChatTurn || !tempChatTurn.chatTurnSets[0].request) {
+			setPageError('Cannot regenerate: No current Temp chat turn.');
 			return;
 		}
 		setIsProcessing(true);
 		setPageError(undefined);
+
 		try {
 			const sequence = tempChatTurn.sequence;
-			const userInput = JSON.stringify(tempChatTurn.chatTurnSets[currentTempSetNo].request.entries);
+			const inputJsonString = JSON.stringify(
+				tempChatTurn.chatTurnSets[currentTempSetNo].request.entries
+			);
 			const recentChatTurnString = JSON.stringify(getRecentTurnsForMemory());
-			const tempChatTurnCdo: TempChatTurnCdo = {
-				sessionId,
-				sequence,
-				inputJsonString: userInput,
-				userId,
-			};
+
+			const tempChatTurnCdo: TempChatTurnCdo = { sessionId, sequence, inputJsonString, userId };
+
 			const result: TempChatTurn = await receiveBotResponse.mutateAsync({
 				tempChatTurnCdo,
 				characterInfo,
@@ -257,6 +265,7 @@ export const ChatPage: FC<{
 				changeTempChatTurn(result);
 				setCurrentTempSetNo(newSetIndex);
 				setFocusedTurnIndex(chatTurns.length);
+
 				updateSessionOnNewMessage({
 					sessionId,
 					latestCharMessage: JSON.stringify({
