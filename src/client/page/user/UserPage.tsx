@@ -68,7 +68,7 @@ const UserPage: FC<{
 				<Grid size={{ xs: 12, md: 8 }}>
 					<GlassCard variant="outlined" sx={{ mb: 2 }}>
 						{/* Header with Avatar and Basic Info */}
-						<Box display="flex" alignItems="center" gap={3} mb={3}>
+						<Box display="flex" alignItems="center" gap={3} my={3}>
 							<Box
 								position="relative"
 								// onMouseEnter={() => setAvatarHover(true)}
@@ -176,58 +176,9 @@ const UserPage: FC<{
 
 				{/* Sidebar */}
 				<Grid size={{ xs: 12, md: 4 }}>
-					{/* My Characters Section */}
-					<GlassCard variant="outlined" sx={{ mb: 2 }}>
-						<Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-							<Typography variant="h6" fontWeight="bold">
-								{getLangText(LANG_KEYS.MY_CHARACTERS)}
-							</Typography>
-							<Chip label={myCharacters.length} size="small" color="primary" />
-						</Box>
-
-						{myCharacters.length === 0 ? (
-							<Box textAlign="center" py={3}>
-								<PersonIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
-								<Typography variant="body2" color="text.secondary">
-									{getLangText(LANG_KEYS.NEW_CHARACTER_TITLE)}
-								</Typography>
-							</Box>
-						) : (
-							<Stack spacing={1.5}>
-								{myCharacters.slice(0, 5).map((character) => (
-									<GlassCard
-										key={character.characterId}
-										variant="outlined"
-										sx={{
-											cursor: 'pointer',
-											transition: 'all 0.2s',
-											'&:hover': { bgcolor: 'rgba(255,255,255,0.05)', transform: 'translateY(-1px)' },
-											py: 1.5,
-											px: 2,
-											'&:last-child': { pb: 1.5 },
-										}}
-									>
-										<Typography variant="subtitle2" fontWeight="bold">
-											{character.showName}
-										</Typography>
-										<Typography variant="caption" color="text.secondary">
-											{`${getLangText(LANG_KEYS.CREATE_DATE)} : ${formatDate(character.createdAt)}`}
-										</Typography>
-									</GlassCard>
-								))}
-
-								{myCharacters.length > 5 && (
-									<Button variant="text" size="small">
-										+{myCharacters.length - 5}개 더 보기
-									</Button>
-								)}
-							</Stack>
-						)}
-					</GlassCard>
-
 					{/* Statistics Card */}
 					<GlassCard variant="outlined">
-						<Typography variant="h6" fontWeight="bold" mb={2}>
+						<Typography variant="h6" fontWeight="bold" my={2}>
 							{getLangText(LANG_KEYS.STATISTICS)}
 						</Typography>
 
@@ -237,7 +188,7 @@ const UserPage: FC<{
 									{getLangText(LANG_KEYS.MY_CHARACTERS)}
 								</Typography>
 								<Typography variant="h6" fontWeight="bold" color="primary">
-									{myCharacters.length}개
+									{myCharacters.length}
 								</Typography>
 							</Box>
 
@@ -245,10 +196,7 @@ const UserPage: FC<{
 								<Typography variant="body2" color="text.secondary">
 									{getLangText(LANG_KEYS.ENTER_DATE)}
 								</Typography>
-								<Typography variant="body2">
-									{formatRelativeDate(userInfo.updatedAt)}
-									일째
-								</Typography>
+								<Typography variant="body2">{formatRelativeDate(userInfo.updatedAt)}</Typography>
 							</Box>
 						</Stack>
 					</GlassCard>

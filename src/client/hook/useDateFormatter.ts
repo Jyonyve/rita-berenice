@@ -32,9 +32,12 @@ export const useDateFormatter = () => {
 		const now = new Date();
 		const daysDiff = Math.ceil((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
 
-		if (daysDiff === 0) return lang === 'kor' ? '오늘' : 'Today';
-		if (daysDiff === 1) return lang === 'kor' ? '어제' : 'Yesterday';
-		if (daysDiff < 7) return lang === 'kor' ? `${daysDiff}일 전` : `${daysDiff} days ago`;
+		// Use the locale for proper formatting
+		const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+
+		if (daysDiff === 0) return rtf.format(0, 'day'); // "today" / "오늘"
+		if (daysDiff === 1) return rtf.format(-1, 'day'); // "yesterday" / "어제"
+		if (daysDiff < 7) return rtf.format(-daysDiff, 'day'); // "3 days ago" / "3일 전"
 
 		return formatDate(dateString);
 	};
