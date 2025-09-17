@@ -20,9 +20,7 @@ export const useUserApi = () => {
 		},
 		onSuccess: () => {
 			// Simple invalidation - covers all cases
-			queryClient.invalidateQueries({ queryKey: ['users', 'list'] });
-			queryClient.invalidateQueries({ queryKey: ['users', 'detail'] });
-			queryClient.invalidateQueries({ queryKey: ['users', 'validation'] });
+			queryClient.invalidateQueries({ queryKey: ['users'] });
 		},
 	});
 
@@ -87,12 +85,56 @@ export const useUserApi = () => {
 			enabled: !!email,
 		});
 
+	/**
+	 * Uploads a user avatar image and returns the public URL.
+	 * This is intended to be called BEFORE storeUser.
+	 */
+	const uploadUserAvatar = useMutation<{ avatarUrl: string }, Error, FormData>({
+		mutationFn: async (formData: FormData) => {
+			// This endpoint should handle file saving and return the new public URL.
+			const url = genApiUrl(MODULE_NAME, 'uploadUserAvatar');
+			const response = await apiClient.post<{ avatarUrl: string }>(url, formData, {
+				headers: { 'Content-Type': 'multipart/form-data' },
+			});
+			return response.data;
+		},
+	});
+
+	/**
+	 * Deletes a user's avatar image.
+	 */
+	const deleteUserAvatar = useMutation<void, Error, { userId: string }>({
+		mutationFn: async ({ userId }) => {
+			const url = genApiUrl(MODULE_NAME, 'deleteUserAvatar');
+			const response = await apiClient.delete(url, { data: { userId } });
+			return response.data;
+		},
+		onSuccess: (_, variables) => {
+			queryClient.invalidateQueries({ queryKey: ['users', 'detail', 'getUser', variables.userId] });
+		},
+	});
+
+	/**
+	 * Creates a character folder on the server.
+	 * This is a pure side-effect and doesn't affect character data queries.
+	 */
+	const createUserFolder = useMutation<any, Error, { userId: string }>({
+		mutationFn: async (data) => {
+			const url = genApiUrl(MODULE_NAME, 'createUserFolder');
+			const response = await apiClient.post(url, data);
+			return response.data;
+		},
+	});
+
 	return {
-		storeUser: storeUser.mutateAsync,
-		checkShowNameExists, // NEW: For username validation
+		checkShowNameExists,
 		getAllUsers,
 		getUser,
-		getUserByShowName, // UPDATED: Renamed from getUserByContact
+		getUserByShowName,
 		getUserByEmail,
+		storeUser: storeUser.mutateAsync,
+		createUserFolder: createUserFolder.mutateAsync,
+		uploadUserAvatar: uploadUserAvatar.mutateAsync,
+		deleteUserAvatar: deleteUserAvatar.mutateAsync,
 	};
 };

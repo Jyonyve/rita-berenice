@@ -16,44 +16,40 @@ import {
 	Alert,
 } from '@mui/material';
 import { FC, useState, useRef, ChangeEvent, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+
 import { useForm, Controller } from 'react-hook-form';
 import { CloudUpload } from '@mui/icons-material';
 import { useCharacterApi } from '../../hook/api/index.js';
-import {
-	GlassButton,
-	GlassCard,
-	GlassPaper,
-	GlassPortraitSlider,
-	GlassSelect,
-} from '../../layout/glass/index.js';
-import { RomanticTitle } from '../../layout/RomanticTitle.jsx';
-import { useAuth } from '../../provider/AuthProvider.jsx';
+import { GlassButton, GlassCard, GlassPaper, GlassSelect } from '../../layout/glass/index.js';
 import { useToast } from '../../provider/ToastProvider.jsx';
-import { routeConstants } from '../../routeConstants.js';
 import { containerSpacing } from '../../style/index.js';
 import {
-	getEmotionSelectMenuItems,
+	getEmotionSelectLabel,
 	getLangAlertText,
 	getLangText,
 	emotionToLangKey,
-	getGenderSelectMenuItems,
+	getGenderSelectLabel,
 } from '../../util/translateUtils.js';
 import { DEFAULT_EMOTION, EmotionValue } from '#shared/config/emotionConstants.js';
-import { LIMIT_5MB, REQUEST_CHARACTER_LIMIT } from '#shared/config/constants.js';
-import { SolidMetallicButton } from '../../layout/SolidMetallicButton.jsx';
+import { ASPECT_RATIOS, LIMIT_5MB, REQUEST_CHARACTER_LIMIT } from '#shared/config/constants.js';
 import { Swiper, SwiperClass, SwiperSlide } from 'swiper/react';
-import { PortraitWithChip } from '../../layout/PortraitWithChip.jsx';
 import { A11y, EffectFade, Mousewheel, Pagination } from 'swiper/modules';
 import { getImageForEmotion } from '../../util/portraitUtils.js';
+import {
+	ImageCropModal,
+	RomanticTitle,
+	SolidMetallicButton,
+	PortraitWithChip,
+} from '../../layout/index.js';
 
 // Shared image type
 interface UploadedImage {
-	file?: File; // present only for newly added/replaced files
-	emotion: string; // emotion key string
-	emotionKey: number; // numeric key used by server
-	preview: string; // object URL or existing URL
-	toDelete?: boolean; // mark deletion in edit mode
+	file?: File;
+	emotion: string;
+	emotionKey: number;
+	preview: string;
+	toDelete?: boolean;
+	crop?: { x: number; y: number; width: number; height: number }; // Add crop data
 }
 
 type Props = {
@@ -103,16 +99,18 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 	// Images state
 	const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
 	const [selectedEmotion, setSelectedEmotion] = useState<EmotionValue>(DEFAULT_EMOTION);
+	const [cropModalOpen, setCropModalOpen] = useState(false);
+	const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
 
 	const getEmotionKey = (emotionName: string): number => {
-		const option = getEmotionSelectMenuItems().find((opt) => opt.key === emotionName);
+		const option = getEmotionSelectLabel().find((opt) => opt.key === emotionName);
 		return option ? option.emotionKey : 0;
 	};
 
 	// Initialize images for edit mode
 	useEffect(() => {
 		if (mode === 'edit' && characterInfo?.characterId) {
-			const entries: UploadedImage[] = getEmotionSelectMenuItems()
+			const entries: UploadedImage[] = getEmotionSelectLabel()
 				.map((opt) => {
 					const url = getImageForEmotion(characterInfo.characterId, opt.key);
 					return url
@@ -129,11 +127,28 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 		if (swiperRef.current && uploadedImages.length > 0) {
 			swiperRef.current.slideTo(uploadedImages.length - 1);
 		}
-	}, [uploadedImages]);
+	}, [uploadedImages]); // Remove pendingImageFile from dependencies
+
+	// Separate cleanup effect
+	useEffect(() => {
+		return () => {
+			// Clean up any pending object URLs when component unmounts
+			uploadedImages.forEach((img) => {
+				if (img.preview.startsWith('blob:')) {
+					URL.revokeObjectURL(img.preview);
+				}
+			});
+
+			if (pendingImageFile) {
+				const pendingUrl = URL.createObjectURL(pendingImageFile);
+				URL.revokeObjectURL(pendingUrl);
+			}
+		};
+	}, []); // Empty dependency array - only run on unmount
 
 	// FIXED: Correctly extract the first file from FileList
 	const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
-		const file = event.target.files?.[0]; // Fixed: was missing [0]
+		const file = event.target.files?.[0];
 		if (!file) return;
 
 		if (!file.type.startsWith('image/')) {
@@ -143,13 +158,27 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 			return addToast(getLangAlertText(LANG_KEYS.FILE_TOO_LARGE), 'error');
 		}
 
+		// Open crop modal instead of directly adding
+		setPendingImageFile(file);
+		setCropModalOpen(true);
+
+		// Clear the file input to allow re-uploading the same file
+		if (fileInputRef.current) {
+			fileInputRef.current.value = '';
+		}
+	};
+
+	const handleCropComplete = (croppedAreaPixels: any) => {
+		if (!pendingImageFile) return;
+
 		const idx = uploadedImages.findIndex((img) => img.emotion === selectedEmotion);
 		const newImage: UploadedImage = {
-			file,
+			file: pendingImageFile,
 			emotion: selectedEmotion,
 			emotionKey: getEmotionKey(selectedEmotion),
-			preview: URL.createObjectURL(file),
+			preview: URL.createObjectURL(pendingImageFile),
 			toDelete: false,
+			crop: croppedAreaPixels, // Store crop data
 		};
 
 		setUploadedImages((prev) => {
@@ -163,6 +192,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 			return next;
 		});
 
+		setPendingImageFile(null);
 		if (fileInputRef.current) fileInputRef.current.value = '';
 		addToast(
 			`${getLangText(emotionToLangKey(selectedEmotion))} ${getLangAlertText(LANG_KEYS.IMAGE_UPLOADED_FOR)}`,
@@ -201,9 +231,15 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 				.filter((img) => img.file && !img.toDelete)
 				.map((image) => {
 					const formData = new FormData();
-					formData.append('image', image.file!);
+					formData.append('image', image.file!); // Note: field name is 'image', not 'avatarFile'
 					formData.append('characterId', characterId);
 					formData.append('emotionKey', image.emotionKey.toString());
+
+					// Add crop data if available
+					if (image.crop) {
+						formData.append('crop', JSON.stringify(image.crop));
+					}
+
 					return uploadCharacterImage(formData);
 				})
 		);
@@ -215,10 +251,25 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 		await Promise.all(
 			deletions.map((img) => deleteCharacterImage({ characterId, emotionKey: img.emotionKey }))
 		);
+
 		// Replacements / additions
 		const replacements = uploadedImages.filter((img) => img.file && !img.toDelete);
 		if (replacements.length > 0) {
-			await uploadPortraits(characterId, replacements);
+			await Promise.all(
+				replacements.map((image) => {
+					const formData = new FormData();
+					formData.append('image', image.file!);
+					formData.append('characterId', characterId);
+					formData.append('emotionKey', image.emotionKey.toString());
+
+					// Add crop data if available
+					if (image.crop) {
+						formData.append('crop', JSON.stringify(image.crop));
+					}
+
+					return uploadCharacterImage(formData);
+				})
+			);
 		}
 	};
 
@@ -280,8 +331,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 												.filter((img) => !img?.toDelete)
 												.map((image) => {
 													const emotionLabel =
-														getEmotionSelectMenuItems().find((e) => e.key === image.emotion)?.label ||
-														image.emotion;
+														getEmotionSelectLabel().find((e) => e.key === image.emotion)?.label || image.emotion;
 													return (
 														<SwiperSlide key={image.emotion}>
 															<PortraitWithChip imageUrl={image.preview} label={emotionLabel} />
@@ -319,7 +369,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 										value={selectedEmotion}
 										onChange={(e) => setSelectedEmotion(e.target.value as EmotionValue)}
 									>
-										{getEmotionSelectMenuItems().map((opt) => (
+										{getEmotionSelectLabel().map((opt) => (
 											<MenuItem key={opt.key} value={opt.key}>
 												{opt.label}
 											</MenuItem>
@@ -349,7 +399,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 											.map((img) => (
 												<Chip
 													key={img.emotion}
-													label={getEmotionSelectMenuItems().find((e) => e.key === img.emotion)?.label}
+													label={getEmotionSelectLabel().find((e) => e.key === img.emotion)?.label}
 													onDelete={() => handleRemoveImage(img.emotion)}
 													color="primary"
 													variant="outlined"
@@ -429,7 +479,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 												<FormControl fullWidth required error={!!errors.gender}>
 													<InputLabel>{getLangText(LANG_KEYS.GENDER)}</InputLabel>
 													<Select {...field}>
-														{getGenderSelectMenuItems().map((opt) => (
+														{getGenderSelectLabel().map((opt) => (
 															<MenuItem key={opt.key} value={opt.key}>
 																{opt.label}
 															</MenuItem>
@@ -534,6 +584,19 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 						</Box>
 					</Grid>
 				</Grid>
+				{/* Add the crop modal */}
+				{pendingImageFile && (
+					<ImageCropModal
+						imageSrc={URL.createObjectURL(pendingImageFile)}
+						open={cropModalOpen}
+						onClose={() => {
+							setCropModalOpen(false);
+							setPendingImageFile(null);
+						}}
+						onCropComplete={handleCropComplete}
+						aspect={ASPECT_RATIOS.CHARACTER}
+					/>
+				)}
 			</form>
 		</GlassPaper>
 	);

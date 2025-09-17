@@ -127,7 +127,10 @@ export const userStore = {
 	storeUser: async (user: UserCdo | UserInfo): Promise<{ userId: string }> => {
 		const collection = await userStore._getCollection();
 		console.log('✅ [userStore.storeUser] Got collection:', collection?.name);
-		const updatedUser: UserInfo = isUserInfo(user) ? user : createBasicUserInfo(user);
+		const now = new Date().toISOString();
+		const updatedUser: UserInfo = isUserInfo(user)
+			? { ...user, updatedAt: now }
+			: createBasicUserInfo(user);
 		try {
 			const documentForEmbedding = flatUserToDoc(updatedUser);
 			await upsertRecord(collection, updatedUser.userId, documentForEmbedding, updatedUser);

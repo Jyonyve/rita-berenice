@@ -6,3 +6,5 @@ export * from './HoverContext.jsx';
 export * from './ScrollGlow.jsx';
 export * from './AdultSwitch.jsx';
 export * from './InlineEditableField.jsx';
+export * from './ImageCropModal.jsx';
+export * from './PortraitWithChip.jsx';

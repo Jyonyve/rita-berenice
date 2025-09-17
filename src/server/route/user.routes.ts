@@ -9,6 +9,9 @@ import {
 	validateServiceId,
 } from '../util/routeHelpers.js';
 import { UserInfo } from '#shared/domain/user/UserInterfaces.js';
+import { BASE_USER_IMAGE_DIR, RUNTIME_USER_IMAGE_DIR } from '#shared/config/constants.js';
+import fs from 'fs';
+import path from 'path';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.USER;
@@ -114,6 +117,44 @@ router.post(
 
 		const response = await userStore.storeUser(req.body);
 		res.status(201).json(response);
+	})
+);
+
+/**
+ * POST /api/user/create-user-folder
+ * Creates a folder for character assets
+ */
+router.post(
+	genRoutePattern('createUserFolder'),
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		validateRequestData(req.body, 'body', ['userId']);
+
+		const { userId } = req.body;
+		const routePath = genRoutePattern('createUserFolder');
+		console.log(`API HIT: POST ${routePath} for user: ${userId}`);
+
+		// ✅ Use constant for directory path
+		const uploadDir = `${BASE_USER_IMAGE_DIR}/${userId}`;
+		const fullUploadPath = path.join(process.cwd(), uploadDir);
+
+		try {
+			if (!fs.existsSync(fullUploadPath)) {
+				fs.mkdirSync(fullUploadPath, { recursive: true });
+				console.log(`Created directory: ${fullUploadPath}`);
+			}
+
+			// ✅ Use constant for URL path
+			res
+				.status(200)
+				.json({
+					success: true,
+					message: 'User folder created successfully',
+					path: `${RUNTIME_USER_IMAGE_DIR}/${userId}`,
+				});
+		} catch (error) {
+			console.error('Error creating directory:', error);
+			res.status(500).json({ error: 'Failed to create user folder' });
+		}
 	})
 );
 

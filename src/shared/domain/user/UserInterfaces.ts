@@ -30,3 +30,4 @@ export interface UserMetadata {
 export type UserInfo = UserMetadata;
 
 export type UserCdo = Pick<UserInfo, 'userId' | 'email'>;
+export type UserUdo = Pick<UserInfo, 'gender' | 'title' | 'showName' | 'contact' | 'avatarUrl'>;
