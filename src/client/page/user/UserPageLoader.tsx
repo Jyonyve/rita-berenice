@@ -5,7 +5,7 @@ import { GlassCircularProgress } from '../../layout/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
 import { useAuth } from '../../provider/AuthProvider.jsx';
-import UserPage from './UserPage.jsx';
+import { UserPage } from './UserPage.jsx';
 import { useCharacterApi, useSessionApi, useUserApi } from '../../hook/index.js';
 
 export function UserPageLoader() {

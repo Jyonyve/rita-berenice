@@ -41,16 +41,7 @@ import {
 	SolidMetallicButton,
 	PortraitWithChip,
 } from '../../layout/index.js';
-
-// Shared image type
-interface UploadedImage {
-	file?: File;
-	emotion: string;
-	emotionKey: number;
-	preview: string;
-	toDelete?: boolean;
-	crop?: { x: number; y: number; width: number; height: number }; // Add crop data
-}
+import { UploadedCharacterImage } from '#shared/domain/image/ImageInterfaces.js';
 
 type Props = {
 	mode: 'create' | 'edit';
@@ -97,7 +88,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 	}, [mode, characterInfo, reset]);
 
 	// Images state
-	const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+	const [uploadedImages, setUploadedCharacterImages] = useState<UploadedCharacterImage[]>([]);
 	const [selectedEmotion, setSelectedEmotion] = useState<EmotionValue>(DEFAULT_EMOTION);
 	const [cropModalOpen, setCropModalOpen] = useState(false);
 	const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
@@ -110,15 +101,15 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 	// Initialize images for edit mode
 	useEffect(() => {
 		if (mode === 'edit' && characterInfo?.characterId) {
-			const entries: UploadedImage[] = getEmotionSelectLabel()
+			const entries: UploadedCharacterImage[] = getEmotionSelectLabel()
 				.map((opt) => {
 					const url = getImageForEmotion(characterInfo.characterId, opt.key);
 					return url
 						? { file: undefined, emotion: opt.key, emotionKey: opt.emotionKey, preview: url }
 						: null;
 				})
-				.filter(Boolean) as UploadedImage[];
-			setUploadedImages(entries);
+				.filter(Boolean) as UploadedCharacterImage[];
+			setUploadedCharacterImages(entries);
 		}
 	}, [mode, characterInfo]);
 
@@ -172,7 +163,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 		if (!pendingImageFile) return;
 
 		const idx = uploadedImages.findIndex((img) => img.emotion === selectedEmotion);
-		const newImage: UploadedImage = {
+		const newImage: UploadedCharacterImage = {
 			file: pendingImageFile,
 			emotion: selectedEmotion,
 			emotionKey: getEmotionKey(selectedEmotion),
@@ -181,7 +172,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 			crop: croppedAreaPixels, // Store crop data
 		};
 
-		setUploadedImages((prev) => {
+		setUploadedCharacterImages((prev) => {
 			const next = [...prev];
 			if (idx >= 0) {
 				if (next[idx].preview.startsWith('blob:')) URL.revokeObjectURL(next[idx].preview);
@@ -203,7 +194,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 
 	// Handle image removal with different behavior for create vs edit
 	const handleRemoveImage = (emotion: string) => {
-		setUploadedImages((prev) => {
+		setUploadedCharacterImages((prev) => {
 			const idx = prev.findIndex((img) => img.emotion === emotion);
 			if (idx < 0) return prev;
 			const next = [...prev];
@@ -224,7 +215,10 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 		});
 	};
 
-	const uploadPortraits = async (characterId: string, images: UploadedImage[]): Promise<void> => {
+	const uploadPortraits = async (
+		characterId: string,
+		images: UploadedCharacterImage[]
+	): Promise<void> => {
 		await createCharacterFolder({ characterId });
 		await Promise.all(
 			images

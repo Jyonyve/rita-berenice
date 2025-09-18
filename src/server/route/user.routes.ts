@@ -10,6 +10,7 @@ import {
 } from '../util/routeHelpers.js';
 import { UserInfo } from '#shared/domain/user/UserInterfaces.js';
 import { BASE_USER_IMAGE_DIR, RUNTIME_USER_IMAGE_DIR } from '#shared/config/constants.js';
+import { avatarUpload, processUserAvatar } from '../util/imageProcessingUtils.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -117,6 +118,71 @@ router.post(
 
 		const response = await userStore.storeUser(req.body);
 		res.status(201).json(response);
+	})
+);
+
+/**
+ * POST /api/user/upload-user-avatar
+ * Uploads and processes a user avatar image, converting to WebP format and cropping to square
+ */
+router.post(
+	genRoutePattern('uploadUserAvatar'),
+	avatarUpload.single('avatarFile'), // Note: field name is 'avatarFile' for users
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		validateRequestData(req.body, 'body', ['userId']);
+
+		const { userId, crop } = req.body; // crop comes from FormData body
+		const file = req.file;
+
+		if (!file) {
+			res.status(400).json({ error: 'No avatar file provided' });
+			return;
+		}
+
+		const routePath = genRoutePattern('uploadUserAvatar');
+		console.log(`API HIT: POST ${routePath} for user: ${userId}`);
+
+		try {
+			// Parse crop data if provided (stringified JSON from FormData)
+			const cropConfig = crop ? JSON.parse(crop) : undefined;
+
+			const avatarUrl = await processUserAvatar(file.buffer, userId, { crop: cropConfig });
+
+			res.status(200).json({ avatarUrl, success: true, message: 'Avatar uploaded successfully' });
+		} catch (error) {
+			console.error('Error processing avatar:', error);
+			res.status(500).json({ error: 'Failed to process avatar' });
+		}
+	})
+);
+
+/**
+ * DELETE /api/user/delete-user-avatar
+ * Deletes a user's avatar image from the filesystem
+ */
+router.delete(
+	genRoutePattern('deleteUserAvatar'),
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		validateRequestData(req.body, 'body', ['userId']);
+
+		const { userId } = req.body;
+		const routePath = genRoutePattern('deleteUserAvatar');
+		console.log(`API HIT: DELETE ${routePath} for user: ${userId}`);
+
+		try {
+			const fileName = 'image.webp';
+			const filePath = path.join(process.cwd(), `${BASE_USER_IMAGE_DIR}/${userId}/${fileName}`);
+
+			if (fs.existsSync(filePath)) {
+				fs.unlinkSync(filePath);
+				console.log(`Deleted avatar: ${filePath}`);
+			}
+
+			res.status(200).json({ success: true, message: 'Avatar deleted successfully' });
+		} catch (error) {
+			console.error('Error deleting avatar:', error);
+			res.status(500).json({ error: 'Failed to delete avatar' });
+		}
 	})
 );
 

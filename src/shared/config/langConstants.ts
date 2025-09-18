@@ -75,6 +75,7 @@ export const LANG_KEYS = {
 	NO_PROFILES: 'NO_PROFILES',
 	NO_HISTORIES: 'NO_HISTORIES',
 	ERROR_MAXLENGTH: 'ERROR_MAXLENGTH',
+	SAVE_SUCCESS: 'SAVE_SUCCESS',
 
 	// --- [NEW] Emotion Keys ---
 	NEUTRAL: 'NEUTRAL',
@@ -253,6 +254,7 @@ export const langConstants: LangRecord = {
 		eng: "This is the character's first line of dialogue shown in the chat window.",
 	},
 	ERROR_MAXLENGTH: { kor: '글자수 제한을 초과하였습니다.', eng: 'Too long texts.' },
+	SAVE_SUCCESS: { kor: '저장에 성공하였습니다.', eng: 'Saving Success.' },
 
 	// --- Emotion Translations ---
 	NEUTRAL: { kor: '중립', eng: 'Neutral' },
