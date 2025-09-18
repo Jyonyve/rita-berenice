@@ -1,7 +1,6 @@
 // src/server/routes/character.routes.ts
 
 import express, { type Request, type Response } from 'express';
-import sharp from 'sharp';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { characterStore } from '../store/characterStore.js';
 import {
@@ -15,11 +14,7 @@ import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { Payload } from '#shared/util/apiHelpers.js';
 import fs from 'fs';
 import path from 'path';
-import {
-	BASE_CHARACTER_IMAGE_DIR,
-	LIMIT_5MB,
-	RUNTIME_CHARACTER_IMAGE_DIR,
-} from '#shared/config/constants.js';
+import { BASE_CHARACTER_IMAGE_DIR, RUNTIME_CHARACTER_IMAGE_DIR } from '#shared/config/constants.js';
 import { characterUpload, processCharacterImage } from '../util/imageProcessingUtils.js';
 
 const router = express.Router();

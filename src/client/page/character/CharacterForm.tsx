@@ -43,6 +43,18 @@ import {
 } from '../../layout/index.js';
 import { UploadedCharacterImage } from '#shared/domain/image/ImageInterfaces.js';
 
+// 🎨 Constants
+const AUTO_SLIDE_DELAY = 100;
+const TOAST_DURATION = 1500;
+const EMPTY_IMAGE_HEIGHT = 300;
+
+// 🎨 Helper Functions
+const getVisibleImages = (images: UploadedCharacterImage[]) =>
+	images.filter((img) => !img?.toDelete);
+
+const getEmotionLabel = (emotionKey: string) =>
+	getEmotionSelectLabel().find((e) => e.key === emotionKey)?.label || emotionKey;
+
 type Props = {
 	mode: 'create' | 'edit';
 	userId: string;
@@ -80,25 +92,27 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 		mode: 'onBlur',
 	});
 
-	// Hydrate when character changes in edit mode
+	// State
+	const [uploadedImages, setUploadedCharacterImages] = useState<UploadedCharacterImage[]>([]);
+	const [selectedEmotion, setSelectedEmotion] = useState<EmotionValue>(DEFAULT_EMOTION);
+	const [cropModalOpen, setCropModalOpen] = useState(false);
+	const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
+	const [modalImageUrl, setModalImageUrl] = useState<string>('');
+	const [lastUploadedEmotion, setLastUploadedEmotion] = useState<string | null>(null);
+
+	// 🎨 Helper Functions
+	const getEmotionKey = (emotionName: string): number => {
+		const option = getEmotionSelectLabel().find((opt) => opt.key === emotionName);
+		return option ? option.emotionKey : 0;
+	};
+
+	// Effects
 	useEffect(() => {
 		if (mode === 'edit' && characterInfo) {
 			reset({ ...characterInfo });
 		}
 	}, [mode, characterInfo, reset]);
 
-	// Images state
-	const [uploadedImages, setUploadedCharacterImages] = useState<UploadedCharacterImage[]>([]);
-	const [selectedEmotion, setSelectedEmotion] = useState<EmotionValue>(DEFAULT_EMOTION);
-	const [cropModalOpen, setCropModalOpen] = useState(false);
-	const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
-
-	const getEmotionKey = (emotionName: string): number => {
-		const option = getEmotionSelectLabel().find((opt) => opt.key === emotionName);
-		return option ? option.emotionKey : 0;
-	};
-
-	// Initialize images for edit mode
 	useEffect(() => {
 		if (mode === 'edit' && characterInfo?.characterId) {
 			const entries: UploadedCharacterImage[] = getEmotionSelectLabel()
@@ -113,35 +127,50 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 		}
 	}, [mode, characterInfo]);
 
-	// Auto-slide to newest image
 	useEffect(() => {
 		if (swiperRef.current && uploadedImages.length > 0) {
 			swiperRef.current.slideTo(uploadedImages.length - 1);
 		}
-	}, [uploadedImages]); // Remove pendingImageFile from dependencies
+	}, [uploadedImages]);
 
-	// Separate cleanup effect
+	// 🎨 Improved auto-slide effect
+	useEffect(() => {
+		if (!lastUploadedEmotion || !swiperRef.current) return;
+
+		const visibleImages = getVisibleImages(uploadedImages);
+		const targetIndex = visibleImages.findIndex((img) => img.emotion === lastUploadedEmotion);
+
+		if (targetIndex >= 0) {
+			setTimeout(() => {
+				swiperRef.current?.slideTo(targetIndex);
+			}, AUTO_SLIDE_DELAY);
+		}
+
+		setLastUploadedEmotion(null);
+	}, [uploadedImages, lastUploadedEmotion]);
+
 	useEffect(() => {
 		return () => {
-			// Clean up any pending object URLs when component unmounts
+			// Clean up any data URLs and blob URLs when component unmounts
 			uploadedImages.forEach((img) => {
 				if (img.preview.startsWith('blob:')) {
 					URL.revokeObjectURL(img.preview);
 				}
 			});
 
-			if (pendingImageFile) {
-				const pendingUrl = URL.createObjectURL(pendingImageFile);
-				URL.revokeObjectURL(pendingUrl);
+			// Clean up modal image URL
+			if (modalImageUrl && modalImageUrl.startsWith('blob:')) {
+				URL.revokeObjectURL(modalImageUrl);
 			}
 		};
-	}, []); // Empty dependency array - only run on unmount
+	}, []);
 
-	// FIXED: Correctly extract the first file from FileList
+	// 🎨 Cleaner image upload handler
 	const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
 		const file = event.target.files?.[0];
 		if (!file) return;
 
+		// Early returns for validation
 		if (!file.type.startsWith('image/')) {
 			return addToast(getLangAlertText(LANG_KEYS.INVALID_FILE_TYPE), 'error');
 		}
@@ -149,50 +178,22 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 			return addToast(getLangAlertText(LANG_KEYS.FILE_TOO_LARGE), 'error');
 		}
 
-		// Open crop modal instead of directly adding
-		setPendingImageFile(file);
-		setCropModalOpen(true);
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			const result = e.target?.result as string;
+			if (!result) return;
 
-		// Clear the file input to allow re-uploading the same file
-		if (fileInputRef.current) {
-			fileInputRef.current.value = '';
-		}
-	};
-
-	const handleCropComplete = (croppedAreaPixels: any) => {
-		if (!pendingImageFile) return;
-
-		const idx = uploadedImages.findIndex((img) => img.emotion === selectedEmotion);
-		const newImage: UploadedCharacterImage = {
-			file: pendingImageFile,
-			emotion: selectedEmotion,
-			emotionKey: getEmotionKey(selectedEmotion),
-			preview: URL.createObjectURL(pendingImageFile),
-			toDelete: false,
-			crop: croppedAreaPixels, // Store crop data
+			setModalImageUrl(result);
+			setPendingImageFile(file);
+			setCropModalOpen(true);
 		};
+		reader.onerror = () => addToast('Error reading image file', 'error');
+		reader.readAsDataURL(file);
 
-		setUploadedCharacterImages((prev) => {
-			const next = [...prev];
-			if (idx >= 0) {
-				if (next[idx].preview.startsWith('blob:')) URL.revokeObjectURL(next[idx].preview);
-				next[idx] = newImage;
-			} else {
-				next.push(newImage);
-			}
-			return next;
-		});
-
-		setPendingImageFile(null);
+		// Clear input
 		if (fileInputRef.current) fileInputRef.current.value = '';
-		addToast(
-			`${getLangText(emotionToLangKey(selectedEmotion))} ${getLangAlertText(LANG_KEYS.IMAGE_UPLOADED_FOR)}`,
-			'success',
-			1500
-		);
 	};
 
-	// Handle image removal with different behavior for create vs edit
 	const handleRemoveImage = (emotion: string) => {
 		setUploadedCharacterImages((prev) => {
 			const idx = prev.findIndex((img) => img.emotion === emotion);
@@ -215,6 +216,60 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 		});
 	};
 
+	// 🎨 Enhanced crop complete handler with better error handling
+	const handleCropComplete = (croppedAreaPixels: any) => {
+		if (!pendingImageFile || !modalImageUrl) {
+			console.warn('Missing required data for crop completion');
+			return;
+		}
+
+		try {
+			const idx = uploadedImages.findIndex((img) => img.emotion === selectedEmotion);
+			const newImage: UploadedCharacterImage = {
+				file: pendingImageFile,
+				emotion: selectedEmotion,
+				emotionKey: getEmotionKey(selectedEmotion),
+				preview: modalImageUrl,
+				toDelete: false,
+				crop: croppedAreaPixels,
+			};
+
+			setUploadedCharacterImages((prev) => {
+				const next = [...prev];
+				if (idx >= 0) {
+					if (next[idx].preview.startsWith('blob:')) {
+						URL.revokeObjectURL(next[idx].preview);
+					}
+					next[idx] = newImage;
+				} else {
+					next.push(newImage);
+				}
+				return next;
+			});
+
+			setLastUploadedEmotion(selectedEmotion);
+			addToast(
+				`${getLangText(emotionToLangKey(selectedEmotion))} ${getLangAlertText(LANG_KEYS.IMAGE_UPLOADED_FOR)}`,
+				'success',
+				TOAST_DURATION
+			);
+		} catch (error) {
+			console.error('Error in crop completion:', error);
+			addToast('Failed to process image', 'error');
+		} finally {
+			setPendingImageFile(null);
+			setModalImageUrl('');
+			setCropModalOpen(false);
+			if (fileInputRef.current) fileInputRef.current.value = '';
+		}
+	};
+
+	const handleModalClose = () => {
+		setCropModalOpen(false);
+		setPendingImageFile(null);
+		setModalImageUrl('');
+	};
+
 	const uploadPortraits = async (
 		characterId: string,
 		images: UploadedCharacterImage[]
@@ -225,11 +280,10 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 				.filter((img) => img.file && !img.toDelete)
 				.map((image) => {
 					const formData = new FormData();
-					formData.append('image', image.file!); // Note: field name is 'image', not 'avatarFile'
+					formData.append('image', image.file!);
 					formData.append('characterId', characterId);
 					formData.append('emotionKey', image.emotionKey.toString());
 
-					// Add crop data if available
 					if (image.crop) {
 						formData.append('crop', JSON.stringify(image.crop));
 					}
@@ -256,7 +310,6 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 					formData.append('characterId', characterId);
 					formData.append('emotionKey', image.emotionKey.toString());
 
-					// Add crop data if available
 					if (image.crop) {
 						formData.append('crop', JSON.stringify(image.crop));
 					}
@@ -269,7 +322,6 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 
 	const onSubmit = async (data: CharacterCdo | CharacterInfo) => {
 		try {
-			// Normalize payload based on mode
 			const payload: CharacterCdo | CharacterInfo =
 				mode === 'edit' && characterInfo
 					? {
@@ -294,6 +346,22 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 		}
 	};
 
+	// 🎨 Helper variables for cleaner JSX
+	const visibleImages = getVisibleImages(uploadedImages);
+	const hasImages = visibleImages.length > 0;
+	const formTitle =
+		mode === 'edit'
+			? watch('showName') || getLangText(LANG_KEYS.EDIT_CHARACTER)
+			: watch('showName') || getLangText(LANG_KEYS.NEW_CHARACTER);
+	const formSubtitle = watch('title') || getLangText(LANG_KEYS.TITLE_GUIDANCE);
+	const submitButtonText = isSubmitting
+		? mode === 'edit'
+			? getLangText(LANG_KEYS.UPDATING)
+			: getLangText(LANG_KEYS.CREATING)
+		: mode === 'edit'
+			? getLangText(LANG_KEYS.UPDATE)
+			: getLangText(LANG_KEYS.CREATE);
+
 	return (
 		<GlassPaper key="character-form" className="paper">
 			<form onSubmit={handleSubmit(onSubmit)}>
@@ -306,7 +374,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 						<Box sx={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
 							{/* Image Preview */}
 							<Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-								{uploadedImages.filter((img) => !img?.toDelete).length > 0 ? (
+								{hasImages ? (
 									<Box sx={{ width: '100%', height: '100%', overflow: 'visible' }}>
 										<Swiper
 											onSwiper={(swiper) => {
@@ -321,23 +389,17 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 											pagination={{ clickable: true }}
 											mousewheel={{ forceToAxis: true, sensitivity: 1, releaseOnEdges: true, invert: true }}
 										>
-											{uploadedImages
-												.filter((img) => !img?.toDelete)
-												.map((image) => {
-													const emotionLabel =
-														getEmotionSelectLabel().find((e) => e.key === image.emotion)?.label || image.emotion;
-													return (
-														<SwiperSlide key={image.emotion}>
-															<PortraitWithChip imageUrl={image.preview} label={emotionLabel} />
-														</SwiperSlide>
-													);
-												})}
+											{visibleImages.map((image) => (
+												<SwiperSlide key={image.emotion}>
+													<PortraitWithChip imageUrl={image.preview} label={getEmotionLabel(image.emotion)} />
+												</SwiperSlide>
+											))}
 										</Swiper>
 									</Box>
 								) : (
 									<Box
 										width="100%"
-										height={300}
+										height={EMPTY_IMAGE_HEIGHT}
 										bgcolor="rgba(255,255,255,0.1)"
 										borderRadius={3}
 										display="flex"
@@ -384,22 +446,20 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 									colorVariant="secondary"
 									sx={{ mb: 2 }}
 								>
-									{getLangText(LANG_KEYS.UPLOAD_IMAGE)}
+									{getLangText(LANG_KEYS.SELECT_IMAGE)}
 								</GlassButton>
-								{uploadedImages.filter((img) => !img?.toDelete).length > 0 && (
+								{hasImages && (
 									<Stack direction="row" flexWrap="wrap" gap={1}>
-										{uploadedImages
-											.filter((img) => !img?.toDelete)
-											.map((img) => (
-												<Chip
-													key={img.emotion}
-													label={getEmotionSelectLabel().find((e) => e.key === img.emotion)?.label}
-													onDelete={() => handleRemoveImage(img.emotion)}
-													color="primary"
-													variant="outlined"
-													size="small"
-												/>
-											))}
+										{visibleImages.map((img) => (
+											<Chip
+												key={img.emotion}
+												label={getEmotionLabel(img.emotion)}
+												onDelete={() => handleRemoveImage(img.emotion)}
+												color="primary"
+												variant="outlined"
+												size="small"
+											/>
+										))}
 									</Stack>
 								)}
 							</GlassCard>
@@ -412,22 +472,19 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 							{/* Header */}
 							<GlassCard variant="outlined">
 								<RomanticTitle hover variant="h4" color="secondary" colorVariant="primary" gutterBottom>
-									{mode === 'edit'
-										? watch('showName') || getLangText(LANG_KEYS.EDIT_CHARACTER)
-										: watch('showName') || getLangText(LANG_KEYS.NEW_CHARACTER)}
+									{formTitle}
 								</RomanticTitle>
 								<Typography variant="body2" color="text.secondary" mt={1} ml={2}>
-									{watch('title') || getLangText(LANG_KEYS.TITLE_GUIDANCE)}
+									{formSubtitle}
 								</Typography>
 							</GlassCard>
 
-							{/* Form Sections */}
+							{/* Basic Info Section */}
 							<GlassCard variant="outlined">
 								<Typography variant="h6" color="secondary" gutterBottom>
 									{getLangText(LANG_KEYS.BASIC_INFO)}
 								</Typography>
 								<Grid container spacing={2}>
-									{/* showName */}
 									<Grid size={{ xs: 12, sm: 5 }}>
 										<Controller
 											name="showName"
@@ -520,12 +577,13 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 								</Grid>
 							</GlassCard>
 
+							{/* Character Detail Section */}
 							<GlassCard variant="outlined">
 								<Typography variant="h6" color="secondary" gutterBottom>
 									{getLangText(LANG_KEYS.CHARACTER_DETAIL)}
 								</Typography>
 								<Grid container spacing={2}>
-									{/* description, instruction, firstMessage fields */}
+									{/* Instruction field */}
 									<Grid size={{ xs: 12 }}>
 										<Controller
 											name="instruction"
@@ -543,6 +601,32 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 													helperText={errors.instruction?.message || getLangText(LANG_KEYS.INSTRUCTION_HELPER)}
 													placeholder={getLangText(LANG_KEYS.INSTRUCTION_PLACEHOLDER)}
 													required
+												/>
+											)}
+										/>
+									</Grid>
+
+									{/* First Message field */}
+									<Grid size={{ xs: 12 }}>
+										<Controller
+											name="firstMessage"
+											control={control}
+											rules={{ required: getLangText(LANG_KEYS.FIRST_MESSAGE_REQUIRED) }}
+											render={({ field }) => (
+												<TextField
+													{...field}
+													fullWidth
+													label={getLangText(LANG_KEYS.FIRST_MESSAGE)}
+													multiline
+													minRows={2}
+													maxRows={6}
+													error={!!errors.firstMessage}
+													helperText={
+														errors.firstMessage?.message || getLangText(LANG_KEYS.FIRST_MESSAGE_HELPER)
+													}
+													placeholder={getLangText(LANG_KEYS.FIRST_MESSAGE_PLACEHOLDER)}
+													required
+													slotProps={{ htmlInput: { maxLength: REQUEST_CHARACTER_LIMIT } }}
 												/>
 											)}
 										/>
@@ -566,27 +650,19 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 									disabled={isSubmitting}
 									loading={isSubmitting}
 								>
-									{isSubmitting
-										? mode === 'edit'
-											? getLangText(LANG_KEYS.UPDATING)
-											: getLangText(LANG_KEYS.CREATING)
-										: mode === 'edit'
-											? getLangText(LANG_KEYS.UPDATE)
-											: getLangText(LANG_KEYS.CREATE)}
+									{submitButtonText}
 								</SolidMetallicButton>
 							</Box>
 						</Box>
 					</Grid>
 				</Grid>
-				{/* Add the crop modal */}
-				{pendingImageFile && (
+
+				{/* Crop Modal */}
+				{pendingImageFile && modalImageUrl && (
 					<ImageCropModal
-						imageSrc={URL.createObjectURL(pendingImageFile)}
+						imageSrc={modalImageUrl}
 						open={cropModalOpen}
-						onClose={() => {
-							setCropModalOpen(false);
-							setPendingImageFile(null);
-						}}
+						onClose={handleModalClose}
 						onCropComplete={handleCropComplete}
 						aspect={ASPECT_RATIOS.CHARACTER}
 					/>

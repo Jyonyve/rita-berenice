@@ -50,6 +50,7 @@ export const LANG_KEYS = {
 	NEW_CHARACTER: 'NEW_CHARACTER',
 	EDIT_CHARACTER: 'EDIT_CHARACTER',
 	CHARACTER_CREATED_SUCCESS: 'CHARACTER_CREATED_SUCCESS',
+	CHARACTER_UPDATED_SUCCESS: 'CHARACTER_UPDATED_SUCCESS',
 	NO_IMAGES: 'NO_IMAGES',
 	PORTRAIT: 'PORTRAIT',
 	EMOTION: 'EMOTION',
@@ -67,7 +68,7 @@ export const LANG_KEYS = {
 	INSTRUCTION: 'INSTRUCTION',
 	TITLE: 'TITLE',
 	SESSION_TITLE: 'SESSION_TITLE',
-	UPLOAD_IMAGE: 'UPLOAD_IMAGE',
+	SELECT_IMAGE: 'SELECT_IMAGE',
 	CHARACTER_DETAIL: 'CHARACTER_DETAIL',
 	TITLE_GUIDANCE: 'TITLE_GUIDANCE',
 	FIRST_MESSAGE: 'FIRST_MESSAGE',
@@ -191,7 +192,7 @@ export const langConstants: LangRecord = {
 	DESCRIPTION: { kor: '캐릭터 소개', eng: 'Character Introduction' },
 	CONTACT: { kor: '연락처', eng: 'Contact' },
 	INSTRUCTION: { kor: '세계관 및 설정', eng: 'World & AI Instructions' },
-	UPLOAD_IMAGE: { kor: '이미지 업로드', eng: 'Upload Image' },
+	SELECT_IMAGE: { kor: '이미지 선택', eng: 'Select Image' },
 	CHARACTER_DETAIL: { kor: '상세 정보', eng: 'Details' },
 	SESSION_TITLE: { kor: '대화방 이름', eng: 'Session Title' },
 	TITLE_GUIDANCE: {
@@ -292,6 +293,10 @@ export const alertToastConstants: LangRecord = {
 	CHARACTER_CREATED_SUCCESS: {
 		kor: '캐릭터를 생성하였습니다.',
 		eng: 'Character created successfully!',
+	},
+	CHARACTER_UPDATED_SUCCESS: {
+		kor: '캐릭터를 수정하였습니다.',
+		eng: 'Character updated successfully!',
 	},
 	INVALID_FILE_TYPE: {
 		kor: '잘못된 파일 형식입니다. 이미지 파일을 업로드해주세요.',
