@@ -17,6 +17,11 @@ import {
 	FormControl,
 	InputLabel,
 	FormHelperText,
+	Collapse,
+	List,
+	ListItem,
+	ListItemText,
+	ListItemButton,
 } from '@mui/material';
 import {
 	Edit as EditIcon,
@@ -30,6 +35,8 @@ import {
 	People as PeopleIcon,
 	Chat as ChatIcon,
 	CloudUpload,
+	ExpandLess,
+	ExpandMore,
 } from '@mui/icons-material';
 
 import {
@@ -54,7 +61,9 @@ import { useUserApi } from '../../hook/api/index.js';
 import { SessionInfo } from '#shared/domain/session/SessionInterfaces.js';
 import { useToast } from '../../provider/ToastProvider.jsx';
 import { UploadedImage } from '#shared/domain/image/index.js';
-import { ImageCropModal } from '../../layout/index.js';
+import { ImageCropModal, RomanticTitle } from '../../layout/index.js';
+import { useNavigate } from 'react-router';
+import { routeConstants } from '#client/routeConstants.js';
 
 // Helper to get gender color
 const getGenderColor = (gender: GENDER_OPTION) => {
@@ -76,6 +85,7 @@ export const UserPage: FC<{
 	mySessions: SessionInfo[];
 	isOwnProfile: boolean;
 }> = ({ userInfo, myCharacters, mySessions, isOwnProfile }) => {
+	const navigate = useNavigate();
 	const { formatDate, formatRelativeDate } = useDateFormatter();
 	const { addToast } = useToast();
 	const { storeUser, uploadUserAvatar, createUserFolder } = useUserApi();
@@ -89,6 +99,9 @@ export const UserPage: FC<{
 	const [cropModalOpen, setCropModalOpen] = useState(false);
 	const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
 	const [modalImageUrl, setModalImageUrl] = useState<string>('');
+
+	// Detail section
+	const [sessionsExpanded, setSessionsExpanded] = useState(false);
 
 	const methods = useForm<UserUdo>({
 		defaultValues: {
@@ -134,7 +147,13 @@ export const UserPage: FC<{
 				URL.revokeObjectURL(pendingUrl);
 			}
 		};
-	}, []); // Empty dependency array - only run on unmount
+	}, []);
+
+	// Session
+	const handleGoSession = (sessionInfo: SessionInfo) => {
+		const { sessionId, title } = sessionInfo;
+		navigate(`/${routeConstants.CHAT}/${sessionId}`, { state: { title } });
+	};
 
 	// Avatar upload handler (similar to CharacterForm's handleImageUpload)
 	const handleAvatarUpload = (event: ChangeEvent<HTMLInputElement>) => {
@@ -150,71 +169,65 @@ export const UserPage: FC<{
 			return addToast(getLangAlertText(LANG_KEYS.FILE_TOO_LARGE), 'error');
 		}
 
-		try {
-			// Create the preview URL once and store it
-			const previewUrl = URL.createObjectURL(file);
-			console.log('🖼️ Created blob URL:', previewUrl);
+		// Use FileReader instead of blob URL
+		const reader = new FileReader();
 
-			setModalImageUrl(previewUrl);
-			setPendingAvatarFile(file);
-			setCropModalOpen(true);
+		reader.onload = (e) => {
+			const result = e.target?.result as string;
+			console.log('📖 FileReader completed, data length:', result?.length);
 
-			// Clear the file input
-			if (fileInputRef.current) {
-				fileInputRef.current.value = '';
+			if (result) {
+				setPendingAvatarFile(file);
+				setModalImageUrl(result); // This will be a data: URL
+				setCropModalOpen(true);
 			}
-		} catch (error) {
-			console.error('❌ Error creating object URL:', error);
-			addToast('Error loading image', 'error');
+		};
+
+		reader.onerror = (error) => {
+			console.error('❌ FileReader error:', error);
+			addToast('Error reading image file', 'error');
+		};
+
+		console.log('📖 Starting FileReader...');
+		reader.readAsDataURL(file); // Creates data:image/webp;base64,... URL
+
+		// Clear the file input
+		if (fileInputRef.current) {
+			fileInputRef.current.value = '';
 		}
 	};
 
-	// Crop completion handler (similar to CharacterForm's handleCropComplete)
+	// Simplify the crop complete handler since data URLs don't need cleanup
 	const handleCropComplete = (croppedAreaPixels: any) => {
-		console.log('✂️ Crop completed:', croppedAreaPixels);
-
-		if (!pendingAvatarFile) {
-			console.warn('⚠️ No pending file found');
+		if (!pendingAvatarFile || !modalImageUrl) {
+			console.warn('⚠️ Missing data for crop completion');
 			return;
 		}
 
 		const newAvatar: UploadedImage = {
 			file: pendingAvatarFile,
-			preview: modalImageUrl, // Use the existing URL
+			preview: modalImageUrl, // Keep the data: URL
 			crop: croppedAreaPixels,
 		};
 
-		console.log('📸 New avatar created:', {
-			hasFile: !!newAvatar.file,
-			previewUrl: newAvatar.preview,
-			hasCrop: !!newAvatar.crop,
-		});
-
-		// Clean up previous avatar preview
+		// Clean up previous avatar if it was a blob URL
 		if (uploadedAvatar?.preview.startsWith('blob:')) {
 			URL.revokeObjectURL(uploadedAvatar.preview);
-			console.log('🗑️ Cleaned up previous avatar URL');
 		}
 
 		setUploadedAvatar(newAvatar);
 		setPendingAvatarFile(null);
 		setCropModalOpen(false);
-		// Don't clear modalImageUrl yet - we're still using it
+		setModalImageUrl('');
 
-		addToast(getLangText(LANG_KEYS.SAVE_SUCCESS), 'success', 1500);
+		addToast('Avatar ready for upload', 'success', 1500);
 	};
 
+	// Simplified modal close (no cleanup needed for data URLs)
 	const handleModalClose = () => {
-		console.log('❌ Modal closing, cleaning up');
 		setCropModalOpen(false);
 		setPendingAvatarFile(null);
-
-		// Clean up the modal image URL
-		if (modalImageUrl) {
-			URL.revokeObjectURL(modalImageUrl);
-			console.log('🗑️ Cleaned up modal URL:', modalImageUrl);
-			setModalImageUrl('');
-		}
+		setModalImageUrl('');
 	};
 
 	// Avatar upload function (similar to CharacterForm's uploadPortraits)
@@ -308,7 +321,7 @@ export const UserPage: FC<{
 											<Stack direction="row" spacing={1}>
 												<Tooltip title={getLangText(LANG_KEYS.SAVE)}>
 													<span>
-														<IconButton type="submit" color="primary" disabled={isSubmitting || isUploading}>
+														<IconButton type="submit" color="secondary" disabled={isSubmitting || isUploading}>
 															{isSubmitting || isUploading ? <GlassCircularProgress /> : <SaveIcon />}
 														</IconButton>
 													</span>
@@ -418,9 +431,9 @@ export const UserPage: FC<{
 											<>
 												{/* Just the name first */}
 												<Box display="flex" alignItems="center" gap={2} mb={1}>
-													<Typography variant="h4" component="h1" fontWeight="bold">
+													<RomanticTitle noGlow hover={false} variant="h4" component="h1" fontWeight="bold">
 														{userInfo.showName}
-													</Typography>
+													</RomanticTitle>
 												</Box>
 
 												{/* Entered date */}
@@ -515,20 +528,59 @@ export const UserPage: FC<{
 												{getLangText(LANG_KEYS.MY_CHARACTERS)}
 											</Typography>
 										</Stack>
-										<Typography variant="h6" fontWeight="bold" color="primary">
+										<Typography variant="h6" fontWeight="bold" color="secondary">
 											{myCharacters.length}
 										</Typography>
 									</Box>
-									<Box display="flex" justifyContent="space-between" alignItems="center">
-										<Stack direction="row" spacing={1} alignItems="center">
-											<ChatIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-											<Typography variant="body2" color="text.secondary">
-												{getLangText(LANG_KEYS.MY_SESSIONS)}
-											</Typography>
-										</Stack>
-										<Typography variant="h6" fontWeight="bold" color="primary">
-											{mySessions.length}
-										</Typography>
+									<Box>
+										<Box display="flex" justifyContent="space-between" alignItems="center">
+											<Stack direction="row" spacing={1} alignItems="center">
+												<ChatIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+												<Typography variant="body2" color="text.secondary">
+													{getLangText(LANG_KEYS.MY_SESSIONS)}
+												</Typography>
+											</Stack>
+											<Box display="flex" alignItems="center" gap={1}>
+												{mySessions.length > 0 && (
+													<IconButton
+														size="small"
+														onClick={() => setSessionsExpanded(!sessionsExpanded)}
+														sx={{ color: 'text.secondary' }}
+													>
+														{sessionsExpanded ? <ExpandLess /> : <ExpandMore />}
+													</IconButton>
+												)}
+												<Typography variant="h6" fontWeight="bold" color="secondary">
+													{mySessions.length}
+												</Typography>
+											</Box>
+										</Box>
+
+										<Collapse in={sessionsExpanded} timeout="auto" unmountOnExit>
+											<List dense className="hide-scrollbar" sx={{ mt: 1, maxHeight: 200, overflow: 'auto' }}>
+												{mySessions.slice(0, 5).map((session) => (
+													<ListItem
+														key={session.sessionId}
+														sx={{ py: 0.5, px: 2, borderRadius: 1, '&:hover': { bgcolor: 'action.hover' } }}
+													>
+														<ListItemButton onClick={() => handleGoSession(session)}>
+															<ListItemText
+																primary={session.title || 'Untitled Session'}
+																secondary={formatRelativeDate(session.updatedAt)}
+																slotProps={{ primary: { variant: 'body2' }, secondary: { variant: 'caption' } }}
+															/>
+														</ListItemButton>
+													</ListItem>
+												))}
+												{mySessions.length > 5 && (
+													<ListItem sx={{ py: 0.5, px: 2, justifyContent: 'center' }}>
+														<Typography variant="caption" color="text.secondary">
+															{`+${mySessions.length - 5} ${getLangText(LANG_KEYS.MORE)}`}
+														</Typography>
+													</ListItem>
+												)}
+											</List>
+										</Collapse>
 									</Box>
 									<Box display="flex" justifyContent="space-between" alignItems="center">
 										<Stack direction="row" spacing={1} alignItems="center">
@@ -537,7 +589,9 @@ export const UserPage: FC<{
 												{`${getLangText(LANG_KEYS.LAST)} ${getLangText(LANG_KEYS.UPDATE_DATE)}`}
 											</Typography>
 										</Stack>
-										<Typography variant="body2">{formatRelativeDate(userInfo.updatedAt)}</Typography>
+										<Typography variant="h6" color="secondary">
+											{formatRelativeDate(userInfo.updatedAt)}
+										</Typography>
 									</Box>
 								</Stack>
 							</GlassCard>
