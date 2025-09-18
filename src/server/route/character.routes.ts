@@ -1,8 +1,6 @@
 // src/server/routes/character.routes.ts
 
 import express, { type Request, type Response } from 'express';
-import multer from 'multer';
-import sharp from 'sharp';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { characterStore } from '../store/characterStore.js';
 import {
@@ -16,25 +14,11 @@ import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { Payload } from '#shared/util/apiHelpers.js';
 import fs from 'fs';
 import path from 'path';
-import { BASE_IMAGE_DIR, LIMIT_5MB, RUNTIME_IMAGE_DIR } from '#shared/config/constants.js';
+import { BASE_CHARACTER_IMAGE_DIR, RUNTIME_CHARACTER_IMAGE_DIR } from '#shared/config/constants.js';
+import { characterUpload, processCharacterImage } from '../util/imageProcessingUtils.js';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.CHARACTER;
-
-const storage = multer.memoryStorage(); // Store in memory for image processing
-const upload = multer({
-	storage,
-	limits: {
-		fileSize: LIMIT_5MB, // 5MB limit
-	},
-	fileFilter: (req, file, cb) => {
-		if (file.mimetype.startsWith('image/')) {
-			cb(null, true);
-		} else {
-			cb(new Error('Only image files are allowed!'));
-		}
-	},
-});
 
 /**
  * GET /api/character/get-all-characters
@@ -164,11 +148,11 @@ router.post(
  */
 router.post(
 	genRoutePattern('uploadCharacterImage'),
-	upload.single('image'),
+	characterUpload.single('image'), // 'image' is the field name from frontend FormData
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		validateRequestData(req.body, 'body', ['characterId', 'emotionKey']);
 
-		const { characterId, emotionKey } = req.body;
+		const { characterId, emotionKey, crop } = req.body; // crop comes from FormData body, not file
 		const file = req.file;
 
 		if (!file) {
@@ -176,42 +160,23 @@ router.post(
 			return;
 		}
 
-		const routePath = genRoutePattern('uploadCharacterImage');
-		console.log(
-			`API HIT: POST ${routePath} for character: ${characterId}, emotionKey: ${emotionKey}`
-		);
-
-		// ✅ Use constant for directory path
-		const uploadDir = `${BASE_IMAGE_DIR}/${characterId}`;
-		const fullUploadPath = path.join(process.cwd(), uploadDir);
-
-		// Create directory if it doesn't exist
-		if (!fs.existsSync(fullUploadPath)) {
-			fs.mkdirSync(fullUploadPath, { recursive: true });
-			console.log(`Created directory: ${fullUploadPath}`);
-		}
-
-		const fileName = `${characterId}_${emotionKey}.avif`; // Changed to match AVIF format
-		const filePath = path.join(fullUploadPath, fileName);
-
 		try {
-			// Convert and save image as AVIF
-			await sharp(file.buffer).avif({ lossless: true }).toFile(filePath);
+			// Parse crop data if provided (stringified JSON from FormData)
+			const cropConfig = crop ? JSON.parse(crop) : undefined;
 
-			// ✅ Use constant for URL path
-			const relativePath = `${RUNTIME_IMAGE_DIR}/${characterId}/${fileName}`;
+			const imagePath = await processCharacterImage(file.buffer, characterId, parseInt(emotionKey), {
+				crop: cropConfig,
+			});
 
-			res
-				.status(200)
-				.json({
-					success: true,
-					message: 'Image uploaded successfully',
-					filePath: relativePath,
-					fileName,
-				});
+			res.status(200).json({
+				success: true,
+				message: 'Character image uploaded successfully',
+				filePath: imagePath,
+				characterId, // Return characterId for frontend cache invalidation
+			});
 		} catch (error) {
-			console.error('Error processing image:', error);
-			res.status(500).json({ error: 'Failed to process and save image' });
+			console.error('Error processing character image:', error);
+			res.status(500).json({ error: 'Failed to process character image' });
 		}
 	})
 );
@@ -230,7 +195,7 @@ router.post(
 		console.log(`API HIT: POST ${routePath} for character: ${characterId}`);
 
 		// ✅ Use constant for directory path
-		const uploadDir = `${BASE_IMAGE_DIR}/${characterId}`;
+		const uploadDir = `${BASE_CHARACTER_IMAGE_DIR}/${characterId}`;
 		const fullUploadPath = path.join(process.cwd(), uploadDir);
 
 		try {
@@ -245,7 +210,7 @@ router.post(
 				.json({
 					success: true,
 					message: 'Character folder created successfully',
-					path: `${RUNTIME_IMAGE_DIR}/${characterId}`,
+					path: `${RUNTIME_CHARACTER_IMAGE_DIR}/${characterId}`,
 				});
 		} catch (error) {
 			console.error('Error creating directory:', error);

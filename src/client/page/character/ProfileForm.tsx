@@ -22,7 +22,7 @@ import { FC, useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { GlassButton, GlassCard, SolidMetallicButton } from '../../layout/index.js';
 import { innerSpacing } from '../../style/index.js';
-import { getGenderSelectMenuItems, getLangText } from '../../util/translateUtils.js';
+import { getGenderSelectLabel, getLangText } from '../../util/translateUtils.js';
 import { ProfilePreviewList } from './ProfilePreviewList.jsx';
 import { REQUEST_CHARACTER_LIMIT } from '#shared/config/constants.js';
 import { useResponsive } from '../../hook/useResponsive.js';
@@ -210,7 +210,7 @@ export const ProfileForm: FC<ProfileFormProps> = ({
 									<FormControl fullWidth required error={!!errors.gender}>
 										{/* <InputLabel>{getLangText(LANG_KEYS.GENDER)}</InputLabel> */}
 										<Select {...field}>
-											{getGenderSelectMenuItems().map((opt) => (
+											{getGenderSelectLabel().map((opt) => (
 												<MenuItem key={opt.key} value={opt.key}>
 													{opt.label}
 												</MenuItem>

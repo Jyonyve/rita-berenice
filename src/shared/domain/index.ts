@@ -10,3 +10,4 @@ export * from './profile/index.js';
 export * from './session/index.js';
 export * from './BaseTypes.js';
 export * from './error/index.js';
+export * from './image/index.js';

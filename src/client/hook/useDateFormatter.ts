@@ -30,7 +30,13 @@ export const useDateFormatter = () => {
 		const locale = lang === 'kor' ? 'ko-KR' : 'en-US';
 		const date = new Date(dateString);
 		const now = new Date();
-		const daysDiff = Math.ceil((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+
+		// Calculate days difference more accurately
+		// Set both dates to start of day (midnight) to compare only dates, not times
+		const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+		const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+		const daysDiff = Math.floor((nowOnly.getTime() - dateOnly.getTime()) / (1000 * 60 * 60 * 24));
 
 		// Use the locale for proper formatting
 		const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });

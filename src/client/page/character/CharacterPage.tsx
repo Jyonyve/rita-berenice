@@ -1,10 +1,10 @@
 import { LANG_KEYS } from '#shared/config/langConstants.js';
 import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { ProfileCdo } from '#shared/domain/profile/ProfileInterfaces.js';
-import { Box, Grid, List, Typography } from '@mui/material';
-import { FC } from 'react';
+import { Box, Grid, IconButton, List, Tooltip, Typography } from '@mui/material';
+import { FC, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { useProfileApi } from '../../hook/api/index.js';
+import { Edit as EditIcon } from '@mui/icons-material';
 import {
 	GlassButton,
 	GlassCard,
@@ -20,15 +20,20 @@ import { getLangAlertText, getLangText } from '../../util/translateUtils.js';
 import { SessionPreviewList } from './SessionPreviewList.jsx';
 import { ProfileHistoryTabs } from './ProfileHistoryTab.jsx';
 import { SolidMetallicButton, RomanticTitle } from '../../layout/index.js';
+import { CharacterForm } from './CharacterForm.jsx'; // Import the form
 
-const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
+const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string; isMine: boolean }> = ({
 	characterInfo,
 	userId,
+	isMine,
 }) => {
 	const { openLoginModal, isLoggedIn } = useAuth();
 	const navigate = useNavigate();
 	const { addToast } = useToast();
 	const characterId = characterInfo.characterId;
+
+	// Add edit state
+	const [isEditing, setIsEditing] = useState(false);
 
 	// Handlers
 	const handleHistory = (historyId: string) => {
@@ -38,6 +43,7 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 	const handleSessionStart = (sessionId: string, title: string) => {
 		navigate(`/${routeConstants.CHAT}/${sessionId}`, { state: { title } });
 	};
+
 	const handleStartNewSession = async (profileCdo: ProfileCdo) => {
 		if (import.meta.env.VITE_APP_MODE === 'static') {
 			addToast(getLangAlertText(LANG_KEYS.STATIC_SESSION_DISABLE), 'error');
@@ -48,16 +54,41 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 			return;
 		}
 
-		// The only logic here is to navigate with the collected data.
 		navigate(`/${routeConstants.CHAT}`, {
-			// Assuming you have a route for this
 			replace: true,
 			state: { characterId: characterId, profileData: profileCdo },
 		});
 	};
 
+	// Edit handlers
+	const handleEditClick = () => {
+		setIsEditing(true);
+	};
+
+	const handleEditCancel = () => {
+		setIsEditing(false);
+	};
+
+	const handleEditSuccess = () => {
+		setIsEditing(false);
+		addToast(getLangAlertText(LANG_KEYS.CHARACTER_UPDATED_SUCCESS), 'success');
+	};
+
 	// Portrait: pick default or first available
 	const portraits = getCharacterImageArray(characterId);
+
+	// If editing, show the form instead of the display
+	if (isEditing) {
+		return (
+			<CharacterForm
+				mode="edit"
+				userId={userId}
+				characterInfo={characterInfo}
+				onCancel={handleEditCancel}
+				onSuccess={handleEditSuccess}
+			/>
+		);
+	}
 
 	return (
 		<GlassPaper key="character-page" className="paper">
@@ -66,24 +97,14 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 				<Grid
 					size={{ xs: 12, md: 4 }}
 					sx={{
-						// Define this column as a sticky "pillar" on larger screens.
 						position: { xs: 'static', md: 'sticky' },
-
-						// Pin it to the top of the scrollable <main> area, respecting its padding.
 						top: (theme) => theme.spacing(2),
-
-						// Prevent this column from stretching if the right-side content is taller.
 						alignSelf: 'flex-start',
-
-						// --- THE CORRECTED HEIGHT CALCULATION ---
-						// We subtract the header, footer, main's padding (2*2), and paper's padding (2*2).
 						height: {
-							xs: 'auto', // On mobile, height is automatic.
+							xs: 'auto',
 							md: (theme) =>
 								`calc(100vh - var(--header-height) - var(--footer-height) - ${theme.spacing(8)})`,
 						},
-						// --- FLEXBOX CENTERING FOR THE IMAGE ---
-						// These properties ensure the image is centered within the pillar and scales correctly.
 						display: 'flex',
 						flexDirection: 'column',
 						gap: 2,
@@ -105,31 +126,36 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string }> = ({
 					)}
 				</Grid>
 
-				{/* Right Column: Using the correct MUI v7 'size' prop */}
+				{/* Right Column */}
 				<Grid size={{ xs: 12, md: 8 }}>
 					<Box display="flex" flexDirection="column" gap={2}>
 						{/* Title and Description Card */}
 						<GlassCard variant="outlined">
-							<Box
-								sx={{
-									display: 'flex',
-									justifyContent: 'space-between',
-									alignItems: 'center',
-									mt: 1,
-									ml: 1,
-								}}
-							>
-								<RomanticTitle noGlow hover variant="h6" color="primary">
-									{characterInfo.showName}
-								</RomanticTitle>
-								{/* <GlassButton colorVariant="silver" variant="outlined" onClick={handleOpenModal}>
-									{getLangText(LANG_KEYS.EDIT)}
-								</GlassButton> */}
+							<Box sx={{ mt: 1, ml: 1 }}>
+								{/* Title with inline edit button */}
+								<Box display="flex" alignItems="center" gap={1}>
+									<RomanticTitle noGlow hover variant="h5" color="secondary" colorVariant="primary">
+										{characterInfo.showName}
+									</RomanticTitle>
+									{/* Inline edit button like UserPage */}
+									{isLoggedIn && isMine && (
+										<Tooltip title={getLangText(LANG_KEYS.EDIT_CHARACTER)}>
+											<IconButton
+												onClick={handleEditClick}
+												size="small"
+												sx={{ color: 'text.secondary', '&:hover': { color: 'silver.main' } }}
+											>
+												<EditIcon fontSize="small" />
+											</IconButton>
+										</Tooltip>
+									)}
+								</Box>
+								<Typography variant="body2" mt={1} ml={0}>
+									{characterInfo.description}
+								</Typography>
 							</Box>
-							<Typography variant="body2" mt={1} ml={2}>
-								{characterInfo.description}
-							</Typography>
 						</GlassCard>
+
 						{isLoggedIn && (
 							<>
 								{/* Session List Card */}

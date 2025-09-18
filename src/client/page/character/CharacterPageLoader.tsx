@@ -41,5 +41,13 @@ export function CharacterPageLoader() {
 		);
 	}
 
-	return <CharacterPage characterInfo={characterRes?.characterInfo} userId={userId || ''} />;
+	const isMine = !!(userId && userId === characterRes.characterInfo.userId);
+
+	return (
+		<CharacterPage
+			characterInfo={characterRes?.characterInfo}
+			userId={userId || ''}
+			isMine={isMine}
+		/>
+	);
 }

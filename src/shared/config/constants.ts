@@ -1,11 +1,19 @@
 export const ALPHANUMERIC_ALPHABET =
 	'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' as const;
-export const RUNTIME_IMAGE_DIR = '/assets/character';
+export const RUNTIME_CHARACTER_IMAGE_DIR = '/assets/character';
+export const RUNTIME_USER_IMAGE_DIR = '/assets/user';
 export const DEFAULT_USER_AVATAR = '/assets/user/new_user.webp' as const;
 export const DEFAULT_CHARACTER_AVATAR = '/assets/character/new_character.webp' as const;
+export const BASE_CHARACTER_IMAGE_DIR = `public${RUNTIME_CHARACTER_IMAGE_DIR}`;
+export const SOURCE_CHARACTER_IMAGE_DIR = `/${BASE_CHARACTER_IMAGE_DIR}`;
+export const BASE_USER_IMAGE_DIR = `public${RUNTIME_USER_IMAGE_DIR}`;
+export const SOURCE_USER_IMAGE_DIR = `/${BASE_USER_IMAGE_DIR}`;
+export const ASPECT_RATIOS = {
+	CHARACTER: 5 / 7, // Portrait (5:7)
+	LORE: 5 / 7, // Same as character
+	USER: 1, // Square (1:1)
+} as const;
 
-export const BASE_IMAGE_DIR = `public${RUNTIME_IMAGE_DIR}`;
-export const SOURCE_IMAGE_DIR = `/${BASE_IMAGE_DIR}`;
 export const ABORT_TIMEOUT = 600 as const; ///300초
 export const DEFAULT_RECAP_INTERVAL: number = 3 as const;
 export const DEFAULT_RELATIONSHIP_RECAP_INTERVAL = 5 as const;
@@ -21,7 +29,7 @@ export const NA = 'N/A' as const;
 export const APPNAME = 'Rita-Berenice' as const;
 export const APPNAME_LOWERCASE = APPNAME.toLowerCase();
 export const LIMIT_5MB = 5 * 1024 * 1024;
-export const GENDER_OPTIONS = ['male', 'female', 'other', 'no_comment'] as const;
+export const GENDER_OPTIONS = ['male', 'female', 'other', 'nocomment'] as const;
 export type GENDER_OPTION = (typeof GENDER_OPTIONS)[number];
 
 // Default limit for querying chat logs

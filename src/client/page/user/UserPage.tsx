@@ -1,5 +1,5 @@
-// src/client/page/UserPage.tsx
-import { FC, useMemo } from 'react';
+import { FC, useState, useEffect, useRef, ChangeEvent } from 'react';
+import { useForm, Controller, FormProvider } from 'react-hook-form';
 import {
 	Avatar,
 	Box,
@@ -8,30 +8,64 @@ import {
 	Divider,
 	Grid,
 	IconButton,
-	List,
 	Stack,
 	Tooltip,
 	Typography,
+	TextField,
+	Select,
+	MenuItem,
+	FormControl,
+	InputLabel,
+	FormHelperText,
+	Collapse,
+	List,
+	ListItem,
+	ListItemText,
+	ListItemButton,
 } from '@mui/material';
-
-import { GlassCard, GlassPaper } from '../../layout/glass/index.js';
-import { containerSpacing } from '../../style/index.js';
-import { getLangText } from '../../util/translateUtils.js';
-import { LANG_KEYS } from '#shared/config/langConstants.js';
-import { UserInfo } from '#shared/domain/user/UserInterfaces.js';
 import {
 	Edit as EditIcon,
 	Email as EmailIcon,
-	Person as PersonIcon,
 	Badge as BadgeIcon,
 	ContactMail as ContactIcon,
 	Schedule as ScheduleIcon,
 	PhotoCamera as PhotoCameraIcon,
+	Save as SaveIcon,
+	Cancel as CancelIcon,
+	People as PeopleIcon,
+	Chat as ChatIcon,
+	CloudUpload,
+	ExpandLess,
+	ExpandMore,
 } from '@mui/icons-material';
-import { GENDER_OPTION } from '#shared/config/constants.js';
-import { CharacterInfo } from '#shared/domain/character/index.js';
-import { useDateFormatter } from '../../hook/useDateFormatter.js';
 
+import {
+	GlassButton,
+	GlassCard,
+	GlassCircularProgress,
+	GlassPaper,
+} from '../../layout/glass/index.js';
+import { containerSpacing } from '../../style/index.js';
+import {
+	genderToLangKey,
+	getGenderSelectLabel,
+	getLangAlertText,
+	getLangText,
+} from '../../util/translateUtils.js';
+import { LANG_KEYS } from '#shared/config/langConstants.js';
+import { UserInfo, UserUdo } from '#shared/domain/user/UserInterfaces.js';
+import { ASPECT_RATIOS, GENDER_OPTION, LIMIT_5MB } from '#shared/config/constants.js';
+import { CharacterInfo } from '#shared/domain/character/index.js';
+import { useDateFormatter } from '../../hook/index.js';
+import { useUserApi } from '../../hook/api/index.js';
+import { SessionInfo } from '#shared/domain/session/SessionInterfaces.js';
+import { useToast } from '../../provider/ToastProvider.jsx';
+import { UploadedImage } from '#shared/domain/image/index.js';
+import { ImageCropModal, RomanticTitle } from '../../layout/index.js';
+import { useNavigate } from 'react-router';
+import { routeConstants } from '#client/routeConstants.js';
+
+// Helper to get gender color
 const getGenderColor = (gender: GENDER_OPTION) => {
 	switch (gender) {
 		case 'male':
@@ -40,170 +74,542 @@ const getGenderColor = (gender: GENDER_OPTION) => {
 			return '#F48FB1';
 		case 'other':
 			return '#AB47BC';
-		case 'no_comment':
-			return '#78909C';
 		default:
 			return '#78909C';
 	}
 };
 
-const UserPage: FC<{
+export const UserPage: FC<{
 	userInfo: UserInfo;
 	myCharacters: CharacterInfo[];
+	mySessions: SessionInfo[];
 	isOwnProfile: boolean;
-}> = ({ userInfo, myCharacters, isOwnProfile }) => {
+}> = ({ userInfo, myCharacters, mySessions, isOwnProfile }) => {
+	const navigate = useNavigate();
 	const { formatDate, formatRelativeDate } = useDateFormatter();
+	const { addToast } = useToast();
+	const { storeUser, uploadUserAvatar, createUserFolder } = useUserApi();
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	// const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-	// 	const file = event.target.files?.[0];
-	// 	if (file && onAvatarChange) {
-	// 		onAvatarChange(file);
-	// 	}
-	// };
+	const [isEditing, setIsEditing] = useState(false);
+	const [isUploading, setIsUploading] = useState(false);
+
+	// Avatar states similar to CharacterForm's image states
+	const [uploadedAvatar, setUploadedAvatar] = useState<UploadedImage | null>(null);
+	const [cropModalOpen, setCropModalOpen] = useState(false);
+	const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
+	const [modalImageUrl, setModalImageUrl] = useState<string>('');
+
+	// Detail section
+	const [sessionsExpanded, setSessionsExpanded] = useState(false);
+
+	const methods = useForm<UserUdo>({
+		defaultValues: {
+			showName: userInfo.showName,
+			title: userInfo.title,
+			contact: userInfo.contact,
+			gender: userInfo.gender,
+			avatarUrl: userInfo.avatarUrl,
+		},
+	});
+
+	const {
+		handleSubmit,
+		control,
+		reset,
+		setValue,
+		formState: { errors, isSubmitting },
+	} = methods;
+
+	// Reset form if userInfo changes from parent
+	useEffect(() => {
+		if (!isEditing) {
+			reset({
+				showName: userInfo.showName,
+				title: userInfo.title ?? '',
+				contact: userInfo.contact ?? '',
+				gender: userInfo.gender,
+				avatarUrl: userInfo.avatarUrl,
+			});
+		}
+	}, [userInfo, isEditing, reset]);
+
+	// Cleanup effect (similar to CharacterForm)
+	useEffect(() => {
+		return () => {
+			// Clean up any pending object URLs when component unmounts
+			if (uploadedAvatar?.preview.startsWith('blob:')) {
+				URL.revokeObjectURL(uploadedAvatar.preview);
+			}
+
+			if (pendingAvatarFile) {
+				const pendingUrl = URL.createObjectURL(pendingAvatarFile);
+				URL.revokeObjectURL(pendingUrl);
+			}
+		};
+	}, []);
+
+	// Session
+	const handleGoSession = (sessionInfo: SessionInfo) => {
+		const { sessionId, title } = sessionInfo;
+		navigate(`/${routeConstants.CHAT}/${sessionId}`, { state: { title } });
+	};
+
+	// Avatar upload handler (similar to CharacterForm's handleImageUpload)
+	const handleAvatarUpload = (event: ChangeEvent<HTMLInputElement>) => {
+		const file = event.target.files?.[0];
+		console.log('📁 File selected:', file?.name, file?.type, file?.size);
+
+		if (!file) return;
+
+		if (!file.type.startsWith('image/')) {
+			return addToast(getLangAlertText(LANG_KEYS.INVALID_FILE_TYPE), 'error');
+		}
+		if (file.size > LIMIT_5MB) {
+			return addToast(getLangAlertText(LANG_KEYS.FILE_TOO_LARGE), 'error');
+		}
+
+		// Use FileReader instead of blob URL
+		const reader = new FileReader();
+
+		reader.onload = (e) => {
+			const result = e.target?.result as string;
+			console.log('📖 FileReader completed, data length:', result?.length);
+
+			if (result) {
+				setPendingAvatarFile(file);
+				setModalImageUrl(result); // This will be a data: URL
+				setCropModalOpen(true);
+			}
+		};
+
+		reader.onerror = (error) => {
+			console.error('❌ FileReader error:', error);
+			addToast('Error reading image file', 'error');
+		};
+
+		console.log('📖 Starting FileReader...');
+		reader.readAsDataURL(file); // Creates data:image/webp;base64,... URL
+
+		// Clear the file input
+		if (fileInputRef.current) {
+			fileInputRef.current.value = '';
+		}
+	};
+
+	// Simplify the crop complete handler since data URLs don't need cleanup
+	const handleCropComplete = (croppedAreaPixels: any) => {
+		if (!pendingAvatarFile || !modalImageUrl) {
+			console.warn('⚠️ Missing data for crop completion');
+			return;
+		}
+
+		const newAvatar: UploadedImage = {
+			file: pendingAvatarFile,
+			preview: modalImageUrl, // Keep the data: URL
+			crop: croppedAreaPixels,
+		};
+
+		// Clean up previous avatar if it was a blob URL
+		if (uploadedAvatar?.preview.startsWith('blob:')) {
+			URL.revokeObjectURL(uploadedAvatar.preview);
+		}
+
+		setUploadedAvatar(newAvatar);
+		setPendingAvatarFile(null);
+		setCropModalOpen(false);
+		setModalImageUrl('');
+
+		addToast('Avatar ready for upload', 'success', 1500);
+	};
+
+	// Simplified modal close (no cleanup needed for data URLs)
+	const handleModalClose = () => {
+		setCropModalOpen(false);
+		setPendingAvatarFile(null);
+		setModalImageUrl('');
+	};
+
+	// Avatar upload function (similar to CharacterForm's uploadPortraits)
+	const uploadAvatar = async (userId: string, avatar: UploadedImage): Promise<string> => {
+		await createUserFolder({ userId });
+
+		const formData = new FormData();
+		formData.append('avatarFile', avatar.file!); // Note: field name is 'avatarFile' for user
+		formData.append('userId', userId);
+
+		// Add crop data if available
+		if (avatar.crop) {
+			formData.append('crop', JSON.stringify(avatar.crop));
+		}
+
+		const result = await uploadUserAvatar(formData);
+		return result.avatarUrl;
+	};
+
+	// Submit handler (similar to CharacterForm's onSubmit)
+	const onSubmit = async (formData: UserUdo) => {
+		try {
+			setIsUploading(true);
+			console.log('📤 Starting submit with avatar:', {
+				hasUploadedAvatar: !!uploadedAvatar,
+				hasFile: !!uploadedAvatar?.file,
+				previewUrl: uploadedAvatar?.preview,
+			});
+
+			let finalAvatarUrl = formData.avatarUrl;
+
+			// Step 1: If there's a new avatar file, upload it first
+			if (uploadedAvatar?.file) {
+				console.log('📤 Uploading avatar...');
+				finalAvatarUrl = await uploadAvatar(userInfo.userId, uploadedAvatar);
+				console.log('✅ Avatar uploaded:', finalAvatarUrl);
+				setValue('avatarUrl', finalAvatarUrl);
+
+				// Clean up the preview URL after successful upload
+				if (uploadedAvatar.preview.startsWith('blob:')) {
+					URL.revokeObjectURL(uploadedAvatar.preview);
+					console.log('🗑️ Cleaned up after upload');
+				}
+			}
+
+			// Step 2: Save the user data
+			const updateData: UserUdo = { ...formData, avatarUrl: finalAvatarUrl };
+
+			await storeUser({ ...userInfo, ...updateData });
+			console.log('✅ User data saved');
+
+			// Step 3: Clean up and close edit mode
+			setIsEditing(false);
+			setUploadedAvatar(null);
+		} catch (error: any) {
+			console.error('❌ Submit error:', error);
+			addToast(error.message || 'An error occurred while updating the profile.', 'error');
+		} finally {
+			setIsUploading(false);
+		}
+	};
+
+	const handleCancelEdit = () => {
+		reset(); // Revert changes to original values
+		setUploadedAvatar(null);
+		setIsEditing(false);
+
+		// Clean up preview URL
+		if (uploadedAvatar?.preview.startsWith('blob:')) {
+			URL.revokeObjectURL(uploadedAvatar.preview);
+		}
+	};
+
+	// Get current avatar source (uploaded preview or existing URL)
+	const getCurrentAvatarSrc = () => {
+		return uploadedAvatar?.preview || userInfo.avatarUrl;
+	};
 
 	return (
 		<GlassPaper key="user-page" className="paper">
-			<Grid container spacing={containerSpacing}>
-				{/* Main Profile Section */}
-				<Grid size={{ xs: 12, md: 8 }}>
-					<GlassCard variant="outlined" sx={{ mb: 2 }}>
-						{/* Header with Avatar and Basic Info */}
-						<Box display="flex" alignItems="center" gap={3} my={3}>
-							<Box
-								position="relative"
-								// onMouseEnter={() => setAvatarHover(true)}
-								// onMouseLeave={() => setAvatarHover(false)}
-							>
-								<Avatar
-									src={userInfo.avatarUrl}
-									alt={userInfo.showName}
-									sx={{
-										width: 100,
-										height: 100,
-										fontSize: '2rem',
-										bgcolor: getGenderColor(userInfo.gender),
-									}}
-								>
-									{userInfo.showName.charAt(0).toUpperCase()}
-								</Avatar>
-							</Box>
-
-							<Box flex={1}>
-								<Box display="flex" alignItems="center" gap={2} mb={1}>
-									<Typography variant="h4" component="h1" fontWeight="bold">
-										{userInfo.showName}
-									</Typography>
-									<Chip
-										label={userInfo.gender}
-										size="small"
-										sx={{ bgcolor: getGenderColor(userInfo.gender), color: 'white', fontWeight: 'bold' }}
-									/>
-								</Box>
-
-								{userInfo.title && (
-									<Typography variant="h6" color="text.secondary" mb={1}>
-										{userInfo.title}
-									</Typography>
+			<FormProvider {...methods}>
+				<form onSubmit={handleSubmit(onSubmit)}>
+					<Grid container spacing={containerSpacing}>
+						{/* Main Profile Section */}
+						<Grid size={{ xs: 12, md: 8 }}>
+							<GlassCard variant="outlined" sx={{ mb: 2, position: 'relative' }}>
+								{/* Edit/Save/Cancel Buttons */}
+								{isOwnProfile && (
+									<Box sx={{ position: 'absolute', top: 16, right: 16 }}>
+										{isEditing ? (
+											<Stack direction="row" spacing={1}>
+												<Tooltip title={getLangText(LANG_KEYS.SAVE)}>
+													<span>
+														<IconButton type="submit" color="secondary" disabled={isSubmitting || isUploading}>
+															{isSubmitting || isUploading ? <GlassCircularProgress /> : <SaveIcon />}
+														</IconButton>
+													</span>
+												</Tooltip>
+												<Tooltip title={getLangText(LANG_KEYS.CANCEL)}>
+													<IconButton
+														onClick={handleCancelEdit}
+														color="secondary"
+														disabled={isSubmitting || isUploading}
+													>
+														<CancelIcon />
+													</IconButton>
+												</Tooltip>
+											</Stack>
+										) : (
+											<Tooltip title={getLangText(LANG_KEYS.EDIT_USER_INFO)}>
+												<IconButton onClick={() => setIsEditing(true)}>
+													<EditIcon />
+												</IconButton>
+											</Tooltip>
+										)}
+									</Box>
 								)}
 
-								<Typography variant="body2" color="text.secondary">
-									{`${getLangText(LANG_KEYS.ENTER_DATE)} : ${formatDate(userInfo.createdAt)}`}
-								</Typography>
-							</Box>
+								{/* Header with Avatar and Basic Info */}
+								<Box display="flex" alignItems="center" gap={3} my={3}>
+									<Box position="relative">
+										<Avatar
+											src={getCurrentAvatarSrc()}
+											alt={userInfo.showName}
+											sx={{
+												width: 100,
+												height: 100,
+												fontSize: '2rem',
+												bgcolor: getGenderColor(userInfo.gender),
+												opacity: isUploading ? 0.7 : 1,
+											}}
+										>
+											{userInfo.showName.charAt(0).toUpperCase()}
+										</Avatar>
+										{isUploading && (
+											<GlassCircularProgress
+												size={100}
+												sx={{ position: 'absolute', top: 0, left: 0, zIndex: 1 }}
+											/>
+										)}
+										{isEditing && !isUploading && (
+											<IconButton
+												component="label"
+												sx={{
+													position: 'absolute',
+													bottom: 0,
+													right: 0,
+													bgcolor: 'rgba(0,0,0,0.6)',
+													'&:hover': { bgcolor: 'rgba(0,0,0,0.8)' },
+												}}
+											>
+												<PhotoCameraIcon sx={{ fontSize: '1.2rem', color: 'white' }} />
+												<input
+													type="file"
+													ref={fileInputRef}
+													hidden
+													accept="image/*"
+													onChange={handleAvatarUpload}
+												/>
+											</IconButton>
+										)}
+									</Box>
 
-							{isOwnProfile && (
-								<Tooltip title={getLangText(LANG_KEYS.EDIT_USER_INFO)}>
-									<IconButton
-										// onClick={onEditProfile}
-										sx={{ bgcolor: 'rgba(255,255,255,0.1)', '&:hover': { bgcolor: 'rgba(255,255,255,0.2)' } }}
-									>
-										<EditIcon />
-									</IconButton>
-								</Tooltip>
-							)}
-						</Box>
+									<Box flex={1}>
+										{isEditing ? (
+											<Stack spacing={2}>
+												<Controller
+													name="showName"
+													control={control}
+													rules={{ required: 'Display name is required' }}
+													render={({ field }) => (
+														<TextField
+															{...field}
+															label={getLangText(LANG_KEYS.SHOWNAME)}
+															variant="standard"
+															error={!!errors.showName}
+															helperText={errors.showName?.message}
+															fullWidth
+															disabled={isUploading}
+														/>
+													)}
+												/>
+												<Controller
+													name="gender"
+													control={control}
+													render={({ field }) => (
+														<FormControl fullWidth variant="standard">
+															<InputLabel>{getLangText(LANG_KEYS.GENDER)}</InputLabel>
+															<Select {...field} label={getLangText(LANG_KEYS.GENDER)} disabled={isUploading}>
+																{getGenderSelectLabel().map(({ key, label }) => (
+																	<MenuItem key={key} value={key}>
+																		{label}
+																	</MenuItem>
+																))}
+															</Select>
+														</FormControl>
+													)}
+												/>
+											</Stack>
+										) : (
+											<>
+												{/* Just the name first */}
+												<Box display="flex" alignItems="center" gap={2} mb={1}>
+													<RomanticTitle noGlow hover={false} variant="h4" component="h1" fontWeight="bold">
+														{userInfo.showName}
+													</RomanticTitle>
+												</Box>
 
-						<Divider sx={{ my: 2 }} />
+												{/* Entered date */}
+												<Typography variant="body2" color="text.secondary" mb={1}>
+													{`${getLangText(LANG_KEYS.ENTER_DATE)} : ${formatDate(userInfo.createdAt)}`}
+												</Typography>
 
-						{/* Contact Information */}
-						<Stack spacing={2}>
-							<Box display="flex" alignItems="center" gap={2}>
-								<EmailIcon sx={{ color: 'text.secondary' }} />
-								<Box>
-									<Typography variant="body2" color="text.secondary">
-										{getLangText(LANG_KEYS.EMAIL)}
-									</Typography>
-									<Typography variant="body1">{userInfo.email}</Typography>
-								</Box>
-							</Box>
-
-							{userInfo.contact && (
-								<Box display="flex" alignItems="center" gap={2}>
-									<ContactIcon sx={{ color: 'text.secondary' }} />
-									<Box>
-										<Typography variant="body2" color="text.secondary">
-											{getLangText(LANG_KEYS.CONTACT)}
-										</Typography>
-										<Typography variant="body1">{userInfo.contact}</Typography>
+												{/* Gender chip below the date */}
+												<Box>
+													<Chip
+														label={getLangText(genderToLangKey(userInfo.gender))}
+														size="small" // Changed from medium to small for better proportion
+														sx={{ bgcolor: getGenderColor(userInfo.gender), color: 'white', fontWeight: 'bold' }}
+													/>
+												</Box>
+											</>
+										)}
 									</Box>
 								</Box>
-							)}
 
-							<Box display="flex" alignItems="center" gap={2}>
-								<BadgeIcon sx={{ color: 'text.secondary' }} />
-								<Box>
-									<Typography variant="body2" color="text.secondary">
-										사용자 ID
-									</Typography>
-									{/* <Typography variant="body1" sx={{ fontFamily: 'monospace', fontSize: '0.9rem' }}>
-										{userInfo.userId}
-									</Typography> */}
-								</Box>
-							</Box>
+								<Divider sx={{ my: 6 }} />
 
-							<Box display="flex" alignItems="center" gap={2}>
-								<ScheduleIcon sx={{ color: 'text.secondary' }} />
-								<Box>
-									<Typography variant="body2" color="text.secondary">
-										{getLangText(LANG_KEYS.UPDATE_DATE)}
-									</Typography>
-									<Typography variant="body1">{formatDate(userInfo.updatedAt)}</Typography>
-								</Box>
-							</Box>
-						</Stack>
-					</GlassCard>
-				</Grid>
+								{/* Details Section */}
+								<Stack spacing={3}>
+									{/* Title */}
+									<Box display="flex" alignItems="center" gap={2}>
+										<BadgeIcon sx={{ color: 'text.secondary' }} />
+										<Box flex={1}>
+											<Typography variant="body2" color="text.secondary">
+												{getLangText(LANG_KEYS.TITLE)}
+											</Typography>
+											{isEditing ? (
+												<Controller
+													name="title"
+													control={control}
+													render={({ field }) => (
+														<TextField {...field} variant="standard" fullWidth disabled={isUploading} />
+													)}
+												/>
+											) : (
+												<Typography variant="body1">{userInfo.title || 'N/A'}</Typography>
+											)}
+										</Box>
+									</Box>
 
-				{/* Sidebar */}
-				<Grid size={{ xs: 12, md: 4 }}>
-					{/* Statistics Card */}
-					<GlassCard variant="outlined">
-						<Typography variant="h6" fontWeight="bold" my={2}>
-							{getLangText(LANG_KEYS.STATISTICS)}
-						</Typography>
+									{/* Email (Readonly) */}
+									<Box display="flex" alignItems="center" gap={2}>
+										<EmailIcon sx={{ color: 'text.secondary' }} />
+										<Box>
+											<Typography variant="body2" color="text.secondary">
+												{getLangText(LANG_KEYS.EMAIL)}
+											</Typography>
+											<Typography variant="body1">{userInfo.email}</Typography>
+										</Box>
+									</Box>
 
-						<Stack spacing={2}>
-							<Box display="flex" justifyContent="space-between" alignItems="center">
-								<Typography variant="body2" color="text.secondary">
-									{getLangText(LANG_KEYS.MY_CHARACTERS)}
+									{/* Contact */}
+									<Box display="flex" alignItems="center" gap={2}>
+										<ContactIcon sx={{ color: 'text.secondary' }} />
+										<Box flex={1}>
+											<Typography variant="body2" color="text.secondary">
+												{getLangText(LANG_KEYS.CONTACT)}
+											</Typography>
+											{isEditing ? (
+												<Controller
+													name="contact"
+													control={control}
+													render={({ field }) => (
+														<TextField {...field} variant="standard" fullWidth disabled={isUploading} />
+													)}
+												/>
+											) : (
+												<Typography variant="body1">{userInfo.contact || 'N/A'}</Typography>
+											)}
+										</Box>
+									</Box>
+								</Stack>
+							</GlassCard>
+						</Grid>
+
+						{/* Sidebar - Statistics remain unchanged */}
+						<Grid size={{ xs: 12, md: 4 }}>
+							<GlassCard variant="outlined">
+								<Typography variant="h6" fontWeight="bold" my={2}>
+									{getLangText(LANG_KEYS.STATISTICS)}
 								</Typography>
-								<Typography variant="h6" fontWeight="bold" color="primary">
-									{myCharacters.length}
-								</Typography>
-							</Box>
+								<Stack spacing={2}>
+									<Box display="flex" justifyContent="space-between" alignItems="center">
+										<Stack direction="row" spacing={1} alignItems="center">
+											<PeopleIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+											<Typography variant="body2" color="text.secondary">
+												{getLangText(LANG_KEYS.MY_CHARACTERS)}
+											</Typography>
+										</Stack>
+										<Typography variant="h6" fontWeight="bold" color="secondary">
+											{myCharacters.length}
+										</Typography>
+									</Box>
+									<Box>
+										<Box display="flex" justifyContent="space-between" alignItems="center">
+											<Stack direction="row" spacing={1} alignItems="center">
+												<ChatIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+												<Typography variant="body2" color="text.secondary">
+													{getLangText(LANG_KEYS.MY_SESSIONS)}
+												</Typography>
+											</Stack>
+											<Box display="flex" alignItems="center" gap={1}>
+												{mySessions.length > 0 && (
+													<IconButton
+														size="small"
+														onClick={() => setSessionsExpanded(!sessionsExpanded)}
+														sx={{ color: 'text.secondary' }}
+													>
+														{sessionsExpanded ? <ExpandLess /> : <ExpandMore />}
+													</IconButton>
+												)}
+												<Typography variant="h6" fontWeight="bold" color="secondary">
+													{mySessions.length}
+												</Typography>
+											</Box>
+										</Box>
 
-							<Box display="flex" justifyContent="space-between" alignItems="center">
-								<Typography variant="body2" color="text.secondary">
-									{getLangText(LANG_KEYS.ENTER_DATE)}
-								</Typography>
-								<Typography variant="body2">{formatRelativeDate(userInfo.updatedAt)}</Typography>
-							</Box>
-						</Stack>
-					</GlassCard>
-				</Grid>
-			</Grid>
+										<Collapse in={sessionsExpanded} timeout="auto" unmountOnExit>
+											<List dense className="hide-scrollbar" sx={{ mt: 1, maxHeight: 200, overflow: 'auto' }}>
+												{mySessions.slice(0, 5).map((session) => (
+													<ListItem
+														key={session.sessionId}
+														sx={{ py: 0.5, px: 2, borderRadius: 1, '&:hover': { bgcolor: 'action.hover' } }}
+													>
+														<ListItemButton onClick={() => handleGoSession(session)}>
+															<ListItemText
+																primary={session.title || 'Untitled Session'}
+																secondary={formatRelativeDate(session.updatedAt)}
+																slotProps={{ primary: { variant: 'body2' }, secondary: { variant: 'caption' } }}
+															/>
+														</ListItemButton>
+													</ListItem>
+												))}
+												{mySessions.length > 5 && (
+													<ListItem sx={{ py: 0.5, px: 2, justifyContent: 'center' }}>
+														<Typography variant="caption" color="text.secondary">
+															{`+${mySessions.length - 5} ${getLangText(LANG_KEYS.MORE)}`}
+														</Typography>
+													</ListItem>
+												)}
+											</List>
+										</Collapse>
+									</Box>
+									<Box display="flex" justifyContent="space-between" alignItems="center">
+										<Stack direction="row" spacing={1} alignItems="center">
+											<ScheduleIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+											<Typography variant="body2" color="text.secondary">
+												{`${getLangText(LANG_KEYS.LAST)} ${getLangText(LANG_KEYS.UPDATE_DATE)}`}
+											</Typography>
+										</Stack>
+										<Typography variant="h6" color="secondary">
+											{formatRelativeDate(userInfo.updatedAt)}
+										</Typography>
+									</Box>
+								</Stack>
+							</GlassCard>
+						</Grid>
+					</Grid>
+
+					{/* Add the crop modal */}
+					{pendingAvatarFile && modalImageUrl && (
+						<ImageCropModal
+							imageSrc={modalImageUrl} // Use the stored URL
+							open={cropModalOpen}
+							onClose={handleModalClose}
+							onCropComplete={handleCropComplete}
+							aspect={ASPECT_RATIOS.USER} // Square aspect ratio for user avatars
+						/>
+					)}
+				</form>
+			</FormProvider>
 		</GlassPaper>
 	);
 };
-
-export default UserPage;

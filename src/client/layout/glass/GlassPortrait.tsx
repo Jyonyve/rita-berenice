@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef, FC } from 'react';
 import { Box, BoxProps, SxProps, Theme, useTheme } from '@mui/material';
 import { ColorVariant, getColor } from '../../style/colors.js';
 import { useHoverState } from '../index.js';
+import { ASPECT_RATIOS } from '#shared/config/index.js';
 
 export interface GlassPortraitProps extends BoxProps {
 	imageUrl: string;
 	alt?: string;
 	colorVariant?: ColorVariant;
 	fit?: 'cover' | 'contain';
+	aspectRatio?: number;
 	hover?: boolean; // The custom prop for controlling hover state
 }
 
@@ -17,6 +19,7 @@ export const GlassPortrait: FC<GlassPortraitProps> = (props) => {
 		alt = 'Character',
 		colorVariant = 'silver',
 		fit = 'cover',
+		aspectRatio = ASPECT_RATIOS.CHARACTER,
 		hover,
 		sx = {}, // sx is also destructured to be merged manually
 		onMouseEnter,
@@ -68,7 +71,7 @@ export const GlassPortrait: FC<GlassPortraitProps> = (props) => {
 	};
 
 	const containerSx: SxProps<Theme> = {
-		aspectRatio: '5 / 7',
+		aspectRatio,
 		width: '100%',
 		height: 'auto',
 		position: 'relative',

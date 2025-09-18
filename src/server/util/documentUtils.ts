@@ -25,8 +25,8 @@ export const chatTurnToDocument = (chatTurn: ChatTurn): string => {
 };
 
 export const flatCharacterToDoc = (character: CharacterInfo) => {
-	const { description, instruction } = character;
-	const document = { description, instruction };
+	const { description, instruction, firstMessage } = character;
+	const document = { description, instruction, firstMessage };
 	return JSON.stringify(document).trim();
 };
 

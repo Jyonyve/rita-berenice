@@ -10,7 +10,7 @@ import {
 } from '#shared/config/langConstants.js';
 import { EmotionValue } from '#shared/config/emotionConstants.js';
 import { EMOTION_CATEGORY_NAMES } from '#shared/util/emotionUtils.js';
-import { GENDER_OPTIONS } from '#shared/config/constants.js';
+import { GENDER_OPTION, GENDER_OPTIONS } from '#shared/config/constants.js';
 
 // 🎯 Global current language state
 let currentLang: LangCode = (() => {
@@ -72,7 +72,9 @@ export const getLangAlertText = (key: LangKey, lang?: LangCode): string => {
 export const emotionToLangKey = (emotion: EmotionValue): LangKey =>
 	emotion.toUpperCase() as LangKey;
 
-export const getEmotionSelectMenuItems = () => {
+export const genderToLangKey = (gender: GENDER_OPTION): LangKey => gender.toUpperCase() as LangKey;
+
+export const getEmotionSelectLabel = () => {
 	return Object.entries(EMOTION_CATEGORY_NAMES).map(([key, value]) => ({
 		key: value,
 		label: getLangText(emotionToLangKey(value)),
@@ -80,9 +82,9 @@ export const getEmotionSelectMenuItems = () => {
 	}));
 };
 
-export const getGenderSelectMenuItems = () => {
+export const getGenderSelectLabel = () => {
 	return GENDER_OPTIONS.map((option) => ({
 		key: option,
-		label: getLangText(LANG_KEYS[option.toUpperCase() as keyof typeof LANG_KEYS]),
+		label: getLangText(genderToLangKey(option)),
 	}));
 };

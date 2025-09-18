@@ -66,18 +66,18 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 	// This is now the primary function to get the latest user profile and update the auth state.
 	const fetchAndSetUserProfile = useCallback(
 		async (currentUserId: string) => {
-			console.log(`🔵 [Auth] Fetching profile for userId: ${currentUserId}`);
+			// console.log(`🔵 [Auth] Fetching profile for userId: ${currentUserId}`);
 			try {
 				// Use the refetch function from useQuery to guarantee fresh data
 				const { data: freshUserData } = await refetchUserQuery();
-				console.log('✅ [Auth] Fetched user data:', freshUserData);
+				// console.log('✅ [Auth] Fetched user data:', freshUserData);
 
 				if (freshUserData?.userInfo) {
-					console.log('✅ [Auth] User profile found. Setting state.');
+					// console.log('✅ [Auth] User profile found. Setting state.');
 					setUserProfile(freshUserData.userInfo);
 					setNeedsProfileSetup(false);
 				} else {
-					console.log('🟡 [Auth] User profile NOT found in DB. User needs profile setup.');
+					// console.log('🟡 [Auth] User profile NOT found in DB. User needs profile setup.');
 					setUserProfile(undefined);
 					setNeedsProfileSetup(true);
 				}
