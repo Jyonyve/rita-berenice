@@ -33,6 +33,7 @@ import orchestrationRoutes from './route/orchestration.routes.js';
 import loginRoutes from './route/login.routes.js';
 import sessionRoutes from './route/session.routes.js';
 import userRoutes from './route/user.routes.js';
+import credentialRoutes from './route/credential.routes.js';
 import { ApiErrorResponse } from '#shared/api/ModuleResponse.js';
 import { ApiError } from '#shared/domain/error/errors.js';
 
@@ -205,6 +206,7 @@ async function createServer() {
 	app.use(`${BASE_API}/${MODULE_NAMES.ORCHESTRATION}`, orchestrationRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.LOGIN}`, loginRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.USER}`, userRoutes);
+	app.use(`${BASE_API}/${MODULE_NAMES.CREDENTIAL}`, credentialRoutes);
 
 	// ✅ CORRECT for Express v5 - matches /auth, /auth/reset-password, etc.
 	app.get(`/${AUTH_PATH}{*splat}`, async (req: Request, res: Response) => {

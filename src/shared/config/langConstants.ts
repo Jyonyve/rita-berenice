@@ -78,6 +78,12 @@ export const LANG_KEYS = {
 	NO_HISTORIES: 'NO_HISTORIES',
 	ERROR_MAXLENGTH: 'ERROR_MAXLENGTH',
 	SAVE_SUCCESS: 'SAVE_SUCCESS',
+	API_KEYS: 'API_KEYS',
+	API_KEYS_DESCRIPTION: 'API_KEYS_DESCRIPTION',
+	SAVE_API_KEYS: 'SAVE_API_KEYS',
+	SAVING: 'SAVING',
+	API_KEYS_SAVED_SUCCESS: 'API_KEYS_SAVED_SUCCESS',
+	API_KEYS_SAVE_FAILED: 'API_KEYS_SAVE_FAILED',
 
 	// --- [NEW] Emotion Keys ---
 	NEUTRAL: 'NEUTRAL',
@@ -158,6 +164,14 @@ export const langConstants: LangRecord = {
 	UPDATE: { kor: '수정', eng: 'Update' },
 	SAVE: { kor: '저장', eng: 'Save' },
 	MORE: { kor: '더보기', eng: 'More' },
+	API_KEYS: { kor: 'API 키', eng: 'API Keys' },
+	API_KEYS_DESCRIPTION: {
+		kor: 'API 키는 암호화되어 안전하게 저장됩니다. 대화 기능을 사용하려면 본인의 AI 서비스 API 키를 입력해야 합니다.',
+		eng: 'Your API keys are encrypted and stored securely. You must enter your own AI service API keys to use chat features.',
+	},
+
+	SAVE_API_KEYS: { kor: 'API 키 저장', eng: 'Save API Keys' },
+	SAVING: { kor: '저장 중...', eng: 'Saving...' },
 	USER_TITLE: { kor: '나를 한마디로 소개해 봅시다.', eng: 'Sum me up in one line.' },
 	LOADING_CHARACTERS: { kor: '캐릭터를 불러오는 중입니다...', eng: 'Loading characters...' },
 	LOADING_SESSIONS: { kor: '지난 이야기를 불러오는 중입니다...', eng: 'Loading past sessions...' },
@@ -318,4 +332,9 @@ export const alertToastConstants: LangRecord = {
 		kor: '캐릭터 생성 중 오류가 발생했습니다. 다시 시도해주세요.',
 		eng: 'An error occurred while creating the character. Please try again.',
 	},
+	API_KEYS_SAVED_SUCCESS: {
+		kor: 'API 키가 성공적으로 저장되었습니다.',
+		eng: 'API keys saved successfully!',
+	},
+	API_KEYS_SAVE_FAILED: { kor: 'API 키 저장에 실패했습니다.', eng: 'Failed to save API keys.' },
 };

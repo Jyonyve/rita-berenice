@@ -58,12 +58,14 @@ import { ASPECT_RATIOS, GENDER_OPTION, LIMIT_5MB } from '#shared/config/constant
 import { CharacterInfo } from '#shared/domain/character/index.js';
 import { useDateFormatter } from '../../hook/index.js';
 import { useUserApi } from '../../hook/api/index.js';
-import { SessionInfo } from '#shared/domain/session/SessionInterfaces.js';
+import { SessionInfo } from '#shared/domain/session/index.js';
 import { useToast } from '../../provider/ToastProvider.jsx';
 import { UploadedImage } from '#shared/domain/image/index.js';
 import { ImageCropModal, RomanticTitle } from '../../layout/index.js';
 import { useNavigate } from 'react-router';
 import { routeConstants } from '#client/routeConstants.js';
+import { CredentialSection } from './CredentialSection.tsx';
+import { UserApiKeys } from '#shared/domain/credential/index.js';
 
 // Helper to get gender color
 const getGenderColor = (gender: GENDER_OPTION) => {
@@ -83,8 +85,9 @@ export const UserPage: FC<{
 	userInfo: UserInfo;
 	myCharacters: CharacterInfo[];
 	mySessions: SessionInfo[];
-	isOwnProfile: boolean;
-}> = ({ userInfo, myCharacters, mySessions, isOwnProfile }) => {
+	userApiKeys: UserApiKeys;
+	isMine: boolean;
+}> = ({ userInfo, myCharacters, mySessions, userApiKeys, isMine }) => {
 	const navigate = useNavigate();
 	const { formatDate, formatRelativeDate } = useDateFormatter();
 	const { addToast } = useToast();
@@ -315,7 +318,7 @@ export const UserPage: FC<{
 						<Grid size={{ xs: 12, md: 8 }}>
 							<GlassCard variant="outlined" sx={{ mb: 2, position: 'relative' }}>
 								{/* Edit/Save/Cancel Buttons */}
-								{isOwnProfile && (
+								{isMine && (
 									<Box sx={{ position: 'absolute', top: 16, right: 16 }}>
 										{isEditing ? (
 											<Stack direction="row" spacing={1}>
@@ -595,6 +598,7 @@ export const UserPage: FC<{
 									</Box>
 								</Stack>
 							</GlassCard>
+							{isMine && <CredentialSection userId={userInfo.userId} userApiKeys={userApiKeys} />}
 						</Grid>
 					</Grid>
 

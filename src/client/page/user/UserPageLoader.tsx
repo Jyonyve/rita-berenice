@@ -6,7 +6,7 @@ import { getLangText } from '../../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
 import { useAuth } from '../../provider/AuthProvider.jsx';
 import { UserPage } from './UserPage.jsx';
-import { useCharacterApi, useSessionApi, useUserApi } from '../../hook/index.js';
+import { useCharacterApi, useCredentialApi, useSessionApi, useUserApi } from '../../hook/index.js';
 
 export function UserPageLoader() {
 	const { userId } = useAuth();
@@ -14,8 +14,9 @@ export function UserPageLoader() {
 	const { data: userRes, isLoading } = useUserApi().getUser(userId);
 	const { data: charRes } = useCharacterApi().getCharactersByUserId(userId);
 	const { data: sessRes } = useSessionApi().getSessionsByUserId(userId);
+	const { data: credRes } = useCredentialApi().getUserApiKeys(userId);
 
-	if (isLoading || !userRes || !charRes || !sessRes) {
+	if (isLoading || !userRes || !charRes || !sessRes || !credRes) {
 		return (
 			<Container
 				sx={{
@@ -35,9 +36,10 @@ export function UserPageLoader() {
 	return (
 		<UserPage
 			userInfo={userRes.userInfo}
-			myCharacters={charRes?.characterInfos || []}
-			mySessions={sessRes.sessionInfos || []}
-			isOwnProfile={userRes.userInfo.userId === userId}
+			myCharacters={charRes?.characterInfos}
+			mySessions={sessRes.sessionInfos}
+			userApiKeys={credRes.userApiKeys}
+			isMine={userRes.userInfo.userId === userId}
 		/>
 	);
 }

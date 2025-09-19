@@ -3,17 +3,10 @@
 import { chromaDbClient } from '../db/chromaDbClient.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
 import { Collection } from 'chromadb';
-import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { buildCredentialId } from '#shared/util/buildIdUtils.js';
 import { decryptValue, encryptValue } from '#shared/util/cryptoUtils.js';
-
-export interface UserApiKeys {
-	openaiApiKey?: string;
-	anthropicApiKey?: string;
-	googleApiKey?: string;
-	openrouterApiKey?: string;
-	groqApiKey?: string;
-}
+import { UserApiKeys } from '#shared/domain/credential/index.js';
+import { CredentialResponse } from '#shared/api/ModuleResponse.js';
 
 const { getCredentialCollection, upsertRecord, getRecordById } = chromaDbClient;
 const ENCRYPTION_KEY = process.env.SECRET_ENCRYPTION_KEY;
@@ -79,7 +72,7 @@ export const credentialStore = {
 	/**
 	 * Retrieves and decrypts API keys for a user.
 	 */
-	getUserApiKeys: async (userId: string): Promise<UserApiKeys> => {
+	getUserApiKeys: async (userId: string): Promise<CredentialResponse> => {
 		try {
 			const collection = await credentialStore._getCollection();
 			const credentialId = buildCredentialId(userId);
@@ -87,7 +80,7 @@ export const credentialStore = {
 
 			if (!result.documents?.[0]) {
 				console.warn(`[CredentialService] No API keys found for user ${userId}`);
-				return {};
+				return { userApiKeys: {} };
 			}
 
 			const encryptedKeys = JSON.parse(result.documents[0]);
@@ -102,19 +95,16 @@ export const credentialStore = {
 								ENCRYPTION_KEY!
 							);
 						} catch (decryptError) {
-							console.error(
-								`[CredentialService] Failed to decrypt ${key} for user ${userId}:`,
-								decryptError
-							);
+							console.error(`[CredentialService] Failed to decrypt key for user ${userId}:`, decryptError);
 						}
 					}
 				})
 			);
 
-			return decryptedKeys;
+			return { userApiKeys: decryptedKeys };
 		} catch (error) {
 			console.error(`[CredentialService] Failed to retrieve API keys for user ${userId}:`, error);
-			return {};
+			return { userApiKeys: {} };
 		}
 	},
 
@@ -129,7 +119,7 @@ export const credentialStore = {
 		try {
 			const existingKeys = await credentialStore.getUserApiKeys(userId);
 			const updatedKeys = { ...existingKeys, [keyType]: keyValue };
-			await credentialStore.storeUserApiKeys(userId, updatedKeys);
+			await credentialStore.storeUserApiKeys(userId, updatedKeys.userApiKeys);
 		} catch (error) {
 			console.error(`[CredentialService] Failed to update ${keyType} for user ${userId}:`, error);
 			throw error;
