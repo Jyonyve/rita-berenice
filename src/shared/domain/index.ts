@@ -4,7 +4,7 @@ export * from './character/index.js';
 export * from './lore/index.js';
 export * from './recap/index.js';
 export * from './term/index.js';
-export * from './aimodel/index.js';
+export * from './credential/index.js';
 export * from './user/index.js';
 export * from './profile/index.js';
 export * from './session/index.js';

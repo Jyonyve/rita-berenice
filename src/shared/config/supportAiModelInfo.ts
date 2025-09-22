@@ -12,14 +12,6 @@ export const SUPPORTED_MODEL_INFO: Record<string, Record<string, string[]>> = {
 		deepseek: ['deepseek/deepseek-chat-v3-0324:free'],
 		mistralai: ['mistralai/mistral-small-3.2-24b-instruct:free'],
 	},
-	// bedrock: {
-	// 	anthropic: [
-	// 		'anthropic.claude-3-5-haiku-20241022-v1:0', // Default summary AI? Keep note.s
-	// 		'anthropic.claude-3-7-sonnet-20250219-v1:0',
-	// 	],
-	// 	amazon: ['amazon.nova-pro-v1:0'],
-	// 	// Add other Bedrock providers if necessary
-	// },
 	direct: {
 		// Mapping previous types to direct providers
 		openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-5'], // Previously 'gpt'
@@ -31,6 +23,7 @@ export const SUPPORTED_MODEL_INFO: Record<string, Record<string, string[]>> = {
 			'gemini-2.5-flash-lite',
 			'gemini-2.0-flash-live-preview-04-09',
 		],
+		groq: [],
 	},
 } as const;
 
@@ -116,16 +109,4 @@ export const correctAiModelInfo: Record<string, Record<string, string[]>> = {
 		deepseek: ['deepseek/deepseek-chat-v3-0324:free'],
 		mistralai: ['mistralai/mistral-small-3.2-24b-instruct:free'],
 	},
-	// direct: {
-	// 	// Mapping previous types to direct providers
-	// 	openai: ['gpt-4o-mini'], // Previously 'gpt'
-	// 	anthropic: ['claude-3.5-haiku'], // Previously 'claude'
-	// 	google: [
-	// 		'gemini-2.0-flash-001',
-	// 		'gemini-2.0-flash-lite-001',
-	// 		'gemini-2.5-pro-preview-05-06',
-	// 		'gemini-2.5-flash-preview-04-17',
-	// 		'gemini-2.0-flash-live-preview-04-09',
-	// 	],
-	// },
 } as const;

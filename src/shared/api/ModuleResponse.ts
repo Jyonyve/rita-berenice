@@ -8,6 +8,7 @@ import { SessionTermInfo, CharacterTermInfo } from '../domain/term/TermInterface
 import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
 import { UserInfo } from '../domain/user/UserInterfaces.js';
 import { SessionInfo } from '../domain/session/SessionInterfaces.js';
+import { UserApiKeys, ValidationResult } from '../domain/credential/CredentialInterfaces.js';
 
 export interface ApiErrorResponse {
 	status: 'error'; // Literal string to indicate an error response
@@ -129,3 +130,8 @@ interface SessionChromaResponse extends ChromaResponse {
 }
 
 export type SessionResponse = SessionChromaResponse;
+
+export type CredentialResponse = {
+	userApiKeys: UserApiKeys;
+	validationResults: Record<string, ValidationResult>;
+};

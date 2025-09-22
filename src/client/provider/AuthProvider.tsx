@@ -98,7 +98,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 			throw new Error('User ID or email is not available to create a profile.');
 		}
 
-		console.log(`🔵 [Auth] Creating/storing profile for userId: ${userId} with email: ${email}`);
+		// console.log(`🔵 [Auth] Creating/storing profile for userId: ${userId} with email: ${email}`);
 		try {
 			await storeUser({ userId, email });
 			console.log(
@@ -151,7 +151,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
 	// Main effect to sync the user profile with the React Query data source
 	useEffect(() => {
-		console.log('🔵 [Auth] Query data changed:', userQueryData);
+		// console.log('🔵 [Auth] Query data changed:', userQueryData);
 		if (isLoggedIn && !isUserQueryLoading) {
 			if (userQueryData?.userInfo) {
 				setUserProfile(userQueryData.userInfo);

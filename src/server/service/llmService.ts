@@ -55,7 +55,7 @@ export const llmService = {
 	 */
 	createLlmInstance: async (aiInfo: AiModelInfo, userId: string) => {
 		const { platform, provider, model, temperature, maxTokens } = aiInfo;
-		const userApiKeys = await credentialStore.getUserApiKeys(userId);
+		const { userApiKeys } = await credentialStore.getUserApiKeys(userId);
 
 		if (platform === 'openrouter') {
 			if (!userApiKeys.openrouterApiKey) {
