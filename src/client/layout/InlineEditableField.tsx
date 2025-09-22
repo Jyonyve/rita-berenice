@@ -114,7 +114,7 @@ export const InlineEditableField: FC<InlineEditableFieldProps> = ({
 				'&:hover .edit-icon': { opacity: 1 },
 			}}
 		>
-			<Typography {...typographyProps} color="text.secondary" noWrap>
+			<Typography {...typographyProps} noWrap>
 				{value}
 			</Typography>
 			{/* <EditIcon
