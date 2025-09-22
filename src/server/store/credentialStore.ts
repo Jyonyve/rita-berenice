@@ -43,16 +43,14 @@ export const credentialStore = {
 
 					if (usageResponse.ok) {
 						const usage = await usageResponse.json();
-						const creditInfo = usage.total_usage
-							? `Used: $${(usage.total_usage / 100).toFixed(2)}`
-							: 'Valid API key';
+						const creditInfo = usage.total_usage ? `Used: $${(usage.total_usage / 100).toFixed(2)}` : '';
 						return { valid: true, platform: 'direct', provider: 'openai', creditInfo };
 					}
 				} catch (usageError) {
 					// Usage API failed, but key is still valid
 				}
 
-				return { valid: true, platform: 'direct', provider: 'openai', creditInfo: 'Valid API key' };
+				return { valid: true, platform: 'direct', provider: 'openai', creditInfo: '' };
 			}
 
 			const errorMessage =
@@ -86,12 +84,7 @@ export const credentialStore = {
 			});
 
 			if (response.status === 401) {
-				return {
-					valid: false,
-					platform: 'direct',
-					provider: 'anthropic',
-					errorMessage: 'Invalid API key',
-				};
+				return { valid: false, platform: 'direct', provider: 'anthropic', errorMessage: '' };
 			}
 
 			if (response.status === 429) {
@@ -103,7 +96,7 @@ export const credentialStore = {
 				};
 			}
 
-			return { valid: true, platform: 'direct', provider: 'anthropic', creditInfo: 'Valid API key' };
+			return { valid: true, platform: 'direct', provider: 'anthropic', creditInfo: '' };
 		} catch (error) {
 			return {
 				valid: false,
@@ -121,14 +114,14 @@ export const credentialStore = {
 			);
 
 			if (response.ok) {
-				return { valid: true, platform: 'direct', provider: 'google', creditInfo: 'Valid API key' };
+				return { valid: true, platform: 'direct', provider: 'google', creditInfo: '' };
 			}
 
 			let errorMessage = `API error: ${response.status}`;
 			if (response.status === 400 || response.status === 403) {
 				try {
 					const error = await response.json();
-					errorMessage = error.error?.message || 'Invalid API key';
+					errorMessage = error.error?.message || '';
 				} catch {}
 			}
 
@@ -150,11 +143,10 @@ export const credentialStore = {
 			});
 
 			if (response.ok) {
-				return { valid: true, platform: 'direct', provider: 'groq', creditInfo: 'Valid API key' };
+				return { valid: true, platform: 'direct', provider: 'groq', creditInfo: '' };
 			}
 
-			const errorMessage =
-				response.status === 401 ? 'Invalid API key' : `API error: ${response.status}`;
+			const errorMessage = response.status === 401 ? '' : `API error: ${response.status}`;
 
 			return { valid: false, platform: 'direct', provider: 'groq', errorMessage };
 		} catch (error) {
@@ -175,15 +167,12 @@ export const credentialStore = {
 
 			if (response.ok) {
 				const data = await response.json();
-				const creditInfo = data.data?.usage
-					? `Credits: $${data.data.usage.toFixed(2)}`
-					: 'Valid API key';
+				const creditInfo = data.data?.usage ? `Credits: $${data.data.usage.toFixed(2)}` : '';
 
 				return { valid: true, platform: 'openrouter', creditInfo };
 			}
 
-			const errorMessage =
-				response.status === 401 ? 'Invalid API key' : `API error: ${response.status}`;
+			const errorMessage = response.status === 401 ? '' : `API error: ${response.status}`;
 
 			return { valid: false, platform: 'openrouter', errorMessage };
 		} catch (error) {

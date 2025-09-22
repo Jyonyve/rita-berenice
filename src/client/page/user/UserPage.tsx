@@ -57,7 +57,7 @@ import { UserInfo, UserUdo } from '#shared/domain/user/UserInterfaces.js';
 import { ASPECT_RATIOS, GENDER_OPTION, LIMIT_5MB } from '#shared/config/constants.js';
 import { CharacterInfo } from '#shared/domain/character/index.js';
 import { useDateFormatter } from '../../hook/index.js';
-import { useUserApi } from '../../hook/api/index.js';
+import { useCredentialApi, useUserApi } from '../../hook/api/index.js';
 import { SessionInfo } from '#shared/domain/session/index.js';
 import { useToast } from '../../provider/ToastProvider.jsx';
 import { UploadedImage } from '#shared/domain/image/index.js';
@@ -65,7 +65,7 @@ import { ImageCropModal, RomanticTitle } from '../../layout/index.js';
 import { useNavigate } from 'react-router';
 import { routeConstants } from '#client/routeConstants.js';
 import { CredentialSection } from './CredentialSection.tsx';
-import { UserApiKeys } from '#shared/domain/credential/index.js';
+import { UserApiKeys, ValidationResult } from '#shared/domain/credential/index.js';
 
 // Helper to get gender color
 const getGenderColor = (gender: GENDER_OPTION) => {
@@ -92,6 +92,7 @@ export const UserPage: FC<{
 	const { formatDate, formatRelativeDate } = useDateFormatter();
 	const { addToast } = useToast();
 	const { storeUser, uploadUserAvatar, createUserFolder } = useUserApi();
+	const { validateUserApiKeys } = useCredentialApi();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	const [isEditing, setIsEditing] = useState(false);
@@ -105,6 +106,9 @@ export const UserPage: FC<{
 
 	// Detail section
 	const [sessionsExpanded, setSessionsExpanded] = useState(false);
+
+	const [validationResults, setValidationResults] = useState<Record<string, ValidationResult>>({});
+	const [isValidatingApiKeys, setIsValidatingApiKeys] = useState(false);
 	const [apiKeysExpanded, setApiKeysExpanded] = useState(false);
 
 	const methods = useForm<UserUdo>({
@@ -152,6 +156,51 @@ export const UserPage: FC<{
 			}
 		};
 	}, []);
+
+	// Credential
+	// ✅ Validate API keys when data loads
+	const validateApiKeys = async (keysToValidate: UserApiKeys) => {
+		const keysWithValues = Object.fromEntries(
+			Object.entries(keysToValidate).filter(([, value]) => value && value.trim() !== '')
+		) as UserApiKeys;
+
+		if (Object.keys(keysWithValues).length === 0) {
+			setValidationResults({});
+			return;
+		}
+
+		setIsValidatingApiKeys(true);
+		try {
+			const results = await validateUserApiKeys({ apiKeys: keysWithValues });
+			setValidationResults(results.validationResults || {});
+		} catch (error) {
+			console.error('API key validation failed:', error);
+			// Set error state for all keys
+			const errorResults: Record<string, ValidationResult> = {};
+			Object.keys(keysWithValues).forEach((key) => {
+				errorResults[key] = {
+					valid: false,
+					platform: 'direct',
+					errorMessage: getLangText(LANG_KEYS.VALIDATION_FAILED_NETWORK_ERROR),
+				};
+			});
+			setValidationResults(errorResults);
+		} finally {
+			setIsValidatingApiKeys(false);
+		}
+	};
+
+	// ✅ Validate on initial load
+	useEffect(() => {
+		if (userApiKeys && Object.keys(userApiKeys).length > 0) {
+			validateApiKeys(userApiKeys);
+		}
+	}, [userApiKeys]);
+
+	// ✅ Callback for re-validation after save
+	const handleApiKeysUpdated = async (updatedKeys: UserApiKeys) => {
+		await validateApiKeys(updatedKeys);
+	};
 
 	// Session
 	const handleGoSession = (sessionInfo: SessionInfo) => {
@@ -360,7 +409,9 @@ export const UserPage: FC<{
 												width: 100,
 												height: 100,
 												fontSize: '2rem',
-												bgcolor: getGenderColor(userInfo.gender),
+												...(getCurrentAvatarSrc()
+													? {} // No bgcolor when image exists (preserves transparency)
+													: { bgcolor: getGenderColor(userInfo.gender) }), // Only use bgcolor as fallback
 												opacity: isUploading ? 0.7 : 1,
 											}}
 										>
@@ -615,7 +666,13 @@ export const UserPage: FC<{
 
 											<Collapse in={apiKeysExpanded} timeout="auto" unmountOnExit>
 												<Box sx={{ mt: 1, px: 1 }}>
-													<CredentialSection userId={userInfo.userId} userApiKeys={userApiKeys} />
+													<CredentialSection
+														userId={userInfo.userId}
+														userApiKeys={userApiKeys}
+														validationResults={validationResults}
+														isValidating={isValidatingApiKeys}
+														onApiKeysUpdated={handleApiKeysUpdated}
+													/>
 												</Box>
 											</Collapse>
 										</Box>
