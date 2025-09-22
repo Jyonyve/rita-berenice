@@ -33,6 +33,7 @@ export const LANG_KEYS = {
 	LOGOUT: 'LOGOUT',
 	EDIT: 'EDIT',
 	SAVE: 'SAVE',
+	SAVE_ANYWAY: 'SAVE_ANYWAY',
 	SEND: 'SEND',
 	STORY: 'STORY',
 	CANCEL: 'CANCEL',
@@ -82,6 +83,8 @@ export const LANG_KEYS = {
 	API_KEYS_DESCRIPTION: 'API_KEYS_DESCRIPTION',
 	SAVE_API_KEYS: 'SAVE_API_KEYS',
 	SAVING: 'SAVING',
+	MODIFIED: 'MODIFIED',
+	VALIDATING: 'VALIDATING',
 	API_KEYS_SAVED_SUCCESS: 'API_KEYS_SAVED_SUCCESS',
 	API_KEYS_SAVE_FAILED: 'API_KEYS_SAVE_FAILED',
 
@@ -124,6 +127,13 @@ export const LANG_KEYS = {
 	DESCRIPTION_HELPER: 'DESCRIPTION_HELPER',
 	INSTRUCTION_HELPER: 'INSTRUCTION_HELPER',
 	FIRST_MESSAGE_HELPER: 'FIRST_MESSAGE_HELPER',
+
+	API_KEY_VALIDATION_RESULTS: 'API_KEY_VALIDATION_RESULTS',
+	API_KEYS_VALIDATION_WARNING: 'API_KEYS_VALIDATION_WARNING',
+	API_KEY_IS_VALID: 'API_KEY_IS_VALID',
+	API_KEY_IS_INVALID: 'API_KEY_IS_INVALID',
+	VALIDATION_FAILED_NETWORK_ERROR: 'VALIDATION_FAILED_NETWORK_ERROR',
+	FAILED_TO_VALIDATE_API_KEYS: 'FAILED_TO_VALIDATE_API_KEYS',
 } as const;
 export type LangKey = keyof typeof LANG_KEYS;
 
@@ -163,13 +173,30 @@ export const langConstants: LangRecord = {
 	CREATE: { kor: '생성', eng: 'Create' },
 	UPDATE: { kor: '수정', eng: 'Update' },
 	SAVE: { kor: '저장', eng: 'Save' },
+	SAVE_ANYWAY: { kor: '강제 저장', eng: 'Save Anyway' },
 	MORE: { kor: '더보기', eng: 'More' },
 	API_KEYS: { kor: 'API 키', eng: 'API Keys' },
 	API_KEYS_DESCRIPTION: {
 		kor: 'API 키는 암호화되어 안전하게 저장됩니다. 대화 기능을 사용하려면 본인의 AI 서비스 API 키를 입력해야 합니다.',
 		eng: 'Your API keys are encrypted and stored securely. You must enter your own AI service API keys to use chat features.',
 	},
-
+	MODIFIED: { kor: '수정됨', eng: 'Modified' },
+	VALIDATING: { kor: '검증 중...', eng: 'Validating...' },
+	API_KEY_VALIDATION_RESULTS: { kor: 'API 키 검증 결과', eng: 'API Key Validation Results' },
+	API_KEYS_VALIDATION_WARNING: {
+		kor: '일부 API 키에 문제가 있습니다. 저장은 가능하지만 채팅에서 작동하지 않을 수 있습니다:',
+		eng: 'Some API keys have issues. You can still save them, but they might not work for chat:',
+	},
+	API_KEY_IS_VALID: { kor: 'API 키가 유효합니다', eng: 'API key is valid' },
+	API_KEY_IS_INVALID: { kor: 'API 키가 유효하지 않습니다', eng: 'API key is invalid' },
+	VALIDATION_FAILED_NETWORK_ERROR: {
+		kor: '검증 실패 - 네트워크 오류',
+		eng: 'Validation failed - network error',
+	},
+	FAILED_TO_VALIDATE_API_KEYS: {
+		kor: 'API 키 검증에 실패했습니다',
+		eng: 'Failed to validate API keys',
+	},
 	SAVE_API_KEYS: { kor: 'API 키 저장', eng: 'Save API Keys' },
 	SAVING: { kor: '저장 중...', eng: 'Saving...' },
 	USER_TITLE: { kor: '나를 한마디로 소개해 봅시다.', eng: 'Sum me up in one line.' },

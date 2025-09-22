@@ -32,7 +32,6 @@ export function UserPageLoader() {
 			</Container>
 		);
 	}
-
 	return (
 		<UserPage
 			userInfo={userRes.userInfo}

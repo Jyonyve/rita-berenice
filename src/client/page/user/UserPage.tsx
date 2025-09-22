@@ -34,7 +34,7 @@ import {
 	Cancel as CancelIcon,
 	People as PeopleIcon,
 	Chat as ChatIcon,
-	CloudUpload,
+	Key as KeyIcon,
 	ExpandLess,
 	ExpandMore,
 } from '@mui/icons-material';
@@ -105,6 +105,7 @@ export const UserPage: FC<{
 
 	// Detail section
 	const [sessionsExpanded, setSessionsExpanded] = useState(false);
+	const [apiKeysExpanded, setApiKeysExpanded] = useState(false);
 
 	const methods = useForm<UserUdo>({
 		defaultValues: {
@@ -315,7 +316,7 @@ export const UserPage: FC<{
 				<form onSubmit={handleSubmit(onSubmit)}>
 					<Grid container spacing={containerSpacing}>
 						{/* Main Profile Section */}
-						<Grid size={{ xs: 12, md: 8 }}>
+						<Grid size={{ xs: 12, md: 6 }}>
 							<GlassCard variant="outlined" sx={{ mb: 2, position: 'relative' }}>
 								{/* Edit/Save/Cancel Buttons */}
 								{isMine && (
@@ -517,13 +518,13 @@ export const UserPage: FC<{
 							</GlassCard>
 						</Grid>
 
-						{/* Sidebar - Statistics remain unchanged */}
-						<Grid size={{ xs: 12, md: 4 }}>
+						<Grid size={{ xs: 12, md: 6 }}>
 							<GlassCard variant="outlined">
 								<Typography variant="h6" fontWeight="bold" my={2}>
 									{getLangText(LANG_KEYS.STATISTICS)}
 								</Typography>
 								<Stack spacing={2}>
+									{/* My Characters */}
 									<Box display="flex" justifyContent="space-between" alignItems="center">
 										<Stack direction="row" spacing={1} alignItems="center">
 											<PeopleIcon fontSize="small" sx={{ color: 'text.secondary' }} />
@@ -535,6 +536,8 @@ export const UserPage: FC<{
 											{myCharacters.length}
 										</Typography>
 									</Box>
+
+									{/* My Sessions */}
 									<Box>
 										<Box display="flex" justifyContent="space-between" alignItems="center">
 											<Stack direction="row" spacing={1} alignItems="center">
@@ -585,6 +588,40 @@ export const UserPage: FC<{
 											</List>
 										</Collapse>
 									</Box>
+
+									{/* ✅ API Keys Section - Only for owner */}
+									{isMine && (
+										<Box>
+											<Box display="flex" justifyContent="space-between" alignItems="center">
+												<Stack direction="row" spacing={1} alignItems="center">
+													<KeyIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+													<Typography variant="body2" color="text.secondary">
+														{getLangText(LANG_KEYS.API_KEYS)}
+													</Typography>
+												</Stack>
+												<Box display="flex" alignItems="center" gap={1}>
+													<IconButton
+														size="small"
+														onClick={() => setApiKeysExpanded(!apiKeysExpanded)}
+														sx={{ color: 'text.secondary' }}
+													>
+														{apiKeysExpanded ? <ExpandLess /> : <ExpandMore />}
+													</IconButton>
+													<Typography variant="h6" fontWeight="bold" color="secondary">
+														{Object.values(userApiKeys || {}).filter((key) => key && key.trim() !== '').length}
+													</Typography>
+												</Box>
+											</Box>
+
+											<Collapse in={apiKeysExpanded} timeout="auto" unmountOnExit>
+												<Box sx={{ mt: 1, px: 1 }}>
+													<CredentialSection userId={userInfo.userId} userApiKeys={userApiKeys} />
+												</Box>
+											</Collapse>
+										</Box>
+									)}
+
+									{/* Last Update Date */}
 									<Box display="flex" justifyContent="space-between" alignItems="center">
 										<Stack direction="row" spacing={1} alignItems="center">
 											<ScheduleIcon fontSize="small" sx={{ color: 'text.secondary' }} />
@@ -598,7 +635,6 @@ export const UserPage: FC<{
 									</Box>
 								</Stack>
 							</GlassCard>
-							{isMine && <CredentialSection userId={userInfo.userId} userApiKeys={userApiKeys} />}
 						</Grid>
 					</Grid>
 

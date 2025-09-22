@@ -48,9 +48,22 @@ export const useCredentialApi = () => {
 		},
 	});
 
+	const validateUserApiKeys = useMutation<
+		CredentialResponse, // ✅ Use CredentialResponse
+		Error,
+		{ apiKeys: UserApiKeys }
+	>({
+		mutationFn: async ({ apiKeys }) => {
+			const url = genApiUrl(MODULE_NAME, 'validateApiKeys');
+			const response = await apiClient.post<Payload>(url, { apiKeys });
+			return decompressData<CredentialResponse>(response.data.payload);
+		},
+	});
+
 	return {
 		getUserApiKeys,
 		storeUserApiKeys: storeUserApiKeys.mutateAsync,
 		updateUserApiKey: updateUserApiKey.mutateAsync,
+		validateUserApiKeys: validateUserApiKeys.mutateAsync,
 	};
 };

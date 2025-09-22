@@ -13,6 +13,24 @@ import { Payload } from '#shared/util/apiHelpers.js';
 const router = Router();
 
 /**
+ * POST /api/credential/validate-api-keys
+ * Validates API keys for a user
+ */
+router.post(
+	genRoutePattern('validateApiKeys'),
+	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+		validateRequestData(req.body, 'body', ['apiKeys']);
+		const { apiKeys } = req.body;
+
+		console.log(`API HIT: POST /api/credential/validate-api-keys`);
+
+		const validationResults = await credentialStore.validateApiKeys(apiKeys);
+		const payload = compressData(validationResults);
+		res.status(200).json({ payload });
+	})
+);
+
+/**
  * GET /api/credential/get-user-api-keys/:userId
  * Retrieves encrypted API keys for a user
  */
