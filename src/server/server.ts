@@ -36,6 +36,8 @@ import userRoutes from './route/user.routes.js';
 import credentialRoutes from './route/credential.routes.js';
 import { ApiErrorResponse } from '#shared/api/ModuleResponse.js';
 import { ApiError } from '#shared/domain/error/errors.js';
+import { userStore } from './store/userStore.js';
+import { credentialStore } from './store/credentialStore.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url)); // src/server
 const isProduction = process.env.NODE_ENV === 'production';
@@ -113,7 +115,36 @@ async function createServer() {
 		recipeList: [
 			UserRoles.init(),
 			Dashboard.init({ admins: dashboardAdmins }),
-			EmailPassword.init(),
+			EmailPassword.init({
+				override: {
+					apis: (originalImplementation) => ({
+						...originalImplementation,
+						signUpPOST: async function (input) {
+							if (!originalImplementation.signUpPOST) {
+								throw new Error('signUpPOST is not available');
+							}
+							const response = await originalImplementation.signUpPOST(input);
+
+							if (response.status === 'OK') {
+								try {
+									const userCdo = { userId: response.user.id, email: response.user.emails[0] };
+
+									await userStore.storeUser(userCdo);
+									await credentialStore.initializeDefaultApiKeys(response.user.id);
+
+									console.log('✅ User successfully synced to database:', response.user.id);
+								} catch (error) {
+									console.error('❌ Failed to sync user to database:', error);
+									// Consider whether to return an error or just log it
+									// For now, we'll let the signup succeed even if DB sync fails
+								}
+							}
+
+							return response;
+						},
+					}),
+				},
+			}),
 			Session.init(),
 		],
 	});

@@ -14,6 +14,7 @@ import Session from 'supertokens-auth-react/recipe/session/index.js';
 import type { APIFormField, UserContext } from 'supertokens-auth-react/lib/build/types.js';
 import type { RecipeFunctionOptions } from 'supertokens-web-js/recipe/emailpassword/index.js';
 import { cryptoState } from '#client/cryptoState.js';
+import { UserCdo } from '#shared/domain/user/UserInterfaces.js';
 
 type SignInInput = {
 	formFields: APIFormField[];

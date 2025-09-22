@@ -287,11 +287,11 @@ export const credentialStore = {
 	 */
 	initializeDefaultApiKeys: async (userId: string): Promise<void> => {
 		const defaultKeys: UserApiKeys = {
-			openaiApiKey: process.env.OPENAI_API_KEY,
-			anthropicApiKey: process.env.ANTHROPIC_API_KEY,
-			googleApiKey: process.env.GOOGLE_API_KEY,
-			openrouterApiKey: process.env.OPENROUTER_API_KEY,
-			groqApiKey: process.env.GROQ_API_KEY,
+			openaiApiKey: '',
+			anthropicApiKey: '',
+			googleApiKey: '',
+			openrouterApiKey: '',
+			groqApiKey: '',
 		};
 
 		const validKeys = Object.fromEntries(
