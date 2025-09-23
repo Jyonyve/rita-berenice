@@ -5,7 +5,7 @@ import { chromaDbClient, sessionStore, termStore } from '#server/index.js';
 import { CharacterTermCdo, SessionTermCdo } from '#shared/domain/index.js';
 import { parseSessionId } from '#shared/index.js';
 export const getCharacterTerms = (characterId: string): CharacterTermCdo[] => [
-	{ koreanTerm: '타리온', initialTerm: 'Tarion', characterId },
+	{ koreanTerm: '타리온', initialTerm: 'Taryeon', characterId },
 	{ koreanTerm: '라이델', initialTerm: 'Rydell', characterId },
 	{ koreanTerm: '바르가스', initialTerm: 'Vargas', characterId },
 	{ koreanTerm: '엘리시아', initialTerm: 'Elysia', characterId },
@@ -14,7 +14,7 @@ export const getCharacterTerms = (characterId: string): CharacterTermCdo[] => [
 	{ koreanTerm: '카사르', initialTerm: 'Kassar', characterId },
 ];
 export const getSessionTerms = (sessionId: string): SessionTermCdo[] => [
-	{ koreanTerm: '타리온', initialTerm: 'Tarion', sessionId },
+	{ koreanTerm: '타리온', initialTerm: 'Taryeon', sessionId },
 	{ koreanTerm: '라이델', initialTerm: 'Rydell', sessionId },
 	{ koreanTerm: '요니브', initialTerm: 'Yonyve', sessionId },
 	{ koreanTerm: '엘리시오스', initialTerm: 'Elysios', sessionId },

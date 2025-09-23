@@ -33,8 +33,8 @@ import { HistoryContext, LoreContext, SessionInfo, SessionMetadata } from '#shar
 import { chromaDbClient } from '#server/db/chromaDbClient.js';
 import {
 	getMondayUserProfileTemplate,
-	getTarionOriginalProfileTemplate,
-	getTarionSpinoffProfileTemplate,
+	getTaryeonOriginalProfileTemplate,
+	getTaryeonSpinoffProfileTemplate,
 } from '../profile/initProfile.ts';
 import { encoding_for_model } from 'tiktoken';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
@@ -214,13 +214,13 @@ const enrichChatTurnWithMetadata = async (
 	const prompt = buildChatTurnMetadataPrompt(
 		{
 			showName: basicTurn.request.showName,
-			name: basicTurn.characterId.includes('tarion') ? 'yonyve' : 'jyonyve',
+			name: basicTurn.characterId.includes('taryeon') ? 'yonyve' : 'jyonyve',
 			gender: 'female',
 		},
 		basicTurn.request,
 		{
 			showName: basicTurn.response.showName,
-			name: basicTurn.characterId.includes('tarion') ? 'tarion' : 'monday',
+			name: basicTurn.characterId.includes('taryeon') ? 'taryeon' : 'monday',
 			gender: 'male',
 		},
 		basicTurn.response,
@@ -465,11 +465,11 @@ async function initChatFromLogFiles() {
 
 		if (!cliSessionId) {
 			// init term
-			if (characterNameFromFile === 'tarion') {
+			if (characterNameFromFile === 'taryeon') {
 				await profileStore.storeProfile(
 					fileNameParts[1] === 'original'
-						? getTarionOriginalProfileTemplate(USER_ID, TARGET_SESSION_ID)
-						: getTarionSpinoffProfileTemplate(USER_ID, TARGET_SESSION_ID)
+						? getTaryeonOriginalProfileTemplate(USER_ID, TARGET_SESSION_ID)
+						: getTaryeonSpinoffProfileTemplate(USER_ID, TARGET_SESSION_ID)
 				);
 				await termStore.storeSessionTerms(getSessionTerms(TARGET_SESSION_ID));
 			} else {

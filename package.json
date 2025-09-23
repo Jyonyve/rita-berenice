@@ -37,7 +37,7 @@
 		"extract:lore": "tsx --env-file .env ./src/migration/source/htmlParserCheerio.ts",
 		"init:user": "tsx --env-file .env ./src/migration/user/initUser.ts",
 		"drop": "tsx --env-file .env ./src/migration/dropCollection.ts",
-		"collection": "tsx --env-file .env ./src/migration/checkCollection.ts",
+		"check": "tsx --env-file .env ./src/migration/checkCollection.ts",
 		"delete": "tsx --env-file .env ./scripts/deleteUser.ts",
 		"verify": "tsx --env-file .env ./scripts/verifyUser.ts",
 		"temp": "tsx --env-file .env ./scripts/migUser.ts",

@@ -7,10 +7,10 @@ import { buildHistoryId } from '#shared/util/buildIdUtils.js';
 // --- Configuration ---
 // The character ID of the source histories.
 // We need this to fetch them efficiently.
-const SOURCE_CHARACTER_ID = 'tarion_original';
+const SOURCE_CHARACTER_ID = 'taryeon_original';
 
 // The new values you want to set.
-const SPINOFF_CHARACTER_ID = 'tarion_spinoff';
+const SPINOFF_CHARACTER_ID = 'taryeon_spinoff';
 
 /**
  * A script to duplicate specific history entries, modifying their userId and characterId.
@@ -19,8 +19,8 @@ async function duplicateHistoryEntries() {
 	console.log('🚀 Starting history duplication script...');
 
 	try {
-		await loreStore.deleteHistory('tarion_original_vargas-empire-era_OGn4_history');
-		await loreStore.deleteHistory('tarion_original_vargas-empire-era_4T0C_history');
+		await loreStore.deleteHistory('taryeon_original_vargas-empire-era_OGn4_history');
+		await loreStore.deleteHistory('taryeon_original_vargas-empire-era_4T0C_history');
 		// --- Step 1: Fetch the original history entries ---
 		console.log(`\n1. Fetching original histories for character: ${SOURCE_CHARACTER_ID}`);
 		// Use the loreStore to get all histories for the source character.

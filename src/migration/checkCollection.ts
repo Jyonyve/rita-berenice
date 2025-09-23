@@ -35,6 +35,7 @@ async function checkCollection() {
 		// 4. Perform the operation. This will now succeed.
 		const result = await collection.get({});
 		console.log(`✅ Found ${result.ids.length} records in "${TARGET_COLLECTION_NAME}".`);
+		console.log(result.metadatas);
 	} catch (error) {
 		if (error instanceof Error && error.message.toLowerCase().includes('does not exist')) {
 			console.error(`❌ Error: Collection "${TARGET_COLLECTION_NAME}" does not exist.`);

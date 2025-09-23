@@ -11,8 +11,8 @@ const CHROMA_SSL = true; // Your URL starts with https://
 
 const COLLECTION_NAME = COLLECTIONS.CHARACTER; // The collection name for characters
 // const TARGET_CHARACTER_ID = 'monday_original';
-// const TARGET_CHARACTER_ID = 'tarion_original';
-const TARGET_CHARACTER_ID = 'tarion_spinoff';
+// const TARGET_CHARACTER_ID = 'taryeon_original';
+const TARGET_CHARACTER_ID = 'taryeon_spinoff';
 
 // --- Main Checking Logic ---
 async function checkCharacterData() {

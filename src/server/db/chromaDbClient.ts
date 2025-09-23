@@ -26,8 +26,8 @@ const embedFnCohere = new CohereEmbeddingFunction({
 	// Cohere embed-v4.0 defaults to 1536 dimensions
 });
 
-// const DESTINATION_CONFIG = { host: 'rita-berenice-chromadb.fly.dev', port: 443, ssl: true };
-const DESTINATION_CONFIG = { host: 'localhost', port: 8000 };
+const DESTINATION_CONFIG = { host: 'rita-berenice-chromadb.fly.dev', port: 443, ssl: true };
+// const DESTINATION_CONFIG = { host: 'localhost', port: 8000 };
 
 const chromaClient = new ChromaClient({ ...DESTINATION_CONFIG });
 const _collectionCache: Map<string, Collection> = new Map();

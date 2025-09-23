@@ -6,12 +6,12 @@ import { SessionInfo, SessionMetadata } from '#shared/domain/index.js';
 import { buildProfileId, METADATA_TYPES } from '#shared/index.js';
 
 const userId = '6b335673-c837-43f9-a1c7-0b92c90edefb';
-const getTarionOriginalSessionTemplate = (sessionId: string): SessionInfo => {
+const getTaryeonOriginalSessionTemplate = (sessionId: string): SessionInfo => {
 	return {
 		sessionId,
 		userId,
 		profileId: buildProfileId(sessionId, userId),
-		characterId: 'tarion_original',
+		characterId: 'taryeon_original',
 		title: `타리온 x 요니브`,
 		createdAt: '2025-06-22T13:05:15.294Z',
 		updatedAt: '2025-06-22T13:08:29.044Z',
@@ -23,12 +23,12 @@ const getTarionOriginalSessionTemplate = (sessionId: string): SessionInfo => {
 	};
 };
 
-const getTarionSpinoffSessionTemplate = (sessionId: string): SessionInfo => {
+const getTaryeonSpinoffSessionTemplate = (sessionId: string): SessionInfo => {
 	return {
 		sessionId,
 		userId,
 		profileId: buildProfileId(sessionId, userId),
-		characterId: 'tarion_spinoff',
+		characterId: 'taryeon_spinoff',
 		title: `타리온 x 요니브`,
 		createdAt: '2025-07-06T17:05:05.115Z',
 		updatedAt: '2025-07-06T17:15:53.965Z',
@@ -64,8 +64,8 @@ async function initSession() {
 		console.log(`Getting collection "${COLLECTIONS.SESSION}"...`);
 		const collection = await chromaDbClient.getSessionCollection();
 		const monday = getMondaySessionTemplate('monday_original_1sYD76a4');
-		const original = getTarionOriginalSessionTemplate('tarion_original_cWRM1T3x');
-		const spinoff = getTarionSpinoffSessionTemplate('tarion_spinoff_9gsTh0LA');
+		const original = getTaryeonOriginalSessionTemplate('taryeon_original_cWRM1T3x');
+		const spinoff = getTaryeonSpinoffSessionTemplate('taryeon_spinoff_9gsTh0LA');
 
 		// Step 4: Prepare the record for ChromaDB.
 		// The document is the text to be embedded for semantic search.

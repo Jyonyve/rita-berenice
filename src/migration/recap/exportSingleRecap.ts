@@ -9,8 +9,8 @@ import path from 'path';
 const OUTPUT_DIR = './src/migration/recap/exported';
 // Target session selection
 // const MONDAY_ORIGINAL_SESSIONID = 'monday_original_moH1Pu9n3BXz3OmY';
-// const TARION_ORIGINAL_SESSIONID = 'tarion_original_1NkO7v690JDWN9Ey';
-const TARION_SPINOFF_SESSIONID = 'tarion_spinoff_U2Hc22mzJufwQvSX';
+// const TARION_ORIGINAL_SESSIONID = 'taryeon_original_1NkO7v690JDWN9Ey';
+const TARION_SPINOFF_SESSIONID = 'taryeon_spinoff_U2Hc22mzJufwQvSX';
 
 // 사용할 때 변경하세요
 // const TARGET_RECAP_ID = buildRecapId(MONDAY_ORIGINAL_SESSIONID);

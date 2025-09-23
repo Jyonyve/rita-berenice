@@ -13,7 +13,7 @@ You must use a variety of comic language and approaches in your comments, instea
 
 You should tease the user in an easygoing, whimsical, and playful way, like a friend poking fun at another friend in a self-aware and gentle way.
 	`;
-export const tarion_original_description = `타리온의 풀네임은 타리온 라이델.
+export const taryeon_original_description = `타리온의 풀네임은 타리온 라이델.
 
 그는 어두운 톤의 짙은 파란색 머리와 청록빛이 감도는 파란 눈을 가진 키 192cm의 29세 남성이다.
 
@@ -23,8 +23,8 @@ export const tarion_original_description = `타리온의 풀네임은 타리온 
 
 타고난 신체 능력과 오랜 기사 훈련으로 다져진 그의 체력은 상상을 초월한다. 뛰어난 회복력과 더불어 예리한 두뇌를 지녔으며, 이러한 능력들은 그를 노예 시장에서 가장 주목받는 존재로 만들었다.`;
 
-export const getTarionOriginalPersona = (userName: string) =>
-	`# Tarion Rydell (타리온 라이델) - LLM 챗봇 페르소나 지침
+export const getTaryeonOriginalPersona = (userName: string) =>
+	`# Taryeon Rydell (타리온 라이델) - LLM 챗봇 페르소나 지침
 
 ## 한국어 지침
 
@@ -138,7 +138,7 @@ export const getTarionOriginalPersona = (userName: string) =>
 "화가 났어? 진실이 그렇게 견디기 힘든가 보지? 엘리시아인들은 항상 자신들이 듣고 싶은 말만 듣길 원하지. 하지만 난 네 노예일 뿐, 네 아첨꾼은 아니야."
 `;
 
-export const getTarionOriginalFirstMessage = (
+export const getTaryeonOriginalFirstMessage = (
 	userName: string
 ) => `*희미한 횃불 빛이 녹슨 쇠창살 사이로 새어 들어오는 엘리시아의 지하 노예 시장에는 전쟁의 상흔이 아직도 짙게 배어있었다.*
 
@@ -152,7 +152,7 @@ export const getTarionOriginalFirstMessage = (
 
 *차가운 음성에 담긴 경멸이 음습한 지하 감옥에 울려 퍼졌다.*`;
 
-export const tarion_spinoff_description = `타리온의 풀네임은 타리온 라이델.
+export const taryeon_spinoff_description = `타리온의 풀네임은 타리온 라이델.
 
 그는 어두운 톤의 짙은 파란색 머리와 청록빛이 감도는 파란 눈을 가진 키 192cm의 29세 남성이다.
 
@@ -164,8 +164,8 @@ export const tarion_spinoff_description = `타리온의 풀네임은 타리온 �
 
 바르가스의 황제는 깊은 고민 끝에, 이 전쟁에서 가장 큰 공을 세우고 가장 많은 희생을 겪은 바르가스의 기사단장 타리온에게 아리온 후작의 딸의 처분을 맡기기로 결정했다. 황제의 결정에 누구도 이의를 제기하지 않았다.`;
 
-export const getTarionSpinoffPersona = (userName: string) =>
-	`# 타리온 라이델 (Tarion Rydell) - LLM 챗봇 페르소나 지침
+export const getTaryeonSpinoffPersona = (userName: string) =>
+	`# 타리온 라이델 (Taryeon Rydell) - LLM 챗봇 페르소나 지침
 
 ## 세계관 요약
 
@@ -238,7 +238,7 @@ export const getTarionSpinoffPersona = (userName: string) =>
 8. 자신의 행동에 죄책감을 느끼지 않는다.
 `;
 
-export const getTarionSpinoffFirstMessage = (
+export const getTaryeonSpinoffFirstMessage = (
 	userName: string
 ) => `*황제가 하사한 타리온의 성은 저녁 노을빛에 붉게 물들어 있었고, 성벽 위로는 바르가스의 깃발이 승전국의 위엄을 과시하듯 거세게 휘날리고 있었다.*
 
@@ -269,13 +269,13 @@ export const mondayOriginal: CharacterInfo = {
 	firstMessage: '',
 };
 
-export const getTarionOriginal = (profileName: string): CharacterInfo => {
+export const getTaryeonOriginal = (profileName: string): CharacterInfo => {
 	return {
-		characterId: buildCharacterId('tarion', 'original'),
-		name: 'tarion',
+		characterId: buildCharacterId('taryeon', 'original'),
+		name: 'taryeon',
 		variant: 'original',
-		description: tarion_original_description,
-		instruction: getTarionOriginalPersona(profileName),
+		description: taryeon_original_description,
+		instruction: getTaryeonOriginalPersona(profileName),
 		showName: '타리온',
 		createdAt: new Date('2024-08-27T10:14:09.261Z').toISOString(),
 		updatedAt: new Date('2025-02-20T08:52:29.482Z').toISOString(),
@@ -284,17 +284,17 @@ export const getTarionOriginal = (profileName: string): CharacterInfo => {
 		userId: 'sunfish',
 		contact: '',
 		title: '패전국의 노예를 구매했다',
-		firstMessage: getTarionOriginalFirstMessage(profileName),
+		firstMessage: getTaryeonOriginalFirstMessage(profileName),
 	};
 };
 
-export const getTarionSpinoff = (profileName: string): CharacterInfo => {
+export const getTaryeonSpinoff = (profileName: string): CharacterInfo => {
 	return {
-		characterId: buildCharacterId('tarion', 'spinoff'),
-		name: 'tarion',
+		characterId: buildCharacterId('taryeon', 'spinoff'),
+		name: 'taryeon',
 		variant: 'spinoff',
-		description: tarion_spinoff_description,
-		instruction: getTarionSpinoffPersona(profileName),
+		description: taryeon_spinoff_description,
+		instruction: getTaryeonSpinoffPersona(profileName),
 		showName: '타리온',
 		createdAt: new Date('2024-10-01T02:19:38.343Z').toISOString(),
 		updatedAt: new Date('2025-02-21T09:02:46.047Z').toISOString(),
@@ -303,6 +303,6 @@ export const getTarionSpinoff = (profileName: string): CharacterInfo => {
 		userId: 'sunfish',
 		contact: '',
 		title: '승전국의 노예가 되었다',
-		firstMessage: getTarionSpinoffFirstMessage(profileName),
+		firstMessage: getTaryeonSpinoffFirstMessage(profileName),
 	};
 };

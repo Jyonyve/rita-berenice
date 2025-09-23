@@ -21,7 +21,7 @@ function localTimezoneHelper(timestamp: string): string {
 const GET_CHAT_LOGS_API_URL = 'https://rofan.ai/api/chat/GetChatLogs'; // Replace with actual API URL
 const CHARACTERS = [
 	{
-		name: 'tarion_original',
+		name: 'taryeon_original',
 		showName: '타리온',
 		url: 'https://rofan.ai/chat/2a5c08d2-b3e0-48eb-982c-f6b75ca869c9',
 		firstTurn: [
@@ -46,13 +46,13 @@ const CHARACTERS = [
 				model: 'Claude 3.5 Sonnet v2',
 				emotion: 'neutral',
 				uuid: '41cebfbc-3808-43a9-bce4-cdb29eab8cfa',
-				name: 'tarion',
+				name: 'taryeon',
 				showName: '타리온',
 			},
 		] as MigChatMessage[],
 	},
 	{
-		name: 'tarion_spinoff',
+		name: 'taryeon_spinoff',
 		showName: '타리온',
 		url: 'https://rofan.ai/chat/ffbf2c97-53bb-496a-b061-67482cd708ae',
 		firstTurn: [
@@ -76,7 +76,7 @@ const CHARACTERS = [
 				updatedAt: '2025-03-14T06:20:08.300Z',
 				model: 'Claude 3.5 Sonnet v2',
 				emotion: 'neutral',
-				name: 'tarion',
+				name: 'taryeon',
 				showName: '타리온',
 				uuid: '6a63a628-497a-40e8-bfb7-8476236d29ce',
 			},

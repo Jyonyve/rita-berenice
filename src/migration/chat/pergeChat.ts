@@ -5,8 +5,8 @@ import { chromaDbClient, CollectionType } from '#server/index.js';
 // Define the sessionIDs you want to KEEP. All others will be deleted.
 // Double and triple-check these IDs.
 const SESSION_IDS_TO_KEEP = [
-	'tarion_original_cWRM1T3x',
-	'tarion_spinoff_9gsTh0LA',
+	'taryeon_original_cWRM1T3x',
+	'taryeon_spinoff_9gsTh0LA',
 	'monday_original_1sYD76a4', // Add any other sessions you want to preserve
 ];
 

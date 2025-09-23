@@ -45,7 +45,7 @@ const USER_ID_NEW = 'dbce0624-7eb1-4e0f-85d2-d25333996992';
 // const USER_ID_OLD = 'dbce0624-7eb1-4e0f-85d2-d25333996992';
 
 const CHAT_JSONL_PATH =
-	'C:/Users/nextree/Favorites/rita-berenice-task/src/migration/chat/backup/tarion_original_3rTcSTNS.jsonl';
+	'C:/Users/nextree/Favorites/rita-berenice-task/src/migration/chat/backup/taryeon_original_3rTcSTNS.jsonl';
 
 // List of collections to migrate from the remote source
 const COLLECTIONS_TO_MIGRATE = ['character', 'recap', 'lore', 'term'];

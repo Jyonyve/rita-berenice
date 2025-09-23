@@ -12,7 +12,7 @@ const userId = '6b335673-c837-43f9-a1c7-0b92c90edefb';
  * @param {string} sessionId - The unique session ID for this profile instance.
  * @returns {ProfileCdo} A profile creation data object.
  */
-export const getTarionOriginalProfileTemplate = (
+export const getTaryeonOriginalProfileTemplate = (
 	userId: string,
 	sessionId: string
 ): ProfileCdo => ({
@@ -29,7 +29,7 @@ export const getTarionOriginalProfileTemplate = (
 	sessionId: sessionId,
 });
 
-export const getTarionSpinoffProfileTemplate = (userId: string, sessionId: string): ProfileCdo => ({
+export const getTaryeonSpinoffProfileTemplate = (userId: string, sessionId: string): ProfileCdo => ({
 	name: 'yonyve',
 	gender: 'female',
 	title: "The Marquis' Eldest Daughter",
@@ -57,8 +57,8 @@ export const getMondayUserProfileTemplate = (userId: string, sessionId: string):
 
 // --- Main Seeding Logic ---
 async function initProfile() {
-	const tarion_original = 'tarion_original_3rTcSTNS';
-	const tarion_spinoff = 'tarion_spinoff_PCyAjZnG';
+	const taryeon_original = 'taryeon_original_3rTcSTNS';
+	const taryeon_spinoff = 'taryeon_spinoff_PCyAjZnG';
 	const sessionId = 'monday_original_zUwPMBc4';
 	try {
 		// Step 1: GET the collection. Do NOT create it.
@@ -76,10 +76,10 @@ async function initProfile() {
 		// 	await profileStore.storeProfile(getMondayUserProfileTemplate(userId, 'monday_original_gKBOnr26'))
 		// ),
 		console.log(
-			await profileStore.storeProfile(getTarionOriginalProfileTemplate(userId, tarion_original))
+			await profileStore.storeProfile(getTaryeonOriginalProfileTemplate(userId, taryeon_original))
 		);
 		// console.log(
-		// 	await profileStore.storeProfile(getTarionSpinoffProfileTemplate(userId, tarion_spinoff))
+		// 	await profileStore.storeProfile(getTaryeonSpinoffProfileTemplate(userId, taryeon_spinoff))
 		// );
 
 		console.log(`✅ Successfully seeded profiles.`);
