@@ -9,7 +9,7 @@ interface GlassCircularProgressProps extends CircularProgressProps {
 }
 
 export const GlassCircularProgress: FC<GlassCircularProgressProps> = ({
-	colorVariant = 'primary',
+	colorVariant = 'silver',
 	glow = true,
 	seconds,
 	sx,

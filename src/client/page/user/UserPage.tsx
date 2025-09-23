@@ -56,7 +56,7 @@ import { LANG_KEYS } from '#shared/config/langConstants.js';
 import { UserInfo, UserUdo } from '#shared/domain/user/UserInterfaces.js';
 import { ASPECT_RATIOS, GENDER_OPTION, LIMIT_5MB } from '#shared/config/constants.js';
 import { CharacterInfo } from '#shared/domain/character/index.js';
-import { useDateFormatter } from '../../hook/index.js';
+import { useDateFormatter, useResponsive } from '../../hook/index.js';
 import { useCredentialApi, useUserApi } from '../../hook/api/index.js';
 import { SessionInfo } from '#shared/domain/session/index.js';
 import { useToast } from '../../provider/ToastProvider.jsx';
@@ -90,6 +90,13 @@ export const UserPage: FC<{
 }> = ({ userInfo, myCharacters, mySessions, userApiKeys, isMine }) => {
 	const navigate = useNavigate();
 	const { formatDate, formatRelativeDate } = useDateFormatter();
+	const {
+		shouldUseMobileLayout,
+		isSmallScreen,
+		isTabletPortrait,
+		hasEnoughSpaceForDesktop,
+		isWideTablet,
+	} = useResponsive();
 	const { addToast } = useToast();
 	const { storeUser, uploadUserAvatar, createUserFolder } = useUserApi();
 	const { validateUserApiKeys } = useCredentialApi();
@@ -400,18 +407,28 @@ export const UserPage: FC<{
 								)}
 
 								{/* Header with Avatar and Basic Info */}
-								<Box display="flex" alignItems="center" gap={3} my={3}>
-									<Box position="relative">
+								<Box
+									display="flex"
+									alignItems="center"
+									gap={shouldUseMobileLayout ? 1.2 : 3}
+									my={shouldUseMobileLayout ? 1.2 : 3}
+									flexDirection={shouldUseMobileLayout ? 'column' : 'row'}
+									sx={{
+										width: '100%',
+										maxWidth: '100%',
+										overflow: 'hidden',
+										textAlign: shouldUseMobileLayout ? 'center' : 'left',
+									}}
+								>
+									<Box position="relative" sx={{ flexShrink: 0 }}>
 										<Avatar
 											src={getCurrentAvatarSrc()}
 											alt={userInfo.showName}
 											sx={{
-												width: 100,
-												height: 100,
-												fontSize: '2rem',
-												...(getCurrentAvatarSrc()
-													? {} // No bgcolor when image exists (preserves transparency)
-													: { bgcolor: getGenderColor(userInfo.gender) }), // Only use bgcolor as fallback
+												width: shouldUseMobileLayout ? 60 : 100,
+												height: shouldUseMobileLayout ? 60 : 100,
+												fontSize: shouldUseMobileLayout ? '1.1rem' : '2rem',
+												...(getCurrentAvatarSrc() ? {} : { bgcolor: getGenderColor(userInfo.gender) }),
 												opacity: isUploading ? 0.7 : 1,
 											}}
 										>
@@ -419,7 +436,7 @@ export const UserPage: FC<{
 										</Avatar>
 										{isUploading && (
 											<GlassCircularProgress
-												size={100}
+												size={shouldUseMobileLayout ? 60 : 100}
 												sx={{ position: 'absolute', top: 0, left: 0, zIndex: 1 }}
 											/>
 										)}
@@ -431,10 +448,14 @@ export const UserPage: FC<{
 													bottom: 0,
 													right: 0,
 													bgcolor: 'rgba(0,0,0,0.6)',
+													width: shouldUseMobileLayout ? 22 : 32,
+													height: shouldUseMobileLayout ? 22 : 32,
 													'&:hover': { bgcolor: 'rgba(0,0,0,0.8)' },
 												}}
 											>
-												<PhotoCameraIcon sx={{ fontSize: '1.2rem', color: 'white' }} />
+												<PhotoCameraIcon
+													sx={{ fontSize: shouldUseMobileLayout ? '0.7rem' : '1.2rem', color: 'white' }}
+												/>
 												<input
 													type="file"
 													ref={fileInputRef}
@@ -509,7 +530,7 @@ export const UserPage: FC<{
 									</Box>
 								</Box>
 
-								<Divider sx={{ my: 6 }} />
+								<Divider sx={{ my: shouldUseMobileLayout ? 3 : 6 }} />
 
 								{/* Details Section */}
 								<Stack spacing={3}>

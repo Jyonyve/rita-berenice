@@ -51,6 +51,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { useSessionApi, useUserApi } from '../hook/api/index.js';
 import { InlineEditableField } from './InlineEditableField.jsx';
 import ReloadToHome from './ReloadToHome.jsx';
+import { titleFontFamily } from '../style/typography.js';
 
 interface LoginModalProps {
 	loginOpen: boolean;
@@ -401,8 +402,10 @@ export function RootLayout() {
 								>
 									{/* Profile name - opens modal */}
 									<Typography
-										variant="caption"
+										variant="body2"
+										fontFamily={titleFontFamily}
 										role="button"
+										color="secondary"
 										onClick={handleProfileModalOpen}
 										sx={{ '&:hover': { textDecoration: 'underline' }, whiteSpace: 'nowrap' }}
 									>
@@ -413,7 +416,8 @@ export function RootLayout() {
 											initialValue={headerInfo.sessionTitle}
 											onSave={handleSessionTitleSave}
 											typographyProps={{
-												variant: 'body2',
+												color: 'textPrimary',
+												variant: 'caption',
 												sx: { maxWidth: isSmallScreen ? '200px' : '150px' },
 											}}
 											textFieldProps={{ variant: 'standard', size: 'small' }}
@@ -422,16 +426,18 @@ export function RootLayout() {
 								</Box>
 							</Box>
 						)}
-						<RomanticTitle
-							variant="subtitle1"
-							colorVariant="silver"
-							component="div"
-							onClick={() => navigate(`/${routeConstants.CHARACTER}`)}
-							role="button"
-							sx={{ px: 1 }}
-						>
-							{getLangText(LANG_KEYS.CHARACTERS)}
-						</RomanticTitle>
+						{!isSmallScreen && (
+							<RomanticTitle
+								variant="subtitle1"
+								colorVariant="silver"
+								component="div"
+								onClick={() => navigate(`/${routeConstants.CHARACTER}`)}
+								role="button"
+								sx={{ px: 1 }}
+							>
+								{getLangText(LANG_KEYS.CHARACTERS)}
+							</RomanticTitle>
+						)}
 					</Box>
 
 					<Box sx={{ display: 'flex', alignItems: 'center' }}>
