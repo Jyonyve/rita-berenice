@@ -127,8 +127,9 @@ async function createServer() {
 
 							if (response.status === 'OK') {
 								try {
-									const userCdo = { userId: response.user.id, email: response.user.emails[0] };
+									await UserRoles.addRoleToUser('public', response.user.id, 'user');
 
+									const userCdo = { userId: response.user.id, email: response.user.emails[0] };
 									await userStore.storeUser(userCdo);
 									await credentialStore.initializeDefaultApiKeys(response.user.id);
 

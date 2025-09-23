@@ -29,6 +29,7 @@ interface AuthContextType {
 	needsProfileSetup: boolean;
 	createUserProfile: () => Promise<void>;
 	refetchProfile: () => void;
+	isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -43,6 +44,14 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 	const isSessionLoading = session.loading;
 	const isLoggedIn = !session.loading && session.doesSessionExist;
 	const userId = isLoggedIn ? session.userId : undefined;
+	// 1. Add this at the top of your component (after getting session)
+	const currentRoles: string[] =
+		!session.loading && Array.isArray(session.accessTokenPayload?.['st-role']?.v)
+			? session.accessTokenPayload['st-role'].v
+			: [];
+
+	// 2. Check if user is admin
+	const isAdmin = currentRoles.includes('admin');
 
 	// Modal state
 	const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -198,6 +207,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 		needsProfileSetup,
 		createUserProfile,
 		refetchProfile,
+		isAdmin,
 	};
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
