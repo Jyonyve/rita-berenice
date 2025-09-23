@@ -3,6 +3,21 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+		<!-- Font performance: preconnect + preload + stylesheet -->
+		<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+		<link
+			rel="preload"
+			as="font"
+			type="font/woff2"
+			crossorigin
+			href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-regular.woff2"
+		/>
+		<link
+			rel="stylesheet"
+			href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
+		/>
+
 		<!-- 1. Emotion Insertion Point -->
 		<meta name="emotion-insertion-point" content="" />
 		<!-- 2. Emotion Styles Placeholder -->
@@ -10,22 +25,17 @@
 		<!--server-data-->
 		<title>Rita-Berenice</title>
 
-		<!-- Standard Favicon for legacy browsers -->
+		<!-- Favicons ... -->
 		<link rel="icon" type="image/x-icon" href="/favicon.ico" />
-		<!-- PNG Favicons for modern browsers -->
 		<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
 		<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
 		<link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png" />
 		<link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png" />
-		<!-- Apple Touch Icon for iOS home screens -->
 		<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-		<!-- Web Manifest for PWA support (if present) -->
 		<link rel="manifest" href="/site.webmanifest" />
 	</head>
 	<body>
-		<!-- 3. App Root -->
 		<div id="root"><!--app-html--></div>
-		<!-- 4. Client Script - CORRECTED PATH -->
 		<script type="module" src="/src/entry-client.tsx"></script>
 	</body>
 </html>

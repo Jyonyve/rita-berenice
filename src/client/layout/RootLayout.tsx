@@ -174,16 +174,22 @@ const ImageModal: FC<ImageModalProps> = ({ open, onClose, imageUrl, characterId 
 // Add this component inside your RootLayout file
 const LanguageSwitch: FC = () => {
 	const { lang, toggleLang } = useLanguage();
+	const isKor = lang === 'kor';
+	const next = isKor ? 'English' : 'Korean';
+
 	const handleChange = (event: React.ChangeEvent<HTMLInputElement>, checked: boolean) => {
 		toggleLang(); // Call your toggle function
 	};
 	return (
 		<Switch
-			checked={lang === 'kor'}
-			onChange={handleChange}
+			checked={isKor}
+			onChange={() => toggleLang()}
+			// ARIA switch semantics
+			role="switch"
+			aria-checked={isKor}
+			aria-label={`Switch language to ${next}`}
 			color="default"
 			size="small"
-			aria-label="toggle language"
 			sx={{
 				'& .MuiSwitch-thumb': {
 					'&:before': {
