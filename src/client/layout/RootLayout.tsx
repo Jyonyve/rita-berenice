@@ -177,9 +177,6 @@ const LanguageSwitch: FC = () => {
 	const isKor = lang === 'kor';
 	const next = isKor ? 'English' : 'Korean';
 
-	const handleChange = (event: React.ChangeEvent<HTMLInputElement>, checked: boolean) => {
-		toggleLang(); // Call your toggle function
-	};
 	return (
 		<Switch
 			checked={isKor}
