@@ -1,5 +1,5 @@
 import { LANG_KEYS, LangKey } from '#shared/config/langConstants.js';
-import { CharacterCdo, CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import { CharacterCdo, CharacterInfo } from '#shared/domain/character/character.type.js';
 import {
 	Box,
 	Grid,
@@ -41,7 +41,7 @@ import {
 	SolidMetallicButton,
 	PortraitWithChip,
 } from '../../layout/index.js';
-import { UploadedCharacterImage } from '#shared/domain/image/ImageInterfaces.js';
+import { UploadedCharacterImage } from '#shared/domain/image/image.type.js';
 import { createBasicCharacterInfo, isCharacterInfo } from '#shared/util/typeGuardUtils.js';
 
 // 🎨 Constants

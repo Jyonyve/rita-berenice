@@ -9,7 +9,7 @@ import {
 } from '../util/routeHelpers.js';
 import { Payload } from '#shared/util/apiHelpers.js';
 import { sessionStore } from '../store/sessionStore.js';
-import { SessionInfo } from '#shared/domain/session/SessionInterfaces.js';
+import { SessionInfo } from '#shared/domain/session/session.type.js';
 
 const router = Router();
 

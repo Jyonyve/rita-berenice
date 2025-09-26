@@ -1,6 +1,6 @@
 // src/client/components/profile/ProfilePreviewList.tsx
 
-import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { ProfileInfo } from '#shared/domain/profile/profile.type.js';
 import {
 	CircularProgress,
 	Divider,

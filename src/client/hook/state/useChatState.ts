@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { DisplayTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { DisplayTurn, TempChatTurn } from '#shared/domain/chat/chat.type.js';
 import { loadAllCachedMessagesForSession, saveMessagesToCache } from '../../util/idbUtils.js';
 import { useChatApi, useTempChatApi } from '../api/index.js';
 import { RECENT_CHAT_TURN } from '#shared/config/constants.js';

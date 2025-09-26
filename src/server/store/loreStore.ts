@@ -4,24 +4,30 @@ import { Collection, Metadata, Where, WhereDocument } from 'chromadb';
 import { METADATA_TYPES } from '#shared/config/constants.js';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { chromaDbClient } from '../db/chromaDbClient.js';
-import { HistoryResponse, LoreResponse } from '#shared/api/ModuleResponse.js';
+import { LoreResponse } from '#shared/api/ModuleResponse.js';
 import {
-	HistoryInfo,
-	HistoryMetadata,
 	LoreIndexContentType,
 	LoreIndexMetadata,
 	LoreInfo,
 	LoreMetadata,
-} from '#shared/domain/lore/LoreInterfaces.js';
-import { metadataToHistory, metadataToLore } from '#shared/util/dbConvertUtils.js';
-import { buildHistoryId, buildLoreId, buildLoreIndexId } from '#shared/util/buildIdUtils.js';
+} from '#shared/domain/lore/lore.type.js';
+import { loreToMetadata, metadataToLore } from '#shared/util/dbConvertUtils.js';
+import { buildLoreId, buildLoreIndexId } from '#shared/util/buildIdUtils.js';
 import { validateChromaResponse, handleServiceError } from '../util/serviceHelpers.js';
 import { FilterCriteria } from '../util/schemaUtils.js';
 import { reRankSemanticResults } from '../util/queryUtils.js';
+import { loreToDocument } from '#shared/util/documentUtils.js';
 
 // Destructure chromaDbClient methods
-const { getLoreCollection, upsertRecords, getRecords, getRecordById, queryRecords, deleteRecords } =
-	chromaDbClient;
+const {
+	getLoreCollection,
+	upsertRecord,
+	upsertRecords,
+	getRecords,
+	getRecordById,
+	queryRecords,
+	deleteRecords,
+} = chromaDbClient;
 const collectionType = COLLECTIONS.LORE;
 
 const emptyLoreRes: LoreResponse = {
@@ -32,15 +38,6 @@ const emptyLoreRes: LoreResponse = {
 	loreContent: '',
 	loreInfos: [],
 	loreContents: [],
-};
-const emptyHisRes: HistoryResponse = {
-	ids: [],
-	metadatas: [],
-	documents: [],
-	historyInfo: {} as HistoryInfo,
-	historyContent: '',
-	historyInfos: [],
-	historyContents: [],
 };
 
 export const loreStore = {
@@ -55,35 +52,119 @@ export const loreStore = {
 		return collection;
 	},
 
-	// --- LORE OPERATIONS ---
-	storeLore: async (loreInfo: LoreInfo): Promise<{ loreId: string }> => {
-		try {
-			const collection = await loreStore._getCollection();
-			const loreMetadata: LoreMetadata = {
-				type: METADATA_TYPES.LORE,
-				loreId: loreInfo.loreId || buildLoreId(loreInfo.loreId, loreInfo.category),
-				userId: loreInfo.userId,
-				createdAt: loreInfo.createdAt,
-				updatedAt: loreInfo.updatedAt,
-				title: loreInfo.title,
-				generatedTitle: loreInfo.generatedTitle,
-				category: loreInfo.category,
-				source: loreInfo.source,
-				summary: loreInfo.summary,
-			};
-			await upsertRecords(collection, [loreInfo.loreId], [loreInfo.content], [loreMetadata]);
-			await loreStore._updateSearchIndexForLore(loreInfo);
-			return { loreId: loreInfo.loreId };
-		} catch (error) {
-			handleServiceError(error, `Failed to store lore ${loreInfo.loreId}`);
+	/**
+	 * @private
+	 * Reconstructs rich LoreInfo objects from primary documents and their associated index records.
+	 * Following your chatStore pattern exactly.
+	 */
+	_constructLoreIndexes: async (loreIds: string[]): Promise<Metadata[]> => {
+		const collection = await loreStore._getCollection();
+		const rawIndexResults = await getRecords(collection, { loreId: { $in: loreIds } });
+		const indexResults = validateChromaResponse(rawIndexResults, 'getList', collectionType);
+		return indexResults.metadatas.filter((m) => !!m);
+	},
+
+	/**
+	 * @private
+	 * Reconstructs rich LoreInfo objects from primary documents and their associated index records.
+	 * Following your chatStore _constructFullChatTurns pattern exactly.
+	 */
+	_constructFullLores(
+		loreMetadatas: (Metadata | null)[],
+		allIndexRecords: (Metadata | null)[]
+	): LoreInfo[] {
+		return (loreMetadatas as unknown as LoreMetadata[]).map((metadata) => {
+			// Find all index records that belong to this specific lore
+			const relatedIndexRecords = (allIndexRecords as unknown as LoreIndexMetadata[]).filter(
+				(record) => record.loreId === metadata.loreId
+			);
+			// Use the utility to "inflate" the rich object
+			return metadataToLore(metadata, '', relatedIndexRecords);
+		});
+	},
+
+	/**
+	 * @private
+	 * Creates or updates semantic-rich search index records for a given LoreInfo.
+	 * Following your chatStore _updateSearchIndexForTurn pattern exactly.
+	 */
+	_updateSearchIndexForLore: async (loreInfo: LoreInfo): Promise<void> => {
+		const collection = await loreStore._getCollection();
+
+		// Delete existing index entries
+		const oldIndexWhere: Where = {
+			$and: [{ type: { $eq: METADATA_TYPES.INDEX } }, { loreId: { $eq: loreInfo.loreId } }],
+		};
+		await collection.delete({ where: oldIndexWhere });
+
+		const newIndexRecords: { id: string; document: string; metadata: LoreIndexMetadata }[] = [];
+		const baseMetadata = {
+			type: METADATA_TYPES.INDEX,
+			loreId: loreInfo.loreId,
+			userId: loreInfo.userId,
+			category: loreInfo.category,
+			originalCreatedAt: loreInfo.createdAt,
+		};
+
+		// Enhanced context for richer semantic understanding
+		const loreContext = `Lore titled "${loreInfo.title}", category: ${loreInfo.category}. Summary: ${loreInfo.summary}. Content: ${loreInfo.content.slice(0, 200)}...`;
+
+		// Create semantic-searchable documents for different content types
+		const createSemanticIndexRecords = (
+			list: string[],
+			contentType: LoreIndexContentType,
+			contextDescription: string
+		) => {
+			if (!list || list.length === 0) return;
+
+			list.forEach((value) => {
+				if (!value || value.trim() === '') return;
+
+				// Create rich document content for semantic search
+				const semanticDocument = `${contextDescription}: "${value}". ${loreContext}`;
+
+				newIndexRecords.push({
+					id: buildLoreIndexId(loreInfo.loreId, contentType),
+					document: semanticDocument,
+					metadata: { ...baseMetadata, contentType, value: value.trim() },
+				});
+			});
+		};
+
+		// Create semantic index records with rich context
+		createSemanticIndexRecords(
+			loreInfo.characterIds,
+			'AFFECTED_CHARACTER',
+			'Character associated with this lore'
+		);
+		createSemanticIndexRecords(
+			loreInfo.keywordList,
+			'KEYWORD',
+			'Key concept or important term in this lore'
+		);
+		createSemanticIndexRecords(loreInfo.topicList, 'TOPIC', 'Main topic or theme of this lore');
+		createSemanticIndexRecords(
+			loreInfo.entityList,
+			'ENTITY',
+			'Person, place, or thing mentioned in this lore'
+		);
+
+		// Batch upsert the enriched index records
+		if (newIndexRecords.length > 0) {
+			await chromaDbClient.upsertRecords(
+				collection,
+				newIndexRecords.map((r) => r.id),
+				newIndexRecords.map((r) => r.document),
+				newIndexRecords.map((r) => r.metadata)
+			);
 		}
 	},
 
 	/**
 	 * @private
-	 * Dynamically builds a ChromaDB 'where' clause to filter LORE/HISTORY index documents.
+	 * Builds ChromaDB 'where' clause to filter lore index documents by search criteria
 	 */
-	_buildIndexWhereClause(characterId: string, criteria: FilterCriteria): Where | undefined {
+	_buildIndexWhereClause(characterIds: string[], criteria: FilterCriteria): Where | undefined {
 		const orConditions: Where[] = [];
 
 		const addConditions = (list: string[] | undefined, type: LoreIndexContentType) => {
@@ -108,114 +189,97 @@ export const loreStore = {
 		return {
 			$and: [
 				{ type: { $eq: METADATA_TYPES.INDEX } },
-				{ characterId: { $eq: characterId } },
-				{ $or: orConditions },
+				{
+					$or: [
+						{ value: { $in: characterIds } }, // Match any character in the list
+						{ $or: orConditions },
+					],
+				},
 			],
 		};
 	},
 
-	_updateSearchIndexForLore: async (loreInfo: LoreInfo): Promise<void> => {
-		const collection = await loreStore._getCollection();
-		const oldIndexWhere: Where = {
-			$and: [{ type: { $eq: METADATA_TYPES.INDEX } }, { contentId: { $eq: loreInfo.loreId } }],
-		};
-		await collection.delete({ where: oldIndexWhere });
+	// --- LORE OPERATIONS ---
+	storeLore: async (loreInfo: LoreInfo): Promise<{ loreId: string }> => {
+		try {
+			const collection = await loreStore._getCollection();
 
-		const newIndexRecords: { id: string; document: string; metadata: LoreIndexMetadata }[] = [];
-		const baseMetadata = {
-			type: METADATA_TYPES.INDEX,
-			contentId: loreInfo.loreId,
-			characterId: loreInfo.characterId,
-		};
+			// 1. Convert rich LoreInfo to lean metadata (following new structure)
+			const loreMetadata = loreToMetadata(loreInfo);
 
-		const createIndexRecords = (
-			list: string[],
-			contentType: LoreIndexContentType,
-			contextDescription: string
-		) => {
-			if (!list || list.length === 0) return;
-			for (const value of list) {
-				if (!value || value.trim() === '') continue;
-				const semanticDocument = `${contextDescription}: "${value}". From lore titled "${loreInfo.title}", summarized as: ${loreInfo.summary}`;
-				newIndexRecords.push({
-					id: buildLoreIndexId(loreInfo.loreId, contentType), // Unique ID per value
-					document: semanticDocument,
-					metadata: { ...baseMetadata, contentType, value },
-				});
-			}
-		};
+			// 2. Create document for semantic search
+			const document = loreToDocument(loreInfo);
 
-		createIndexRecords(loreInfo.keywordList, 'KEYWORD', 'Key concept');
-		createIndexRecords(loreInfo.topicList, 'TOPIC', 'Main topic');
-		createIndexRecords(loreInfo.entityList, 'ENTITY', 'Mentioned entity');
-		createIndexRecords(
-			loreInfo.allAffectedCharacterIdList,
-			'AFFECTED_CHARACTER',
-			'Affected character'
-		);
+			// 3. Store primary document (lean metadata + semantic document)
+			await upsertRecord(collection, loreInfo.loreId, document, loreMetadata);
 
-		if (newIndexRecords.length > 0) {
-			await upsertRecords(
-				collection,
-				newIndexRecords.map((r) => r.id),
-				newIndexRecords.map((r) => r.document),
-				newIndexRecords.map((r) => r.metadata)
-			);
+			// 4. Update the denormalized search index for this lore (following your chatStore pattern)
+			await loreStore._updateSearchIndexForLore(loreInfo);
+
+			return { loreId: loreInfo.loreId };
+		} catch (error) {
+			handleServiceError(error, `Failed to store lore ${loreInfo.loreId}`);
 		}
 	},
 
 	/**
 	 * Retrieves a single, fully reconstructed Lore object by its ID.
-	 * @param loreId The unique identifier for the lore.
-	 * @returns A LoreResponse containing the single lore object.
+	 * Following your chatStore getChatTurn pattern exactly.
 	 */
-	async getLore(loreId: string): Promise<LoreResponse> {
+	getLore: async (loreId: string): Promise<LoreResponse> => {
 		try {
 			const collection = await loreStore._getCollection();
 
-			// 1. Fetch the primary LORE document by its unique ID.
-			const rawLoreResult = await getRecordById(collection, loreId);
-			const primaryLoreResult = validateChromaResponse(rawLoreResult, 'getOne', collectionType);
+			// 1. Fetch the primary lore document and all its index records in one go.
+			const loreAndIndexDocsResponse = await getRecords(collection, { loreId: { $eq: loreId } });
 
-			// If no document is found, return the empty response immediately.
-			if (primaryLoreResult.ids.length === 0) {
+			const allDocs = validateChromaResponse(loreAndIndexDocsResponse, 'getList', collectionType);
+			if (allDocs.ids.length === 0) {
 				console.warn(`[getLore] No lore document found with ID: ${loreId}`);
 				return emptyLoreRes;
 			}
 
-			const loreMetadata = primaryLoreResult.metadatas?.[0] || {};
-			const loreDocument = primaryLoreResult.documents[0] || '';
+			// 2. Partition the results into the primary lore and its index records.
+			let primaryLoreDoc: { id: string; document: string | null; metadata: Metadata | null } | null =
+				null;
+			const indexRecords: Metadata[] = [];
 
-			// 2. Fetch all associated LORE_INDEX records for this specific loreId.
-			const indexWhereClause: Where = {
-				$and: [
-					{ type: { $eq: METADATA_TYPES.LORE } },
-					{ contentId: { $eq: loreId } }, // Direct match, more efficient than $in
-				],
-			};
-			const rawIndexResults = await getRecords(collection, indexWhereClause);
-			const indexResults = validateChromaResponse(rawIndexResults, 'getList', collectionType);
-			const indexMetadatas = (indexResults.metadatas || []) as unknown as LoreIndexMetadata[];
+			// Use a standard 'for' loop to avoid closure-related type inference issues.
+			for (let i = 0; i < allDocs.metadatas.length; i++) {
+				const metadata = allDocs.metadatas[i];
+				if (metadata) {
+					if (metadata.type === METADATA_TYPES.WORLD || metadata.type === METADATA_TYPES.LORE) {
+						primaryLoreDoc = { id: allDocs.ids[i], document: allDocs.documents[i], metadata: metadata };
+					} else if (metadata.type === METADATA_TYPES.INDEX) {
+						indexRecords.push(metadata);
+					}
+				}
+			}
 
-			// 3. Reconstruct the single, rich Lore object.
-			const loreInfo: LoreInfo = metadataToLore(
-				loreMetadata as unknown as LoreMetadata,
-				loreDocument,
-				indexMetadatas
+			// Ensure the primary lore document was actually found.
+			if (!primaryLoreDoc || !primaryLoreDoc.metadata) {
+				console.warn(`[getLore] Primary lore data for ID '${loreId}' is missing or corrupt.`);
+				return emptyLoreRes;
+			}
+
+			// 3. Reconstruct the single full, rich object.
+			const loreInfo = metadataToLore(
+				primaryLoreDoc.metadata as unknown as LoreMetadata,
+				primaryLoreDoc.document || '',
+				indexRecords as unknown as LoreIndexMetadata[]
 			);
 
-			// 4. Return the response object populated with the single lore.
+			// 4. Return the complete LoreResponse object for the single lore.
 			return {
-				ids: [loreInfo.loreId],
-				metadatas: [loreMetadata],
-				documents: [loreDocument], // Or include index documents if needed
+				ids: [primaryLoreDoc.id],
+				documents: [primaryLoreDoc.document],
+				metadatas: [primaryLoreDoc.metadata],
 				loreInfos: [loreInfo],
 				loreInfo: loreInfo,
 				loreContent: loreInfo.content,
 				loreContents: [loreInfo.content],
 			};
 		} catch (error) {
-			// Handle other potential errors.
 			handleServiceError(
 				error,
 				'An internal error occurred in [getLore].',
@@ -225,66 +289,126 @@ export const loreStore = {
 		}
 	},
 
-	getLores: async (characterId: string): Promise<LoreResponse> => {
+	/**
+	 * Get all lores for specific character(s) by searching index records
+	 */
+	getLoresByCharacter: async (characterIds: string | string[]): Promise<LoreResponse> => {
 		try {
 			const collection = await loreStore._getCollection();
-			const where: Where = {
-				$and: [{ type: { $eq: METADATA_TYPES.LORE } }, { characterId: { $eq: characterId } }],
-			};
+			const charIdArray = Array.isArray(characterIds) ? characterIds : [characterIds];
 
-			// 1. Fetch primary LORE documents.
-			const loreResults = await getRecords(collection, where);
-			const lorePrimaryDocs = validateChromaResponse(loreResults, 'getList', collectionType);
-			if (lorePrimaryDocs.ids.length === 0) return emptyLoreRes;
-
-			// 2. Fetch all index records for the found lores.
-			const contentIds = lorePrimaryDocs.ids;
+			// 1. Find lores that have these characters in their index records
 			const indexWhere: Where = {
-				$and: [{ type: { $eq: METADATA_TYPES.INDEX } }, { contentId: { $in: contentIds } }],
+				$and: [
+					{ type: { $eq: METADATA_TYPES.INDEX } },
+					{ contentType: { $eq: 'AFFECTED_CHARACTER' } },
+					{ value: { $in: charIdArray } },
+				],
 			};
-			const indexResults = await getRecords(collection, indexWhere);
-			const allIndexRecords = validateChromaResponse(indexResults, 'getList', collectionType);
 
-			// 3. Reconstruct full rich objects.
-			const loreInfos = lorePrimaryDocs.metadatas.map((metadata, i) => {
-				const relatedIndexMetadatas = allIndexRecords.metadatas.filter(
-					(record) => !!record && record.contentId === (metadata as unknown as LoreMetadata).loreId
-				);
-				return metadataToLore(
-					metadata as unknown as LoreMetadata,
-					lorePrimaryDocs.documents[i] || '',
-					relatedIndexMetadatas as unknown as LoreIndexMetadata[]
-				);
-			});
+			const rawIndexResults = await getRecords(collection, indexWhere);
+			const indexResults = validateChromaResponse(rawIndexResults, 'getList', collectionType);
+
+			if (indexResults.ids.length === 0) return emptyLoreRes;
+
+			// 2. Get unique loreIds from index records
+			const loreIds = [
+				...new Set(
+					indexResults.metadatas.map((m) => (m as unknown as LoreIndexMetadata).loreId).filter(Boolean)
+				),
+			];
+
+			// 3. Fetch each lore with complete reconstruction
+			const lorePromises = loreIds.map((loreId) => loreStore.getLore(loreId));
+			const loreResponses = await Promise.all(lorePromises);
+
+			// 4. Combine results
+			const allLoreInfos = loreResponses
+				.filter((response) => response.loreInfos.length > 0)
+				.flatMap((response) => response.loreInfos);
+
+			if (allLoreInfos.length === 0) return emptyLoreRes;
 
 			return {
-				ids: lorePrimaryDocs.ids,
-				metadatas: lorePrimaryDocs.metadatas,
-				documents: lorePrimaryDocs.documents,
-				loreInfos,
-				loreInfo: loreInfos[0] || null,
-				loreContent: loreInfos[0]?.content || '',
-				loreContents: loreInfos.map((l) => l.content),
+				ids: allLoreInfos.map((l) => l.loreId),
+				metadatas: allLoreInfos.map((l) => loreToMetadata(l)),
+				documents: allLoreInfos.map((l) => l.content),
+				loreInfos: allLoreInfos,
+				loreInfo: allLoreInfos[0],
+				loreContent: allLoreInfos[0]?.content || '',
+				loreContents: allLoreInfos.map((l) => l.content),
 			};
 		} catch (error) {
-			handleServiceError(error, `Failed to get lores for character ${characterId}`);
-			return emptyLoreRes; // Ensure a valid response is always returned
+			handleServiceError(error, `Failed to get lores for characters ${characterIds}`);
+			return emptyLoreRes;
+		}
+	},
+
+	/**
+	 * Get world lores (category = 'World')
+	 */
+	getWorldLores: async (userId?: string): Promise<LoreResponse> => {
+		try {
+			const collection = await loreStore._getCollection();
+
+			const whereConditions: Where[] = [
+				{ type: { $eq: METADATA_TYPES.WORLD } }, // World lore type
+				{ category: { $eq: 'World' } },
+			];
+
+			if (userId) {
+				whereConditions.push({ userId: { $eq: userId } });
+			}
+
+			const where: Where = { $and: whereConditions };
+
+			const rawResults = await getRecords(collection, where);
+			const results = validateChromaResponse(rawResults, 'getList', collectionType);
+
+			if (results.ids.length === 0) return emptyLoreRes;
+
+			// Reconstruct each world lore with its index records
+			const worldLorePromises = results.ids.map((loreId) => loreStore.getLore(loreId));
+			const worldLoreResponses = await Promise.all(worldLorePromises);
+
+			const allWorldLores = worldLoreResponses
+				.filter((response) => response.loreInfos.length > 0)
+				.flatMap((response) => response.loreInfos);
+
+			return {
+				ids: allWorldLores.map((l) => l.loreId),
+				metadatas: allWorldLores.map((l) => loreToMetadata(l)),
+				documents: allWorldLores.map((l) => l.content),
+				loreInfos: allWorldLores,
+				loreInfo: allWorldLores[0] || ({} as LoreInfo),
+				loreContent: allWorldLores[0]?.content || '',
+				loreContents: allWorldLores.map((l) => l.content),
+			};
+		} catch (error) {
+			handleServiceError(error, `Failed to get world lores for user ${userId}`);
+			return emptyLoreRes;
 		}
 	},
 
 	/**
 	 * Deletes a lore document and all its associated index entries.
-	 * @param loreId The unique identifier of the lore to delete.
 	 */
 	deleteLore: async (loreId: string): Promise<void> => {
 		try {
 			const collection = await loreStore._getCollection();
 			console.log(`[LoreStore] Deleting lore and all associated indexes for loreId: ${loreId}`);
 
-			// This where clause targets both the primary LORE document (via its unique `loreId` field)
-			// and all its associated INDEX documents (via the `contentId` field).
+			// Delete primary document and all index records
 			const whereFilter: Where = {
-				$or: [{ loreId: { $eq: loreId } }, { contentId: { $eq: loreId } }],
+				$or: [
+					{ loreId: { $eq: loreId } }, // Primary document
+					{
+						$and: [
+							{ type: { $eq: METADATA_TYPES.INDEX } },
+							{ loreId: { $eq: loreId } }, // Index records
+						],
+					},
+				],
 			};
 
 			await deleteRecords(collection, undefined, whereFilter);
@@ -294,257 +418,51 @@ export const loreStore = {
 		}
 	},
 
-	// --- HISTORY OPERATIONS (Corrected and aligned with Lore) ---
-	storeHistory: async (historyInfo: HistoryInfo): Promise<{ historyId: string }> => {
-		try {
-			const collection = await loreStore._getCollection();
-			const historyMetadata: HistoryMetadata = {
-				type: METADATA_TYPES.HISTORY,
-				historyId:
-					historyInfo.historyId || buildHistoryId(historyInfo.characterId, historyInfo.periodLabel),
-				characterId: historyInfo.characterId,
-				userId: historyInfo.userId,
-				profileId: historyInfo.profileId,
-				createdAt: historyInfo.createdAt,
-				updatedAt: historyInfo.updatedAt,
-				title: historyInfo.title,
-				generatedTitle: historyInfo.generatedTitle,
-				category: historyInfo.category,
-				summary: historyInfo.summary,
-				periodLabel: historyInfo.periodLabel,
-				eventDateValue: historyInfo.eventDateValue,
-				eventDateType: historyInfo.eventDateType,
-			};
-			await upsertRecords(
-				collection,
-				[historyInfo.historyId],
-				[historyInfo.content],
-				[historyMetadata]
-			);
-			await loreStore._updateSearchIndexForHistory(historyInfo);
-			return { historyId: historyInfo.historyId };
-		} catch (error) {
-			handleServiceError(error, `Failed to store history ${historyInfo.historyId}`);
-		}
-	},
-
-	_updateSearchIndexForHistory: async (historyInfo: HistoryInfo): Promise<void> => {
-		const collection = await loreStore._getCollection();
-		const oldIndexWhere: Where = {
-			$and: [{ type: { $eq: METADATA_TYPES.INDEX } }, { contentId: { $eq: historyInfo.historyId } }],
-		};
-		await collection.delete({ where: oldIndexWhere });
-
-		const newIndexRecords: { id: string; document: string; metadata: LoreIndexMetadata }[] = [];
-		const baseMetadata = {
-			type: METADATA_TYPES.INDEX,
-			contentId: historyInfo.historyId,
-			characterId: historyInfo.characterId,
-		};
-
-		const createIndexRecords = (
-			list: any[],
-			contentType: LoreIndexContentType,
-			contextDescription: string
-		) => {
-			if (!list || list.length === 0) return;
-			for (const item of list) {
-				const value = typeof item === 'string' ? item : JSON.stringify(item);
-				if (!value || value.trim() === '') continue;
-				const semanticDocument = `${contextDescription}: "${value}". From history event titled "${historyInfo.title}", summarized as: ${historyInfo.summary}`;
-				newIndexRecords.push({
-					id: buildLoreIndexId(historyInfo.historyId, contentType),
-					document: semanticDocument,
-					metadata: { ...baseMetadata, contentType, value },
-				});
-			}
-		};
-
-		createIndexRecords(historyInfo.keywordList, 'KEYWORD', 'Key concept');
-		createIndexRecords(historyInfo.topicList, 'TOPIC', 'Main topic');
-		createIndexRecords(historyInfo.entityList, 'ENTITY', 'Mentioned entity');
-		createIndexRecords(
-			historyInfo.allAffectedCharacterIdList,
-			'AFFECTED_CHARACTER',
-			'Affected character'
-		);
-		createIndexRecords(historyInfo.relatedEventList, 'RELATED_EVENT', 'Related event');
-
-		if (newIndexRecords.length > 0) {
-			await upsertRecords(
-				collection,
-				newIndexRecords.map((r) => r.id),
-				newIndexRecords.map((r) => r.document),
-				newIndexRecords.map((r) => r.metadata)
-			);
-		}
-	},
-
-	/**
-	 * Retrieves a single, fully reconstructed Lore object by its ID.
-	 * @param historyId The unique identifier for the lore.
-	 * @returns A LoreResponse containing the single lore object.
-	 */
-	async getHistory(historyId: string): Promise<HistoryResponse> {
-		try {
-			const collection = await loreStore._getCollection();
-
-			// 1. Fetch the primary LORE document by its unique ID.
-			const rawHisResult = await getRecordById(collection, historyId);
-			const primaryHisResult = validateChromaResponse(rawHisResult, 'getOne', collectionType);
-
-			// If no document is found, return the empty response immediately.
-			if (primaryHisResult.ids.length === 0) {
-				console.warn(`[getLore] No lore document found with ID: ${historyId}`);
-				return emptyHisRes;
-			}
-
-			const hisMetadata = primaryHisResult.metadatas?.[0] || {};
-			const hisDocument = primaryHisResult.documents[0] || '';
-
-			// 2. Fetch all associated LORE_INDEX records for this specific loreId.
-			const indexWhereClause: Where = {
-				$and: [
-					{ type: { $eq: METADATA_TYPES.HISTORY } },
-					{ contentId: { $eq: historyId } }, // Direct match, more efficient than $in
-				],
-			};
-			const rawIndexResults = await getRecords(collection, indexWhereClause);
-			const indexResults = validateChromaResponse(rawIndexResults, 'getList', collectionType);
-			const indexMetadatas = (indexResults.metadatas || []) as unknown as LoreIndexMetadata[];
-
-			// 3. Reconstruct the single, rich Lore object.
-			const historyInfo: HistoryInfo = metadataToHistory(
-				hisMetadata as unknown as HistoryMetadata,
-				hisDocument,
-				indexMetadatas
-			);
-
-			// 4. Return the response object populated with the single lore.
-			return {
-				ids: [historyInfo.historyId],
-				metadatas: [hisMetadata],
-				documents: [hisDocument], // Or include index documents if needed
-				historyInfos: [historyInfo],
-				historyInfo: historyInfo,
-				historyContent: historyInfo.content,
-				historyContents: [historyInfo.content],
-			};
-		} catch (error) {
-			// Handle other potential errors.
-			handleServiceError(
-				error,
-				'An internal error occurred in [getLore].',
-				`Failed to get lore for ID ${historyId}`,
-				{ suppress404: true }
-			);
-		}
-	},
-
-	getHistories: async (characterId: string): Promise<HistoryResponse> => {
-		try {
-			const collection = await loreStore._getCollection();
-			const where: Where = {
-				$and: [{ type: { $eq: METADATA_TYPES.HISTORY } }, { characterId: { $eq: characterId } }],
-			};
-			const historyResults = await getRecords(collection, where);
-			const historyPrimaryDocs = validateChromaResponse(historyResults, 'getList', collectionType);
-			if (historyPrimaryDocs.ids.length === 0) return emptyHisRes;
-
-			const contentIds = historyPrimaryDocs.ids;
-			const indexWhere: Where = {
-				$and: [{ type: { $eq: METADATA_TYPES.INDEX } }, { contentId: { $in: contentIds } }],
-			};
-			const indexResults = await getRecords(collection, indexWhere);
-			const allIndexRecords = validateChromaResponse(indexResults, 'getList', collectionType);
-
-			const historyInfos = historyPrimaryDocs.metadatas.map((metadata, i) => {
-				const relatedIndexMetadatas = allIndexRecords.metadatas.filter(
-					(record) => !!record && record.contentId === (metadata as unknown as HistoryMetadata).historyId
-				);
-				return metadataToHistory(
-					metadata as unknown as HistoryMetadata,
-					historyPrimaryDocs.documents[i] || '',
-					relatedIndexMetadatas as unknown as LoreIndexMetadata[]
-				);
-			});
-
-			return {
-				ids: historyPrimaryDocs.ids,
-				metadatas: historyPrimaryDocs.metadatas,
-				documents: historyPrimaryDocs.documents,
-				historyInfos,
-				historyInfo: historyInfos[0] || null,
-				historyContent: historyInfos[0]?.content || '',
-				historyContents: historyInfos.map((h) => h.content),
-			};
-		} catch (error) {
-			handleServiceError(error, `Failed to get histories for character ${characterId}`);
-		}
-	},
-
-	/**
-	 * Deletes a history document and all its associated index entries.
-	 * @param historyId The unique identifier of the history to delete.
-	 */
-	deleteHistory: async (historyId: string): Promise<void> => {
-		try {
-			const collection = await loreStore._getCollection();
-			console.log(
-				`[LoreStore] Deleting history and all associated indexes for historyId: ${historyId}`
-			);
-
-			// This where clause targets both the primary HISTORY document (via its unique `historyId` field)
-			// and all its associated INDEX documents (via the `contentId` field).
-			const whereFilter: Where = {
-				$or: [{ historyId: { $eq: historyId } }, { contentId: { $eq: historyId } }],
-			};
-
-			await deleteRecords(collection, undefined, whereFilter);
-			console.log(`[LoreStore] Successfully deleted history and indexes for historyId: ${historyId}`);
-		} catch (error) {
-			handleServiceError(error, `Failed to delete history ${historyId}`);
-		}
-	},
-
-	// --- QUERY OPERATIONS ---
 	/**
 	 * [For Backend RAG] Performs a hybrid semantic/metadata search for Lore entries.
 	 */
-	async queryLores(
-		characterId: string,
+	queryLores: async (
+		characterIds: string | string[],
 		queryTexts: string[],
 		filterCriteria?: FilterCriteria,
 		whereDocument?: WhereDocument,
 		limit?: number
-	): Promise<LoreResponse> {
+	): Promise<LoreResponse> => {
 		try {
 			const collection = await loreStore._getCollection();
+			const charIdArray = Array.isArray(characterIds) ? characterIds : [characterIds];
 			let contentIdsToSearch: string[] | undefined = undefined;
 
+			// 1. Apply filter criteria to narrow down search space
 			if (filterCriteria && Object.keys(filterCriteria).length > 0) {
-				const indexWhereFilter = loreStore._buildIndexWhereClause(characterId, filterCriteria);
+				const indexWhereFilter = loreStore._buildIndexWhereClause(charIdArray, filterCriteria);
 				if (indexWhereFilter) {
 					const indexResults = await getRecords(collection, indexWhereFilter);
 					const validatedIndexes = validateChromaResponse(indexResults, 'getList', collectionType);
 					contentIdsToSearch = [
-						...new Set(
-							validatedIndexes.metadatas.map((m) => (m as unknown as LoreIndexMetadata).contentId)
-						),
+						...new Set(validatedIndexes.metadatas.map((m) => (m as unknown as LoreIndexMetadata).loreId)),
 					];
 					if (contentIdsToSearch.length === 0) return emptyLoreRes;
 				}
 			}
 
+			// 2. Build query conditions for primary documents
 			const queryConditions: Where[] = [
-				{ type: { $eq: METADATA_TYPES.LORE } },
-				{ characterId: { $eq: characterId } },
+				{
+					$or: [
+						{ type: { $eq: METADATA_TYPES.WORLD } }, // World lore
+						{ type: { $eq: METADATA_TYPES.LORE } }, // Misc lore
+					],
+				},
 			];
+
 			if (contentIdsToSearch) {
 				queryConditions.push({ loreId: { $in: contentIdsToSearch } });
 			}
+
 			const queryWhere: Where = { $and: queryConditions };
 
+			// 3. Perform semantic search
 			const searchLimit = limit ? Math.min(limit * 3, 50) : 30;
 			const queryResults = await queryRecords(
 				collection,
@@ -557,6 +475,7 @@ export const loreStore = {
 				validateChromaResponse(r, 'getList', collectionType)
 			);
 
+			// 4. Rank and limit results
 			const rankedResults = reRankSemanticResults(validatedQueryResults, limit, {
 				semanticWeight: 0.5,
 				recencyWeight: 0.5,
@@ -565,126 +484,32 @@ export const loreStore = {
 
 			if (rankedResults.ids.length === 0) return emptyLoreRes;
 
-			const finalContentIds = rankedResults.ids;
-			const allIndexResult = await getRecords(collection, { contentId: { $in: finalContentIds } });
-			const validatedIndexes = validateChromaResponse(allIndexResult, 'getList', collectionType);
+			// 5. Reconstruct full objects with index records
+			const lorePromises = rankedResults.ids.map((loreId) => loreStore.getLore(loreId));
+			const loreResponses = await Promise.all(lorePromises);
 
-			const loreInfos = rankedResults.metadatas.map((metadata, i) => {
-				const relatedIndexMetadatas = validatedIndexes.metadatas.filter(
-					(record): record is Metadata =>
-						!!record && record.contentId === (metadata as unknown as LoreMetadata).loreId
-				);
-				return metadataToLore(
-					metadata as unknown as LoreMetadata,
-					rankedResults.documents[i] || '',
-					relatedIndexMetadatas as unknown as LoreIndexMetadata[]
-				);
-			});
+			const loreInfos = loreResponses
+				.filter((response) => response.loreInfos.length > 0)
+				.flatMap((response) => response.loreInfos)
+				.filter((lore) => {
+					// Filter by character involvement
+					return lore.characterIds.some((charId) => charIdArray.includes(charId));
+				});
 
 			return {
-				ids: rankedResults.ids,
-				metadatas: rankedResults.metadatas,
-				documents: rankedResults.documents,
+				ids: loreInfos.map((l) => l.loreId),
+				metadatas: loreInfos.map((l) => loreToMetadata(l)),
+				documents: loreInfos.map((l) => l.content),
 				loreInfos,
 				loreInfo: loreInfos[0] || ({} as LoreInfo),
 				loreContent: loreInfos[0]?.content || '',
 				loreContents: loreInfos.map((r) => r.content),
 			};
 		} catch (error) {
-			handleServiceError(error, `Failed to query lores for character ${characterId}`);
+			handleServiceError(error, `Failed to query lores for characters ${characterIds}`);
 			return emptyLoreRes;
 		}
 	},
-
-	/**
-	 * [For Backend RAG] Performs a hybrid semantic/metadata search for History entries.
-	 */
-	async queryHistories(
-		characterId: string,
-		queryTexts: string[],
-		filterCriteria?: FilterCriteria,
-		whereDocument?: WhereDocument,
-		limit?: number
-	): Promise<HistoryResponse> {
-		try {
-			const collection = await loreStore._getCollection();
-			let contentIdsToSearch: string[] | undefined = undefined;
-
-			if (filterCriteria && Object.keys(filterCriteria).length > 0) {
-				const indexWhereFilter = loreStore._buildIndexWhereClause(characterId, filterCriteria);
-				if (indexWhereFilter) {
-					const indexResults = await getRecords(collection, indexWhereFilter);
-					const validatedIndexes = validateChromaResponse(indexResults, 'getList', collectionType);
-					contentIdsToSearch = [
-						...new Set(
-							validatedIndexes.metadatas.map((m) => (m as unknown as LoreIndexMetadata).contentId)
-						),
-					];
-					if (contentIdsToSearch.length === 0) return emptyHisRes;
-				}
-			}
-
-			const queryConditions: Where[] = [
-				{ type: { $eq: METADATA_TYPES.HISTORY } },
-				{ characterId: { $eq: characterId } },
-			];
-			if (contentIdsToSearch) {
-				queryConditions.push({ historyId: { $in: contentIdsToSearch } });
-			}
-			const queryWhere: Where = { $and: queryConditions };
-
-			const searchLimit = limit ? Math.min(limit * 3, 50) : 30;
-			const queryResults = await queryRecords(
-				collection,
-				queryTexts,
-				queryWhere,
-				whereDocument,
-				searchLimit
-			);
-			const validatedQueryResults = queryResults.map((r) =>
-				validateChromaResponse(r, 'getList', collectionType)
-			);
-
-			const rankedResults = reRankSemanticResults(validatedQueryResults, limit, {
-				semanticWeight: 1.0,
-				recencyWeight: 0.0,
-				updatedAtField: 'updatedAt',
-			});
-
-			if (rankedResults.ids.length === 0) return emptyHisRes;
-
-			const finalContentIds = rankedResults.ids;
-			const allIndexResult = await getRecords(collection, { contentId: { $in: finalContentIds } });
-			const validatedIndexes = validateChromaResponse(allIndexResult, 'getList', collectionType);
-
-			const historyInfos = rankedResults.metadatas.map((metadata, i) => {
-				const relatedIndexMetadatas = validatedIndexes.metadatas.filter(
-					(record): record is Metadata =>
-						!!record && record.contentId === (metadata as unknown as HistoryMetadata).historyId
-				);
-				return metadataToHistory(
-					metadata as unknown as HistoryMetadata,
-					rankedResults.documents[i] || '',
-					relatedIndexMetadatas as unknown as LoreIndexMetadata[]
-				);
-			});
-
-			return {
-				ids: rankedResults.ids,
-				metadatas: rankedResults.metadatas,
-				documents: rankedResults.documents,
-				historyInfos,
-				historyInfo: historyInfos[0] || ({} as HistoryInfo),
-				historyContent: historyInfos[0]?.content || '',
-				historyContents: historyInfos.map((r) => r.content),
-			};
-		} catch (error) {
-			handleServiceError(error, `Failed to query histories for character ${characterId}`);
-			return emptyHisRes;
-		}
-	},
-
-	// --- UTILITY METHODS ---
 
 	/**
 	 * Clear collection cache

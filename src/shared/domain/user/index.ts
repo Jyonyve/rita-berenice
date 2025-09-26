@@ -1,1 +1,1 @@
-export * from './UserInterfaces.js';
+export * from './user.type.js';

@@ -1,1 +1,1 @@
-export * from './ChatInterfaces.js';
+export * from './chat.type.js';

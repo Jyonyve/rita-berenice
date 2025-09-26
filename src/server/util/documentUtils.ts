@@ -1,13 +1,14 @@
-import { ChatEntry, ChatMessage, ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
-import { CharacterDocument, CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
-import { HistoryInfo, LoreInfo } from '#shared/domain/lore/LoreInterfaces.js';
+import { ChatEntry, ChatMessage, ChatTurn } from '#shared/domain/chat/chat.type.js';
+import { CharacterDocument, CharacterInfo } from '#shared/domain/character/character.type.js';
+import { LoreInfo } from '#shared/src/shared/domain/lore/lore.type.js';
 import { RecapInfo } from '#shared/domain/recap/RecapInterfaces.js';
-import { TermDocument, TermType } from '#shared/domain/term/TermInterfaces.js';
-import { UserDocument, UserInfo } from '#shared/domain/user/UserInterfaces.js';
-import { ProfileDocument, ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
-import { SessionDocument, SessionInfo } from '#shared/domain/session/SessionInterfaces.js';
+import { TermDocument, TermType } from '#shared/domain/term/term.type.js';
+import { UserDocument, UserInfo } from '#shared/domain/user/user.type.js';
+import { ProfileDocument, ProfileInfo } from '#shared/domain/profile/profile.type.js';
+import { SessionDocument, SessionInfo } from '#shared/domain/session/session.type.js';
 import { parseConversationToEntries, parseEntriesToConversation } from './chatParseUtils.js';
 import { Term } from '#shared/api/ModuleResponse.js';
+import { HistoryInfo } from '#shared/src/shared/domain/history/history.type.js';
 
 export const flatChatMessageToDoc = (entries: ChatEntry[]) => {
 	return parseEntriesToConversation(entries).trim();
@@ -50,8 +51,12 @@ export const inflateProfileDoc = (document: string): ProfileDocument => {
 	return { description: parsed.description };
 };
 
-export const loreOrHistoryToDocument = (lore: LoreInfo | HistoryInfo): string => {
+export const loreToDocument = (lore: LoreInfo): string => {
 	return `Title: ${lore.title}\nSummary: ${lore.summary}\n\n${lore.content}`;
+};
+
+export const historyToDocument = (history: HistoryInfo): string => {
+	return `Title: ${history.title}\nSummary: ${history.summary}\n\n${history.content}`;
 };
 
 export const flatTermToDoc = (term: Term) => {
@@ -75,13 +80,16 @@ export const recapToDocument = (recap: RecapInfo) => {
 };
 
 export const flatSessionToDoc = (session: SessionInfo) => {
-	const document: SessionDocument = { lastCharMessage: session.lastCharMessage };
+	const document: SessionDocument = {
+		lastCharMessage: session.lastCharMessage,
+		userNote: session.userNote,
+	};
 	return JSON.stringify(document).trim();
 };
 
 export const inflateSessionDoc = (document: string): SessionDocument => {
 	const parsed = JSON.parse(document);
-	return { lastCharMessage: parsed.lastCharMessage };
+	return { lastCharMessage: parsed.lastCharMessage, userNote: parsed.userNote };
 };
 
 export const flatUserToDoc = (user: UserInfo) => {

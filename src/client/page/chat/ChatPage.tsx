@@ -6,9 +6,9 @@ import { UserInput } from './UserInput.jsx';
 
 // MUI Components
 import { DEFAULT_EMOTION } from '#shared/config/emotionConstants.js';
-import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
-import { ChatTurnCdo, TempChatTurn, TempChatTurnCdo } from '#shared/domain/chat/ChatInterfaces.js';
-import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { CharacterInfo } from '#shared/domain/character/character.type.js';
+import { ChatTurnCdo, TempChatTurn, TempChatTurnCdo } from '#shared/domain/chat/chat.type.js';
+import { ProfileInfo } from '#shared/domain/profile/profile.type.js';
 import { Box, Grid, useMediaQuery, useTheme } from '@mui/material';
 import { useOrchestrationApi, useTempChatApi, useSessionApi } from '../../hook/api/index.js';
 import { useChatState } from '../../hook/state/useChatState.js';

@@ -6,7 +6,7 @@ import {
 	ProfileInfo,
 	ProfileMetadata,
 	ProfileCdo,
-} from '#shared/domain/profile/ProfileInterfaces.js';
+} from '#shared/domain/profile/profile.type.js';
 import { ChromaResponse, ProfileResponse } from '#shared/api/ModuleResponse.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import { buildProfileId } from '../../shared/util/buildIdUtils.js';

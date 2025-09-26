@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
-import { ProfileCdo, ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { ProfileCdo, ProfileInfo } from '#shared/domain/profile/profile.type.js';
 import { Payload } from '#shared/util/apiHelpers.js';
 import { ProfileResponse } from '#shared/api/ModuleResponse.js';
 

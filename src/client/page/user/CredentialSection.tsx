@@ -21,7 +21,7 @@ import { useForm, Controller, useWatch } from 'react-hook-form';
 import { GlassButton, GlassCard } from '../../layout/index.ts';
 import { useCredentialApi } from '../../hook/api/useCredentialApi.ts';
 import { useToast } from '../../provider/ToastProvider.tsx';
-import { UserApiKeys, ValidationResult } from '#shared/domain/credential/CredentialInterfaces.js';
+import { UserApiKeys, ValidationResult } from '#shared/domain/credential/credential.type.js';
 import { getLangAlertText, getLangText } from '../../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
 

@@ -1,4 +1,4 @@
-import { DisplayTurn, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { DisplayTurn, TempChatTurn } from '#shared/domain/chat/chat.type.js';
 import { FC } from 'react';
 import { FixedTurnDisplay } from './FixedTurnDisplay.jsx';
 import { TempTurnDisplay } from './TempTurnDisplay.jsx';

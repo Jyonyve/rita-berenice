@@ -3,7 +3,7 @@
 import { METADATA_TYPES, NA } from '#shared/config/constants.js';
 
 import { buildChatTurnMetadataPrompt } from '../util/templateUtils.js';
-import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { ChatTurn } from '#shared/domain/chat/chat.type.js';
 import { RecapInfo } from '#shared/domain/recap/RecapInterfaces.js';
 import { convertArrayToString, parseSessionId } from '#shared/util/parseUtils.js';
 import { MemoryResponse } from '#shared/api/ModuleResponse.js';
@@ -29,7 +29,7 @@ import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { DEFAULT_EMOTION } from '#shared/config/emotionConstants.js';
 import { logFlow } from '../util/jsonlLogger.js';
 import { LangCode } from '#shared/config/langConstants.js';
-import { HistoryInfo, LoreInfo } from '#shared/domain/lore/LoreInterfaces.js';
+import { HistoryInfo, LoreInfo } from '#shared/src/shared/domain/lore/lore.type.js';
 import { parseEntriesToConversation } from '../util/chatParseUtils.js';
 
 export const memoryEngine = {

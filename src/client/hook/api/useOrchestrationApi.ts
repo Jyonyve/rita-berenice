@@ -8,11 +8,11 @@ import {
 	ChatTurnCdo,
 	TempChatTurn,
 	TempChatTurnCdo,
-} from '#shared/domain/chat/ChatInterfaces.js';
+} from '#shared/domain/chat/chat.type.js';
 import { Payload } from '#shared/util/apiHelpers.js';
-import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import { CharacterInfo } from '#shared/domain/character/character.type.js';
 import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';
-import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { ProfileInfo } from '#shared/domain/profile/profile.type.js';
 
 /**
  * A client-side hook for interacting with the main ORCHESTRATION API endpoint,

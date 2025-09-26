@@ -1,1 +1,1 @@
-export * from './CharacterInterfaces.js';
+export * from './character.type.js';

@@ -1,1 +1,1 @@
-export * from './CredentialInterfaces.js';
+export * from './credential.type.js';

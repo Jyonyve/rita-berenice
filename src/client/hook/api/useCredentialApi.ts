@@ -4,7 +4,7 @@ import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelper
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { CredentialResponse } from '#shared/api/ModuleResponse.js';
 import { Payload } from '#shared/util/apiHelpers.js';
-import { UserApiKeys } from '#shared/domain/credential/CredentialInterfaces.js';
+import { UserApiKeys } from '#shared/domain/credential/credential.type.js';
 
 export const useCredentialApi = () => {
 	const MODULE_NAME = MODULE_NAMES.CREDENTIAL;

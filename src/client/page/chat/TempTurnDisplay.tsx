@@ -1,6 +1,6 @@
 // src/client/component/page/chat/TempTurnDisplay.tsx
 
-import { ChatMessageSet, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { ChatMessageSet, TempChatTurn } from '#shared/domain/chat/chat.type.js';
 import CancelIcon from '@mui/icons-material/Cancel';
 import EditIcon from '@mui/icons-material/Edit';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';

@@ -5,7 +5,7 @@ import express, { type Request, type Response } from 'express';
 import { Where } from 'chromadb';
 import { chatStore } from '../store/chatStore.js';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
-import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { ChatTurn } from '#shared/domain/chat/chat.type.js';
 import {
 	asyncHandler,
 	compressData,

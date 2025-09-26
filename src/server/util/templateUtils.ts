@@ -1,16 +1,16 @@
 // src/util/templateUtils.ts (or your path)
 
-import { BasicBeingInfo, CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
-import { ChatMessage, ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { BasicBeingInfo, CharacterInfo } from '#shared/domain/character/character.type.js';
+import { ChatMessage, ChatTurn } from '#shared/domain/chat/chat.type.js';
 import { convertArrayToString } from '#shared/util/parseUtils.js';
 import {
 	HistoryContext,
 	HistoryInfo,
 	LoreContext,
 	LoreInfo,
-} from '#shared/domain/lore/LoreInterfaces.js';
+} from '#shared/src/shared/domain/lore/lore.type.js';
 import { MemoryResponse } from '#shared/api/ModuleResponse.js';
-import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { ProfileInfo } from '#shared/domain/profile/profile.type.js';
 import { LangCode } from '#shared/config/langConstants.js';
 import { NA } from '#shared/config/constants.js';
 import { parseEntriesToConversation } from './chatParseUtils.js';

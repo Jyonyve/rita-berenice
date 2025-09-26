@@ -9,7 +9,7 @@ import {
 	ChatTurn,
 	ChatTurnMetadata,
 	DisplayTurn,
-} from '#shared/domain/chat/ChatInterfaces.js';
+} from '#shared/domain/chat/chat.type.js';
 import { chatTurnToDocument } from '#server/util/documentUtils.js';
 import { ApiError } from '#shared/domain/error/errors.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';

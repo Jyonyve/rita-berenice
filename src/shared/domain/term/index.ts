@@ -1,1 +1,1 @@
-export * from './TermInterfaces.js';
+export * from './term.type.js';

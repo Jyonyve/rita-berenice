@@ -2,7 +2,7 @@ import { Collection, IncludeEnum, Where } from 'chromadb';
 import { chromaDbClient } from '../db/chromaDbClient.js';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
-import { UserCdo, UserInfo, UserMetadata } from '#shared/domain/user/UserInterfaces.js';
+import { UserCdo, UserInfo, UserMetadata } from '#shared/domain/user/user.type.js';
 import { ChromaResponse, UserResponse } from '#shared/api/ModuleResponse.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import { metadataToUser } from '#shared/util/dbConvertUtils.js';

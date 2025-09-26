@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient, genApiUrl } from '../../util/clientApiHelpers.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
-import { UserCdo, UserInfo } from '#shared/domain/user/UserInterfaces.js';
+import { UserCdo, UserInfo } from '#shared/domain/user/user.type.js';
 import { UserResponse } from '#shared/api/ModuleResponse.js';
 
 export const useUserApi = () => {

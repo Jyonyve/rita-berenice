@@ -12,7 +12,7 @@ import {
 	validateRequestData,
 	validateServiceId,
 } from '../util/routeHelpers.js';
-import { HistoryInfo, LoreInfo } from '#shared/domain/lore/LoreInterfaces.js';
+import { HistoryInfo, LoreInfo } from '#shared/src/shared/domain/lore/lore.type.js';
 import { Payload } from '#shared/util/apiHelpers.js';
 
 const router = express.Router();

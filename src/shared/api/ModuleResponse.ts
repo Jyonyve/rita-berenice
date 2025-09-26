@@ -1,14 +1,14 @@
-import { HistoryInfo, LoreInfo } from '../domain/lore/LoreInterfaces.js';
+import { HistoryInfo, LoreInfo } from '../domain/lore/lore.type.ts';
 import { LangCode } from '../config/langConstants.js';
 import { EmotionValue } from '../config/emotionConstants.js';
-import { CharacterInfo } from '../domain/character/CharacterInterfaces.js';
-import { ChatTurn, TempChatTurn, DisplayTurn } from '../domain/chat/ChatInterfaces.js';
+import { CharacterInfo } from '../domain/character/character.type.ts';
+import { ChatTurn, TempChatTurn, DisplayTurn } from '../domain/chat/chat.type.ts';
 import { RecapInfo } from '../domain/recap/RecapInterfaces.js';
-import { SessionTermInfo, CharacterTermInfo } from '../domain/term/TermInterfaces.js';
-import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
-import { UserInfo } from '../domain/user/UserInterfaces.js';
-import { SessionInfo } from '../domain/session/SessionInterfaces.js';
-import { UserApiKeys, ValidationResult } from '../domain/credential/CredentialInterfaces.js';
+import { SessionTermInfo, CharacterTermInfo } from '../domain/term/term.type.ts';
+import { ProfileInfo } from '#shared/domain/profile/profile.type.js';
+import { UserInfo } from '../domain/user/user.type.ts';
+import { SessionInfo } from '../domain/session/session.type.js';
+import { UserApiKeys, ValidationResult } from '../domain/credential/credential.type.ts';
 
 export interface ApiErrorResponse {
 	status: 'error'; // Literal string to indicate an error response

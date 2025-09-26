@@ -1,7 +1,7 @@
 // src/client/components/profile/ProfileTabs.tsx
 
 import { LANG_KEYS } from '#shared/config/langConstants.js';
-import { ProfileCdo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { ProfileCdo } from '#shared/domain/profile/profile.type.js';
 import { Box, CardContent, Tab, Tabs } from '@mui/material';
 import { FC, useState } from 'react';
 import { GlassCard } from '../../layout/glass/index.js'; // Assuming GlassCard is here

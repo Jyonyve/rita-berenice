@@ -28,7 +28,7 @@ import { DEFAULT_EMOTION } from '#shared/config/emotionConstants.js';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
-import { ProfileCdo, ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { ProfileCdo, ProfileInfo } from '#shared/domain/profile/profile.type.js';
 import { ProfileForm } from '../character/ProfileForm.tsx';
 import { useResponsive } from '../../hook/useResponsive.js';
 

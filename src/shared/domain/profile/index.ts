@@ -1,1 +1,1 @@
-export * from './ProfileInterfaces.js';
+export * from './profile.type.js';

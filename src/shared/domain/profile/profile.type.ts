@@ -1,5 +1,5 @@
-import { METADATA_TYPES } from '../../config/constants.js';
-import { BeingMetadata } from '../character/CharacterInterfaces.js';
+import { METADATA_TYPES } from '../../config/constants.ts';
+import { BeingMetadata } from '../character/character.type.ts';
 
 export interface ProfileMetadata extends BeingMetadata {
 	profileId: string; //${userId}_${sessionId}

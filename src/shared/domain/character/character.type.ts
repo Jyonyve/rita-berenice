@@ -1,7 +1,7 @@
 // src/shared/domain/character/CharacterInterfaces.ts
 // if type is stored as metadata, it should be premitive type.
-import { GENDER_OPTION, METADATA_TYPES } from '../../config/constants.js';
-import { EmotionKey } from '../../config/emotionConstants.js';
+import { GENDER_OPTION, METADATA_TYPES } from '../../config/constants.ts';
+import { EmotionKey } from '../../config/emotionConstants.ts';
 
 export interface BeingMetadata {
 	name: string;

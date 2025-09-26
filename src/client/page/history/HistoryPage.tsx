@@ -1,6 +1,6 @@
 import { LANG_KEYS } from '#shared/config/langConstants.js';
-import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
-import { ProfileCdo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { CharacterInfo } from '#shared/domain/character/character.type.js';
+import { ProfileCdo } from '#shared/domain/profile/profile.type.js';
 import { Box, Grid, List, Typography } from '@mui/material';
 import { FC } from 'react';
 import { useNavigate } from 'react-router';
@@ -18,7 +18,7 @@ import { routeConstants } from '../../routeConstants.js';
 import { containerSpacing } from '../../style/index.js';
 import { getCharacterImageArray, getLoreImage } from '../../util/portraitUtils.js';
 import { getLangAlertText, getLangText } from '../../util/translateUtils.js';
-import { HistoryInfo } from '#shared/domain/lore/LoreInterfaces.js';
+import { HistoryInfo } from '#shared/src/shared/domain/lore/lore.type.js';
 
 const HistoryPage: FC<{ historyInfo: HistoryInfo; userId: string }> = ({ historyInfo, userId }) => {
 	const navigate = useNavigate();

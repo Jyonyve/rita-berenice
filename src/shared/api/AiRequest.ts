@@ -1,4 +1,4 @@
-import { ChatRoleType } from '../domain/chat/ChatInterfaces.js';
+import { ChatRoleType } from '../domain/chat/chat.type.ts';
 import { AiModelInfo } from '../domain/aimodel/AiInfoTypes.js';
 
 // Common message structure

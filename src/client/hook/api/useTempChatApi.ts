@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
-import { TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { TempChatTurn } from '#shared/domain/chat/chat.type.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { Payload } from '#shared/util/apiHelpers.js';
 import { TempChatResponse } from '#shared/api/ModuleResponse.js';

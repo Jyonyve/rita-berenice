@@ -1,4 +1,4 @@
-import { GENDER_OPTION, METADATA_TYPES } from '../../config/constants.js';
+import { GENDER_OPTION, METADATA_TYPES } from '../../config/constants.ts';
 
 /**
  * Metadata for a user document stored in ChromaDB.

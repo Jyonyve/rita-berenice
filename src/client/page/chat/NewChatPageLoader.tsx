@@ -1,7 +1,7 @@
 // src/client/page/ChatPageLoader.tsx
 
 import { DEFAULT_EMOTION } from '#shared/config/emotionConstants.js';
-import { ChatMessage, TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { ChatMessage, TempChatTurn } from '#shared/domain/chat/chat.type.js';
 import { buildMessageId } from '#shared/util/buildIdUtils.js';
 import { parseTextToEntries } from '../../util/chatParseUtils.js';
 import { Box, CircularProgress, Typography } from '@mui/material';
@@ -18,8 +18,8 @@ import { routeConstants } from '../../routeConstants.js';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
-import { ProfileCdo } from '#shared/domain/profile/ProfileInterfaces.js';
-import { SessionInfo } from '#shared/domain/session/SessionInterfaces.js';
+import { ProfileCdo } from '#shared/domain/profile/profile.type.js';
+import { SessionInfo } from '#shared/domain/session/session.type.js';
 
 export function NewChatPageLoader() {
 	const navigate = useNavigate();

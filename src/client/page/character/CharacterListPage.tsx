@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Typography, Box, Grid } from '@mui/material';
-import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import { CharacterInfo } from '#shared/domain/character/character.type.js';
 import { useNavigate } from 'react-router';
 import { GlassCard, GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
 import { RomanticTitle } from '../../layout/index.js';

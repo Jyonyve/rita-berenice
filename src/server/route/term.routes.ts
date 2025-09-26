@@ -15,7 +15,7 @@ import {
 	SessionTermInfo,
 	CharacterTermCdo,
 	CharacterTermInfo,
-} from '#shared/domain/term/TermInterfaces.js';
+} from '#shared/domain/term/term.type.js';
 
 const router = express.Router();
 const collectionType = COLLECTIONS.TERM;

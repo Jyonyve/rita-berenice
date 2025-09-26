@@ -11,7 +11,7 @@ import {
 	CharacterCdo,
 	CharacterInfo,
 	CharacterMetadata,
-} from '#shared/domain/character/CharacterInterfaces.js';
+} from '#shared/domain/character/character.type.js';
 import { createBasicCharacterInfo, isCharacterInfo } from '#shared/util/typeGuardUtils.js';
 
 const { getCharacterCollection, getRecordById, getRecords } = chromaDbClient;

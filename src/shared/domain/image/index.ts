@@ -1,1 +1,1 @@
-export * from './ImageInterfaces.js';
+export * from './image.type.js';

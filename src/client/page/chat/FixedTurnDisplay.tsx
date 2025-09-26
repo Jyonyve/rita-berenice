@@ -1,6 +1,6 @@
 // src/client/component/page/chat/FixedTurnDisplay.tsx
 
-import { DisplayTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { DisplayTurn } from '#shared/domain/chat/chat.type.js';
 import EditIcon from '@mui/icons-material/Edit';
 import { Box, IconButton, Typography } from '@mui/material';
 import { FC } from 'react';

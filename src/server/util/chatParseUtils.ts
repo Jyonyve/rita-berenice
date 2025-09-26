@@ -3,7 +3,7 @@ import {
 	ChatMessage,
 	ChatMessageType,
 	ChatRoleType,
-} from '#shared/domain/chat/ChatInterfaces.js';
+} from '#shared/domain/chat/chat.type.js';
 import { DEFAULT_EMOTION, EmotionValue } from '#shared/config/emotionConstants.js';
 export const parseEntriesToConversation = (entries: ChatEntry[]): string => {
 	return entries

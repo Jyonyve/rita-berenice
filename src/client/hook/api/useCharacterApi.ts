@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { CharacterResponse } from '#shared/api/ModuleResponse.js';
-import { CharacterCdo, CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import { CharacterCdo, CharacterInfo } from '#shared/domain/character/character.type.js';
 import { Payload } from '#shared/util/apiHelpers.js';
 
 export const useCharacterApi = () => {

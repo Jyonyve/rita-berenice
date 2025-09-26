@@ -4,7 +4,7 @@ import { ChromaResponse } from '#shared/api/ModuleResponse.js';
 import { DefaultAiRole } from '#shared/domain/aimodel/index.js';
 import { HistoryContext, HistoryInfo, LoreContext, LoreInfo } from '#shared/domain/lore/index.js';
 import { logFlow } from './jsonlLogger.js';
-import { ChatEntry, ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { ChatEntry, ChatTurn } from '#shared/domain/chat/chat.type.js';
 import { parseEntriesToConversation } from './chatParseUtils.js';
 import { Metadata } from 'chromadb';
 

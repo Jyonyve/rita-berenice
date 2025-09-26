@@ -9,7 +9,7 @@ import {
 	CharacterTermCdo,
 	CharacterTermInfo,
 	TermType,
-} from '#shared/domain/term/TermInterfaces.js';
+} from '#shared/domain/term/term.type.js';
 import { Payload } from '#shared/util/apiHelpers.js';
 import { TermResponse } from '#shared/api/ModuleResponse.js';
 

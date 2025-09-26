@@ -6,7 +6,7 @@ import {
 	ChatRoleType,
 	ChatTurn,
 	ChatTurnMetadata,
-} from '../domain/chat/ChatInterfaces.js';
+} from '../domain/chat/chat.type.ts';
 import { DEFAULT_EMOTION } from '../config/emotionConstants.js';
 import { buildCharacterId } from '#shared/util/buildIdUtils.js';
 import { NA } from '../config/constants.js';

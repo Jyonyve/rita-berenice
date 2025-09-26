@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import styles from '#client/asset/style/ChatComp.module.scss';
 import { SUPPORTED_MODEL_INFO } from '#shared/config/supportAiModelInfo.js';
-import { ChatRoleType } from '#shared/domain/chat/ChatInterfaces.js';
+import { ChatRoleType } from '#shared/domain/chat/chat.type.js';
 
 export const useErrorDialog = (initialMessage?: string) => {
 	const [open, setOpen] = useState(false);

@@ -3,7 +3,7 @@ import { chromaDbClient } from '../db/chromaDbClient.js';
 
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
-import { TempChatTurn, TempChatTurnMetadata } from '#shared/domain/chat/ChatInterfaces.js';
+import { TempChatTurn, TempChatTurnMetadata } from '#shared/domain/chat/chat.type.js';
 import { buildTempChatTurnId } from '../../shared/util/buildIdUtils.js';
 
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';

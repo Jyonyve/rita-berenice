@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { SessionInfo } from '#shared/domain/session/SessionInterfaces.js';
+import { SessionInfo } from '#shared/domain/session/session.type.js';
 import { MODULE_NAMES } from '#shared/config/constants.js';
 import { Payload } from '#shared/util/apiHelpers.js';
 import { SessionResponse } from '#shared/api/ModuleResponse.js';

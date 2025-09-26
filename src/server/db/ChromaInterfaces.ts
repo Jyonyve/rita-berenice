@@ -35,6 +35,7 @@ export const COLLECTIONS = {
 	TEMP: 'temp',
 	RECAP: 'recap',
 	LORE: 'lore',
+	HISTORY: 'history',
 	TERM: 'term',
 	CREDENTIAL: 'credential',
 	USER: 'user',

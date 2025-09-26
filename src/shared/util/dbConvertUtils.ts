@@ -3,11 +3,13 @@
 import {
 	LoreMetadata,
 	LoreInfo,
-	HistoryMetadata,
-	HistoryInfo,
 	LoreIndexMetadata,
 	LoreIndexContentType,
-} from '../domain/lore/LoreInterfaces.js';
+	WorldLoreMetadata,
+	MiscLoreInfo,
+	MiscLoreMetadata,
+	WorldLoreInfo,
+} from '../domain/lore/lore.type.js';
 import { convertArrayToString, convertStringToArray } from './parseUtils.js';
 import {
 	ChatTurnMetadata,
@@ -16,15 +18,22 @@ import {
 	ChatIndexMetadata,
 	ChatIndexContentType,
 	DisplayTurn,
-} from '../domain/chat/ChatInterfaces.js';
+} from '../domain/chat/chat.type.ts';
 import { buildProfileId } from './buildIdUtils.js';
-import { CharacterInfo, CharacterMetadata } from '../domain/character/CharacterInterfaces.js';
+import { CharacterInfo, CharacterMetadata } from '../domain/character/character.type.js';
 import { RecapInfo, RecapMetadata, RecapIndexMetadata } from '../domain/recap/RecapInterfaces.js';
-import { ProfileInfo, ProfileMetadata } from '../domain/profile/ProfileInterfaces.js';
-import { UserInfo, UserMetadata } from '../domain/user/UserInterfaces.js';
-import { SessionMetadata } from '../domain/session/SessionInterfaces.js';
-import { SessionInfo } from '#shared/domain/session/SessionInterfaces.js';
+import { ProfileInfo, ProfileMetadata } from '../domain/profile/profile.type.ts';
+import { UserInfo, UserMetadata } from '../domain/user/user.type.ts';
+import { SessionMetadata } from '../domain/session/session.type.js';
+import { SessionInfo } from '#shared/domain/session/session.type.js';
 import { Reference, RelatedEvent } from '../domain/BaseTypes.js';
+import { METADATA_TYPES } from '#shared/config/constants.js';
+import {
+	HistoryIndexContentType,
+	HistoryIndexMetadata,
+	HistoryInfo,
+	HistoryMetadata,
+} from '../domain/history/history.type.js';
 
 export const metadataToCharacter = (
 	metadata: CharacterMetadata,
@@ -46,9 +55,10 @@ export const metadataToUser = (metadata: UserMetadata): UserInfo => {
 
 export const metadataToSession = (
 	metadata: SessionMetadata,
-	lastCharMessage: string
+	lastCharMessage: string,
+	userNote: string
 ): SessionInfo => {
-	return { ...metadata, lastCharMessage };
+	return { ...metadata, lastCharMessage, userNote };
 };
 
 // --- UTILITY HELPERS ---
@@ -187,27 +197,30 @@ export const metadataToDisplayTurn = (metadata: ChatTurnMetadata): DisplayTurn =
  * Converts a rich LoreInfo object into the lean metadata format for ChromaDB.
  */
 export const loreToMetadata = (loreInfo: LoreInfo): LoreMetadata => {
-	return {
+	const baseMetadata = {
 		type: loreInfo.type,
 		loreId: loreInfo.loreId,
-		characterId: loreInfo.characterId,
 		userId: loreInfo.userId,
-		profileId: loreInfo.profileId,
 		createdAt: loreInfo.createdAt,
 		updatedAt: loreInfo.updatedAt,
 		title: loreInfo.title,
 		generatedTitle: loreInfo.generatedTitle,
-		category: loreInfo.category,
-		source: loreInfo.source,
 		summary: loreInfo.summary,
+		category: loreInfo.category, // Always present now - 'World' for world lore
 	};
+
+	if (loreInfo.type === METADATA_TYPES.WORLD) {
+		return baseMetadata as WorldLoreMetadata;
+	} else {
+		return { ...baseMetadata, source: (loreInfo as MiscLoreInfo).source } as MiscLoreMetadata;
+	}
 };
 
 /**
  * Reconstructs a rich LoreInfo object from its primary metadata and its search index records.
  * @param metadata The core LoreMetadata from the main document.
  * @param content The document's content string.
- * @param indexRecords An array of ContentSearchIndexMetadata records associated with this lore.
+ * @param indexRecords An array of LoreIndexMetadata records associated with this lore.
  */
 export const metadataToLore = (
 	metadata: LoreMetadata,
@@ -216,21 +229,24 @@ export const metadataToLore = (
 ): LoreInfo => {
 	const getValuesFromIndex = (contentType: LoreIndexContentType): string[] => {
 		return indexRecords
-			.filter((record) => record.contentType === contentType && record.contentId === metadata.loreId)
+			.filter((record) => record.contentType === contentType && record.loreId === metadata.loreId)
 			.map((record) => record.value);
 	};
 
-	const affectedCharacters = getValuesFromIndex('AFFECTED_CHARACTER');
-	return {
+	const baseInfo = {
 		...metadata,
 		content,
-		sideCharacterIdList: affectedCharacters.filter((id) => id !== metadata.characterId),
-		allAffectedCharacterIdList: [...new Set([metadata.characterId, ...affectedCharacters])],
-		keywordList: getValuesFromIndex('KEYWORD'),
-		topicList: getValuesFromIndex('TOPIC'),
-		entityList: getValuesFromIndex('ENTITY'),
-		type: 'lore',
+		characterIds: getValuesFromIndex('AFFECTED_CHARACTER'), // Array from index
+		keywordList: getValuesFromIndex('KEYWORD'), // Array from index
+		topicList: getValuesFromIndex('TOPIC'), // Array from index
+		entityList: getValuesFromIndex('ENTITY'), // Array from index
 	};
+
+	if (metadata.type === METADATA_TYPES.WORLD) {
+		return baseInfo as WorldLoreInfo;
+	} else {
+		return baseInfo as MiscLoreInfo;
+	}
 };
 
 /**
@@ -240,9 +256,8 @@ export const historyToMetadata = (historyInfo: HistoryInfo): HistoryMetadata => 
 	return {
 		type: historyInfo.type,
 		historyId: historyInfo.historyId,
-		characterId: historyInfo.characterId,
+		characterId: historyInfo.characterId, // History always has single characterId
 		userId: historyInfo.userId,
-		profileId: historyInfo.profileId,
 		createdAt: historyInfo.createdAt,
 		updatedAt: historyInfo.updatedAt,
 		title: historyInfo.title,
@@ -259,22 +274,25 @@ export const historyToMetadata = (historyInfo: HistoryInfo): HistoryMetadata => 
  * Reconstructs a rich HistoryInfo object from its primary metadata and its search index records.
  * @param metadata The core HistoryMetadata from the main document.
  * @param content The document's content string.
- * @param indexRecords An array of ContentSearchIndexMetadata records associated with this history.
+ * @param indexRecords An array of HistoryIndexMetadata records associated with this history.
  */
 export const metadataToHistory = (
 	metadata: HistoryMetadata,
 	content: string,
-	indexRecords: LoreIndexMetadata[] = []
+	indexRecords: HistoryIndexMetadata[] = []
 ): HistoryInfo => {
-	const getValuesFromIndex = (contentType: LoreIndexContentType): string[] => {
+	const getValuesFromIndex = (contentType: HistoryIndexContentType): string[] => {
 		return indexRecords
 			.filter(
-				(record) => record.contentType === contentType && record.contentId === metadata.historyId
+				(record) => record.contentType === contentType && record.historyId === metadata.historyId
 			)
 			.map((record) => record.value);
 	};
 
+	// Get all affected characters from index
 	const affectedCharacters = getValuesFromIndex('AFFECTED_CHARACTER');
+
+	// Parse related events from index (they're stored as JSON strings)
 	const relatedEvents: RelatedEvent[] = getValuesFromIndex('RELATED_EVENT')
 		.map((value) => {
 			try {

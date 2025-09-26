@@ -10,12 +10,12 @@ import {
 
 import { buildChatCompletion } from '../util/llmUtils.js';
 import { MemoryResponse, PersonaResponse } from '#shared/api/ModuleResponse.js';
-import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
-import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { CharacterInfo } from '#shared/domain/character/character.type.js';
+import { ChatTurn } from '#shared/domain/chat/chat.type.js';
 import { llmService } from './llmService.js';
 import { AiModelInfo, DEFAULT_EXTRACTION_MODEL } from '#shared/domain/aimodel/AiInfoTypes.js';
 
-import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { ProfileInfo } from '#shared/domain/profile/profile.type.js';
 import { createPersonaResponseSchema } from '../util/schemaUtils.js';
 import { logFlow } from '../util/jsonlLogger.js';
 import { parseEntriesToConversation } from '../util/chatParseUtils.js';

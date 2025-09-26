@@ -1,7 +1,7 @@
 // src/client/components/profile/ProfileForm.tsx
 
 import { LANG_KEYS } from '#shared/config/langConstants.js';
-import { ProfileCdo, ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { ProfileCdo, ProfileInfo } from '#shared/domain/profile/profile.type.js';
 import {
 	Box,
 	TextField,

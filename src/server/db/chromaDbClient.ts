@@ -138,6 +138,8 @@ export const chromaDbClient = {
 		_getOrCreateSingletonCollection(COLLECTIONS.TEMP),
 	getRecapCollection: (): Promise<Collection> => _getOrCreateSingletonCollection(COLLECTIONS.RECAP),
 	getLoreCollection: (): Promise<Collection> => _getOrCreateSingletonCollection(COLLECTIONS.LORE),
+	getHistoryCollection: (): Promise<Collection> =>
+		_getOrCreateSingletonCollection(COLLECTIONS.HISTORY),
 	getTermCollection: (): Promise<Collection> => _getOrCreateSingletonCollection(COLLECTIONS.TERM),
 	getChatCollection: (): Promise<Collection> => _getOrCreateSingletonCollection(COLLECTIONS.CHAT),
 	getUserCollection: (): Promise<Collection> => _getOrCreateSingletonCollection(COLLECTIONS.USER),

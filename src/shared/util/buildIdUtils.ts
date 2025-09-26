@@ -1,8 +1,8 @@
 import { ALPHANUMERIC_ALPHABET, METADATA_TYPES } from '#shared/config/constants.js';
-import { ChatIndexContentType, ChatMessageType } from '#shared/domain/chat/ChatInterfaces.js';
+import { ChatIndexContentType, ChatMessageType } from '#shared/domain/chat/chat.type.js';
 import { customAlphabet } from 'nanoid';
 import { _nanoid } from 'zod/v4/core';
-import { LoreIndexContentType } from '../domain/lore/LoreInterfaces.js';
+import { LoreIndexContentType } from '../domain/lore/lore.type.ts';
 import { RecapIndexContentType } from '../domain/recap/RecapInterfaces.js';
 import { LangCode } from '../config/langConstants.js';
 import { generateNickName } from '../config/nicknameConstants.js';
@@ -78,8 +78,15 @@ export const buildChatTurnIndexId = (
 	return `${chatTurnId}_${sanitizeIdInput(contentType)}_${_genNanoId(4)}`;
 };
 
-export const buildLoreIndexId = (contentId: string, contentType: LoreIndexContentType): string => {
-	return `${contentId}_${sanitizeIdInput(contentType)}_${_genNanoId(4)}`;
+export const buildLoreIndexId = (loreId: string, contentType: LoreIndexContentType): string => {
+	return `${loreId}_${sanitizeIdInput(contentType)}_${_genNanoId(4)}`;
+};
+
+export const buildHistoryIndexId = (
+	historyId: string,
+	contentType: LoreIndexContentType
+): string => {
+	return `${historyId}_${sanitizeIdInput(contentType)}_${_genNanoId(4)}`;
 };
 
 export const buildRecapIndexId = (

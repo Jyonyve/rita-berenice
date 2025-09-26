@@ -10,7 +10,7 @@ import {
 	SessionTermInfo,
 	SessionTermMetadata,
 	TermType,
-} from '#shared/domain/term/TermInterfaces.js';
+} from '#shared/domain/term/term.type.js';
 import {
 	buildCharacterId,
 	buildCharacterTermId,

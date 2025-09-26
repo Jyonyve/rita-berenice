@@ -10,7 +10,7 @@ import {
 	validateRequestData,
 	validateServiceId,
 } from '../util/routeHelpers.js';
-import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import { CharacterInfo } from '#shared/domain/character/character.type.js';
 import { Payload } from '#shared/util/apiHelpers.js';
 import fs from 'fs';
 import path from 'path';

@@ -1,6 +1,6 @@
 import { LANG_KEYS } from '#shared/config/langConstants.js';
-import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
-import { ProfileCdo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { CharacterInfo } from '#shared/domain/character/character.type.js';
+import { ProfileCdo } from '#shared/domain/profile/profile.type.js';
 import { Box, Grid, IconButton, List, Tooltip, Typography } from '@mui/material';
 import { FC, useState } from 'react';
 import { useNavigate } from 'react-router';

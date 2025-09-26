@@ -72,6 +72,7 @@ export const METADATA_TYPES = {
 	TERM: 'term',
 	USER: 'user',
 	INDEX: 'index',
+	WORLD: 'world',
 } as const;
 
 export type MetadataType = (typeof METADATA_TYPES)[keyof typeof METADATA_TYPES];

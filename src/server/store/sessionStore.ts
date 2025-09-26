@@ -3,7 +3,7 @@
 import { Collection, Where } from 'chromadb';
 import { chromaDbClient } from '../db/chromaDbClient.js';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
-import { SessionInfo, SessionMetadata } from '#shared/domain/session/SessionInterfaces.js';
+import { SessionInfo, SessionMetadata } from '#shared/domain/session/session.type.js';
 import { ChromaResponse, SessionResponse } from '#shared/api/ModuleResponse.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import { buildSessionId } from '../../shared/util/buildIdUtils.js';
@@ -11,7 +11,7 @@ import { METADATA_TYPES } from '#shared/config/constants.js';
 import { flatSessionToDoc, inflateSessionDoc } from '../util/documentUtils.js';
 import { metadataToSession } from '#shared/util/dbConvertUtils.js';
 import { parseEntriesToConversation } from '../util/chatParseUtils.js';
-import { ChatEntry } from '#shared/domain/chat/ChatInterfaces.js';
+import { ChatEntry } from '#shared/domain/chat/chat.type.js';
 
 // Destructure chromaDbClient methods
 const { getSessionCollection, addRecord, updateRecord, getRecordById, getRecords } = chromaDbClient; // Assume getSessionCollection is added to chromaDbClient

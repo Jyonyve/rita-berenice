@@ -1,1 +1,1 @@
-export * from './SessionInterfaces.js';
+export * from './session.type.js';

@@ -1,1 +1,1 @@
-export * from './LoreInterfaces.js';
+export * from './lore.type.js';

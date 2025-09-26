@@ -12,7 +12,7 @@ import React, {
 } from 'react';
 import { useSessionContext } from 'supertokens-auth-react/recipe/session/index.js';
 import { signOut } from 'supertokens-auth-react/recipe/session/index.js';
-import { UserInfo, UserCdo } from '#shared/domain/user/UserInterfaces.js';
+import { UserInfo, UserCdo } from '#shared/domain/user/user.type.js';
 import { useUserApi } from '../hook/api/useUserApi.js';
 import { cryptoState } from '../cryptoState.js';
 

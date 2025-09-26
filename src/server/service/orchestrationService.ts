@@ -7,8 +7,8 @@ import {
 	ChatTurnCdo,
 	TempChatTurn,
 	TempChatTurnCdo,
-} from '#shared/domain/chat/ChatInterfaces.js';
-import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
+} from '#shared/domain/chat/chat.type.js';
+import { CharacterInfo } from '#shared/domain/character/character.type.js';
 
 import { chatStore } from '../store/chatStore.js';
 import { buildProfileId, buildTempChatTurnId } from '../../shared/util/buildIdUtils.js';
@@ -17,7 +17,7 @@ import { memoryEngine } from './memoryEngine.js';
 import { personaEngine } from './personaEngine.js';
 import { AiModelInfo } from '#shared/domain/aimodel/AiInfoTypes.js';
 
-import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { ProfileInfo } from '#shared/domain/profile/profile.type.js';
 import { tempStore } from '../store/tempStore.js';
 import { MemoryResponse, PersonaResponse } from '#shared/api/ModuleResponse.js';
 import { detectLanguage } from '../util/languageUtils.js';

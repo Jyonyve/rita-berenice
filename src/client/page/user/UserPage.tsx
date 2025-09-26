@@ -53,7 +53,7 @@ import {
 	getLangText,
 } from '../../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
-import { UserInfo, UserUdo } from '#shared/domain/user/UserInterfaces.js';
+import { UserInfo, UserUdo } from '#shared/domain/user/user.type.js';
 import { ASPECT_RATIOS, GENDER_OPTION, LIMIT_5MB } from '#shared/config/constants.js';
 import { CharacterInfo } from '#shared/domain/character/index.js';
 import { useDateFormatter, useResponsive } from '../../hook/index.js';

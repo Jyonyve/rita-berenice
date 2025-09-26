@@ -12,7 +12,7 @@ import {
 	validateSequenceRule,
 	validateServiceId,
 } from '../util/routeHelpers.js';
-import { TempChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
+import { TempChatTurn } from '#shared/domain/chat/chat.type.js';
 import { TempChatResponse } from '#shared/api/ModuleResponse.js';
 import { ApiError } from '#shared/domain/error/errors.js';
 

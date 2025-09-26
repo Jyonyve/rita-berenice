@@ -1,11 +1,11 @@
-import { CharacterCdo, CharacterInfo } from '../domain/character/CharacterInterfaces.js';
-import { ProfileCdo, ProfileInfo } from '../domain/profile/ProfileInterfaces.js';
+import { CharacterCdo, CharacterInfo } from '../domain/character/character.type.ts';
+import { ProfileCdo, ProfileInfo } from '../domain/profile/profile.type.ts';
 import {
 	CharacterTermCdo,
 	CharacterTermInfo,
 	SessionTermCdo,
 	SessionTermInfo,
-} from '../domain/term/TermInterfaces.js';
+} from '../domain/term/term.type.ts';
 import {
 	buildCharacterId,
 	buildChatTurnId,
@@ -13,12 +13,12 @@ import {
 	buildProfileId,
 	buildUserShowName,
 } from './buildIdUtils.js';
-import { ChatTurn, ChatTurnCdo } from '../domain/chat/ChatInterfaces.js';
+import { ChatTurn, ChatTurnCdo } from '../domain/chat/chat.type.ts';
 import { parseSessionId } from './parseUtils.js';
-import { HistoryCdo, HistoryInfo, LoreCdo, LoreInfo } from '../domain/lore/LoreInterfaces.js';
+import { HistoryCdo, HistoryInfo, LoreCdo, LoreInfo } from '../domain/lore/lore.type.ts';
 import { DEFAULT_USER_AVATAR, NA } from '../config/constants.js';
 import { DEFAULT_EMOTION } from '../config/emotionConstants.js';
-import { UserCdo, UserInfo } from '../domain/user/UserInterfaces.js';
+import { UserCdo, UserInfo } from '../domain/user/user.type.ts';
 
 //type guard
 export function isCharacterTermInfo(

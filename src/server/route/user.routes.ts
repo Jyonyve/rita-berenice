@@ -8,7 +8,7 @@ import {
 	validateRequestData,
 	validateServiceId,
 } from '../util/routeHelpers.js';
-import { UserInfo } from '#shared/domain/user/UserInterfaces.js';
+import { UserInfo } from '#shared/domain/user/user.type.js';
 import { BASE_USER_IMAGE_DIR, RUNTIME_USER_IMAGE_DIR } from '#shared/config/constants.js';
 import { avatarUpload, processUserAvatar } from '../util/imageProcessingUtils.js';
 import fs from 'fs';

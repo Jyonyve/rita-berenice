@@ -10,7 +10,7 @@ import {
 	validateRequestData,
 	validateServiceId,
 } from '../util/routeHelpers.js';
-import { ProfileInfo, ProfileMetadata } from '#shared/domain/profile/ProfileInterfaces.js';
+import { ProfileInfo, ProfileMetadata } from '#shared/domain/profile/profile.type.js';
 import { Payload } from '#shared/util/apiHelpers.js';
 
 const router = express.Router();
