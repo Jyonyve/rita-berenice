@@ -6,9 +6,12 @@ export interface ProfileMetadata extends BeingMetadata {
 	sessionId: string;
 	type: typeof METADATA_TYPES.PROFILE;
 }
-export interface ProfileInfo extends ProfileMetadata {
+
+export interface ProfileDocument {
 	description: string;
 }
+
+export type ProfileInfo = ProfileMetadata & ProfileDocument;
 
 export type ProfileCdo = Pick<
 	ProfileInfo,

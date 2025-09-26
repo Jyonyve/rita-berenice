@@ -1,11 +1,11 @@
 import { ChatEntry, ChatMessage, ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
-import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import { CharacterDocument, CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
 import { HistoryInfo, LoreInfo } from '#shared/domain/lore/LoreInterfaces.js';
 import { RecapInfo } from '#shared/domain/recap/RecapInterfaces.js';
-import { TermType } from '#shared/domain/term/TermInterfaces.js';
-import { UserInfo } from '#shared/domain/user/UserInterfaces.js';
-import { ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
-import { SessionInfo } from '#shared/domain/session/SessionInterfaces.js';
+import { TermDocument, TermType } from '#shared/domain/term/TermInterfaces.js';
+import { UserDocument, UserInfo } from '#shared/domain/user/UserInterfaces.js';
+import { ProfileDocument, ProfileInfo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { SessionDocument, SessionInfo } from '#shared/domain/session/SessionInterfaces.js';
 import { parseConversationToEntries, parseEntriesToConversation } from './chatParseUtils.js';
 import { Term } from '#shared/api/ModuleResponse.js';
 
@@ -25,28 +25,27 @@ export const chatTurnToDocument = (chatTurn: ChatTurn): string => {
 };
 
 export const flatCharacterToDoc = (character: CharacterInfo) => {
-	const { description, instruction, firstMessage } = character;
-	const document = { description, instruction, firstMessage };
+	const { description, instruction, worldLoreId, firstMessage } = character;
+	const document: CharacterDocument = { description, instruction, worldLoreId, firstMessage };
 	return JSON.stringify(document).trim();
 };
 
-export const inflateCharacterDoc = (
-	document: string
-): { description: string; instruction: string; firstMessage: string } => {
+export const inflateCharacterDoc = (document: string): CharacterDocument => {
 	const parsed = JSON.parse(document);
 	return {
 		description: parsed.description,
 		instruction: parsed.instruction,
+		worldLoreId: parsed.worldLoreId,
 		firstMessage: parsed.firstMessage,
 	};
 };
 
 export const flatProfileToDoc = (profile: ProfileInfo) => {
-	const document = { description: profile.description };
+	const document: ProfileDocument = { description: profile.description };
 	return JSON.stringify(document).trim();
 };
 
-export const inflateProfileDoc = (document: string): { description: string } => {
+export const inflateProfileDoc = (document: string): ProfileDocument => {
 	const parsed = JSON.parse(document);
 	return { description: parsed.description };
 };
@@ -57,13 +56,11 @@ export const loreOrHistoryToDocument = (lore: LoreInfo | HistoryInfo): string =>
 
 export const flatTermToDoc = (term: Term) => {
 	const { koreanTerm, englishTerm, termId, type } = term;
-	const document = { koreanTerm, englishTerm, termId, type };
+	const document: TermDocument = { koreanTerm, englishTerm, termId, type };
 	return JSON.stringify(document).trim();
 };
 
-export const inflateTermDoc = (
-	document: string
-): { koreanTerm: string; englishTerm: string; termId: string; type: TermType } => {
+export const inflateTermDoc = (document: string): TermDocument => {
 	const parsed = JSON.parse(document);
 	return {
 		koreanTerm: parsed.koreanTerm,
@@ -78,21 +75,21 @@ export const recapToDocument = (recap: RecapInfo) => {
 };
 
 export const flatSessionToDoc = (session: SessionInfo) => {
-	const document = { lastCharMessage: session.lastCharMessage };
+	const document: SessionDocument = { lastCharMessage: session.lastCharMessage };
 	return JSON.stringify(document).trim();
 };
 
-export const inflateSessionDoc = (document: string): { lastCharMessage: string } => {
+export const inflateSessionDoc = (document: string): SessionDocument => {
 	const parsed = JSON.parse(document);
 	return { lastCharMessage: parsed.lastCharMessage };
 };
 
 export const flatUserToDoc = (user: UserInfo) => {
-	const document = { email: user.email, userId: user.userId };
+	const document: UserDocument = { email: user.email, userId: user.userId };
 	return JSON.stringify(document).trim();
 };
 
-export const inflateUserDoc = (document: string): { email: string; userId: string } => {
+export const inflateUserDoc = (document: string): UserDocument => {
 	const parsed = JSON.parse(document);
 	return { email: parsed.email, userId: parsed.userId };
 };

@@ -15,9 +15,10 @@ export interface SessionMetadata {
 	type: typeof METADATA_TYPES.SESSION;
 }
 
-export interface SessionInfo extends SessionMetadata {
-	lastCharMessage: string; // A short preview of the last message
+export interface SessionDocument {
+	lastCharMessage: string;
 }
+export type SessionInfo = SessionMetadata & SessionDocument;
 
 // This type defines the data needed to create a new session.
 export type SessionCdo = Pick<SessionInfo, 'userId' | 'characterId' | 'lastCharMessage'>;

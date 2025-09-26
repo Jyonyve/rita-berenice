@@ -62,9 +62,7 @@ export const loreStore = {
 			const loreMetadata: LoreMetadata = {
 				type: METADATA_TYPES.LORE,
 				loreId: loreInfo.loreId || buildLoreId(loreInfo.loreId, loreInfo.category),
-				characterId: loreInfo.characterId,
 				userId: loreInfo.userId,
-				profileId: loreInfo.profileId,
 				createdAt: loreInfo.createdAt,
 				updatedAt: loreInfo.updatedAt,
 				title: loreInfo.title,

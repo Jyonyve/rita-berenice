@@ -44,6 +44,7 @@ export const characterStore = {
 				metadata!,
 				inflatedDoc.description,
 				inflatedDoc.instruction,
+				inflatedDoc.worldLoreId,
 				inflatedDoc.firstMessage
 			);
 			return characterInfo;
@@ -152,7 +153,8 @@ export const characterStore = {
 		const updatedCharacter: CharacterInfo = isCharacterInfo(character)
 			? character
 			: createBasicCharacterInfo(character);
-		const { description, instruction, firstMessage, ...characterMetadata } = updatedCharacter;
+		const { description, instruction, worldLoreId, firstMessage, ...characterMetadata } =
+			updatedCharacter;
 
 		const updatedMetadata: CharacterMetadata = {
 			...characterMetadata, // Start with all fields from input
@@ -166,6 +168,7 @@ export const characterStore = {
 			...characterMetadata,
 			description,
 			instruction,
+			worldLoreId,
 			firstMessage,
 		});
 

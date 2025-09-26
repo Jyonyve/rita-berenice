@@ -20,11 +20,14 @@ export interface CharacterMetadata extends BeingMetadata {
 	contact: string;
 	type: typeof METADATA_TYPES.CHARACTER;
 }
-export interface CharacterInfo extends CharacterMetadata {
+export interface CharacterDocument {
 	description: string;
 	instruction: string;
+	worldLoreId: string;
 	firstMessage: string; // optional
 }
+
+export type CharacterInfo = CharacterMetadata & CharacterDocument;
 
 export type CharacterImages = Record<string, string[]>;
 
@@ -47,5 +50,6 @@ export type CharacterCdo = Pick<
 	| 'name'
 	| 'showName'
 	| 'userId'
+	| 'worldLoreId'
 	| 'firstMessage'
 >;

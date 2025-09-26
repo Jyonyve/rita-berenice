@@ -43,7 +43,6 @@ export interface LoreMetadata {
 	loreId: string;
 	characterId: string; // The primary owner
 	userId: string;
-	profileId: string;
 	createdAt: string;
 	updatedAt: string;
 	title: string;
@@ -58,7 +57,6 @@ export interface HistoryMetadata {
 	historyId: string;
 	characterId: string; // The primary owner
 	userId: string;
-	profileId: string;
 	createdAt: string;
 	updatedAt: string;
 	title: string;

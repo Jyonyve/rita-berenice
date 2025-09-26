@@ -28,3 +28,10 @@ export type SessionTermInfo = SessionTermMetadata;
 export type SessionTermCdo = Pick<SessionTermInfo, 'initialTerm' | 'koreanTerm' | 'sessionId'>;
 
 export type TermType = typeof METADATA_TYPES.SESSION | typeof METADATA_TYPES.CHARACTER;
+
+export interface TermDocument {
+	koreanTerm: string;
+	englishTerm: string;
+	termId: string;
+	type: TermType;
+}

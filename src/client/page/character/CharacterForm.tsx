@@ -19,7 +19,7 @@ import { FC, useState, useRef, ChangeEvent, useEffect } from 'react';
 
 import { useForm, Controller } from 'react-hook-form';
 import { CloudUpload } from '@mui/icons-material';
-import { useCharacterApi } from '../../hook/api/index.js';
+import { useCharacterApi, useLoreApi } from '../../hook/api/index.js';
 import { GlassButton, GlassCard, GlassPaper, GlassSelect } from '../../layout/glass/index.js';
 import { useToast } from '../../provider/ToastProvider.jsx';
 import { containerSpacing } from '../../style/index.js';
@@ -42,6 +42,7 @@ import {
 	PortraitWithChip,
 } from '../../layout/index.js';
 import { UploadedCharacterImage } from '#shared/domain/image/ImageInterfaces.js';
+import { createBasicCharacterInfo, isCharacterInfo } from '#shared/util/typeGuardUtils.js';
 
 // 🎨 Constants
 const AUTO_SLIDE_DELAY = 100;
@@ -67,6 +68,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 	const { addToast } = useToast();
 	const { storeCharacter, uploadCharacterImage, createCharacterFolder, deleteCharacterImage } =
 		useCharacterApi();
+	const { storeLore } = useLoreApi();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const swiperRef = useRef<SwiperClass | null>(null);
 
@@ -86,7 +88,8 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 			name: '',
 			showName: '',
 			userId,
-			firstMessage: '',
+			worldLoreId: '', // Now required in CDO
+			firstMessage: '', // Now included in CDO
 			...(mode === 'edit' && characterInfo ? characterInfo : {}),
 		},
 		mode: 'onBlur',
@@ -322,15 +325,13 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 
 	const onSubmit = async (data: CharacterCdo | CharacterInfo) => {
 		try {
-			const payload: CharacterCdo | CharacterInfo =
-				mode === 'edit' && characterInfo
-					? {
-							...(data as CharacterInfo),
-							characterId: characterInfo.characterId,
-							createdAt: characterInfo.createdAt,
-							userId,
-						}
-					: { ...(data as CharacterCdo), userId };
+			let payload: CharacterInfo;
+
+			if (mode === 'edit' && isCharacterInfo(data)) {
+				payload = { ...data };
+			} else {
+				payload = createBasicCharacterInfo(data);
+			}
 
 			const response = await storeCharacter(payload);
 			const { characterId } = response;
@@ -345,7 +346,6 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 			addToast(error.message || 'An error occurred while saving the character.', 'error');
 		}
 	};
-
 	// 🎨 Helper variables for cleaner JSX
 	const visibleImages = getVisibleImages(uploadedImages);
 	const hasImages = visibleImages.length > 0;
@@ -584,6 +584,29 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 								</Typography>
 								<Grid container spacing={2}>
 									{/* Instruction field */}
+									<Grid size={{ xs: 12 }}>
+										<Controller
+											name="instruction"
+											control={control}
+											rules={{ required: getLangText(LANG_KEYS.INSTRUCTION_REQUIRED) }}
+											render={({ field }) => (
+												<TextField
+													{...field}
+													fullWidth
+													label={getLangText(LANG_KEYS.INSTRUCTION)}
+													multiline
+													minRows={3}
+													maxRows={10}
+													error={!!errors.instruction}
+													helperText={errors.instruction?.message || getLangText(LANG_KEYS.INSTRUCTION_HELPER)}
+													placeholder={getLangText(LANG_KEYS.INSTRUCTION_PLACEHOLDER)}
+													required
+												/>
+											)}
+										/>
+									</Grid>
+
+									{/* World Lore field */}
 									<Grid size={{ xs: 12 }}>
 										<Controller
 											name="instruction"

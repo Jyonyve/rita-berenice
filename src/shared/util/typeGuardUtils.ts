@@ -58,7 +58,15 @@ export const createBasicCharacterInfo = (cdo: CharacterCdo): CharacterInfo => {
 	const now = new Date().toISOString();
 	const characterId = buildCharacterId(cdo.name);
 	const variant = characterId.split('_')[1];
-	return { ...cdo, characterId, variant, type: 'character', createdAt: now, updatedAt: now };
+	return {
+		...cdo,
+		characterId,
+		variant,
+		type: 'character',
+		createdAt: now,
+		updatedAt: now,
+		firstMessage: '',
+	};
 };
 
 export const createBasicProfileInfo = (cdo: ProfileCdo): ProfileInfo => {

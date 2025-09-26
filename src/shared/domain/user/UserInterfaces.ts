@@ -27,6 +27,10 @@ export interface UserMetadata {
 	avatarUrl: string;
 }
 
+export interface UserDocument {
+	email: string;
+	userId: string;
+}
 export type UserInfo = UserMetadata;
 
 export type UserCdo = Pick<UserInfo, 'userId' | 'email'>;

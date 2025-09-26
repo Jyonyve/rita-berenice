@@ -30,9 +30,10 @@ export const metadataToCharacter = (
 	metadata: CharacterMetadata,
 	description: string,
 	instruction: string,
+	worldLoreId: string,
 	firstMessage: string
 ): CharacterInfo => {
-	return { ...metadata, description, instruction, firstMessage };
+	return { ...metadata, description, instruction, worldLoreId, firstMessage };
 };
 
 export const metadataToProfile = (metadata: ProfileMetadata, description: string): ProfileInfo => {
