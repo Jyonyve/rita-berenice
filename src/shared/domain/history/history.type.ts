@@ -1,7 +1,7 @@
 // src/shared/domain/history/HistoryInterfaces.ts
 
 import { METADATA_TYPES } from '#shared/config/constants.js';
-import { RelatedEvent } from '../BaseTypes.ts';
+import { RelatedEvent } from '../BaseTypes.js';
 
 export type EventDateType =
 	| 'absolute_date'
@@ -68,16 +68,3 @@ export interface HistoryInfo extends HistoryMetadata {
 
 // --- CDO TYPES ---
 export type HistoryCdo = Pick<HistoryInfo, 'content' | 'title' | 'userId' | 'characterId'>;
-
-// For your history context
-export interface HistoryContext {
-	historyId: string; // The ID to be returned
-	title: string; // The human-readable title
-	summary: string; // A concise summary of the event
-	category: HistoryCategory; // The event's classification
-	periodLabel: string; // The life period this event belongs to
-	keywordList: string[]; // Specific search terms
-	topicList: string[]; // Broader thematic concepts
-	entityList: string[]; // Specific named people, places, things
-	allAffectedCharacterIdList: string[];
-}

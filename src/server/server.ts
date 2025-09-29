@@ -34,6 +34,7 @@ import loginRoutes from './route/login.routes.js';
 import sessionRoutes from './route/session.routes.js';
 import userRoutes from './route/user.routes.js';
 import credentialRoutes from './route/credential.routes.js';
+import historyRoutes from './route/history.routes.js';
 import { ApiErrorResponse } from '#shared/api/ModuleResponse.js';
 import { ApiError } from '#shared/domain/error/errors.js';
 import { userStore } from './store/userStore.js';
@@ -232,6 +233,7 @@ async function createServer() {
 	app.use(`${BASE_API}/${MODULE_NAMES.PROFILE}`, profileRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.TEMP}`, tempRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.LORE}`, loreRoutes);
+	app.use(`${BASE_API}/${MODULE_NAMES.HISTORY}`, historyRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.TERM}`, termRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.SESSION}`, sessionRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.PERSONA}`, personaRoutes);

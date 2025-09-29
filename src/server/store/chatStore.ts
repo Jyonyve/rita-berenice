@@ -170,7 +170,7 @@ export const chatStore = {
 			: 'Stable dynamic';
 
 		// Create semantic-searchable documents for different content types
-		const createSemanticIndexRecords = (
+		const createIndexRecords = (
 			list: string[],
 			contentType: ChatIndexContentType,
 			contextDescription: string
@@ -204,20 +204,12 @@ export const chatStore = {
 		};
 
 		// Create semantic index records with rich context
-		createSemanticIndexRecords(
-			turn.keywordList,
-			'KEYWORD',
-			'Key concept or important term discussed'
-		);
-		createSemanticIndexRecords(turn.topicList, 'TOPIC', 'Main topic or theme of conversation');
-		createSemanticIndexRecords(turn.entityList, 'ENTITY', 'Person, place, or thing mentioned');
-		createSemanticIndexRecords(turn.actionList, 'ACTION', 'Action taken or behavior observed');
-		createSemanticIndexRecords(
-			turn.flagList,
-			'FLAG',
-			'Important flag or marker for this conversation'
-		);
-		createSemanticIndexRecords(
+		createIndexRecords(turn.keywordList, 'KEYWORD', 'Key concept or important term discussed');
+		createIndexRecords(turn.topicList, 'TOPIC', 'Main topic or theme of conversation');
+		createIndexRecords(turn.entityList, 'ENTITY', 'Person, place, or thing mentioned');
+		createIndexRecords(turn.actionList, 'ACTION', 'Action taken or behavior observed');
+		createIndexRecords(turn.flagList, 'FLAG', 'Important flag or marker for this conversation');
+		createIndexRecords(
 			turn.relationshipShiftList,
 			'RELATIONSHIP_SHIFT',
 			'Change in relationship dynamic'

@@ -1,6 +1,6 @@
 // src/shared/domain/glossaryInterfaces.ts
 
-import { METADATA_TYPES } from '../../config/constants.ts';
+import { METADATA_TYPES } from '../../config/constants.js';
 
 export interface CharacterTermMetadata {
 	characterId: string;

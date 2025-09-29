@@ -2,11 +2,11 @@ import OpenAI from 'openai';
 import { ChatCompletion } from 'openai/resources/index.mjs';
 import { ChromaResponse } from '#shared/api/ModuleResponse.js';
 import { DefaultAiRole } from '#shared/domain/aimodel/index.js';
-import { HistoryContext, HistoryInfo, LoreContext, LoreInfo } from '#shared/domain/lore/index.js';
 import { logFlow } from './jsonlLogger.js';
 import { ChatEntry, ChatTurn } from '#shared/domain/chat/chat.type.js';
 import { parseEntriesToConversation } from './chatParseUtils.js';
 import { Metadata } from 'chromadb';
+import { HistoryInfo, LoreInfo } from '#shared/domain/index.js';
 
 export function isDirectOpenAIClient(llm: any): llm is OpenAI {
 	// Check for a unique property or method of the OpenAI client instance
@@ -123,7 +123,7 @@ export const buildChatCompletion = (role: DefaultAiRole, content: string, name?:
 };
 
 // CORRECT mapping for Histories
-export const mapHistoryContexts = (historyInfos: HistoryInfo[]): HistoryContext[] =>
+export const mapHistoryContexts = (historyInfos: HistoryInfo[]) =>
 	historyInfos.map((history) => {
 		return {
 			// --- Explicitly list only the fields you need ---
@@ -140,7 +140,7 @@ export const mapHistoryContexts = (historyInfos: HistoryInfo[]): HistoryContext[
 	});
 
 // CORRECT mapping for Lore
-export const mapLoreContexts = (loreInfos: LoreInfo[]): LoreContext[] =>
+export const mapLoreContexts = (loreInfos: LoreInfo[]) =>
 	loreInfos.map((lore) => {
 		return {
 			loreId: lore.loreId,
@@ -150,7 +150,7 @@ export const mapLoreContexts = (loreInfos: LoreInfo[]): LoreContext[] =>
 			keywordList: lore.keywordList,
 			topicList: lore.topicList,
 			entityList: lore.entityList,
-			allAffectedCharacterIdList: lore.allAffectedCharacterIdList,
+			characterIdList: lore.characterIds,
 		};
 	});
 

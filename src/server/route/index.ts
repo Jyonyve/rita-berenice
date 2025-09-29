@@ -5,6 +5,7 @@ export { default as llmRoutes } from './llm.routes.js';
 export { default as termRoutes } from './term.routes.js';
 export { default as tempRoutes } from './temp.routes.js';
 export { default as loreRoutes } from './lore.routes.js';
+export { default as historyRoutes } from './history.routes.js';
 export { default as personaRoutes } from './persona.routes.js';
 export { default as orchestrationRoutes } from './orchestration.routes.js';
 export { default as sessionRoutes } from './session.routes.js';

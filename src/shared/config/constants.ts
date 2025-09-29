@@ -43,6 +43,7 @@ export const MODULE_NAMES = {
 	TEMP: 'temp',
 	RECAP: 'recap',
 	LORE: 'lore',
+	HISTORY: 'history',
 	TERM: 'term',
 	CREDENTIAL: 'credential',
 	LLM: 'llm',

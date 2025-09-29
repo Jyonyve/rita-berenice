@@ -1,26 +1,26 @@
-import { HistoryInfo, HistoryMetadata } from '#shared/domain/history/history.type.js';
 import { Collection, Metadata, Where, WhereDocument } from 'chromadb';
 import { METADATA_TYPES } from '#shared/config/constants.js';
 import { COLLECTIONS } from '../db/ChromaInterfaces.js';
 import { chromaDbClient } from '../db/chromaDbClient.js';
-import { HistoryResponse, LoreResponse } from '#shared/api/ModuleResponse.js';
 import {
-	LoreIndexContentType,
-	LoreIndexMetadata,
-	LoreInfo,
-	LoreMetadata,
-} from '#shared/domain/lore/lore.type.js';
-import { metadataToHistory, metadataToLore } from '#shared/util/dbConvertUtils.js';
-import { buildHistoryId, buildLoreId, buildLoreIndexId } from '#shared/util/buildIdUtils.js';
+	HistoryIndexContentType,
+	HistoryIndexMetadata,
+	HistoryInfo,
+	HistoryMetadata,
+} from '#shared/domain/history/history.type.js';
 import { validateChromaResponse, handleServiceError } from '../util/serviceHelpers.js';
 import { FilterCriteria } from '../util/schemaUtils.js';
 import { reRankSemanticResults } from '../util/queryUtils.js';
+import { HistoryResponse } from '#shared/api/ModuleResponse.js';
+import { historyToMetadata, metadataToHistory } from '#shared/util/dbConvertUtils.js';
+import { historyToDocument } from '../util/documentUtils.js';
+import { buildHistoryIndexId } from '#shared/util/buildIdUtils.js';
 
 const {
 	getHistoryCollection,
 	upsertRecords,
 	getRecords,
-	getRecordById,
+	upsertRecord,
 	queryRecords,
 	deleteRecords,
 } = chromaDbClient;
@@ -55,7 +55,7 @@ export const historyStore = {
 	_buildIndexWhereClause(characterId: string, criteria: FilterCriteria): Where | undefined {
 		const orConditions: Where[] = [];
 
-		const addConditions = (list: string[] | undefined, type: LoreIndexContentType) => {
+		const addConditions = (list: string[] | undefined, type: HistoryIndexContentType) => {
 			if (!list || list.length === 0) return;
 			const topTerms = list.slice(0, 5); // Be selective
 			topTerms.forEach((item) => {
@@ -83,81 +83,65 @@ export const historyStore = {
 		};
 	},
 
-	// --- HISTORY OPERATIONS (Corrected and aligned with Lore) ---
-	storeHistory: async (historyInfo: HistoryInfo): Promise<{ historyId: string }> => {
-		try {
-			const collection = await historyStore._getCollection();
-			const historyMetadata: HistoryMetadata = {
-				type: METADATA_TYPES.HISTORY,
-				historyId:
-					historyInfo.historyId || buildHistoryId(historyInfo.characterId, historyInfo.periodLabel),
-				characterId: historyInfo.characterId,
-				userId: historyInfo.userId,
-				createdAt: historyInfo.createdAt,
-				updatedAt: historyInfo.updatedAt,
-				title: historyInfo.title,
-				generatedTitle: historyInfo.generatedTitle,
-				category: historyInfo.category,
-				summary: historyInfo.summary,
-				periodLabel: historyInfo.periodLabel,
-				eventDateValue: historyInfo.eventDateValue,
-				eventDateType: historyInfo.eventDateType,
-			};
-			await upsertRecords(
-				collection,
-				[historyInfo.historyId],
-				[historyInfo.content],
-				[historyMetadata]
-			);
-			await historyStore._updateSearchIndexForHistory(historyInfo);
-			return { historyId: historyInfo.historyId };
-		} catch (error) {
-			handleServiceError(error, `Failed to store history ${historyInfo.historyId}`);
-		}
-	},
-
+	/**
+	 * @private
+	 * Creates or updates semantic-rich search index records for a given HistoryInfo.
+	 * Follows the chatStore._updateSearchIndexForTurn pattern.
+	 */
 	_updateSearchIndexForHistory: async (historyInfo: HistoryInfo): Promise<void> => {
 		const collection = await historyStore._getCollection();
+
+		// 1. Delete existing index entries for this historyId
 		const oldIndexWhere: Where = {
-			$and: [{ type: { $eq: METADATA_TYPES.INDEX } }, { contentId: { $eq: historyInfo.historyId } }],
+			$and: [{ type: { $eq: METADATA_TYPES.INDEX } }, { historyId: { $eq: historyInfo.historyId } }],
 		};
 		await collection.delete({ where: oldIndexWhere });
 
-		const newIndexRecords: { id: string; document: string; metadata: LoreIndexMetadata }[] = [];
-		const baseMetadata = {
+		// 2. Prepare to create new index records
+		const newIndexRecords: { id: string; document: string; metadata: HistoryIndexMetadata }[] = [];
+		const baseMetadata: Omit<HistoryIndexMetadata, 'contentType' | 'value'> = {
 			type: METADATA_TYPES.INDEX,
-			contentId: historyInfo.historyId,
+			historyId: historyInfo.historyId,
 			characterId: historyInfo.characterId,
+			userId: historyInfo.userId,
+			category: historyInfo.category,
+			originalCreatedAt: historyInfo.createdAt,
 		};
+
+		const historyContext = `History event titled "${historyInfo.title}", category: ${historyInfo.category}. Summary: ${historyInfo.summary}`;
 
 		const createIndexRecords = (
 			list: any[],
-			contentType: LoreIndexContentType,
+			contentType: HistoryIndexContentType,
 			contextDescription: string
 		) => {
 			if (!list || list.length === 0) return;
+
 			for (const item of list) {
 				const value = typeof item === 'string' ? item : JSON.stringify(item);
 				if (!value || value.trim() === '') continue;
-				const semanticDocument = `${contextDescription}: "${value}". From history event titled "${historyInfo.title}", summarized as: ${historyInfo.summary}`;
+
+				const semanticDocument = `${contextDescription}: "${value}". ${historyContext}`;
 				newIndexRecords.push({
-					id: buildHistoryId(historyInfo.historyId, contentType),
+					id: buildHistoryIndexId(historyInfo.historyId, contentType), // Unique ID per value
 					document: semanticDocument,
 					metadata: { ...baseMetadata, contentType, value },
 				});
 			}
 		};
 
-		createIndexRecords(historyInfo.keywordList, 'KEYWORD', 'Key concept');
-		createIndexRecords(historyInfo.topicList, 'TOPIC', 'Main topic');
-		createIndexRecords(historyInfo.entityList, 'ENTITY', 'Mentioned entity');
+		// 3. Generate index records for all searchable arrays
 		createIndexRecords(
 			historyInfo.allAffectedCharacterIdList,
 			'AFFECTED_CHARACTER',
 			'Affected character'
 		);
+		createIndexRecords(historyInfo.keywordList, 'KEYWORD', 'Key concept');
+		createIndexRecords(historyInfo.topicList, 'TOPIC', 'Main topic');
+		createIndexRecords(historyInfo.entityList, 'ENTITY', 'Mentioned entity');
 		createIndexRecords(historyInfo.relatedEventList, 'RELATED_EVENT', 'Related event');
 
+		// 4. Batch upsert the new index records
 		if (newIndexRecords.length > 0) {
 			await upsertRecords(
 				collection,
@@ -167,100 +151,126 @@ export const historyStore = {
 			);
 		}
 	},
+	// --- HISTORY OPERATIONS ---
+	/**
+	 * Stores a fully enriched history event and updates its search index.
+	 * The historyInfo object should already have its historyId assigned.
+	 */
+	storeHistory: async (historyInfo: HistoryInfo): Promise<{ historyId: string }> => {
+		try {
+			const collection = await historyStore._getCollection();
+			const historyMetadata = historyToMetadata(historyInfo);
+			const document = historyToDocument(historyInfo); // Pass the info object
+
+			// 1. Store the primary HISTORY document
+			await upsertRecord(collection, historyInfo.historyId, document, historyMetadata);
+
+			// 2. Update the denormalized search index
+			await historyStore._updateSearchIndexForHistory(historyInfo);
+
+			return { historyId: historyInfo.historyId };
+		} catch (error) {
+			handleServiceError(error, `Failed to store history ${historyInfo.historyId}`);
+		}
+	},
 
 	/**
-	 * Retrieves a single, fully reconstructed Lore object by its ID.
-	 * @param historyId The unique identifier for the lore.
-	 * @returns A LoreResponse containing the single lore object.
+	 * Retrieves a single, fully reconstructed History object by its ID.
 	 */
-	async getHistory(historyId: string): Promise<HistoryResponse> {
+	getHistory: async (historyId: string): Promise<HistoryResponse> => {
 		try {
 			const collection = await historyStore._getCollection();
 
-			// 1. Fetch the primary LORE document by its unique ID.
-			const rawHisResult = await getRecordById(collection, historyId);
-			const primaryHisResult = validateChromaResponse(rawHisResult, 'getOne', collectionType);
+			// 1. Fetch the primary history document and all its index records in one go.
+			const historyAndIndexDocsResponse = await getRecords(collection, {
+				historyId: { $eq: historyId },
+			});
+			const allDocs = validateChromaResponse(historyAndIndexDocsResponse, 'getList', collectionType);
 
-			// If no document is found, return the empty response immediately.
-			if (primaryHisResult.ids.length === 0) {
-				console.warn(`[getLore] No lore document found with ID: ${historyId}`);
+			if (allDocs.ids.length === 0) {
 				return emptyHisRes;
 			}
 
-			const hisMetadata = primaryHisResult.metadatas?.[0] || {};
-			const hisDocument = primaryHisResult.documents[0] || '';
+			// 2. Partition the results into the primary doc and its index records.
+			let primaryDoc: { id: string; document: string | null; metadata: Metadata | null } | null = null;
+			const indexRecords: Metadata[] = [];
 
-			// 2. Fetch all associated LORE_INDEX records for this specific loreId.
-			const indexWhereClause: Where = {
-				$and: [
-					{ type: { $eq: METADATA_TYPES.HISTORY } },
-					{ contentId: { $eq: historyId } }, // Direct match, more efficient than $in
-				],
-			};
-			const rawIndexResults = await getRecords(collection, indexWhereClause);
-			const indexResults = validateChromaResponse(rawIndexResults, 'getList', collectionType);
-			const indexMetadatas = (indexResults.metadatas || []) as unknown as LoreIndexMetadata[];
+			for (let i = 0; i < allDocs.metadatas.length; i++) {
+				const metadata = allDocs.metadatas[i];
+				if (metadata?.type === METADATA_TYPES.HISTORY) {
+					primaryDoc = { id: allDocs.ids[i], document: allDocs.documents[i], metadata };
+				} else if (metadata?.type === METADATA_TYPES.INDEX) {
+					indexRecords.push(metadata);
+				}
+			}
 
-			// 3. Reconstruct the single, rich Lore object.
-			const historyInfo: HistoryInfo = metadataToHistory(
-				hisMetadata as unknown as HistoryMetadata,
-				hisDocument,
-				indexMetadatas
+			if (!primaryDoc) return emptyHisRes;
+
+			// 3. Reconstruct the rich object.
+			const historyInfo = metadataToHistory(
+				primaryDoc.metadata as unknown as HistoryMetadata,
+				primaryDoc.document || '',
+				indexRecords as unknown as HistoryIndexMetadata[]
 			);
 
-			// 4. Return the response object populated with the single lore.
+			// 4. Return the response.
 			return {
-				ids: [historyInfo.historyId],
-				metadatas: [hisMetadata],
-				documents: [hisDocument], // Or include index documents if needed
+				ids: [primaryDoc.id],
+				metadatas: [primaryDoc.metadata],
+				documents: [primaryDoc.document],
 				historyInfos: [historyInfo],
-				historyInfo: historyInfo,
+				historyInfo,
 				historyContent: historyInfo.content,
 				historyContents: [historyInfo.content],
 			};
 		} catch (error) {
-			// Handle other potential errors.
-			handleServiceError(
-				error,
-				'An internal error occurred in [getLore].',
-				`Failed to get lore for ID ${historyId}`,
-				{ suppress404: true }
-			);
+			handleServiceError(error, `Failed to get history for ID ${historyId}`);
 		}
 	},
 
+	/**
+	 * Retrieves all history events for a specific character.
+	 */
 	getHistories: async (characterId: string): Promise<HistoryResponse> => {
 		try {
 			const collection = await historyStore._getCollection();
+
+			// 1. Fetch all primary HISTORY documents for the character.
 			const where: Where = {
 				$and: [{ type: { $eq: METADATA_TYPES.HISTORY } }, { characterId: { $eq: characterId } }],
 			};
 			const historyResults = await getRecords(collection, where);
-			const historyPrimaryDocs = validateChromaResponse(historyResults, 'getList', collectionType);
-			if (historyPrimaryDocs.ids.length === 0) return emptyHisRes;
+			const primaryDocs = validateChromaResponse(historyResults, 'getList', collectionType);
+			if (primaryDocs.ids.length === 0) return emptyHisRes;
 
-			const contentIds = historyPrimaryDocs.ids;
+			// 2. Fetch all index records for these histories in one call.
+			const historyIds = primaryDocs.ids;
 			const indexWhere: Where = {
-				$and: [{ type: { $eq: METADATA_TYPES.INDEX } }, { contentId: { $in: contentIds } }],
+				$and: [{ type: { $eq: METADATA_TYPES.INDEX } }, { historyId: { $in: historyIds } }],
 			};
 			const indexResults = await getRecords(collection, indexWhere);
-			const allIndexRecords = validateChromaResponse(indexResults, 'getList', collectionType);
+			const allIndexRecords = validateChromaResponse(
+				indexResults,
+				'getList',
+				collectionType
+			).metadatas;
 
-			const historyInfos = historyPrimaryDocs.metadatas.map((metadata, i) => {
-				const relatedIndexMetadatas = allIndexRecords.metadatas.filter(
-					(record) => !!record && record.contentId === (metadata as unknown as HistoryMetadata).historyId
+			// 3. Reconstruct full rich objects.
+			const historyInfos = primaryDocs.metadatas.map((metadata, i) => {
+				const relatedIndexes = (allIndexRecords as unknown as HistoryIndexMetadata[]).filter(
+					(record) => record.historyId === (metadata as unknown as HistoryMetadata).historyId
 				);
 				return metadataToHistory(
 					metadata as unknown as HistoryMetadata,
-					historyPrimaryDocs.documents[i] || '',
-					relatedIndexMetadatas as unknown as LoreIndexMetadata[]
+					primaryDocs.documents[i] || '',
+					relatedIndexes
 				);
 			});
 
 			return {
-				ids: historyPrimaryDocs.ids,
-				metadatas: historyPrimaryDocs.metadatas,
-				documents: historyPrimaryDocs.documents,
+				ids: primaryDocs.ids,
+				metadatas: primaryDocs.metadatas,
+				documents: primaryDocs.documents,
 				historyInfos,
 				historyInfo: historyInfos[0] || null,
 				historyContent: historyInfos[0]?.content || '',
@@ -273,23 +283,15 @@ export const historyStore = {
 
 	/**
 	 * Deletes a history document and all its associated index entries.
-	 * @param historyId The unique identifier of the history to delete.
 	 */
 	deleteHistory: async (historyId: string): Promise<void> => {
 		try {
 			const collection = await historyStore._getCollection();
-			console.log(
-				`[LoreStore] Deleting history and all associated indexes for historyId: ${historyId}`
-			);
 
-			// This where clause targets both the primary HISTORY document (via its unique `historyId` field)
-			// and all its associated INDEX documents (via the `contentId` field).
-			const whereFilter: Where = {
-				$or: [{ historyId: { $eq: historyId } }, { contentId: { $eq: historyId } }],
-			};
+			// Delete primary document AND all index records using the historyId field
+			const whereFilter: Where = { historyId: { $eq: historyId } };
 
 			await deleteRecords(collection, undefined, whereFilter);
-			console.log(`[LoreStore] Successfully deleted history and indexes for historyId: ${historyId}`);
 		} catch (error) {
 			handleServiceError(error, `Failed to delete history ${historyId}`);
 		}
@@ -298,38 +300,43 @@ export const historyStore = {
 	/**
 	 * [For Backend RAG] Performs a hybrid semantic/metadata search for History entries.
 	 */
-	async queryHistories(
+	queryHistories: async (
 		characterId: string,
 		queryTexts: string[],
 		filterCriteria?: FilterCriteria,
 		whereDocument?: WhereDocument,
 		limit?: number
-	): Promise<HistoryResponse> {
+	): Promise<HistoryResponse> => {
 		try {
 			const collection = await historyStore._getCollection();
-			let contentIdsToSearch: string[] | undefined = undefined;
+			let historyIdsToSearch: string[] | undefined = undefined;
 
+			// 1. Pre-filter via INDEX documents to get candidate historyIds.
 			if (filterCriteria && Object.keys(filterCriteria).length > 0) {
 				const indexWhereFilter = historyStore._buildIndexWhereClause(characterId, filterCriteria);
 				if (indexWhereFilter) {
 					const indexResults = await getRecords(collection, indexWhereFilter);
 					const validatedIndexes = validateChromaResponse(indexResults, 'getList', collectionType);
-					contentIdsToSearch = [
-						...new Set(validatedIndexes.metadatas.map((m) => (m as unknown as LoreIndexMetadata).loreId)),
+					historyIdsToSearch = [
+						...new Set(
+							validatedIndexes.metadatas.map((m) => (m as unknown as HistoryIndexMetadata).historyId)
+						),
 					];
-					if (contentIdsToSearch.length === 0) return emptyHisRes;
+					if (historyIdsToSearch.length === 0) return emptyHisRes;
 				}
 			}
 
+			// 2. Build the main query for primary HISTORY documents.
 			const queryConditions: Where[] = [
 				{ type: { $eq: METADATA_TYPES.HISTORY } },
 				{ characterId: { $eq: characterId } },
 			];
-			if (contentIdsToSearch) {
-				queryConditions.push({ historyId: { $in: contentIdsToSearch } });
+			if (historyIdsToSearch) {
+				queryConditions.push({ historyId: { $in: historyIdsToSearch } });
 			}
 			const queryWhere: Where = { $and: queryConditions };
 
+			// 3. Perform the hybrid search.
 			const searchLimit = limit ? Math.min(limit * 3, 50) : 30;
 			const queryResults = await queryRecords(
 				collection,
@@ -338,31 +345,35 @@ export const historyStore = {
 				whereDocument,
 				searchLimit
 			);
-			const validatedQueryResults = queryResults.map((r) =>
+			const validatedResults = queryResults.map((r) =>
 				validateChromaResponse(r, 'getList', collectionType)
 			);
 
-			const rankedResults = reRankSemanticResults(validatedQueryResults, limit, {
+			// 4. Rank results.
+			const rankedResults = reRankSemanticResults(validatedResults, limit, {
 				semanticWeight: 1.0,
 				recencyWeight: 0.0,
 				updatedAtField: 'updatedAt',
 			});
-
 			if (rankedResults.ids.length === 0) return emptyHisRes;
 
-			const finalContentIds = rankedResults.ids;
-			const allIndexResult = await getRecords(collection, { contentId: { $in: finalContentIds } });
-			const validatedIndexes = validateChromaResponse(allIndexResult, 'getList', collectionType);
+			// 5. Reconstruct full objects.
+			const finalHistoryIds = rankedResults.ids;
+			const allIndexResult = await getRecords(collection, { historyId: { $in: finalHistoryIds } });
+			const allIndexRecords = validateChromaResponse(
+				allIndexResult,
+				'getList',
+				collectionType
+			).metadatas;
 
 			const historyInfos = rankedResults.metadatas.map((metadata, i) => {
-				const relatedIndexMetadatas = validatedIndexes.metadatas.filter(
-					(record): record is Metadata =>
-						!!record && record.contentId === (metadata as unknown as HistoryMetadata).historyId
+				const relatedIndexes = (allIndexRecords as unknown as HistoryIndexMetadata[]).filter(
+					(record) => record.historyId === (metadata as unknown as HistoryMetadata).historyId
 				);
 				return metadataToHistory(
 					metadata as unknown as HistoryMetadata,
 					rankedResults.documents[i] || '',
-					relatedIndexMetadatas as unknown as LoreIndexMetadata[]
+					relatedIndexes
 				);
 			});
 
@@ -377,17 +388,10 @@ export const historyStore = {
 			};
 		} catch (error) {
 			handleServiceError(error, `Failed to query histories for character ${characterId}`);
-			return emptyHisRes;
 		}
 	},
 
-	// --- UTILITY METHODS ---
-
-	/**
-	 * Clear collection cache
-	 */
 	clearCollectionCache: (): void => {
-		console.log('[LoreService] Clearing cached lore collection.');
 		historyStore._historyCollection = null;
 	},
 };

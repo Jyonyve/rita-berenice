@@ -4,15 +4,17 @@ import { METADATA_TYPES, NA } from '#shared/config/constants.js';
 
 import { buildChatTurnMetadataPrompt } from '../util/templateUtils.js';
 import { ChatTurn } from '#shared/domain/chat/chat.type.js';
-import { RecapInfo } from '#shared/domain/recap/RecapInterfaces.js';
 import { convertArrayToString, parseSessionId } from '#shared/util/parseUtils.js';
 import { MemoryResponse } from '#shared/api/ModuleResponse.js';
-import { recapStore } from '../store/recapStore.js';
-import { characterStore } from '../store/characterStore.js';
-import { chatStore } from '../store/chatStore.js';
-import { loreStore } from '../store/loreStore.js';
-import { profileStore } from '../store/profileStore.js';
-import { termStore } from '../store/termStore.js';
+import {
+	chatStore,
+	historyStore,
+	loreStore,
+	profileStore,
+	termStore,
+	characterStore,
+} from '../store/index.js';
+
 import { handleServiceError } from '../util/serviceHelpers.js';
 import {
 	mapLoreContexts,
@@ -23,13 +25,12 @@ import {
 import { llmService } from './llmService.js';
 import { DEFAULT_EXTRACTION_MODEL } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { ragQueryService } from './ragQueryService.js';
-import { WhereDocument } from 'chromadb';
 import { createChatTurnMetadataSchema } from '#server/util/schemaUtils.js';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { DEFAULT_EMOTION } from '#shared/config/emotionConstants.js';
 import { logFlow } from '../util/jsonlLogger.js';
 import { LangCode } from '#shared/config/langConstants.js';
-import { HistoryInfo, LoreInfo } from '#shared/src/shared/domain/lore/lore.type.js';
+import { HistoryInfo, LoreInfo, RecapInfo } from '#shared/domain/index.js';
 import { parseEntriesToConversation } from '../util/chatParseUtils.js';
 
 export const memoryEngine = {
@@ -72,7 +73,7 @@ export const memoryEngine = {
 					transformedQuery.filterCriteria,
 					undefined
 				),
-				loreStore.queryHistories(
+				historyStore.queryHistories(
 					characterId,
 					transformedQuery.queryTexts,
 					transformedQuery.filterCriteria,
@@ -166,8 +167,8 @@ export const memoryEngine = {
 			const [profileInfo, charInfo, loreRes, historyRes, termGuidanceMap] = await Promise.all([
 				profileStore.getProfileBySessionId(sessionId),
 				characterStore.getCharacter(characterId),
-				loreStore.getLores(characterId),
-				loreStore.getHistories(characterId),
+				loreStore.getLoresByCharacter(characterId),
+				historyStore.getHistories(characterId),
 				termStore.ensureAndGetTermsForPrompt(sessionId, userId, extractedKpns),
 			]);
 

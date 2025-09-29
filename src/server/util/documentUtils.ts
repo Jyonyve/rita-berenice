@@ -1,14 +1,21 @@
-import { ChatEntry, ChatMessage, ChatTurn } from '#shared/domain/chat/chat.type.js';
-import { CharacterDocument, CharacterInfo } from '#shared/domain/character/character.type.js';
-import { LoreInfo } from '#shared/src/shared/domain/lore/lore.type.js';
-import { RecapInfo } from '#shared/domain/recap/RecapInterfaces.js';
-import { TermDocument, TermType } from '#shared/domain/term/term.type.js';
-import { UserDocument, UserInfo } from '#shared/domain/user/user.type.js';
-import { ProfileDocument, ProfileInfo } from '#shared/domain/profile/profile.type.js';
-import { SessionDocument, SessionInfo } from '#shared/domain/session/session.type.js';
 import { parseConversationToEntries, parseEntriesToConversation } from './chatParseUtils.js';
 import { Term } from '#shared/api/ModuleResponse.js';
-import { HistoryInfo } from '#shared/src/shared/domain/history/history.type.js';
+import {
+	CharacterDocument,
+	CharacterInfo,
+	ChatEntry,
+	ChatTurn,
+	HistoryInfo,
+	LoreInfo,
+	ProfileDocument,
+	ProfileInfo,
+	RecapInfo,
+	SessionDocument,
+	SessionInfo,
+	TermDocument,
+	UserDocument,
+	UserInfo,
+} from '#shared/domain/index.js';
 
 export const flatChatMessageToDoc = (entries: ChatEntry[]) => {
 	return parseEntriesToConversation(entries).trim();

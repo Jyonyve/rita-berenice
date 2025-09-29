@@ -16,7 +16,7 @@ import { buildLoreId, buildLoreIndexId } from '#shared/util/buildIdUtils.js';
 import { validateChromaResponse, handleServiceError } from '../util/serviceHelpers.js';
 import { FilterCriteria } from '../util/schemaUtils.js';
 import { reRankSemanticResults } from '../util/queryUtils.js';
-import { loreToDocument } from '#shared/util/documentUtils.js';
+import { loreToDocument } from '#server/util/documentUtils.js';
 
 // Destructure chromaDbClient methods
 const {
@@ -110,7 +110,7 @@ export const loreStore = {
 		const loreContext = `Lore titled "${loreInfo.title}", category: ${loreInfo.category}. Summary: ${loreInfo.summary}. Content: ${loreInfo.content.slice(0, 200)}...`;
 
 		// Create semantic-searchable documents for different content types
-		const createSemanticIndexRecords = (
+		const createIndexRecords = (
 			list: string[],
 			contentType: LoreIndexContentType,
 			contextDescription: string
@@ -132,18 +132,14 @@ export const loreStore = {
 		};
 
 		// Create semantic index records with rich context
-		createSemanticIndexRecords(
+		createIndexRecords(
 			loreInfo.characterIds,
 			'AFFECTED_CHARACTER',
 			'Character associated with this lore'
 		);
-		createSemanticIndexRecords(
-			loreInfo.keywordList,
-			'KEYWORD',
-			'Key concept or important term in this lore'
-		);
-		createSemanticIndexRecords(loreInfo.topicList, 'TOPIC', 'Main topic or theme of this lore');
-		createSemanticIndexRecords(
+		createIndexRecords(loreInfo.keywordList, 'KEYWORD', 'Key concept or important term in this lore');
+		createIndexRecords(loreInfo.topicList, 'TOPIC', 'Main topic or theme of this lore');
+		createIndexRecords(
 			loreInfo.entityList,
 			'ENTITY',
 			'Person, place, or thing mentioned in this lore'
@@ -290,56 +286,91 @@ export const loreStore = {
 	},
 
 	/**
-	 * Get all lores for specific character(s) by searching index records
+	 * Get all lores for a specific character by searching the index records.
+	 * This version is optimized to reduce database calls.
 	 */
-	getLoresByCharacter: async (characterIds: string | string[]): Promise<LoreResponse> => {
+	getLoresByCharacter: async (characterId: string): Promise<LoreResponse> => {
 		try {
 			const collection = await loreStore._getCollection();
-			const charIdArray = Array.isArray(characterIds) ? characterIds : [characterIds];
 
-			// 1. Find lores that have these characters in their index records
+			// Step 1: Find all INDEX records where the 'value' is the character's ID.
+			// Your logic here is correct.
 			const indexWhere: Where = {
 				$and: [
 					{ type: { $eq: METADATA_TYPES.INDEX } },
 					{ contentType: { $eq: 'AFFECTED_CHARACTER' } },
-					{ value: { $in: charIdArray } },
+					{ value: { $eq: characterId } }, // Using $eq for a single ID is slightly more direct
 				],
 			};
 
 			const rawIndexResults = await getRecords(collection, indexWhere);
 			const indexResults = validateChromaResponse(rawIndexResults, 'getList', collectionType);
 
-			if (indexResults.ids.length === 0) return emptyLoreRes;
+			if (indexResults.ids.length === 0) {
+				return emptyLoreRes;
+			}
 
-			// 2. Get unique loreIds from index records
+			// Step 2: Get a unique list of loreIds from the found index records.
 			const loreIds = [
 				...new Set(
 					indexResults.metadatas.map((m) => (m as unknown as LoreIndexMetadata).loreId).filter(Boolean)
 				),
 			];
 
-			// 3. Fetch each lore with complete reconstruction
-			const lorePromises = loreIds.map((loreId) => loreStore.getLore(loreId));
-			const loreResponses = await Promise.all(lorePromises);
+			if (loreIds.length === 0) {
+				return emptyLoreRes;
+			}
 
-			// 4. Combine results
-			const allLoreInfos = loreResponses
-				.filter((response) => response.loreInfos.length > 0)
-				.flatMap((response) => response.loreInfos);
+			// --- OPTIMIZATION: Fetch all data in batches instead of a loop ---
 
-			if (allLoreInfos.length === 0) return emptyLoreRes;
+			// Step 3: Fetch all primary LORE/WORLD documents for the found loreIds in one call.
+			const primaryDocsWhere: Where = { loreId: { $in: loreIds } };
+			const rawPrimaryResults = await getRecords(collection, primaryDocsWhere);
+			const primaryResults = validateChromaResponse(rawPrimaryResults, 'getList', collectionType);
 
+			// Filter for only primary doc types, just in case index records were returned
+			const primaryMetadatas = primaryResults.metadatas.filter(
+				(m) => m?.type === METADATA_TYPES.LORE || m?.type === METADATA_TYPES.WORLD
+			);
+			if (primaryMetadatas.length === 0) return emptyLoreRes;
+
+			// Step 4: Fetch ALL index records for these lores to enable full reconstruction.
+			const allIndexWhere: Where = {
+				$and: [{ type: { $eq: METADATA_TYPES.INDEX } }, { loreId: { $in: loreIds } }],
+			};
+			const rawAllIndexResults = await getRecords(collection, allIndexWhere);
+			const allIndexRecords = validateChromaResponse(rawAllIndexResults, 'getList', collectionType)
+				.metadatas as unknown as LoreIndexMetadata[];
+
+			// --- END OPTIMIZATION ---
+
+			// Step 5: Reconstruct the rich LoreInfo objects in memory.
+			const allLoreInfos = primaryResults.metadatas
+				.map((metadata, i) => {
+					if (metadata?.type !== METADATA_TYPES.LORE && metadata?.type !== METADATA_TYPES.WORLD)
+						return null;
+
+					const loreMetadata = metadata as unknown as LoreMetadata;
+					const relatedIndexRecords = allIndexRecords.filter(
+						(record) => record.loreId === loreMetadata.loreId
+					);
+
+					return metadataToLore(loreMetadata, primaryResults.documents[i] || '', relatedIndexRecords);
+				})
+				.filter(Boolean) as LoreInfo[]; // Filter out any nulls
+
+			// Step 6: Return the final, combined response.
 			return {
 				ids: allLoreInfos.map((l) => l.loreId),
-				metadatas: allLoreInfos.map((l) => loreToMetadata(l)),
+				metadatas: allLoreInfos.map((l) => loreToMetadata(l)) as unknown as Metadata[],
 				documents: allLoreInfos.map((l) => l.content),
 				loreInfos: allLoreInfos,
-				loreInfo: allLoreInfos[0],
+				loreInfo: allLoreInfos[0] || null,
 				loreContent: allLoreInfos[0]?.content || '',
 				loreContents: allLoreInfos.map((l) => l.content),
 			};
 		} catch (error) {
-			handleServiceError(error, `Failed to get lores for characters ${characterIds}`);
+			handleServiceError(error, `Failed to get lores for character ${characterId}`);
 			return emptyLoreRes;
 		}
 	},
@@ -377,7 +408,7 @@ export const loreStore = {
 
 			return {
 				ids: allWorldLores.map((l) => l.loreId),
-				metadatas: allWorldLores.map((l) => loreToMetadata(l)),
+				metadatas: allWorldLores.map((l) => loreToMetadata(l)) as unknown as Metadata[],
 				documents: allWorldLores.map((l) => l.content),
 				loreInfos: allWorldLores,
 				loreInfo: allWorldLores[0] || ({} as LoreInfo),
@@ -431,7 +462,7 @@ export const loreStore = {
 		try {
 			const collection = await loreStore._getCollection();
 			const charIdArray = Array.isArray(characterIds) ? characterIds : [characterIds];
-			let contentIdsToSearch: string[] | undefined = undefined;
+			let loreIdsToSearch: string[] | undefined = undefined;
 
 			// 1. Apply filter criteria to narrow down search space
 			if (filterCriteria && Object.keys(filterCriteria).length > 0) {
@@ -439,10 +470,10 @@ export const loreStore = {
 				if (indexWhereFilter) {
 					const indexResults = await getRecords(collection, indexWhereFilter);
 					const validatedIndexes = validateChromaResponse(indexResults, 'getList', collectionType);
-					contentIdsToSearch = [
+					loreIdsToSearch = [
 						...new Set(validatedIndexes.metadatas.map((m) => (m as unknown as LoreIndexMetadata).loreId)),
 					];
-					if (contentIdsToSearch.length === 0) return emptyLoreRes;
+					if (loreIdsToSearch.length === 0) return emptyLoreRes;
 				}
 			}
 
@@ -456,8 +487,8 @@ export const loreStore = {
 				},
 			];
 
-			if (contentIdsToSearch) {
-				queryConditions.push({ loreId: { $in: contentIdsToSearch } });
+			if (loreIdsToSearch) {
+				queryConditions.push({ loreId: { $in: loreIdsToSearch } });
 			}
 
 			const queryWhere: Where = { $and: queryConditions };
@@ -498,7 +529,7 @@ export const loreStore = {
 
 			return {
 				ids: loreInfos.map((l) => l.loreId),
-				metadatas: loreInfos.map((l) => loreToMetadata(l)),
+				metadatas: loreInfos.map((l) => loreToMetadata(l)) as unknown as Metadata[],
 				documents: loreInfos.map((l) => l.content),
 				loreInfos,
 				loreInfo: loreInfos[0] || ({} as LoreInfo),

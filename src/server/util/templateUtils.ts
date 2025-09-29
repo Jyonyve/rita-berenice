@@ -3,12 +3,7 @@
 import { BasicBeingInfo, CharacterInfo } from '#shared/domain/character/character.type.js';
 import { ChatMessage, ChatTurn } from '#shared/domain/chat/chat.type.js';
 import { convertArrayToString } from '#shared/util/parseUtils.js';
-import {
-	HistoryContext,
-	HistoryInfo,
-	LoreContext,
-	LoreInfo,
-} from '#shared/src/shared/domain/lore/lore.type.js';
+import { HistoryCategory, HistoryInfo, LoreCategory, LoreInfo } from '#shared/domain/index.js';
 import { MemoryResponse } from '#shared/api/ModuleResponse.js';
 import { ProfileInfo } from '#shared/domain/profile/profile.type.js';
 import { LangCode } from '#shared/config/langConstants.js';
@@ -389,8 +384,27 @@ export const buildChatTurnMetadataPrompt = (
 	userRequest: ChatMessage,
 	charInfo: BasicBeingInfo,
 	charResponse: ChatMessage,
-	loreContexts: LoreContext[],
-	historyContexts: HistoryContext[],
+	loreContexts: {
+		loreId: string;
+		title: string;
+		summary: string;
+		category: LoreCategory;
+		keywordList: string[];
+		topicList: string[];
+		entityList: string[];
+		characterIdList: string[];
+	}[],
+	historyContexts: {
+		historyId: string; // The ID to be returned
+		title: string; // The human-readable title
+		summary: string; // A concise summary of the event
+		category: HistoryCategory; // The event's classification
+		periodLabel: string; // The life period this event belongs to
+		keywordList: string[]; // Specific search terms
+		topicList: string[]; // Broader thematic concepts
+		entityList: string[]; // Specific named people, places, things
+		allAffectedCharacterIdList: string[];
+	}[],
 	termGuidanceMap?: Map<string, string>,
 
 	eng?: boolean

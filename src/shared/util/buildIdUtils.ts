@@ -1,9 +1,12 @@
 import { ALPHANUMERIC_ALPHABET, METADATA_TYPES } from '#shared/config/constants.js';
-import { ChatIndexContentType, ChatMessageType } from '#shared/domain/chat/chat.type.js';
+import {
+	ChatIndexContentType,
+	ChatMessageType,
+	LoreIndexContentType,
+	RecapIndexContentType,
+} from '#shared/domain/index.js';
 import { customAlphabet } from 'nanoid';
 import { _nanoid } from 'zod/v4/core';
-import { LoreIndexContentType } from '../domain/lore/lore.type.ts';
-import { RecapIndexContentType } from '../domain/recap/RecapInterfaces.js';
 import { LangCode } from '../config/langConstants.js';
 import { generateNickName } from '../config/nicknameConstants.js';
 
@@ -46,12 +49,12 @@ export const buildProfileId = (sessionId: string, userId: string) => {
 	return `${sessionId}_${userId}`;
 };
 
-export const buildLoreId = (characterId: string, category: string) => {
-	return `${characterId}_${sanitizeIdInput(category)}_${_genNanoId(4)}_${SUFFIX.LORE}`;
+export const buildLoreId = (userId: string) => {
+	return `${userId}_${_genNanoId(4)}_${SUFFIX.LORE}`;
 };
 
-export const buildHistoryId = (characterId: string, periodLabel: string) => {
-	return `${characterId}_${sanitizeIdInput(periodLabel)}_${_genNanoId(4)}_${SUFFIX.HISTORY}`;
+export const buildHistoryId = (userId: string) => {
+	return `${userId}_${_genNanoId(4)}_${SUFFIX.HISTORY}`;
 };
 
 /* chat id */

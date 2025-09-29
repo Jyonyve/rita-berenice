@@ -1,24 +1,34 @@
-import { CharacterCdo, CharacterInfo } from '../domain/character/character.type.ts';
-import { ProfileCdo, ProfileInfo } from '../domain/profile/profile.type.ts';
-import {
-	CharacterTermCdo,
-	CharacterTermInfo,
-	SessionTermCdo,
-	SessionTermInfo,
-} from '../domain/term/term.type.ts';
 import {
 	buildCharacterId,
 	buildChatTurnId,
 	buildHistoryId,
+	buildLoreId,
 	buildProfileId,
 	buildUserShowName,
 } from './buildIdUtils.js';
-import { ChatTurn, ChatTurnCdo } from '../domain/chat/chat.type.ts';
 import { parseSessionId } from './parseUtils.js';
-import { HistoryCdo, HistoryInfo, LoreCdo, LoreInfo } from '../domain/lore/lore.type.ts';
-import { DEFAULT_USER_AVATAR, NA } from '../config/constants.js';
+import {
+	CharacterCdo,
+	CharacterInfo,
+	CharacterTermCdo,
+	CharacterTermInfo,
+	ChatTurn,
+	ChatTurnCdo,
+	HistoryCdo,
+	HistoryInfo,
+	LoreCdo,
+	LoreInfo,
+	MiscLoreCdo,
+	ProfileCdo,
+	ProfileInfo,
+	SessionTermCdo,
+	SessionTermInfo,
+	UserCdo,
+	UserInfo,
+	WorldLoreCdo,
+} from '../domain/index.js';
+import { DEFAULT_USER_AVATAR, METADATA_TYPES, NA } from '../config/constants.js';
 import { DEFAULT_EMOTION } from '../config/emotionConstants.js';
-import { UserCdo, UserInfo } from '../domain/user/user.type.ts';
 
 //type guard
 export function isCharacterTermInfo(
@@ -52,6 +62,11 @@ export function isHistoryInfo(history: HistoryCdo | HistoryInfo): history is His
 export function isLoreInfo(lore: LoreCdo | LoreInfo): lore is LoreInfo {
 	return (lore as LoreInfo).loreId !== undefined;
 }
+
+export function isWorldLore(cdo: WorldLoreCdo | MiscLoreCdo): cdo is WorldLoreCdo {
+	return (cdo as WorldLoreCdo).category === 'World';
+}
+
 // init builder
 
 export const createBasicCharacterInfo = (cdo: CharacterCdo): CharacterInfo => {
@@ -121,15 +136,52 @@ export const createBasicChatTurn = (cdo: ChatTurnCdo): ChatTurn => {
 	};
 };
 
+// in typeGuardUtils.ts (alongside createBasicHistory)
+export const createBasicLore = (cdo: LoreCdo): LoreInfo => {
+	const now = new Date().toISOString();
+	const loreId = buildLoreId(cdo.userId);
+	return isWorldLore(cdo)
+		? {
+				...cdo,
+				loreId,
+				type: 'world',
+				generatedTitle: '',
+				summary: '',
+				category: 'World',
+				createdAt: now,
+				updatedAt: now,
+				keywordList: [],
+				topicList: [],
+				entityList: [],
+				characterIds: cdo.characterIds ?? [],
+			}
+		: {
+				...cdo,
+				loreId,
+				type: 'lore',
+				generatedTitle: '',
+				summary: '',
+				category: 'Other',
+				createdAt: now,
+				updatedAt: now,
+				source: '',
+				keywordList: [],
+				topicList: [],
+				entityList: [],
+				characterIds: cdo.characterIds ?? [],
+			};
+};
+
 export const createBasicHistory = (cdo: HistoryCdo): HistoryInfo => {
 	const now = new Date().toISOString();
+	const historyId = buildHistoryId(cdo.userId);
 	return {
 		content: cdo.content,
 		createdAt: now,
 		updatedAt: now,
 		title: cdo.title,
 		userId: cdo.userId,
-		historyId: '',
+		historyId,
 		type: 'history',
 		generatedTitle: '',
 		category: 'Other',
@@ -142,7 +194,6 @@ export const createBasicHistory = (cdo: HistoryCdo): HistoryInfo => {
 		allAffectedCharacterIdList: [],
 		relatedEventList: [],
 		keywordList: [],
-		profileId: '',
 		topicList: [],
 		entityList: [],
 	};

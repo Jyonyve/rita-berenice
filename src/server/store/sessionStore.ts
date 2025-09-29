@@ -34,7 +34,11 @@ export const sessionStore = {
 			const metadata = metadatas[index] as unknown as SessionMetadata;
 			const document = documents[index];
 			const inflatedDoc = inflateSessionDoc(document!);
-			const sessionInfo = metadataToSession(metadata!, inflatedDoc.lastCharMessage);
+			const sessionInfo = metadataToSession(
+				metadata!,
+				inflatedDoc.lastCharMessage,
+				inflatedDoc.userNote
+			);
 			return sessionInfo;
 		});
 		return {
@@ -74,7 +78,7 @@ export const sessionStore = {
 			type: METADATA_TYPES.SESSION,
 		};
 
-		const sessionInfo: SessionInfo = { ...metadata, lastCharMessage: firstCharMessage };
+		const sessionInfo: SessionInfo = { ...metadata, lastCharMessage: firstCharMessage, userNote: '' };
 
 		// We store the session metadata directly. The document can be a simple string for embedding.
 		const documentForEmbedding = flatSessionToDoc(sessionInfo);
@@ -99,7 +103,7 @@ export const sessionStore = {
 		const collection = await sessionStore._getCollection();
 		const now = new Date().toISOString();
 		try {
-			const { lastCharMessage, ...sessionMetadata } = sessionInfo;
+			const { lastCharMessage, userNote, ...sessionMetadata } = sessionInfo;
 
 			const updatedMetadata: SessionMetadata = { ...sessionMetadata, updatedAt: now };
 
@@ -107,6 +111,7 @@ export const sessionStore = {
 			const documentForEmbedding = flatSessionToDoc({
 				...updatedMetadata,
 				lastCharMessage: newMessage,
+				userNote,
 			});
 			await updateRecord(collection, updatedMetadata.sessionId, documentForEmbedding, updatedMetadata);
 		} catch (error) {
@@ -195,7 +200,7 @@ export const sessionStore = {
 		const now = new Date().toISOString();
 		try {
 			const sessionInfo = (await sessionStore.getSession(sessionId)).sessionInfo;
-			const { lastCharMessage, ...sessionMetadata } = sessionInfo;
+			const { lastCharMessage, userNote, ...sessionMetadata } = sessionInfo;
 
 			const updatedMetadata: SessionMetadata = {
 				...sessionMetadata,
@@ -207,6 +212,7 @@ export const sessionStore = {
 			const documentForEmbedding = flatSessionToDoc({
 				...updatedMetadata,
 				lastCharMessage: lastConversation,
+				userNote,
 			});
 			await updateRecord(collection, updatedMetadata.sessionId, documentForEmbedding, updatedMetadata);
 		} catch (error) {
@@ -228,7 +234,28 @@ export const sessionStore = {
 			const sessionInfo = (await sessionStore.getSession(sessionId)).sessionInfo;
 			const newSessionInfo: SessionInfo = { ...sessionInfo, title, updatedAt: now };
 			const documentForEmbedding = flatSessionToDoc(newSessionInfo);
-			const { lastCharMessage, ...updatedMetadata } = newSessionInfo;
+			const { lastCharMessage, userNote, ...updatedMetadata } = newSessionInfo;
+			await updateRecord(collection, updatedMetadata.sessionId, documentForEmbedding, updatedMetadata);
+		} catch (error) {
+			handleServiceError(
+				error,
+				'An internal error occurred while do [updateSessionOnNewMessage].',
+				`Failed to update sessionInfo Message with ID ${sessionId}:`
+			);
+		}
+	},
+
+	/**
+	 * Updates a session's metadata, typically after a new message is added.
+	 */
+	async updateSessionUserNote(sessionId: string, newUserNote: string): Promise<void> {
+		const collection = await sessionStore._getCollection();
+		const now = new Date().toISOString();
+		try {
+			const sessionInfo = (await sessionStore.getSession(sessionId)).sessionInfo;
+			const newSessionInfo: SessionInfo = { ...sessionInfo, updatedAt: now, userNote: newUserNote };
+			const documentForEmbedding = flatSessionToDoc(newSessionInfo);
+			const { lastCharMessage, userNote, ...updatedMetadata } = newSessionInfo;
 			await updateRecord(collection, updatedMetadata.sessionId, documentForEmbedding, updatedMetadata);
 		} catch (error) {
 			handleServiceError(

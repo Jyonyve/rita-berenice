@@ -18,8 +18,8 @@ import {
 } from '@mui/material';
 import { Visibility, VisibilityOff, CheckCircle, Warning, Refresh } from '@mui/icons-material';
 import { useForm, Controller, useWatch } from 'react-hook-form';
-import { GlassButton, GlassCard } from '../../layout/index.ts';
-import { useCredentialApi } from '../../hook/api/useCredentialApi.ts';
+import { GlassButton, GlassCard } from '../../layout/index.js';
+import { useCredentialApi } from '../../hook/api/useCredentialApi.js';
 import { useToast } from '../../provider/ToastProvider.tsx';
 import { UserApiKeys, ValidationResult } from '#shared/domain/credential/credential.type.js';
 import { getLangAlertText, getLangText } from '../../util/translateUtils.js';

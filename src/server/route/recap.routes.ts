@@ -9,7 +9,7 @@ import {
 } from '../util/routeHelpers.js';
 import { Payload } from '#shared/util/apiHelpers.js';
 import { recapStore } from '../store/recapStore.js';
-import { RecapInfo } from '#shared/domain/recap/RecapInterfaces.js';
+import { RecapInfo } from '#shared/domain/recap/recap.routes.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
 
 const router = Router();

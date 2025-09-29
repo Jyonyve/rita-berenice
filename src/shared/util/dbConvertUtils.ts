@@ -1,39 +1,41 @@
 // src/shared/util/loreHelpers.ts
 
-import {
-	LoreMetadata,
-	LoreInfo,
-	LoreIndexMetadata,
-	LoreIndexContentType,
-	WorldLoreMetadata,
-	MiscLoreInfo,
-	MiscLoreMetadata,
-	WorldLoreInfo,
-} from '../domain/lore/lore.type.js';
 import { convertArrayToString, convertStringToArray } from './parseUtils.js';
-import {
-	ChatTurnMetadata,
-	ChatTurn,
-	ChatMessage,
-	ChatIndexMetadata,
-	ChatIndexContentType,
-	DisplayTurn,
-} from '../domain/chat/chat.type.ts';
 import { buildProfileId } from './buildIdUtils.js';
-import { CharacterInfo, CharacterMetadata } from '../domain/character/character.type.js';
-import { RecapInfo, RecapMetadata, RecapIndexMetadata } from '../domain/recap/RecapInterfaces.js';
-import { ProfileInfo, ProfileMetadata } from '../domain/profile/profile.type.ts';
-import { UserInfo, UserMetadata } from '../domain/user/user.type.ts';
-import { SessionMetadata } from '../domain/session/session.type.js';
-import { SessionInfo } from '#shared/domain/session/session.type.js';
-import { Reference, RelatedEvent } from '../domain/BaseTypes.js';
-import { METADATA_TYPES } from '#shared/config/constants.js';
 import {
+	CharacterInfo,
+	CharacterMetadata,
+	ChatIndexContentType,
+	ChatIndexMetadata,
+	ChatMessage,
+	ChatTurn,
+	ChatTurnMetadata,
+	DisplayTurn,
 	HistoryIndexContentType,
 	HistoryIndexMetadata,
 	HistoryInfo,
 	HistoryMetadata,
-} from '../domain/history/history.type.js';
+	LoreIndexContentType,
+	LoreIndexMetadata,
+	LoreInfo,
+	LoreMetadata,
+	MiscLoreInfo,
+	MiscLoreMetadata,
+	ProfileInfo,
+	ProfileMetadata,
+	RecapIndexMetadata,
+	RecapInfo,
+	RecapMetadata,
+	Reference,
+	RelatedEvent,
+	SessionInfo,
+	SessionMetadata,
+	UserInfo,
+	UserMetadata,
+	WorldLoreInfo,
+	WorldLoreMetadata,
+} from '../domain/index.js';
+import { METADATA_TYPES } from '#shared/config/constants.js';
 
 export const metadataToCharacter = (
 	metadata: CharacterMetadata,

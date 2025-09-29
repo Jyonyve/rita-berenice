@@ -85,7 +85,10 @@ export interface MiscLoreInfo extends MiscLoreMetadata {
 }
 
 // --- CDO TYPES ---
-export type WorldLoreCdo = Pick<WorldLoreInfo, 'content' | 'title' | 'userId' | 'characterIds'>;
+export type WorldLoreCdo = Pick<
+	WorldLoreInfo,
+	'content' | 'title' | 'userId' | 'characterIds' | 'category'
+>;
 export type MiscLoreCdo = Pick<MiscLoreInfo, 'content' | 'title' | 'userId' | 'characterIds'>;
 
 // Union types for easier handling

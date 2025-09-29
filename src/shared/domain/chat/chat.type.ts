@@ -1,7 +1,7 @@
 import { METADATA_TYPES, MetadataType } from '#shared/config/constants.js';
-import { allEmotionKeywordsList, EmotionValue } from '../../config/emotionConstants.ts';
-import { DefaultAiRole } from '../aimodel/AiInfoTypes.ts';
-import { Reference } from '../BaseTypes.ts';
+import { allEmotionKeywordsList, EmotionValue } from '../../config/emotionConstants.js';
+import { DefaultAiRole } from '../aimodel/AiInfoTypes.js';
+import { Reference } from '../BaseTypes.js';
 
 export type ChatRoleType = DefaultAiRole;
 export type ChatEntry = { type: 'dialogue' | 'action'; prompt: string };

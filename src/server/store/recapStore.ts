@@ -11,7 +11,7 @@ import {
 	RecapMetadata,
 	RecapIndexMetadata,
 	RecapIndexContentType,
-} from '#shared/domain/recap/RecapInterfaces.js';
+} from '#shared/domain/recap/recap.routes.js';
 import { buildRecapIndexId } from '#shared/util/buildIdUtils.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import { FilterCriteria } from '../util/schemaUtils.js';
