@@ -4,10 +4,12 @@ import { MODULE_NAMES } from '#shared/config/constants.js';
 import { Payload } from '#shared/util/apiHelpers.js';
 import { SessionResponse } from '#shared/api/ModuleResponse.js';
 import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
+import { useAuth } from '../../provider/index.js';
 
 export const useSessionApi = () => {
 	const MODULE_NAME = MODULE_NAMES.SESSION;
 	const queryClient = useQueryClient();
+	const { userId } = useAuth();
 
 	/** Creates a new session */
 	const createSession = useMutation<
@@ -77,7 +79,25 @@ export const useSessionApi = () => {
 			queryClient.invalidateQueries({ queryKey: ['sessions', 'detail', variables.sessionId] });
 
 			// Also invalidate all session lists since the "latest message" affects list ordering/preview
-			queryClient.invalidateQueries({ queryKey: ['sessions', 'list'] });
+			queryClient.invalidateQueries({ queryKey: ['sessions', 'list', userId] });
+		},
+	});
+
+	/**
+	 * Updates session on new message. Called frequently.
+	 * Now efficiently invalidates both the specific session AND related lists.
+	 */
+	const updateSessionUserNote = useMutation<void, Error, { sessionId: string; userNote: string }>({
+		mutationFn: async (variables) => {
+			const url = genApiUrl(MODULE_NAME, 'updateSessionUserNote');
+			await apiClient.put(url, variables);
+		},
+		onSuccess: (_, variables) => {
+			// Invalidate the specific session detail
+			queryClient.invalidateQueries({ queryKey: ['sessions', 'detail', variables.sessionId] });
+
+			// Also invalidate all session lists since the "latest message" affects list ordering/preview
+			queryClient.invalidateQueries({ queryKey: ['sessions', 'list', userId] });
 		},
 	});
 
@@ -92,7 +112,7 @@ export const useSessionApi = () => {
 		onSuccess: (_, variables) => {
 			// Invalidate the specific session and all related lists
 			queryClient.invalidateQueries({ queryKey: ['sessions', 'detail', variables.sessionId] });
-			queryClient.invalidateQueries({ queryKey: ['sessions', 'list'] });
+			queryClient.invalidateQueries({ queryKey: ['sessions', 'list', userId] });
 		},
 	});
 
@@ -107,7 +127,7 @@ export const useSessionApi = () => {
 		onSuccess: (_, variables) => {
 			// Title changes affect both detail view and list previews
 			queryClient.invalidateQueries({ queryKey: ['sessions', 'detail', variables.sessionId] });
-			queryClient.invalidateQueries({ queryKey: ['sessions', 'list'] });
+			queryClient.invalidateQueries({ queryKey: ['sessions', 'list', userId] });
 		},
 	});
 
@@ -124,7 +144,7 @@ export const useSessionApi = () => {
 			queryClient.invalidateQueries({
 				queryKey: ['sessions', 'detail', variables.sessionInfo.sessionId],
 			});
-			queryClient.invalidateQueries({ queryKey: ['sessions', 'list'] });
+			queryClient.invalidateQueries({ queryKey: ['sessions', 'list', userId] });
 		},
 	});
 
@@ -135,6 +155,7 @@ export const useSessionApi = () => {
 		initSessionProfileId: initSessionProfileId.mutateAsync,
 		updateSession: updateSession.mutateAsync,
 		updateSessionOnNewMessage: updateSessionOnNewMessage.mutateAsync,
+		updateSessionUserNote: updateSessionUserNote.mutateAsync,
 		updateSessionTitle: updateSessionTitle.mutateAsync,
 		getSessionsByUserIdAndCharacterId,
 	};
