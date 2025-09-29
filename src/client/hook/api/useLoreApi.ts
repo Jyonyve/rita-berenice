@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../../provider/ToastProvider.jsx';
 import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
-import { MODULE_NAMES } from '#shared/config/constants.js';
-import { HistoryInfo, LoreInfo } from '#shared/src/shared/domain/lore/lore.type.js';
+import { LoreInfo } from '#shared/domain/index.js';
 import { Payload } from '#shared/util/apiHelpers.js';
-import { HistoryResponse, LoreResponse } from '#shared/api/ModuleResponse.js';
+import { LoreResponse } from '#shared/api/ModuleResponse.js';
+import { getLangAlertText } from '../../util/translateUtils.js';
+import { LANG_KEYS, MODULE_NAMES } from '#shared/config/index.js';
 
 /**
  * A client-side hook for interacting with the LORE API endpoints, which handle
@@ -27,24 +28,32 @@ export const useLoreApi = () => {
 			return response.data;
 		},
 		onSuccess: (data, variables) => {
-			addToast('Lore entry saved successfully.', 'success');
+			addToast(getLangAlertText(LANG_KEYS.LORE_SAVED_SUCCESS), 'success');
 
 			// Invalidate the specific lore entry
 			queryClient.invalidateQueries({ queryKey: ['lore', 'detail', 'getLore', data.loreId] });
 
 			// Invalidate all lore lists for this character
-			queryClient.invalidateQueries({ queryKey: ['lore', 'list', 'getLores', variables.characterId] });
+			if (variables.characterIds && variables.characterIds.length > 0) {
+				const invalidationPromises = variables.characterIds.map((characterId) =>
+					queryClient.invalidateQueries({
+						queryKey: ['lore', 'list', 'getLoresByCharacter', characterId],
+					})
+				);
+				// Use Promise.all to wait for all invalidations to be triggered.
+				Promise.all(invalidationPromises);
+			}
 		},
 	});
 
 	/**
 	 * Fetches all lore entries for a specific character.
 	 */
-	const getLores = (characterId: string) =>
+	const getLoresByCharacter = (characterId: string) =>
 		useQuery<LoreResponse, Error>({
-			queryKey: ['lore', 'list', 'getLores', characterId], // Separate lore hierarchy
+			queryKey: ['lore', 'list', 'getLoresByCharacter', characterId], // Separate lore hierarchy
 			queryFn: async () => {
-				const url = genApiUrl(MODULE_NAME, 'getLores', [characterId]);
+				const url = genApiUrl(MODULE_NAME, 'getLoresByCharacter', [characterId]);
 				const response = await apiClient.get<Payload>(url);
 				return decompressData<LoreResponse>(response.data.payload);
 			},
@@ -65,64 +74,5 @@ export const useLoreApi = () => {
 			enabled: !!loreId,
 		});
 
-	// --- HISTORY OPERATIONS ---
-
-	/**
-	 * Stores a new or updated history entry.
-	 */
-	const storeHistory = useMutation<{ historyId: string }, Error, HistoryInfo>({
-		mutationFn: async (historyInfo) => {
-			const url = genApiUrl(MODULE_NAME, 'storeHistory');
-			const response = await apiClient.post<{ historyId: string }>(url, historyInfo);
-			return response.data;
-		},
-		onSuccess: (data, variables) => {
-			addToast('History entry saved successfully.', 'success');
-
-			// Invalidate the specific history entry
-			queryClient.invalidateQueries({ queryKey: ['history', 'detail', 'getHistory', data.historyId] });
-
-			// Invalidate all history lists for this character
-			queryClient.invalidateQueries({
-				queryKey: ['history', 'list', 'getHistories', variables.characterId],
-			});
-		},
-	});
-
-	/**
-	 * Fetches all history entries for a character.
-	 */
-	const getHistories = (characterId: string) =>
-		useQuery<HistoryResponse, Error>({
-			queryKey: ['history', 'list', 'getHistories', characterId], // Separate history hierarchy
-			queryFn: async () => {
-				const url = genApiUrl(MODULE_NAME, 'getHistories', [characterId]);
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<HistoryResponse>(response.data.payload);
-			},
-			enabled: !!characterId,
-		});
-
-	/**
-	 * Fetches a single history entry by its unique ID.
-	 */
-	const getHistory = (historyId: string) =>
-		useQuery<HistoryResponse, Error>({
-			queryKey: ['history', 'detail', 'getHistory', historyId], // Separate history hierarchy
-			queryFn: async () => {
-				const url = genApiUrl(MODULE_NAME, 'getHistory', [historyId]);
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<HistoryResponse>(response.data.payload);
-			},
-			enabled: !!historyId,
-		});
-
-	return {
-		storeLore: storeLore.mutateAsync,
-		getLores,
-		getLore,
-		storeHistory: storeHistory.mutateAsync,
-		getHistories,
-		getHistory,
-	};
+	return { storeLore: storeLore.mutateAsync, getLoresByCharacter, getLore };
 };

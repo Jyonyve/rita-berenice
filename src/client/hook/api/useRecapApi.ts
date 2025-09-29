@@ -4,7 +4,7 @@ import type { Where, WhereDocument } from 'chromadb';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
 import { MODULE_NAMES, METADATA_TYPES } from '#shared/config/constants.js';
-import { RecapInfo } from '#shared/src/shared/domain/recap/recap.routes.js';
+import { RecapInfo } from '#shared/domain/recap/recap.routes.js';
 import { Payload } from '#shared/util/apiHelpers.js';
 
 /**

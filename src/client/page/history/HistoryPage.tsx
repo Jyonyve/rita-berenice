@@ -18,7 +18,7 @@ import { routeConstants } from '../../routeConstants.js';
 import { containerSpacing } from '../../style/index.js';
 import { getCharacterImageArray, getLoreImage } from '../../util/portraitUtils.js';
 import { getLangAlertText, getLangText } from '../../util/translateUtils.js';
-import { HistoryInfo } from '#shared/src/shared/domain/lore/lore.type.js';
+import { HistoryInfo } from '#shared/domain/lore/lore.type.js';
 
 const HistoryPage: FC<{ historyInfo: HistoryInfo; userId: string }> = ({ historyInfo, userId }) => {
 	const navigate = useNavigate();

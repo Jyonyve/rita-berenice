@@ -11,3 +11,4 @@ export { useTempChatApi } from './useTempChatApi.js';
 export { useTermApi } from './useTermApi.js';
 export { useUserApi } from './useUserApi.js';
 export { useCredentialApi } from './useCredentialApi.js';
+export { useHistoryApi } from './useHistoryApi.js';

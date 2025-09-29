@@ -87,6 +87,8 @@ export const LANG_KEYS = {
 	VALIDATING: 'VALIDATING',
 	API_KEYS_SAVED_SUCCESS: 'API_KEYS_SAVED_SUCCESS',
 	API_KEYS_SAVE_FAILED: 'API_KEYS_SAVE_FAILED',
+	LORE_SAVED_SUCCESS: 'LORE_SAVED_SUCCESS',
+	HISTORY_SAVED_SUCCESS: 'HISTORY_SAVED_SUCCESS',
 
 	// --- [NEW] Emotion Keys ---
 	NEUTRAL: 'NEUTRAL',
@@ -369,4 +371,12 @@ export const alertToastConstants: LangRecord = {
 		eng: 'API keys saved successfully!',
 	},
 	API_KEYS_SAVE_FAILED: { kor: 'API 키 저장에 실패했습니다.', eng: 'Failed to save API keys.' },
+	LORE_SAVED_SUCCESS: {
+		kor: '세계관 로어가 성공적으로 저장되었습니다.',
+		eng: 'Lore saved successfully!',
+	},
+	HISTORY_SAVED_SUCCESS: {
+		kor: '캐릭터 스토리가 성공적으로 저장되었습니다.',
+		eng: 'Character History saved successfully!',
+	},
 };

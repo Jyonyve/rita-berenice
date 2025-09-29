@@ -1,6 +1,6 @@
 import { Box, Divider, ListItem, ListItemButton, ListItemText, Typography } from '@mui/material';
 import React, { FC, Fragment } from 'react'; // Import Fragment
-import { useLoreApi } from '../../hook/api/index.js';
+import { useHistoryApi } from '../../hook/api/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
@@ -10,7 +10,7 @@ export const HistoryPreviewList: FC<{
 	characterId: string;
 	handleHistory: (historyId: string) => void;
 }> = ({ characterId, handleHistory }) => {
-	const { data: historyRes, isLoading, error } = useLoreApi().getHistories(characterId);
+	const { data: historyRes, isLoading, error } = useHistoryApi().getHistories(characterId);
 	if (isLoading) {
 		return (
 			<ListItem sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>

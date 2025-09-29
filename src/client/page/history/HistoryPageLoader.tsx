@@ -1,7 +1,7 @@
 import { CircularProgress, Container, Typography } from '@mui/material';
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { useCharacterApi, useLoreApi } from '../../hook/index.js';
+import { useCharacterApi, useHistoryApi } from '../../hook/index.js';
 import { useAuth } from '../../provider/index.js';
 import HistoryPage from './HistoryPage.jsx';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
@@ -21,7 +21,7 @@ export function HistoryPageLoader() {
 
 	if (!historyId) return;
 
-	const { data: historyRes, isLoading } = useLoreApi().getHistory(historyId);
+	const { data: historyRes, isLoading } = useHistoryApi().getHistory(historyId);
 
 	if (isLoading || !historyRes) {
 		// Use a more descriptive loading state, maybe centered
@@ -41,5 +41,5 @@ export function HistoryPageLoader() {
 		);
 	}
 
-	return <HistoryPage historyInfo={historyRes?.historyInfo} userId={userId} />;
+	return <HistoryPage historyInfo={historyRes?.historyInfo} userId={userId ?? ''} />;
 }
