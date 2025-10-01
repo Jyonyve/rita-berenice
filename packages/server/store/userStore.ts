@@ -5,8 +5,13 @@ import { METADATA_TYPES } from '@rita-berenice/shared/config/constants.js';
 import { UserCdo, UserInfo, UserMetadata } from '@rita-berenice/shared/domain/user/user.type.js';
 import { ChromaResponse, UserResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
+<<<<<<< HEAD:src/server/store/userStore.ts
+import { metadataToUser } from '#shared/util/dbConvertUtils.js';
+import { createBasicUserInfo, isUserInfo } from '#shared/util/typeGuardUtils.js';
+=======
 import { metadataToUser } from '@rita-berenice/shared/util/dbConvertUtils.js';
 import { createBasicUserInfo, isUserInfo } from '@rita-berenice/shared/util/typeGuardUtils.js';
+>>>>>>> monorepo:packages/server/store/userStore.ts
 import { flatUserToDoc } from '../util/documentUtils.js';
 
 const { getUserCollection, upsertRecord, getRecordById, getRecords, countOption } = chromaDbClient;
@@ -134,7 +139,10 @@ export const userStore = {
 		try {
 			const documentForEmbedding = flatUserToDoc(updatedUser);
 			await upsertRecord(collection, updatedUser.userId, documentForEmbedding, updatedUser);
+<<<<<<< HEAD:src/server/store/userStore.ts
+=======
 			return { userId: updatedUser.userId };
+>>>>>>> monorepo:packages/server/store/userStore.ts
 		} catch (error) {
 			handleServiceError(
 				error,

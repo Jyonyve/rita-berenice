@@ -19,8 +19,7 @@
 			"#client/*": ["src/client/*"],
 			"@rita-berenice/shared/*": ["src/shared/*"],
 			"#server/*": ["src/server/*"]
-		},
-		"types": ["vite/client"]
+		}
 	},
 	"include": ["src/**/*", "vite.config.ts", "src/**/*.d.ts", "packages/types.d.ts", "packages/entry-client.tsx", "packages/entry-server.tsx", "packages/vite-env.d.ts"],
 	"exclude": ["node_modules", "dist", ".vite_cache"]

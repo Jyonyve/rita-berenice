@@ -160,7 +160,9 @@ export const memoryEngine = {
 
 		try {
 			// 1. Extract named entities to ensure they are in the glossary.
-			const textForNer = `${parseEntriesToConversation(turn.request.entries)}\n${parseEntriesToConversation(turn.response.entries)}`;
+			const textForNer = `${parseEntriesToConversation(
+				turn.request.entries
+			)}\n${parseEntriesToConversation(turn.response.entries)}`;
 			const extractedKpns = await llmService.extractProperNouns(textForNer, userId);
 
 			// 2. Fetch all necessary context for the enrichment prompt.

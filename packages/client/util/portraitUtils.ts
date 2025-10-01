@@ -67,6 +67,7 @@ function initializePortraits(): void {
 		const match = finalImageUrl.match(emotionFilenameRegex);
 		if (!match || !match[1]) continue;
 
+		// ✅ FIXED: Use match[1] for first capture group (emotion number)
 		const imageNumber = parseInt(match[1], 10) as EmotionKey;
 		if (!validEmotionKeys.has(imageNumber)) continue;
 

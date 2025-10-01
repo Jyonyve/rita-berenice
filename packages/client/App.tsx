@@ -50,6 +50,14 @@ export function App() {
 				/>
 				{/* character  */}
 				<Route path={`${CHARACTER}`} element={<CharacterListPageLoader />} />
+				<Route
+					path={`${CHARACTER}/new`}
+					element={
+						<SessionAuth>
+							<NewCharacterPageLoader />
+						</SessionAuth>
+					}
+				/>
 				<Route path={`${CHARACTER}/:characterId`} element={<CharacterPageLoader />} />
 				<Route
 					path={`${CHARACTER}/new`}
