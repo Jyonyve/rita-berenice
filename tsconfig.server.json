@@ -14,7 +14,7 @@
 	},
 	"paths": {
 		"#client/*": ["src/client/*"],
-		"#shared/*": ["src/shared/*"],
+		"@rita-berenice/shared/*": ["src/shared/*"],
 		"#server/*": ["src/server/*"]
 	},
 	"include": [
