@@ -4,7 +4,7 @@ import { DisplayTurn } from '#shared/domain/chat/chat.type.js';
 import EditIcon from '@mui/icons-material/Edit';
 import { Box, IconButton, Typography } from '@mui/material';
 import { FC } from 'react';
-import { commonStyle, styleEntryFont } from '../../util/styleUtils.jsx';
+import { styleEntryFont } from '../../util/styleUtils.jsx';
 
 interface FixedTurnDisplayProps {
 	turn: DisplayTurn;
@@ -12,7 +12,7 @@ interface FixedTurnDisplayProps {
 
 export const FixedTurnDisplay: FC<FixedTurnDisplayProps> = ({ turn }) => {
 	return (
-		<Box key={`${turn.sessionId}-${turn.sequence}`} className={commonStyle.turnContainer}>
+		<Box key={`${turn.sessionId}-${turn.sequence}`} className={'turnContainer'}>
 			{/* User Request Block */}
 			<Box sx={{ mb: 1 }}>
 				{/* Added a container for the request */}

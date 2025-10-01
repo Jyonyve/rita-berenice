@@ -6,14 +6,23 @@ import { UserInput } from './UserInput.jsx';
 
 // MUI Components
 import { DEFAULT_EMOTION } from '#shared/config/emotionConstants.js';
-import { CharacterInfo } from '#shared/domain/character/character.type.js';
-import { ChatTurnCdo, TempChatTurn, TempChatTurnCdo } from '#shared/domain/chat/chat.type.js';
-import { ProfileInfo } from '#shared/domain/profile/profile.type.js';
-import { Box, Grid, useMediaQuery, useTheme } from '@mui/material';
+import { CharacterInfo } from '#shared/domain/character/index.js';
+import { ChatTurnCdo, TempChatTurn, TempChatTurnCdo } from '#shared/domain/chat/index.js';
+import { ProfileInfo } from '#shared/domain/profile/index.js';
+import {
+	Box,
+	Grid,
+	useTheme,
+	Dialog,
+	DialogTitle,
+	DialogContent,
+	TextField,
+	DialogActions,
+} from '@mui/material';
 import { useOrchestrationApi, useTempChatApi, useSessionApi } from '../../hook/api/index.js';
 import { useChatState } from '../../hook/state/useChatState.js';
-import { GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
-import { containerSpacing } from '../../style/index.js';
+import { GlassButton, GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
+import { containerSpacing, getTheme } from '../../style/index.js';
 import { useEmotionContext } from './ChatPageLoader.jsx';
 import { getAiModelInfo, isValidAiModelInfo } from '#shared/util/aiModelUtils.js';
 import {
@@ -21,21 +30,23 @@ import {
 	AllModelNames,
 	DEFAULT_EXTRACTION_MODEL,
 } from '#shared/domain/aimodel/AiInfoTypes.js';
-import { useErrorDialog } from '../../util/styleUtils.jsx';
-import { parseEntriesToText, parseTextToEntries } from '../../util/chatParseUtils.js';
+import { getLangText, parseTextToEntries, useErrorDialog } from '../../util/index.js';
 import { useResponsive } from '../../hook/useResponsive.js';
+import { SessionInfo } from '#shared/domain/session/index.js';
+import { LANG_KEYS } from '#shared/config/langConstants.js';
 
 export const ChatPage: FC<{
 	characterInfo: CharacterInfo;
 	profileInfo: ProfileInfo;
-	sessionId: string;
+	sessionInfo: SessionInfo;
 	userId: string;
-}> = ({ characterInfo, profileInfo, sessionId, userId }) => {
+}> = ({ characterInfo, profileInfo, sessionInfo, userId }) => {
 	const { receiveBotResponse, finalizeChatTurn } = useOrchestrationApi();
 	const { saveTempChatTurn, getTempChatTurn } = useTempChatApi();
-	const { updateSessionOnNewMessage } = useSessionApi();
-	const theme = useTheme();
+	const { updateSessionOnNewMessage, updateSessionUserNote } = useSessionApi();
 	const { showError } = useErrorDialog();
+
+	const sessionId = sessionInfo.sessionId;
 
 	// Get emotion context from Loader
 	const { setCurrentEmotion, imageUrl } = useEmotionContext();
@@ -72,6 +83,7 @@ export const ChatPage: FC<{
 	// --- STATE (simplified - no image state) ---
 	const [currentTempSetNo, setCurrentTempSetNo] = useState(0);
 	const [userInput, setUserInput] = useState('');
+	const [userNote, setUserNote] = useState(sessionInfo.userNote);
 	const [isProcessing, setIsProcessing] = useState(false);
 	const [pageError, setPageError] = useState<string>();
 	const [userEditInput, setUserEditInput] = useState('');
@@ -80,9 +92,30 @@ export const ChatPage: FC<{
 	const [focusedTurnIndex, setFocusedTurnIndex] = useState(-1);
 	const [isScene, setIsScene] = useState(false);
 
+	// Modal state
+	const [isUserNoteModalOpen, setIsUserNoteModalOpen] = useState(false);
+	const [editingUserNote, setEditingUserNote] = useState(sessionInfo.userNote);
+
 	const allTurns = tempChatTurn ? [...chatTurns, tempChatTurn] : chatTurns;
 
 	// --- HANDLERS ---
+
+	// Add modal handlers
+	const handleOpenUserNoteModal = useCallback(() => {
+		setEditingUserNote(userNote || '');
+		setIsUserNoteModalOpen(true);
+	}, [userNote]);
+
+	const handleCloseUserNoteModal = useCallback(() => {
+		setIsUserNoteModalOpen(false);
+	}, []);
+
+	const handleSaveUserNote = useCallback(async () => {
+		await updateSessionUserNote({ sessionId, userNote: editingUserNote });
+		setUserNote(editingUserNote);
+		setIsUserNoteModalOpen(false);
+	}, [editingUserNote, updateSessionUserNote]);
+
 	// Simplified: just update emotion in Loader context
 	const handleCharacterImage = useCallback(
 		(emotion: string) => {
@@ -133,6 +166,7 @@ export const ChatPage: FC<{
 		},
 		[showError]
 	);
+
 	const handleSendMessage = useCallback(async () => {
 		setPageError(undefined);
 		setIsProcessing(true);
@@ -214,7 +248,7 @@ export const ChatPage: FC<{
 	}, [
 		// Ensure all dependencies are correct
 		userInput,
-		sessionId,
+		sessionInfo,
 		userId,
 		characterInfo,
 		profileInfo,
@@ -282,7 +316,7 @@ export const ChatPage: FC<{
 	}, [
 		tempChatTurn,
 		aiModelInfo,
-		sessionId,
+		sessionInfo,
 		receiveBotResponse,
 		changeTempChatTurn,
 		characterInfo,
@@ -344,7 +378,7 @@ export const ChatPage: FC<{
 	};
 
 	const userInputProps = {
-		sessionId,
+		sessionInfo,
 		value: userInput,
 		isProcessing,
 		isDisabled: isInputDisabled,
@@ -354,6 +388,7 @@ export const ChatPage: FC<{
 		onAiModel: handleAiModel,
 		isScene,
 		onScene: handleScene,
+		onOpenUserNoteModal: handleOpenUserNoteModal,
 	};
 
 	// --- RENDER ---
@@ -444,7 +479,7 @@ export const ChatPage: FC<{
 						spacing={containerSpacing}
 						sx={{
 							height: '100%',
-							minHeight: 0,
+
 							flex: 1,
 							// FIXED: Let content flow naturally within the padded container
 							width: '100%',
@@ -455,20 +490,18 @@ export const ChatPage: FC<{
 						<Grid
 							size={{
 								md: 4,
-								lg: 3, // Smaller on very wide screens
-								xl: 2.5,
+								// lg: 3, xl: 2.5
 							}}
-							sx={{
+							sx={(theme) => ({
 								position: 'sticky',
 								top: theme.spacing(2),
 								alignSelf: 'flex-start',
-								height: `calc(100vh - var(--header-height) - var(--footer-height) - ${theme.spacing(12)})`, // Account for GlassPaper padding
+								height: `calc(100vh - var(--header-height) - var(--footer-height) - ${theme.spacing(8)})`,
 								display: 'flex',
-								alignItems: 'center',
+								alignItems: 'flex-start',
 								justifyContent: 'center',
-								// FIXED: Natural sizing within grid constraints
-								minWidth: 0, // Allow grid to control width
-							}}
+								minWidth: 0,
+							})}
 						>
 							<Box
 								sx={{
@@ -476,7 +509,7 @@ export const ChatPage: FC<{
 									width: '100%',
 									display: 'flex',
 									justifyContent: 'center',
-									alignItems: 'center',
+									alignItems: 'flex-start',
 								}}
 							>
 								<GlassPortrait imageUrl={imageUrl} />
@@ -507,6 +540,30 @@ export const ChatPage: FC<{
 					</Grid>
 				</GlassPaper>
 			)}
+			{/* User Note Edit Modal */}
+			<Dialog open={isUserNoteModalOpen} onClose={handleCloseUserNoteModal} maxWidth="md" fullWidth>
+				<DialogTitle>{`${getLangText(LANG_KEYS.USER_NOTE)}`}</DialogTitle>
+				<DialogContent>
+					<TextField
+						autoFocus
+						margin="dense"
+						fullWidth
+						multiline
+						rows={6}
+						value={editingUserNote}
+						onChange={(e) => setEditingUserNote(e.target.value)}
+						placeholder={getLangText(LANG_KEYS.USER_NOTE_PLACEHOLDER)}
+					/>
+				</DialogContent>
+				<DialogActions>
+					<GlassButton onClick={handleCloseUserNoteModal} colorVariant="silver">
+						{getLangText(LANG_KEYS.CANCEL)}
+					</GlassButton>
+					<GlassButton onClick={handleSaveUserNote} colorVariant="secondary">
+						{getLangText(LANG_KEYS.SAVE)}
+					</GlassButton>
+				</DialogActions>
+			</Dialog>
 		</>
 	);
 };

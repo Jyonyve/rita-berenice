@@ -18,6 +18,7 @@ import {
 	useCharacterApi,
 	useProfileApi,
 	useTempChatApi,
+	useSessionApi,
 } from '../../hook/api/index.js';
 import { saveMessagesToCache } from '../../util/idbUtils.js';
 import { ChatPage } from './ChatPage.jsx';
@@ -82,7 +83,7 @@ export function ChatPageLoader() {
 		}
 	}, [sessionId, navigate]);
 
-	if (!sessionId) return;
+	if (!sessionId || !userId) return;
 
 	// ------------ Fetching Data ------------
 	const characterId = useMemo(() => parseSessionId(sessionId)?.characterId || '', [sessionId]);
@@ -105,6 +106,12 @@ export function ChatPageLoader() {
 		isLoading: isLoadingTurns,
 		isError: isTurnsError,
 	} = useChatApi().getAllDisplayTurns(sessionId);
+
+	const {
+		data: sessionRes,
+		isLoading: isLoadingSession,
+		isError: isSessionError,
+	} = useSessionApi().getSession(sessionId);
 
 	// Generate image URL based on current emotion
 	const imageUrl = useMemo(() => {
@@ -158,14 +165,7 @@ export function ChatPageLoader() {
 	}
 
 	// Show loading spinner
-	if (
-		isSessionLoading ||
-		isLoadingCharacter ||
-		isLoadingProfile ||
-		isLoadingTurns ||
-		!characterRes?.characterInfo ||
-		!profileRes?.profileInfo
-	) {
+	if (isSessionLoading || !characterRes || !profileRes || !sessionRes) {
 		return (
 			<Box
 				sx={{
@@ -184,6 +184,7 @@ export function ChatPageLoader() {
 
 	const characterInfo = characterRes.characterInfo;
 	const profileInfo = profileRes.profileInfo;
+	const sessionInfo = sessionRes.sessionInfo;
 
 	// Emotion context value
 	const emotionContextValue: EmotionContextType = {
@@ -199,7 +200,7 @@ export function ChatPageLoader() {
 			<ChatPage
 				characterInfo={characterInfo}
 				profileInfo={profileInfo}
-				sessionId={sessionId}
+				sessionInfo={sessionInfo}
 				userId={userId}
 			/>
 

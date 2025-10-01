@@ -40,8 +40,8 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string; isMine: 
 		navigate(`/${routeConstants.HISTORY}/${historyId}`);
 	};
 
-	const handleSessionStart = (sessionId: string, title: string) => {
-		navigate(`/${routeConstants.CHAT}/${sessionId}`, { state: { title } });
+	const handleSessionStart = (sessionId: string) => {
+		navigate(`/${routeConstants.CHAT}/${sessionId}`);
 	};
 
 	const handleStartNewSession = async (profileCdo: ProfileCdo) => {

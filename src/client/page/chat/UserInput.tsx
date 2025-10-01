@@ -1,25 +1,28 @@
 // src/client/component/page/chat/UserInput.tsx
 
 import { LANG_KEYS } from '#shared/config/langConstants.js';
-import {
-	Box,
-	CircularProgress,
-	FormControlLabel,
-	Switch,
-	TextField,
-	useTheme,
-} from '@mui/material';
+import { Box, IconButton, Menu, TextField, useTheme } from '@mui/material';
 import React, { ChangeEvent, ChangeEventHandler, FC, useState } from 'react';
-import { GlassBox, GlassButton, GlassCircularProgress } from '../../layout/glass/index.js';
+import {
+	GlassBox,
+	GlassButton,
+	GlassCircularProgress,
+	GlassMenu,
+	GlassMenuItem,
+} from '../../layout/glass/index.js';
 import { useToast } from '../../provider/ToastProvider.jsx';
 import { getLangAlertText, getLangText } from '../../util/translateUtils.js';
 import { AiModelSelector } from './AiModelSelector.jsx';
 import { AllModelNames } from '#shared/domain/aimodel/AiInfoTypes.js';
 import { REQUEST_CHARACTER_LIMIT } from '#shared/config/constants.js';
 import { AdultSwitch } from '../../layout/AdultSwitch.jsx';
+import SettingsIcon from '@mui/icons-material/Settings';
+import { silver } from '../../style/index.js';
+import { glassEffect } from '../../style/glassEffect.js';
+import { SessionInfo } from '#shared/domain/session/index.js';
 
 interface UserInputProps {
-	sessionId: string;
+	sessionInfo: SessionInfo;
 	value: string;
 	isProcessing: boolean;
 	isDisabled: boolean;
@@ -29,10 +32,11 @@ interface UserInputProps {
 	onAiModel: (modelName: AllModelNames) => void;
 	isScene: boolean;
 	onScene: (event: ChangeEvent<HTMLInputElement>, checked: boolean) => void;
+	onOpenUserNoteModal: () => void;
 }
 
 export const UserInput: FC<UserInputProps> = ({
-	sessionId,
+	sessionInfo,
 	value,
 	isProcessing,
 	isDisabled,
@@ -42,10 +46,24 @@ export const UserInput: FC<UserInputProps> = ({
 	onAiModel,
 	isScene,
 	onScene,
+	onOpenUserNoteModal,
 }) => {
 	const { addToast } = useToast();
 	const theme = useTheme();
 	const [elapsedSeconds, setElapsedSeconds] = useState<number>();
+
+	// State for controlling the settings dropdown menu
+	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+	const isMenuOpen = Boolean(anchorEl);
+
+	// Settings menu handlers
+	const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+		setAnchorEl(event.currentTarget);
+	};
+
+	const handleMenuClose = () => {
+		setAnchorEl(null);
+	};
 
 	const handleSend = async () => {
 		if (import.meta.env.VITE_APP_MODE === 'static') {
@@ -53,35 +71,26 @@ export const UserInput: FC<UserInputProps> = ({
 			return;
 		}
 
-		// ✅ Start timing
 		const startTime = performance.now();
 
 		try {
-			// Call the parent's onSend function and wait for it to complete
 			onSend();
-
-			// ✅ Calculate and permanently display elapsed time
 			const endTime = performance.now();
 			const seconds = parseFloat(((endTime - startTime) / 1000).toFixed(1));
 			setElapsedSeconds(seconds);
-
-			// ✅ NO timeout - the elapsed time stays visible until the next send
 		} catch (error) {
 			console.error('Send failed:', error);
-			// Optionally show error message to user
 		}
 	};
 
 	const handleKeyDown = (event: React.KeyboardEvent) => {
 		if (event.key === 'Enter') {
 			if (event.ctrlKey || event.metaKey) {
-				// Ctrl+Enter (Windows/Linux) or Cmd+Enter (Mac) sends message
 				event.preventDefault();
 				if (!isDisabled && value.trim()) {
 					handleSend();
 				}
 			}
-			// else: Allow default behavior (Enter adds new line)
 		}
 	};
 
@@ -96,13 +105,7 @@ export const UserInput: FC<UserInputProps> = ({
 					rows={2}
 					value={value}
 					slotProps={{
-						formHelperText: {
-							sx: {
-								textAlign: 'right', // Aligns the counter to the right
-								m: 0, // Removes the default margin for a tighter look
-								mr: 1, // Adds a little margin to the right
-							},
-						},
+						formHelperText: { sx: { textAlign: 'right', m: 0, mr: 1 } },
 						htmlInput: { maxLength: REQUEST_CHARACTER_LIMIT },
 						input: { sx: { fontSize: theme.typography.body2.fontSize } },
 					}}
@@ -123,6 +126,41 @@ export const UserInput: FC<UserInputProps> = ({
 				}}
 			>
 				<Box sx={{ display: 'flex', alignItems: 'center' }}>
+					{/* Settings Icon and Menu */}
+					<IconButton
+						onClick={handleMenuOpen}
+						aria-label="session settings"
+						aria-controls={isMenuOpen ? 'session-setting-menu' : undefined}
+						aria-haspopup="true"
+						sx={{
+							color: 'silver',
+							transition: 'all 0.3s ease-in-out',
+							'&:hover': { color: silver.main },
+						}}
+					>
+						<SettingsIcon />
+					</IconButton>
+					<GlassMenu
+						id="session-setting-menu"
+						anchorEl={anchorEl}
+						open={isMenuOpen}
+						onClose={handleMenuClose}
+						onClick={handleMenuClose}
+						// Changed: Open upward from bottom-left
+						anchorOrigin={{ horizontal: 'left', vertical: 'top' }}
+						transformOrigin={{ horizontal: 'left', vertical: 'bottom' }}
+					>
+						<GlassMenuItem
+							onClick={() => {
+								handleMenuClose();
+								onOpenUserNoteModal();
+							}}
+							colorVariant="silver"
+						>
+							{getLangText(LANG_KEYS.USER_NOTE)}
+						</GlassMenuItem>
+					</GlassMenu>
+
 					<AiModelSelector modelName={modelName} onAiModel={onAiModel} />
 					<AdultSwitch
 						checked={!!isScene}

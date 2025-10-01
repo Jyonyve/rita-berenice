@@ -3,6 +3,7 @@ export const SUPPORTED_MODEL_INFO: Record<string, Record<string, string[]>> = {
 	// local: { exaone: ['exaone-deep:2.4b'], google: ['gemma3:1b', 'gemma3:1b-Q6_K'] },
 	openrouter: {
 		anthropic: [
+			'anthropic/claude-sonnet-4.5',
 			'anthropic/claude-sonnet-4',
 			'anthropic/claude-3.7-sonnet',
 			'anthropic/claude-3.5-sonnet-20240620',
@@ -43,6 +44,12 @@ export const MODEL_LIMITS_INFO: Record<
 		recommendedOutputTokens: 2_048,
 	},
 	// Aliases for user's config
+	'anthropic/claude-sonnet-4.5': {
+		contextWindow: 1_000_000, // 1M context (requires context-1m-2025-08-07 beta header), 200K standard
+		maxOutputTokens: 64_000, // Up to 64K output tokens supported
+		recommendedOutputTokens: 8_192, // Conservative recommendation for most use cases
+	},
+
 	'anthropic/claude-sonnet-4': {
 		contextWindow: 200_000,
 		maxOutputTokens: 8_192,
@@ -86,18 +93,6 @@ export const MODEL_LIMITS_INFO: Record<
 		contextWindow: 400_000,
 		maxOutputTokens: 16_384,
 		recommendedOutputTokens: 4_096,
-	},
-
-	// Other Models (via OpenRouter)
-	'deepseek/deepseek-chat-v3-0324:free': {
-		contextWindow: 32_000,
-		maxOutputTokens: 4_096,
-		recommendedOutputTokens: 2_048,
-	},
-	'mistralai/mistral-small-3.2-24b-instruct:free': {
-		contextWindow: 32_000,
-		maxOutputTokens: 4_096,
-		recommendedOutputTokens: 2_048,
 	},
 };
 

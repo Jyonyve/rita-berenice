@@ -42,6 +42,11 @@ export function NewChatPageLoader() {
 	const { saveTempChatTurn } = useTempChatApi();
 
 	useEffect(() => {
+		if (!userId || !characterId || !profileData) {
+			navigate('/create-session-error', { replace: true });
+			return;
+		}
+
 		// This function will be defined and then called within the effect
 		const initializeSession = async () => {
 			if (isSessionLoading || isLoadingCharacter || !characterRes?.characterInfo || !profileData) {
@@ -123,15 +128,9 @@ export function NewChatPageLoader() {
 		if (isSessionLoading) {
 			return; // Wait for session to load
 		}
-		if (!userId || !characterId || !profileData) {
-			navigate('/create-session-error', { replace: true });
-			return;
-		}
 
 		initializeSession();
 	}, [
-		// **Dependencies**: The effect will re-run if any of these change.
-		// This ensures we always work with the latest data and avoids race conditions.
 		isSessionLoading,
 		userId,
 		characterRes,

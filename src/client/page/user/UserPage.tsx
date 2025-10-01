@@ -210,9 +210,8 @@ export const UserPage: FC<{
 	};
 
 	// Session
-	const handleGoSession = (sessionInfo: SessionInfo) => {
-		const { sessionId, title } = sessionInfo;
-		navigate(`/${routeConstants.CHAT}/${sessionId}`, { state: { title } });
+	const handleGoSession = (sessionId: string) => {
+		navigate(`/${routeConstants.CHAT}/${sessionId}`);
 	};
 
 	// Avatar upload handler (similar to CharacterForm's handleImageUpload)
@@ -641,7 +640,7 @@ export const UserPage: FC<{
 														key={session.sessionId}
 														sx={{ py: 0.5, px: 2, borderRadius: 1, '&:hover': { bgcolor: 'action.hover' } }}
 													>
-														<ListItemButton onClick={() => handleGoSession(session)}>
+														<ListItemButton onClick={() => handleGoSession(session.sessionId)}>
 															<ListItemText
 																primary={session.title || 'Untitled Session'}
 																secondary={formatRelativeDate(session.updatedAt)}

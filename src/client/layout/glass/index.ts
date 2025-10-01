@@ -11,3 +11,4 @@ export * from './GlassMenuItem.jsx';
 export * from './GlassPortraitSlider.jsx';
 export * from './GlassCircularProgress.jsx';
 export * from './GlassContainer.jsx';
+export * from './GlassMenu.jsx';

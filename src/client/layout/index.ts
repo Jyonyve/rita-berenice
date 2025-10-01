@@ -8,3 +8,5 @@ export * from './AdultSwitch.jsx';
 export * from './InlineEditableField.jsx';
 export * from './ImageCropModal.jsx';
 export * from './PortraitWithChip.jsx';
+export * from './LanguageSwitch.jsx';
+export * from './ThemeSwitch.jsx';

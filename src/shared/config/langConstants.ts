@@ -30,6 +30,7 @@ export const LANG_KEYS = {
 	EDIT_USER_INFO: 'EDIT_USER_INFO',
 	MY_CHARACTERS: 'MY_CHARACTERS',
 	MY_SESSIONS: 'MY_SESSIONS',
+	USER_NOTE: 'USER_NOTE',
 	LOGOUT: 'LOGOUT',
 	EDIT: 'EDIT',
 	SAVE: 'SAVE',
@@ -127,6 +128,7 @@ export const LANG_KEYS = {
 	DESCRIPTION_PLACEHOLDER: 'DESCRIPTION_PLACEHOLDER',
 	INSTRUCTION_PLACEHOLDER: 'INSTRUCTION_PLACEHOLDER',
 	FIRST_MESSAGE_PLACEHOLDER: 'FIRST_MESSAGE_PLACEHOLDER',
+	USER_NOTE_PLACEHOLDER: 'USER_NOTE_PLACEHOLDER',
 	DESCRIPTION_HELPER: 'DESCRIPTION_HELPER',
 	INSTRUCTION_HELPER: 'INSTRUCTION_HELPER',
 	FIRST_MESSAGE_HELPER: 'FIRST_MESSAGE_HELPER',
@@ -160,8 +162,8 @@ export const langConstants: LangRecord = {
 	EMAIL: { kor: '이메일', eng: 'Email' },
 	ERROR: { kor: '에러', eng: 'Error' },
 	STATISTICS: { kor: '활동 통계', eng: 'Statistics' },
-	USER_INFO: { kor: '내 정보', eng: 'User Info' },
-	EDIT_USER_INFO: { kor: '내 정보 수정', eng: 'Edit User Info' },
+	USER_INFO: { kor: '내 정보', eng: 'My Info' },
+	EDIT_USER_INFO: { kor: '내 정보 수정', eng: 'Edit My Info' },
 	CHARACTERS: { kor: '캐릭터', eng: 'Characters' },
 	MY_CHARACTERS: { kor: '내 캐릭터', eng: 'My Characters' },
 	MY_SESSIONS: { kor: '내 대화', eng: 'My Sessions' },
@@ -177,6 +179,7 @@ export const langConstants: LangRecord = {
 	UPDATE: { kor: '수정', eng: 'Update' },
 	SAVE: { kor: '저장', eng: 'Save' },
 	SAVE_ANYWAY: { kor: '강제 저장', eng: 'Save Anyway' },
+	USER_NOTE: { kor: '유저 노트', eng: 'User Note' },
 	MORE: { kor: '더보기', eng: 'More' },
 	API_KEYS: { kor: 'API 키', eng: 'API Keys' },
 	API_KEYS_DESCRIPTION: {
@@ -292,6 +295,11 @@ export const langConstants: LangRecord = {
 		kor: '새 대화를 시작할 때 캐릭터가 보내는 첫 메시지입니다.',
 		eng: "The character's first message when starting a new conversation.",
 	},
+	USER_NOTE_PLACEHOLDER: {
+		kor: '캐릭터가 꼭 기억했으면 하는 내용을 적어 주세요.',
+		eng: 'Write any details you want the character to remember.',
+	},
+
 	DESCRIPTION_HELPER: {
 		kor: '캐릭터에 대한 자세한 소개입니다. 유저에게 공개됩니다.',
 		eng: 'Character introduction visible to users.',

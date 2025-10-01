@@ -9,10 +9,9 @@ import ReplayIcon from '@mui/icons-material/Replay';
 import SaveIcon from '@mui/icons-material/Save';
 import { Box, IconButton, TextField, Typography, useTheme } from '@mui/material';
 import { FC, useEffect, useState } from 'react';
-import { commonStyle, styleEntryFont } from '../../util/styleUtils.jsx';
+import { styleEntryFont } from '../../util/styleUtils.jsx';
 import { REQUEST_CHARACTER_LIMIT } from '#shared/config/constants.js';
-import { GlassBox } from '../../layout/glass/GlassBox.jsx';
-import { GlassCircularProgress } from '../../layout/glass/index.js';
+import { GlassCircularProgress, GlassBox } from '../../layout/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
 import { parseEntriesToText } from '../../util/chatParseUtils.js';
@@ -77,7 +76,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 
 	return (
 		<Box
-			className={commonStyle.turnContainer}
+			className={'turnContainer'}
 			sx={{
 				position: 'relative',
 				// 1. If isEditing, padding is fixed. Otherwise, it's 0 initially.

@@ -12,7 +12,6 @@ import {
 	FormControl,
 	InputLabel,
 } from '@mui/material';
-import styles from '#client/asset/style/ChatComp.module.scss';
 import { SUPPORTED_MODEL_INFO } from '#shared/config/supportAiModelInfo.js';
 import { ChatRoleType } from '#shared/domain/chat/chat.type.js';
 
@@ -77,14 +76,12 @@ export const SelectAiModel = ({ id }: { id?: string }) => {
 
 export const styleEntryFont = (role: ChatRoleType, type: 'dialogue' | 'action'): string => {
 	if (role === 'user') {
-		return type === 'dialogue' ? styles.userDialogue : styles.userAction;
+		return type === 'dialogue' ? 'userDialogue' : 'userAction';
 	} else {
 		// assistant
-		return type === 'dialogue' ? styles.assistantDialogue : styles.assistantAction;
+		return type === 'dialogue' ? 'assistantDialogue' : 'assistantAction';
 	}
 };
-
-export const commonStyle = styles;
 
 export const formatTimestamp = (isoString: string, formatString?: string) => {
 	const date = new Date(isoString);

@@ -24,10 +24,10 @@ import {
 	DialogContent,
 	useTheme,
 	useMediaQuery,
+	MenuItem,
 } from '@mui/material';
 import { useColorMode } from '../provider/ColorModeProvider.jsx';
 import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpassword/prebuiltui.js';
-import AccountCircle from '@mui/icons-material/AccountCircle';
 import { AuthPage } from 'supertokens-auth-react/ui/index.js';
 import { APPNAME } from '#shared/config/constants.js';
 import { useLanguage } from '../provider/LanguageProvider.jsx';
@@ -36,22 +36,23 @@ import {
 	GlassAppBar,
 	GlassFooter,
 	GlassMenuItem,
-	GlassBox,
 	GlassPortrait,
+	GlassMenu,
 } from './glass/index.js';
 import { RomanticTitle } from './RomanticTitle.jsx';
 import { gold, silver } from '../style/colors.js';
 import { routeConstants } from '../routeConstants.js';
-import { glassEffect, glassEffectLight } from '../style/glassEffect.js';
 import { getLangText } from '../util/translateUtils.js';
 import { LANG_KEYS } from '#shared/config/langConstants.js';
 import { useAuth } from '../provider/AuthProvider.jsx';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ImageIcon from '@mui/icons-material/Image';
 import CloseIcon from '@mui/icons-material/Close';
 import { useSessionApi, useUserApi } from '../hook/api/index.js';
 import { InlineEditableField } from './InlineEditableField.jsx';
 import ReloadToHome from './ReloadToHome.jsx';
 import { titleFontFamily } from '../style/typography.js';
+import { LanguageSwitch, ThemeSwitch } from './index.js';
 
 interface LoginModalProps {
 	loginOpen: boolean;
@@ -168,46 +169,6 @@ const ImageModal: FC<ImageModalProps> = ({ open, onClose, imageUrl, characterId 
 				</Box>
 			</DialogContent>
 		</Dialog>
-	);
-};
-
-// Add this component inside your RootLayout file
-const LanguageSwitch: FC = () => {
-	const { lang, toggleLang } = useLanguage();
-	const isKor = lang === 'kor';
-	const next = isKor ? 'English' : 'Korean';
-
-	return (
-		<Switch
-			checked={isKor}
-			onChange={() => toggleLang()}
-			// ARIA switch semantics
-			role="switch"
-			aria-checked={isKor}
-			aria-label={`Switch language to ${next}`}
-			color="default"
-			size="small"
-			sx={{
-				'& .MuiSwitch-thumb': {
-					'&:before': {
-						content: lang === 'kor' ? '"한"' : '"EN"',
-						position: 'absolute',
-						width: '100%',
-						height: '100%',
-						left: 0,
-						top: 0,
-						backgroundRepeat: 'no-repeat',
-						backgroundPosition: 'center',
-						fontSize: '9px',
-						fontWeight: 'bold',
-						display: 'flex',
-						alignItems: 'center',
-						justifyContent: 'center',
-						color: 'black',
-					},
-				},
-			}}
-		/>
 	);
 };
 
@@ -365,7 +326,7 @@ export function RootLayout() {
 								component="div"
 								onClick={() => navigate('/')}
 								role="button"
-								sx={{ pr: 1 }}
+								sx={{ pr: 2 }}
 							>
 								{APPNAME}
 							</RomanticTitle>
@@ -388,7 +349,7 @@ export function RootLayout() {
 									sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
 								>
 									<Avatar src={headerInfo.avatarUrl} variant="circular">
-										<AccountCircle />
+										<AccountCircleIcon />
 									</Avatar>
 								</Box>
 
@@ -396,10 +357,9 @@ export function RootLayout() {
 								<Box
 									sx={{
 										display: 'flex',
-										// Stack vertically on mobile, horizontally on desktop
-										flexDirection: isSmallScreen ? 'column' : 'row',
-										alignItems: isSmallScreen ? 'flex-start' : 'center',
-										gap: isSmallScreen ? 0.2 : 1,
+										flexDirection: 'column',
+										alignItems: 'flex-start',
+										gap: 0.2,
 										minWidth: 0, // Prevent overflow
 									}}
 								>
@@ -457,14 +417,6 @@ export function RootLayout() {
 								<ImageIcon />
 							</IconButton>
 						)}
-						<LanguageSwitch />
-						{/* <Switch
-							checked={mode === 'dark'}
-							onChange={toggleMode}
-							color="default"
-							size="small"
-							aria-label="toggle theme"
-						/> */}
 
 						{!isSessionLoading && (
 							<>
@@ -474,7 +426,7 @@ export function RootLayout() {
 									aria-controls={isMenuOpen ? 'account-menu' : undefined}
 									aria-haspopup="true"
 								>
-									<AccountCircle
+									<AccountCircleIcon
 										sx={{
 											color: isLoggedIn ? gold.main : 'grey',
 											transition: 'all 0.3s ease-in-out',
@@ -482,48 +434,56 @@ export function RootLayout() {
 										}}
 									/>
 								</IconButton>
-								<Menu
+								<GlassMenu
 									id="account-menu"
 									anchorEl={anchorEl}
 									open={isMenuOpen}
 									onClose={handleMenuClose}
-									onClick={handleMenuClose}
-									transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-									anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-									disableAutoFocusItem={true} // <-- This prevents auto-focus on first item
-									slotProps={{
-										paper: {
-											className: 'hide-scrollbar',
-											sx: (theme) => {
-												const styleObject = theme.palette.mode === 'dark' ? glassEffect : glassEffectLight;
-												const { '&:hover': hoverStyles, ...baseStyles } = styleObject;
-
-												return {
-													...baseStyles,
-													// Apply hover styles only on non-mobile devices
-													[theme.breakpoints.up('md')]: { ...hoverStyles },
-												};
-											},
-										},
-										// Remove list padding on mobile
-										list: { sx: (theme) => ({ [theme.breakpoints.down('md')]: { padding: 0.5 } }) },
-									}}
+									// No onClick here - we handle it per MenuItem
 								>
+									{/* These menu items WILL close the menu */}
 									<GlassMenuItem
-										onClick={goUserPage}
+										onClick={() => {
+											goUserPage();
+											handleMenuClose(); // Close menu after action
+										}}
 										colorVariant="silver"
 										sx={{ alignItems: 'center', my: 1 }}
 									>
 										<Avatar src={userRes?.userInfo?.avatarUrl} variant="circular" sx={{ mr: 2 }} />
 										<Typography variant="subtitle1">{getLangText(LANG_KEYS.USER_INFO)}</Typography>
 									</GlassMenuItem>
-									<GlassMenuItem onClick={goMyCharacterListPage} colorVariant="silver">
+
+									<GlassMenuItem
+										onClick={() => {
+											goMyCharacterListPage();
+											handleMenuClose(); // Close menu after action
+										}}
+										colorVariant="silver"
+									>
 										{getLangText(LANG_KEYS.MY_CHARACTERS)}
 									</GlassMenuItem>
-									<GlassMenuItem onClick={onLogout} colorVariant="silver">
+
+									<GlassMenuItem
+										onClick={() => {
+											onLogout();
+											handleMenuClose(); // Close menu after action
+										}}
+										colorVariant="silver"
+									>
 										{getLangText(LANG_KEYS.LOGOUT)}
 									</GlassMenuItem>
-								</Menu>
+
+									{/* This last MenuItem will NOT close the menu */}
+
+									<Box
+										sx={{ display: 'flex', width: '100%', justifyContent: 'space-around', mb: 1, mt: 2 }}
+										onClick={(e) => e.stopPropagation()}
+									>
+										<ThemeSwitch />
+										<LanguageSwitch />
+									</Box>
+								</GlassMenu>
 							</>
 						)}
 					</Box>

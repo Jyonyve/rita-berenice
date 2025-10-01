@@ -2,22 +2,8 @@
 
 import { createTheme, Theme } from '@mui/material/styles';
 import { typography } from './typography.js';
-
-// --- PALETTES ---
-
-const darkPalette = {
-	primary: { main: '#00A9FF' },
-	secondary: { main: '#A0E9FF' },
-	background: { default: '#0A0A0A', paper: 'rgba(10, 10, 10, 0.5)' },
-	text: { primary: '#E0E0E0', secondary: '#BDBDBD' },
-};
-
-const lightPalette = {
-	primary: { main: '#007AB8' },
-	secondary: { main: '#0091ea' },
-	background: { default: '#F4F6F8', paper: 'rgba(255, 255, 255, 0.7)' },
-	text: { primary: '#212B36', secondary: '#637381' },
-};
+import { darkPalette, lightPalette } from './colors.js';
+import { chatStyles } from './chatStyles.ts';
 
 // --- THEME CREATION ---
 
@@ -25,6 +11,17 @@ export const getTheme = (mode: 'light' | 'dark') => {
 	const theme = createTheme({
 		palette: { mode, ...(mode === 'dark' ? darkPalette : lightPalette) },
 		typography,
+		transitions: {
+			duration: {
+				shortest: 150,
+				shorter: 200,
+				short: 250,
+				standard: 300,
+				complex: 375,
+				enteringScreen: 225,
+				leavingScreen: 195,
+			},
+		},
 	});
 
 	return createTheme(theme, {
@@ -70,9 +67,19 @@ export const getTheme = (mode: 'light' | 'dark') => {
 			MuiCssBaseline: {
 				styleOverrides: {
 					// --- BASE & BOX-SIZING ---
-					'*, *::before, *::after': { boxSizing: 'border-box' },
+					'*, *::before, *::after': {
+						boxSizing: 'border-box',
+						// Add smooth transitions to all elements
+						transition: 'background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease',
+					},
 					html: { height: '100%', margin: 0, padding: 0 },
-					body: { height: '100%', margin: 0, padding: 0 },
+					body: {
+						height: '100%',
+						margin: 0,
+						padding: 0,
+						// Smooth background transition
+						transition: 'background-color 0.3s ease',
+					},
 					'#root': { height: '100%' },
 					"[role='button']": { cursor: 'pointer' },
 
@@ -91,23 +98,10 @@ export const getTheme = (mode: 'light' | 'dark') => {
 
 					// --- REVISED GLOBAL PAGE CONTAINER STYLE ---
 					'.paper': {
-						// Fill the available width inside the padded 'main' container.
 						width: '100%',
-
-						// This is key: The paper should be at least as tall as its container.
-						// If its content makes it taller, it will push past 100% and
-						// trigger the parent 'main' element to scroll.
 						minHeight: '100%',
-
-						// Add 16px of *inner* padding. This fixes the issue of child
-						// components overflowing the paper's borders.
 						padding: theme.spacing(2),
-
-						// Ensure the paper itself does not scroll or hide its content.
-						// Its children are now contained by the padding above.
 						overflow: 'visible',
-
-						// Flex properties to arrange the content *inside* the paper.
 						display: 'flex',
 						flexDirection: 'column',
 						position: 'relative',
@@ -118,6 +112,9 @@ export const getTheme = (mode: 'light' | 'dark') => {
 						msOverflowStyle: 'none', // Correct: camelCase for -ms-overflow-style
 						scrollbarWidth: 'none', // Correct: camelCase for scrollbar-width
 					},
+
+					// --- CHAT COMPONENT STYLES ---
+					...chatStyles, // Merge chat styles here
 				},
 			},
 		},
