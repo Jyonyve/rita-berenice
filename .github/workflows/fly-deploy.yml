@@ -1,0 +1,31 @@
+name: Fly Deploy Rita-Berenice
+
+on:
+ push:
+  branches:
+   - main
+
+jobs:
+ deploy:
+  name: Fly Deploy Rita-Berenice
+  runs-on: ubuntu-latest
+  environment: production
+  concurrency: deploy-group
+
+  steps:
+   - name: Checkout repository
+     uses: actions/checkout@v4
+
+   - name: Setup Fly.io
+     uses: superfly/flyctl-actions/setup-flyctl@master
+
+   - name: Deploy to Fly.io
+     run: |
+      flyctl deploy --remote-only -a rita-berenice \
+        --build-arg VITE_APP_ENV=production \
+        --build-arg VITE_API_DOMAIN='${{ vars.VITE_API_DOMAIN }}' \
+        --build-arg VITE_APP_DOMAIN='${{ vars.VITE_APP_DOMAIN }}' \
+        --env VITE_API_DOMAIN='${{ vars.VITE_API_DOMAIN }}' \
+        --env VITE_APP_DOMAIN='${{ vars.VITE_APP_DOMAIN }}'
+     env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

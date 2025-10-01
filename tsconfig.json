@@ -16,10 +16,11 @@
 		"useDefineForClassFields": true,
 		"baseUrl": ".",
 		"paths": {
-			"#shared/*": ["src/shared/*"],
+			"#client/*": ["src/client/*"],
+			"@rita-berenice/shared/*": ["src/shared/*"],
 			"#server/*": ["src/server/*"]
 		}
 	},
-	"include": ["src/**/*", "src/**/*.d.ts", "src/types.d.ts"],
-	"exclude": ["node_modules", "dist"]
+	"include": ["src/**/*", "vite.config.ts", "src/**/*.d.ts", "packages/types.d.ts", "packages/entry-client.tsx", "packages/entry-server.tsx", "packages/vite-env.d.ts"],
+	"exclude": ["node_modules", "dist", ".vite_cache"]
 }

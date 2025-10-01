@@ -9,26 +9,33 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # Stage 3: Build the application
-# It will automatically receive build-time secrets set with --stage build
 FROM deps AS builder
 COPY . .
 
-# Use ARG to receive build-time variables from fly.toml
+# CRITICAL FIX: Accept build args in the builder stage
+ARG VITE_APP_ENV
 ARG VITE_API_DOMAIN
 ARG VITE_APP_DOMAIN
-ARG VITE_APP_ENV
 
-# Set them as ENV for the 'pnpm run build' command
+# Set them as ENV for the build command (Vite needs these at build time)
+ENV VITE_APP_ENV=$VITE_APP_ENV
 ENV VITE_API_DOMAIN=$VITE_API_DOMAIN
 ENV VITE_APP_DOMAIN=$VITE_APP_DOMAIN
-ENV VITE_APP_ENV=$VITE_APP_ENV
 
 RUN pnpm run build
 
 # Stage 4: Production image
-# This stage ONLY contains what's needed to RUN the app.
 FROM base AS production
 ENV NODE_ENV=production
+
+# CRITICAL FIX: Declare ARGs again in the production stage
+# Docker build args don't carry over between stages automatically
+ARG VITE_API_DOMAIN
+ARG VITE_APP_DOMAIN
+
+# Pass build args to runtime environment variables
+ENV VITE_API_DOMAIN=$VITE_API_DOMAIN
+ENV VITE_APP_DOMAIN=$VITE_APP_DOMAIN
 
 # Copy production dependencies manifest
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./

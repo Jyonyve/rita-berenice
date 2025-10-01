@@ -1,0 +1,21 @@
+{
+	"name": "@rita-berenice/shared",
+	"version": "1.0.0",
+	"private": true,
+	"type": "module",
+	"main": "./index.ts",
+	"exports": {
+		".": "./index.ts",
+		"./api": "./api/index.ts",
+		"./config": "./config/index.ts",
+		"./domain": "./domain/index.ts"
+	},
+	"scripts": {
+		"build": "tsc --noEmit"
+	},
+	"dependencies": {
+		"zod": "^4.1.4",
+		"date-fns": "^4.1.0",
+		"nanoid": "^5.1.5"
+	}
+}
