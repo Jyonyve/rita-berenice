@@ -1,5 +1,5 @@
-import { styled, Switch } from '@mui/material';
-import { FC } from 'react';
+import { styled, Switch, SwitchProps } from '@mui/material';
+import { ComponentType, FC } from 'react';
 import { gold, silver } from '../style/colors.js';
 
 // --- SVG Icons ---
@@ -22,7 +22,7 @@ const adultIconOnSvg = `
   </svg>
 `;
 const encodedAdultIconOn = `url("data:image/svg+xml,${encodeURIComponent(adultIconOnSvg)}")`;
-export const AdultSwitch = styled(Switch)(({ theme }) => ({
+export const AdultSwitch: ComponentType<SwitchProps> = styled(Switch)(({ theme }) => ({
 	width: 42,
 	height: 26,
 	padding: 0,

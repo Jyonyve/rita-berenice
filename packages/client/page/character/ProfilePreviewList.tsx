@@ -1,19 +1,12 @@
 // src/client/components/profile/ProfilePreviewList.tsx
 
-import { ProfileInfo } from '@rita-berenice/shared/domain/profile/profile.type.js';
-import {
-	CircularProgress,
-	Divider,
-	ListItem,
-	ListItemButton,
-	ListItemText,
-	Typography,
-} from '@mui/material';
+import { Divider, ListItem, ListItemButton, ListItemText, Typography } from '@mui/material';
 import { FC, Fragment } from 'react';
 import { useProfileApi } from '../../hook/api/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
-import { LANG_KEYS } from '@rita-berenice/shared/config/langConstants.js';
+import { LANG_KEYS } from '@rita-berenice/shared/config';
+import { ProfileInfo } from '@rita-berenice/shared/domain';
 
 // The props are updated to handle two separate click events
 export const ProfilePreviewList: FC<{

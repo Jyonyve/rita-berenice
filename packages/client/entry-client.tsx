@@ -1,11 +1,5 @@
-// src/client/entry-client.tsx
-import { App } from '#client/App.jsx';
-import { AppProviders } from '#client/AppProviders.jsx';
-import { routeConstants } from '#client/routeConstants.js';
-import '#client/style/index.css';
-import { superTokenUiStyle } from '#client/style/superTokensUi.js';
-import { APPNAME } from '@rita-berenice/shared/config/constants.js';
-import { createEmotionCache } from '@rita-berenice/shared/config/createEmotionCache.js';
+import './style/index.css';
+import { APPNAME } from '@rita-berenice/shared/config';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
 import SuperTokens from 'supertokens-auth-react';
@@ -13,8 +7,12 @@ import EmailPassword from 'supertokens-auth-react/recipe/emailpassword/index.js'
 import Session from 'supertokens-auth-react/recipe/session/index.js';
 import type { APIFormField, UserContext } from 'supertokens-auth-react/lib/build/types.js';
 import type { RecipeFunctionOptions } from 'supertokens-web-js/recipe/emailpassword/index.js';
-import { cryptoState } from '#client/cryptoState.js';
-import { UserCdo } from '@rita-berenice/shared/domain/user/user.type.js';
+import { routeConstants } from './routeConstants.js';
+import { superTokenUiStyle } from './style/superTokensUi.js';
+import { cryptoState } from './cryptoState.js';
+import { createEmotionCache } from './util/index.js';
+import { AppProviders } from './AppProviders.js';
+import { App } from './App.js';
 
 type SignInInput = {
 	formFields: APIFormField[];

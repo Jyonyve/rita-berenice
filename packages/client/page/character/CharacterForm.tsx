@@ -1,5 +1,3 @@
-import { LANG_KEYS, LangKey } from '@rita-berenice/shared/config/langConstants.js';
-import { CharacterCdo, CharacterInfo } from '@rita-berenice/shared/domain/character/character.type.js';
 import {
 	Box,
 	Grid,
@@ -9,11 +7,9 @@ import {
 	InputLabel,
 	Select,
 	MenuItem,
-	SelectChangeEvent,
 	FormHelperText,
 	Chip,
 	Stack,
-	Alert,
 } from '@mui/material';
 import { FC, useState, useRef, ChangeEvent, useEffect } from 'react';
 
@@ -30,8 +26,6 @@ import {
 	emotionToLangKey,
 	getGenderSelectLabel,
 } from '../../util/translateUtils.js';
-import { DEFAULT_EMOTION, EmotionValue } from '@rita-berenice/shared/config/emotionConstants.js';
-import { ASPECT_RATIOS, LIMIT_5MB, REQUEST_CHARACTER_LIMIT } from '@rita-berenice/shared/config/constants.js';
 import { Swiper, SwiperClass, SwiperSlide } from 'swiper/react';
 import { A11y, EffectFade, Mousewheel, Pagination } from 'swiper/modules';
 import { getImageForEmotion } from '../../util/portraitUtils.js';
@@ -41,8 +35,16 @@ import {
 	SolidMetallicButton,
 	PortraitWithChip,
 } from '../../layout/index.js';
-import { UploadedCharacterImage } from '@rita-berenice/shared/domain/image/image.type.js';
-import { createBasicCharacterInfo, isCharacterInfo } from '@rita-berenice/shared/util/typeGuardUtils.js';
+import {
+	EmotionValue,
+	DEFAULT_EMOTION,
+	LANG_KEYS,
+	LIMIT_5MB,
+	REQUEST_CHARACTER_LIMIT,
+	ASPECT_RATIOS,
+} from '@rita-berenice/shared/config';
+import { UploadedCharacterImage, CharacterInfo, CharacterCdo } from '@rita-berenice/shared/domain';
+import { isCharacterInfo, createBasicCharacterInfo } from '@rita-berenice/shared/util';
 
 // 🎨 Constants
 const AUTO_SLIDE_DELAY = 100;

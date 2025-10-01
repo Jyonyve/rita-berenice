@@ -1,6 +1,6 @@
 // src/shared/domain/history/HistoryInterfaces.ts
 
-import { METADATA_TYPES } from '@rita-berenice/shared/config/constants.js';
+import { METADATA_TYPES } from '../../config/index.js';
 import { RelatedEvent } from '../BaseTypes.js';
 
 export type EventDateType =

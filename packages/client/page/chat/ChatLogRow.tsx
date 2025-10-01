@@ -1,7 +1,7 @@
-import { DisplayTurn, TempChatTurn } from '@rita-berenice/shared/domain/chat/chat.type.js';
 import { FC } from 'react';
 import { FixedTurnDisplay } from './FixedTurnDisplay.jsx';
 import { TempTurnDisplay } from './TempTurnDisplay.jsx';
+import { DisplayTurn, TempChatTurn } from '@rita-berenice/shared/domain';
 
 // The props interface is now much simpler.
 // It receives the specific 'turn' to render, not the whole list.

@@ -1,10 +1,10 @@
 // src/client/hook/api/useCredentialApi.ts
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
-import { MODULE_NAMES } from '@rita-berenice/shared/config/constants.js';
-import { CredentialResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
-import { Payload } from '@rita-berenice/shared/util/apiHelpers.js';
-import { UserApiKeys } from '@rita-berenice/shared/domain/credential/credential.type.js';
+import { CredentialResponse } from '@rita-berenice/shared/api';
+import { Payload } from '@rita-berenice/shared/util';
+import { MODULE_NAMES } from '@rita-berenice/shared/config';
+import { UserApiKeys } from '@rita-berenice/shared/domain';
 
 export const useCredentialApi = () => {
 	const MODULE_NAME = MODULE_NAMES.CREDENTIAL;

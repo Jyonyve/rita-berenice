@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react';
-import { format } from 'date-fns';
+
 import {
 	Dialog,
 	DialogActions,
@@ -12,8 +12,9 @@ import {
 	FormControl,
 	InputLabel,
 } from '@mui/material';
-import { SUPPORTED_MODEL_INFO } from '@rita-berenice/shared/config/supportAiModelInfo.js';
-import { ChatRoleType } from '@rita-berenice/shared/domain/chat/chat.type.js';
+import { SUPPORTED_MODEL_INFO } from '@rita-berenice/shared/config';
+import { ChatRoleType } from '@rita-berenice/shared/domain';
+import { format } from 'date-fns';
 
 export const useErrorDialog = (initialMessage?: string) => {
 	const [open, setOpen] = useState(false);

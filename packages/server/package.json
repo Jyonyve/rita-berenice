@@ -6,17 +6,17 @@
 	"scripts": {
 		"dev": "tsx --env-file ../../.env.development ./server.ts",
 		"build": "vite build --ssr entry-server.tsx --outDir ../../dist/server && tsc --project tsconfig.json && tsc-alias -p tsconfig.json",
-		"start": "node ../../dist/server/server.js"
+		"start": "node ../../dist/server/server.js",
+		"lint": "eslint . --ext .ts"
 	},
 	"dependencies": {
-		"@rita-berenice/shared": "workspace:*",
 		"@chroma-core/cohere": "^0.1.7",
 		"@chroma-core/openai": "^0.1.7",
-		"@emotion/server": "^11.11.0",
 		"@langchain/anthropic": "^0.3.26",
 		"@langchain/core": "^0.3.72",
 		"@langchain/google-genai": "^0.2.16",
 		"@langchain/openai": "^0.6.9",
+		"@rita-berenice/shared": "workspace:*",
 		"chromadb": "^3.0.14",
 		"compression": "^1.8.1",
 		"cors": "^2.8.5",
@@ -27,8 +27,7 @@
 		"sharp": "^0.34.3",
 		"sirv": "^3.0.1",
 		"supertokens-node": "^23.0.1",
-		"tiktoken": "^1.0.22",
-		"unique-names-generator": "^4.7.1"
+		"tiktoken": "^1.0.22"
 	},
 	"devDependencies": {
 		"@types/compression": "^1.8.1",

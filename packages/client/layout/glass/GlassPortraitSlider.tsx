@@ -1,6 +1,6 @@
 // src/client/component/GlassPortraitSlider.tsx
 
-import React from 'react';
+import React, { FC } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, A11y, Autoplay, Mousewheel, EffectFade } from 'swiper/modules';
 import { Box } from '@mui/material';
@@ -16,7 +16,7 @@ interface GlassPortraitSliderProps {
 	imageUrls: string[];
 }
 
-export const GlassPortraitSlider: React.FC<GlassPortraitSliderProps> = ({ imageUrls }) => {
+export const GlassPortraitSlider: FC<GlassPortraitSliderProps> = ({ imageUrls }) => {
 	if (!imageUrls || imageUrls.length === 0) {
 		return null;
 	}

@@ -6,7 +6,7 @@ import { useAuth } from '../../provider/index.js';
 import HistoryPage from './HistoryPage.jsx';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
-import { LANG_KEYS } from '@rita-berenice/shared/config/langConstants.js';
+import { LANG_KEYS } from '@rita-berenice/shared/config';
 
 export function HistoryPageLoader() {
 	const navigate = useNavigate();

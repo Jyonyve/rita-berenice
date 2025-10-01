@@ -1,10 +1,11 @@
 // e.g., src/client/layout/glass/GlassSelect.tsx
 
-import { Select, alpha, styled } from '@mui/material';
+import { Select, SelectProps, alpha, styled } from '@mui/material';
 // Import the raw style objects directly for precise control
 import { glassEffect, glassEffectLight } from '../../style/glassEffect.js';
+import { ComponentType } from 'react';
 
-export const GlassSelect = styled(Select)(({ theme }) => {
+export const GlassSelect: ComponentType<SelectProps> = styled(Select)(({ theme }) => {
 	// 1. Determine which style object to use based on the current theme mode.
 	const styleObject = theme.palette.mode === 'dark' ? glassEffect : glassEffectLight;
 

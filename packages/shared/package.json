@@ -5,17 +5,18 @@
 	"type": "module",
 	"main": "./index.ts",
 	"exports": {
-		".": "./index.ts",
 		"./api": "./api/index.ts",
 		"./config": "./config/index.ts",
-		"./domain": "./domain/index.ts"
+		"./domain": "./domain/index.ts",
+		"./util": "./util/index.ts"
 	},
 	"scripts": {
-		"build": "tsc --noEmit"
+		"build": "tsc --noEmit",
+		"lint": "eslint . --ext .ts"
 	},
 	"dependencies": {
 		"zod": "^4.1.4",
-		"date-fns": "^4.1.0",
-		"nanoid": "^5.1.5"
+		"nanoid": "^5.1.5",
+		"unique-names-generator": "^4.7.1"
 	}
 }

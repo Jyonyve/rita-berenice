@@ -1,13 +1,14 @@
 // src/components/ui/GlassFooter.tsx
 
-import { Box, styled } from '@mui/material';
+import { Box, BoxProps, styled } from '@mui/material';
 import { getGlassEffect } from '../../style/glassEffect.js';
+import { ComponentType } from 'react';
 
 /**
  * A glassmorphism-styled Footer component based on MUI's Box.
  * It's designed to be a flexible container for footer content.
  */
-export const GlassFooter = styled(Box)(({ theme }) => ({
+export const GlassFooter: ComponentType<BoxProps> = styled(Box)(({ theme }) => ({
 	...getGlassEffect(theme.palette.mode),
 
 	backgroundColor: 'transparent',

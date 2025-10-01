@@ -1,14 +1,15 @@
 // src/components/ui/GlassButton.tsx
 
-import { Button, Palette, styled } from '@mui/material';
+import { Button, ButtonProps, Palette, styled } from '@mui/material';
 import { getGlassEffect, glassEffect, glassEffectLight } from '../../style/glassEffect.js';
 import { ColorVariant, getColor, gold, silver } from '../../style/colors.js';
+import { ComponentType } from 'react';
 
-interface GlassButtonProps {
+interface GlassButtonProps extends ButtonProps {
 	colorVariant?: ColorVariant;
 }
 
-export const GlassButton = styled(Button, {
+export const GlassButton: ComponentType<GlassButtonProps> = styled(Button, {
 	shouldForwardProp: (prop) => prop !== 'colorVariant',
 })<GlassButtonProps>(({ theme, colorVariant = 'default' }) => {
 	const baseGlassStyle = getGlassEffect(theme.palette.mode);

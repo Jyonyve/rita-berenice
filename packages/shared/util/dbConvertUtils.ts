@@ -35,7 +35,7 @@ import {
 	WorldLoreInfo,
 	WorldLoreMetadata,
 } from '../domain/index.js';
-import { METADATA_TYPES } from '@rita-berenice/shared/config/constants.js';
+import { METADATA_TYPES } from '../config/index.js';
 
 export const metadataToCharacter = (
 	metadata: CharacterMetadata,

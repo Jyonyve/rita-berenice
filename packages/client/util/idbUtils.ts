@@ -1,7 +1,7 @@
 // src/client/util/idbUtils.ts
 
+import { ChatTurn, DisplayTurn } from '@rita-berenice/shared/domain';
 import { openDB, IDBPDatabase } from 'idb';
-import { ChatTurn, DisplayTurn } from '@rita-berenice/shared/domain/chat/chat.type.js';
 
 const DB_NAME = 'ChatTurnDB';
 const STORE_NAME = 'messages';

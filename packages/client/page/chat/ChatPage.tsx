@@ -4,11 +4,6 @@ import { ChangeEvent, FC, useCallback, useEffect, useMemo, useState } from 'reac
 import { ChatLog } from './ChatLog.jsx';
 import { UserInput } from './UserInput.jsx';
 
-// MUI Components
-import { DEFAULT_EMOTION } from '@rita-berenice/shared/config/emotionConstants.js';
-import { CharacterInfo } from '@rita-berenice/shared/domain/character/index.js';
-import { ChatTurnCdo, TempChatTurn, TempChatTurnCdo } from '@rita-berenice/shared/domain/chat/index.js';
-import { ProfileInfo } from '@rita-berenice/shared/domain/profile/index.js';
 import {
 	Box,
 	Grid,
@@ -22,18 +17,23 @@ import {
 import { useOrchestrationApi, useTempChatApi, useSessionApi } from '../../hook/api/index.js';
 import { useChatState } from '../../hook/state/useChatState.js';
 import { GlassButton, GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
-import { containerSpacing, getTheme } from '../../style/index.js';
+import { containerSpacing } from '../../style/index.js';
 import { useEmotionContext } from './ChatPageLoader.jsx';
-import { getAiModelInfo, isValidAiModelInfo } from '@rita-berenice/shared/util/aiModelUtils.js';
-import {
-	AiModelInfo,
-	AllModelNames,
-	DEFAULT_EXTRACTION_MODEL,
-} from '@rita-berenice/shared/domain/aimodel/AiInfoTypes.js';
 import { getLangText, parseTextToEntries, useErrorDialog } from '../../util/index.js';
 import { useResponsive } from '../../hook/useResponsive.js';
-import { SessionInfo } from '@rita-berenice/shared/domain/session/index.js';
-import { LANG_KEYS } from '@rita-berenice/shared/config/langConstants.js';
+import { DEFAULT_EMOTION, LANG_KEYS } from '@rita-berenice/shared/config';
+import {
+	CharacterInfo,
+	ProfileInfo,
+	SessionInfo,
+	AiModelInfo,
+	DEFAULT_EXTRACTION_MODEL,
+	AllModelNames,
+	TempChatTurnCdo,
+	ChatTurnCdo,
+	TempChatTurn,
+} from '@rita-berenice/shared/domain';
+import { getAiModelInfo, isValidAiModelInfo } from '@rita-berenice/shared/util';
 
 export const ChatPage: FC<{
 	characterInfo: CharacterInfo;

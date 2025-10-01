@@ -5,20 +5,28 @@
 	"type": "module",
 	"packageManager": "pnpm@10.17.1",
 	"scripts": {
-		"dev": "pnpm --parallel --filter @rita-berenice/client --filter @rita-berenice/server dev",
-		"build": "pnpm --filter @rita-berenice/shared build && pnpm --parallel --filter @rita-berenice/client --filter @rita-berenice/server build",
+		"dev": "turbo run dev",
+		"build": "turbo run build",
 		"build:shared": "pnpm --filter @rita-berenice/shared build",
 		"build:client": "pnpm --filter @rita-berenice/client build",
 		"build:server": "pnpm --filter @rita-berenice/server build",
 		"clean": "rimraf packages/*/dist && rimraf dist && rimraf node_modules",
-		"start": "node dist/server/server.js"
+		"start": "node dist/server/server.js",
+		"migration": "pnpm --filter @rita-berenice/migration-tool",
+		"migration:install": "pnpm --filter @rita-berenice/migration-tool install"
 	},
 	"devDependencies": {
 		"@types/node": "^24.3.0",
-		"typescript": "^5.9.2",
+		"@vitejs/plugin-react": "^4.7.0",
 		"prettier": "^3.6.2",
 		"rimraf": "^6.0.1",
-		"tsx": "^4.20.5"
+		"tsx": "^4.20.5",
+		"turbo": "^2.5.8",
+		"typescript": "^5.9.2",
+		"vite": "^6.3.6",
+		"vite-plugin-node-polyfills": "^0.24.0",
+		"vite-plugin-svgr": "^4.5.0",
+		"vite-tsconfig-paths": "^5.1.4"
 	},
 	"pnpm": {
 		"overrides": {

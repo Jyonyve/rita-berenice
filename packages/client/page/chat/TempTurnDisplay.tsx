@@ -1,6 +1,5 @@
 // src/client/component/page/chat/TempTurnDisplay.tsx
 
-import { ChatMessageSet, TempChatTurn } from '@rita-berenice/shared/domain/chat/chat.type.js';
 import CancelIcon from '@mui/icons-material/Cancel';
 import EditIcon from '@mui/icons-material/Edit';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
@@ -10,11 +9,11 @@ import SaveIcon from '@mui/icons-material/Save';
 import { Box, IconButton, TextField, Typography, useTheme } from '@mui/material';
 import { FC, useEffect, useState } from 'react';
 import { styleEntryFont } from '../../util/styleUtils.jsx';
-import { REQUEST_CHARACTER_LIMIT } from '@rita-berenice/shared/config/constants.js';
 import { GlassCircularProgress, GlassBox } from '../../layout/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
-import { LANG_KEYS } from '@rita-berenice/shared/config/langConstants.js';
 import { parseEntriesToText } from '../../util/chatParseUtils.js';
+import { REQUEST_CHARACTER_LIMIT, LANG_KEYS } from '@rita-berenice/shared/config';
+import { TempChatTurn, ChatMessageSet } from '@rita-berenice/shared/domain';
 
 /**
  * Props for the TempTurnDisplay component.

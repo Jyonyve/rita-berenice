@@ -39,12 +39,7 @@ import {
 	ExpandMore,
 } from '@mui/icons-material';
 
-import {
-	GlassButton,
-	GlassCard,
-	GlassCircularProgress,
-	GlassPaper,
-} from '../../layout/glass/index.js';
+import { GlassCard, GlassCircularProgress, GlassPaper } from '../../layout/glass/index.js';
 import { containerSpacing } from '../../style/index.js';
 import {
 	genderToLangKey,
@@ -52,20 +47,23 @@ import {
 	getLangAlertText,
 	getLangText,
 } from '../../util/translateUtils.js';
-import { LANG_KEYS } from '@rita-berenice/shared/config/langConstants.js';
-import { UserInfo, UserUdo } from '@rita-berenice/shared/domain/user/user.type.js';
-import { ASPECT_RATIOS, GENDER_OPTION, LIMIT_5MB } from '@rita-berenice/shared/config/constants.js';
-import { CharacterInfo } from '@rita-berenice/shared/domain/character/index.js';
 import { useDateFormatter, useResponsive } from '../../hook/index.js';
 import { useCredentialApi, useUserApi } from '../../hook/api/index.js';
-import { SessionInfo } from '@rita-berenice/shared/domain/session/index.js';
 import { useToast } from '../../provider/ToastProvider.jsx';
-import { UploadedImage } from '@rita-berenice/shared/domain/image/index.js';
 import { ImageCropModal, RomanticTitle } from '../../layout/index.js';
 import { useNavigate } from 'react-router';
-import { routeConstants } from '#client/routeConstants.js';
 import { CredentialSection } from './CredentialSection.tsx';
-import { UserApiKeys, ValidationResult } from '@rita-berenice/shared/domain/credential/index.js';
+import { GENDER_OPTION, LANG_KEYS, LIMIT_5MB, ASPECT_RATIOS } from '@rita-berenice/shared/config';
+import {
+	CharacterInfo,
+	SessionInfo,
+	UserApiKeys,
+	UploadedImage,
+	ValidationResult,
+	UserUdo,
+	UserInfo,
+} from '@rita-berenice/shared/domain';
+import { routeConstants } from '../../routeConstants.ts';
 
 // Helper to get gender color
 const getGenderColor = (gender: GENDER_OPTION) => {

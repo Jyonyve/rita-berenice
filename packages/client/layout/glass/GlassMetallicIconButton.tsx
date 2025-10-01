@@ -1,17 +1,19 @@
 // src/components/ui/GlassMetallicIconButton.tsx
 
-import { IconButton, styled } from '@mui/material';
+import { IconButton, IconButtonProps, styled } from '@mui/material';
 import { getGlassEffect } from '../../style/glassEffect.js';
 import { ColorVariant, getColor, gold, silver } from '../../style/colors.js';
+import { ComponentType } from 'react';
 
-interface GlassMetallicIconButtonProps {
+interface GlassMetallicIconButtonProps extends IconButtonProps {
 	colorVariant?: ColorVariant;
 	glowColorVariant?: ColorVariant;
 }
 
-export const GlassMetallicIconButton = styled(IconButton, {
-	shouldForwardProp: (prop) => prop !== 'colorVariant' && prop !== 'glowColorVariant',
-})<GlassMetallicIconButtonProps>(({ theme, colorVariant = 'primary', glowColorVariant }) => {
+export const GlassMetallicIconButton: ComponentType<GlassMetallicIconButtonProps> = styled(
+	IconButton,
+	{ shouldForwardProp: (prop) => prop !== 'colorVariant' && prop !== 'glowColorVariant' }
+)<GlassMetallicIconButtonProps>(({ theme, colorVariant = 'primary', glowColorVariant }) => {
 	const baseGlassStyle = getGlassEffect(theme.palette.mode);
 
 	// Determine colors for the BORDER (based on colorVariant)

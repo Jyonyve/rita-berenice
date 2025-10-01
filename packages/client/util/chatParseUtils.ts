@@ -1,4 +1,5 @@
-import { ChatEntry } from '@rita-berenice/shared/domain/chat/chat.type.js';
+import { ChatEntry } from '@rita-berenice/shared/domain';
+
 export const parseTextToEntries = (text: string): ChatEntry[] => {
 	// 1. Validate asterisk count first
 	const starCount = (text.match(/\*/g) || []).length;

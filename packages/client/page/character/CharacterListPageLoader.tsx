@@ -4,9 +4,9 @@ import { useCharacterApi } from '../../hook/api/index.js';
 import { CharacterListPage } from './CharacterListPage.jsx';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
-import { LANG_KEYS } from '@rita-berenice/shared/config/langConstants.js';
 import { useLocation } from 'react-router';
 import { useAuth } from '../../provider/AuthProvider.tsx';
+import { LANG_KEYS } from '@rita-berenice/shared/config';
 
 export function CharacterListPageLoader() {
 	const { state } = useLocation();

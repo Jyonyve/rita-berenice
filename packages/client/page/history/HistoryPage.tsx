@@ -1,24 +1,14 @@
-import { LANG_KEYS } from '@rita-berenice/shared/config/langConstants.js';
-import { CharacterInfo } from '@rita-berenice/shared/domain/character/character.type.js';
-import { ProfileCdo } from '@rita-berenice/shared/domain/profile/profile.type.js';
-import { Box, Grid, List, Typography } from '@mui/material';
+import { Box, Grid, Typography } from '@mui/material';
 import { FC } from 'react';
 import { useNavigate } from 'react-router';
-import { useProfileApi } from '../../hook/api/index.js';
-import {
-	GlassButton,
-	GlassCard,
-	GlassPaper,
-	GlassPortraitSlider,
-} from '../../layout/glass/index.js';
-import { RomanticTitle } from '../../layout/RomanticTitle.jsx';
-import { useAuth } from '../../provider/AuthProvider.jsx';
+import { GlassCard, GlassPaper, GlassPortraitSlider } from '../../layout/glass/index.js';
+
 import { useToast } from '../../provider/ToastProvider.jsx';
-import { routeConstants } from '../../routeConstants.js';
+
 import { containerSpacing } from '../../style/index.js';
-import { getCharacterImageArray, getLoreImage } from '../../util/portraitUtils.js';
-import { getLangAlertText, getLangText } from '../../util/translateUtils.js';
-import { HistoryInfo } from '@rita-berenice/shared/domain/lore/lore.type.js';
+import { getLoreImage } from '../../util/portraitUtils.js';
+import { getLangText } from '../../util/translateUtils.js';
+import { HistoryInfo } from '@rita-berenice/shared/domain';
 
 const HistoryPage: FC<{ historyInfo: HistoryInfo; userId: string }> = ({ historyInfo, userId }) => {
 	const navigate = useNavigate();

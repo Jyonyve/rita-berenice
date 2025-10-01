@@ -1,15 +1,6 @@
-import { MessageContent, MessageContentText } from '@langchain/core/messages';
-import {
-	ChatEntry,
-	ChatMessage,
-	ChatMessageType,
-	ChatRoleType,
-	ChatTurn,
-	ChatTurnMetadata,
-} from '../domain/chat/chat.type.js';
-import { DEFAULT_EMOTION } from '../config/emotionConstants.js';
-import { buildCharacterId } from '@rita-berenice/shared/util/buildIdUtils.js';
-import { NA } from '../config/constants.js';
+import { ChatMessageType, ChatTurn, ChatTurnMetadata } from '../domain/chat/chat.type.js';
+import { DEFAULT_EMOTION, NA } from '../config/index.js';
+import { buildCharacterId } from './buildIdUtils.js';
 
 export const convertStringToArray = (input: string): string[] => {
 	if (!input || typeof input !== 'string') {
@@ -63,17 +54,6 @@ export const parseChatTurnToMetadata = (turn: ChatTurn): ChatTurnMetadata => {
 		loreReferenceList: jsonStringifyOrEmpty(turn.loreReferenceList),
 		historyReferenceList: jsonStringifyOrEmpty(turn.historyReferenceList),
 	};
-};
-
-export const convertMessageContentToString = (content: MessageContent): string => {
-	if (typeof content === 'string') {
-		return content;
-	} else if (Array.isArray(content)) {
-		const textContent = content.find((item) => item.type === 'text') as MessageContentText;
-		return textContent ? textContent.text : JSON.stringify(content);
-	} else {
-		return JSON.stringify(content);
-	}
 };
 
 export const parseSessionId = (

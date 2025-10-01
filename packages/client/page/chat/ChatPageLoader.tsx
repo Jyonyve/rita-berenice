@@ -12,7 +12,6 @@ import {
 	useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { parseSessionId } from '@rita-berenice/shared/util/parseUtils.js';
 import {
 	useChatApi,
 	useCharacterApi,
@@ -25,13 +24,13 @@ import { ChatPage } from './ChatPage.jsx';
 import { useAuth } from '../../provider/AuthProvider.jsx';
 import { HeaderContextType } from '../../layout/RootLayout.jsx';
 import { getDefaultImage, getImageForEmotion } from '../../util/portraitUtils.js';
-import { DEFAULT_EMOTION } from '@rita-berenice/shared/config/emotionConstants.js';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
-import { LANG_KEYS } from '@rita-berenice/shared/config/langConstants.js';
-import { ProfileCdo, ProfileInfo } from '@rita-berenice/shared/domain/profile/profile.type.js';
 import { ProfileForm } from '../character/ProfileForm.tsx';
 import { useResponsive } from '../../hook/useResponsive.js';
+import { DEFAULT_EMOTION, LANG_KEYS } from '@rita-berenice/shared/config';
+import { ProfileInfo, ProfileCdo } from '@rita-berenice/shared/domain';
+import { parseSessionId } from '@rita-berenice/shared/util';
 
 // Create Emotion Context for ChatPage communication
 interface EmotionContextType {

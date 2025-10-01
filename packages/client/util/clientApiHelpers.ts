@@ -1,8 +1,7 @@
 import Session from 'supertokens-web-js/recipe/session/index.js';
 import axios from 'axios';
-import { ApiError } from '@rita-berenice/shared/domain/error/errors.js';
-import { toKebabCase } from '@rita-berenice/shared/util/apiHelpers.js';
-import { gunzipSync } from 'zlib';
+import { ApiError } from '@rita-berenice/shared/domain';
+import { toKebabCase } from '@rita-berenice/shared/util';
 
 // API 클라이언트 인스턴스 생성
 export const apiClient = axios.create({

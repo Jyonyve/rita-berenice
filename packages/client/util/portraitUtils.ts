@@ -1,13 +1,13 @@
 // src/client/util/portraitUtil.ts
 
 import {
-	DEFAULT_EMOTION,
-	EmotionKey,
-	numberToEmotionWordsMap,
 	PortraitUrlMap,
+	EmotionKey,
 	validEmotionKeys,
+	DEFAULT_EMOTION,
 	validEmotions,
-} from '@rita-berenice/shared/config/emotionConstants.js';
+	numberToEmotionWordsMap,
+} from '@rita-berenice/shared/config';
 
 // --- DATA STORES ---
 const allPortraitsMap = new Map<string, PortraitUrlMap>();

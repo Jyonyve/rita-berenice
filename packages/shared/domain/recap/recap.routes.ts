@@ -1,6 +1,6 @@
 // src/shared/domain/recap/RecapInterfaces.ts (or your equivalent file)
 
-import { METADATA_TYPES } from '@rita-berenice/shared/config/constants.js';
+import { METADATA_TYPES } from '../../config/index.js';
 import { Reference } from '../BaseTypes.js';
 
 export type RecapIndexContentType = 'RECAP_FLAG';

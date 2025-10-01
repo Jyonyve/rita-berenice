@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
-import { MODULE_NAMES } from '@rita-berenice/shared/config/constants.js';
-import { ProfileCdo, ProfileInfo } from '@rita-berenice/shared/domain/profile/profile.type.js';
-import { Payload } from '@rita-berenice/shared/util/apiHelpers.js';
-import { ProfileResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
+import { MODULE_NAMES } from '@rita-berenice/shared/config';
+import { ProfileCdo, ProfileInfo } from '@rita-berenice/shared/domain';
+import { ProfileResponse } from '@rita-berenice/shared/api';
+import { Payload } from '@rita-berenice/shared/util';
 
 /**
  * A client-side hook for interacting with the PROFILE API endpoints.

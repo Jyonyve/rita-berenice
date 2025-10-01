@@ -2,17 +2,17 @@
 
 import { useMutation } from '@tanstack/react-query';
 import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
-import { MODULE_NAMES } from '@rita-berenice/shared/config/constants.js';
+import { MODULE_NAMES } from '@rita-berenice/shared/config';
 import {
 	ChatTurn,
 	ChatTurnCdo,
 	TempChatTurn,
 	TempChatTurnCdo,
-} from '@rita-berenice/shared/domain/chat/chat.type.js';
-import { Payload } from '@rita-berenice/shared/util/apiHelpers.js';
-import { CharacterInfo } from '@rita-berenice/shared/domain/character/character.type.js';
-import { AiModelInfo } from '@rita-berenice/shared/domain/aimodel/AiInfoTypes.js';
-import { ProfileInfo } from '@rita-berenice/shared/domain/profile/profile.type.js';
+	CharacterInfo,
+	ProfileInfo,
+	AiModelInfo,
+} from '@rita-berenice/shared/domain';
+import { Payload } from '@rita-berenice/shared/util';
 
 /**
  * A client-side hook for interacting with the main ORCHESTRATION API endpoint,

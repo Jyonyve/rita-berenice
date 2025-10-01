@@ -1,14 +1,14 @@
-import { ALPHANUMERIC_ALPHABET, METADATA_TYPES } from '@rita-berenice/shared/config/constants.js';
 import {
 	ChatIndexContentType,
 	ChatMessageType,
 	LoreIndexContentType,
 	RecapIndexContentType,
-} from '@rita-berenice/shared/domain/index.js';
+} from '@rita-berenice/shared/domain';
 import { customAlphabet } from 'nanoid';
 import { _nanoid } from 'zod/v4/core';
 import { LangCode } from '../config/langConstants.js';
 import { generateNickName } from '../config/nicknameConstants.js';
+import { ALPHANUMERIC_ALPHABET, METADATA_TYPES } from '../config/index.js';
 
 /* gen uuid (shortened)*/
 const _genNanoId = (length: number) => customAlphabet(ALPHANUMERIC_ALPHABET, length)();

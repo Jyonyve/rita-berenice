@@ -3,10 +3,10 @@ import { Container, Typography } from '@mui/material';
 
 import { GlassCircularProgress } from '../../layout/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
-import { LANG_KEYS } from '@rita-berenice/shared/config/langConstants.js';
 import { useAuth } from '../../provider/AuthProvider.jsx';
 import { UserPage } from './UserPage.jsx';
 import { useCharacterApi, useCredentialApi, useSessionApi, useUserApi } from '../../hook/index.js';
+import { LANG_KEYS } from '@rita-berenice/shared/config';
 
 export function UserPageLoader() {
 	const { userId } = useAuth();

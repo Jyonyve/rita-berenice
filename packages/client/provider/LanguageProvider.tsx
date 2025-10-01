@@ -8,7 +8,7 @@ import React, {
 	useMemo,
 	useEffect,
 } from 'react';
-import { LangCode, DEFAULT_LANG } from '@rita-berenice/shared/config/langConstants.js';
+import { LangCode, DEFAULT_LANG } from '@rita-berenice/shared/config';
 import { fetchWithTimeout } from '../util/fetchUtils.js';
 import { setCurrentLang } from '../util/translateUtils.js';
 

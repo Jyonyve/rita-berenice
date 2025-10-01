@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient, genApiUrl } from '../../util/clientApiHelpers.js';
-import { MODULE_NAMES } from '@rita-berenice/shared/config/constants.js';
-import { UserCdo, UserInfo } from '@rita-berenice/shared/domain/user/user.type.js';
-import { UserResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
+import { UserResponse } from '@rita-berenice/shared/api';
+import { MODULE_NAMES } from '@rita-berenice/shared/config';
+import { UserCdo, UserInfo } from '@rita-berenice/shared/domain';
 
 export const useUserApi = () => {
 	const MODULE_NAME = MODULE_NAMES.USER;

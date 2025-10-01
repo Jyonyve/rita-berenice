@@ -1,10 +1,10 @@
 import { Box, Divider, ListItem, ListItemButton, ListItemText, Typography } from '@mui/material';
-import React, { FC, Fragment } from 'react'; // Import Fragment
+import React, { FC, Fragment } from 'react';
 import { useSessionApi } from '../../hook/api/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
-import { LANG_KEYS } from '@rita-berenice/shared/config/langConstants.js';
 import { formatTimestamp } from '../../util/styleUtils.jsx';
+import { LANG_KEYS } from '@rita-berenice/shared/config';
 
 export const SessionPreviewList: FC<{
 	userId: string;

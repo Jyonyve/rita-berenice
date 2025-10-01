@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2020"],
+    "types": ["node"],
+    "rootDir": ".",
+    "outDir": "./dist",
+    "noEmit": false,
+    "allowImportingTsExtensions": false
+  },
+  "references": [
+    { "path": "../shared" }
+  ],
+  "include": ["./**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

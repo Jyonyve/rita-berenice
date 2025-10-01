@@ -1,4 +1,4 @@
-import { MODEL_LIMITS_INFO, SUPPORTED_MODEL_INFO } from '../../config/supportAiModelInfo.js'; //should export from file, not index(circular error)
+import { MODEL_LIMITS_INFO, SUPPORTED_MODEL_INFO } from '../../config/index.js';
 
 // 2. Define types based on the new structure
 export type AiPlatform = keyof typeof SUPPORTED_MODEL_INFO;

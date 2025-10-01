@@ -2,15 +2,14 @@
 
 import React from 'react';
 import { Typography, Box, Grid } from '@mui/material';
-import { CharacterInfo } from '@rita-berenice/shared/domain/character/character.type.js';
 import { useNavigate } from 'react-router';
 import { GlassCard, GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
 import { RomanticTitle } from '../../layout/index.js';
 import { containerSpacing } from '../../style/index.js';
 import { getDefaultImage } from '../../util/portraitUtils.js';
 import { getLangText } from '../../util/translateUtils.js';
-import { LANG_KEYS } from '@rita-berenice/shared/config/langConstants.js';
-import { DEFAULT_CHARACTER_AVATAR } from '@rita-berenice/shared/config/constants.js';
+import { DEFAULT_CHARACTER_AVATAR, LANG_KEYS } from '@rita-berenice/shared/config';
+import { CharacterInfo } from '@rita-berenice/shared/domain';
 
 const characterCardSx = {
 	display: 'flex',

@@ -1,36 +1,22 @@
-import React, {
-	FC,
-	useCallback,
-	useEffect,
-	useLayoutEffect,
-	useMemo,
-	useRef,
-	useState,
-} from 'react';
-import { Outlet, useMatch, useNavigate } from 'react-router';
+import React, { FC, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Outlet, useNavigate } from 'react-router';
 import {
-	AppBar,
 	Box,
 	Container,
 	Toolbar,
 	Typography,
 	CssBaseline,
-	Switch,
 	IconButton,
 	Modal,
-	Menu,
 	Avatar,
 	Dialog,
 	DialogContent,
 	useTheme,
 	useMediaQuery,
-	MenuItem,
 } from '@mui/material';
 import { useColorMode } from '../provider/ColorModeProvider.jsx';
 import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpassword/prebuiltui.js';
 import { AuthPage } from 'supertokens-auth-react/ui/index.js';
-import { APPNAME } from '@rita-berenice/shared/config/constants.js';
-import { useLanguage } from '../provider/LanguageProvider.jsx';
 import {
 	GlassPaper,
 	GlassAppBar,
@@ -43,7 +29,6 @@ import { RomanticTitle } from './RomanticTitle.jsx';
 import { gold, silver } from '../style/colors.js';
 import { routeConstants } from '../routeConstants.js';
 import { getLangText } from '../util/translateUtils.js';
-import { LANG_KEYS } from '@rita-berenice/shared/config/langConstants.js';
 import { useAuth } from '../provider/AuthProvider.jsx';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ImageIcon from '@mui/icons-material/Image';
@@ -53,6 +38,7 @@ import { InlineEditableField } from './InlineEditableField.jsx';
 import ReloadToHome from './ReloadToHome.jsx';
 import { titleFontFamily } from '../style/typography.js';
 import { LanguageSwitch, ThemeSwitch } from './index.js';
+import { APPNAME, LANG_KEYS } from '@rita-berenice/shared/config';
 
 interface LoginModalProps {
 	loginOpen: boolean;

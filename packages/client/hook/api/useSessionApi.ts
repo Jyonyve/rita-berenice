@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { SessionInfo } from '@rita-berenice/shared/domain/session/session.type.js';
-import { MODULE_NAMES } from '@rita-berenice/shared/config/constants.js';
-import { Payload } from '@rita-berenice/shared/util/apiHelpers.js';
-import { SessionResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
+
 import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
 import { useAuth } from '../../provider/index.js';
+import { MODULE_NAMES } from '@rita-berenice/shared/config';
+import { SessionResponse } from '@rita-berenice/shared/api';
+import { Payload } from '@rita-berenice/shared/util';
+import { SessionInfo } from '@rita-berenice/shared/domain';
 
 export const useSessionApi = () => {
 	const MODULE_NAME = MODULE_NAMES.SESSION;

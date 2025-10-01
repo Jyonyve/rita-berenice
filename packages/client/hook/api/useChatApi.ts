@@ -1,12 +1,11 @@
 // src/client/hooks/useChatApi.ts
 
-import type { Where } from 'chromadb';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
-import { ChatTurn } from '@rita-berenice/shared/domain/chat/chat.type.js';
-import { MODULE_NAMES } from '@rita-berenice/shared/config/constants.js';
-import { Payload } from '@rita-berenice/shared/util/apiHelpers.js';
-import { ChatResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
+import { ChatTurn } from '@rita-berenice/shared/domain';
+import { Payload } from '@rita-berenice/shared/util';
+import { ChatResponse } from '@rita-berenice/shared/api';
+import { MODULE_NAMES } from '@rita-berenice/shared/config';
 
 /**
  * A client-side hook for interacting with the CHAT and TEMP_CHAT API endpoints.

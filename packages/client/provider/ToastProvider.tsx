@@ -1,9 +1,8 @@
 import React, { createContext, useState, useCallback, useContext, ReactNode } from 'react';
-import { nanoid } from 'nanoid';
 import { Snackbar, Alert } from '@mui/material';
 
 interface Toast {
-	id: string;
+	id: number; // ✅ Changed from string to number
 	message: string;
 	type: 'success' | 'error' | 'info' | 'warning';
 	duration?: number;
@@ -18,6 +17,8 @@ interface ToastContextType {
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
+
+let toastIdCounter = 0; // ✅ Simple counter
 
 export const ToastProvider = ({ children }: { children: ReactNode }) => {
 	const [toasts, setToasts] = useState<Toast[]>([]);
@@ -34,7 +35,7 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
 
 	const addToast = useCallback(
 		(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info', duration = 3000) => {
-			const id = nanoid();
+			const id = toastIdCounter++; // ✅ Increment counter
 			setToasts((prevToasts) => [...prevToasts, { id, message, type, duration }]);
 		},
 		[]

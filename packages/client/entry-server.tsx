@@ -4,9 +4,9 @@ import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 import { StaticRouter } from 'react-router'; // Use StaticRouter for server
 import createEmotionServer from '@emotion/server/create-instance';
-import { App } from '#client/App.jsx';
-import { createEmotionCache } from '@rita-berenice/shared/config/createEmotionCache.js';
-import { AppProviders } from '#client/AppProviders.jsx';
+import { AppProviders } from './AppProviders.js';
+import { App } from './App.js';
+import { createEmotionCache } from './util/index.js';
 
 interface RenderResult {
 	html: string;

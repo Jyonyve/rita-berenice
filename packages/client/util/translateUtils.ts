@@ -1,16 +1,15 @@
 // Create a new file: src/shared/util/translateUtils.ts
-
+import { EMOTION_CATEGORY_NAMES } from '@rita-berenice/shared/util';
 import {
-	alertToastConstants,
-	DEFAULT_LANG,
-	LANG_KEYS,
 	LangCode,
-	langConstants,
+	DEFAULT_LANG,
 	LangKey,
-} from '@rita-berenice/shared/config/langConstants.js';
-import { EmotionValue } from '@rita-berenice/shared/config/emotionConstants.js';
-import { EMOTION_CATEGORY_NAMES } from '@rita-berenice/shared/util/emotionUtils.js';
-import { GENDER_OPTION, GENDER_OPTIONS } from '@rita-berenice/shared/config/constants.js';
+	langConstants,
+	alertToastConstants,
+	EmotionValue,
+	GENDER_OPTION,
+	GENDER_OPTIONS,
+} from '@rita-berenice/shared/config';
 
 // 🎯 Global current language state
 let currentLang: LangCode = (() => {

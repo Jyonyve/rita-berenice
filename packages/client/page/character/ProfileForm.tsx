@@ -1,7 +1,5 @@
 // src/client/components/profile/ProfileForm.tsx
 
-import { LANG_KEYS } from '@rita-berenice/shared/config/langConstants.js';
-import { ProfileCdo, ProfileInfo } from '@rita-berenice/shared/domain/profile/profile.type.js';
 import {
 	Box,
 	TextField,
@@ -20,12 +18,13 @@ import {
 } from '@mui/material';
 import { FC, useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { GlassButton, GlassCard, SolidMetallicButton } from '../../layout/index.js';
+import { GlassButton, SolidMetallicButton } from '../../layout/index.js';
 import { innerSpacing } from '../../style/index.js';
 import { getGenderSelectLabel, getLangText } from '../../util/translateUtils.js';
 import { ProfilePreviewList } from './ProfilePreviewList.jsx';
-import { REQUEST_CHARACTER_LIMIT } from '@rita-berenice/shared/config/constants.js';
 import { useResponsive } from '../../hook/useResponsive.js';
+import { LANG_KEYS, REQUEST_CHARACTER_LIMIT } from '@rita-berenice/shared/config';
+import { ProfileInfo, ProfileCdo } from '@rita-berenice/shared/domain';
 
 const modalStyle = {
 	position: 'absolute',

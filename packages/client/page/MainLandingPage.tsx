@@ -4,9 +4,9 @@ import React, { Fragment } from 'react';
 import { Box, Container, Typography, useTheme } from '@mui/material';
 import { useNavigate } from 'react-router';
 import { routeConstants } from '../routeConstants.js';
-import { APPNAME } from '@rita-berenice/shared/config/constants.js';
 import { RomanticTitle } from '../layout/RomanticTitle.jsx';
 import { GlassBox, GlassPaper } from '../layout/glass/index.js';
+import { APPNAME } from '@rita-berenice/shared/config';
 
 export function MainLandingPage() {
 	const navigate = useNavigate();

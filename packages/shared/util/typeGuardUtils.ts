@@ -27,7 +27,7 @@ import {
 	UserInfo,
 	WorldLoreCdo,
 } from '../domain/index.js';
-import { DEFAULT_USER_AVATAR, METADATA_TYPES, NA } from '../config/constants.js';
+import { DEFAULT_USER_AVATAR, NA } from '../config/constants.js';
 import { DEFAULT_EMOTION } from '../config/emotionConstants.js';
 
 //type guard

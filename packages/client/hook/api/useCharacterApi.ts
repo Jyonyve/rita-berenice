@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
-import { MODULE_NAMES } from '@rita-berenice/shared/config/constants.js';
-import { CharacterResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
-import { CharacterCdo, CharacterInfo } from '@rita-berenice/shared/domain/character/character.type.js';
-import { Payload } from '@rita-berenice/shared/util/apiHelpers.js';
+import { MODULE_NAMES } from '@rita-berenice/shared/config';
+import { CharacterResponse } from '@rita-berenice/shared/api';
+import { CharacterCdo, CharacterInfo } from '@rita-berenice/shared/domain';
+import { Payload } from '@rita-berenice/shared/util';
 
 export const useCharacterApi = () => {
 	const MODULE_NAME = MODULE_NAMES.CHARACTER;

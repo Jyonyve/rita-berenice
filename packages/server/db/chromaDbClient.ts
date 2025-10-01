@@ -26,10 +26,17 @@ const embedFnCohere = new CohereEmbeddingFunction({
 	// Cohere embed-v4.0 defaults to 1536 dimensions
 });
 
-const DESTINATION_CONFIG = { host: 'rita-berenice-chromadb.fly.dev', port: 443, ssl: true };
-// const DESTINATION_CONFIG = { host: 'localhost', port: 8000 };
+const host = process.env.CHROMA_HOST;
+const port = Number(process.env.CHROMA_PORT);
+const ssl = process.env.CHROMA_SSL === 'true';
 
-const chromaClient = new ChromaClient({ ...DESTINATION_CONFIG });
+if (!host || !port || isNaN(port) || ssl === undefined) {
+	throw new Error(
+		'ChromaDB environment variables (CHROMA_HOST, CHROMA_PORT, CHROMA_SSL) must be set.'
+	);
+}
+
+const chromaClient = new ChromaClient({ host, port, ssl });
 const _collectionCache: Map<string, Collection> = new Map();
 
 // ✅ SIMPLIFIED: Direct mapping without chooseEmbeddingFunction
@@ -220,9 +227,7 @@ export const chromaDbClient = {
 		const whereFilter: Where = { type: { $eq: type } }; // For just type
 
 		console.log(
-			`[ChromaClient.getDocumentsByMetadata] Fetching documents with filter: ${JSON.stringify(
-				whereFilter
-			)}`
+			`[ChromaClient.getDocumentsByMetadata] Fetching documents with filter: ${JSON.stringify(whereFilter)}`
 		);
 
 		try {

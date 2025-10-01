@@ -1,6 +1,5 @@
 // src/client/component/page/chat/UserInput.tsx
 
-import { LANG_KEYS } from '@rita-berenice/shared/config/langConstants.js';
 import { Box, IconButton, Menu, TextField, useTheme } from '@mui/material';
 import React, { ChangeEvent, ChangeEventHandler, FC, useState } from 'react';
 import {
@@ -13,13 +12,11 @@ import {
 import { useToast } from '../../provider/ToastProvider.jsx';
 import { getLangAlertText, getLangText } from '../../util/translateUtils.js';
 import { AiModelSelector } from './AiModelSelector.jsx';
-import { AllModelNames } from '@rita-berenice/shared/domain/aimodel/AiInfoTypes.js';
-import { REQUEST_CHARACTER_LIMIT } from '@rita-berenice/shared/config/constants.js';
 import { AdultSwitch } from '../../layout/AdultSwitch.jsx';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { silver } from '../../style/index.js';
-import { glassEffect } from '../../style/glassEffect.js';
-import { SessionInfo } from '@rita-berenice/shared/domain/session/index.js';
+import { LANG_KEYS, REQUEST_CHARACTER_LIMIT } from '@rita-berenice/shared/config';
+import { SessionInfo, AllModelNames } from '@rita-berenice/shared/domain';
 
 interface UserInputProps {
 	sessionInfo: SessionInfo;

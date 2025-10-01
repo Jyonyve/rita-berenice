@@ -2,10 +2,10 @@ import { Box, CircularProgress, Typography } from '@mui/material';
 import React, { FC, memo, useCallback, useEffect, useRef } from 'react';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 
-import { DisplayTurn, TempChatTurn } from '@rita-berenice/shared/domain/chat/chat.type.js';
 import { useScrollEffect } from '../../hook/useScrollEffect.js';
 import ChatLogRow, { ChatLogRowProps } from './ChatLogRow.jsx';
 import { GlassCircularProgress, ScrollGlow } from '../../layout/index.js';
+import { DisplayTurn, TempChatTurn } from '@rita-berenice/shared/domain';
 
 interface ChatLogProps {
 	allTurns: (DisplayTurn | TempChatTurn)[];

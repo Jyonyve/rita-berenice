@@ -1,5 +1,4 @@
-import { METADATA_TYPES, MetadataType } from '@rita-berenice/shared/config/constants.js';
-import { allEmotionKeywordsList, EmotionValue } from '../../config/emotionConstants.js';
+import { allEmotionKeywordsList, EmotionValue, METADATA_TYPES } from '../../config/index.js';
 import { DefaultAiRole } from '../aimodel/AiInfoTypes.js';
 import { Reference } from '../BaseTypes.js';
 

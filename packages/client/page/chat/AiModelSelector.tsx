@@ -1,10 +1,10 @@
 // src/client/component/page/chat/AiModelSelector.tsx
 
-import { SUPPORTED_MODEL_INFO } from '@rita-berenice/shared/config/supportAiModelInfo.js';
 import { alpha, FormControl, InputLabel, ListSubheader } from '@mui/material';
 import { GlassMenuItem, GlassSelect } from '../../layout/glass/index.js';
 import { glassEffect, glassEffectLight } from '../../style/glassEffect.js';
-import { AllModelNames } from '@rita-berenice/shared/domain/aimodel/AiInfoTypes.js';
+import { SUPPORTED_MODEL_INFO } from '@rita-berenice/shared/config';
+import { AllModelNames } from '@rita-berenice/shared/domain';
 export const AiModelSelector = ({
 	modelName,
 	onAiModel,

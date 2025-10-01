@@ -1,13 +1,13 @@
 // src/client/components/profile/ProfileTabs.tsx
 
-import { LANG_KEYS } from '@rita-berenice/shared/config/langConstants.js';
-import { ProfileCdo } from '@rita-berenice/shared/domain/profile/profile.type.js';
 import { Box, CardContent, Tab, Tabs } from '@mui/material';
-import { FC, useState } from 'react';
+import { FC, SyntheticEvent, useState } from 'react';
 import { GlassCard } from '../../layout/glass/index.js'; // Assuming GlassCard is here
 import { getLangText } from '../../util/translateUtils.js';
 import { ProfileForm } from './ProfileForm.js';
 import { HistoryPreviewList } from './HistoryPreviewList.jsx';
+import { LANG_KEYS } from '@rita-berenice/shared/config';
+import { ProfileCdo } from '@rita-berenice/shared/domain';
 
 interface TabPanelProps {
 	children?: React.ReactNode;
@@ -35,7 +35,7 @@ export const ProfileHistoryTabs: FC<{
 }> = ({ userId, characterId, onSubmit, onHistory }) => {
 	const [tabValue, setTabValue] = useState(0);
 
-	const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+	const handleTabChange = (event: SyntheticEvent, newValue: number) => {
 		setTabValue(newValue);
 	};
 

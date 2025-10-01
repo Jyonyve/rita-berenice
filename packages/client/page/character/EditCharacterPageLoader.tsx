@@ -8,7 +8,7 @@ import { useCharacterApi } from '../../hook/index.js';
 import { Container, Typography } from '@mui/material';
 import { useAuth } from '../../provider/index.js';
 import { getLangText } from '../../util/translateUtils.js';
-import { LANG_KEYS } from '@rita-berenice/shared/config/langConstants.js';
+import { LANG_KEYS } from '@rita-berenice/shared/config';
 
 export const EditCharacterPageLoader = () => {
 	const navigate = useNavigate();

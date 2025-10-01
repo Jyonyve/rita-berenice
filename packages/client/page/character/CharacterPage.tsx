@@ -1,6 +1,3 @@
-import { LANG_KEYS } from '@rita-berenice/shared/config/langConstants.js';
-import { CharacterInfo } from '@rita-berenice/shared/domain/character/character.type.js';
-import { ProfileCdo } from '@rita-berenice/shared/domain/profile/profile.type.js';
 import { Box, Grid, IconButton, List, Tooltip, Typography } from '@mui/material';
 import { FC, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -21,6 +18,8 @@ import { SessionPreviewList } from './SessionPreviewList.jsx';
 import { ProfileHistoryTabs } from './ProfileHistoryTab.jsx';
 import { SolidMetallicButton, RomanticTitle } from '../../layout/index.js';
 import { CharacterForm } from './CharacterForm.jsx'; // Import the form
+import { LANG_KEYS } from '@rita-berenice/shared/config';
+import { CharacterInfo, ProfileCdo } from '@rita-berenice/shared/domain';
 
 const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string; isMine: boolean }> = ({
 	characterInfo,

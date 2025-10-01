@@ -7,6 +7,7 @@ import { ChatEntry, ChatTurn } from '@rita-berenice/shared/domain/chat/chat.type
 import { parseEntriesToConversation } from './chatParseUtils.js';
 import { Metadata } from 'chromadb';
 import { HistoryInfo, LoreInfo } from '@rita-berenice/shared/domain/index.js';
+import { MessageContent, MessageContentText } from '@langchain/core/messages';
 
 export function isDirectOpenAIClient(llm: any): llm is OpenAI {
 	// Check for a unique property or method of the OpenAI client instance
@@ -367,4 +368,15 @@ export const boostByCriticalTerm = <T extends ChatTurn | LoreInfo | HistoryInfo>
 			return bBoost - aBoost;
 		})
 		.map(({ _relevanceBoost, ...item }) => item as unknown as T); // Remove the temporary boost property
+};
+
+export const convertMessageContentToString = (content: MessageContent): string => {
+	if (typeof content === 'string') {
+		return content;
+	} else if (Array.isArray(content)) {
+		const textContent = content.find((item) => item.type === 'text') as MessageContentText;
+		return textContent ? textContent.text : JSON.stringify(content);
+	} else {
+		return JSON.stringify(content);
+	}
 };

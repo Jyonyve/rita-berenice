@@ -16,14 +16,14 @@ import {
 	TextFieldProps,
 	CircularProgress,
 } from '@mui/material';
-import { Visibility, VisibilityOff, CheckCircle, Warning, Refresh } from '@mui/icons-material';
+import { Visibility, VisibilityOff, CheckCircle, Warning } from '@mui/icons-material';
 import { useForm, Controller, useWatch } from 'react-hook-form';
 import { GlassButton, GlassCard } from '../../layout/index.js';
 import { useCredentialApi } from '../../hook/api/useCredentialApi.js';
 import { useToast } from '../../provider/ToastProvider.tsx';
-import { UserApiKeys, ValidationResult } from '@rita-berenice/shared/domain/credential/credential.type.js';
-import { getLangAlertText, getLangText } from '../../util/translateUtils.js';
-import { LANG_KEYS } from '@rita-berenice/shared/config/langConstants.js';
+import { LANG_KEYS } from '@rita-berenice/shared/config';
+import { UserApiKeys, ValidationResult } from '@rita-berenice/shared/domain';
+import { getLangText, getLangAlertText } from '../../util/translateUtils.js';
 
 // API Key configuration
 const API_KEY_CONFIG = [

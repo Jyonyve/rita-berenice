@@ -1,7 +1,8 @@
 // src/components/ui/GlassPaper.tsx
-import { Paper, styled } from '@mui/material';
+import { Paper, PaperProps, styled } from '@mui/material';
+import { ComponentType } from 'react';
 
-export const GlassPaper = styled(Paper)(({ theme }) => ({
+export const GlassPaper: ComponentType<PaperProps> = styled(Paper)(({ theme }) => ({
 	// --- Core Glassmorphism Styles (from before) ---
 	background: 'rgba(255, 255, 255, 0.05)',
 	backdropFilter: 'blur(10px)',

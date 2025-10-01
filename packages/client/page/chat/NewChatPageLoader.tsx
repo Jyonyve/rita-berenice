@@ -1,8 +1,5 @@
 // src/client/page/ChatPageLoader.tsx
 
-import { DEFAULT_EMOTION } from '@rita-berenice/shared/config/emotionConstants.js';
-import { ChatMessage, TempChatTurn } from '@rita-berenice/shared/domain/chat/chat.type.js';
-import { buildMessageId } from '@rita-berenice/shared/util/buildIdUtils.js';
 import { parseTextToEntries } from '../../util/chatParseUtils.js';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
@@ -17,9 +14,9 @@ import { useAuth } from '../../provider/AuthProvider.jsx';
 import { routeConstants } from '../../routeConstants.js';
 import { GlassCircularProgress } from '../../layout/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
-import { LANG_KEYS } from '@rita-berenice/shared/config/langConstants.js';
-import { ProfileCdo } from '@rita-berenice/shared/domain/profile/profile.type.js';
-import { SessionInfo } from '@rita-berenice/shared/domain/session/session.type.js';
+import { DEFAULT_EMOTION, LANG_KEYS } from '@rita-berenice/shared/config';
+import { ProfileCdo, ChatMessage, TempChatTurn } from '@rita-berenice/shared/domain';
+import { buildMessageId } from '@rita-berenice/shared/util';
 
 export function NewChatPageLoader() {
 	const navigate = useNavigate();

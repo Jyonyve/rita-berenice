@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../../provider/ToastProvider.jsx';
-import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
-import { LoreInfo } from '@rita-berenice/shared/domain/index.js';
-import { Payload } from '@rita-berenice/shared/util/apiHelpers.js';
-import { LoreResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
 import { getLangAlertText } from '../../util/translateUtils.js';
-import { LANG_KEYS, MODULE_NAMES } from '@rita-berenice/shared/config/index.js';
+import { LoreResponse } from '@rita-berenice/shared/api';
+import { MODULE_NAMES, LANG_KEYS } from '@rita-berenice/shared/config';
+import { LoreInfo } from '@rita-berenice/shared/domain';
+import { Payload } from '@rita-berenice/shared/util';
+import { genApiUrl, apiClient, decompressData } from '../../util/clientApiHelpers.js';
 
 /**
  * A client-side hook for interacting with the LORE API endpoints, which handle

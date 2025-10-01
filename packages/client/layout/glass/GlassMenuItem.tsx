@@ -2,6 +2,7 @@
 
 import { MenuItem, styled, alpha, MenuItemProps } from '@mui/material';
 import { getColor, ColorVariant } from '../../style/colors.js';
+import { ComponentType } from 'react';
 
 // Define the custom props our component will accept
 interface GlassMenuItemProps extends MenuItemProps {
@@ -14,7 +15,7 @@ interface GlassMenuItemProps extends MenuItemProps {
  * The glow color is controlled by the `colorVariant` prop.
  * The `compact` prop enables a tighter layout for mobile devices.
  */
-export const GlassMenuItem = styled(MenuItem, {
+export const GlassMenuItem: ComponentType<GlassMenuItemProps> = styled(MenuItem, {
 	// Ensure custom props aren't passed down to the DOM
 	shouldForwardProp: (prop) => prop !== 'colorVariant' && prop !== 'compact',
 })<GlassMenuItemProps>(({ theme, colorVariant = 'primary', compact = false }) => {

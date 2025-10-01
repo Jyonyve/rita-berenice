@@ -2,16 +2,16 @@
 
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
-import { MODULE_NAMES } from '@rita-berenice/shared/config/constants.js';
+import { MODULE_NAMES } from '@rita-berenice/shared/config';
+import { TermResponse } from '@rita-berenice/shared/api';
 import {
 	SessionTermCdo,
 	SessionTermInfo,
 	CharacterTermCdo,
 	CharacterTermInfo,
 	TermType,
-} from '@rita-berenice/shared/domain/term/term.type.js';
-import { Payload } from '@rita-berenice/shared/util/apiHelpers.js';
-import { TermResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
+} from '@rita-berenice/shared/domain';
+import { Payload } from '@rita-berenice/shared/util';
 
 /**
  * A client-side hook for interacting with the GLOSSARY (TERM) API endpoints.

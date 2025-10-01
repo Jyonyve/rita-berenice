@@ -1,7 +1,6 @@
 import React, { useState, useEffect, FC, useRef } from 'react';
 import { TextField, Typography, IconButton, Box, TypographyProps } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
-import EditIcon from '@mui/icons-material/Edit';
 
 interface InlineEditableFieldProps {
 	initialValue: string;

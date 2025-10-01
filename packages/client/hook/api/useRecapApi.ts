@@ -1,11 +1,10 @@
 // src/client/hooks/useRecapApi.ts
 
-import type { Where, WhereDocument } from 'chromadb';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
-import { MODULE_NAMES, METADATA_TYPES } from '@rita-berenice/shared/config/constants.js';
-import { RecapInfo } from '@rita-berenice/shared/domain/recap/recap.routes.js';
-import { Payload } from '@rita-berenice/shared/util/apiHelpers.js';
+import { METADATA_TYPES, MODULE_NAMES } from '@rita-berenice/shared/config';
+import { RecapInfo } from '@rita-berenice/shared/domain';
+import { Payload } from '@rita-berenice/shared/util';
 
 /**
  * A client-side hook for interacting with the RECAP API endpoints,

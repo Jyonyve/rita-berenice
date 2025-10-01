@@ -1,13 +1,14 @@
 // src/components/ui/SolidMetallicButton.tsx
 
-import { Button, styled, alpha, PaletteColor, Palette } from '@mui/material';
+import { Button, styled, alpha, PaletteColor, Palette, ButtonProps } from '@mui/material';
 import { getColor, ColorVariant, gold, silver } from '../style/colors.js';
+import { ComponentType } from 'react';
 
-interface SolidMetallicButtonProps {
+interface SolidMetallicButtonProps extends ButtonProps {
 	colorVariant?: ColorVariant;
 }
 
-export const SolidMetallicButton = styled(Button, {
+export const SolidMetallicButton: ComponentType<SolidMetallicButtonProps> = styled(Button, {
 	shouldForwardProp: (prop) => prop !== 'colorVariant',
 })<SolidMetallicButtonProps>(({ theme, colorVariant = 'primary' }) => {
 	// 1. Determine the color palette for the button

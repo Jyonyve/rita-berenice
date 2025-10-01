@@ -1,6 +1,6 @@
 // src/shared/domain/lore/LoreInterfaces.ts
 
-import { METADATA_TYPES } from '@rita-berenice/shared/config/constants.js';
+import { METADATA_TYPES } from '../../config/index.js';
 
 export type LoreIndexContentType =
 	| 'AFFECTED_CHARACTER'

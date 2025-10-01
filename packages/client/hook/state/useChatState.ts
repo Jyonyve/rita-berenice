@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
-import { DisplayTurn, TempChatTurn } from '@rita-berenice/shared/domain/chat/chat.type.js';
 import { loadAllCachedMessagesForSession, saveMessagesToCache } from '../../util/idbUtils.js';
 import { useChatApi, useTempChatApi } from '../api/index.js';
-import { RECENT_CHAT_TURN } from '@rita-berenice/shared/config/constants.js';
+import { DisplayTurn, TempChatTurn } from '@rita-berenice/shared/domain';
+import { RECENT_CHAT_TURN } from '@rita-berenice/shared/config';
 
 export const useChatState = (sessionId: string) => {
 	// --- STATE MANAGEMENT ---

@@ -12,9 +12,9 @@ import React, {
 } from 'react';
 import { useSessionContext } from 'supertokens-auth-react/recipe/session/index.js';
 import { signOut } from 'supertokens-auth-react/recipe/session/index.js';
-import { UserInfo, UserCdo } from '@rita-berenice/shared/domain/user/user.type.js';
 import { useUserApi } from '../hook/api/useUserApi.js';
 import { cryptoState } from '../cryptoState.js';
+import { UserInfo } from '@rita-berenice/shared/domain';
 
 // --- Define the shape of our unified context ---
 interface AuthContextType {
