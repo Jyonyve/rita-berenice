@@ -1,9 +1,12 @@
+# pnpm-workspace.yaml
+packages:
+ - 'packages/*'
+
 onlyBuiltDependencies:
-  - '@parcel/watcher'
-  - '@swc/core'
-  - browser-tabs-lock
-  - esbuild
-  - onnxruntime-node
-  - protobufjs
-  - puppeteer
-  - sharp
+ - '@parcel/watcher'
+ - browser-tabs-lock
+ - esbuild
+ - onnxruntime-node
+ - protobufjs
+ - puppeteer
+ - sharp
