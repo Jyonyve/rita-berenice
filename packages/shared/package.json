@@ -1,0 +1,22 @@
+{
+	"name": "@rita-berenice/shared",
+	"version": "1.0.0",
+	"private": true,
+	"type": "module",
+	"main": "./index.ts",
+	"exports": {
+		"./api": "./api/index.ts",
+		"./config": "./config/index.ts",
+		"./domain": "./domain/index.ts",
+		"./util": "./util/index.ts"
+	},
+	"scripts": {
+		"build": "tsc --project tsconfig.json",
+		"clean": "rimraf dist",
+		"dev": "tsc --project tsconfig.json --watch"
+	},
+	"dependencies": {
+		"nanoid": "^5.1.5",
+		"unique-names-generator": "^4.7.1"
+	}
+}

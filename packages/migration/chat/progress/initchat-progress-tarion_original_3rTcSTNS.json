@@ -1,0 +1,37 @@
+{
+  "sessionId": "taryeon_original_3rTcSTNS",
+  "totalTurnsInLogFile": 1478,
+  "lastProcessedSequence": 996,
+  "successfullyEnrichedTurnsCount": 995,
+  "fallbackSavedTurnsCount": 0,
+  "startedAt": "2025-08-21T05:00:56.825Z",
+  "lastUpdatedAt": "2025-09-08T04:02:54.947Z",
+  "status": "in_progress",
+  "errors": [
+    {
+      "sequence": 106,
+      "error": "DB Upsert failed: An internal error occurred while doing [storeChatTurn].: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.",
+      "timestamp": "2025-08-21T06:33:03.062Z"
+    },
+    {
+      "sequence": 281,
+      "error": "DB Upsert failed: An internal error occurred while doing [storeChatTurn].: Invalid response body while trying to fetch https://api.openai.com/v1/embeddings: Premature close",
+      "timestamp": "2025-08-21T07:16:51.105Z"
+    },
+    {
+      "sequence": 551,
+      "error": "DB Upsert failed: An internal error occurred while doing [storeChatTurn].: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.",
+      "timestamp": "2025-08-22T02:03:39.842Z"
+    },
+    {
+      "sequence": 566,
+      "error": "DB Upsert failed: An internal error occurred while doing [storeChatTurn].: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.",
+      "timestamp": "2025-08-22T04:21:56.059Z"
+    },
+    {
+      "sequence": 577,
+      "error": "DB Upsert failed: An internal error occurred while doing [storeChatTurn].: Failed to connect to chromadb. Make sure your server is running and try again. If you are running from a browser, make sure that your chromadb instance is configured to allow requests from the current origin using the CHROMA_SERVER_CORS_ALLOW_ORIGINS environment variable.",
+      "timestamp": "2025-08-22T07:14:46.480Z"
+    }
+  ]
+}

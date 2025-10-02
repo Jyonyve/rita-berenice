@@ -1,0 +1,44 @@
+{
+	"name": "@rita-berenice/client",
+	"version": "1.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build",
+		"build:ssr": "vite build --mode ssr",
+		"preview": "vite preview",
+		"clean": "rimraf ../../dist/client"
+	},
+	"dependencies": {
+		"@emotion/cache": "^11.14.0",
+		"@emotion/react": "^11.14.0",
+		"@emotion/server": "^11.11.0",
+		"@emotion/styled": "^11.14.1",
+		"@mui/icons-material": "^7.3.1",
+		"@mui/material": "^7.3.1",
+		"@rita-berenice/shared": "workspace:*",
+		"@tanstack/react-query": "^5.85.5",
+		"axios": "^1.11.0",
+		"date-fns": "^4.1.0",
+		"idb": "^8.0.3",
+		"react": "^19.1.1",
+		"react-dom": "^19.1.1",
+		"react-easy-crop": "^5.5.1",
+		"react-hook-form": "^7.62.0",
+		"react-router": "^7.8.2",
+		"react-virtuoso": "^4.14.0",
+		"supertokens-auth-react": "^0.50.0",
+		"supertokens-web-js": "^0.16.0",
+		"swiper": "^11.2.10"
+	},
+	"devDependencies": {
+		"@types/react": "^19.1.12",
+		"@types/react-dom": "^19.1.8",
+		"vite": "^6.3.6"
+	},
+	"peerDependencies": {
+		"react": "^17.0.0 || ^18.0.0 || ^19.0.0",
+		"react-dom": "^17.0.0 || ^18.0.0 || ^19.0.0"
+	}
+}

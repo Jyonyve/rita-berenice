@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 최초로 로컬 개발 환경에서 SSR + CSR 통합 실행 성공
 - `vite`, `express`, `react`, `emotion`, `mui` 기반 SSR 렌더링 구성
 - `tsconfig`, `vite.config.ts`, `server.ts`, `entry-server.tsx` 등 주요 구성 완료
-- `import alias` 적용 및 경로 정리 (`#server/*`, `#client/*`, `#shared/*`)
+- `import alias` 적용 및 경로 정리 (`#server/*`, `#client/*`, `@rita-berenice/shared/*`)
 
 ### Changed
 
