@@ -20,7 +20,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "41cebfbc-3808-43a9-bce4-cdb29eab8cfa",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 0
   },
@@ -45,7 +45,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "e101fe24-b5e7-49b2-8628-8ce005255fb1",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 1
   },
@@ -70,7 +70,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "ced98527-f5a2-4c57-858f-1e4b9a07c709",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 2
   },
@@ -95,7 +95,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "c5f37a37-5450-4a94-9d75-e2d9d5d34696",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 3
   },
@@ -120,7 +120,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "fedd596b-c905-4f4e-b4e3-07c921d82faf",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 4
   },
@@ -145,7 +145,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "1123829a-46ee-4bc6-bbf7-6754c4d223e3",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 5
   },
@@ -170,7 +170,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "3df2509a-e630-406d-956b-c8d1fe886177",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 6
   },
@@ -195,7 +195,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "d80d8c46-52bc-45ec-9d9e-9930b5abef9e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 7
   },
@@ -220,7 +220,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "69abf1ce-0db2-41bd-8245-03ed726b2edd",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 8
   },
@@ -245,7 +245,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "435208b9-ab77-46c7-982f-786de3263cfb",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 9
   },
@@ -270,7 +270,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "5d077f3e-a58a-4bd4-8b11-1b7dfc6fe085",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 10
   },
@@ -295,7 +295,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "042c414a-4fe5-49bb-94d3-c8d81bc7bf24",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 11
   },
@@ -320,7 +320,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "a1ac1847-877e-4582-92ca-ef3623664517",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 12
   },
@@ -345,7 +345,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "4f87bc19-4aba-4ac1-8f3a-575b59d3f98f",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 13
   },
@@ -370,7 +370,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "cold",
     "uuid": "392206a9-89af-4a81-9b4b-5b6f27225c7d",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 14
   },
@@ -395,7 +395,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "c6a77989-7691-4294-b5fa-b987fdaad76f",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 15
   },
@@ -420,7 +420,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "95247246-f597-4953-8207-440f7f18f1a1",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 16
   },
@@ -445,7 +445,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "4ca7ef4e-9255-4553-9ddc-45711105f13a",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 17
   },
@@ -470,7 +470,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "26c8f599-8586-4d4d-8d86-a9212b5b4284",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 18
   },
@@ -495,7 +495,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "10320280-d050-4c0b-91b7-8ea1da24119e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 19
   },
@@ -520,7 +520,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "02268502-f696-4671-a968-7af57ee84917",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 20
   },
@@ -545,7 +545,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "7536037e-6d62-4ce5-8b4b-9fb8f5b5303f",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 21
   },
@@ -570,7 +570,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "502f7e2b-2bc3-4556-be89-8998d307da6f",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 22
   },
@@ -595,7 +595,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "dbfdde93-ce64-40cf-b87a-bfa639036188",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 23
   },
@@ -620,7 +620,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "d0a5c035-63a2-4b1d-8135-1167164fd79d",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 24
   },
@@ -645,7 +645,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "b1c07b1c-79ea-4628-b65f-b1393ec711d3",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 25
   },
@@ -670,7 +670,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "2a8bac1a-f386-4276-bbd7-6fd176660716",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 26
   },
@@ -695,7 +695,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "35582c69-be43-497a-aa1d-f37fc25e860b",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 27
   },
@@ -720,7 +720,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "0a30c9ab-3b5f-4b6c-b3c6-b73e98d321e0",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 28
   },
@@ -745,7 +745,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "6b273add-41b3-4ce8-93c1-370e785f12a7",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 29
   },
@@ -770,7 +770,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "87e37d1f-c495-4588-a846-fb1e8dd81c2a",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 30
   },
@@ -795,7 +795,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "469e4b39-3df5-4382-bcb1-87bd6d4a127d",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 31
   },
@@ -820,7 +820,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "c75bb354-bda7-4b1c-9331-1887107e0aaa",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 32
   },
@@ -845,7 +845,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "659b7748-ba61-4d5e-b269-64461ed0072c",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 33
   },
@@ -870,7 +870,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "684a916e-d4ec-49c6-ba41-f962897a04ba",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 34
   },
@@ -895,7 +895,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "20d226c1-d7f4-400a-8f9e-d58e812330fa",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 35
   },
@@ -920,7 +920,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "f3111a6e-47e2-4ed4-a2df-86aefff37870",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 36
   },
@@ -945,7 +945,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "96b383cf-a93d-4528-aca3-1313229b2058",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 37
   },
@@ -970,7 +970,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "9fc4efcb-2ed1-4ed1-bc59-e7e982f8fcbe",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 38
   },
@@ -995,7 +995,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "73130518-f774-4db3-bbe2-8bf9360781d3",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 39
   },
@@ -1020,7 +1020,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "a92dd6c3-cb49-41e3-83d1-7a0aa7db4d33",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 40
   },
@@ -1045,7 +1045,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "4f91ce35-d4dc-4c27-b6e8-1491736970e1",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 41
   },
@@ -1070,7 +1070,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "love",
     "uuid": "d3363fa9-9405-4bd5-a76a-e691ab1bbf47",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 42
   },
@@ -1095,7 +1095,7 @@
     "model": "GPT-4o",
     "emotion": "neutral",
     "uuid": "2b47c652-8250-4d1a-96e5-affafa69e7e2",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 43
   },
@@ -1120,7 +1120,7 @@
     "model": "GPT-4o",
     "emotion": "neutral",
     "uuid": "85d025b2-d2f0-4210-b30c-46388ba1f35a",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 44
   },
@@ -1145,7 +1145,7 @@
     "model": "GPT-4o",
     "emotion": "love",
     "uuid": "2acd7178-8668-45a2-97b9-d74b380f8ce8",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 45
   },
@@ -1170,7 +1170,7 @@
     "model": "GPT-4o",
     "emotion": "love",
     "uuid": "fef082d0-1b1a-4aed-944e-d18df5155886",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 46
   },
@@ -1195,7 +1195,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "love",
     "uuid": "f22850f1-00cb-4646-8428-aa39b60c2465",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 47
   },
@@ -1220,7 +1220,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "92290966-b582-41de-915f-965c0231d8b6",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 48
   },
@@ -1245,7 +1245,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "9e7de352-5eee-4791-a2a7-becde9785caa",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 49
   },
@@ -1270,7 +1270,7 @@
     "model": "Nova 1 Pro",
     "emotion": "neutral",
     "uuid": "a6e9aa80-9995-4ad1-9557-0669a07dd60b",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 50
   },
@@ -1295,7 +1295,7 @@
     "model": "Nova 1 Pro",
     "emotion": "neutral",
     "uuid": "af57ba76-10a7-4e31-a422-2970a118a2a8",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 51
   },
@@ -1320,7 +1320,7 @@
     "model": "Nova 1 Pro",
     "emotion": "neutral",
     "uuid": "a6502425-b5bc-40c4-9992-59f27564e8e1",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 52
   },
@@ -1345,7 +1345,7 @@
     "model": "GPT-4o",
     "emotion": "neutral",
     "uuid": "9dbb33cf-643d-4ed3-9d4e-a573369ed3d9",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 53
   },
@@ -1370,7 +1370,7 @@
     "model": "GPT-4o",
     "emotion": "neutral",
     "uuid": "265a67bd-64d3-47e0-a40a-e0ab3f54d037",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 54
   },
@@ -1395,7 +1395,7 @@
     "model": "GPT-4o",
     "emotion": "neutral",
     "uuid": "cf34a438-3936-4677-908c-31347d05daec",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 55
   },
@@ -1420,7 +1420,7 @@
     "model": "GPT-4o",
     "emotion": "neutral",
     "uuid": "010275a4-3b16-4b74-b26c-f9938ff75002",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 56
   },
@@ -1445,7 +1445,7 @@
     "model": "GPT-4o",
     "emotion": "neutral",
     "uuid": "0eaae7a7-e577-4cef-b8ed-d9dee67e204e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 57
   },
@@ -1470,7 +1470,7 @@
     "model": "GPT-4o",
     "emotion": "realization",
     "uuid": "ef88b9b1-0523-45bf-989e-e70b4a8c4cf0",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 58
   },
@@ -1495,7 +1495,7 @@
     "model": "GPT-4o",
     "emotion": "realization",
     "uuid": "375515c1-c56a-4fef-8ab0-572b360c985c",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 59
   },
@@ -1520,7 +1520,7 @@
     "model": "GPT-4o",
     "emotion": "neutral",
     "uuid": "18420bb0-e61d-49d6-91e2-23800e7345c3",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 60
   },
@@ -1545,7 +1545,7 @@
     "model": "GPT-4o",
     "emotion": "neutral",
     "uuid": "0519e281-4640-458c-a5d9-20c8b65ca219",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 61
   },
@@ -1570,7 +1570,7 @@
     "model": "GPT-4o",
     "emotion": "love",
     "uuid": "e38efe64-87ac-4776-a7a4-e30a416f2e71",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 62
   },
@@ -1595,7 +1595,7 @@
     "model": "GPT-4o",
     "emotion": "neutral",
     "uuid": "901eee38-8913-4d4c-8363-474a05c5f062",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 63
   },
@@ -1620,7 +1620,7 @@
     "model": "GPT-4o",
     "emotion": "love",
     "uuid": "87b8db24-e272-4d53-8c67-85b8d40ed87e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 64
   },
@@ -1645,7 +1645,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "love",
     "uuid": "88e02572-321b-4cb4-a54c-53b5b0d29e8e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 65
   },
@@ -1670,7 +1670,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "9fc657f9-f148-4dc7-bb84-b60d4b3d2b96",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 66
   },
@@ -1695,7 +1695,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "3c5c6316-7f58-4d05-97ce-01b523ef5963",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 67
   },
@@ -1720,7 +1720,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "00c04123-713e-49ab-8109-135b80cb47c7",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 68
   },
@@ -1745,7 +1745,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "d0204908-bfac-4f99-9274-16d682622fde",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 69
   },
@@ -1770,7 +1770,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "fda5a2d0-0d08-4393-b041-d97446abf82c",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 70
   },
@@ -1795,7 +1795,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "8f193db7-a162-40be-86eb-199477890d4e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 71
   },
@@ -1820,7 +1820,7 @@
     "model": "Nova 1 Pro",
     "emotion": "realization",
     "uuid": "1b022402-4cdc-4d69-908f-648c52ecf405",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 72
   },
@@ -1845,7 +1845,7 @@
     "model": "Nova 1 Pro",
     "emotion": "realization",
     "uuid": "a726d20e-6934-4dc7-9acc-e468659f443e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 73
   },
@@ -1870,7 +1870,7 @@
     "model": "Nova 1 Pro",
     "emotion": "neutral",
     "uuid": "972fd7a7-4dcf-4090-bde3-a6e8b882c3b0",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 74
   },
@@ -1895,7 +1895,7 @@
     "model": "GPT-4o",
     "emotion": "neutral",
     "uuid": "700db99f-bd50-42b3-b804-b0059cd0a9e7",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 75
   },
@@ -1920,7 +1920,7 @@
     "model": "GPT-4o",
     "emotion": "neutral",
     "uuid": "70698072-fcff-441d-a58a-c424facd0d1b",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 76
   },
@@ -1945,7 +1945,7 @@
     "model": "GPT-4o",
     "emotion": "neutral",
     "uuid": "6448bcf9-b890-475c-a07d-65b94e4aa29e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 77
   },
@@ -1970,7 +1970,7 @@
     "model": "GPT-4o",
     "emotion": "love",
     "uuid": "ac607103-c476-45dd-811b-41cf68eb0d00",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 78
   },
@@ -1995,7 +1995,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "love",
     "uuid": "9a882965-0d95-4a3d-80c9-66c4a0e04b60",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 79
   },
@@ -2020,7 +2020,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "bd32bdec-7428-4dea-b574-f48084001098",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 80
   },
@@ -2045,7 +2045,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "694b58a9-d86f-42ba-b517-eb1a35ee7e8b",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 81
   },
@@ -2070,7 +2070,7 @@
     "model": "Nova 1 Pro",
     "emotion": "neutral",
     "uuid": "36ecc346-542e-493a-b51b-ad3fc4b9ab7f",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 82
   },
@@ -2095,7 +2095,7 @@
     "model": "Nova 1 Pro",
     "emotion": "realization",
     "uuid": "95f8811c-4388-492b-9e85-ab3e9753d805",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 83
   },
@@ -2120,7 +2120,7 @@
     "model": "Nova 1 Pro",
     "emotion": "realization",
     "uuid": "c399764a-caba-4715-8588-9af1f7dddc66",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 84
   },
@@ -2145,7 +2145,7 @@
     "model": "Nova 1 Pro",
     "emotion": "realization",
     "uuid": "63380a38-aae2-4865-b3e6-9be428a430e4",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 85
   },
@@ -2170,7 +2170,7 @@
     "model": "Nova 1 Pro",
     "emotion": "realization",
     "uuid": "e78c55b4-ee52-4cb9-99db-74a0eb8f34c5",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 86
   },
@@ -2195,7 +2195,7 @@
     "model": "Nova 1 Pro",
     "emotion": "realization",
     "uuid": "6397ce0b-1cc8-4041-8434-e7aec8855eb6",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 87
   },
@@ -2220,7 +2220,7 @@
     "model": "GPT-4o",
     "emotion": "realization",
     "uuid": "b5382d11-c237-4d47-ba70-d879acb7482a",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 88
   },
@@ -2245,7 +2245,7 @@
     "model": "GPT-4o",
     "emotion": "realization",
     "uuid": "1d3d6e8c-afb1-4519-9802-4e5efa0c25c5",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 89
   },
@@ -2270,7 +2270,7 @@
     "model": "GPT-4o",
     "emotion": "neutral",
     "uuid": "d9c48a19-c141-4f38-9023-8c2b78f1d0f6",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 90
   },
@@ -2295,7 +2295,7 @@
     "model": "GPT-4o",
     "emotion": "realization",
     "uuid": "3e5b4af4-cb36-4c1b-9aa9-f6691d81d2af",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 91
   },
@@ -2320,7 +2320,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "5471008c-ce35-42f4-8da6-5897f5005bd5",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 92
   },
@@ -2345,7 +2345,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "e88723cb-27ed-45e2-9388-59e651fc2e81",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 93
   },
@@ -2370,7 +2370,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "b8a0183c-242a-413a-ac48-f23d622afb94",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 94
   },
@@ -2395,7 +2395,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "c43a150e-5189-447d-9da4-4a3d7c088fbb",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 95
   },
@@ -2420,7 +2420,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "4e0a044b-74d5-4ce0-a8ac-431af24539ae",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 96
   },
@@ -2445,7 +2445,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "b87b2542-73e5-4f69-a4ba-26efe27aa391",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 97
   },
@@ -2470,7 +2470,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "6920f882-e7b6-421f-ae53-16ffaafd7f06",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 98
   },
@@ -2495,7 +2495,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "cfdf09b4-d3c0-4335-8f1d-56d6ce2bb7c8",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 99
   },
@@ -2520,7 +2520,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "d374a7bb-ca0e-44bf-94ea-0280286be1d4",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 100
   },
@@ -2545,7 +2545,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "67a33bfe-e481-4c1e-bf68-1939275ddbc7",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 101
   },
@@ -2570,7 +2570,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "e9905e30-b231-44eb-9928-39db8127920c",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 102
   },
@@ -2595,7 +2595,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "68f49fcd-3dc4-4ed6-a919-79ac7305e132",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 103
   },
@@ -2620,7 +2620,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "ea1a1195-0130-46b4-81a0-34166630b687",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 104
   },
@@ -2645,7 +2645,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "1b0481e1-e8f3-4bfc-a4a3-f0ec6ba16272",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 105
   },
@@ -2670,7 +2670,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "c06103a0-578a-4c28-9585-36952e3e9c34",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 106
   },
@@ -2695,7 +2695,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "b50e4fa2-52c5-4417-91c1-fbea954f125d",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 107
   },
@@ -2720,7 +2720,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "7b58a533-6640-46ec-9a9a-46143725a452",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 108
   },
@@ -2745,7 +2745,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "love",
     "uuid": "3e7542af-eab6-49c5-bbe7-3e354c48a340",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 109
   },
@@ -2770,7 +2770,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "love",
     "uuid": "0bb565f9-2b3c-4c4b-8610-bae6f84e6400",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 110
   },
@@ -2795,7 +2795,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "love",
     "uuid": "c6538f2c-6547-4d0c-92ea-270e6ca2dbf1",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 111
   },
@@ -2820,7 +2820,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "e6972090-965e-447c-9e95-c183818ba4f1",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 112
   },
@@ -2845,7 +2845,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "395f4d6e-46b2-4f48-8cb9-b9128cb1d72b",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 113
   },
@@ -2870,7 +2870,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "26b7253c-6db5-4e45-8ac8-79b6b4b34e55",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 114
   },
@@ -2895,7 +2895,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "5dba860c-36c6-42ea-ac03-7c0925ccc878",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 115
   },
@@ -2920,7 +2920,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "2410348e-b0e5-40ff-b06c-39fe79848de5",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 116
   },
@@ -2945,7 +2945,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "f2dc6d99-ad23-45e4-9f71-0dcdde4e59cb",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 117
   },
@@ -2970,7 +2970,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "55a12fb6-dd3d-4496-815d-867dae2f5128",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 118
   },
@@ -2995,7 +2995,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "07001a65-19d4-46d7-b30c-7a601ee03733",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 119
   },
@@ -3020,7 +3020,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "459be9d7-7a2d-4228-a671-4ca633fe10d0",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 120
   },
@@ -3045,7 +3045,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "03b92415-3eb7-4151-b552-e22e72aec899",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 121
   },
@@ -3070,7 +3070,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "f3c2c6a9-2c97-4f10-9d2d-ef3ef193ab88",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 122
   },
@@ -3095,7 +3095,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "4e698c8c-9fa2-477b-946d-3f6402b40c43",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 123
   },
@@ -3120,7 +3120,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "cfa5a9d2-9107-406a-8dac-d07139123f30",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 124
   },
@@ -3145,7 +3145,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "67e09161-8ccb-427e-b439-e73e6baf5f48",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 125
   },
@@ -3170,7 +3170,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "974e676c-9889-4252-a91d-a2d0476bc167",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 126
   },
@@ -3195,7 +3195,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "af875d17-5f70-43a1-93fe-55165903ba5c",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 127
   },
@@ -3220,7 +3220,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "99936406-5a07-4172-b7a7-98421471ce38",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 128
   },
@@ -3245,7 +3245,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "509c8b31-c680-4011-b5b1-85e5f1ab3adc",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 129
   },
@@ -3270,7 +3270,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "a0f7ba75-4d7a-4298-a8f6-08ff6b316ed5",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 130
   },
@@ -3295,7 +3295,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "21fbbb67-d8e1-4feb-ade8-613f928f633e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 131
   },
@@ -3320,7 +3320,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "05989196-0e1e-4e64-8757-7b6ea186fb52",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 132
   },
@@ -3345,7 +3345,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "love",
     "uuid": "1138ae5f-e1ca-4480-b16d-4d85e10ae083",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 133
   },
@@ -3370,7 +3370,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "love",
     "uuid": "7ebf05eb-5336-4e5f-a603-c1fd46a8e81e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 134
   },
@@ -3395,7 +3395,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "love",
     "uuid": "58fb965f-2738-4e9f-85cb-e30b0fe0ed62",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 135
   },
@@ -3420,7 +3420,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "53305f58-7d17-4fad-a68d-628864cdb2a7",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 136
   },
@@ -3445,7 +3445,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "7ee2d48d-48da-4bba-b028-3dc5825f80d2",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 137
   },
@@ -3470,7 +3470,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "62971b86-f629-4301-85ef-7b6850ab97ef",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 138
   },
@@ -3495,7 +3495,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "love",
     "uuid": "a4d085ee-503c-4ea5-9479-ffde7302a1a5",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 139
   },
@@ -3520,7 +3520,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "b158a62b-0c98-497e-905a-2fc8473df6fc",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 140
   },
@@ -3545,7 +3545,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "a0a8dbf2-4550-438b-929c-c76e353d057a",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 141
   },
@@ -3570,7 +3570,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "love",
     "uuid": "414c3cef-97e2-4f2d-ac9a-07b0a615cad7",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 142
   },
@@ -3595,7 +3595,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "love",
     "uuid": "550f9062-e39b-4b8c-87e2-c28486a6dfa8",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 143
   },
@@ -3620,7 +3620,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "3c7c3a39-d89f-4d8e-a574-590721d19150",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 144
   },
@@ -3645,7 +3645,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "9ebcdbad-355a-4d50-9fba-f7973523a2da",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 145
   },
@@ -3670,7 +3670,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "c526187a-3c55-40cb-8e49-ad5766f54468",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 146
   },
@@ -3695,7 +3695,7 @@
     "model": "Nova 1 Pro",
     "emotion": "neutral",
     "uuid": "8bc08fda-9f5f-465d-a3da-3302837e8624",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 147
   },
@@ -3720,7 +3720,7 @@
     "model": "GPT-4o",
     "emotion": "neutral",
     "uuid": "91383427-eb22-472a-8714-cea8a34246b0",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 148
   },
@@ -3745,7 +3745,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "25384013-7c50-4025-86ef-3cdda61d0b3a",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 149
   },
@@ -3770,7 +3770,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "ec0c82ba-4a3b-4248-8ca6-d40a0ec48824",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 150
   },
@@ -3795,7 +3795,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "12a79214-8cbe-449c-b49a-40f8fc2ceed6",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 151
   },
@@ -3820,7 +3820,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "35ff01af-a695-46f9-82c7-0124686a107f",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 152
   },
@@ -3845,7 +3845,7 @@
     "model": "Nova 1 Hard",
     "emotion": "realization",
     "uuid": "008d89e1-10dd-4311-ae5d-040fff581853",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 153
   },
@@ -3870,7 +3870,7 @@
     "model": "Nova 1 Hard",
     "emotion": "realization",
     "uuid": "fc2733b8-e2a0-4544-b668-ca151d55e7b9",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 154
   },
@@ -3895,7 +3895,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "cc302df9-73ae-4779-b11c-1bfdac466615",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 155
   },
@@ -3920,7 +3920,7 @@
     "model": "Nova 1 Hard",
     "emotion": "realization",
     "uuid": "5de7382e-fc1f-45d6-b0d7-e35092a821d2",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 156
   },
@@ -3945,7 +3945,7 @@
     "model": "Nova 1 Hard",
     "emotion": "realization",
     "uuid": "9945d5a3-f7fe-40fb-aaa4-4359f3f6e1c4",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 157
   },
@@ -3970,7 +3970,7 @@
     "model": "Nova 1 Hard",
     "emotion": "realization",
     "uuid": "3ae6abd8-bbbf-4024-9956-4a1c9c267e6c",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 158
   },
@@ -3995,7 +3995,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "10bc275c-cc07-40f8-9d00-906185fa6356",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 159
   },
@@ -4020,7 +4020,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "5eef43c5-6722-4034-8677-883841d40939",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 160
   },
@@ -4045,7 +4045,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "d00eb483-efc9-41ec-9972-19ea93302675",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 161
   },
@@ -4070,7 +4070,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "5f03b25f-9873-4b06-bebd-69ad6779143b",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 162
   },
@@ -4095,7 +4095,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "anger",
     "uuid": "c6483017-8992-4418-b232-f173e81e52cb",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 163
   },
@@ -4120,7 +4120,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "13c2bb35-ae7d-4b07-9e5a-2bf884015b12",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 164
   },
@@ -4145,7 +4145,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "cb433750-9822-412b-ac32-b725e1957ded",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 165
   },
@@ -4170,7 +4170,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "e8ea081e-51ec-4c19-8917-bed5c8b740ff",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 166
   },
@@ -4195,7 +4195,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "f8a74ac6-cbce-4f3e-b2e4-9a365312175a",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 167
   },
@@ -4220,7 +4220,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "742c1f7d-1a8d-4c4e-97d3-62a05e4b6ffe",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 168
   },
@@ -4245,7 +4245,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "7dec613e-eb95-4db6-a751-6a2eb8f8d9b0",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 169
   },
@@ -4270,7 +4270,7 @@
     "model": "GPT-4o",
     "emotion": "love",
     "uuid": "e8da2e5d-ef1d-461e-848f-238382d9f56e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 170
   },
@@ -4295,7 +4295,7 @@
     "model": "GPT-4o",
     "emotion": "love",
     "uuid": "9bf16021-5b9b-4146-89c1-f5be9064bd46",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 171
   },
@@ -4320,7 +4320,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "8df3e5e3-0f82-44c7-858c-974291c1ca04",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 172
   },
@@ -4345,7 +4345,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "a02b9624-f7cf-47d5-9197-b5e490875c15",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 173
   },
@@ -4370,7 +4370,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "97037412-9c8a-4f71-8089-1cba38aad9c9",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 174
   },
@@ -4395,7 +4395,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "42da3afc-64c4-4e5f-b259-e830b5384367",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 175
   },
@@ -4420,7 +4420,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "c74da3e5-487c-441b-ab4d-c24de9f0c923",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 176
   },
@@ -4445,7 +4445,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "9ed6b231-5390-4a85-8f2e-65a071790135",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 177
   },
@@ -4470,7 +4470,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "3f3f0d0d-708a-4ac5-a4ef-5ca9f2ac6e79",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 178
   },
@@ -4495,7 +4495,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "96ecf52e-6cf7-4b7f-b01e-cc1b9fb52b9a",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 179
   },
@@ -4520,7 +4520,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "9a45ef38-1f06-4307-80cd-cddafd7d583f",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 180
   },
@@ -4545,7 +4545,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "a53e51c7-697a-4d48-a1f8-8b5c153c1ba7",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 181
   },
@@ -4570,7 +4570,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "1edb3709-742c-413a-b318-d704b5eddf2f",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 182
   },
@@ -4595,7 +4595,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "b25675f5-0e70-46f2-82f3-5ed6e9a7c9fc",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 183
   },
@@ -4620,7 +4620,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "bf1862e6-897a-48a7-97a6-973a06073cd9",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 184
   },
@@ -4645,7 +4645,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "9dfb6a41-c0a6-489a-a096-d94b8c78205f",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 185
   },
@@ -4670,7 +4670,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "9df76416-2e41-4623-8884-dd469ba0d723",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 186
   },
@@ -4695,7 +4695,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "5b3a50b1-aa15-4eb3-a9b5-1d1c69439646",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 187
   },
@@ -4720,7 +4720,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "5cd264d2-1450-4c5c-9231-f9b1f6a14c1d",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 188
   },
@@ -4745,7 +4745,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "f32e6c26-0ece-49bc-8ab6-a008e80de625",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 189
   },
@@ -4770,7 +4770,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "40ea83c0-47db-4976-a6cd-1a12bbc861ae",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 190
   },
@@ -4795,7 +4795,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "432f53ce-24fd-4164-9ece-b96d12641ae9",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 191
   },
@@ -4820,7 +4820,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "realization",
     "uuid": "735326cd-72c3-4495-aaae-9f5f38fafb62",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 192
   },
@@ -4845,7 +4845,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "realization",
     "uuid": "f1c0d837-4925-4f60-a300-63ab55e7fcc9",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 193
   },
@@ -4870,7 +4870,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "realization",
     "uuid": "7a30c039-f284-4156-849f-9eb7397a5c8a",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 194
   },
@@ -4895,7 +4895,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "realization",
     "uuid": "db125ee1-8926-4133-8dea-f1e9407a292f",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 195
   },
@@ -4920,7 +4920,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "realization",
     "uuid": "7ebd0edc-665f-493a-b32d-5d585c78ca35",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 196
   },
@@ -4945,7 +4945,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "realization",
     "uuid": "f4048193-e702-49e4-bcf7-9b4960454764",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 197
   },
@@ -4970,7 +4970,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "5e1cb3a2-ad7a-4782-82ee-c746e7e85966",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 198
   },
@@ -4995,7 +4995,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "cce36484-008d-472b-b679-90b7d5b537fe",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 199
   },
@@ -5020,7 +5020,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "7ad281f6-ef58-4599-bce7-4e777466e439",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 200
   },
@@ -5045,7 +5045,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "6fc1b014-a00d-4507-bbf1-35dce31f375c",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 201
   },
@@ -5070,7 +5070,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "8a0f8e0d-d328-4f53-83a7-93a30de47ea1",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 202
   },
@@ -5095,7 +5095,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "f22170ff-bcca-46aa-93e5-de44789465b5",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 203
   },
@@ -5120,7 +5120,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "4a8051be-f55b-4b92-9190-6a734e194595",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 204
   },
@@ -5145,7 +5145,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "c66c93c9-b7c9-4991-997b-49a7c719d52a",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 205
   },
@@ -5170,7 +5170,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "3383d8e1-bae9-4938-9773-a5065c9a18de",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 206
   },
@@ -5195,7 +5195,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "0a27c1dd-42ae-4062-b27d-93349bacc5be",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 207
   },
@@ -5220,7 +5220,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "7d0fa2f3-da79-46ef-90ac-12e3b7414d47",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 208
   },
@@ -5245,7 +5245,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "realization",
     "uuid": "d0a2a501-d102-4f29-ad58-531d3b4ff2f9",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 209
   },
@@ -5270,7 +5270,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "realization",
     "uuid": "c98392fa-3477-4811-824a-ed5a50f1cf40",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 210
   },
@@ -5295,7 +5295,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "realization",
     "uuid": "1aa5c930-6c37-4b9e-b6e5-51ab4641ccd6",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 211
   },
@@ -5320,7 +5320,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "ff131d4e-aa6a-4899-872f-4343b4ab17ea",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 212
   },
@@ -5345,7 +5345,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "aa8f613d-bc4a-4e94-92bb-10ea42494367",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 213
   },
@@ -5370,7 +5370,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "6c7bea6a-aa22-4a75-bdac-fa2599c0217f",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 214
   },
@@ -5395,7 +5395,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "6c4f5092-f653-4a4d-911f-f0f3b2c40033",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 215
   },
@@ -5420,7 +5420,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "262ff54f-72f2-48a9-b95d-d9c07b843615",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 216
   },
@@ -5445,7 +5445,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "0c95d532-3df9-4138-aa33-53c8666d7501",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 217
   },
@@ -5470,7 +5470,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "dc1d7f7e-1e10-48f0-98cc-74fd3f0b45ed",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 218
   },
@@ -5495,7 +5495,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "realization",
     "uuid": "234d088a-4c51-4253-a037-35878104b2a1",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 219
   },
@@ -5520,7 +5520,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "ad8f508a-623c-4caf-8302-266c3700866f",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 220
   },
@@ -5545,7 +5545,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "eb98bb85-2bd3-4e5f-bd06-dc6aa665052b",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 221
   },
@@ -5570,7 +5570,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "b381f736-2ada-49f2-995c-fcfcbe3bfed9",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 222
   },
@@ -5595,7 +5595,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "78dd8d9a-ad09-48ac-a396-448f34687394",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 223
   },
@@ -5620,7 +5620,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "a898e86b-1916-4b38-a293-36ccdce7152f",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 224
   },
@@ -5645,7 +5645,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "b7e5bb74-5ae5-4b07-9a3e-41801bff5626",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 225
   },
@@ -5670,7 +5670,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "31aa82d1-6160-40a6-a6a7-3810939f2801",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 226
   },
@@ -5695,7 +5695,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "72750d89-bfc7-4c6f-abf5-ba816fabaac1",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 227
   },
@@ -5720,7 +5720,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "d383a500-9d44-48d7-8241-8ce1a3f042da",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 228
   },
@@ -5745,7 +5745,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "576623ac-0feb-4278-a949-7b3919e0f687",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 229
   },
@@ -5770,7 +5770,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "f3283400-ac60-4183-9fcd-8f352ef9fd7b",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 230
   },
@@ -5795,7 +5795,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "e215eb9e-f273-416b-980a-f53b02cff008",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 231
   },
@@ -5820,7 +5820,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "1a591df6-33b6-497c-a582-528e4adc0094",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 232
   },
@@ -5845,7 +5845,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "9583734f-b5fe-4842-b9ec-b1d6b5bf6740",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 233
   },
@@ -5870,7 +5870,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "f3e4827a-9c53-41e5-be78-c3ede21b63d4",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 234
   },
@@ -5895,7 +5895,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "6014e216-82b3-4186-85d6-df97bb9b79ac",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 235
   },
@@ -5920,7 +5920,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "fda48623-5870-4d4b-8af9-fd0b4c2cc911",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 236
   },
@@ -5945,7 +5945,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "1489a524-5be6-47bd-bbd4-099d86ad0fa1",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 237
   },
@@ -5970,7 +5970,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "81eb5898-19ce-4ee1-a19d-338c58fd6cc6",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 238
   },
@@ -5995,7 +5995,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "1077ef35-739d-44f8-a410-6f6924d273ca",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 239
   },
@@ -6020,7 +6020,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "22765fe6-5c08-4a7c-a041-7ac8385833a3",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 240
   },
@@ -6045,7 +6045,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "ad9124f1-8288-4845-9659-352efa079c59",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 241
   },
@@ -6070,7 +6070,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "bc6dfbec-75bc-4391-9e67-5cecd85f1272",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 242
   },
@@ -6095,7 +6095,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "e1545451-59c1-4f34-97be-036d41399433",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 243
   },
@@ -6120,7 +6120,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "d6f9cb60-608e-4ce0-a543-dce107b65d41",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 244
   },
@@ -6145,7 +6145,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "6136ea3d-c97a-4cc8-a66b-031dead1c8ff",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 245
   },
@@ -6170,7 +6170,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "c56ee639-570c-496c-be86-5bc1ae4e4cb2",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 246
   },
@@ -6195,7 +6195,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "1f7e2881-0b56-42bf-ada7-c9590eb493c5",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 247
   },
@@ -6220,7 +6220,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "2a16310f-35ab-410a-b510-a4cc0399fff6",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 248
   },
@@ -6245,7 +6245,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "6da2344a-9e16-4418-8ce9-19eb241c645a",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 249
   },
@@ -6270,7 +6270,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "realization",
     "uuid": "40c1821f-7779-4277-9d04-de0f26605add",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 250
   },
@@ -6295,7 +6295,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "6fd480a4-eeb1-4f6c-ae59-064e86d815df",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 251
   },
@@ -6320,7 +6320,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "8e02408b-cde5-4c02-aba8-7f355dac428d",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 252
   },
@@ -6345,7 +6345,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "6b68b227-3897-41ea-b644-3c7f98b231be",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 253
   },
@@ -6370,7 +6370,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "65871043-271f-4021-90e7-a391d5e332e4",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 254
   },
@@ -6395,7 +6395,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "702a8ccf-a90f-4986-b08d-7ec3362d90bf",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 255
   },
@@ -6420,7 +6420,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "7670b1d0-10d0-4f98-a1f6-4a97a5d2671b",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 256
   },
@@ -6445,7 +6445,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "8b455454-7f5c-4f8b-8958-1a7a8f3687ca",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 257
   },
@@ -6470,7 +6470,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "d4c49bf5-ef53-4f99-ae5e-7544004f5101",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 258
   },
@@ -6495,7 +6495,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "451c76c9-13d5-4b45-b0a5-afee7c070f3e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 259
   },
@@ -6520,7 +6520,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "f6ce81de-c56b-4f7a-a56e-a41decc9d6ae",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 260
   },
@@ -6545,7 +6545,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "6f8dfa21-befe-4762-ab5a-3408f0712b2b",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 261
   },
@@ -6570,7 +6570,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "94c10a1b-9457-43ec-9908-0e1e43416c88",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 262
   },
@@ -6595,7 +6595,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "cd4e979f-85ca-4802-a3b4-beb7855d15b3",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 263
   },
@@ -6620,7 +6620,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "cb082eea-c22a-405c-8495-301d4459aaf7",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 264
   },
@@ -6645,7 +6645,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "1cf7ce35-4ce7-4139-834f-bf14f5cf9781",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 265
   },
@@ -6670,7 +6670,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "bd0e6c5a-4da3-4f05-b9fa-1feedb28018b",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 266
   },
@@ -6695,7 +6695,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "4bc55e43-abc1-4299-b9ef-51c7a0692524",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 267
   },
@@ -6720,7 +6720,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "3e3ca7d5-312e-4b87-838b-092c29406fe6",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 268
   },
@@ -6745,7 +6745,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "realization",
     "uuid": "45a88890-165e-43a4-8007-10eb19b0223c",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 269
   },
@@ -6770,7 +6770,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "realization",
     "uuid": "53efbfc2-66e1-4d45-9d8d-94d39736ea6f",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 270
   },
@@ -6795,7 +6795,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "b13423c3-a028-4bd5-81b0-f7a07eb734cf",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 271
   },
@@ -6820,7 +6820,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "f04f9ea0-43ef-4dee-8485-cae424ff0856",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 272
   },
@@ -6845,7 +6845,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "81e6c61a-8b6d-4672-a000-e7926432a14b",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 273
   },
@@ -6870,7 +6870,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "6de40aad-4de7-4831-a68b-2c69769df997",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 274
   },
@@ -6895,7 +6895,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "e551607c-d8dc-4905-8b2d-7acf7e68944e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 275
   },
@@ -6920,7 +6920,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "8dab4bd4-7e3c-45ec-895f-e1c9a4aa123f",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 276
   },
@@ -6945,7 +6945,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "79a56562-50fa-4fd7-a196-1c370271cb99",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 277
   },
@@ -6970,7 +6970,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "42af6f42-8ad9-4801-b139-e466da8ef072",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 278
   },
@@ -6995,7 +6995,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "bebae8a5-c658-4b8f-b6cb-ef6c3b121372",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 279
   },
@@ -7020,7 +7020,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "f64f8092-fefa-468e-bdf1-34fc0f948664",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 280
   },
@@ -7045,7 +7045,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "873d8e0f-efa0-4904-abd4-018f5a752cec",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 281
   },
@@ -7070,7 +7070,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "cd3946b2-624c-4970-866c-f01b1bbf0374",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 282
   },
@@ -7095,7 +7095,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "663d1ebe-7d3c-40a1-869f-e98967f0f7ed",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 283
   },
@@ -7120,7 +7120,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "ecf82795-9954-4bbf-a6a0-4f6d7cb7df0e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 284
   },
@@ -7145,7 +7145,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "f61d352f-d985-42ec-9d3b-c8022cd0db0e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 285
   },
@@ -7170,7 +7170,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "a0e79885-dfbc-46e0-afbd-590ca54f1eb1",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 286
   },
@@ -7195,7 +7195,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "bc1d26b0-64c7-47f0-a50c-40b1786f6720",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 287
   },
@@ -7220,7 +7220,7 @@
     "model": "GPT-4o",
     "emotion": "neutral",
     "uuid": "71a20225-ac90-4b8a-afb8-468f397768ce",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 288
   },
@@ -7245,7 +7245,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "e8d3368f-9906-4ef7-8539-7c50776f0d02",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 289
   },
@@ -7270,7 +7270,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "95746209-7341-427c-a683-99ce0657ee32",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 290
   },
@@ -7295,7 +7295,7 @@
     "model": "GPT-4o",
     "emotion": "love",
     "uuid": "8feee0ce-5baa-4b55-95a8-775ae8c52cb7",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 291
   },
@@ -7320,7 +7320,7 @@
     "model": "GPT-4o",
     "emotion": "neutral",
     "uuid": "90918c57-021e-44e0-bb27-a38573fbc78a",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 292
   },
@@ -7345,7 +7345,7 @@
     "model": "Claude 3 Opus",
     "emotion": "neutral",
     "uuid": "37252a50-01d3-48c9-8571-92f3e18a9a23",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 293
   },
@@ -7370,7 +7370,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "12e94f4b-4f68-415a-93ce-a870ece419d2",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 294
   },
@@ -7395,7 +7395,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "d16d472e-500a-4c58-8ae3-64e9633efcd2",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 295
   },
@@ -7420,7 +7420,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "db0804d1-01a0-4832-973b-bd5ad401dc81",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 296
   },
@@ -7445,7 +7445,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "264c3e8d-b5e7-4a8e-becd-f505c9d33e5f",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 297
   },
@@ -7470,7 +7470,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "d1b5f817-d801-416b-b75e-848f5ac5dba8",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 298
   },
@@ -7495,7 +7495,7 @@
     "model": "Nova 1 Pro",
     "emotion": "neutral",
     "uuid": "f693a133-3398-4d00-8e35-20ff3e56aa0d",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 299
   },
@@ -7520,7 +7520,7 @@
     "model": "Nova 1 Hard",
     "emotion": "love",
     "uuid": "93ccee29-7de2-42f0-bdc1-8946031b0556",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 300
   },
@@ -7545,7 +7545,7 @@
     "model": "Nova 1 Pro",
     "emotion": "neutral",
     "uuid": "3361bbbf-2b6e-4155-a4cd-14e6eb7e7abf",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 301
   },
@@ -7570,7 +7570,7 @@
     "model": "Nova 1 Pro",
     "emotion": "neutral",
     "uuid": "1d3f18cf-3058-4c96-9305-17a45b5d517b",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 302
   },
@@ -7595,7 +7595,7 @@
     "model": "Nova 1 Hard",
     "emotion": "neutral",
     "uuid": "6354c617-6d94-4ca8-a696-123c590ede87",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 303
   },
@@ -7620,7 +7620,7 @@
     "model": "Nova 1 Hard",
     "emotion": "love",
     "uuid": "3dbec4ef-ba3a-4183-bf66-a4f4d5059177",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 304
   },
@@ -7645,7 +7645,7 @@
     "model": "Nova 1 Pro",
     "emotion": "neutral",
     "uuid": "384c3fa0-ec3a-43be-8a8e-464c5e618483",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 305
   },
@@ -7670,7 +7670,7 @@
     "model": "Nova 1 Hard",
     "emotion": "love",
     "uuid": "26831623-458b-43a6-bbbd-8b0f8ae12ade",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 306
   },
@@ -7695,7 +7695,7 @@
     "model": "Nova 1 Pro",
     "emotion": "love",
     "uuid": "f196b1a7-ceb8-4106-bebf-7f4052d7a093",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 307
   },
@@ -7720,7 +7720,7 @@
     "model": "Nova 1 Pro",
     "emotion": "love",
     "uuid": "eb053066-7b6b-46a0-afff-ea30e87b2d62",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 308
   },
@@ -7745,7 +7745,7 @@
     "model": "Nova 1 Pro",
     "emotion": "neutral",
     "uuid": "c64fb529-9929-4139-936e-bc9dbe3e14bb",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 309
   },
@@ -7770,7 +7770,7 @@
     "model": "Nova 1 Pro",
     "emotion": "neutral",
     "uuid": "7cccfd8c-1f09-4ae3-8c27-4a98b1e34d62",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 310
   },
@@ -7795,7 +7795,7 @@
     "model": "Nova 1 Pro",
     "emotion": "love",
     "uuid": "f9f57257-561e-4a48-a4ff-52603fa2958a",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 311
   },
@@ -7820,7 +7820,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "love",
     "uuid": "2f76232e-d5fb-4ed6-8270-25ff7cf1714a",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 312
   },
@@ -7845,7 +7845,7 @@
     "model": "Nova 1 Pro",
     "emotion": "neutral",
     "uuid": "e538a8d7-382b-4125-baac-586a94fdc641",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 313
   },
@@ -7870,7 +7870,7 @@
     "model": "Nova 1 Pro",
     "emotion": "love",
     "uuid": "6819b1e7-d7bc-4c34-860c-7c3065560104",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 314
   },
@@ -7895,7 +7895,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "love",
     "uuid": "a215d92b-a602-48a5-aed5-90cb20cab650",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 315
   },
@@ -7920,7 +7920,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "3f5232c5-9d9d-4a36-9604-a6007b9b9c61",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 316
   },
@@ -7945,7 +7945,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "286f86fa-665a-4251-8d58-0324c8f521ab",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 317
   },
@@ -7970,7 +7970,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "4a76d765-85eb-444e-b33b-7d8191cd3194",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 318
   },
@@ -7995,7 +7995,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "bda562fa-589c-4774-9990-99e02b765a2e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 319
   },
@@ -8020,7 +8020,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "b5ba3bd8-31e6-4d4c-93df-f6946e4902c5",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 320
   },
@@ -8045,7 +8045,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "8a2cae64-f5df-4dfd-a569-bff6ff46b599",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 321
   },
@@ -8070,7 +8070,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "e47a2ab5-8876-4d8d-b5c4-24e7eefee69c",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 322
   },
@@ -8095,7 +8095,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "6c882247-00cc-43b8-b323-a15f3a68ab4b",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 323
   },
@@ -8120,7 +8120,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "realization",
     "uuid": "7c87900e-0ec9-4cff-b530-c733b86b06a8",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 324
   },
@@ -8145,7 +8145,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "13876476-840e-469e-a872-47280245becc",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 325
   },
@@ -8170,7 +8170,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "11389dc9-f552-45cb-bc22-adbdb827e6cd",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 326
   },
@@ -8195,7 +8195,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "3812cd3f-3ddf-4520-9aeb-2202e67eaf8a",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 327
   },
@@ -8220,7 +8220,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "realization",
     "uuid": "351ac619-80c8-4f90-a05e-9101cb4b1020",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 328
   },
@@ -8245,7 +8245,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "2470f644-277e-4c77-8715-0a94d15c97b9",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 329
   },
@@ -8270,7 +8270,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "6e5e4a6d-7973-4ba4-9559-da55a32e503e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 330
   },
@@ -8295,7 +8295,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "a08a6cda-23c9-438d-a00d-ba100eca00fb",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 331
   },
@@ -8320,7 +8320,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "10c399a2-50cd-4f54-b6e2-e84ab1043009",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 332
   },
@@ -8345,7 +8345,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "2e0f9315-5b1d-4919-9de8-9806b68b8247",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 333
   },
@@ -8370,7 +8370,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "19256a53-f6f0-4e05-a63c-f38fe217ed2a",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 334
   },
@@ -8395,7 +8395,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "fd69a60c-7529-432a-82e0-c311c13bfe04",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 335
   },
@@ -8420,7 +8420,7 @@
     "model": "Nova 1 Pro",
     "emotion": "love",
     "uuid": "49c2431a-781c-4c82-a695-5c8d50e0069d",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 336
   },
@@ -8445,7 +8445,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "realization",
     "uuid": "7b4b4fe2-462d-4123-9863-2d42bab8ce74",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 337
   },
@@ -8470,7 +8470,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "1b9b2f0d-9c35-4e8c-b1b5-0ada8a3b43cc",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 338
   },
@@ -8495,7 +8495,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "b157909b-018a-419f-9877-013b069842f5",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 339
   },
@@ -8520,7 +8520,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "ead031ad-bf14-44db-bd01-dccbe2ef235f",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 340
   },
@@ -8545,7 +8545,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "1dfc7491-e716-4c01-995e-36fd80dbd8e8",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 341
   },
@@ -8570,7 +8570,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "ace1ddfe-baac-4569-ab8a-9e9ffb64c56d",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 342
   },
@@ -8595,7 +8595,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "47f22225-a93d-4033-abb6-fb5833d6f986",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 343
   },
@@ -8620,7 +8620,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "89bc9f13-f428-4d2d-84b7-a4110054188e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 344
   },
@@ -8645,7 +8645,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "ebb0c096-c4a9-4403-8990-3f42f1cd7053",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 345
   },
@@ -8670,7 +8670,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "73c022cb-5918-4322-b081-b52b133bf711",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 346
   },
@@ -8695,7 +8695,7 @@
     "model": "Nova 2 Pro",
     "emotion": "love",
     "uuid": "b6b2be31-fa3f-4f82-9570-8a9b1ff2d3a2",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 347
   },
@@ -8720,7 +8720,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "love",
     "uuid": "d738e2cb-c76d-4c9d-94d4-2e4e3c79b80e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 348
   },
@@ -8745,7 +8745,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "6e6c7c7b-138c-4364-8330-e581c35323ad",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 349
   },
@@ -8770,7 +8770,7 @@
     "model": "Nova 2 Pro",
     "emotion": "love",
     "uuid": "d411a004-3913-481c-a21a-9ccd209b0d0a",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 350
   },
@@ -8795,7 +8795,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "941c4b47-9ecf-4c4f-90b8-4b09f9afe8b8",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 351
   },
@@ -8820,7 +8820,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "b36240bd-09f1-44ec-bd4b-c6da661bb791",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 352
   },
@@ -8845,7 +8845,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "1947f695-73df-4e77-aaa3-c4fed62315c8",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 353
   },
@@ -8870,7 +8870,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "f1cf41c9-43b2-4aae-95d9-258fd6d6aee5",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 354
   },
@@ -8895,7 +8895,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "db8ebcbd-c26c-4b8e-8316-360983965956",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 355
   },
@@ -8920,7 +8920,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "f7974ac9-7163-4032-816d-215da0b11761",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 356
   },
@@ -8945,7 +8945,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "e835e927-459f-40d7-ab23-ecc42b1baa3b",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 357
   },
@@ -8970,7 +8970,7 @@
     "model": "Claude 4 Sonnet",
     "emotion": "love",
     "uuid": "70caef43-9a17-48be-83c7-8a446ef7a988",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 358
   },
@@ -8995,7 +8995,7 @@
     "model": "Claude 4 Sonnet",
     "emotion": "love",
     "uuid": "0820a96e-273d-432d-9187-029d611939f0",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 359
   },
@@ -9020,7 +9020,7 @@
     "model": "Claude 4 Sonnet",
     "emotion": "love",
     "uuid": "0a801c57-de4c-4c98-a69a-6974c192fd46",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 360
   },
@@ -9045,7 +9045,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "7270e5a1-107c-4a48-8853-43cf25ef100e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 361
   },
@@ -9070,7 +9070,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "df57106c-87ac-449d-a859-dacf8978adaa",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 362
   },
@@ -9095,7 +9095,7 @@
     "model": "Claude 4 Sonnet",
     "emotion": "love",
     "uuid": "7f9a4d42-1f31-49d6-9456-5e3decd8d157",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 363
   },
@@ -9120,7 +9120,7 @@
     "model": "Claude 4 Sonnet",
     "emotion": "neutral",
     "uuid": "1b88a291-ccb2-437c-9dbc-18bc30d67c38",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 364
   },
@@ -9145,7 +9145,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "56abe041-144f-4ce1-ab9a-29f139d0ace5",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 365
   },
@@ -9170,7 +9170,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "79b0e121-621b-41ae-b6e1-5f9b1980e209",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 366
   },
@@ -9195,7 +9195,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "2a42b2b2-2e06-47b1-9e81-7f5c95393be9",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 367
   },
@@ -9220,7 +9220,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "9b0436b6-b95d-4d6f-ab2a-8596b9c9b9e7",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 368
   },
@@ -9245,7 +9245,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "465b3412-738a-4792-9f4b-0f5d3cb3df16",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 369
   },
@@ -9270,7 +9270,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "f5d2d74b-5590-484b-8031-4969ca174587",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 370
   },
@@ -9295,7 +9295,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "42d4178b-1cfe-42d5-afe3-397f6d322956",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 371
   },
@@ -9320,7 +9320,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "65142c4e-412b-4de3-8556-a666afaeb978",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 372
   },
@@ -9345,7 +9345,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "82681f5f-a582-4667-a9c1-44996e8ea862",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 373
   },
@@ -9370,7 +9370,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "b1041e17-2575-4bb6-a57e-b502d5fa936a",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 374
   },
@@ -9395,7 +9395,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "6b1cc6ff-2f9e-46f0-a201-929a0937bc3d",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 375
   },
@@ -9420,7 +9420,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "realization",
     "uuid": "1fd9fee8-078c-4503-8da5-a68e62baceb6",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 376
   },
@@ -9445,7 +9445,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "love",
     "uuid": "6e29ccf0-b87f-4515-9de0-e8be2c1b033d",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 377
   },
@@ -9470,7 +9470,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "c6006682-0fef-4e4e-93fe-68ccbcf81d6c",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 378
   },
@@ -9495,7 +9495,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "28093ce4-f239-4b2c-a6de-d8d0012e16fa",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 379
   },
@@ -9520,7 +9520,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "cfa3bdd7-dfcc-4fee-8f74-24ac3425a882",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 380
   },
@@ -9545,7 +9545,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "61ecad84-f201-48de-90a2-a3c245ff16dd",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 381
   },
@@ -9570,7 +9570,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "dddb7a74-2398-4fd6-b7bf-d3e4d34849c8",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 382
   },
@@ -9595,7 +9595,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "da078688-0428-4270-9275-496c52ded327",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 383
   },
@@ -9620,7 +9620,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "e274d500-91d6-460b-bdb4-05d2fff34664",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 384
   },
@@ -9645,7 +9645,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "eaa8e312-272b-4044-a19c-237a286c98f1",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 385
   },
@@ -9670,7 +9670,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "7b2bf1cb-3e3e-4a8c-917c-bf34c63c2426",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 386
   },
@@ -9695,7 +9695,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "realization",
     "uuid": "1e2ba7a8-a85f-45ed-baa6-c85a6fcee672",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 387
   },
@@ -9720,7 +9720,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "0f3ed53f-5e74-4a66-b9c9-e5eadc3f79c8",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 388
   },
@@ -9745,7 +9745,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "c3df888d-f270-45ca-9fb0-130c44ec5ff7",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 389
   },
@@ -9770,7 +9770,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "3f7ce397-e625-4889-ad19-316efb7e8887",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 390
   },
@@ -9795,7 +9795,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "neutral",
     "uuid": "cff62d58-aa6b-4915-88d1-6cd0beb28319",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 391
   },
@@ -9820,7 +9820,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "415d4b6e-4593-4a20-9657-758961b0e86c",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 392
   },
@@ -9845,7 +9845,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "c0be4322-2391-447d-a197-7bfd1d2215e9",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 393
   },
@@ -9870,7 +9870,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "love",
     "uuid": "e2b800ef-faf7-4b57-89ac-b389355bbcf6",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 394
   },
@@ -9895,7 +9895,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "3897c9c8-f455-40a4-b592-00effd5f1656",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 395
   },
@@ -9920,7 +9920,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "neutral",
     "uuid": "ce21a12b-6e33-474b-ab29-540dade07945",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 396
   },
@@ -9945,7 +9945,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "6eb56897-2450-487a-9657-4081773ddcfd",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 397
   },
@@ -9970,7 +9970,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "54540fb5-4234-49e8-bcc5-8cb5897431b2",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 398
   },
@@ -9995,7 +9995,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "bb4c881f-3e00-42db-8bb2-9693ae99692c",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 399
   },
@@ -10020,7 +10020,7 @@
     "model": "Claude 3.7 Sonnet",
     "emotion": "love",
     "uuid": "efef9620-fc48-486b-9487-9a514b564caf",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 400
   },
@@ -10045,7 +10045,7 @@
     "model": "Claude 3.5 Sonnet v2",
     "emotion": "love",
     "uuid": "cfc793ff-5d20-43a0-acca-1ba494ae58f0",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 401
   },
@@ -10070,7 +10070,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "555ccf78-42d7-44e7-83ef-9849b44dd794",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 402
   },
@@ -10095,7 +10095,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "652e9bd9-3e1f-4c3d-9205-6494c35638aa",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 403
   },
@@ -10120,7 +10120,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "a28001c2-19d7-470f-871b-1f774de6d551",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 404
   },
@@ -10145,7 +10145,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "15ee8ff5-b5b0-4f04-8e24-b73758b0ae12",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 405
   },
@@ -10170,7 +10170,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "7726ed20-36e1-4b78-b4ed-a2d4e3126c45",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 406
   },
@@ -10195,7 +10195,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "6f375e61-b1a4-4691-a78c-57647a9d0845",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 407
   },
@@ -10220,7 +10220,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "7be11d2b-70fb-4aab-b67a-0430b4843177",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 408
   },
@@ -10245,7 +10245,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "cd79b521-9e60-4e00-acfb-8e02b9b0f184",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 409
   },
@@ -10270,7 +10270,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "8327fce1-0a46-4fda-8764-1736c5a33560",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 410
   },
@@ -10295,7 +10295,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "f0687709-aa14-4781-a078-4b07c1be1095",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 411
   },
@@ -10320,7 +10320,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "b80c6cd5-9ecb-4999-8a7f-222eb33b3f64",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 412
   },
@@ -10345,7 +10345,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "aebbeb7b-c991-4d84-bce9-e5b92fb02cad",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 413
   },
@@ -10370,7 +10370,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "31d0206d-0c09-477f-9c41-b33e13688261",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 414
   },
@@ -10395,7 +10395,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "246162fb-87e0-4a76-b659-518cfdf863a4",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 415
   },
@@ -10420,7 +10420,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "aaf92de7-43fd-48c1-b0b5-145ba90c0834",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 416
   },
@@ -10445,7 +10445,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "cb8b7a89-aa77-40d1-8b26-0a876c8747ca",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 417
   },
@@ -10470,7 +10470,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "realization",
     "uuid": "b880e45a-c6ce-42f8-80a1-27d3948d425d",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 418
   },
@@ -10495,7 +10495,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "7a8bb51d-4b4f-456e-b5b7-8aca771b022c",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 419
   },
@@ -10520,7 +10520,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "9b9e03f6-6a2c-4051-be58-d5fd8c41563c",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 420
   },
@@ -10545,7 +10545,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "91bada2d-f9a2-420e-9146-40ec216ad6f6",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 421
   },
@@ -10570,7 +10570,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "9adbf8a2-4b3d-4a0b-8121-e49eec59662e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 422
   },
@@ -10595,7 +10595,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "7b33b96f-6fa7-44aa-ac82-615e894c4c43",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 423
   },
@@ -10620,7 +10620,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "e01462df-a67e-4741-8e29-bfbf4e2ca322",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 424
   },
@@ -10645,7 +10645,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "8d812dde-ee42-45a0-a53b-45bfea25f164",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 425
   },
@@ -10670,7 +10670,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "c55defb2-8060-4cb1-9ae4-305709b65e83",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 426
   },
@@ -10695,7 +10695,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "realization",
     "uuid": "37adae87-417e-4883-9889-d06cc1154b63",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 427
   },
@@ -10720,7 +10720,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "3d874894-b03d-4e2e-ac1b-e63305be1daa",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 428
   },
@@ -10745,7 +10745,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "e1c5dfce-1e8f-4046-aa33-81ac70b652ab",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 429
   },
@@ -10770,7 +10770,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "4b71fc6a-b4ce-4590-bd72-bd527c82b9b1",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 430
   },
@@ -10795,7 +10795,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "ceeedfe6-4963-4966-8185-f7433b8fc69d",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 431
   },
@@ -10820,7 +10820,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "de6336e2-0691-4f0b-ad3e-0b2b9654dc01",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 432
   },
@@ -10845,7 +10845,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "2b5a20f5-2ac7-4ca7-ab07-2d4169e8f596",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 433
   },
@@ -10870,7 +10870,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "c4c6a4d4-7c20-4be5-9107-8eb72d855131",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 434
   },
@@ -10895,7 +10895,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "7602d913-5311-4ae1-af60-95af32f5e045",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 435
   },
@@ -10920,7 +10920,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "ebe1b9a5-d426-44e0-b430-f8fdbaccb852",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 436
   },
@@ -10945,7 +10945,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "95ebe683-4b8a-4c75-8a8e-90b9b9b934cf",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 437
   },
@@ -10970,7 +10970,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "797ef9d1-9404-4e22-b280-99f9b756ce0d",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 438
   },
@@ -10995,7 +10995,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "2df38780-1f17-4672-9222-e1635b5f70d7",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 439
   },
@@ -11020,7 +11020,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "dc8ee761-59f1-406e-a55f-8e26cb9ba827",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 440
   },
@@ -11045,7 +11045,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "realization",
     "uuid": "eb32c959-d8c1-4c9e-86cb-840d8099610f",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 441
   },
@@ -11070,7 +11070,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "27d9ccac-84fa-4b9e-85e6-321bd64ee373",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 442
   },
@@ -11095,7 +11095,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "7a67dd6a-7399-4633-87f5-598ae7bb6ae2",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 443
   },
@@ -11120,7 +11120,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "b64d56cc-ca7f-41de-898f-478b13488365",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 444
   },
@@ -11145,7 +11145,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "c1a92748-05ae-49a2-9d4a-899d08ad1a2e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 445
   },
@@ -11170,7 +11170,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "ddf46c94-8d72-41a5-ac5f-18a5fdd232dc",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 446
   },
@@ -11195,7 +11195,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "69fe46f6-ec1a-4af5-b3b7-acbf77c40732",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 447
   },
@@ -11220,7 +11220,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "3f3c3bc6-2976-4cdd-bc99-38e39af2eed5",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 448
   },
@@ -11245,7 +11245,7 @@
     "model": "Claude 4 Sonnet",
     "emotion": "neutral",
     "uuid": "85eff133-a3a1-49a1-ac7a-5a2aa2fd7f06",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 449
   },
@@ -11270,7 +11270,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "8ca1fe0f-301e-4207-b60c-47e90604366d",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 450
   },
@@ -11295,7 +11295,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "4ba04b7d-fd77-44bc-a727-df64b20c3e57",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 451
   },
@@ -11320,7 +11320,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "421eb656-e441-4400-a2ac-f6eb3e4d4c7f",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 452
   },
@@ -11345,7 +11345,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "realization",
     "uuid": "0e4face4-f86a-4441-9a89-d0b1814f5796",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 453
   },
@@ -11370,7 +11370,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "realization",
     "uuid": "db11663f-8f6a-44e8-8662-f056614dca9b",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 454
   },
@@ -11395,7 +11395,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "4c42e87c-4370-4d4f-a77f-f2072f5995b8",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 455
   },
@@ -11420,7 +11420,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "realization",
     "uuid": "49c68e68-3345-43cd-bbea-0359b52f27d4",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 456
   },
@@ -11445,7 +11445,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "realization",
     "uuid": "220852a4-4753-43ad-aefc-842de03647b7",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 457
   },
@@ -11470,7 +11470,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "df8a1ffa-d464-4ef1-a7e6-bdb005cc243a",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 458
   },
@@ -11495,7 +11495,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "b71cf56a-977e-4257-a4b2-c9e56fbe17a2",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 459
   },
@@ -11520,7 +11520,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "realization",
     "uuid": "d598862c-3e3d-4025-afcb-0b9435eb3eff",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 460
   },
@@ -11545,7 +11545,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "realization",
     "uuid": "53983414-4e21-447d-96a9-3613151c8d46",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 461
   },
@@ -11570,7 +11570,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "dbf30971-c580-4082-b259-8b2dbb0d0bf5",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 462
   },
@@ -11595,7 +11595,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "a8091877-75d9-401b-a9e0-1d21f59b0972",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 463
   },
@@ -11620,7 +11620,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "193833a5-4f1c-4a18-ae2e-31c30ae71c39",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 464
   },
@@ -11645,7 +11645,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "1814a246-ae33-45dc-b26c-573219d0deb0",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 465
   },
@@ -11670,7 +11670,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "9786a6ff-e58a-49f6-92bd-cc6e0b9f1237",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 466
   },
@@ -11695,7 +11695,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "a7ec6a04-998c-40b1-8aca-fd08226143da",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 467
   },
@@ -11720,7 +11720,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "realization",
     "uuid": "b383f6da-9bf1-4134-86b3-d5c86b931ade",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 468
   },
@@ -11745,7 +11745,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "8fa6e8cc-f68c-4ffd-bee9-e834274e58b1",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 469
   },
@@ -11770,7 +11770,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "6582aeef-766b-4f49-876a-44fb01fd4acc",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 470
   },
@@ -11795,7 +11795,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "realization",
     "uuid": "7ee036f9-f20f-4df5-8b6d-7e6efbbb0861",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 471
   },
@@ -11820,7 +11820,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "realization",
     "uuid": "2a5797d1-8c71-41ef-9984-773a0587fa26",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 472
   },
@@ -11845,7 +11845,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "87e9ed08-fcf4-4a86-ae43-6a9834407c81",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 473
   },
@@ -11870,7 +11870,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "b0c9734f-bbc1-41fa-89be-d75d1f19a6c0",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 474
   },
@@ -11895,7 +11895,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "c35cc864-eb5f-4ec8-984b-02b68ab666b6",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 475
   },
@@ -11920,7 +11920,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "6be8be95-2e67-4370-86a2-67fe4126c5f5",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 476
   },
@@ -11945,7 +11945,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "4046ee2c-d0bc-4ee7-adb5-01cbb3e10427",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 477
   },
@@ -11970,7 +11970,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "realization",
     "uuid": "3e4486b2-f69f-48dc-9ef5-64f837ae6f13",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 478
   },
@@ -11995,7 +11995,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "8648ef5c-6bfd-4965-838e-a39420414f9f",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 479
   },
@@ -12020,7 +12020,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "6f956666-7c87-4a57-ba80-102d865578d5",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 480
   },
@@ -12045,7 +12045,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "f3b96379-0de7-4232-889a-c04d1ba4b45d",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 481
   },
@@ -12070,7 +12070,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "409a09ed-3b6d-4a54-aea8-4f026c0f0ab6",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 482
   },
@@ -12095,7 +12095,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "ec637f93-f09e-46b9-8304-7135beb63ca4",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 483
   },
@@ -12120,7 +12120,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "e3eacff6-766f-474e-97c0-82f379d58fc7",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 484
   },
@@ -12145,7 +12145,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "03fb3c38-81be-4bb1-8941-23c80cea4ea0",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 485
   },
@@ -12170,7 +12170,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "644f0659-c109-4231-86a2-784efb05dd92",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 486
   },
@@ -12195,7 +12195,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "967f0aad-dbc5-4d86-8e9a-013cf73ae895",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 487
   },
@@ -12220,7 +12220,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "bcd91518-6058-4b83-84b4-b1c4c3ac1057",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 488
   },
@@ -12245,7 +12245,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "eaa65ba5-d1bb-4426-8ad4-bfe6aa859bea",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 489
   },
@@ -12270,7 +12270,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "realization",
     "uuid": "cb003917-42c9-45cb-9371-7d506052da3c",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 490
   },
@@ -12295,7 +12295,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "realization",
     "uuid": "7fb9b592-848a-4ea7-8193-1415db252838",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 491
   },
@@ -12320,7 +12320,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "eae4c5ce-8fe7-4c97-a9da-4c65c11887b8",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 492
   },
@@ -12345,7 +12345,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "594f360c-b4bb-41b3-952c-97fe48ee28b0",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 493
   },
@@ -12370,7 +12370,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "realization",
     "uuid": "11153287-728d-4308-8395-f726e59f196b",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 494
   },
@@ -12395,7 +12395,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "6f694df9-9aa2-45c5-b405-1d6748a8ac34",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 495
   },
@@ -12420,7 +12420,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "683f1a7b-6e87-489c-95f5-9bf690b157af",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 496
   },
@@ -12445,7 +12445,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "realization",
     "uuid": "86e56e10-099c-4423-b91e-40a6efa195b0",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 497
   },
@@ -12470,7 +12470,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "6b04c310-6d85-47b5-9fe3-3ba4ba9d7580",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 498
   },
@@ -12495,7 +12495,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "4689f0f4-c2c3-4fa0-9560-c4970ed51b05",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 499
   },
@@ -12520,7 +12520,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "5ef0845d-7f47-4c5f-b99a-d7af6c5ad6b0",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 500
   },
@@ -12545,7 +12545,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "8682fceb-ff91-4621-a0f7-95836b79c65e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 501
   },
@@ -12570,7 +12570,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "realization",
     "uuid": "be5b13d9-695b-4abd-8600-715fa08cc20a",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 502
   },
@@ -12595,7 +12595,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "d3dbcea1-5e0c-4e70-b2e3-5f2f929fe588",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 503
   },
@@ -12620,7 +12620,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "b7bb6efd-94e1-47bb-aaac-3fb441140b72",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 504
   },
@@ -12645,7 +12645,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "7c17b150-2040-4cb4-bd02-9f92677a5015",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 505
   },
@@ -12670,7 +12670,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "c60a3428-5fbe-40e8-9383-59c8f4877116",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 506
   },
@@ -12695,7 +12695,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "2f113099-05d3-4430-9440-268745f498c7",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 507
   },
@@ -12720,7 +12720,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "1f1c19ab-810c-4ddf-897e-5d3ae3c266a1",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 508
   },
@@ -12745,7 +12745,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "2d2d6b22-3a65-42a5-8e83-760bc1eee7b8",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 509
   },
@@ -12770,7 +12770,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "a339db27-794c-4ef9-adc6-d12c974b7c23",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 510
   },
@@ -12795,7 +12795,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "neutral",
     "uuid": "b671c7df-24a0-4a4c-9469-2973786dd05a",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 511
   },
@@ -12820,7 +12820,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "1d332772-3807-4bab-9751-152ef544ac5e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 512
   },
@@ -12845,7 +12845,7 @@
     "model": "Gemini 2.5 Pro",
     "emotion": "love",
     "uuid": "168e774f-ad36-40af-8396-52508282326e",
-    "name": "tarion",
+    "name": "taryeon",
     "showName": "타리온",
     "index": 513
   }

@@ -1,50 +1,14 @@
-# React + TypeScript + Vite
+## License / 라이선스
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This project is licensed under the Rita-Berenice Enhanced Use License v1.0
 
-Currently, two official plugins are available:
+- English: [LICENSE](LICENSE)
+- 한국어: [LICENSE.ko](LICENSE.ko)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ⚠️ Important Disclaimer / 중요한 면책사항
 
-## Expanding the ESLint configuration
+**English**: This software is provided "as is" without any warranties.
+Use at your own risk. See LICENSE for full terms.
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
-
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
-
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+**한국어**: 본 소프트웨어는 "있는 그대로" 제공되며 어떠한 보증도 없습니다.
+사용자 책임 하에 사용하시기 바랍니다. 전체 조건은 LICENSE 파일을 참조하세요.
