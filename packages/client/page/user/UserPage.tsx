@@ -53,7 +53,14 @@ import { useToast } from '../../provider/ToastProvider.jsx';
 import { ImageCropModal, RomanticTitle } from '../../layout/index.js';
 import { useNavigate } from 'react-router';
 import { CredentialSection } from './CredentialSection.tsx';
-import { GENDER_OPTION, LANG_KEYS, LIMIT_5MB, ASPECT_RATIOS } from '@rita-berenice/shared/config';
+import {
+	GENDER_OPTION,
+	LANG_KEYS,
+	LIMIT_5MB,
+	ASPECT_RATIOS,
+	SUPPORTED_IMAGE_MIMETYPES,
+	getImageInputAccept,
+} from '@rita-berenice/shared/config';
 import {
 	CharacterInfo,
 	SessionInfo,
@@ -64,6 +71,7 @@ import {
 	UserInfo,
 } from '@rita-berenice/shared/domain';
 import { routeConstants } from '../../routeConstants.ts';
+import { blobToWebpFile, cleanupBlobUrl, processCroppedImage } from '../../util/cropImageUtils.ts';
 
 // Helper to get gender color
 const getGenderColor = (gender: GENDER_OPTION) => {
@@ -215,69 +223,59 @@ export const UserPage: FC<{
 	// Avatar upload handler (similar to CharacterForm's handleImageUpload)
 	const handleAvatarUpload = (event: ChangeEvent<HTMLInputElement>) => {
 		const file = event.target.files?.[0];
-		console.log('📁 File selected:', file?.name, file?.type, file?.size);
-
 		if (!file) return;
 
-		if (!file.type.startsWith('image/')) {
+		// Use shared validation
+		if (!SUPPORTED_IMAGE_MIMETYPES.includes(file.type as any)) {
 			return addToast(getLangAlertText(LANG_KEYS.INVALID_FILE_TYPE), 'error');
 		}
 		if (file.size > LIMIT_5MB) {
 			return addToast(getLangAlertText(LANG_KEYS.FILE_TOO_LARGE), 'error');
 		}
 
-		// Use FileReader instead of blob URL
 		const reader = new FileReader();
-
 		reader.onload = (e) => {
 			const result = e.target?.result as string;
-			console.log('📖 FileReader completed, data length:', result?.length);
-
 			if (result) {
 				setPendingAvatarFile(file);
-				setModalImageUrl(result); // This will be a data: URL
+				setModalImageUrl(result);
 				setCropModalOpen(true);
 			}
 		};
-
 		reader.onerror = (error) => {
-			console.error('❌ FileReader error:', error);
+			console.error('FileReader error:', error);
 			addToast('Error reading image file', 'error');
 		};
+		reader.readAsDataURL(file);
 
-		console.log('📖 Starting FileReader...');
-		reader.readAsDataURL(file); // Creates data:image/webp;base64,... URL
-
-		// Clear the file input
 		if (fileInputRef.current) {
 			fileInputRef.current.value = '';
 		}
 	};
 
 	// Simplify the crop complete handler since data URLs don't need cleanup
-	const handleCropComplete = (croppedAreaPixels: any) => {
-		if (!pendingAvatarFile || !modalImageUrl) {
-			console.warn('⚠️ Missing data for crop completion');
-			return;
+	const handleCropComplete = async (croppedBlob: Blob) => {
+		if (!pendingAvatarFile) return;
+
+		try {
+			// Use utility to process blob
+			const { file, previewUrl } = processCroppedImage(croppedBlob, pendingAvatarFile.name);
+
+			const newAvatar: UploadedImage = { file, preview: previewUrl };
+
+			// Clean up previous avatar
+			cleanupBlobUrl(uploadedAvatar?.preview);
+
+			setUploadedAvatar(newAvatar);
+			setPendingAvatarFile(null);
+			setCropModalOpen(false);
+			setModalImageUrl('');
+
+			addToast('Avatar ready for upload', 'success', 1500);
+		} catch (error) {
+			console.error('Error processing cropped image:', error);
+			addToast('Failed to process image', 'error');
 		}
-
-		const newAvatar: UploadedImage = {
-			file: pendingAvatarFile,
-			preview: modalImageUrl, // Keep the data: URL
-			crop: croppedAreaPixels,
-		};
-
-		// Clean up previous avatar if it was a blob URL
-		if (uploadedAvatar?.preview.startsWith('blob:')) {
-			URL.revokeObjectURL(uploadedAvatar.preview);
-		}
-
-		setUploadedAvatar(newAvatar);
-		setPendingAvatarFile(null);
-		setCropModalOpen(false);
-		setModalImageUrl('');
-
-		addToast('Avatar ready for upload', 'success', 1500);
 	};
 
 	// Simplified modal close (no cleanup needed for data URLs)
@@ -292,13 +290,9 @@ export const UserPage: FC<{
 		await createUserFolder({ userId });
 
 		const formData = new FormData();
-		formData.append('avatarFile', avatar.file!); // Note: field name is 'avatarFile' for user
+		formData.append('avatarFile', avatar.file!);
 		formData.append('userId', userId);
-
-		// Add crop data if available
-		if (avatar.crop) {
-			formData.append('crop', JSON.stringify(avatar.crop));
-		}
+		// Remove crop data - client already cropped
 
 		const result = await uploadUserAvatar(formData);
 		return result.avatarUrl;
@@ -457,7 +451,7 @@ export const UserPage: FC<{
 													type="file"
 													ref={fileInputRef}
 													hidden
-													accept="image/*"
+													accept={getImageInputAccept()}
 													onChange={handleAvatarUpload}
 												/>
 											</IconButton>

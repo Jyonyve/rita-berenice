@@ -27,8 +27,9 @@ import {
 	UserInfo,
 	WorldLoreCdo,
 } from '../domain/index.js';
-import { DEFAULT_USER_AVATAR, NA } from '../config/constants.js';
+import { NA } from '../config/constants.js';
 import { DEFAULT_EMOTION } from '../config/emotionConstants.js';
+import { DEFAULT_USER_AVATAR } from '../config/imageConstants.js';
 
 //type guard
 export function isCharacterTermInfo(

@@ -58,7 +58,8 @@ export default defineConfig(({ mode }) => {
 		build: {
 			outDir: '../../dist/client',
 			emptyOutDir: true,
-			target: 'es2022',
+			target: 'baseline-widely-available',
+			// target: 'es2022',
 			sourcemap: !isProduction,
 			minify: 'esbuild',
 			chunkSizeWarningLimit: 5000,
