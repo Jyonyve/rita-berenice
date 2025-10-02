@@ -1,3 +1,4 @@
+// server/util/imageProcessor.ts
 import sharp from 'sharp';
 import fs from 'fs';
 import path from 'path';
@@ -8,56 +9,38 @@ import {
 	BASE_USER_IMAGE_DIR,
 	RUNTIME_CHARACTER_IMAGE_DIR,
 	RUNTIME_USER_IMAGE_DIR,
+	SUPPORTED_IMAGE_EXTENSIONS,
+	SUPPORTED_IMAGE_MIMETYPES,
+	IMAGE_PROCESSING_CONFIG,
+	ASPECT_RATIO_STRINGS,
+	getDeletionFormats,
+	getUnsupportedImageError,
+	ImageFormat,
 } from '@rita-berenice/shared/config';
 
+// ==================== Types ====================
 export interface CropConfig {
 	x: number;
 	y: number;
 	width: number;
 	height: number;
 }
+
 export interface ImageProcessOptions {
 	outputSize?: { width: number; height: number };
-	format: 'webp' | 'avif' | 'jpeg' | 'png';
+	format: ImageFormat;
 	crop?: CropConfig;
 	aspectRatio?: string;
 }
 
+// ==================== Multer Setup ====================
 const storage = multer.memoryStorage();
-
-const SUPPORTED_IMAGE_EXTENSIONS = [
-	'.png',
-	'.jpg',
-	'.jpeg',
-	'.gif',
-	'.svg',
-	'.avif',
-	'.webp',
-	'.bmp',
-	'.tiff',
-	'.ico',
-];
-
-const SUPPORTED_IMAGE_MIMETYPES = [
-	'image/png',
-	'image/jpg',
-	'image/jpeg',
-	'image/gif',
-	'image/svg+xml',
-	'image/avif',
-	'image/webp',
-	'image/bmp',
-	'image/tiff',
-	'image/x-icon',
-	'image/vnd.microsoft.icon',
-];
 
 const createImageUpload = (maxFileSize: number = LIMIT_5MB) => {
 	return multer({
 		storage,
 		limits: { fileSize: maxFileSize },
 		fileFilter: (req, file, cb) => {
-			// Check both mimetype and file extension for comprehensive support
 			const mimetypeValid = SUPPORTED_IMAGE_MIMETYPES.includes(file.mimetype);
 			const extensionValid = file.originalname
 				? SUPPORTED_IMAGE_EXTENSIONS.includes(path.extname(file.originalname).toLowerCase())
@@ -66,11 +49,7 @@ const createImageUpload = (maxFileSize: number = LIMIT_5MB) => {
 			if (mimetypeValid || extensionValid) {
 				cb(null, true);
 			} else {
-				cb(
-					new Error(
-						`Only image files are allowed! Supported formats: ${SUPPORTED_IMAGE_EXTENSIONS.join(', ')}`
-					)
-				);
+				cb(new Error(getUnsupportedImageError()));
 			}
 		},
 	});
@@ -80,6 +59,7 @@ export const imageUpload = createImageUpload();
 export const avatarUpload = createImageUpload(LIMIT_5MB);
 export const characterUpload = createImageUpload(LIMIT_5MB);
 
+// ==================== Helper Functions ====================
 /**
  * Creates directory if it doesn't exist
  */
@@ -93,24 +73,25 @@ export const ensureDirectoryExists = (directoryPath: string): void => {
 
 /**
  * Applies format-specific processing without quality reduction
+ * All formats use lossless/maximum quality settings
  */
-const applyFormat = (processor: sharp.Sharp, format: string): sharp.Sharp => {
+const applyFormat = (processor: sharp.Sharp, format: ImageFormat): sharp.Sharp => {
 	switch (format) {
 		case 'webp':
-			return processor.webp({ lossless: true }); // Lossless for avatars
+			return processor.webp({ lossless: true });
 		case 'avif':
-			return processor.avif({ lossless: true }); // Lossless for characters/lore
+			return processor.avif({ lossless: true });
 		case 'jpeg':
-			return processor.jpeg({ quality: 100 }); // Maximum quality if needed
+			return processor.jpeg({ quality: 100 });
 		case 'png':
-			return processor.png({ compressionLevel: 0 }); // No compression
+			return processor.png({ compressionLevel: 0 });
 		default:
 			return processor.webp({ lossless: true });
 	}
 };
 
 /**
- * Calculates dimensions based on aspect ratio
+ * Calculates dimensions based on aspect ratio string (e.g., "5/7")
  */
 const calculateAspectRatioDimensions = (
 	aspectRatio: string,
@@ -129,17 +110,21 @@ const calculateAspectRatioDimensions = (
 	}
 };
 
+// ==================== Image Processing Functions ====================
 /**
- * Processes user avatar image (fixed 512x512 square, WebP format)
+ * Processes user avatar image
+ * - Client sends already cropped WebP from canvas
+ * - Server resizes to 512x512 and converts to lossless WebP
  */
 export const processUserAvatar = async (
 	buffer: Buffer,
 	userId: string,
 	options: Partial<ImageProcessOptions> = {}
 ): Promise<string> => {
+	// Use shared config
 	const config: ImageProcessOptions = {
-		format: 'webp', // Always WebP for avatars
-		outputSize: { width: 512, height: 512 },
+		format: IMAGE_PROCESSING_CONFIG.USER_AVATAR.format,
+		outputSize: IMAGE_PROCESSING_CONFIG.USER_AVATAR.dimensions,
 		...options,
 	};
 
@@ -151,29 +136,13 @@ export const processUserAvatar = async (
 
 	let processor = sharp(buffer);
 
-	// Apply crop if provided
-	if (config.crop) {
-		processor = processor.extract({
-			left: Math.round(config.crop.x),
-			top: Math.round(config.crop.y),
-			width: Math.round(config.crop.width),
-			height: Math.round(config.crop.height),
-		});
-	} else {
-		// Auto-crop to square from center
-		const metadata = await sharp(buffer).metadata();
-		const { width = 0, height = 0 } = metadata;
-		const cropSize = Math.min(width, height);
-		const left = Math.floor((width - cropSize) / 2);
-		const top = Math.floor((height - cropSize) / 2);
+	// Client already cropped the image, just resize to final dimensions
+	processor = processor.resize(config.outputSize!.width, config.outputSize!.height, {
+		fit: 'cover',
+		position: 'center',
+	});
 
-		processor = processor.extract({ left, top, width: cropSize, height: cropSize });
-	}
-
-	// Always resize to 512x512
-	processor = processor.resize(512, 512, { fit: 'cover', position: 'center' });
-
-	// Apply format (lossless WebP)
+	// Apply lossless WebP format
 	processor = applyFormat(processor, config.format);
 
 	await processor.toFile(filePath);
@@ -182,7 +151,9 @@ export const processUserAvatar = async (
 };
 
 /**
- * Processes character image (5:7 aspect ratio, AVIF format)
+ * Processes character portrait image
+ * - Client sends already cropped WebP from canvas
+ * - Server converts to lossless AVIF with 5:7 aspect ratio
  */
 export const processCharacterImage = async (
 	buffer: Buffer,
@@ -190,8 +161,10 @@ export const processCharacterImage = async (
 	emotionKey: number,
 	options: Partial<ImageProcessOptions> = {}
 ): Promise<string> => {
+	// Use shared config
 	const config: ImageProcessOptions = {
-		format: 'avif', // Always AVIF for characters
+		format: IMAGE_PROCESSING_CONFIG.CHARACTER_PORTRAIT.format,
+		aspectRatio: ASPECT_RATIO_STRINGS.CHARACTER,
 		...options,
 	};
 
@@ -203,26 +176,19 @@ export const processCharacterImage = async (
 
 	let processor = sharp(buffer);
 
-	// Apply crop if provided
-	if (config.crop) {
-		processor = processor.extract({
-			left: Math.round(config.crop.x),
-			top: Math.round(config.crop.y),
-			width: Math.round(config.crop.width),
-			height: Math.round(config.crop.height),
-		});
-	}
-
-	// Calculate dimensions for 5:7 aspect ratio
+	// Calculate dimensions for aspect ratio if specified
 	if (config.aspectRatio) {
-		const dimensions = calculateAspectRatioDimensions(config.aspectRatio, 700);
+		const dimensions = calculateAspectRatioDimensions(
+			config.aspectRatio,
+			IMAGE_PROCESSING_CONFIG.CHARACTER_PORTRAIT.baseSize
+		);
 		processor = processor.resize(dimensions.width, dimensions.height, {
 			fit: 'cover',
 			position: 'center',
 		});
 	}
 
-	// Apply format (lossless AVIF)
+	// Apply lossless AVIF format
 	processor = applyFormat(processor, config.format);
 
 	await processor.toFile(filePath);
@@ -231,16 +197,19 @@ export const processCharacterImage = async (
 };
 
 /**
- * Processes lore image (5:7 aspect ratio, AVIF format)
+ * Processes lore image
+ * - Client sends already cropped WebP from canvas
+ * - Server converts to lossless AVIF with 5:7 aspect ratio
  */
 export const processLoreImage = async (
 	buffer: Buffer,
 	loreId: string,
 	options: Partial<ImageProcessOptions> = {}
 ): Promise<string> => {
+	// Use shared config
 	const config: ImageProcessOptions = {
-		format: 'avif', // Always AVIF for lore
-		aspectRatio: '5/7',
+		format: IMAGE_PROCESSING_CONFIG.LORE_IMAGE.format,
+		aspectRatio: ASPECT_RATIO_STRINGS.LORE,
 		...options,
 	};
 
@@ -252,17 +221,11 @@ export const processLoreImage = async (
 
 	let processor = sharp(buffer);
 
-	if (config.crop) {
-		processor = processor.extract({
-			left: Math.round(config.crop.x),
-			top: Math.round(config.crop.y),
-			width: Math.round(config.crop.width),
-			height: Math.round(config.crop.height),
-		});
-	}
-
 	if (config.aspectRatio) {
-		const dimensions = calculateAspectRatioDimensions(config.aspectRatio, 600);
+		const dimensions = calculateAspectRatioDimensions(
+			config.aspectRatio,
+			IMAGE_PROCESSING_CONFIG.LORE_IMAGE.baseSize
+		);
 		processor = processor.resize(dimensions.width, dimensions.height, {
 			fit: 'cover',
 			position: 'center',
@@ -275,11 +238,14 @@ export const processLoreImage = async (
 	return `${RUNTIME_CHARACTER_IMAGE_DIR}/lore/${loreId}/${fileName}`;
 };
 
+// ==================== Deletion Functions ====================
 /**
  * Deletes user avatar files
+ * Checks current format first, then legacy formats for backward compatibility
  */
 export const deleteUserAvatar = async (userId: string): Promise<void> => {
-	const formats = ['webp', 'jpg', 'jpeg', 'png'];
+	const currentFormat = IMAGE_PROCESSING_CONFIG.USER_AVATAR.format;
+	const formats = getDeletionFormats(currentFormat);
 
 	for (const format of formats) {
 		const filePath = path.join(process.cwd(), `${BASE_USER_IMAGE_DIR}/${userId}/image.${format}`);
@@ -292,13 +258,15 @@ export const deleteUserAvatar = async (userId: string): Promise<void> => {
 };
 
 /**
- * Deletes character image files
+ * Deletes character portrait files
+ * Checks current format first, then legacy formats for backward compatibility
  */
 export const deleteCharacterImage = async (
 	characterId: string,
 	emotionKey: number
 ): Promise<void> => {
-	const formats = ['avif', 'webp', 'jpg', 'jpeg', 'png'];
+	const currentFormat = IMAGE_PROCESSING_CONFIG.CHARACTER_PORTRAIT.format;
+	const formats = getDeletionFormats(currentFormat);
 
 	for (const format of formats) {
 		const filePath = path.join(
@@ -315,9 +283,11 @@ export const deleteCharacterImage = async (
 
 /**
  * Deletes lore image files
+ * Checks current format first, then legacy formats for backward compatibility
  */
 export const deleteLoreImage = async (loreId: string): Promise<void> => {
-	const formats = ['webp', 'jpg', 'jpeg', 'png'];
+	const currentFormat = IMAGE_PROCESSING_CONFIG.LORE_IMAGE.format;
+	const formats = getDeletionFormats(currentFormat);
 
 	for (const format of formats) {
 		const filePath = path.join(

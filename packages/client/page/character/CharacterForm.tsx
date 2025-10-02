@@ -42,9 +42,12 @@ import {
 	LIMIT_5MB,
 	REQUEST_CHARACTER_LIMIT,
 	ASPECT_RATIOS,
+	SUPPORTED_IMAGE_MIMETYPES,
+	getImageInputAccept,
 } from '@rita-berenice/shared/config';
 import { UploadedCharacterImage, CharacterInfo, CharacterCdo } from '@rita-berenice/shared/domain';
 import { isCharacterInfo, createBasicCharacterInfo } from '@rita-berenice/shared/util';
+import { blobToWebpFile, cleanupBlobUrl, processCroppedImage } from '../../util/cropImageUtils.js';
 
 // 🎨 Constants
 const AUTO_SLIDE_DELAY = 100;
@@ -175,8 +178,8 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 		const file = event.target.files?.[0];
 		if (!file) return;
 
-		// Early returns for validation
-		if (!file.type.startsWith('image/')) {
+		// Use shared validation
+		if (!SUPPORTED_IMAGE_MIMETYPES.includes(file.type as any)) {
 			return addToast(getLangAlertText(LANG_KEYS.INVALID_FILE_TYPE), 'error');
 		}
 		if (file.size > LIMIT_5MB) {
@@ -195,7 +198,6 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 		reader.onerror = () => addToast('Error reading image file', 'error');
 		reader.readAsDataURL(file);
 
-		// Clear input
 		if (fileInputRef.current) fileInputRef.current.value = '';
 	};
 
@@ -222,29 +224,26 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 	};
 
 	// 🎨 Enhanced crop complete handler with better error handling
-	const handleCropComplete = (croppedAreaPixels: any) => {
-		if (!pendingImageFile || !modalImageUrl) {
-			console.warn('Missing required data for crop completion');
-			return;
-		}
+	const handleCropComplete = async (croppedBlob: Blob) => {
+		if (!pendingImageFile) return;
 
 		try {
+			// Use utility to process blob
+			const { file, previewUrl } = processCroppedImage(croppedBlob, pendingImageFile.name);
+
 			const idx = uploadedImages.findIndex((img) => img.emotion === selectedEmotion);
 			const newImage: UploadedCharacterImage = {
-				file: pendingImageFile,
+				file,
 				emotion: selectedEmotion,
 				emotionKey: getEmotionKey(selectedEmotion),
-				preview: modalImageUrl,
+				preview: previewUrl,
 				toDelete: false,
-				crop: croppedAreaPixels,
 			};
 
 			setUploadedCharacterImages((prev) => {
 				const next = [...prev];
 				if (idx >= 0) {
-					if (next[idx].preview.startsWith('blob:')) {
-						URL.revokeObjectURL(next[idx].preview);
-					}
+					cleanupBlobUrl(next[idx].preview); // Use utility
 					next[idx] = newImage;
 				} else {
 					next.push(newImage);
@@ -288,10 +287,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 					formData.append('image', image.file!);
 					formData.append('characterId', characterId);
 					formData.append('emotionKey', image.emotionKey.toString());
-
-					if (image.crop) {
-						formData.append('crop', JSON.stringify(image.crop));
-					}
+					// Remove crop data - client already cropped
 
 					return uploadCharacterImage(formData);
 				})
@@ -299,13 +295,11 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 	};
 
 	const applyPortraitDiffs = async (characterId: string): Promise<void> => {
-		// Deletes
 		const deletions = uploadedImages.filter((img) => img.toDelete);
 		await Promise.all(
 			deletions.map((img) => deleteCharacterImage({ characterId, emotionKey: img.emotionKey }))
 		);
 
-		// Replacements / additions
 		const replacements = uploadedImages.filter((img) => img.file && !img.toDelete);
 		if (replacements.length > 0) {
 			await Promise.all(
@@ -314,10 +308,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 					formData.append('image', image.file!);
 					formData.append('characterId', characterId);
 					formData.append('emotionKey', image.emotionKey.toString());
-
-					if (image.crop) {
-						formData.append('crop', JSON.stringify(image.crop));
-					}
+					// Remove crop data - client already cropped
 
 					return uploadCharacterImage(formData);
 				})
@@ -438,7 +429,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 									type="file"
 									ref={fileInputRef}
 									onChange={handleImageUpload}
-									accept="image/*"
+									accept={getImageInputAccept()}
 									style={{ display: 'none' }}
 								/>
 								<GlassButton

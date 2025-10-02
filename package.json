@@ -14,17 +14,19 @@
 		"clean:dist": "turbo run clean && rimraf dist",
 		"start": "node dist/server/server.js",
 		"migration": "pnpm --filter @rita-berenice/migration-tool",
-		"migration:install": "pnpm --filter @rita-berenice/migration-tool install"
+		"migration:install": "pnpm --filter @rita-berenice/migration-tool install",
+		"update:check": "pnpm outdated -r",
+		"update:all": "pnpm update -r --latest"
 	},
 	"devDependencies": {
-		"@types/node": "^24.3.0",
-		"@vitejs/plugin-react": "^4.7.0",
+		"@types/node": "^24.6.2",
+		"@vitejs/plugin-react": "^5.0.4",
 		"prettier": "^3.6.2",
 		"rimraf": "^6.0.1",
-		"tsx": "^4.20.5",
+		"tsx": "^4.20.6",
 		"turbo": "^2.5.8",
-		"typescript": "^5.9.2",
-		"vite": "^6.3.6",
+		"typescript": "^5.9.3",
+		"vite": "^7.1.7",
 		"vite-plugin-node-polyfills": "^0.24.0",
 		"vite-plugin-svgr": "^4.5.0",
 		"vite-tsconfig-paths": "^5.1.4"

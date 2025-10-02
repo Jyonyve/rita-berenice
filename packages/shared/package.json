@@ -16,7 +16,7 @@
 		"dev": "tsc --project tsconfig.json --watch"
 	},
 	"dependencies": {
-		"nanoid": "^5.1.5",
+		"nanoid": "^5.1.6",
 		"unique-names-generator": "^4.7.1"
 	}
 }
