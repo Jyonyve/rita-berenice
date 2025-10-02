@@ -61,13 +61,11 @@ export default defineConfig(({ mode }) => {
 			target: 'es2022',
 			sourcemap: !isProduction,
 			minify: 'esbuild',
-
-			// Set the chunk size warning higher
 			chunkSizeWarningLimit: 5000,
 
-			// Use manual vendor chunk splitting for big dependencies
 			rollupOptions: {
-				input: { main: path.resolve(__dirname, 'packages/client/index.html') },
+				// ✅ FIX: Only specify index.html, not entry-server.tsx
+				input: path.resolve(__dirname, 'packages/client/index.html'),
 				output: {
 					manualChunks(id) {
 						if (id.includes('node_modules')) {

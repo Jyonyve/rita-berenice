@@ -189,19 +189,19 @@ importers:
         version: 0.1.7(chromadb@3.0.15)
       '@chroma-core/openai':
         specifier: ^0.1.7
-        version: 0.1.7(chromadb@3.0.15)(ws@8.18.3)(zod@3.25.76)
+        version: 0.1.7(chromadb@3.0.15)(ws@8.18.3)(zod@4.1.11)
       '@langchain/anthropic':
         specifier: ^0.3.26
-        version: 0.3.30(@langchain/core@0.3.78(openai@5.23.2(ws@8.18.3)(zod@3.25.76)))(zod@3.25.76)
+        version: 0.3.30(@langchain/core@0.3.78(openai@5.23.2(ws@8.18.3)(zod@4.1.11)))(zod@4.1.11)
       '@langchain/core':
         specifier: ^0.3.72
-        version: 0.3.78(openai@5.23.2(ws@8.18.3)(zod@3.25.76))
+        version: 0.3.78(openai@5.23.2(ws@8.18.3)(zod@4.1.11))
       '@langchain/google-genai':
         specifier: ^0.2.16
-        version: 0.2.18(@langchain/core@0.3.78(openai@5.23.2(ws@8.18.3)(zod@3.25.76)))
+        version: 0.2.18(@langchain/core@0.3.78(openai@5.23.2(ws@8.18.3)(zod@4.1.11)))
       '@langchain/openai':
         specifier: ^0.6.9
-        version: 0.6.14(@langchain/core@0.3.78(openai@5.23.2(ws@8.18.3)(zod@3.25.76)))(ws@8.18.3)
+        version: 0.6.14(@langchain/core@0.3.78(openai@5.23.2(ws@8.18.3)(zod@4.1.11)))(ws@8.18.3)
       '@rita-berenice/shared':
         specifier: workspace:*
         version: link:../shared
@@ -225,7 +225,7 @@ importers:
         version: 2.0.2
       openai:
         specifier: ^5.16.0
-        version: 5.23.2(ws@8.18.3)(zod@3.25.76)
+        version: 5.23.2(ws@8.18.3)(zod@4.1.11)
       sharp:
         specifier: ^0.34.3
         version: 0.34.4
@@ -238,6 +238,9 @@ importers:
       tiktoken:
         specifier: ^1.0.22
         version: 1.0.22
+      zod:
+        specifier: ^4.1.11
+        version: 4.1.11
     devDependencies:
       '@types/compression':
         specifier: ^1.8.1
@@ -269,9 +272,6 @@ importers:
       unique-names-generator:
         specifier: ^4.7.1
         version: 4.7.1
-      zod:
-        specifier: ^4.1.4
-        version: 4.1.11
 
 packages:
 
@@ -3656,6 +3656,12 @@ snapshots:
     optionalDependencies:
       zod: 3.25.76
 
+  '@anthropic-ai/sdk@0.65.0(zod@4.1.11)':
+    dependencies:
+      json-schema-to-ts: 3.1.1
+    optionalDependencies:
+      zod: 4.1.11
+
   '@aws-crypto/sha256-browser@5.2.0':
     dependencies:
       '@aws-crypto/sha256-js': 5.2.0
@@ -4229,6 +4235,16 @@ snapshots:
       - ws
       - zod
 
+  '@chroma-core/openai@0.1.7(chromadb@3.0.15)(ws@8.18.3)(zod@4.1.11)':
+    dependencies:
+      '@chroma-core/ai-embeddings-common': 0.1.7
+      chromadb: 3.0.15
+      openai: 4.104.0(ws@8.18.3)(zod@4.1.11)
+    transitivePeerDependencies:
+      - encoding
+      - ws
+      - zod
+
   '@emnapi/runtime@1.5.0':
     dependencies:
       tslib: 2.8.1
@@ -4536,6 +4552,14 @@ snapshots:
     transitivePeerDependencies:
       - zod
 
+  '@langchain/anthropic@0.3.30(@langchain/core@0.3.78(openai@5.23.2(ws@8.18.3)(zod@4.1.11)))(zod@4.1.11)':
+    dependencies:
+      '@anthropic-ai/sdk': 0.65.0(zod@4.1.11)
+      '@langchain/core': 0.3.78(openai@5.23.2(ws@8.18.3)(zod@4.1.11))
+      fast-xml-parser: 4.5.3
+    transitivePeerDependencies:
+      - zod
+
   '@langchain/core@0.3.78(openai@5.23.2(ws@8.18.3)(zod@3.25.76))':
     dependencies:
       '@cfworker/json-schema': 4.1.1
@@ -4544,6 +4568,26 @@ snapshots:
       decamelize: 1.2.0
       js-tiktoken: 1.0.21
       langsmith: 0.3.71(openai@5.23.2(ws@8.18.3)(zod@3.25.76))
+      mustache: 4.2.0
+      p-queue: 6.6.2
+      p-retry: 4.6.2
+      uuid: 10.0.0
+      zod: 3.25.76
+      zod-to-json-schema: 3.24.6(zod@3.25.76)
+    transitivePeerDependencies:
+      - '@opentelemetry/api'
+      - '@opentelemetry/exporter-trace-otlp-proto'
+      - '@opentelemetry/sdk-trace-base'
+      - openai
+
+  '@langchain/core@0.3.78(openai@5.23.2(ws@8.18.3)(zod@4.1.11))':
+    dependencies:
+      '@cfworker/json-schema': 4.1.1
+      ansi-styles: 5.2.0
+      camelcase: 6.3.0
+      decamelize: 1.2.0
+      js-tiktoken: 1.0.21
+      langsmith: 0.3.71(openai@5.23.2(ws@8.18.3)(zod@4.1.11))
       mustache: 4.2.0
       p-queue: 6.6.2
       p-retry: 4.6.2
@@ -4569,6 +4613,12 @@ snapshots:
       '@langchain/core': 0.3.78(openai@5.23.2(ws@8.18.3)(zod@3.25.76))
       uuid: 11.1.0
 
+  '@langchain/google-genai@0.2.18(@langchain/core@0.3.78(openai@5.23.2(ws@8.18.3)(zod@4.1.11)))':
+    dependencies:
+      '@google/generative-ai': 0.24.1
+      '@langchain/core': 0.3.78(openai@5.23.2(ws@8.18.3)(zod@4.1.11))
+      uuid: 11.1.0
+
   '@langchain/groq@0.2.4(@langchain/core@0.3.78(openai@5.23.2(ws@8.18.3)(zod@3.25.76)))':
     dependencies:
       '@langchain/core': 0.3.78(openai@5.23.2(ws@8.18.3)(zod@3.25.76))
@@ -4580,6 +4630,15 @@ snapshots:
   '@langchain/openai@0.6.14(@langchain/core@0.3.78(openai@5.23.2(ws@8.18.3)(zod@3.25.76)))(ws@8.18.3)':
     dependencies:
       '@langchain/core': 0.3.78(openai@5.23.2(ws@8.18.3)(zod@3.25.76))
+      js-tiktoken: 1.0.21
+      openai: 5.12.2(ws@8.18.3)(zod@3.25.76)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - ws
+
+  '@langchain/openai@0.6.14(@langchain/core@0.3.78(openai@5.23.2(ws@8.18.3)(zod@4.1.11)))(ws@8.18.3)':
+    dependencies:
+      '@langchain/core': 0.3.78(openai@5.23.2(ws@8.18.3)(zod@4.1.11))
       js-tiktoken: 1.0.21
       openai: 5.12.2(ws@8.18.3)(zod@3.25.76)
       zod: 3.25.76
@@ -6388,6 +6447,18 @@ snapshots:
     optionalDependencies:
       openai: 5.23.2(ws@8.18.3)(zod@3.25.76)
 
+  langsmith@0.3.71(openai@5.23.2(ws@8.18.3)(zod@4.1.11)):
+    dependencies:
+      '@types/uuid': 10.0.0
+      chalk: 4.1.2
+      console-table-printer: 2.14.6
+      p-queue: 6.6.2
+      p-retry: 4.6.2
+      semver: 7.7.2
+      uuid: 10.0.0
+    optionalDependencies:
+      openai: 5.23.2(ws@8.18.3)(zod@4.1.11)
+
   libphonenumber-js@1.12.23: {}
 
   lines-and-columns@1.2.4: {}
@@ -6623,6 +6694,21 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
+  openai@4.104.0(ws@8.18.3)(zod@4.1.11):
+    dependencies:
+      '@types/node': 18.19.129
+      '@types/node-fetch': 2.6.13
+      abort-controller: 3.0.0
+      agentkeepalive: 4.6.0
+      form-data-encoder: 1.7.2
+      formdata-node: 4.4.1
+      node-fetch: 2.7.0
+    optionalDependencies:
+      ws: 8.18.3
+      zod: 4.1.11
+    transitivePeerDependencies:
+      - encoding
+
   openai@5.12.2(ws@8.18.3)(zod@3.25.76):
     optionalDependencies:
       ws: 8.18.3
@@ -6632,6 +6718,11 @@ snapshots:
     optionalDependencies:
       ws: 8.18.3
       zod: 3.25.76
+
+  openai@5.23.2(ws@8.18.3)(zod@4.1.11):
+    optionalDependencies:
+      ws: 8.18.3
+      zod: 4.1.11
 
   os-browserify@0.3.0: {}
 

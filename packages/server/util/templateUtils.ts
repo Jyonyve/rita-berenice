@@ -1,13 +1,19 @@
 // src/util/templateUtils.ts (or your path)
 
-import { BasicBeingInfo, CharacterInfo } from '@rita-berenice/shared/domain/character/character.type.js';
-import { ChatMessage, ChatTurn } from '@rita-berenice/shared/domain/chat/chat.type.js';
-import { convertArrayToString } from '@rita-berenice/shared/util/parseUtils.js';
-import { HistoryCategory, HistoryInfo, LoreCategory, LoreInfo } from '@rita-berenice/shared/domain/index.js';
-import { MemoryResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
-import { ProfileInfo } from '@rita-berenice/shared/domain/profile/profile.type.js';
-import { LangCode } from '@rita-berenice/shared/config/langConstants.js';
-import { NA } from '@rita-berenice/shared/config/constants.js';
+import { MemoryResponse } from '@rita-berenice/shared/api';
+import { LangCode, NA } from '@rita-berenice/shared/config';
+import {
+	LoreInfo,
+	HistoryInfo,
+	ChatTurn,
+	CharacterInfo,
+	ProfileInfo,
+	BasicBeingInfo,
+	ChatMessage,
+	LoreCategory,
+	HistoryCategory,
+} from '@rita-berenice/shared/domain';
+import { convertArrayToString } from '@rita-berenice/shared/util';
 import { parseEntriesToConversation } from './chatParseUtils.js';
 
 const REALATIONSHIP_CHARACTERS_LIMIT: number = 3000 as const;
@@ -447,7 +453,7 @@ Analyze the following single turn of conversation between ${userKor} (English: $
 *   **User (${userKor}/${userEng}, Initial Emotion: ${userRequest.emotion}):** ${userRequestContent}
 *   **Character (${charKor}/${charEng}, Initial Emotion: ${charResponse.emotion}, Model: ${
 				charResponse.model || NA
-		  }):** ${charResponseContent}
+			}):** ${charResponseContent}
 
 **Reference Catalog (CRITICAL):**
 Use this catalog to identify relevant lore or history. For the 'loreReferenceList' and 'historyReferenceList' fields, you MUST use the 'loreId' or 'historyId' from this catalog.
@@ -477,7 +483,7 @@ ${userKor}(영어명: ${userEng}, ${userGender} 사용자)과 ${charKor}(영어�
 *   **사용자 (${userKor}/${userEng}, 초기 감정: ${userRequest.emotion}):** ${userRequestContent}
 *   **캐릭터 (${charKor}/${charEng}, 초기 감정: ${charResponse.emotion}, 모델: ${
 				charResponse.model || NA
-		  }):** ${charResponseContent}
+			}):** ${charResponseContent}
 
 **중요 지침:**
 ${termGuidanceInstruction}

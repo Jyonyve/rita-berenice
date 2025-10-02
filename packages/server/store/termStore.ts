@@ -1,31 +1,29 @@
-// src/server/services/glossaryService.ts
+// src/server/services/termStore.ts
 
-import { Collection, Where } from 'chromadb'; // Or your specific Collection type
-import { chromaDbClient } from '../db/chromaDbClient.js';
+import { ChromaResponse, TermResponse, Term } from '@rita-berenice/shared/api';
+import { METADATA_TYPES } from '@rita-berenice/shared/config';
 import {
-	CharacterTermCdo,
 	CharacterTermInfo,
+	SessionTermInfo,
+	CharacterTermCdo,
 	CharacterTermMetadata,
 	SessionTermCdo,
-	SessionTermInfo,
 	SessionTermMetadata,
 	TermType,
-} from '@rita-berenice/shared/domain/term/term.type.js';
+} from '@rita-berenice/shared/domain';
 import {
-	buildCharacterId,
+	isCharacterTermInfo,
 	buildCharacterTermId,
+	isSessionTermInfo,
+	parseSessionId,
 	buildSessionTermId,
-} from '../../shared/util/buildIdUtils.js';
-
-import { ChromaResponse, Term, TermResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
-
-import { COLLECTIONS } from '../db/ChromaInterfaces.js';
-import { METADATA_TYPES } from '@rita-berenice/shared/config/constants.js';
-import { flatTermToDoc, inflateTermDoc } from '../util/documentUtils.js';
-import { isCharacterTermInfo, isSessionTermInfo } from '@rita-berenice/shared/util/typeGuardUtils.js';
-import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
+} from '@rita-berenice/shared/util';
+import { Collection, Where } from 'chromadb';
+import { COLLECTIONS, toChromaMetadata } from '../db/chroma.type.js';
+import chromaDbClient from '../db/chromaDbClient.js';
 import { llmService } from '../service/llmService.js';
-import { parseSessionId } from '@rita-berenice/shared/util/parseUtils.js';
+import { inflateTermDoc, flatTermToDoc } from '../util/documentUtils.js';
+import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 
 const { getTermCollection } = chromaDbClient;
 const collectionType = COLLECTIONS.TERM;
@@ -136,7 +134,13 @@ export const termStore = {
 		const documentForEmbedding = flatTermToDoc(metadata);
 
 		try {
-			await chromaDbClient.upsertRecord(collection, metadata.termId, documentForEmbedding, metadata);
+			const chromaMetadata = toChromaMetadata(metadata);
+			await chromaDbClient.upsertRecord(
+				collection,
+				metadata.termId,
+				documentForEmbedding,
+				chromaMetadata
+			);
 
 			const sessionCache = await termStore._getOrBuildCharacterTermMap(metadata.characterId);
 			sessionCache.set(metadata.koreanTerm, metadata);
@@ -187,7 +191,7 @@ export const termStore = {
 				collection,
 				recordsToUpsert.map((r) => r.id),
 				recordsToUpsert.map((r) => r.document),
-				recordsToUpsert.map((r) => r.metadata)
+				recordsToUpsert.map((r) => toChromaMetadata(r.metadata))
 			);
 
 			// Group terms by session to update caches efficiently
@@ -242,7 +246,13 @@ export const termStore = {
 		const documentForEmbedding = flatTermToDoc(metadata);
 
 		try {
-			await chromaDbClient.upsertRecord(collection, metadata.termId, documentForEmbedding, metadata);
+			const chromaMetadata = toChromaMetadata(metadata);
+			await chromaDbClient.upsertRecord(
+				collection,
+				metadata.termId,
+				documentForEmbedding,
+				chromaMetadata
+			);
 
 			const sessionCache = await termStore._getOrBuildSessionTermMap(metadata.sessionId);
 			sessionCache.set(metadata.koreanTerm, metadata);
@@ -295,7 +305,7 @@ export const termStore = {
 				collection,
 				recordsToUpsert.map((r) => r.id),
 				recordsToUpsert.map((r) => r.document),
-				recordsToUpsert.map((r) => r.metadata)
+				recordsToUpsert.map((r) => toChromaMetadata(r.metadata))
 			);
 
 			// Group terms by session to update caches efficiently

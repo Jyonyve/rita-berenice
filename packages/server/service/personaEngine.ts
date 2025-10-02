@@ -7,18 +7,19 @@ import {
 	buildLongTermMemoryPrompt,
 	buildStaticSystemPrompt,
 } from '../util/templateUtils.js';
-
 import { buildChatCompletion } from '../util/llmUtils.js';
-import { MemoryResponse, PersonaResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
-import { CharacterInfo } from '@rita-berenice/shared/domain/character/character.type.js';
-import { ChatTurn } from '@rita-berenice/shared/domain/chat/chat.type.js';
-import { llmService } from './llmService.js';
-import { AiModelInfo, DEFAULT_EXTRACTION_MODEL } from '@rita-berenice/shared/domain/aimodel/AiInfoTypes.js';
-
-import { ProfileInfo } from '@rita-berenice/shared/domain/profile/profile.type.js';
 import { createPersonaResponseSchema } from '../util/schemaUtils.js';
 import { logFlow } from '../util/jsonlLogger.js';
 import { parseEntriesToConversation } from '../util/chatParseUtils.js';
+import { MemoryResponse, PersonaResponse } from '@rita-berenice/shared/api';
+import {
+	CharacterInfo,
+	ProfileInfo,
+	AiModelInfo,
+	DEFAULT_EXTRACTION_MODEL,
+	ChatTurn,
+} from '@rita-berenice/shared/domain';
+import { llmService } from './llmService.js';
 
 export const personaEngine = {
 	/**

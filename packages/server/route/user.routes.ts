@@ -1,20 +1,22 @@
-import express, { type Request, type Response } from 'express';
+import express, { type Request, type Response, type Router } from 'express';
 import { userStore } from '../store/userStore.js';
-import { COLLECTIONS } from '../db/ChromaInterfaces.js';
-import { UserResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
+import { COLLECTIONS } from '../db/chroma.type.js';
 import {
 	asyncHandler,
 	genRoutePattern,
 	validateRequestData,
 	validateServiceId,
 } from '../util/routeHelpers.js';
-import { UserInfo } from '@rita-berenice/shared/domain/user/user.type.js';
-import { BASE_USER_IMAGE_DIR, RUNTIME_USER_IMAGE_DIR } from '@rita-berenice/shared/config/constants.js';
+
 import { avatarUpload, processUserAvatar } from '../util/imageProcessingUtils.js';
 import fs from 'fs';
 import path from 'path';
+import { UserResponse } from '@rita-berenice/shared/api';
+import { BASE_USER_IMAGE_DIR, RUNTIME_USER_IMAGE_DIR } from '@rita-berenice/shared/config';
+import { UserInfo } from '@rita-berenice/shared/domain';
 
-const router = express.Router();
+const router: Router = express.Router();
+
 const collectionType = COLLECTIONS.USER;
 
 /**

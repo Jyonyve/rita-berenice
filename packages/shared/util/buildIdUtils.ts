@@ -5,7 +5,6 @@ import {
 	RecapIndexContentType,
 } from '@rita-berenice/shared/domain';
 import { customAlphabet } from 'nanoid';
-import { _nanoid } from 'zod/v4/core';
 import { LangCode } from '../config/langConstants.js';
 import { generateNickName } from '../config/nicknameConstants.js';
 import { ALPHANUMERIC_ALPHABET, METADATA_TYPES } from '../config/index.js';

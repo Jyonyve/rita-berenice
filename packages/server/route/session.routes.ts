@@ -1,17 +1,17 @@
 // server/route/session.routes.ts
 
-import { Router, Request, Response } from 'express';
+import express, { type Request, type Response, type Router } from 'express';
 import {
 	asyncHandler,
 	compressData,
 	genRoutePattern,
 	validateRequestData,
 } from '../util/routeHelpers.js';
-import { Payload } from '@rita-berenice/shared/util/apiHelpers.js';
 import { sessionStore } from '../store/sessionStore.js';
-import { SessionInfo } from '@rita-berenice/shared/domain/session/session.type.js';
+import { SessionInfo } from '@rita-berenice/shared/domain';
+import { Payload } from '@rita-berenice/shared/util';
 
-const router = Router();
+const router: Router = express.Router();
 
 /**
  * POST /api/session/create-session

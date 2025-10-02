@@ -1,5 +1,5 @@
 // src/server/routes/ai.routes.ts (or chatGeneration.routes.ts)
-import express, { type Request, type Response } from 'express';
+import express, { type Request, type Response, type Router } from 'express';
 
 import { llmService } from '../service/llmService.js';
 import {
@@ -8,11 +8,11 @@ import {
 	genRoutePattern,
 	validateRequestData,
 } from '../util/routeHelpers.js';
-import { isValidAiModelInfo } from '@rita-berenice/shared/util/aiModelUtils.js';
+import { isValidAiModelInfo } from '@rita-berenice/shared/util';
 
 // Import the necessary server-side utils
 
-const router = express.Router();
+const router: Router = express.Router();
 
 /**
  * POST /api/llm/invoke-llm

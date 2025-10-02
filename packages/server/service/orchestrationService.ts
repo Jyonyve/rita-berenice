@@ -1,30 +1,27 @@
 // src/server/services/orchestrationService.ts (Updated)
 
-import { ABORT_TIMEOUT, METADATA_TYPES, NA } from '@rita-berenice/shared/config/constants.js';
+import { MemoryResponse } from '@rita-berenice/shared/api';
+import { ABORT_TIMEOUT, METADATA_TYPES } from '@rita-berenice/shared/config';
 import {
-	ChatMessageSet,
-	ChatTurn,
-	ChatTurnCdo,
-	TempChatTurn,
 	TempChatTurnCdo,
-} from '@rita-berenice/shared/domain/chat/chat.type.js';
-import { CharacterInfo } from '@rita-berenice/shared/domain/character/character.type.js';
-
+	CharacterInfo,
+	ProfileInfo,
+	AiModelInfo,
+	TempChatTurn,
+	ChatTurnCdo,
+	ChatTurn,
+	ApiError,
+	ChatMessageSet,
+} from '@rita-berenice/shared/domain';
+import { createBasicChatTurn, buildTempChatTurnId } from '@rita-berenice/shared/util';
 import { chatStore } from '../store/chatStore.js';
-import { buildProfileId, buildTempChatTurnId } from '../../shared/util/buildIdUtils.js';
+import { tempStore } from '../store/tempStore.js';
+import { parseEntriesToConversation, buildChatMessage } from '../util/chatParseUtils.js';
+import { detectLanguage } from '../util/languageUtils.js';
+import { sanitizeLlmResponse } from '../util/llmUtils.js';
 import { handleServiceError } from '../util/serviceHelpers.js';
 import { memoryEngine } from './memoryEngine.js';
 import { personaEngine } from './personaEngine.js';
-import { AiModelInfo } from '@rita-berenice/shared/domain/aimodel/AiInfoTypes.js';
-
-import { ProfileInfo } from '@rita-berenice/shared/domain/profile/profile.type.js';
-import { tempStore } from '../store/tempStore.js';
-import { MemoryResponse, PersonaResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
-import { detectLanguage } from '../util/languageUtils.js';
-import { createBasicChatTurn } from '@rita-berenice/shared/util/typeGuardUtils.js';
-import { ApiError } from '@rita-berenice/shared/domain/error/errors.js';
-import { sanitizeLlmResponse as sanitizeLlmResponse } from '../util/llmUtils.js';
-import { buildChatMessage, parseEntriesToConversation } from '../util/chatParseUtils.js';
 
 const timerLabel = (sequence: number) => `RESPONSE_GENERATION: Turn ${sequence}`;
 

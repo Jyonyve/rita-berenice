@@ -1,8 +1,8 @@
 // src/server/routes/profile.routes.ts
 
-import express, { type Request, type Response } from 'express';
+import express, { type Request, type Response, type Router } from 'express';
 import { profileStore } from '../store/profileStore.js';
-import { COLLECTIONS } from '../db/ChromaInterfaces.js';
+import { COLLECTIONS } from '../db/chroma.type.js';
 import {
 	asyncHandler,
 	compressData,
@@ -10,10 +10,11 @@ import {
 	validateRequestData,
 	validateServiceId,
 } from '../util/routeHelpers.js';
-import { ProfileInfo, ProfileMetadata } from '@rita-berenice/shared/domain/profile/profile.type.js';
-import { Payload } from '@rita-berenice/shared/util/apiHelpers.js';
+import { ProfileInfo, ProfileMetadata } from '@rita-berenice/shared/domain';
+import { Payload } from '@rita-berenice/shared/util';
 
-const router = express.Router();
+const router: Router = express.Router();
+
 const collectionType = COLLECTIONS.PROFILE;
 
 /**

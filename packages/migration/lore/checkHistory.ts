@@ -1,6 +1,6 @@
 // scripts/checkHistory.ts
 import { ChromaClient, Collection, IncludeEnum, Where } from 'chromadb';
-import { COLLECTIONS } from '../../server/db/ChromaInterfaces.js';
+import { COLLECTIONS } from '../../server/db/chroma.type.js';
 import { HistoryMetadata } from '../../shared/domain/lore/LoreInterfaces.js';
 import { METADATA_TYPES } from '#shared/config/constants.js';
 import { loreStore } from '#server/index.js';

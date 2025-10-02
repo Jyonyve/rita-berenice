@@ -1,18 +1,17 @@
-import { Collection, IncludeEnum, Where } from 'chromadb';
-import { chromaDbClient } from '../db/chromaDbClient.js';
-import { COLLECTIONS } from '../db/ChromaInterfaces.js';
-import { METADATA_TYPES } from '@rita-berenice/shared/config/constants.js';
+import { ChromaResponse, ProfileResponse } from '@rita-berenice/shared/api';
+import { METADATA_TYPES } from '@rita-berenice/shared/config';
+import { ProfileMetadata, ProfileCdo, ProfileInfo } from '@rita-berenice/shared/domain';
 import {
-	ProfileInfo,
-	ProfileMetadata,
-	ProfileCdo,
-} from '@rita-berenice/shared/domain/profile/profile.type.js';
-import { ChromaResponse, ProfileResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
-import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
-import { buildProfileId } from '../../shared/util/buildIdUtils.js';
-import { flatProfileToDoc, inflateProfileDoc } from '../util/documentUtils.js';
-import { metadataToProfile } from '@rita-berenice/shared/util/dbConvertUtils.js';
-import { createBasicProfileInfo, isProfileInfo } from '@rita-berenice/shared/util/typeGuardUtils.js';
+	metadataToProfile,
+	isProfileInfo,
+	createBasicProfileInfo,
+	buildProfileId,
+} from '@rita-berenice/shared/util';
+import { Collection, Where, IncludeEnum } from 'chromadb';
+import { COLLECTIONS, toChromaMetadata } from '../db/chroma.type.js';
+import chromaDbClient from '../db/chromaDbClient.js';
+import { inflateProfileDoc, flatProfileToDoc } from '../util/documentUtils.js';
+import { validateChromaResponse, handleServiceError } from '../util/serviceHelpers.js';
 
 const { getProfileCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.PROFILE;
@@ -145,7 +144,8 @@ export const profileStore = {
 		const documentForEmbedding = flatProfileToDoc(updatedProfile);
 
 		try {
-			await upsertRecord(collection, updatedMetadata.profileId, documentForEmbedding, updatedMetadata);
+			const chromaMetadata = toChromaMetadata(updatedMetadata);
+			await upsertRecord(collection, updatedMetadata.profileId, documentForEmbedding, chromaMetadata);
 			return { profileId: updatedMetadata.profileId };
 		} catch (error) {
 			handleServiceError(

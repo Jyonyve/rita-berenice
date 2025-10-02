@@ -1,1 +1,1 @@
-export * from './AiInfoTypes.js';
+export * from './aiInfo.type.js';

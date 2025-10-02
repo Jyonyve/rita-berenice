@@ -1,10 +1,8 @@
 // src/server/routes/lore.routes.ts
 
-import express, { type Request, type Response } from 'express';
+import express, { type Request, type Response, type Router } from 'express';
 
-import { historyStore } from '../store/historyStore.js'; // Assuming store is at this path
-
-import { COLLECTIONS } from '../db/ChromaInterfaces.js';
+import { historyStore } from '../store/historyStore.js';
 import {
 	asyncHandler,
 	compressData,
@@ -12,10 +10,11 @@ import {
 	validateRequestData,
 	validateServiceId,
 } from '../util/routeHelpers.js';
-import { HistoryInfo, LoreInfo } from '@rita-berenice/shared/domain/index.js';
-import { Payload } from '@rita-berenice/shared/util/apiHelpers.js';
+import { Payload } from '@rita-berenice/shared/util';
+import { COLLECTIONS } from '../db/chroma.type.js';
 
-const router = express.Router();
+const router: Router = express.Router();
+
 const collectionType = COLLECTIONS.LORE;
 
 // --- HISTORY ROUTES ---

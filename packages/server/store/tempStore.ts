@@ -1,13 +1,11 @@
-import { Collection, Metadata, Where, WhereDocument } from 'chromadb';
+import { Collection, Where } from 'chromadb';
 import { chromaDbClient } from '../db/chromaDbClient.js';
-
-import { COLLECTIONS } from '../db/ChromaInterfaces.js';
-import { METADATA_TYPES } from '@rita-berenice/shared/config/constants.js';
-import { TempChatTurn, TempChatTurnMetadata } from '@rita-berenice/shared/domain/chat/chat.type.js';
-import { buildTempChatTurnId } from '../../shared/util/buildIdUtils.js';
-
+import { COLLECTIONS, toChromaMetadata } from '../db/chroma.type.js';
+import { ChromaResponse, TempChatResponse } from '@rita-berenice/shared/api';
+import { TempChatTurn, TempChatTurnMetadata } from '@rita-berenice/shared/domain';
+import { buildTempChatTurnId } from '@rita-berenice/shared/util';
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
-import { ChatResponse, ChromaResponse, TempChatResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
+import { METADATA_TYPES } from '@rita-berenice/shared/config';
 
 // Destructure outside the object
 const { getTempChatCollection, upsertRecord, getRecords } = chromaDbClient;
@@ -64,12 +62,9 @@ export const tempStore = {
 			};
 
 			const documentObj: TempChatTurn = { ...updatedMetadata, chatTurnSets: tempTurn.chatTurnSets };
-			await upsertRecord(
-				collection,
-				tempTurn.tempTurnId,
-				JSON.stringify(documentObj),
-				updatedMetadata
-			);
+			const chromaMetadata = toChromaMetadata(updatedMetadata);
+
+			await upsertRecord(collection, tempTurn.tempTurnId, JSON.stringify(documentObj), chromaMetadata);
 			return { tempTurnId: tempTurn.tempTurnId };
 		} catch (error) {
 			handleServiceError(error, `Failed to store temp turn ${tempTurn.sessionId}`);

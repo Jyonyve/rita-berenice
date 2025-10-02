@@ -1,2 +1,2 @@
 export * from './chromaDbClient.js';
-export * from './ChromaInterfaces.js';
+export * from './chroma.type.js';

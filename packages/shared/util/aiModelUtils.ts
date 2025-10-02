@@ -2,12 +2,11 @@
 
 import { MODEL_LIMITS_INFO, SUPPORTED_MODEL_INFO } from '../config/supportAiModelInfo.js';
 import {
-	AiModelInfo,
-	AiPlatform,
-	AiProvider,
 	AllModelNames,
+	AiModelInfo,
 	DEFAULT_EXTRACTION_MODEL,
-} from '../domain/aimodel/AiInfoTypes.js';
+	AiPlatform,
+} from '../domain/index.js';
 
 // --- Constants (Client-safe) ---
 const PLATFORM_OPENROUTER = 'openrouter';

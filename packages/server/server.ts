@@ -20,7 +20,6 @@ import {
 import cors from 'cors';
 import sirv from 'sirv';
 
-import { MODULE_NAMES, APPNAME, DEFAULT_TENANT_ID } from '@rita-berenice/shared/config/constants.js';
 import characterRoutes from './route/character.routes.js';
 import chatRoutes from './route/chat.routes.js';
 import llmRoutes from './route/llm.routes.js';
@@ -35,10 +34,11 @@ import sessionRoutes from './route/session.routes.js';
 import userRoutes from './route/user.routes.js';
 import credentialRoutes from './route/credential.routes.js';
 import historyRoutes from './route/history.routes.js';
-import { ApiErrorResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
-import { ApiError } from '@rita-berenice/shared/domain/error/errors.js';
 import { userStore } from './store/userStore.js';
 import { credentialStore } from './store/credentialStore.js';
+import { ApiErrorResponse } from '@rita-berenice/shared/api';
+import { APPNAME, MODULE_NAMES } from '@rita-berenice/shared/config';
+import { ApiError } from '@rita-berenice/shared/domain';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url)); // src/server
 const isProduction = process.env.NODE_ENV === 'production';

@@ -1,18 +1,12 @@
 import { Collection, IncludeEnum, Where } from 'chromadb';
 import { chromaDbClient } from '../db/chromaDbClient.js';
-import { COLLECTIONS } from '../db/ChromaInterfaces.js';
-import { METADATA_TYPES } from '@rita-berenice/shared/config/constants.js';
-import { UserCdo, UserInfo, UserMetadata } from '@rita-berenice/shared/domain/user/user.type.js';
-import { ChromaResponse, UserResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
-import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
-<<<<<<< HEAD:src/server/store/userStore.ts
-import { metadataToUser } from '#shared/util/dbConvertUtils.js';
-import { createBasicUserInfo, isUserInfo } from '#shared/util/typeGuardUtils.js';
-=======
-import { metadataToUser } from '@rita-berenice/shared/util/dbConvertUtils.js';
-import { createBasicUserInfo, isUserInfo } from '@rita-berenice/shared/util/typeGuardUtils.js';
->>>>>>> monorepo:packages/server/store/userStore.ts
+import { COLLECTIONS, toChromaMetadata } from '../db/chroma.type.js';
+import { ChromaResponse, UserResponse } from '@rita-berenice/shared/api';
+import { METADATA_TYPES } from '@rita-berenice/shared/config';
+import { UserMetadata, UserCdo, UserInfo } from '@rita-berenice/shared/domain';
+import { metadataToUser, isUserInfo, createBasicUserInfo } from '@rita-berenice/shared/util';
 import { flatUserToDoc } from '../util/documentUtils.js';
+import { validateChromaResponse, handleServiceError } from '../util/serviceHelpers.js';
 
 const { getUserCollection, upsertRecord, getRecordById, getRecords, countOption } = chromaDbClient;
 const collectionType = COLLECTIONS.USER;
@@ -46,10 +40,7 @@ export const userStore = {
 	getAllUsers: async (): Promise<UserResponse> => {
 		const collection = await userStore._getCollection();
 		try {
-			const rawResults = await collection.get({
-				include: [IncludeEnum.metadatas], // Only need metadatas for users
-				where: { type: METADATA_TYPES.USER },
-			});
+			const rawResults = await getRecords(collection, { type: { $eq: METADATA_TYPES.USER } });
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 			return userStore._constructUser(results);
 		} catch (error) {
@@ -138,11 +129,9 @@ export const userStore = {
 			: createBasicUserInfo(user);
 		try {
 			const documentForEmbedding = flatUserToDoc(updatedUser);
-			await upsertRecord(collection, updatedUser.userId, documentForEmbedding, updatedUser);
-<<<<<<< HEAD:src/server/store/userStore.ts
-=======
+			const chromaMetadata = toChromaMetadata(updatedUser);
+			await upsertRecord(collection, updatedUser.userId, documentForEmbedding, chromaMetadata);
 			return { userId: updatedUser.userId };
->>>>>>> monorepo:packages/server/store/userStore.ts
 		} catch (error) {
 			handleServiceError(
 				error,

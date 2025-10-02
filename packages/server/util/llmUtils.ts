@@ -1,13 +1,17 @@
 import OpenAI from 'openai';
-import { ChatCompletion } from 'openai/resources/index.mjs';
-import { ChromaResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
-import { DefaultAiRole } from '@rita-berenice/shared/domain/aimodel/index.js';
+
 import { logFlow } from './jsonlLogger.js';
-import { ChatEntry, ChatTurn } from '@rita-berenice/shared/domain/chat/chat.type.js';
-import { parseEntriesToConversation } from './chatParseUtils.js';
-import { Metadata } from 'chromadb';
-import { HistoryInfo, LoreInfo } from '@rita-berenice/shared/domain/index.js';
-import { MessageContent, MessageContentText } from '@langchain/core/messages';
+
+import { ChromaResponse, Metadata } from '@rita-berenice/shared/api';
+import {
+	ChatEntry,
+	DefaultAiRole,
+	HistoryInfo,
+	LoreInfo,
+	ChatTurn,
+} from '@rita-berenice/shared/domain';
+import { ChatCompletion } from 'openai/resources/index.mjs';
+import { MessageContentText, MessageContent } from '@langchain/core/messages';
 
 export function isDirectOpenAIClient(llm: any): llm is OpenAI {
 	// Check for a unique property or method of the OpenAI client instance
@@ -294,50 +298,57 @@ export const rankBySemanticScore = (
  * @param recencyWeight Weight for recency (default: 0.3)
  * @returns The same ChromaResponse object, but with its contents sorted by the new combined score.
  */
+/**
+ * Re-ranks ChromaDB results based on semantic distance and recency.
+ */
 export function reRankByRecency<T extends { updatedAt: string }>(
 	response: ChromaResponse & { contents?: T[] },
 	decayRate: number = 0.05,
 	semanticWeight: number = 0.7,
 	recencyWeight: number = 0.3
 ): ChromaResponse & { contents?: T[] } {
-	if (!response.documents || !response.distances || !response.contents) {
-		return response; // Not enough data to rank
+	// Early return if not enough data
+	if (!response.contents?.length || !response.distances?.length || !response.documents?.length) {
+		return response;
 	}
 
 	const now = Date.now();
-	const rankedItems = (response.distances[0] || [])
-		.map((distance, index) => {
-			const item = response.contents![index];
-			const ageInDays = (now - Date.parse(item.updatedAt)) / (1000 * 60 * 60 * 24);
+	const { distances, contents, ids, documents, metadatas } = response;
 
-			// 1. Normalize semantic distance (lower is better) to a score (higher is better)
+	// Map and rank items
+	const rankedItems = contents
+		.map((content, index) => {
+			const distance = distances[index];
+
+			// Skip invalid entries
+			if (typeof distance !== 'number') return null;
+
+			const ageInDays = (now - Date.parse(content.updatedAt)) / (1000 * 60 * 60 * 24);
 			const semanticScore = 1 / (1 + distance);
-
-			// 2. Calculate recency score using exponential decay
 			const recencyScore = Math.exp(-decayRate * ageInDays);
-
-			// 3. Combine the scores with configurable weights
 			const combinedScore = semanticScore * semanticWeight + recencyScore * recencyWeight;
 
 			return {
-				id: response.ids[index],
-				document: response.documents![index],
-				metadata: response.metadatas![index],
-				content: item,
+				id: ids[index],
+				document: documents[index],
+				metadata: metadatas?.[index] ?? null,
+				content,
 				combinedScore,
 			};
 		})
-		.sort((a, b) => b.combinedScore - a.combinedScore); // Sort descending by combined score
+		.filter((item): item is NonNullable<typeof item> => item !== null)
+		.sort((a, b) => b.combinedScore - a.combinedScore);
 
-	// Reconstruct the ChromaResponse object with the sorted data
+	// Return re-ranked response
 	return {
 		ids: rankedItems.map((item) => item.id),
 		documents: rankedItems.map((item) => item.document),
 		metadatas: rankedItems.map((item) => item.metadata),
+		distances: rankedItems.map(() => null),
 		contents: rankedItems.map((item) => item.content),
-		// Note: distances are no longer meaningful after re-ranking
 	};
 }
+
 /**
  * Boosts relevance scores for items containing the critical term.
  * @param results Array of ChatTurn, LoreInfo, or HistoryInfo objects

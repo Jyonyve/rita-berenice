@@ -1,35 +1,35 @@
-import { Collection, Metadata, Where, WhereDocument } from 'chromadb';
-import { chromaDbClient } from '../db/chromaDbClient.js';
-
-import { COLLECTIONS } from '../db/ChromaInterfaces.js';
-import { METADATA_TYPES } from '@rita-berenice/shared/config/constants.js';
+import { ChatResponse, Metadata } from '@rita-berenice/shared/api';
+import { METADATA_TYPES, DEFAULT_EMOTION } from '@rita-berenice/shared/config';
 import {
-	ChatIndexContentType,
-	ChatIndexMetadata,
 	ChatTurn,
 	ChatTurnMetadata,
+	ChatIndexMetadata,
 	DisplayTurn,
-} from '@rita-berenice/shared/domain/chat/chat.type.js';
-import { chatTurnToDocument } from '#server/util/documentUtils.js';
-import { ApiError } from '@rita-berenice/shared/domain/error/errors.js';
-import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
+	ChatIndexContentType,
+	ApiError,
+} from '@rita-berenice/shared/domain';
 import {
-	chatTurnToMetadata,
+	isValidEmotion,
+	mapEmotionToCategory,
 	metadataToChatTurn,
 	metadataToDisplayTurn,
-} from '@rita-berenice/shared/util/dbConvertUtils.js';
-import { ChatResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
-import { buildChatTurnIndexId, buildChatTurnId } from '@rita-berenice/shared/util/buildIdUtils.js';
-import { FilterCriteria } from '../util/schemaUtils.js';
+	buildChatTurnIndexId,
+	chatTurnToMetadata,
+	buildChatTurnId,
+} from '@rita-berenice/shared/util';
+import { Collection, Where, WhereDocument } from 'chromadb';
+import { COLLECTIONS, toChromaMetadata } from '../db/chroma.type.js';
+import chromaDbClient from '../db/chromaDbClient.js';
+import { parseEntriesToConversation } from '../util/chatParseUtils.js';
+import { chatTurnToDocument } from '../util/documentUtils.js';
 import {
 	getTokenCount,
 	MEMORY_CONFIG,
 	prioritizeRecentTurns,
 	reRankSemanticResults,
 } from '../util/queryUtils.js';
-import { parseEntriesToConversation } from '../util/chatParseUtils.js';
-import { DEFAULT_EMOTION } from '@rita-berenice/shared/config/emotionConstants.js';
-import { mapEmotionToCategory, isValidEmotion } from '@rita-berenice/shared/util/emotionUtils.js';
+import { FilterCriteria } from '../util/schemaUtils.js';
+import { validateChromaResponse, handleServiceError } from '../util/serviceHelpers.js';
 
 // Destructure outside the object
 const {
@@ -282,7 +282,7 @@ export const chatStore = {
 				collection,
 				newIndexRecords.map((r) => r.id),
 				newIndexRecords.map((r) => r.document),
-				newIndexRecords.map((r) => r.metadata)
+				newIndexRecords.map((r) => toChromaMetadata(r.metadata))
 			);
 		}
 	},
@@ -386,7 +386,9 @@ export const chatStore = {
 			// 1. Prepare and store the primary TURN document
 			const metadata = chatTurnToMetadata(turn);
 			const document = chatTurnToDocument(turn);
-			await upsertRecord(collection, metadata.chatTurnId, document, metadata);
+			const chromaMetadata = toChromaMetadata(metadata);
+
+			await upsertRecord(collection, metadata.chatTurnId, document, chromaMetadata);
 
 			// 2. Update the denormalized search index for this turn
 			await chatStore._updateSearchIndexForTurn(turn);
@@ -469,7 +471,7 @@ export const chatStore = {
 			return {
 				ids: [primaryTurnDoc.id],
 				documents: [primaryTurnDoc.document],
-				metadatas: [primaryTurnDoc.metadata],
+				metadatas: [toChromaMetadata(primaryTurnDoc.metadata)],
 				chatTurns: [chatTurn], // Return as an array
 				displayTurns: [],
 			};
@@ -520,7 +522,7 @@ export const chatStore = {
 			return {
 				ids: primaryTurnDocs.ids,
 				documents: primaryTurnDocs.documents,
-				metadatas: primaryTurnDocs.metadatas,
+				metadatas: primaryTurnDocs.metadatas.filter((m) => !!m).map((m) => toChromaMetadata(m)),
 				chatTurns,
 				displayTurns: [],
 			};
@@ -546,7 +548,7 @@ export const chatStore = {
 				collection,
 				recordsToUpsert.map((r) => r.id),
 				recordsToUpsert.map((r) => r.document),
-				recordsToUpsert.map((r) => r.metadata)
+				recordsToUpsert.map((r) => toChromaMetadata(r.metadata))
 			);
 			console.log(`[chatStore] Successfully stored ${chatTurns.length} primary turns.`);
 
@@ -671,7 +673,7 @@ export const chatStore = {
 
 			return {
 				ids: rankedResults.ids,
-				metadatas: rankedResults.metadatas,
+				metadatas: rankedResults.metadatas.filter((m) => !!m).map((m) => toChromaMetadata(m)),
 				documents: rankedResults.documents,
 				chatTurns,
 				displayTurns: [],

@@ -1,5 +1,5 @@
-import { allEmotionKeywordsList, EmotionValue, METADATA_TYPES } from '../../config/index.js';
-import { DefaultAiRole } from '../aimodel/AiInfoTypes.js';
+import { EmotionValue, METADATA_TYPES } from '../../config/index.js';
+import { DefaultAiRole } from '../aimodel/aiInfo.type.js';
 import { Reference } from '../BaseTypes.js';
 
 export type ChatRoleType = DefaultAiRole;

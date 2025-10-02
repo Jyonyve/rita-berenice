@@ -1,10 +1,10 @@
 // File: server/util/routeHelpers.ts
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import { CollectionType } from '../db/ChromaInterfaces.js';
-import { convertArrayToString } from '@rita-berenice/shared/util/parseUtils.js';
-import { ApiError } from '@rita-berenice/shared/domain/error/errors.js';
-import { toKebabCase } from '@rita-berenice/shared/util/apiHelpers.js';
+import { CollectionType } from '../db/chroma.type.js';
+
 import zlib from 'zlib';
+import { ApiError } from '@rita-berenice/shared/domain';
+import { convertArrayToString, toKebabCase } from '@rita-berenice/shared/util';
 
 /** Router part */
 export type CustomValidationRule = {

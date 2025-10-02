@@ -1,5 +1,5 @@
-import { Where, Metadata } from 'chromadb';
-import { ChromaResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
+import { Where } from 'chromadb';
+import { ChromaResponse, Metadata } from '@rita-berenice/shared/api';
 import { get_encoding } from 'tiktoken';
 
 export function isAndWhere(where: Where): where is { $and: Where[] } {

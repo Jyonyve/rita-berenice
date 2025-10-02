@@ -1,13 +1,12 @@
 // src/server/services/ragQueryService.ts
 
-import { z } from 'zod';
 import { llmService } from './llmService.js';
 import { termStore } from '../store/termStore.js';
-import { AiModelInfo, DEFAULT_EXTRACTION_MODEL } from '@rita-berenice/shared/domain/aimodel/AiInfoTypes.js';
 import { buildChatCompletion } from '../util/llmUtils.js';
 import { FilterCriteria, FilterCriteriaSchema } from '../util/schemaUtils.js';
 import { logFlow } from '../util/jsonlLogger.js';
 import { buildFilterCriteriaPrompt } from '../util/templateUtils.js';
+import { DEFAULT_EXTRACTION_MODEL, AiModelInfo } from '@rita-berenice/shared/domain';
 
 // The service output interface, returning query texts and structured filter criteria.
 export interface TransformedQuery {

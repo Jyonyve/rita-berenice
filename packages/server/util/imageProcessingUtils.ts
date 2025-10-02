@@ -8,7 +8,7 @@ import {
 	BASE_USER_IMAGE_DIR,
 	RUNTIME_CHARACTER_IMAGE_DIR,
 	RUNTIME_USER_IMAGE_DIR,
-} from '@rita-berenice/shared/config/constants.js';
+} from '@rita-berenice/shared/config';
 
 export interface CropConfig {
 	x: number;

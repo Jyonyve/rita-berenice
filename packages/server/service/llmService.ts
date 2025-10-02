@@ -1,25 +1,26 @@
 // src/server/services/aiService.ts
 
 import { get_encoding, Tiktoken } from 'tiktoken';
-import { BaseChatModel } from '@langchain/core/language_models/chat_models';
-
-import util from 'util';
-import { JsonOutputParser, StructuredOutputParser } from '@langchain/core/output_parsers';
+import { StructuredOutputParser } from '@langchain/core/output_parsers';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { BaseMessage, SystemMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
 
 import { credentialStore } from '../store/credentialStore.js';
-import { AiModelInfo, DEFAULT_EXTRACTION_MODEL } from '@rita-berenice/shared/domain/aimodel/AiInfoTypes.js';
-import { MODEL_LIMITS_INFO } from '@rita-berenice/shared/config/supportAiModelInfo.js';
-import { convertMessageContentToString } from '@rita-berenice/shared/util/parseUtils.js';
+
 import { buildNerPrompt, buildTermTranslationPrompt } from '../util/templateUtils.js';
-import z, { ZodObject } from 'zod';
 import { logFlow } from '../util/jsonlLogger.js';
 
 import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { ChatOpenAI } from '@langchain/openai';
-import { buildChatCompletion, extractJsonFromLlmResponse } from '../util/llmUtils.js';
+import {
+	buildChatCompletion,
+	convertMessageContentToString,
+	extractJsonFromLlmResponse,
+} from '../util/llmUtils.js';
+import { MODEL_LIMITS_INFO } from '@rita-berenice/shared/config';
+import { AiModelInfo, DEFAULT_EXTRACTION_MODEL } from '@rita-berenice/shared/domain';
+import { ZodObject } from 'zod';
 
 const normalizeMessageContent = (content: unknown): string => {
 	if (!content) return '';

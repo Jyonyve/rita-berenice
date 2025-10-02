@@ -15,7 +15,6 @@
 		"lint": "eslint . --ext .ts"
 	},
 	"dependencies": {
-		"zod": "^4.1.4",
 		"nanoid": "^5.1.5",
 		"unique-names-generator": "^4.7.1"
 	}

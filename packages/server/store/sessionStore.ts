@@ -2,16 +2,14 @@
 
 import { Collection, Where } from 'chromadb';
 import { chromaDbClient } from '../db/chromaDbClient.js';
-import { COLLECTIONS } from '../db/ChromaInterfaces.js';
-import { SessionInfo, SessionMetadata } from '@rita-berenice/shared/domain/session/session.type.js';
-import { ChromaResponse, SessionResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
-import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
-import { buildSessionId } from '../../shared/util/buildIdUtils.js';
-import { METADATA_TYPES } from '@rita-berenice/shared/config/constants.js';
-import { flatSessionToDoc, inflateSessionDoc } from '../util/documentUtils.js';
-import { metadataToSession } from '@rita-berenice/shared/util/dbConvertUtils.js';
+import { COLLECTIONS, toChromaMetadata } from '../db/chroma.type.js';
+import { ChromaResponse, SessionResponse } from '@rita-berenice/shared/api';
+import { SessionMetadata, SessionInfo } from '@rita-berenice/shared/domain';
+import { metadataToSession, buildSessionId } from '@rita-berenice/shared/util';
 import { parseEntriesToConversation } from '../util/chatParseUtils.js';
-import { ChatEntry } from '@rita-berenice/shared/domain/chat/chat.type.js';
+import { inflateSessionDoc, flatSessionToDoc } from '../util/documentUtils.js';
+import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
+import { METADATA_TYPES } from '@rita-berenice/shared/config';
 
 // Destructure chromaDbClient methods
 const { getSessionCollection, addRecord, updateRecord, getRecordById, getRecords } = chromaDbClient; // Assume getSessionCollection is added to chromaDbClient
@@ -84,7 +82,8 @@ export const sessionStore = {
 		const documentForEmbedding = flatSessionToDoc(sessionInfo);
 
 		try {
-			await addRecord(collection, metadata.sessionId, documentForEmbedding, metadata);
+			const chromaMetadata = toChromaMetadata(metadata);
+			await addRecord(collection, metadata.sessionId, documentForEmbedding, chromaMetadata);
 			return { sessionId: metadata.sessionId };
 		} catch (error: any) {
 			handleServiceError(
@@ -113,7 +112,8 @@ export const sessionStore = {
 				lastCharMessage: newMessage,
 				userNote,
 			});
-			await updateRecord(collection, updatedMetadata.sessionId, documentForEmbedding, updatedMetadata);
+			const chromaMetadata = toChromaMetadata(updatedMetadata);
+			await updateRecord(collection, updatedMetadata.sessionId, documentForEmbedding, chromaMetadata);
 		} catch (error) {
 			handleServiceError(
 				error,
@@ -214,7 +214,8 @@ export const sessionStore = {
 				lastCharMessage: lastConversation,
 				userNote,
 			});
-			await updateRecord(collection, updatedMetadata.sessionId, documentForEmbedding, updatedMetadata);
+			const chromaMetadata = toChromaMetadata(updatedMetadata);
+			await updateRecord(collection, updatedMetadata.sessionId, documentForEmbedding, chromaMetadata);
 		} catch (error) {
 			handleServiceError(
 				error,

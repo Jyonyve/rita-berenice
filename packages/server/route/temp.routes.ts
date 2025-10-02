@@ -1,9 +1,8 @@
 // src/server/routes/tempChat.routes.ts
-import express, { type Request, type Response } from 'express';
+import express, { type Request, type Response, type Router } from 'express';
 
 import { tempStore } from '../store/tempStore.js';
-import { Payload } from '@rita-berenice/shared/util/apiHelpers.js';
-import { COLLECTIONS } from '../db/ChromaInterfaces.js';
+import { COLLECTIONS } from '../db/chroma.type.js';
 import {
 	asyncHandler,
 	compressData,
@@ -12,11 +11,11 @@ import {
 	validateSequenceRule,
 	validateServiceId,
 } from '../util/routeHelpers.js';
-import { TempChatTurn } from '@rita-berenice/shared/domain/chat/chat.type.js';
-import { TempChatResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
-import { ApiError } from '@rita-berenice/shared/domain/error/errors.js';
+import { ApiError } from '@rita-berenice/shared/domain';
+import { Payload } from '@rita-berenice/shared/util';
 
-const router = express.Router();
+const router: Router = express.Router();
+
 const collectionType = COLLECTIONS.TEMP; // For validating sessionId if it were used as a serviceId elsewhere
 // --- Temporary Chat Turn Operations ---
 

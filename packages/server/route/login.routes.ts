@@ -1,11 +1,11 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import express, { NextFunction, type Request, type Response, type Router } from 'express';
 import EmailPassword from 'supertokens-node/recipe/emailpassword';
 import Session from 'supertokens-node/recipe/session';
 import { webcrypto } from 'node:crypto';
-import { asyncHandler, genRoutePattern, validateRequestData } from '../util/routeHelpers.js'; // Assuming routeHelpers are in this path
-import { DEFAULT_TENANT_ID } from '@rita-berenice/shared/config/constants.js';
+import { asyncHandler, genRoutePattern, validateRequestData } from '../util/routeHelpers.js';
+import { DEFAULT_TENANT_ID } from '@rita-berenice/shared/config';
 
-const router = Router();
+const router: Router = express.Router();
 
 // Your public key can be stored as a constant within this module.
 const publicKeyJwk = {

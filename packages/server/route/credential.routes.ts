@@ -1,16 +1,15 @@
 // src/server/routes/credentialRoutes.ts
-import { Router, Request, Response } from 'express';
+import express, { type Request, type Response, type Router } from 'express';
 import {
 	asyncHandler,
 	compressData,
-	CustomValidationRule,
 	genRoutePattern,
 	validateRequestData,
 } from '../util/routeHelpers.js';
 import { credentialStore } from '../store/credentialStore.js';
-import { Payload } from '@rita-berenice/shared/util/apiHelpers.js';
+import { Payload } from '@rita-berenice/shared/util';
 
-const router = Router();
+const router: Router = express.Router();
 
 /**
  * POST /api/credential/validate-api-keys

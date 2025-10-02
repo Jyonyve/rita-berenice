@@ -1,10 +1,11 @@
+import { EmotionValue, DEFAULT_EMOTION } from '@rita-berenice/shared/config';
 import {
 	ChatEntry,
+	ChatRoleType,
 	ChatMessage,
 	ChatMessageType,
-	ChatRoleType,
-} from '@rita-berenice/shared/domain/chat/chat.type.js';
-import { DEFAULT_EMOTION, EmotionValue } from '@rita-berenice/shared/config/emotionConstants.js';
+} from '@rita-berenice/shared/domain';
+
 export const parseEntriesToConversation = (entries: ChatEntry[]): string => {
 	return entries
 		.map((entry) => (entry.type === 'dialogue' ? `"${entry.prompt}"` : entry.prompt))

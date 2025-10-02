@@ -1,7 +1,7 @@
 // src/server/routes/character.routes.ts
 
-import express, { type Request, type Response } from 'express';
-import { COLLECTIONS } from '../db/ChromaInterfaces.js';
+import express, { type Request, type Response, type Router } from 'express';
+import { COLLECTIONS } from '../db/chroma.type.js';
 import { characterStore } from '../store/characterStore.js';
 import {
 	asyncHandler,
@@ -10,14 +10,18 @@ import {
 	validateRequestData,
 	validateServiceId,
 } from '../util/routeHelpers.js';
-import { CharacterInfo } from '@rita-berenice/shared/domain/character/character.type.js';
-import { Payload } from '@rita-berenice/shared/util/apiHelpers.js';
+
 import fs from 'fs';
 import path from 'path';
-import { BASE_CHARACTER_IMAGE_DIR, RUNTIME_CHARACTER_IMAGE_DIR } from '@rita-berenice/shared/config/constants.js';
+import {
+	BASE_CHARACTER_IMAGE_DIR,
+	RUNTIME_CHARACTER_IMAGE_DIR,
+} from '@rita-berenice/shared/config';
 import { characterUpload, processCharacterImage } from '../util/imageProcessingUtils.js';
+import { CharacterInfo } from '@rita-berenice/shared/domain';
+import { Payload } from '@rita-berenice/shared/util';
 
-const router = express.Router();
+const router: Router = express.Router();
 const collectionType = COLLECTIONS.CHARACTER;
 
 /**

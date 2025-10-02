@@ -1,16 +1,12 @@
 // src/server/routes/persona.routes.ts
 
-import express, { type Request, type Response } from 'express';
-
+import express, { type Request, type Response, type Router } from 'express';
 import { personaEngine } from '../service/personaEngine.js';
-import { ChatMessage } from '@rita-berenice/shared/domain/chat/chat.type.js';
-import { CharacterInfo } from '@rita-berenice/shared/domain/character/character.type.js';
-import { asyncHandler, genRoutePattern, validateRequestData } from '../util/routeHelpers.js';
-import { AiModelInfo } from '@rita-berenice/shared/domain/aimodel/AiInfoTypes.js';
-import { MemoryResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
-import { ProfileInfo } from '@rita-berenice/shared/domain/profile/profile.type.js';
+import { MemoryResponse } from '@rita-berenice/shared/api';
+import { CharacterInfo, ProfileInfo, ChatMessage, AiModelInfo } from '@rita-berenice/shared/domain';
+import { genRoutePattern, asyncHandler, validateRequestData } from '../util/routeHelpers.js';
 
-const router = express.Router();
+const router: Router = express.Router();
 
 // Define a type for the complex request body for clarity and type safety
 type GenerateResponseRequestBody = {

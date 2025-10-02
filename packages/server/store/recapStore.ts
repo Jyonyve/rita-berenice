@@ -1,31 +1,23 @@
 // src/server/store/recapStore.ts
 
 import { Collection, Where, WhereDocument } from 'chromadb';
-import { COLLECTIONS } from '../db/ChromaInterfaces.js';
-import { METADATA_TYPES } from '@rita-berenice/shared/config/constants.js';
-import { chromaDbClient } from '../db/chromaDbClient.js';
-import { RecapResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
-import { recapToMetadata, metadataToRecap } from '@rita-berenice/shared/util/dbConvertUtils.js';
-import {
-	RecapInfo,
-	RecapMetadata,
-	RecapIndexMetadata,
-	RecapIndexContentType,
-} from '@rita-berenice/shared/domain/recap/recap.routes.js';
-import { buildRecapIndexId } from '@rita-berenice/shared/util/buildIdUtils.js';
+import { COLLECTIONS, toChromaMetadata } from '../db/chroma.type.js';
+
 import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 import { FilterCriteria } from '../util/schemaUtils.js';
 import { recapToDocument } from '../util/documentUtils.js';
+import {
+	RecapInfo,
+	RecapIndexMetadata,
+	RecapIndexContentType,
+	RecapMetadata,
+} from '@rita-berenice/shared/domain';
+import { buildRecapIndexId, metadataToRecap, recapToMetadata } from '@rita-berenice/shared/util';
+import chromaDbClient from '../db/chromaDbClient.js';
+import { METADATA_TYPES } from '@rita-berenice/shared/config';
 
 // Destructure chromaDbClient methods
-const {
-	getRecapCollection,
-	upsertRecord,
-	upsertRecords,
-	getRecords,
-	queryRecords,
-	deleteRecordById,
-} = chromaDbClient;
+const { getRecapCollection, upsertRecords, getRecords, queryRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.RECAP;
 
 export const recapStore = {
@@ -118,7 +110,7 @@ export const recapStore = {
 				collection,
 				newIndexRecords.map((r) => r.id),
 				newIndexRecords.map((r) => r.document),
-				newIndexRecords.map((r) => r.metadata)
+				newIndexRecords.map((r) => toChromaMetadata(r.metadata))
 			);
 		}
 	},
@@ -156,11 +148,13 @@ export const recapStore = {
 			const collection = await recapStore._getCollection();
 			// 1. Convert the rich object to the flat metadata for the primary document.
 			const metadata = recapToMetadata(recapInfo);
+			const chromaMetadata = toChromaMetadata(metadata);
+
 			// 2. Prepare the document content for embedding.
 			const document = recapToDocument(recapInfo);
 
 			// 3. Upsert the primary RECAP document.
-			await upsertRecords(collection, [metadata.recapId], [document], [metadata]);
+			await upsertRecords(collection, [metadata.recapId], [document], [chromaMetadata]);
 
 			// 4. Update its denormalized search indexes.
 			await recapStore._updateSearchIndexForRecap(recapInfo);

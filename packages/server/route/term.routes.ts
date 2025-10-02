@@ -1,23 +1,19 @@
 // src/server/routes/glossary.routes.ts
-import express, { type Request, type Response } from 'express';
+import express, { type Request, type Response, type Router } from 'express';
 
 import { termStore } from '../store/termStore.js';
-import { Payload } from '@rita-berenice/shared/util/apiHelpers.js';
-import { COLLECTIONS } from '../db/ChromaInterfaces.js';
+import { COLLECTIONS } from '../db/chroma.type.js';
 import {
 	asyncHandler,
 	compressData,
 	genRoutePattern,
 	validateRequestData,
 } from '../util/routeHelpers.js';
-import {
-	SessionTermCdo,
-	SessionTermInfo,
-	CharacterTermCdo,
-	CharacterTermInfo,
-} from '@rita-berenice/shared/domain/term/term.type.js';
+import { SessionTermInfo, CharacterTermInfo } from '@rita-berenice/shared/domain';
+import { Payload } from '@rita-berenice/shared/util';
 
-const router = express.Router();
+const router: Router = express.Router();
+
 const collectionType = COLLECTIONS.TERM;
 
 /**

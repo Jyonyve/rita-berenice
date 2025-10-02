@@ -1,21 +1,22 @@
-import { parseConversationToEntries, parseEntriesToConversation } from './chatParseUtils.js';
-import { Term } from '@rita-berenice/shared/api/ModuleResponse.js';
+import { Term } from '@rita-berenice/shared/api';
 import {
-	CharacterDocument,
-	CharacterInfo,
 	ChatEntry,
 	ChatTurn,
-	HistoryInfo,
-	LoreInfo,
-	ProfileDocument,
+	CharacterInfo,
+	CharacterDocument,
 	ProfileInfo,
-	RecapInfo,
-	SessionDocument,
-	SessionInfo,
+	ProfileDocument,
+	LoreInfo,
+	HistoryInfo,
 	TermDocument,
+	RecapInfo,
+	SessionInfo,
+	SessionDocument,
 	UserDocument,
 	UserInfo,
-} from '@rita-berenice/shared/domain/index.js';
+} from '@rita-berenice/shared/domain';
+
+import { parseConversationToEntries, parseEntriesToConversation } from './chatParseUtils.js';
 
 export const flatChatMessageToDoc = (entries: ChatEntry[]) => {
 	return parseEntriesToConversation(entries).trim();
@@ -105,16 +106,6 @@ export const flatUserToDoc = (user: UserInfo) => {
 };
 
 export const inflateUserDoc = (document: string): UserDocument => {
-	const parsed = JSON.parse(document);
-	return { email: parsed.email, userId: parsed.userId };
-};
-
-export const flatUserToDoc = (user: UserInfo) => {
-	const document = { email: user.email, userId: user.userId };
-	return JSON.stringify(document).trim();
-};
-
-export const inflateUserDoc = (document: string): { email: string; userId: string } => {
 	const parsed = JSON.parse(document);
 	return { email: parsed.email, userId: parsed.userId };
 };

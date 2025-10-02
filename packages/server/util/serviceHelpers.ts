@@ -1,6 +1,6 @@
-import { CollectionType } from '../db/ChromaInterfaces.js';
-import { ChromaResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
-import { ApiError } from '@rita-berenice/shared/domain/error/errors.js';
+import { ChromaResponse } from '@rita-berenice/shared/api';
+import { ApiError } from '@rita-berenice/shared/domain';
+import { CollectionType } from '../db/chroma.type.js';
 
 /**
  * Handles errors caught in service methods.

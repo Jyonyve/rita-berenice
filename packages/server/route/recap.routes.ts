@@ -1,18 +1,18 @@
 // src/server/routes/recap.routes.ts
 
-import { Router, Request, Response } from 'express';
+import express, { type Request, type Response, type Router } from 'express';
 import {
 	asyncHandler,
 	compressData,
 	genRoutePattern,
 	validateRequestData,
 } from '../util/routeHelpers.js';
-import { Payload } from '@rita-berenice/shared/util/apiHelpers.js';
 import { recapStore } from '../store/recapStore.js';
-import { RecapInfo } from '@rita-berenice/shared/domain/recap/recap.routes.js';
-import { METADATA_TYPES } from '@rita-berenice/shared/config/constants.js';
+import { METADATA_TYPES } from '@rita-berenice/shared/config';
+import { RecapInfo } from '@rita-berenice/shared/domain';
+import { Payload } from '@rita-berenice/shared/util';
 
-const router = Router();
+const router: Router = express.Router();
 
 /**
  * POST /api/recap/store

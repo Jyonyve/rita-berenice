@@ -1,11 +1,8 @@
 // src/server/routes/chat.routes.ts
 
-import express, { type Request, type Response } from 'express';
-
-import { Where } from 'chromadb';
+import express, { type Request, type Response, type Router } from 'express';
 import { chatStore } from '../store/chatStore.js';
-import { COLLECTIONS } from '../db/ChromaInterfaces.js';
-import { ChatTurn } from '@rita-berenice/shared/domain/chat/chat.type.js';
+import { COLLECTIONS } from '../db/chroma.type.js';
 import {
 	asyncHandler,
 	compressData,
@@ -14,10 +11,10 @@ import {
 	validateSequenceRule,
 	validateServiceId,
 } from '../util/routeHelpers.js';
-import { ChatResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
-import { Payload } from '@rita-berenice/shared/util/apiHelpers.js';
+import { ChatTurn } from '@rita-berenice/shared/domain';
+import { Payload } from '@rita-berenice/shared/util';
 
-const router = express.Router();
+const router: Router = express.Router();
 const collectionType = COLLECTIONS.CHAT;
 
 // --- Fixed Chat Turn Operations ---

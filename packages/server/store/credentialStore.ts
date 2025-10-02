@@ -1,12 +1,24 @@
 // src/server/credential/credentialService.ts
 
-import { chromaDbClient } from '../db/chromaDbClient.js';
-import { METADATA_TYPES } from '@rita-berenice/shared/config/constants.js';
+import { CredentialResponse } from '@rita-berenice/shared/api';
+import { METADATA_TYPES } from '@rita-berenice/shared/config';
+import { ValidationResult, UserApiKeys } from '@rita-berenice/shared/domain';
+import { buildCredentialId, encryptValue, decryptValue } from '@rita-berenice/shared/util';
 import { Collection } from 'chromadb';
-import { buildCredentialId } from '@rita-berenice/shared/util/buildIdUtils.js';
-import { decryptValue, encryptValue } from '@rita-berenice/shared/util/cryptoUtils.js';
-import { UserApiKeys, ValidationResult } from '@rita-berenice/shared/domain/credential/index.js';
-import { CredentialResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
+import chromaDbClient from '../db/chromaDbClient.js';
+
+// ✅ API Response Types
+interface OpenAIUsageResponse {
+	total_usage?: number;
+}
+
+interface OpenRouterAuthResponse {
+	data?: { usage?: number };
+}
+
+interface GoogleErrorResponse {
+	error?: { message?: string };
+}
 
 const { getCredentialCollection, upsertRecord, getRecordById } = chromaDbClient;
 const ENCRYPTION_KEY = process.env.SECRET_ENCRYPTION_KEY;
@@ -42,7 +54,7 @@ export const credentialStore = {
 					);
 
 					if (usageResponse.ok) {
-						const usage = await usageResponse.json();
+						const usage = (await usageResponse.json()) as OpenAIUsageResponse;
 						const creditInfo = usage.total_usage ? `Used: $${(usage.total_usage / 100).toFixed(2)}` : '';
 						return { valid: true, platform: 'direct', provider: 'openai', creditInfo };
 					}
@@ -120,8 +132,8 @@ export const credentialStore = {
 			let errorMessage = `API error: ${response.status}`;
 			if (response.status === 400 || response.status === 403) {
 				try {
-					const error = await response.json();
-					errorMessage = error.error?.message || '';
+					const error = (await response.json()) as GoogleErrorResponse;
+					errorMessage = error.error?.message || errorMessage;
 				} catch {}
 			}
 
@@ -166,7 +178,7 @@ export const credentialStore = {
 			});
 
 			if (response.ok) {
-				const data = await response.json();
+				const data = (await response.json()) as OpenRouterAuthResponse;
 				const creditInfo = data.data?.usage ? `Credits: $${data.data.usage.toFixed(2)}` : '';
 
 				return { valid: true, platform: 'openrouter', creditInfo };
@@ -229,7 +241,6 @@ export const credentialStore = {
 	 * Retrieves and decrypts API keys for a user.
 	 */
 	getUserApiKeys: async (userId: string): Promise<CredentialResponse> => {
-		// ✅ Return UserApiKeys directly
 		try {
 			const collection = await credentialStore._getCollection();
 			const credentialId = buildCredentialId(userId);
@@ -237,7 +248,7 @@ export const credentialStore = {
 
 			if (!result.documents?.[0]) {
 				console.warn(`[CredentialService] No API keys found for user ${userId}`);
-				return { userApiKeys: {}, validationResults: {} }; // ✅ Return empty object directly
+				return { userApiKeys: {}, validationResults: {} };
 			}
 
 			const encryptedKeys = JSON.parse(result.documents[0]);
@@ -257,10 +268,10 @@ export const credentialStore = {
 					}
 				})
 			);
-			return { userApiKeys: decryptedKeys, validationResults: {} }; // ✅ Return data directly
+			return { userApiKeys: decryptedKeys, validationResults: {} };
 		} catch (error) {
 			console.error(`[CredentialService] Failed to retrieve API keys for user ${userId}:`, error);
-			return { userApiKeys: {}, validationResults: {} }; // ✅ Return empty object directly
+			return { userApiKeys: {}, validationResults: {} };
 		}
 	},
 
@@ -345,7 +356,6 @@ export const credentialStore = {
 
 		await Promise.all(validationPromises);
 
-		// ✅ Return CredentialResponse with validation results
 		return { userApiKeys: apiKeys, validationResults };
 	},
 };

@@ -1,20 +1,23 @@
-import { Collection, Metadata, Where, WhereDocument } from 'chromadb';
-import { METADATA_TYPES } from '@rita-berenice/shared/config/constants.js';
-import { COLLECTIONS } from '../db/ChromaInterfaces.js';
-import { chromaDbClient } from '../db/chromaDbClient.js';
+import { HistoryResponse, Metadata } from '@rita-berenice/shared/api';
+import { METADATA_TYPES } from '@rita-berenice/shared/config';
 import {
+	HistoryInfo,
 	HistoryIndexContentType,
 	HistoryIndexMetadata,
-	HistoryInfo,
 	HistoryMetadata,
-} from '@rita-berenice/shared/domain/history/history.type.js';
-import { validateChromaResponse, handleServiceError } from '../util/serviceHelpers.js';
-import { FilterCriteria } from '../util/schemaUtils.js';
-import { reRankSemanticResults } from '../util/queryUtils.js';
-import { HistoryResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
-import { historyToMetadata, metadataToHistory } from '@rita-berenice/shared/util/dbConvertUtils.js';
+} from '@rita-berenice/shared/domain';
+import {
+	buildHistoryIndexId,
+	historyToMetadata,
+	metadataToHistory,
+} from '@rita-berenice/shared/util';
+import { Collection, Where, WhereDocument } from 'chromadb';
+import { COLLECTIONS, toChromaMetadata } from '../db/chroma.type.js';
+import chromaDbClient from '../db/chromaDbClient.js';
 import { historyToDocument } from '../util/documentUtils.js';
-import { buildHistoryIndexId } from '@rita-berenice/shared/util/buildIdUtils.js';
+import { reRankSemanticResults } from '../util/queryUtils.js';
+import { FilterCriteria } from '../util/schemaUtils.js';
+import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
 
 const {
 	getHistoryCollection,
@@ -147,7 +150,7 @@ export const historyStore = {
 				collection,
 				newIndexRecords.map((r) => r.id),
 				newIndexRecords.map((r) => r.document),
-				newIndexRecords.map((r) => r.metadata)
+				newIndexRecords.map((r) => toChromaMetadata(r.metadata))
 			);
 		}
 	},
@@ -163,7 +166,8 @@ export const historyStore = {
 			const document = historyToDocument(historyInfo); // Pass the info object
 
 			// 1. Store the primary HISTORY document
-			await upsertRecord(collection, historyInfo.historyId, document, historyMetadata);
+			const chromaMetadata = toChromaMetadata(historyMetadata);
+			await upsertRecord(collection, historyInfo.historyId, document, chromaMetadata);
 
 			// 2. Update the denormalized search index
 			await historyStore._updateSearchIndexForHistory(historyInfo);
@@ -379,7 +383,7 @@ export const historyStore = {
 
 			return {
 				ids: rankedResults.ids,
-				metadatas: rankedResults.metadatas,
+				metadatas: rankedResults.metadatas.filter((m) => !!m).map((m) => toChromaMetadata(m)),
 				documents: rankedResults.documents,
 				historyInfos,
 				historyInfo: historyInfos[0] || ({} as HistoryInfo),

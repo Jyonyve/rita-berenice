@@ -1,8 +1,8 @@
 // Create a new file: src/shared/util/languageUtils.ts
 
-import { LangCode } from '@rita-berenice/shared/config/langConstants.js';
+import { Term } from '@rita-berenice/shared/api';
+import { LangCode } from '@rita-berenice/shared/config';
 import { franc } from 'franc';
-import { Term } from '@rita-berenice/shared/api/ModuleResponse.js';
 
 /**
  * Detects the language of a given text string using the 'franc' library.

@@ -1,18 +1,16 @@
-import { Collection, IncludeEnum, Where } from 'chromadb';
-
-import { COLLECTIONS } from '../db/ChromaInterfaces.js';
-import { METADATA_TYPES } from '@rita-berenice/shared/config/constants.js';
-import { chromaDbClient } from '../db/chromaDbClient.js';
-import { CharacterResponse, ChromaResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
-import { flatCharacterToDoc, inflateCharacterDoc } from '../util/documentUtils.js';
-import { validateChromaResponse, handleServiceError } from '../util/serviceHelpers.js';
-import { metadataToCharacter } from '@rita-berenice/shared/util/dbConvertUtils.js';
+import { ChromaResponse, CharacterResponse } from '@rita-berenice/shared/api';
+import { METADATA_TYPES } from '@rita-berenice/shared/config';
+import { CharacterMetadata, CharacterCdo, CharacterInfo } from '@rita-berenice/shared/domain';
 import {
-	CharacterCdo,
-	CharacterInfo,
-	CharacterMetadata,
-} from '@rita-berenice/shared/domain/character/character.type.js';
-import { createBasicCharacterInfo, isCharacterInfo } from '@rita-berenice/shared/util/typeGuardUtils.js';
+	metadataToCharacter,
+	isCharacterInfo,
+	createBasicCharacterInfo,
+} from '@rita-berenice/shared/util';
+import { Collection, Where } from 'chromadb';
+import { COLLECTIONS, toChromaMetadata } from '../db/chroma.type.js';
+import chromaDbClient from '../db/chromaDbClient.js';
+import { inflateCharacterDoc, flatCharacterToDoc } from '../util/documentUtils.js';
+import { validateChromaResponse, handleServiceError } from '../util/serviceHelpers.js';
 
 const { getCharacterCollection, getRecordById, getRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.CHARACTER;
@@ -173,12 +171,13 @@ export const characterStore = {
 		});
 
 		try {
+			const chromaMetadata = toChromaMetadata(updatedMetadata);
 			// chromaDbClient.upsertRecord is Promise<void> and throws generic Error on underlying failure
 			await chromaDbClient.upsertRecord(
 				collection,
 				updatedMetadata.characterId,
 				documentForEmbedding,
-				updatedMetadata
+				chromaMetadata
 			);
 
 			return { characterId: updatedMetadata.characterId };

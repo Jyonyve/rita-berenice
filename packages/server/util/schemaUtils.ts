@@ -1,6 +1,6 @@
-import { z } from 'zod';
-import { curatedEmotionKeywords } from '@rita-berenice/shared/config/emotionConstants.js';
-import { convertArrayToString } from '@rita-berenice/shared/util/parseUtils.js';
+import { curatedEmotionKeywords } from '@rita-berenice/shared/config';
+import { convertArrayToString } from '@rita-berenice/shared/util';
+import z from 'zod';
 
 // Safe type guard to ensure non-empty array
 function ensureNonEmptyArray<T>(arr: T[]): asserts arr is [T, ...T[]] {

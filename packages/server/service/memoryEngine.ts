@@ -1,37 +1,26 @@
 // src/server/services/memoryEngine.ts
 
-import { METADATA_TYPES, NA } from '@rita-berenice/shared/config/constants.js';
+import { MemoryResponse } from "@rita-berenice/shared/api";
+import { LangCode, DEFAULT_EMOTION, NA } from "@rita-berenice/shared/config";
+import { ChatTurn, DEFAULT_EXTRACTION_MODEL, RecapInfo } from "@rita-berenice/shared/domain";
+import { parseSessionId, convertArrayToString } from "@rita-berenice/shared/util";
+import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
+import { characterStore } from "../store/characterStore.js";
+import { chatStore } from "../store/chatStore.js";
+import { historyStore } from "../store/historyStore.js";
+import { loreStore } from "../store/loreStore.js";
+import { profileStore } from "../store/profileStore.js";
+import { termStore } from "../store/termStore.js";
+import { parseEntriesToConversation } from "../util/chatParseUtils.js";
+import { logFlow } from "../util/jsonlLogger.js";
+import { reRankByRecency, boostByCriticalTerm, mapLoreContexts, mapHistoryContexts } from "../util/llmUtils.js";
+import { createChatTurnMetadataSchema } from "../util/schemaUtils.js";
+import { handleServiceError } from "../util/serviceHelpers.js";
+import { buildChatTurnMetadataPrompt } from "../util/templateUtils.js";
+import { llmService } from "./llmService.js";
+import { ragQueryService } from "./ragQueryService.js";
 
-import { buildChatTurnMetadataPrompt } from '../util/templateUtils.js';
-import { ChatTurn } from '@rita-berenice/shared/domain/chat/chat.type.js';
-import { convertArrayToString, parseSessionId } from '@rita-berenice/shared/util/parseUtils.js';
-import { MemoryResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
-import {
-	chatStore,
-	historyStore,
-	loreStore,
-	profileStore,
-	termStore,
-	characterStore,
-} from '../store/index.js';
 
-import { handleServiceError } from '../util/serviceHelpers.js';
-import {
-	mapLoreContexts,
-	reRankByRecency,
-	mapHistoryContexts,
-	boostByCriticalTerm,
-} from '../util/llmUtils.js';
-import { llmService } from './llmService.js';
-import { DEFAULT_EXTRACTION_MODEL } from '@rita-berenice/shared/domain/aimodel/AiInfoTypes.js';
-import { ragQueryService } from './ragQueryService.js';
-import { createChatTurnMetadataSchema } from '#server/util/schemaUtils.js';
-import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
-import { DEFAULT_EMOTION } from '@rita-berenice/shared/config/emotionConstants.js';
-import { logFlow } from '../util/jsonlLogger.js';
-import { LangCode } from '@rita-berenice/shared/config/langConstants.js';
-import { HistoryInfo, LoreInfo, RecapInfo } from '@rita-berenice/shared/domain/index.js';
-import { parseEntriesToConversation } from '../util/chatParseUtils.js';
 
 export const memoryEngine = {
 	/**

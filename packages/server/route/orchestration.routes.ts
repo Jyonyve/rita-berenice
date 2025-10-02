@@ -1,7 +1,7 @@
 // src/server/routes/orchestration.routes.ts
 
-import express, { type Request, type Response } from 'express';
-import { COLLECTIONS } from '../db/ChromaInterfaces.js';
+import express, { type Request, type Response, type Router } from 'express';
+import { COLLECTIONS } from '../db/chroma.type.js';
 import {
 	asyncHandler,
 	compressData,
@@ -10,18 +10,18 @@ import {
 	validateServiceId,
 } from '../util/routeHelpers.js';
 import {
+	TempChatTurnCdo,
+	CharacterInfo,
+	ProfileInfo,
+	AiModelInfo,
+	TempChatTurn,
 	ChatTurn,
 	ChatTurnCdo,
-	TempChatTurn,
-	TempChatTurnCdo,
-} from '@rita-berenice/shared/domain/chat/chat.type.js';
-import { finalizeChatTurn, receiveBotResponse } from '../service/orchestrationService.js';
-import { CharacterInfo } from '@rita-berenice/shared/domain/character/character.type.js';
-import { AiModelInfo } from '@rita-berenice/shared/domain/aimodel/AiInfoTypes.js';
-import { ProfileInfo } from '@rita-berenice/shared/domain/profile/profile.type.js';
-import { Payload } from '@rita-berenice/shared/util/apiHelpers.js';
+} from '@rita-berenice/shared/domain';
+import { Payload } from '@rita-berenice/shared/util';
+import { receiveBotResponse, finalizeChatTurn } from '../service/orchestrationService.js';
 
-const router = express.Router();
+const router: Router = express.Router();
 
 // Define a type for the complex request body for clarity
 interface ReceiveBotResponseBody {

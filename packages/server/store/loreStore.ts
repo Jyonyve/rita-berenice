@@ -1,33 +1,24 @@
 // src/server/services/loreStore.ts
 
-import { Collection, Metadata, Where, WhereDocument } from 'chromadb';
-import { METADATA_TYPES } from '@rita-berenice/shared/config/constants.js';
-import { COLLECTIONS } from '../db/ChromaInterfaces.js';
-import { chromaDbClient } from '../db/chromaDbClient.js';
-import { LoreResponse } from '@rita-berenice/shared/api/ModuleResponse.js';
+import { LoreResponse, Metadata } from '@rita-berenice/shared/api';
+import { METADATA_TYPES } from '@rita-berenice/shared/config';
 import {
-	LoreIndexContentType,
-	LoreIndexMetadata,
 	LoreInfo,
 	LoreMetadata,
-} from '@rita-berenice/shared/domain/lore/lore.type.js';
-import { loreToMetadata, metadataToLore } from '@rita-berenice/shared/util/dbConvertUtils.js';
-import { buildLoreId, buildLoreIndexId } from '@rita-berenice/shared/util/buildIdUtils.js';
-import { validateChromaResponse, handleServiceError } from '../util/serviceHelpers.js';
-import { FilterCriteria } from '../util/schemaUtils.js';
+	LoreIndexMetadata,
+	LoreIndexContentType,
+} from '@rita-berenice/shared/domain';
+import { metadataToLore, buildLoreIndexId, loreToMetadata } from '@rita-berenice/shared/util';
+import { Collection, Where, WhereDocument } from 'chromadb';
+import { COLLECTIONS, toChromaMetadata } from '../db/chroma.type.js';
+import chromaDbClient from '../db/chromaDbClient.js';
+import { loreToDocument } from '../util/documentUtils.js';
 import { reRankSemanticResults } from '../util/queryUtils.js';
-import { loreToDocument } from '#server/util/documentUtils.js';
+import { FilterCriteria } from '../util/schemaUtils.js';
+import { validateChromaResponse, handleServiceError } from '../util/serviceHelpers.js';
 
 // Destructure chromaDbClient methods
-const {
-	getLoreCollection,
-	upsertRecord,
-	upsertRecords,
-	getRecords,
-	getRecordById,
-	queryRecords,
-	deleteRecords,
-} = chromaDbClient;
+const { getLoreCollection, upsertRecord, getRecords, queryRecords, deleteRecords } = chromaDbClient;
 const collectionType = COLLECTIONS.LORE;
 
 const emptyLoreRes: LoreResponse = {
@@ -151,7 +142,7 @@ export const loreStore = {
 				collection,
 				newIndexRecords.map((r) => r.id),
 				newIndexRecords.map((r) => r.document),
-				newIndexRecords.map((r) => r.metadata)
+				newIndexRecords.map((r) => toChromaMetadata(r.metadata))
 			);
 		}
 	},
@@ -205,9 +196,9 @@ export const loreStore = {
 
 			// 2. Create document for semantic search
 			const document = loreToDocument(loreInfo);
-
+			const chromaMetadata = toChromaMetadata(loreMetadata);
 			// 3. Store primary document (lean metadata + semantic document)
-			await upsertRecord(collection, loreInfo.loreId, document, loreMetadata);
+			await upsertRecord(collection, loreInfo.loreId, document, chromaMetadata);
 
 			// 4. Update the denormalized search index for this lore (following your chatStore pattern)
 			await loreStore._updateSearchIndexForLore(loreInfo);
@@ -269,7 +260,7 @@ export const loreStore = {
 			return {
 				ids: [primaryLoreDoc.id],
 				documents: [primaryLoreDoc.document],
-				metadatas: [primaryLoreDoc.metadata],
+				metadatas: [toChromaMetadata(primaryLoreDoc.metadata)],
 				loreInfos: [loreInfo],
 				loreInfo: loreInfo,
 				loreContent: loreInfo.content,
