@@ -114,6 +114,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.1.8
         version: 19.1.9(@types/react@19.1.16)
+      vite:
+        specifier: ^6.3.6
+        version: 6.3.6(@types/node@24.6.1)(tsx@4.20.6)
 
   packages/migration:
     dependencies:

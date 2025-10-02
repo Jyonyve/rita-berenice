@@ -10,7 +10,8 @@
 		"build:shared": "pnpm --filter @rita-berenice/shared build",
 		"build:client": "pnpm --filter @rita-berenice/client build",
 		"build:server": "pnpm --filter @rita-berenice/server build",
-		"clean": "rimraf packages/*/dist && rimraf dist && rimraf node_modules",
+		"clean": "turbo run clean && rimraf dist node_modules",
+		"clean:dist": "turbo run clean && rimraf dist",
 		"start": "node dist/server/server.js",
 		"migration": "pnpm --filter @rita-berenice/migration-tool",
 		"migration:install": "pnpm --filter @rita-berenice/migration-tool install"

@@ -52,12 +52,7 @@ export const profileStore = {
 			const where: Where = {
 				$and: [{ type: { $eq: METADATA_TYPES.PROFILE } }, { userId: { $eq: userId } }],
 			};
-
-			const rawResults = await collection.get({
-				include: [IncludeEnum.documents, IncludeEnum.metadatas],
-				where,
-			});
-
+			const rawResults = await getRecords(collection, where);
 			const results = validateChromaResponse(rawResults, 'getList', collectionType);
 			return profileStore._constructProfile(results);
 		} catch (error) {

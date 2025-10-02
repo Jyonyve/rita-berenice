@@ -11,8 +11,9 @@
 		"./util": "./util/index.ts"
 	},
 	"scripts": {
-		"build": "tsc --noEmit",
-		"lint": "eslint . --ext .ts"
+		"build": "tsc --project tsconfig.json",
+		"clean": "rimraf dist",
+		"dev": "tsc --project tsconfig.json --watch"
 	},
 	"dependencies": {
 		"nanoid": "^5.1.5",

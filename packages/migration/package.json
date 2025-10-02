@@ -4,8 +4,9 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"clean": "rimraf dist && rimraf node_modules",
-		"build": "tsc --project tsconfig.json && tsc-alias -p tsconfig.json",
+		"build": "tsc --project tsconfig.json",
+		"clean": "rimraf dist",
+		"dev": "tsx watch ./index.ts",
 		"proxy:chromadb": "fly proxy 8000:8000 -a chromadb-flyio",
 		"init:char": "tsx --env-file ../../.env character/initCharacter.ts",
 		"check:char": "tsx --env-file ../../.env character/checkCharacter.ts",

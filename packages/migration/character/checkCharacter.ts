@@ -1,7 +1,5 @@
 // Save this file as scripts/checkCharacterData.ts
 
-import { COLLECTIONS } from '#server/index.js';
-import { CharacterMetadata } from '#shared/domain/index.js';
 import { ChromaClient, Collection, IncludeEnum } from 'chromadb';
 
 // --- Configuration ---
