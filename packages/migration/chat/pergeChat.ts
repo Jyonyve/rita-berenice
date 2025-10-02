@@ -1,8 +1,9 @@
-import { ChromaClient, Where } from 'chromadb';
-import { chromaDbClient, CollectionType } from '#server/index.js';
-
 // --- !!! DANGEROUS AREA !!! ---
 // Define the sessionIDs you want to KEEP. All others will be deleted.
+
+import { chromaDbClient, CollectionType } from '@rita-berenice/server/db';
+import { Where } from 'chromadb';
+
 // Double and triple-check these IDs.
 const SESSION_IDS_TO_KEEP = [
 	'taryeon_original_cWRM1T3x',

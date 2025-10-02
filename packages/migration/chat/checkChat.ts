@@ -1,6 +1,6 @@
-import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
-import { chatStore } from '#server/index.js';
-import { METADATA_TYPES } from '#shared/index.js';
+import { COLLECTIONS } from '@rita-berenice/server/db';
+import { chatStore } from '@rita-berenice/server/store';
+import { METADATA_TYPES } from '@rita-berenice/shared/config';
 
 // --- Configuration ---
 const TARGET_COLLECTION_NAME = COLLECTIONS.CHAT;

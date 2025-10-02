@@ -3,8 +3,9 @@
 	"version": "1.6.0",
 	"private": true,
 	"type": "module",
+	"description": "Database migration and management scripts (development only)",
 	"scripts": {
-		"build": "tsc --project tsconfig.json",
+		"build": "echo 'Migration package does not need building - skipping'",
 		"clean": "rimraf dist",
 		"dev": "tsx watch ./index.ts",
 		"proxy:chromadb": "fly proxy 8000:8000 -a chromadb-flyio",
@@ -47,6 +48,7 @@
 	},
 	"dependencies": {
 		"@rita-berenice/shared": "workspace:*",
+		"@rita-berenice/server": "workspace:*",
 		"@chroma-core/cohere": "^0.1.7",
 		"@chroma-core/openai": "^0.1.7",
 		"@langchain/anthropic": "^0.3.26",
@@ -61,9 +63,11 @@
 		"franc": "^6.2.0",
 		"openai": "^5.16.0",
 		"puppeteer": "^24.19.0",
+		"cheerio": "^1.1.2",
 		"sharp": "^0.34.3",
 		"supertokens-node": "^23.0.1",
-		"tiktoken": "^1.0.22"
+		"tiktoken": "^1.0.22",
+		"zod": "^4.1.11"
 	},
 	"devDependencies": {
 		"rimraf": "^6.0.1",

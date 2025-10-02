@@ -9,6 +9,8 @@
 		"rootDir": ".",
 		"outDir": "../../dist/server",
 		"noEmit": false,
+		"declaration": true, // ✅ Add this
+		"declarationMap": true, // ✅ Add this
 		"allowImportingTsExtensions": false
 	},
 	"references": [{ "path": "../shared" }],

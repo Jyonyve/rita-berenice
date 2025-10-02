@@ -1,9 +1,8 @@
 // scripts/checkHistory.ts
-import { ChromaClient, Collection, IncludeEnum, Where } from 'chromadb';
-import { COLLECTIONS } from '../../server/db/chroma.type.js';
-import { HistoryMetadata } from '../../shared/domain/lore/LoreInterfaces.js';
-import { METADATA_TYPES } from '#shared/config/constants.js';
-import { loreStore } from '#server/index.js';
+
+import { COLLECTIONS } from '@rita-berenice/server/db';
+import { loreStore } from '@rita-berenice/server/store';
+import { Collection } from 'chromadb';
 
 // const CHROMA_URL = process.env.CHROMA_HOST;
 const TARGET_COLLECTION_NAME = COLLECTIONS.LORE;

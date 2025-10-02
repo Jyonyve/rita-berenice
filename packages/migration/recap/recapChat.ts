@@ -1,17 +1,12 @@
 // src/migration/chat/recapChatBatch.ts
 
+import { chromaDbClient } from '@rita-berenice/server/db';
+import { chatStore } from '@rita-berenice/server/store';
+import { buildFactualRecapPrompt } from '@rita-berenice/server/util';
+import { METADATA_TYPES } from '@rita-berenice/shared/config';
+import { ChatTurn, RecapInfo } from '@rita-berenice/shared/domain';
+import { buildRecapId, recapToMetadata } from '@rita-berenice/shared/util';
 import { writeFile, access, readFile, mkdir, unlink } from 'fs/promises';
-import {
-	ChatTurn,
-	METADATA_TYPES,
-	RecapInfo,
-	buildRecapId,
-	parseEntriesToText,
-	recapToMetadata, // Import the helper
-} from '../../shared/index.js';
-import { buildFactualRecapPrompt } from '../../server/util/templateUtils.js';
-import { chatStore } from '#server/index.js';
-import { chromaDbClient } from '#server/db/index.js';
 
 // --- Configuration (Same) ---
 const TARGET_SESSION_ID = process.argv[2];
@@ -19,8 +14,7 @@ if (!TARGET_SESSION_ID) {
 	console.error('Usage: pnpm recap:factual -- <session_id>');
 	process.exit(1);
 }
-const OUTPUT_DIR = './src/migration/recap/output';
-const PROGRESS_DIR = './src/migration/recap/progress';
+
 const BATCH_SIZE = 3;
 
 const GEMINI_MODEL = 'gemini-2.0-flash-001'; // Fast model for metadata extraction

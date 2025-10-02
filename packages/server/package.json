@@ -3,6 +3,14 @@
 	"version": "1.0.0",
 	"private": true,
 	"type": "module",
+	"main": "./index.js",
+	"exports": {
+		"./db": "./db/index.js",
+		"./route": "./route/index.js",
+		"./service": "./service/index.js",
+		"./store": "./store/index.js",
+		"./util": "./util/index.js"
+	},
 	"scripts": {
 		"build": "tsc --project tsconfig.json",
 		"clean": "rimraf ../../dist/server",

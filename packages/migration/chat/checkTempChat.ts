@@ -1,5 +1,4 @@
-import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
-import { chatStore, chromaDbClient, tempStore } from '#server/index.js';
+import { COLLECTIONS, chromaDbClient } from '@rita-berenice/server/db';
 
 // --- Configuration ---
 const TARGET_COLLECTION_NAME = COLLECTIONS.TEMP;

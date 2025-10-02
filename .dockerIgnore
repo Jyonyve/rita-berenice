@@ -3,7 +3,7 @@
 node_modules
 packages/*/node_modules
 packages/*/dist
-packages/migration-tool
+packages/migration
 dist
 .env*
 !.env.production

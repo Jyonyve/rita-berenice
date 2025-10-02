@@ -1,10 +1,11 @@
 import fs from 'node:fs';
 import readline from 'node:readline';
 import path from 'node:path';
-import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
-import { chatStore } from '#server/store/chatStore.js';
-import { buildProfileId } from '#shared/util/buildIdUtils.js';
+
 import { fileURLToPath } from 'node:url';
+import { chatStore } from '@rita-berenice/server/store';
+import { ChatTurn } from '@rita-berenice/shared/domain';
+import { buildProfileId } from '@rita-berenice/shared/util';
 
 // --- NEW: Path Resolution Relative to This File ---
 // Get the directory of the current script file
@@ -48,10 +49,7 @@ async function importTurnsFromJsonl() {
 
 	const turnsToImport: ChatTurn[] = [];
 	const fileStream = fs.createReadStream(jsonlFilePath);
-	const rl = readline.createInterface({
-		input: fileStream,
-		crlfDelay: Infinity,
-	});
+	const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
 
 	for await (const line of rl) {
 		if (line.trim() === '') continue;

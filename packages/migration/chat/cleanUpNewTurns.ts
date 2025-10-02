@@ -1,9 +1,9 @@
 // scripts/chat/cleanupNewTurns.ts
 
-import { chatStore } from '#server/store/chatStore.js';
-import { chromaDbClient } from '#server/db/chromaDbClient.js';
+import { chromaDbClient } from '@rita-berenice/server/db';
+import { chatStore } from '@rita-berenice/server/store';
+import { buildChatTurnId } from '@rita-berenice/shared/util';
 import { Where } from 'chromadb';
-import { buildChatTurnId } from '#shared/util/buildIdUtils.js';
 
 /**
  * Atomically deletes chat turns and all their associated index records

@@ -1,9 +1,13 @@
 // scripts/chat/duplicateChat.ts
 
-import { chatStore } from '#server/store/chatStore.js';
-import { ChatTurn } from '#shared/domain/chat/ChatInterfaces.js';
-import { parseSessionId } from '#shared/util/index.js';
-import { buildChatTurnId, buildMessageId, buildSessionId } from '#shared/util/buildIdUtils.js';
+import { chatStore } from '@rita-berenice/server/store';
+import { ChatTurn } from '@rita-berenice/shared/domain';
+import {
+	buildChatTurnId,
+	buildMessageId,
+	buildSessionId,
+	parseSessionId,
+} from '@rita-berenice/shared/util';
 
 const BATCH_SIZE = 100;
 

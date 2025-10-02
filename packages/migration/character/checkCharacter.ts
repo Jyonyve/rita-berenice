@@ -1,9 +1,11 @@
 // Save this file as scripts/checkCharacterData.ts
 
+import { COLLECTIONS } from '@rita-berenice/server/db';
+import { CharacterMetadata } from '@rita-berenice/shared/domain';
 import { ChromaClient, Collection, IncludeEnum } from 'chromadb';
 
 // --- Configuration ---
-const CHROMA_HOST = process.env.CHROMA_HOST
+const CHROMA_HOST = process.env.CHROMA_HOST;
 const CHROMA_PORT = Number(process.env.CHROMA_PORT) || 443;
 const CHROMA_SSL = true; // Your URL starts with https://
 

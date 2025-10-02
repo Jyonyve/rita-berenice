@@ -64,15 +64,6 @@ export default defineConfig(({ mode }) => {
 			chunkSizeWarningLimit: 5000,
 
 			rollupOptions: {
-				onwarn(warning, warn) {
-					// Ignore "use client" directive warnings from MUI
-					if (warning.code === 'MODULE_LEVEL_DIRECTIVE' && warning.message.includes('"use client"')) {
-						return;
-					}
-
-					// Show all other warnings
-					warn(warning);
-				},
 				input: path.resolve(__dirname, 'packages/client/index.html'),
 				output: {
 					manualChunks(id) {

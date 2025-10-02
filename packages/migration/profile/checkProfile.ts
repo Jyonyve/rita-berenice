@@ -1,6 +1,6 @@
 // scripts/checkProfile.ts
 
-import { chromaDbClient } from '#server/db/chromaDbClient.js';
+import { chromaDbClient } from '@rita-berenice/server/db';
 import { Where, IncludeEnum } from 'chromadb';
 
 /**

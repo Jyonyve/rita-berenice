@@ -1,9 +1,9 @@
-import { ChromaClient, Collection, Metadata } from 'chromadb';
-import { METADATA_TYPES } from '#shared/config/constants.js';
-import { ChatEntry, ChatMessage } from '#shared/domain/chat/index.js';
-import { EmotionValue } from '#shared/index.js';
-import { chromaDbClient, parseConversationToEntries } from '#server/index.js';
-import { parseTextToEntries } from 'src/client/util/chatParseUtils.ts';
+import { chromaDbClient } from '@rita-berenice/server/db';
+import { parseConversationToEntries } from '@rita-berenice/server/util';
+import { METADATA_TYPES, EmotionValue } from '@rita-berenice/shared/config';
+import { ChatMessage } from '@rita-berenice/shared/domain';
+import { Metadata } from 'chromadb';
+import { ChatEntry } from './validateChat.js';
 
 /**
  * Filters out dialogue entries that have an empty or whitespace-only prompt.
@@ -188,10 +188,7 @@ export async function patchEntryAsterisk(sessionId: string): Promise<void> {
 	// 3. Perform the batch update
 	if (idsToUpdate.length > 0) {
 		console.log(`Updating ${idsToUpdate.length} chat turns in a single batch...`);
-		await collection.update({
-			ids: idsToUpdate,
-			metadatas: metadatasToUpdate,
-		});
+		await collection.update({ ids: idsToUpdate, metadatas: metadatasToUpdate });
 		console.log(`✅ Successfully updated ${idsToUpdate.length} chat turns.`);
 	} else {
 		console.log('✅ No chat turns required updates.');

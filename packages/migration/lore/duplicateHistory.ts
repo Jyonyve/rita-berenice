@@ -1,8 +1,8 @@
 // src/migration/util/duplicateHistory.ts
 
-import { loreStore } from '#server/index.js';
-import { HistoryInfo } from '#shared/domain/lore/LoreInterfaces.js';
-import { buildHistoryId } from '#shared/util/buildIdUtils.js';
+import { historyStore } from '@rita-berenice/server/store';
+import { HistoryInfo } from '@rita-berenice/shared/domain';
+import { buildHistoryId } from '@rita-berenice/shared/util';
 
 // --- Configuration ---
 // The character ID of the source histories.
@@ -19,12 +19,12 @@ async function duplicateHistoryEntries() {
 	console.log('🚀 Starting history duplication script...');
 
 	try {
-		await loreStore.deleteHistory('taryeon_original_vargas-empire-era_OGn4_history');
-		await loreStore.deleteHistory('taryeon_original_vargas-empire-era_4T0C_history');
+		await historyStore.deleteHistory('taryeon_original_vargas-empire-era_OGn4_history');
+		await historyStore.deleteHistory('taryeon_original_vargas-empire-era_4T0C_history');
 		// --- Step 1: Fetch the original history entries ---
 		console.log(`\n1. Fetching original histories for character: ${SOURCE_CHARACTER_ID}`);
 		// Use the loreStore to get all histories for the source character.
-		const { historyInfos } = await loreStore.getHistories(SOURCE_CHARACTER_ID);
+		const { historyInfos } = await historyStore.getHistories(SOURCE_CHARACTER_ID);
 
 		// Filter down to the specific two records we care about.
 		console.log(`   -> ✅ Found ${historyInfos.length} target history entries.`);
@@ -54,7 +54,7 @@ async function duplicateHistoryEntries() {
 			};
 
 			// Store the new record. Since the historyId is new, this will be a fresh creation.
-			await loreStore.storeHistory(newSpinoffHistory);
+			await historyStore.storeHistory(newSpinoffHistory);
 			console.log(
 				`   -> ✅ Created: ${newSpinoffHistory.historyId} (from ${originalHistory.historyId})`
 			);

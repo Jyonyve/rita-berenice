@@ -1,5 +1,5 @@
-import { METADATA_TYPES } from '#shared/index.js';
 import { OpenAIEmbeddingFunction } from '@chroma-core/openai';
+import { METADATA_TYPES } from '@rita-berenice/shared/config';
 import { ChromaClient, Where } from 'chromadb';
 
 // --- Configuration ---

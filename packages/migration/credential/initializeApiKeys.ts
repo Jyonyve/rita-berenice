@@ -1,6 +1,6 @@
 // scripts/setup/initializeApiKeys.ts
 
-import { credentialStore } from '#server/store/credentialStore.js';
+import { credentialStore } from '@rita-berenice/server/store';
 
 async function initializeApiKeys() {
 	const userId = process.argv[2] || 'default';

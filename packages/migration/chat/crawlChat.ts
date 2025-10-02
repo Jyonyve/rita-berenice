@@ -2,7 +2,7 @@ import * as puppeteer from 'puppeteer';
 import fs from 'fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { MigChatMessage } from '#shared/domain/index.js';
+import { MigChatMessage } from '@rita-berenice/shared/domain';
 
 function localTimezoneHelper(timestamp: string): string {
 	const date = new Date(timestamp);
@@ -204,7 +204,7 @@ async function fetchChatLogsFromBrowser(
 			'POST',
 			payload
 		);
-		return response;
+		return response as RofanChatLog[];
 	} catch (error) {
 		console.error(
 			`   Error during API call for ${characterName}, offset ${(payload as any).offset}:`,

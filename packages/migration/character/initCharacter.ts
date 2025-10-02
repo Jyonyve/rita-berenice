@@ -1,8 +1,8 @@
 // Save this file as scripts/initCharacter.ts
 
+import { COLLECTIONS } from '@rita-berenice/server/db';
 import { mondayOriginal, getTaryeonOriginal, getTaryeonSpinoff } from './migrationTemplates.js';
-import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
-import { characterStore } from '#server/index.js';
+import { characterStore } from '@rita-berenice/server/store';
 
 // --- Main Seeding Logic ---
 async function initCharacter() {

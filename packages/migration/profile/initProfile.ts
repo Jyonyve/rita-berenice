@@ -1,9 +1,8 @@
 // Save this file as scripts/initProfile.ts
 
-import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
-import { profileStore } from '#server/index.js';
-
-import { ProfileCdo } from '#shared/domain/profile/ProfileInterfaces.js';
+import { COLLECTIONS } from '@rita-berenice/server/db';
+import { profileStore } from '@rita-berenice/server/store';
+import { ProfileCdo } from '@rita-berenice/shared/domain';
 
 const userId = '6b335673-c837-43f9-a1c7-0b92c90edefb';
 /**
@@ -29,7 +28,10 @@ export const getTaryeonOriginalProfileTemplate = (
 	sessionId: sessionId,
 });
 
-export const getTaryeonSpinoffProfileTemplate = (userId: string, sessionId: string): ProfileCdo => ({
+export const getTaryeonSpinoffProfileTemplate = (
+	userId: string,
+	sessionId: string
+): ProfileCdo => ({
 	name: 'yonyve',
 	gender: 'female',
 	title: "The Marquis' Eldest Daughter",

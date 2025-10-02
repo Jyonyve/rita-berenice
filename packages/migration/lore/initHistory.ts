@@ -4,14 +4,17 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
-import { HistoryInfo } from '#shared/domain/lore/LoreInterfaces.js';
-import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
-import { buildHistoryId, buildProfileId } from '#shared/util/buildIdUtils.js';
-import { createHistoryMetadataSchema } from '#server/util/schemaUtils.js';
-import { buildHistoryMetadataPrompt } from '#server/util/templateUtils.js';
-import { loreStore } from '#server/store/loreStore.js';
+
 import { ChatOpenAI } from '@langchain/openai';
-import { mapTerms, termStore } from '#server/index.js';
+import { historyStore, loreStore, termStore } from '@rita-berenice/server/store';
+import { COLLECTIONS } from '@rita-berenice/server/db';
+import {
+	createHistoryMetadataSchema,
+	mapTerms,
+	buildHistoryMetadataPrompt,
+} from '@rita-berenice/server/util';
+import { HistoryInfo } from '@rita-berenice/shared/domain';
+import { buildHistoryId, buildProfileId } from '@rita-berenice/shared/util';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,7 +43,7 @@ const queryExistingHistories = async (characterId: string): Promise<ExistingHist
 	const allExistingHistories: ExistingHistoryEntry[] = [];
 
 	try {
-		const historyResponse = await loreStore.getHistories(characterId);
+		const historyResponse = await historyStore.getHistories(characterId);
 		if (historyResponse.historyInfos && historyResponse.historyInfos.length > 0) {
 			const mapped = historyResponse.historyInfos.map((h) => ({
 				originalTitle: h.title,
@@ -167,7 +170,6 @@ async function initHistoryFromFiles(characterId: string) {
 					historyId,
 					characterId,
 					userId: USER_ID,
-					profileId: buildProfileId(characterId, USER_ID),
 					createdAt: now,
 					updatedAt: now,
 					title: data.title,
@@ -200,7 +202,7 @@ async function initHistoryFromFiles(characterId: string) {
 				};
 
 				// Store using the updated loreStore method
-				await loreStore.storeHistory(historyInfo);
+				await historyStore.storeHistory(historyInfo);
 
 				console.log(
 					`   ✅ Successfully stored history "${historyInfo.title}" with ID: ${historyInfo.historyId}`

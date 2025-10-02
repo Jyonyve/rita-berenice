@@ -1,14 +1,11 @@
 // scripts/recap/modifyRecapIds.ts
 
-import { chromaDbClient } from '#server/db/chromaDbClient.js';
-import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
-import { METADATA_TYPES } from '#shared/config/constants.js';
-import { buildRecapDocId, buildRecapId } from '#shared/util/buildIdUtils.js';
-import { metadataToRecap, recapToMetadata } from '#shared/util/dbConvertUtils.js';
-import { RecapInfo, RecapMetadata } from '#shared/domain/recap/RecapInterfaces.js';
+import { chromaDbClient, COLLECTIONS, toChromaMetadata } from '@rita-berenice/server/db';
+import { recapStore } from '@rita-berenice/server/store';
+import { METADATA_TYPES } from '@rita-berenice/shared/config';
+import { RecapInfo } from '@rita-berenice/shared/domain';
+import { buildRecapId, metadataToRecap, recapToMetadata } from '@rita-berenice/shared/util';
 import { Metadata } from 'chromadb';
-import { recapToDocument, inflateRecapDoc, recapStore } from '#server/index.js';
-import { c } from 'node_modules/vite/dist/node/moduleRunnerTransport.d-DJ_mE5sf.js';
 
 const BATCH_SIZE = 50; // Process records in batches to avoid overwhelming the database
 /**
@@ -96,7 +93,7 @@ async function modifyRecapIds() {
 				recapCollection,
 				batch.map((r) => r.id),
 				batch.map((r) => r.document),
-				batch.map((r) => r.metadata)
+				batch.map((r) => toChromaMetadata(r.metadata))
 			);
 		}
 
@@ -116,7 +113,7 @@ async function modifyRecapIds() {
 }
 
 async function checkRecap(sessionId: string) {
-	const recapInfos = (await recapStore.getRecapsBySessionId(sessionId, 'recap')).recapInfos;
+	const recapInfos = await recapStore.getRecapsBySessionId(sessionId, 'recap');
 	console.log(recapInfos[0]);
 	console.log(recapInfos[1]);
 	console.log(recapInfos[2]);

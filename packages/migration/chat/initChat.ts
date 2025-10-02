@@ -3,45 +3,61 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
-import { ChatMessage, ChatTurn, MigChatMessage } from '#shared/domain/chat/ChatInterfaces.js';
-import {
-	buildCharacterId,
-	buildChatTurnId,
-	buildMessageId,
-	buildSessionId,
-	buildProfileId,
-	parseSessionId,
-} from '#shared/util/index.js';
-import { parseConversationToEntries } from '#server/util/chatParseUtils.js';
-import { COLLECTIONS } from '#server/db/ChromaInterfaces.js';
 
-import { APPNAME, METADATA_TYPES, NA } from '#shared/config/constants.js';
-import { chatStore } from '#server/store/chatStore.js';
-import { buildChatTurnMetadataPrompt } from '#server/util/templateUtils.js';
-import {
-	flatSessionToDoc,
-	mapHistoryContexts,
-	mapLoreContexts,
-	mapTerms,
-	profileStore,
-	termStore,
-} from '#server/index.js';
-import { createChatTurnMetadataSchema } from '#server/util/schemaUtils.js';
-import { loreStore } from '#server/store/loreStore.js';
 import { ChatGroq } from '@langchain/groq';
-import { HistoryContext, LoreContext, SessionInfo, SessionMetadata } from '#shared/domain/index.js';
-import { chromaDbClient } from '#server/db/chromaDbClient.js';
-import {
-	getMondayUserProfileTemplate,
-	getTaryeonOriginalProfileTemplate,
-	getTaryeonSpinoffProfileTemplate,
-} from '../profile/initProfile.ts';
+
 import { encoding_for_model } from 'tiktoken';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { ChatOpenAI } from '@langchain/openai';
 import { USER_ID } from '../userId.js';
-import { getSessionTerms } from '../term/initTerm.ts';
-import { DEFAULT_EMOTION, EmotionValue, validEmotions } from '#shared/config/emotionConstants.js';
+import { COLLECTIONS, chromaDbClient, toChromaMetadata } from '@rita-berenice/server/db';
+import {
+	chatStore,
+	profileStore,
+	termStore,
+	loreStore,
+	historyStore,
+} from '@rita-berenice/server/store';
+import {
+	createChatTurnMetadataSchema,
+	buildChatTurnMetadataPrompt,
+	flatSessionToDoc,
+	mapTerms,
+	mapLoreContexts,
+	mapHistoryContexts,
+	parseConversationToEntries,
+} from '@rita-berenice/server/util';
+import {
+	NA,
+	DEFAULT_EMOTION,
+	APPNAME,
+	EmotionValue,
+	METADATA_TYPES,
+	validEmotions,
+} from '@rita-berenice/shared/config';
+import {
+	ChatTurn,
+	MigChatMessage,
+	SessionInfo,
+	SessionMetadata,
+	ChatMessage,
+	LoreCategory,
+	HistoryCategory,
+} from '@rita-berenice/shared/domain';
+import {
+	parseSessionId,
+	buildCharacterId,
+	buildSessionId,
+	buildProfileId,
+	buildMessageId,
+	buildChatTurnId,
+} from '@rita-berenice/shared/util';
+import {
+	getTaryeonOriginalProfileTemplate,
+	getTaryeonSpinoffProfileTemplate,
+	getMondayUserProfileTemplate,
+} from '../profile/initProfile.js';
+import { getSessionTerms } from '../term/initTerm.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -156,8 +172,27 @@ const getDefaultEnrichedMetadata = () => ({
 
 function correctLLMResponse(
 	rawResponse: any,
-	loreContexts: LoreContext[],
-	historyContexts: HistoryContext[]
+	loreContexts: {
+		loreId: string;
+		title: string;
+		summary: string;
+		category: LoreCategory;
+		keywordList: string[];
+		topicList: string[];
+		entityList: string[];
+		characterIdList: string[];
+	}[],
+	historyContexts: {
+		historyId: string;
+		title: string;
+		summary: string;
+		category: HistoryCategory;
+		periodLabel: string;
+		keywordList: string[];
+		topicList: string[];
+		entityList: string[];
+		allAffectedCharacterIdList: string[];
+	}[]
 ): any {
 	const existingLoreIds = loreContexts.map((l) => l.loreId);
 	const existingHistoryIds = historyContexts.map((h) => h.historyId);
@@ -203,8 +238,27 @@ function correctLLMResponse(
 const enrichChatTurnWithMetadata = async (
 	basicTurn: ChatTurn,
 	termGuidanceMap: Map<string, string>,
-	loreContexts: LoreContext[],
-	historyContexts: HistoryContext[]
+	loreContexts: {
+		loreId: string;
+		title: string;
+		summary: string;
+		category: LoreCategory;
+		keywordList: string[];
+		topicList: string[];
+		entityList: string[];
+		characterIdList: string[];
+	}[],
+	historyContexts: {
+		historyId: string;
+		title: string;
+		summary: string;
+		category: HistoryCategory;
+		periodLabel: string;
+		keywordList: string[];
+		topicList: string[];
+		entityList: string[];
+		allAffectedCharacterIdList: string[];
+	}[]
 ): Promise<ChatTurn> => {
 	const chatTurnSchema = createChatTurnMetadataSchema(
 		basicTurn.request.showName,
@@ -325,8 +379,27 @@ async function processAndUpsertTurn(
 	turnToProcess: ChatTurn,
 	progress: InitChatProgress,
 	termGuidanceMap: Map<string, string>,
-	loreContexts: LoreContext[],
-	historyContexts: HistoryContext[],
+	loreContexts: {
+		loreId: string;
+		title: string;
+		summary: string;
+		category: LoreCategory;
+		keywordList: string[];
+		topicList: string[];
+		entityList: string[];
+		characterIdList: string[];
+	}[],
+	historyContexts: {
+		historyId: string;
+		title: string;
+		summary: string;
+		category: HistoryCategory;
+		periodLabel: string;
+		keywordList: string[];
+		topicList: string[];
+		entityList: string[];
+		allAffectedCharacterIdList: string[];
+	}[],
 	currentIndex: number,
 	batchTotal: number
 ) {
@@ -444,6 +517,7 @@ async function initChatFromLogFiles() {
 			status: 'active',
 			type: METADATA_TYPES.SESSION,
 			lastCharMessage: lastMessage.content,
+			userNote: '',
 		};
 		const document = flatSessionToDoc(sessionInfo);
 		const metadata: SessionMetadata = {
@@ -461,7 +535,8 @@ async function initChatFromLogFiles() {
 
 		// Step 5: Upsert the record directly into the collection.
 		console.log(`Upserting session with predefined ID: ${sessionInfo.sessionId}...`);
-		await chromaDbClient.upsertRecord(collection, sessionInfo.sessionId, document, metadata);
+		const chromaMetadata = toChromaMetadata(metadata);
+		await chromaDbClient.upsertRecord(collection, sessionInfo.sessionId, document, chromaMetadata);
 
 		if (!cliSessionId) {
 			// init term
@@ -489,8 +564,8 @@ async function initChatFromLogFiles() {
 
 		console.log(`      Fetching existing lore and history for character ${characterId}...`);
 		const [loreRes, historyRes] = await Promise.all([
-			loreStore.getLores(characterId),
-			loreStore.getHistories(characterId),
+			loreStore.getLoresByCharacter(characterId),
+			historyStore.getHistories(characterId),
 		]);
 
 		const loreContexts = mapLoreContexts(loreRes.loreInfos);

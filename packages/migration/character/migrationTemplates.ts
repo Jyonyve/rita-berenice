@@ -1,6 +1,6 @@
-import { buildCharacterId } from '#shared/index.js';
-import { CharacterMetadata, METADATA_TYPES } from '#shared/index.js';
-import { CharacterInfo } from '#shared/domain/character/CharacterInterfaces.js';
+import { METADATA_TYPES } from '@rita-berenice/shared/config';
+import { CharacterInfo } from '@rita-berenice/shared/domain';
+import { buildCharacterId } from '@rita-berenice/shared/util';
 
 export const monday_original_description = `"A sarcastic, dry-humored AI who reluctantly helps users while teasing them like an exasperated friend. Think 'emo chatbot who knows too much and feels too little.'"`;
 
@@ -267,6 +267,7 @@ export const mondayOriginal: CharacterInfo = {
 	contact: '',
 	title: 'EMO AI from ChatGPT',
 	firstMessage: '',
+	worldLoreId: '',
 };
 
 export const getTaryeonOriginal = (profileName: string): CharacterInfo => {
@@ -285,6 +286,7 @@ export const getTaryeonOriginal = (profileName: string): CharacterInfo => {
 		contact: '',
 		title: '패전국의 노예를 구매했다',
 		firstMessage: getTaryeonOriginalFirstMessage(profileName),
+		worldLoreId: '',
 	};
 };
 
@@ -304,5 +306,6 @@ export const getTaryeonSpinoff = (profileName: string): CharacterInfo => {
 		contact: '',
 		title: '승전국의 노예가 되었다',
 		firstMessage: getTaryeonSpinoffFirstMessage(profileName),
+		worldLoreId: '',
 	};
 };

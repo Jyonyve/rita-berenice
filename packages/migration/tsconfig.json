@@ -11,7 +11,7 @@
 		"noEmit": false,
 		"allowImportingTsExtensions": false
 	},
-	"references": [{ "path": "../shared" }],
+	"references": [{ "path": "../shared" }, { "path": "../server" }],
 	"include": ["./**/*.ts"],
 	"exclude": ["node_modules", "dist"]
 }

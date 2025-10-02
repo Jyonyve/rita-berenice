@@ -1,8 +1,8 @@
 // scripts/chat/deleteChatSession.ts
 
-import { chatStore } from '#server/store/chatStore.js';
-import { chromaDbClient } from '#server/db/chromaDbClient.js';
-import { buildChatTurnId } from '#shared/index.js';
+import { chromaDbClient } from '@rita-berenice/server/db';
+import { chatStore } from '@rita-berenice/server/store';
+import { buildChatTurnId } from '@rita-berenice/shared/util';
 
 const BATCH_SIZE = 100; // Process deletions in batches for performance and stability
 

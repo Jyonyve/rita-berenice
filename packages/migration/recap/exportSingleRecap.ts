@@ -1,7 +1,8 @@
 // src/migration/recap/exportSingleRecap.ts
 
-import { chromaDbClient, handleServiceError, buildRecapId } from '#server/index.js';
-import { METADATA_TYPES } from '#shared/index.js';
+import { chromaDbClient } from '@rita-berenice/server/db';
+import { handleServiceError } from '@rita-berenice/server/util';
+import { METADATA_TYPES, NA } from '@rita-berenice/shared/config';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 
