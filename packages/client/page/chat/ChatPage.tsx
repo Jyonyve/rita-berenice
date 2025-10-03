@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import { useOrchestrationApi, useTempChatApi, useSessionApi } from '../../hook/api/index.js';
 import { useChatState } from '../../hook/state/useChatState.js';
-import { GlassButton, GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
+import { GlassButton, GlassPaper, GlassPortrait } from '../../layout/component/glass/index.js';
 import { containerSpacing } from '../../style/index.js';
 import { useEmotionContext } from './ChatPageLoader.jsx';
 import { getLangText, parseTextToEntries, useErrorDialog } from '../../util/index.js';

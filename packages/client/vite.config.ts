@@ -10,25 +10,24 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const CHROMADB = 'chromadb' as const;
 const nodeBuiltinModules = builtinModules.map((m) => `node:${m}`);
 const allBuiltinModules = [...new Set([...builtinModules, ...nodeBuiltinModules])];
 
 export default defineConfig(({ mode }) => {
 	const isStaticBuild = mode === 'static';
 	const isProduction = mode === 'production';
-	const env = loadEnv(mode, process.cwd(), '');
+	const rootDir = path.resolve(__dirname, '../../');
+	const env = loadEnv(mode, rootDir, '');
 
 	return {
-		root: './packages/client',
 		base: isStaticBuild ? '/rita-berenice/' : '/',
 		cacheDir: '../../.vite_cache',
-
+		envDir: rootDir,
+		publicDir: '../../public',
 		ssr: {
-			external: [CHROMADB, ...allBuiltinModules, 'fsevents'],
+			external: allBuiltinModules,
 			noExternal: [
 				'@mui/material',
-				'@mui/system',
 				'@mui/icons-material',
 				'@emotion/react',
 				'@emotion/styled',
@@ -42,7 +41,7 @@ export default defineConfig(({ mode }) => {
 		plugins: [
 			react({ jsxImportSource: '@emotion/react', babel: { plugins: ['@emotion/babel-plugin'] } }),
 			nodePolyfills({ protocolImports: true }),
-			tsconfigPaths(),
+			tsconfigPaths({ root: '../../' }),
 			svgr(),
 		],
 
@@ -50,6 +49,11 @@ export default defineConfig(({ mode }) => {
 			'import.meta.env.VITE_API_DOMAIN': JSON.stringify(
 				env.VITE_API_DOMAIN || 'http://localhost:3000'
 			),
+			'import.meta.env.VITE_APP_DOMAIN': JSON.stringify(
+				env.VITE_APP_DOMAIN || 'http://localhost:3000'
+			),
+			'import.meta.env.VITE_SUPERTOKENS_DOMAIN': JSON.stringify(env.VITE_SUPERTOKENS_DOMAIN || ''),
+			'import.meta.env.VITE_APP_ENV': JSON.stringify(env.VITE_APP_ENV || mode),
 		},
 
 		server: { host: '0.0.0.0', port: 3000, strictPort: true },
@@ -65,7 +69,7 @@ export default defineConfig(({ mode }) => {
 			chunkSizeWarningLimit: 5000,
 
 			rollupOptions: {
-				input: path.resolve(__dirname, 'packages/client/index.html'),
+				input: path.resolve(__dirname, 'index.html'),
 				output: {
 					manualChunks(id) {
 						if (id.includes('node_modules')) {
@@ -102,18 +106,17 @@ export default defineConfig(({ mode }) => {
 				'@emotion/styled',
 				'@emotion/cache',
 				'@mui/material',
-				'@mui/system',
 				'@mui/icons-material',
 				'react',
 				'react-dom',
 				'react-router',
 			],
-			exclude: ['chromadb', 'ollama', 'whatwg-fetch', 'fsevents'],
+
 			force: true,
 		},
 
 		esbuild: { target: 'es2022', logOverride: { 'this-is-undefined-in-esm': 'silent' } },
 
-		resolve: { alias: { '@rita-berenice/shared': path.resolve(__dirname, 'packages/shared') } },
+		resolve: { alias: { '@rita-berenice/shared': path.resolve(__dirname, '../shared') } },
 	};
 });

@@ -2,7 +2,7 @@
 import { useState, useCallback, FC, useEffect } from 'react';
 import { Dialog, DialogContent, DialogActions, Button, Box } from '@mui/material';
 import * as ReactEasyCrop from 'react-easy-crop';
-import { getCroppedImageBlob } from '../util/index.js';
+import { getCroppedImageBlob } from '../../util/index.js';
 
 const Cropper = (ReactEasyCrop as any).default || ReactEasyCrop;
 

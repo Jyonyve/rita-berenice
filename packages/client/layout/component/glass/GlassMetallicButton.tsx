@@ -1,8 +1,8 @@
 // src/components/ui/MetallicGlassButton.tsx
 
 import { Button, ButtonProps, Palette, styled } from '@mui/material';
-import { getGlassEffect, glassEffect, glassEffectLight } from '../../style/glassEffect.js';
-import { ColorVariant, getColor, gold, silver } from '../../style/colors.js';
+import { getGlassEffect, glassEffect, glassEffectLight } from '../../../style/glassEffect.js';
+import { ColorVariant, getColor, gold, silver } from '../../../style/colors.js';
 import { ComponentType } from 'react';
 
 // The props interface now uses the unified 'ColorVariant' type

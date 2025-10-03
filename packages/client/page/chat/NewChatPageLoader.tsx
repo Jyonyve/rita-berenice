@@ -12,7 +12,7 @@ import {
 } from '../../hook/api/index.js';
 import { useAuth } from '../../provider/AuthProvider.jsx';
 import { routeConstants } from '../../routeConstants.js';
-import { GlassCircularProgress } from '../../layout/glass/index.js';
+import { GlassCircularProgress } from '../../layout/component/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { DEFAULT_EMOTION, LANG_KEYS } from '@rita-berenice/shared/config';
 import { ProfileCdo, ChatMessage, TempChatTurn } from '@rita-berenice/shared/domain';

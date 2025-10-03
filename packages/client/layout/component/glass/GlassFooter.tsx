@@ -1,7 +1,7 @@
 // src/components/ui/GlassFooter.tsx
 
 import { Box, BoxProps, styled } from '@mui/material';
-import { getGlassEffect } from '../../style/glassEffect.js';
+import { getGlassEffect } from '../../../style/glassEffect.js';
 import { ComponentType } from 'react';
 
 /**

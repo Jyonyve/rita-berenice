@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { Typography, TypographyProps, useTheme } from '@mui/material';
-import { logoFontFamily, titleFontFamily } from '../style/typography.js';
-import { ColorVariant, getColor } from '../style/colors.js';
+import { logoFontFamily, titleFontFamily } from '../../style/typography.js';
+import { ColorVariant, getColor } from '../../style/colors.js';
 import { useHoverState } from './index.js';
 
 // The props interface is correct. We will use 'hover' for clarity.

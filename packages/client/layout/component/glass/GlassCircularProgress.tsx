@@ -1,6 +1,6 @@
 import React, { FC } from 'react';
 import { Box, CircularProgress, CircularProgressProps, Typography, useTheme } from '@mui/material';
-import { ColorVariant, getColor } from '../../style/colors.js';
+import { ColorVariant, getColor } from '../../../style/colors.js';
 
 interface GlassCircularProgressProps extends CircularProgressProps {
 	colorVariant?: ColorVariant;

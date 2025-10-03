@@ -3,7 +3,7 @@
 	"version": "1.8.0",
 	"private": true,
 	"type": "module",
-	"packageManager": "pnpm@10.17.1",
+	"packageManager": "pnpm@10.18.0",
 	"scripts": {
 		"dev": "turbo run dev",
 		"build": "turbo run build",

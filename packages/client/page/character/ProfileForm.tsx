@@ -18,7 +18,7 @@ import {
 } from '@mui/material';
 import { FC, useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { GlassButton, SolidMetallicButton } from '../../layout/index.js';
+import { GlassButton, SolidMetallicButton } from '../../layout/component/index.js';
 import { innerSpacing } from '../../style/index.js';
 import { getGenderSelectLabel, getLangText } from '../../util/translateUtils.js';
 import { ProfilePreviewList } from './ProfilePreviewList.jsx';

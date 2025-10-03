@@ -4,7 +4,7 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"dev": "vite",
+		"dev": "vite --port 3000 --strictPort  --mode development",
 		"build": "vite build",
 		"build:ssr": "vite build --mode ssr",
 		"preview": "vite preview",

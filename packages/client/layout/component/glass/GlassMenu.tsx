@@ -2,7 +2,7 @@
 
 import { FC, ReactNode } from 'react';
 import { Menu, MenuProps } from '@mui/material';
-import { glassEffect, glassEffectLight } from '../../style/glassEffect.js';
+import { glassEffect, glassEffectLight } from '../../../style/glassEffect.js';
 
 export interface GlassMenuProps extends Omit<MenuProps, 'children'> {
 	children: ReactNode;

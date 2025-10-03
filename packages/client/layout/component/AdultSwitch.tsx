@@ -1,6 +1,6 @@
 import { styled, Switch, SwitchProps } from '@mui/material';
 import { ComponentType, FC } from 'react';
-import { gold, silver } from '../style/colors.js';
+import { gold, silver } from '../../style/colors.js';
 
 // --- SVG Icons ---
 // The 'off' state icon with white text.

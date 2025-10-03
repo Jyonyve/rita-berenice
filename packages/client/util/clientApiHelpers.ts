@@ -128,6 +128,7 @@ export function genApiUrl(
  */
 export const decompressData = async <T>(compressedBase64: string): Promise<T> => {
 	try {
+		if (!compressedBase64) throw new Error('no data to decompress');
 		// Step 1: Decode the Base64 string into a byte stream (Uint8Array).
 		// This is the correct, modern way to handle this, despite the legacy name of `atob`.
 		const compressedBytes = Uint8Array.from(atob(compressedBase64), (c) => c.charCodeAt(0));

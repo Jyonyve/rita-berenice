@@ -7,7 +7,7 @@
 	"scripts": {
 		"build": "echo 'Migration package does not need building - skipping'",
 		"clean": "rimraf dist",
-		"dev": "tsx watch ./index.ts",
+		"dev": "echo 'Migration should not run in dev mode. Use specific migration commands instead.'",
 		"proxy:chromadb": "fly proxy 8000:8000 -a chromadb-flyio",
 		"init:char": "tsx --env-file ../../.env character/initCharacter.ts",
 		"check:char": "tsx --env-file ../../.env character/checkCharacter.ts",

@@ -14,7 +14,7 @@
 	"scripts": {
 		"build": "tsc --project tsconfig.json",
 		"clean": "rimraf ../../dist/server",
-		"dev": "tsx watch ./index.ts"
+		"dev": "tsx watch ./index.ts --port 3001"
 	},
 	"dependencies": {
 		"@chroma-core/cohere": "^0.1.7",

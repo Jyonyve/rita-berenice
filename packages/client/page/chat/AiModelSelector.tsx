@@ -1,7 +1,7 @@
 // src/client/component/page/chat/AiModelSelector.tsx
 
 import { alpha, FormControl, InputLabel, ListSubheader } from '@mui/material';
-import { GlassMenuItem, GlassSelect } from '../../layout/glass/index.js';
+import { GlassMenuItem, GlassSelect } from '../../layout/component/glass/index.js';
 import { glassEffect, glassEffectLight } from '../../style/glassEffect.js';
 import { SUPPORTED_MODEL_INFO } from '@rita-berenice/shared/config';
 import { AllModelNames } from '@rita-berenice/shared/domain';

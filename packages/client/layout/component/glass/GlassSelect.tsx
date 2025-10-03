@@ -2,7 +2,7 @@
 
 import { Select, SelectProps, alpha, styled } from '@mui/material';
 // Import the raw style objects directly for precise control
-import { glassEffect, glassEffectLight } from '../../style/glassEffect.js';
+import { glassEffect, glassEffectLight } from '../../../style/glassEffect.js';
 import { ComponentType } from 'react';
 
 export const GlassSelect: ComponentType<SelectProps> = styled(Select)(({ theme }) => {

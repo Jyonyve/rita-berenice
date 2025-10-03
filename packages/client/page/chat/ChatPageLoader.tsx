@@ -24,7 +24,7 @@ import { ChatPage } from './ChatPage.jsx';
 import { useAuth } from '../../provider/AuthProvider.jsx';
 import { HeaderContextType } from '../../layout/RootLayout.jsx';
 import { getDefaultImage, getImageForEmotion } from '../../util/portraitUtils.js';
-import { GlassCircularProgress } from '../../layout/glass/index.js';
+import { GlassCircularProgress } from '../../layout/component/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { ProfileForm } from '../character/ProfileForm.tsx';
 import { useResponsive } from '../../hook/useResponsive.js';

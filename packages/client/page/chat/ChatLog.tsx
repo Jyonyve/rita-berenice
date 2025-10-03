@@ -4,7 +4,7 @@ import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 
 import { useScrollEffect } from '../../hook/useScrollEffect.js';
 import ChatLogRow, { ChatLogRowProps } from './ChatLogRow.jsx';
-import { GlassCircularProgress, ScrollGlow } from '../../layout/index.js';
+import { GlassCircularProgress, ScrollGlow } from '../../layout/component/index.js';
 import { DisplayTurn, TempChatTurn } from '@rita-berenice/shared/domain';
 
 interface ChatLogProps {

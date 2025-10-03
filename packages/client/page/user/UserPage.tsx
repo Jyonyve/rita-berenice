@@ -39,7 +39,7 @@ import {
 	ExpandMore,
 } from '@mui/icons-material';
 
-import { GlassCard, GlassCircularProgress, GlassPaper } from '../../layout/glass/index.js';
+import { GlassCard, GlassCircularProgress, GlassPaper } from '../../layout/component/glass/index.js';
 import { containerSpacing } from '../../style/index.js';
 import {
 	genderToLangKey,
@@ -50,7 +50,7 @@ import {
 import { useDateFormatter, useResponsive } from '../../hook/index.js';
 import { useCredentialApi, useUserApi } from '../../hook/api/index.js';
 import { useToast } from '../../provider/ToastProvider.jsx';
-import { ImageCropModal, RomanticTitle } from '../../layout/index.js';
+import { ImageCropModal, RomanticTitle } from '../../layout/component/index.js';
 import { useNavigate } from 'react-router';
 import { CredentialSection } from './CredentialSection.tsx';
 import {

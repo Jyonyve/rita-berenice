@@ -24,8 +24,8 @@ import {
 	GlassMenuItem,
 	GlassPortrait,
 	GlassMenu,
-} from './glass/index.js';
-import { RomanticTitle } from './RomanticTitle.jsx';
+} from './component/glass/index.js';
+import { RomanticTitle } from './component/RomanticTitle.js';
 import { gold, silver } from '../style/colors.js';
 import { routeConstants } from '../routeConstants.js';
 import { getLangText } from '../util/translateUtils.js';
@@ -34,10 +34,10 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ImageIcon from '@mui/icons-material/Image';
 import CloseIcon from '@mui/icons-material/Close';
 import { useSessionApi, useUserApi } from '../hook/api/index.js';
-import { InlineEditableField } from './InlineEditableField.jsx';
-import ReloadToHome from './ReloadToHome.jsx';
+import { InlineEditableField } from './component/InlineEditableField.js';
+import ReloadToHome from './component/ReloadToHome.js';
 import { titleFontFamily } from '../style/typography.js';
-import { LanguageSwitch, ThemeSwitch } from './index.js';
+import { LanguageSwitch, ThemeSwitch } from './component/index.js';
 import { APPNAME, LANG_KEYS } from '@rita-berenice/shared/config';
 
 interface LoginModalProps {
@@ -403,7 +403,7 @@ export function RootLayout() {
 								<ImageIcon />
 							</IconButton>
 						)}
-
+						{!isLoggedIn && <LanguageSwitch />}
 						{!isSessionLoading && (
 							<>
 								<IconButton

@@ -1,7 +1,7 @@
 // src/client/layout/glass/GlassMenuItem.tsx
 
 import { MenuItem, styled, alpha, MenuItemProps } from '@mui/material';
-import { getColor, ColorVariant } from '../../style/colors.js';
+import { getColor, ColorVariant } from '../../../style/colors.js';
 import { ComponentType } from 'react';
 
 // Define the custom props our component will accept

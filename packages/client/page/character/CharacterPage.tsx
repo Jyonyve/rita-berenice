@@ -7,7 +7,7 @@ import {
 	GlassCard,
 	GlassPaper,
 	GlassPortraitSlider,
-} from '../../layout/glass/index.js';
+} from '../../layout/component/glass/index.js';
 import { useAuth } from '../../provider/AuthProvider.jsx';
 import { useToast } from '../../provider/ToastProvider.jsx';
 import { routeConstants } from '../../routeConstants.js';
@@ -16,7 +16,7 @@ import { getCharacterImageArray } from '../../util/portraitUtils.js';
 import { getLangAlertText, getLangText } from '../../util/translateUtils.js';
 import { SessionPreviewList } from './SessionPreviewList.jsx';
 import { ProfileHistoryTabs } from './ProfileHistoryTab.jsx';
-import { SolidMetallicButton, RomanticTitle } from '../../layout/index.js';
+import { SolidMetallicButton, RomanticTitle } from '../../layout/component/index.js';
 import { CharacterForm } from './CharacterForm.jsx'; // Import the form
 import { LANG_KEYS } from '@rita-berenice/shared/config';
 import { CharacterInfo, ProfileCdo } from '@rita-berenice/shared/domain';

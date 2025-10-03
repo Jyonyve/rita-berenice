@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, FC } from 'react';
 import { Box, BoxProps, SxProps, Theme, useTheme } from '@mui/material';
-import { ColorVariant, getColor } from '../../style/colors.js';
+import { ColorVariant, getColor } from '../../../style/colors.js';
 import { useHoverState } from '../index.js';
 import { ASPECT_RATIOS } from '@rita-berenice/shared/config';
 

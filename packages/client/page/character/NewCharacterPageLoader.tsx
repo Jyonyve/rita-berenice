@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from 'react-router';
 import { useAuth } from '../../provider/index.js';
-import { GlassPaper } from '../../layout/glass/index.js';
+import { GlassPaper } from '../../layout/component/glass/index.js';
 import { routeConstants } from '../../routeConstants.js';
 import { CharacterForm } from './CharacterForm.jsx';
 

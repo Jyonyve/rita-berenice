@@ -3,8 +3,8 @@
 import React from 'react';
 import { Typography, Box, Grid } from '@mui/material';
 import { useNavigate } from 'react-router';
-import { GlassCard, GlassPaper, GlassPortrait } from '../../layout/glass/index.js';
-import { RomanticTitle } from '../../layout/index.js';
+import { GlassCard, GlassPaper, GlassPortrait } from '../../layout/component/glass/index.js';
+import { RomanticTitle } from '../../layout/component/index.js';
 import { containerSpacing } from '../../style/index.js';
 import { getDefaultImage } from '../../util/portraitUtils.js';
 import { getLangText } from '../../util/translateUtils.js';

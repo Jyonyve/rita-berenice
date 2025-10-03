@@ -1,5 +1,5 @@
 import { FC } from 'react';
-import { useLanguage } from '../provider/LanguageProvider.jsx';
+import { useLanguage } from '../../provider/LanguageProvider.js';
 import { Switch } from '@mui/material';
 
 export const LanguageSwitch: FC = () => {

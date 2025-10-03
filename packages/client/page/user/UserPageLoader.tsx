@@ -1,7 +1,7 @@
 // src/client/page/UserPageLoader.tsx
 import { Container, Typography } from '@mui/material';
 
-import { GlassCircularProgress } from '../../layout/glass/index.js';
+import { GlassCircularProgress } from '../../layout/component/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { useAuth } from '../../provider/AuthProvider.jsx';
 import { UserPage } from './UserPage.jsx';

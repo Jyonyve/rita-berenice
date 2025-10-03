@@ -1,8 +1,8 @@
 // src/components/ui/GlassButton.tsx
 
 import { Button, ButtonProps, Palette, styled } from '@mui/material';
-import { getGlassEffect, glassEffect, glassEffectLight } from '../../style/glassEffect.js';
-import { ColorVariant, getColor, gold, silver } from '../../style/colors.js';
+import { getGlassEffect, glassEffect, glassEffectLight } from '../../../style/glassEffect.js';
+import { ColorVariant, getColor, gold, silver } from '../../../style/colors.js';
 import { ComponentType } from 'react';
 
 interface GlassButtonProps extends ButtonProps {

@@ -18,7 +18,7 @@ import {
 } from '@mui/material';
 import { Visibility, VisibilityOff, CheckCircle, Warning } from '@mui/icons-material';
 import { useForm, Controller, useWatch } from 'react-hook-form';
-import { GlassButton, GlassCard } from '../../layout/index.js';
+import { GlassButton, GlassCard } from '../../layout/component/index.js';
 import { useCredentialApi } from '../../hook/api/useCredentialApi.js';
 import { useToast } from '../../provider/ToastProvider.tsx';
 import { LANG_KEYS } from '@rita-berenice/shared/config';

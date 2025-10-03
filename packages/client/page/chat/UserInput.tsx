@@ -8,11 +8,11 @@ import {
 	GlassCircularProgress,
 	GlassMenu,
 	GlassMenuItem,
-} from '../../layout/glass/index.js';
+} from '../../layout/component/glass/index.js';
 import { useToast } from '../../provider/ToastProvider.jsx';
 import { getLangAlertText, getLangText } from '../../util/translateUtils.js';
 import { AiModelSelector } from './AiModelSelector.jsx';
-import { AdultSwitch } from '../../layout/AdultSwitch.jsx';
+import { AdultSwitch } from '../../layout/component/AdultSwitch.js';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { silver } from '../../style/index.js';
 import { LANG_KEYS, REQUEST_CHARACTER_LIMIT } from '@rita-berenice/shared/config';

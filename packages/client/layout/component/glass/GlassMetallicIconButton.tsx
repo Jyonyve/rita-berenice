@@ -1,8 +1,8 @@
 // src/components/ui/GlassMetallicIconButton.tsx
 
 import { IconButton, IconButtonProps, styled } from '@mui/material';
-import { getGlassEffect } from '../../style/glassEffect.js';
-import { ColorVariant, getColor, gold, silver } from '../../style/colors.js';
+import { getGlassEffect } from '../../../style/glassEffect.js';
+import { ColorVariant, getColor, gold, silver } from '../../../style/colors.js';
 import { ComponentType } from 'react';
 
 interface GlassMetallicIconButtonProps extends IconButtonProps {

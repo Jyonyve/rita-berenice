@@ -1,7 +1,7 @@
 // src/components/ui/SolidMetallicButton.tsx
 
 import { Button, styled, alpha, PaletteColor, Palette, ButtonProps } from '@mui/material';
-import { getColor, ColorVariant, gold, silver } from '../style/colors.js';
+import { getColor, ColorVariant, gold, silver } from '../../style/colors.js';
 import { ComponentType } from 'react';
 
 interface SolidMetallicButtonProps extends ButtonProps {

@@ -1,7 +1,7 @@
 import { Box, Grid, Typography } from '@mui/material';
 import { FC } from 'react';
 import { useNavigate } from 'react-router';
-import { GlassCard, GlassPaper, GlassPortraitSlider } from '../../layout/glass/index.js';
+import { GlassCard, GlassPaper, GlassPortraitSlider } from '../../layout/component/glass/index.js';
 
 import { useToast } from '../../provider/ToastProvider.jsx';
 

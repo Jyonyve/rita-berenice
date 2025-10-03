@@ -2,7 +2,7 @@
 
 import { Box, CardContent, Tab, Tabs } from '@mui/material';
 import { FC, SyntheticEvent, useState } from 'react';
-import { GlassCard } from '../../layout/glass/index.js'; // Assuming GlassCard is here
+import { GlassCard } from '../../layout/component/glass/index.js'; // Assuming GlassCard is here
 import { getLangText } from '../../util/translateUtils.js';
 import { ProfileForm } from './ProfileForm.js';
 import { HistoryPreviewList } from './HistoryPreviewList.jsx';

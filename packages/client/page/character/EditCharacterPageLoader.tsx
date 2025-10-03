@@ -1,7 +1,7 @@
 // src/client/page/character/EditCharacterPage.tsx
 import { FC, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { GlassCircularProgress, GlassPaper } from '../../layout/glass/index.js';
+import { GlassCircularProgress, GlassPaper } from '../../layout/component/glass/index.js';
 import { routeConstants } from '../../routeConstants.js';
 import { CharacterForm } from './CharacterForm.jsx';
 import { useCharacterApi } from '../../hook/index.js';

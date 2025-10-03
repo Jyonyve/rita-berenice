@@ -1,9 +1,9 @@
 // Add to RootLayout.tsx, near LanguageSwitch
 
-import { useColorMode } from '../provider/index.js';
+import { useColorMode } from '../../provider/index.js';
 import { FC } from 'react';
 import { Switch } from '@mui/material';
-import { silver } from '../style/colors.js';
+import { silver } from '../../style/colors.js';
 
 export const ThemeSwitch: FC = () => {
 	const { mode, toggleMode } = useColorMode();

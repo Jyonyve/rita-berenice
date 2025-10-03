@@ -14,6 +14,7 @@ export const typography: TypographyVariantsOptions = {
 	// Default body font
 	fontFamily: [
 		// 'HakgyoansimBareondotum',
+		'Pretendard Variable',
 		'Pretendard',
 		'-apple-system',
 		'BlinkMacSystemFont',

@@ -9,7 +9,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import { Box, IconButton, TextField, Typography, useTheme } from '@mui/material';
 import { FC, useEffect, useState } from 'react';
 import { styleEntryFont } from '../../util/styleUtils.jsx';
-import { GlassCircularProgress, GlassBox } from '../../layout/glass/index.js';
+import { GlassCircularProgress, GlassBox } from '../../layout/component/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { parseEntriesToText } from '../../util/chatParseUtils.js';
 import { REQUEST_CHARACTER_LIMIT, LANG_KEYS } from '@rita-berenice/shared/config';

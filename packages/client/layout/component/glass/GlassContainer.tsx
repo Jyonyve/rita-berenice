@@ -2,7 +2,7 @@
 
 import React, { useState, Children, cloneElement, isValidElement, FC } from 'react';
 import { Card, styled, PaperProps, CardContent, CardContentProps } from '@mui/material';
-import { getGlassEffect } from '../../style/glassEffect.js';
+import { getGlassEffect } from '../../../style/glassEffect.js';
 import { HoverContext } from '../index.js';
 
 const StyledGlassContainer = styled(Card)(({ theme }) => ({
@@ -14,11 +14,9 @@ const StyledGlassContainer = styled(Card)(({ theme }) => ({
 	height: '100%',
 }));
 
-interface GlassCardProps extends PaperProps {
-	contentProps?: CardContentProps;
-}
+interface GlassContainerProps extends PaperProps {}
 
-export const GlassCard: FC<GlassCardProps> = ({ children, sx, contentProps, ...rest }) => {
+export const GlassContainer: FC<GlassContainerProps> = ({ children, sx, ...rest }) => {
 	// This internal state management is perfectly correct.
 	const [isHovering, setIsHovering] = useState(false);
 
@@ -30,9 +28,7 @@ export const GlassCard: FC<GlassCardProps> = ({ children, sx, contentProps, ...r
 			onMouseLeave={() => setIsHovering(false)}
 			sx={sx}
 		>
-			<HoverContext.Provider value={isHovering}>
-				<CardContent {...contentProps}>{children}</CardContent>
-			</HoverContext.Provider>
+			<HoverContext.Provider value={isHovering}>{children}</HoverContext.Provider>
 		</StyledGlassContainer>
 	);
 };
