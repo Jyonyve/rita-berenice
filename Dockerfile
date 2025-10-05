@@ -26,7 +26,7 @@ COPY packages/server ./packages/server
 
 # Copy build config files
 COPY tsconfig.base.json tsconfig.json ./
-COPY vite.config.ts ./
+COPY packages/client/vite.config.ts ./
 
 # CRITICAL: Accept build args in builder stage
 ARG VITE_APP_ENV
