@@ -6,6 +6,7 @@
 	"scripts": {
 		"dev": "vite --port 3000 --strictPort  --mode development",
 		"build": "vite build",
+		"build:static": "vite build --mode static --outDir ../../dist/static",
 		"build:ssr": "vite build --mode ssr",
 		"preview": "vite preview",
 		"clean": "rimraf ../../dist/client"

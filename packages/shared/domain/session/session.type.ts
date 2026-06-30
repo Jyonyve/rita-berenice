@@ -17,7 +17,7 @@ export interface SessionMetadata {
 
 export interface SessionDocument {
 	lastCharMessage: string;
-	userNote:string
+	userNote: string;
 }
 export type SessionInfo = SessionMetadata & SessionDocument;
 

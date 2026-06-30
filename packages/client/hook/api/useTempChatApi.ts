@@ -1,5 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
+import {
+	ApiRequestConfig,
+	apiClient,
+	decompressData,
+	genApiUrl,
+} from '../../util/clientApiHelpers.js';
 import { TempChatResponse } from '@rita-berenice/shared/api';
 import { MODULE_NAMES } from '@rita-berenice/shared/config';
 import { TempChatTurn } from '@rita-berenice/shared/domain';
@@ -47,10 +52,8 @@ export const useTempChatApi = () => {
 			queryKey: ['tempChat', 'detail', 'getTempChatTurn', sessionId, sequence],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAMES.TEMP, 'getTempChatTurn', [sessionId, sequence]);
-				const response = await apiClient.get<Payload>(url, {
-					_suppressToast: true,
-					_suppress404Error: true,
-				});
+				const requestConfig: ApiRequestConfig = { _suppressToast: true, _suppress404Error: true };
+				const response = await apiClient.get<Payload>(url, requestConfig);
 				return decompressData<TempChatResponse>(response.data.payload);
 			},
 			enabled: !!sessionId && sequence >= 0,

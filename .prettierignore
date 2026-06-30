@@ -1,0 +1,27 @@
+node_modules
+dist
+dist-ssr
+packages/*/dist
+.turbo
+.vite_cache
+coverage
+*.tsbuildinfo
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Generated or bulky project data
+logs
+public/assets
+packages/client/asset
+packages/migration/chat/progress
+packages/migration/chat/result
+packages/migration/chat/*.json
+packages/migration/recap/exported
+packages/migration/recap/output
+
+# Lockfiles and package-manager internals
+pnpm-lock.yaml
+.pnpm-store

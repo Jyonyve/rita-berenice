@@ -63,10 +63,7 @@ async function migrateChatFromJsonl(filePath: string): Promise<void> {
 
 	try {
 		const fileStream = fs.createReadStream(filePath);
-		const rl = readline.createInterface({
-			input: fileStream,
-			crlfDelay: Infinity,
-		});
+		const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
 
 		let chatTurnBatch: ChatTurn[] = [];
 		let totalLines = 0;
@@ -110,9 +107,7 @@ async function migrateCollection(
 	);
 	try {
 		// Get source collection (it will use its original embedding function for retrieval)
-		const sourceCollection = await sourceClient.getCollection({
-			name: collectionName,
-		});
+		const sourceCollection = await sourceClient.getCollection({ name: collectionName });
 
 		// Create destination collection with the SPECIFIED embedding function
 		const destCollection = await destClient.getOrCreateCollection({

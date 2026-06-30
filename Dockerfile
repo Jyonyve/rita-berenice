@@ -1,7 +1,7 @@
 # Stage 1: Base image with pnpm
 FROM node:22-slim AS base
 WORKDIR /app
-RUN corepack enable pnpm && corepack install -g pnpm@10.17.1
+RUN corepack enable pnpm && corepack install -g pnpm@10.18.0
 
 # Stage 2: Install dependencies (workspace-aware)
 FROM base AS deps

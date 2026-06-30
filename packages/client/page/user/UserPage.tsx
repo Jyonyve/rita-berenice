@@ -39,7 +39,11 @@ import {
 	ExpandMore,
 } from '@mui/icons-material';
 
-import { GlassCard, GlassCircularProgress, GlassPaper } from '../../layout/component/glass/index.js';
+import {
+	GlassCard,
+	GlassCircularProgress,
+	GlassPaper,
+} from '../../layout/component/glass/index.js';
 import { containerSpacing } from '../../style/index.js';
 import {
 	genderToLangKey,

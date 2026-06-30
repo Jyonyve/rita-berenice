@@ -1,7 +1,13 @@
 import Session from 'supertokens-web-js/recipe/session/index.js';
-import axios from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 import { ApiError } from '@rita-berenice/shared/domain';
 import { toKebabCase } from '@rita-berenice/shared/util';
+
+export type ApiRequestConfig = AxiosRequestConfig & {
+	_suppressToast?: boolean;
+	_suppress404Error?: boolean;
+	_retry?: boolean;
+};
 
 // API 클라이언트 인스턴스 생성
 export const apiClient = axios.create({
@@ -30,7 +36,7 @@ export function setupApiClient(
 	apiClient.interceptors.response.use(
 		(response) => response,
 		async (error) => {
-			const originalRequest = error.config as any;
+			const originalRequest = error.config as ApiRequestConfig;
 			// 1. The Suppression Override: This is the most important check.
 			// It runs before any other logic.
 			if (error?.response?.status === 404 && originalRequest._suppress404Error) {

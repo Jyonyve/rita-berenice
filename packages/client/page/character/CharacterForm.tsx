@@ -16,7 +16,12 @@ import { FC, useState, useRef, ChangeEvent, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { CloudUpload } from '@mui/icons-material';
 import { useCharacterApi, useLoreApi } from '../../hook/api/index.js';
-import { GlassButton, GlassCard, GlassPaper, GlassSelect } from '../../layout/component/glass/index.js';
+import {
+	GlassButton,
+	GlassCard,
+	GlassPaper,
+	GlassSelect,
+} from '../../layout/component/glass/index.js';
 import { useToast } from '../../provider/ToastProvider.jsx';
 import { containerSpacing } from '../../style/index.js';
 import {
