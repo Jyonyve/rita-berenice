@@ -57,7 +57,7 @@ const resolve = (p: string) =>
 	isProduction ? path.resolve(__dirname, '../..', p) : path.resolve(__dirname, p);
 
 // --- Template HTML paths ---
-const templateDevHtmlFile = path.resolve(__dirname, '../../index.html');
+const templateDevHtmlFile = path.resolve(__dirname, '../client/index.html');
 const templateProdHtmlBuilt = path.resolve(__dirname, '../client/index.html');
 const dashboardAdmins = serverEnv.DASHBOARD_ADMIN_EMAILS;
 
@@ -196,7 +196,7 @@ async function createServer() {
 			},
 			appType: 'custom',
 			base: BASE,
-			root: path.resolve(__dirname, '../..'),
+			root: path.resolve(__dirname, '../client'),
 			// Add SSR optimizations
 			optimizeDeps: {
 				// Pre-bundle during server start for SSR
@@ -308,7 +308,7 @@ async function createServer() {
 				// DEVELOPMENT
 				template = await fs.readFile(templateDevHtmlFile, 'utf-8');
 				template = await vite.transformIndexHtml(req.originalUrl, template);
-				const serverEntry = await vite.ssrLoadModule('/src/entry-server.tsx');
+				const serverEntry = await vite.ssrLoadModule('/entry-server.tsx');
 				render = serverEntry.render;
 			} else {
 				// PRODUCTION

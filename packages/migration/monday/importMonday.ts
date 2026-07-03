@@ -12,9 +12,14 @@ import {
 	SessionInfo,
 	UserInfo,
 } from '@rita-berenice/shared/domain';
-import { buildChatTurnId, buildMessageId, buildProfileId } from '@rita-berenice/shared/util';
+import {
+	buildChatTurnId,
+	buildMessageId,
+	buildProfileId,
+	getAiModelInfo,
+} from '@rita-berenice/shared/util';
 import { closeDatabase, getDatabase } from '@rita-berenice/server/db';
-import { memoryEngine } from '@rita-berenice/server/service';
+import { memoryEngine, personaEngine } from '@rita-berenice/server/service';
 import {
 	characterStore,
 	chatStore,
@@ -22,7 +27,7 @@ import {
 	sessionStore,
 	userStore,
 } from '@rita-berenice/server/store';
-import { parseConversationToEntries } from '@rita-berenice/server/util';
+import { detectLanguage, parseConversationToEntries } from '@rita-berenice/server/util';
 import { mondayOriginal } from '../character/migrationTemplates.js';
 import { USER_ID } from '../userId.js';
 
@@ -296,6 +301,55 @@ const enrichMonday = async () => {
 	if (complete !== 9) throw new Error(`Expected 9 enriched turns, found ${complete}.`);
 };
 
+const chatSmokeMonday = async () => {
+	const query = 'Do you remember our conversation about TypeScript, Java, and AI development?';
+	const [chatResponse, characterResponse, profileResponse] = await Promise.all([
+		chatStore.getAllChatTurns(SESSION_ID),
+		characterStore.getCharacter(mondayOriginal.characterId),
+		profileStore.getProfileBySessionId(SESSION_ID),
+	]);
+	const recentTurns = chatResponse.chatTurns.slice(-3);
+	const memories = await memoryEngine.recallRelevantMemories(
+		SESSION_ID,
+		query,
+		USER_ID,
+		recentTurns,
+		detectLanguage(query)
+	);
+	const recalledSequences = memories.longTermHistory.map((turn) => turn.sequence);
+	const memoryPassed = recalledSequences.includes(0) || recalledSequences.includes(1);
+	if (!memoryPassed) {
+		throw new Error('End-to-end smoke test failed to recall a programming-related Monday turn.');
+	}
+
+	const persona = await personaEngine.generateResponse(
+		memories,
+		characterResponse.characterInfo,
+		profileResponse.profileInfo,
+		query,
+		getAiModelInfo('gpt-4o-mini')
+	);
+	const responseLength = persona.response.trim().length;
+	const responsePassed = responseLength > 0;
+	console.log(
+		JSON.stringify(
+			{
+				query,
+				recentSequences: recentTurns.map((turn) => turn.sequence),
+				recalledSequences,
+				memoryPassed,
+				personaEmotion: persona.emotion,
+				responseLength,
+				responsePassed,
+				passed: memoryPassed && responsePassed,
+			},
+			null,
+			2
+		)
+	);
+	if (!responsePassed) throw new Error('End-to-end smoke test generated an empty response.');
+};
+
 const command = process.argv[2] ?? 'validate';
 
 try {
@@ -307,8 +361,12 @@ try {
 		await recallMonday();
 	} else if (command === 'enrich') {
 		await enrichMonday();
+	} else if (command === 'chat-smoke') {
+		await chatSmokeMonday();
 	} else {
-		throw new Error(`Unknown command '${command}'. Use 'validate', 'import', 'recall', or 'enrich'.`);
+		throw new Error(
+			`Unknown command '${command}'. Use 'validate', 'import', 'recall', 'enrich', or 'chat-smoke'.`
+		);
 	}
 } finally {
 	await closeDatabase();

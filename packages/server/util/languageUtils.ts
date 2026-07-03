@@ -12,6 +12,11 @@ import { franc } from 'franc';
  * @returns 'kor' for Korean, or 'eng' for English. Defaults to 'kor'.
  */
 export const detectLanguage = (text: string): LangCode => {
+	const hangulCount = (text.match(/[\uac00-\ud7a3]/g) ?? []).length;
+	const latinCount = (text.match(/[A-Za-z]/g) ?? []).length;
+	if (hangulCount > 0) return 'kor';
+	if (latinCount >= 5) return 'eng';
+
 	// For very short inputs (e.g., "ok", "no"), franc can be unreliable.
 	// Defaulting to Korean is a safe bet for your primary user base.
 	if (!text || text.trim().length < 5) {

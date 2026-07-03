@@ -38,18 +38,20 @@ Baseline scaffolding:
 - Run focused tests: `pnpm test`
 - Run server tests: `pnpm test:server`
 - Run deterministic RAG retrieval evaluation: `pnpm eval:rag`
-- Start local PostgreSQL with pgvector: `pnpm db:up`
+- Start local PostgreSQL, pgvector, and SuperTokens: `pnpm db:up`
 - Generate Drizzle migrations: `pnpm db:generate`
 - Apply Drizzle migrations: `pnpm db:migrate`
 - Check formatting: `pnpm format:check`
 - Run the baseline local gate: `pnpm check`
-- Start all dev tasks through Turbo: `pnpm dev`
+- Start the Express SSR/API host with Vite middleware: `pnpm dev`
+- Start the standalone Vite client only: `pnpm dev:client`
 - Start production server after build: `pnpm start`
 - Check outdated dependencies: `pnpm update:check`
 - Validate the original Monday fixture without writes: `pnpm data:monday:validate`
 - Import the original Monday fixture and embeddings: `pnpm data:monday:import`
 - Smoke-test semantic recall for the Monday fixture: `pnpm data:monday:recall`
 - Enrich the Monday fixture with structured RAG metadata: `pnpm data:monday:enrich`
+- Run Monday retrieval plus persona generation smoke test: `pnpm data:monday:chat-smoke`
 
 Package-local commands:
 

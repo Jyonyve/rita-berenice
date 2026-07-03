@@ -21,7 +21,7 @@ const serverEnvSchema = z.object({
 	PORT: portSchema.default(3000),
 	HOST: z.string().default('0.0.0.0'),
 	BASE: z.string().default('/'),
-	SUPERTOKENS_DOMAIN: z.string().min(1, 'SUPERTOKENS_DOMAIN is required'),
+	SUPERTOKENS_DOMAIN: z.string().url().default('http://localhost:3567'),
 	SUPERTOKENS_API_KEY: z.string().optional(),
 	VITE_APP_DOMAIN: z.string().optional(),
 	VITE_API_DOMAIN: z.string().optional(),

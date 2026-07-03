@@ -14,11 +14,11 @@
 	"scripts": {
 		"build": "tsc --project tsconfig.json",
 		"clean": "rimraf ../../dist/server",
-		"dev": "tsx watch ./index.ts --port 3001",
+		"dev": "tsx watch --exclude ../client/node_modules/** --exclude ../../.vite_cache/** --env-file ../../.env ./server.ts",
 		"db:generate": "drizzle-kit generate --config drizzle.config.ts",
 		"db:migrate": "drizzle-kit migrate --config drizzle.config.ts",
 		"db:studio": "drizzle-kit studio --config drizzle.config.ts",
-		"test": "tsx --test service/llmService.test.ts util/structuredOutputUtils.test.ts util/partialJsonUtils.test.ts util/backgroundJobQueue.test.ts eval/ragEvaluation.test.ts",
+		"test": "tsx --test service/llmService.test.ts util/structuredOutputUtils.test.ts util/partialJsonUtils.test.ts util/backgroundJobQueue.test.ts util/languageUtils.test.ts eval/ragEvaluation.test.ts",
 		"eval:rag": "tsx --test eval/ragEvaluation.test.ts"
 	},
 	"dependencies": {
