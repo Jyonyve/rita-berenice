@@ -41,9 +41,9 @@ export const SupportAiModelList = Object.values(SUPPORTED_MODEL_INFO)
 export type DefaultAiRole = 'system' | 'user' | 'assistant';
 
 export const DEFAULT_EXTRACTION_MODEL: AiModelInfo = {
-	platform: 'openrouter',
-	provider: 'google',
-	model: 'google/gemini-2.5-flash-lite',
+	platform: 'direct',
+	provider: 'openai',
+	model: 'gpt-4o-mini',
 	temperature: 0.3,
-	maxTokens: MODEL_LIMITS_INFO['google/gemini-2.5-flash-lite']?.maxOutputTokens || 8192,
+	maxTokens: MODEL_LIMITS_INFO['gpt-4o-mini']?.maxOutputTokens || 8192,
 };

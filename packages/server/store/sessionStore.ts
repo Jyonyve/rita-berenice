@@ -51,6 +51,15 @@ const requireSession = async (sessionId: string): Promise<SessionInfo> => {
 };
 
 export const sessionStore = {
+	async storeSession(sessionInfo: SessionInfo): Promise<{ sessionId: string }> {
+		try {
+			await persistSession(sessionInfo);
+			return { sessionId: sessionInfo.sessionId };
+		} catch (error) {
+			handleServiceError(error, `Failed to store session '${sessionInfo.sessionId}'`);
+		}
+	},
+
 	async createSession(
 		userId: string,
 		characterId: string,

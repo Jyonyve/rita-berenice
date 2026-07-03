@@ -94,6 +94,7 @@ export const MODEL_LIMITS_INFO: Record<
 		maxOutputTokens: 16_384,
 		recommendedOutputTokens: 4_096,
 	},
+	'gpt-4o-mini': { contextWindow: 128_000, maxOutputTokens: 16_384, recommendedOutputTokens: 2_048 },
 };
 
 export const correctAiModelInfo: Record<string, Record<string, string[]>> = {

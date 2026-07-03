@@ -22,6 +22,7 @@ import {
 	StructuredOutputValidationError,
 } from '../util/structuredOutputUtils.js';
 import { createNerSchema } from '../util/schemaUtils.js';
+import { getEmbeddingEnv } from '../config/env.js';
 
 const normalizeMessageContent = (content: unknown): string => {
 	if (!content) return '';
@@ -98,14 +99,8 @@ export const llmService = {
 		if (platform === 'direct') {
 			switch (provider) {
 				case 'openai':
-					if (!userApiKeys.openaiApiKey) throw new Error('[llmService] OpenAI API key not found.');
-					return new ChatOpenAI({
-						apiKey: userApiKeys.openaiApiKey,
-						model,
-						temperature,
-						maxTokens,
-						user: userId,
-					});
+					const openaiApiKey = userApiKeys.openaiApiKey || getEmbeddingEnv().OPENAI_API_KEY;
+					return new ChatOpenAI({ apiKey: openaiApiKey, model, temperature, maxTokens, user: userId });
 				case 'anthropic':
 					if (!userApiKeys.anthropicApiKey) throw new Error('[llmService] Anthropic API key not found.');
 					return new ChatAnthropic({

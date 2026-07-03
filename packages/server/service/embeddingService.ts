@@ -63,7 +63,13 @@ export const replaceMemoryEmbedding = async (input: {
 			eq(memoryEmbeddings.active, true)
 		),
 	});
-	if (existing) return;
+	if (existing) {
+		await db
+			.update(memoryEmbeddings)
+			.set({ metadata: input.metadata ?? {}, updatedAt: new Date().toISOString() })
+			.where(eq(memoryEmbeddings.embeddingId, existing.embeddingId));
+		return;
+	}
 
 	const vector = await embed(input.content);
 	const now = new Date().toISOString();

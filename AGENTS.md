@@ -46,6 +46,10 @@ Baseline scaffolding:
 - Start all dev tasks through Turbo: `pnpm dev`
 - Start production server after build: `pnpm start`
 - Check outdated dependencies: `pnpm update:check`
+- Validate the original Monday fixture without writes: `pnpm data:monday:validate`
+- Import the original Monday fixture and embeddings: `pnpm data:monday:import`
+- Smoke-test semantic recall for the Monday fixture: `pnpm data:monday:recall`
+- Enrich the Monday fixture with structured RAG metadata: `pnpm data:monday:enrich`
 
 Package-local commands:
 

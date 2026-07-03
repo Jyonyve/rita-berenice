@@ -146,7 +146,10 @@ export const memoryEngine = {
 	 * Takes a chat turn, enriches it with LLM-generated metadata, and populates the `enrichedMetadata` field.
 	 * This process includes term standardization using the session glossary.
 	 */
-	async enrichChatTurnViaLlm(turn: ChatTurn): Promise<ChatTurn> {
+	async enrichChatTurnViaLlm(
+		turn: ChatTurn,
+		options: { skipTermNormalization?: boolean } = {}
+	): Promise<ChatTurn> {
 		const { sessionId, userId } = turn;
 		const { characterId } = parseSessionId(sessionId);
 
@@ -155,7 +158,9 @@ export const memoryEngine = {
 			const textForNer = `${parseEntriesToConversation(
 				turn.request.entries
 			)}\n${parseEntriesToConversation(turn.response.entries)}`;
-			const extractedKpns = await llmService.extractProperNouns(textForNer, userId);
+			const extractedKpns = options.skipTermNormalization
+				? []
+				: await llmService.extractProperNouns(textForNer, userId);
 
 			// 2. Fetch all necessary context for the enrichment prompt.
 			const [profileInfo, charInfo, loreRes, historyRes, termGuidanceMap] = await Promise.all([
