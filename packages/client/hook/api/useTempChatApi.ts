@@ -1,14 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-	ApiRequestConfig,
-	apiClient,
-	decompressData,
-	genApiUrl,
-} from '../../util/clientApiHelpers.js';
+import { ApiRequestConfig, apiClient, genApiUrl } from '../../util/clientApiHelpers.js';
 import { TempChatResponse } from '@rita-berenice/shared/api';
 import { MODULE_NAMES } from '@rita-berenice/shared/config';
 import { TempChatTurn } from '@rita-berenice/shared/domain';
-import { Payload } from '@rita-berenice/shared/util';
 
 /**
  * A client-side hook for interacting with the TEMP_CHAT API endpoints.
@@ -53,8 +47,8 @@ export const useTempChatApi = () => {
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAMES.TEMP, 'getTempChatTurn', [sessionId, sequence]);
 				const requestConfig: ApiRequestConfig = { _suppressToast: true, _suppress404Error: true };
-				const response = await apiClient.get<Payload>(url, requestConfig);
-				return decompressData<TempChatResponse>(response.data.payload);
+				const response = await apiClient.get<TempChatResponse>(url, requestConfig);
+				return response.data;
 			},
 			enabled: !!sessionId && sequence >= 0,
 			retry: false,

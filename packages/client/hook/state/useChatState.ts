@@ -73,20 +73,23 @@ export const useChatState = (sessionId: string) => {
 
 		if (apiResponse?.displayTurns) {
 			const sortedApiTurns = _sortTurns(apiResponse.displayTurns);
-			// Update state and cache only if the server data is different from what's currently shown.
-			// This prevents unnecessary re-renders.
-			if (JSON.stringify(sortedApiTurns) !== JSON.stringify(chatTurns)) {
-				setChatTurns(sortedApiTurns);
-				saveMessagesToCache(sortedApiTurns);
-			}
+			setChatTurns((currentTurns) =>
+				JSON.stringify(sortedApiTurns) === JSON.stringify(currentTurns) ? currentTurns : sortedApiTurns
+			);
+			saveMessagesToCache(sortedApiTurns);
 		}
-	}, [apiResponse, isApiError, apiError, chatTurns, _sortTurns]);
+	}, [apiResponse, isApiError, apiError, _sortTurns]);
 
 	// --- STATE UPDATERS & GETTERS ---
 
 	const addChatTurn = useCallback(
 		async (turn: DisplayTurn) => {
-			setChatTurns((prev) => _sortTurns([...prev, turn]));
+			setChatTurns((previousTurns) =>
+				_sortTurns([
+					...previousTurns.filter((existingTurn) => existingTurn.sequence !== turn.sequence),
+					turn,
+				])
+			);
 			await saveMessagesToCache([turn]);
 		},
 		[_sortTurns]

@@ -81,13 +81,13 @@ const normalizeSemanticScores = (distances: number[]): number[] => {
 };
 
 // Calculate recency score from updatedAt timestamp
-const calculateRecencyScore = (updatedAt?: string): number => {
+const calculateRecencyScore = (updatedAt?: string, nowMs: number = Date.now()): number => {
 	if (!updatedAt) return 0;
 
 	const timestamp = Date.parse(updatedAt);
 	if (Number.isNaN(timestamp)) return 0;
 
-	const age = Date.now() - timestamp;
+	const age = nowMs - timestamp;
 	if (age <= 0) return 1;
 
 	return Math.max(0, 1 - age / SEMANTIC_RANKING_CONFIG.RECENT_WINDOW_MS);
@@ -107,33 +107,41 @@ const extractDistance = (distanceRaw: any): number | null => {
 export const reRankSemanticResults = (
 	queryResults: ChromaResponse[],
 	limit?: number,
-	options?: { semanticWeight?: number; recencyWeight?: number; updatedAtField?: string }
+	options?: {
+		semanticWeight?: number;
+		recencyWeight?: number;
+		updatedAtField?: string;
+		nowMs?: number;
+	}
 ): {
 	ids: string[];
 	documents: (string | null)[];
 	metadatas: (Metadata | null)[];
 	scores: number[];
 } => {
-	const hits: Array<{
-		id: string;
-		document: string | null;
-		metadata: Metadata | null;
-		distance: number;
-	}> = [];
+	const hitsById = new Map<
+		string,
+		{ id: string; document: string | null; metadata: Metadata | null; distance: number }
+	>();
 
-	// Flatten all results
+	// Merge transformed-query results, keeping each record's best semantic match.
 	for (const result of queryResults) {
 		for (let i = 0; i < result.ids.length; i++) {
 			const distance = extractDistance(result.distances?.[i]);
-			hits.push({
+			const hit = {
 				id: result.ids[i],
 				document: result.documents[i] ?? null,
 				metadata: result.metadatas[i] ?? null,
 				distance: typeof distance === 'number' ? distance : Number.POSITIVE_INFINITY,
-			});
+			};
+			const existingHit = hitsById.get(hit.id);
+			if (!existingHit || hit.distance < existingHit.distance) {
+				hitsById.set(hit.id, hit);
+			}
 		}
 	}
 
+	const hits = Array.from(hitsById.values());
 	if (!hits.length) {
 		return { ids: [], documents: [], metadatas: [], scores: [] };
 	}
@@ -145,11 +153,12 @@ export const reRankSemanticResults = (
 	const semanticWeight = options?.semanticWeight ?? SEMANTIC_RANKING_CONFIG.WEIGHTS.semantic;
 	const recencyWeight = options?.recencyWeight ?? SEMANTIC_RANKING_CONFIG.WEIGHTS.recency;
 	const updatedAtField = options?.updatedAtField ?? 'updatedAt';
+	const nowMs = options?.nowMs ?? Date.now();
 
 	// Create ranked results
 	const ranked: RankedHit[] = hits.map((hit, i) => {
 		const semanticScore = semanticScores[i];
-		const recencyScore = calculateRecencyScore((hit.metadata as any)?.[updatedAtField]);
+		const recencyScore = calculateRecencyScore((hit.metadata as any)?.[updatedAtField], nowMs);
 		const combinedScore = semanticWeight * semanticScore + recencyWeight * recencyScore;
 
 		return { ...hit, semanticScore, recencyScore, combinedScore };

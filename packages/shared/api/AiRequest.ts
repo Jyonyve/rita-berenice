@@ -1,5 +1,6 @@
 import { ChatRoleType } from '../domain/chat/chat.type.js';
-import { AiModelInfo } from '../domain/aimodel/index.js';
+import { AiModelInfo, AllModelNames } from '../domain/aimodel/index.js';
+import { ChatEntry, ChatTurn, DisplayTurn, TempChatTurn } from '../domain/chat/chat.type.js';
 
 // Common message structure
 interface MessageContent {
@@ -46,4 +47,38 @@ export interface BasicLlmRequestFormat {
 	role: ChatRoleType;
 	prompt: string;
 	aiModelInfo: AiModelInfo;
+}
+
+export interface ReceiveBotResponseRequest {
+	sessionId: string;
+	sequence: number;
+	entries: ChatEntry[];
+	modelName: AllModelNames;
+	isScene?: boolean;
+}
+
+export type ChatGenerationStage = 'preparing' | 'retrieving' | 'generating' | 'saving';
+
+export type ReceiveBotResponseStreamEvent =
+	| { type: 'status'; stage: ChatGenerationStage }
+	| { type: 'delta'; text: string }
+	| { type: 'complete'; data: TempChatTurn }
+	| { type: 'error'; message: string; clientMessage?: string };
+
+export type FinalizationJobStatus = 'queued' | 'running' | 'retrying' | 'completed' | 'failed';
+
+export interface FinalizationJobSnapshot {
+	jobId: string;
+	status: FinalizationJobStatus;
+	attempts: number;
+	maxAttempts: number;
+	createdAt: string;
+	updatedAt: string;
+	result?: ChatTurn;
+	error?: string;
+}
+
+export interface EnqueueFinalizationResponse {
+	job: FinalizationJobSnapshot;
+	displayTurn: DisplayTurn;
 }

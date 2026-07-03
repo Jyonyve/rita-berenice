@@ -100,6 +100,85 @@ export const processApiError = (err: unknown): ApiError => {
 	return new ApiError(500, 'An unknown error occurred.');
 };
 
+const buildAuthenticatedHeaders = async (): Promise<Headers> => {
+	const headers = new Headers({
+		'Content-Type': 'application/json',
+		Accept: 'application/x-ndjson',
+	});
+	if (await Session.doesSessionExist()) {
+		const token = await Session.getAccessToken();
+		headers.set('Authorization', `Bearer ${token}`);
+	}
+	return headers;
+};
+
+const openAuthenticatedStream = async (
+	url: string,
+	body: unknown,
+	signal?: AbortSignal,
+	canRetry: boolean = true
+): Promise<Response> => {
+	const response = await fetch(`/api${url}`, {
+		method: 'POST',
+		headers: await buildAuthenticatedHeaders(),
+		body: JSON.stringify(body),
+		credentials: 'include',
+		signal,
+	});
+
+	if (response.status === 401 && canRetry && (await Session.attemptRefreshingSession())) {
+		return openAuthenticatedStream(url, body, signal, false);
+	}
+
+	if (!response.ok) {
+		const errorBody = await response.json().catch(() => ({}));
+		throw new ApiError(
+			response.status,
+			errorBody.message || `Streaming request failed with status ${response.status}.`,
+			errorBody.clientMessage
+		);
+	}
+	return response;
+};
+
+export const consumeNdjsonStream = async <T>(
+	url: string,
+	body: unknown,
+	onEvent: (event: T) => void,
+	signal?: AbortSignal
+): Promise<void> => {
+	const response = await openAuthenticatedStream(url, body, signal);
+	if (!response.body) {
+		throw new ApiError(502, 'Streaming response body is missing.');
+	}
+
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder();
+	let buffer = '';
+
+	try {
+		while (true) {
+			const { done, value } = await reader.read();
+			buffer += decoder.decode(value, { stream: !done });
+			const lines = buffer.split('\n');
+			buffer = lines.pop() || '';
+
+			for (const line of lines) {
+				if (line.trim()) {
+					onEvent(JSON.parse(line) as T);
+				}
+			}
+			if (done) break;
+		}
+
+		if (buffer.trim()) {
+			onEvent(JSON.parse(buffer) as T);
+		}
+	} finally {
+		reader.releaseLock();
+	}
+};
+
 /**
  * Generates a concrete API URL path suitable for client-side API calls.
  * Inserts actual parameter values into the path.
@@ -125,40 +204,3 @@ export function genApiUrl(
 
 	return path;
 }
-
-// src/client/util/compressionUtils.ts
-
-/**
- * Decompresses a gzipped, Base64-encoded string using only native browser APIs.
- * This is the most reliable method, avoiding all Node.js polyfill issues.
- */
-export const decompressData = async <T>(compressedBase64: string): Promise<T> => {
-	try {
-		if (!compressedBase64) throw new Error('no data to decompress');
-		// Step 1: Decode the Base64 string into a byte stream (Uint8Array).
-		// This is the correct, modern way to handle this, despite the legacy name of `atob`.
-		const compressedBytes = Uint8Array.from(atob(compressedBase64), (c) => c.charCodeAt(0));
-
-		// Step 2: Create a readable stream from the compressed data.
-		const compressedStream = new ReadableStream({
-			start(controller) {
-				controller.enqueue(compressedBytes);
-				controller.close();
-			},
-		});
-
-		// Step 3: Pipe the data through the native DecompressionStream.
-		const decompressionStream = compressedStream.pipeThrough(new DecompressionStream('gzip'));
-
-		// Step 4: Use the Response API to easily read the entire decompressed stream.
-		// This is a robust way to handle the stream and get the final result.
-		const decompressedBlob = await new Response(decompressionStream).blob();
-		const decompressedText = await decompressedBlob.text();
-
-		// Step 5: Parse the resulting JSON text.
-		return JSON.parse(decompressedText);
-	} catch (error) {
-		console.error('Client-side decompression failed:', error);
-		throw new Error('Failed to decompress data on the client.');
-	}
-};

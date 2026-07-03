@@ -1,13 +1,7 @@
 // src/server/routes/credentialRoutes.ts
 import express, { type Request, type Response, type Router } from 'express';
-import {
-	asyncHandler,
-	compressData,
-	genRoutePattern,
-	validateRequestData,
-} from '../util/routeHelpers.js';
+import { asyncHandler, genRoutePattern, validateRequestData } from '../util/routeHelpers.js';
 import { credentialStore } from '../store/credentialStore.js';
-import { Payload } from '@rita-berenice/shared/util';
 
 const router: Router = express.Router();
 
@@ -17,15 +11,14 @@ const router: Router = express.Router();
  */
 router.post(
 	genRoutePattern('validateApiKeys'),
-	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		validateRequestData(req.body, 'body', ['apiKeys']);
 		const { apiKeys } = req.body;
 
 		console.log(`API HIT: POST /api/credential/validate-api-keys`);
 
 		const validationResults = await credentialStore.validateApiKeys(apiKeys);
-		const payload = compressData(validationResults);
-		res.status(200).json({ payload });
+		res.status(200).json(validationResults);
 	})
 );
 
@@ -35,15 +28,14 @@ router.post(
  */
 router.get(
 	genRoutePattern('getUserApiKeys', ['userId']),
-	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		validateRequestData(req.params, 'params', ['userId']);
 		const { userId } = req.params;
 
 		console.log(`API HIT: GET /api/credential/get-user-api-keys/${userId}`);
 
 		const response = await credentialStore.getUserApiKeys(userId);
-		const payload = compressData(response);
-		res.status(200).json({ payload });
+		res.status(200).json(response);
 	})
 );
 

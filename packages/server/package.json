@@ -14,7 +14,9 @@
 	"scripts": {
 		"build": "tsc --project tsconfig.json",
 		"clean": "rimraf ../../dist/server",
-		"dev": "tsx watch ./index.ts --port 3001"
+		"dev": "tsx watch ./index.ts --port 3001",
+		"test": "tsx --test service/llmService.test.ts util/structuredOutputUtils.test.ts util/partialJsonUtils.test.ts util/backgroundJobQueue.test.ts eval/ragEvaluation.test.ts",
+		"eval:rag": "tsx --test eval/ragEvaluation.test.ts"
 	},
 	"dependencies": {
 		"@chroma-core/cohere": "^0.1.7",

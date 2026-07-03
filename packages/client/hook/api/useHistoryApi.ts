@@ -1,10 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../../provider/ToastProvider.tsx';
-import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
+import { apiClient, genApiUrl } from '../../util/clientApiHelpers.js';
 import { LANG_KEYS, MODULE_NAMES } from '@rita-berenice/shared/config';
 import { HistoryInfo } from '@rita-berenice/shared/domain';
 import { HistoryResponse } from '@rita-berenice/shared/api';
-import { Payload } from '@rita-berenice/shared/util';
 import { getLangAlertText } from '../../util/translateUtils.js';
 
 /**
@@ -48,8 +47,8 @@ export const useHistoryApi = () => {
 			queryKey: ['history', 'list', 'getHistories', characterId], // Separate history hierarchy
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getHistories', [characterId]);
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<HistoryResponse>(response.data.payload);
+				const response = await apiClient.get<HistoryResponse>(url);
+				return response.data;
 			},
 			enabled: !!characterId,
 		});
@@ -62,8 +61,8 @@ export const useHistoryApi = () => {
 			queryKey: ['history', 'detail', 'getHistory', historyId], // Separate history hierarchy
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getHistory', [historyId]);
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<HistoryResponse>(response.data.payload);
+				const response = await apiClient.get<HistoryResponse>(url);
+				return response.data;
 			},
 			enabled: !!historyId,
 		});

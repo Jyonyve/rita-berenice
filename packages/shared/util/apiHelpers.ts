@@ -14,5 +14,3 @@ export function toKebabCase(str: string): string {
 			.toLowerCase()
 	);
 }
-
-export type Payload = { payload: string };

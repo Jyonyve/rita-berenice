@@ -1,4 +1,4 @@
-import { ChangeEvent, FC, useCallback, useEffect, useMemo, useState } from 'react';
+import { ChangeEvent, FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 // Import the new components
 import { ChatLog } from './ChatLog.jsx';
@@ -29,11 +29,15 @@ import {
 	AiModelInfo,
 	DEFAULT_EXTRACTION_MODEL,
 	AllModelNames,
-	TempChatTurnCdo,
 	ChatTurnCdo,
 	TempChatTurn,
 } from '@rita-berenice/shared/domain';
-import { getAiModelInfo, isValidAiModelInfo } from '@rita-berenice/shared/util';
+import {
+	createBasicChatTurn,
+	getAiModelInfo,
+	isValidAiModelInfo,
+} from '@rita-berenice/shared/util';
+import { ChatGenerationStage } from '@rita-berenice/shared/api';
 
 export const ChatPage: FC<{
 	characterInfo: CharacterInfo;
@@ -41,7 +45,7 @@ export const ChatPage: FC<{
 	sessionInfo: SessionInfo;
 	userId: string;
 }> = ({ characterInfo, profileInfo, sessionInfo, userId }) => {
-	const { receiveBotResponse, finalizeChatTurn } = useOrchestrationApi();
+	const { receiveBotResponse, enqueueFinalization, waitForFinalizationJob } = useOrchestrationApi();
 	const { saveTempChatTurn, getTempChatTurn } = useTempChatApi();
 	const { updateSessionOnNewMessage, updateSessionUserNote } = useSessionApi();
 	const { showError } = useErrorDialog();
@@ -61,7 +65,6 @@ export const ChatPage: FC<{
 		addChatTurn,
 		changeTempChatTurn,
 		getNextSequence,
-		getRecentTurnsForMemory,
 	} = useChatState(sessionId);
 
 	const tempSequence = useMemo(() => {
@@ -85,6 +88,10 @@ export const ChatPage: FC<{
 	const [userInput, setUserInput] = useState('');
 	const [userNote, setUserNote] = useState(sessionInfo.userNote);
 	const [isProcessing, setIsProcessing] = useState(false);
+	const [streamingText, setStreamingText] = useState('');
+	const [streamingStage, setStreamingStage] = useState<ChatGenerationStage>();
+	const streamAbortControllerRef = useRef<AbortController | undefined>(undefined);
+	const finalizationControllersRef = useRef(new Set<AbortController>());
 	const [pageError, setPageError] = useState<string>();
 	const [userEditInput, setUserEditInput] = useState('');
 	const [botEditInput, setBotEditInput] = useState('');
@@ -95,6 +102,15 @@ export const ChatPage: FC<{
 	// Modal state
 	const [isUserNoteModalOpen, setIsUserNoteModalOpen] = useState(false);
 	const [editingUserNote, setEditingUserNote] = useState(sessionInfo.userNote);
+
+	useEffect(
+		() => () => {
+			streamAbortControllerRef.current?.abort();
+			finalizationControllersRef.current.forEach((controller) => controller.abort());
+			finalizationControllersRef.current.clear();
+		},
+		[]
+	);
 
 	const allTurns = tempChatTurn ? [...chatTurns, tempChatTurn] : chatTurns;
 
@@ -167,33 +183,72 @@ export const ChatPage: FC<{
 		[showError]
 	);
 
+	const finalizeTurnInBackground = useCallback(
+		(chatTurnCdo: ChatTurnCdo) => {
+			void addChatTurn(createBasicChatTurn(chatTurnCdo));
+
+			void (async () => {
+				const controller = new AbortController();
+				finalizationControllersRef.current.add(controller);
+				try {
+					const { job, displayTurn } = await enqueueFinalization.mutateAsync({
+						cdo: chatTurnCdo,
+						signal: controller.signal,
+					});
+					await addChatTurn(displayTurn);
+					if (job.status === 'completed') return;
+
+					const finalizedTurn = await waitForFinalizationJob(
+						chatTurnCdo.sessionId,
+						chatTurnCdo.sequence,
+						controller.signal
+					);
+					await addChatTurn(finalizedTurn);
+				} catch (error) {
+					if (
+						controller.signal.aborted ||
+						(error instanceof DOMException && error.name === 'AbortError')
+					) {
+						return;
+					}
+					console.error('Background chat finalization failed:', error);
+					setPageError(
+						'The message remains visible, but memory indexing failed. It will be retried when finalized again.'
+					);
+				} finally {
+					finalizationControllersRef.current.delete(controller);
+				}
+			})();
+		},
+		[addChatTurn, enqueueFinalization, waitForFinalizationJob]
+	);
+
 	const handleSendMessage = useCallback(async () => {
 		setPageError(undefined);
 		setIsProcessing(true);
+		setStreamingText('');
+		setStreamingStage('preparing');
+		streamAbortControllerRef.current?.abort();
+		const streamController = new AbortController();
+		streamAbortControllerRef.current = streamController;
 
 		let newTempTurnResult = null;
 
 		try {
 			// 1. FIRST: Generate the new temp turn (AI response)
 			if (userInput.trim()) {
-				const inputJsonString = JSON.stringify(parseTextToEntries(userInput));
-				const recentChatTurnString = JSON.stringify(getRecentTurnsForMemory());
 				const newTempSequence = getNextSequence();
-
-				const tempChatTurnCdo: TempChatTurnCdo = {
-					sessionId,
-					sequence: newTempSequence,
-					inputJsonString,
-					userId,
-				};
-
 				newTempTurnResult = await receiveBotResponse.mutateAsync({
-					tempChatTurnCdo,
-					characterInfo,
-					profileInfo,
-					aiModelInfo,
-					recentChatTurnString,
-					isScene,
+					request: {
+						sessionId,
+						sequence: newTempSequence,
+						entries: parseTextToEntries(userInput),
+						modelName: aiModelInfo.model,
+						isScene,
+					},
+					onDelta: (text) => setStreamingText((current) => current + text),
+					onStatus: setStreamingStage,
+					signal: streamController.signal,
 				});
 			}
 
@@ -211,18 +266,7 @@ export const ChatPage: FC<{
 							response: pickedTurnSet.response,
 						};
 
-						try {
-							const savedTurn = await finalizeChatTurn.mutateAsync(finalizedTurnCdo);
-							if (savedTurn) {
-								addChatTurn(savedTurn);
-							}
-						} catch (finalizeError: any) {
-							console.warn(
-								'Failed to finalize previous turn, but continuing with new turn:',
-								finalizeError
-							);
-							// Don't throw - we still want to show the new temp turn
-						}
+						finalizeTurnInBackground(finalizedTurnCdo);
 					}
 				}
 
@@ -244,23 +288,27 @@ export const ChatPage: FC<{
 			setPageError(`An error occurred: ${err.clientMessage || err.message || 'Unknown error'}`);
 		} finally {
 			setIsProcessing(false);
+			setStreamingText('');
+			setStreamingStage(undefined);
+			if (streamAbortControllerRef.current === streamController) {
+				streamAbortControllerRef.current = undefined;
+			}
 		}
 	}, [
 		// Ensure all dependencies are correct
 		userInput,
-		sessionInfo,
 		userId,
-		characterInfo,
-		profileInfo,
+		sessionId,
 		aiModelInfo,
+		isScene,
 		tempChatTurn,
 		currentTempSetNo,
-		finalizeChatTurn,
+		finalizeTurnInBackground,
 		receiveBotResponse,
 		addChatTurn,
 		changeTempChatTurn,
 		getNextSequence,
-		getRecentTurnsForMemory,
+		updateSessionOnNewMessage,
 		chatTurns.length, // Keep this dependency
 	]);
 
@@ -275,23 +323,25 @@ export const ChatPage: FC<{
 		}
 		setIsProcessing(true);
 		setPageError(undefined);
+		setStreamingText('');
+		setStreamingStage('preparing');
+		streamAbortControllerRef.current?.abort();
+		const streamController = new AbortController();
+		streamAbortControllerRef.current = streamController;
 
 		try {
 			const sequence = tempChatTurn.sequence;
-			const inputJsonString = JSON.stringify(
-				tempChatTurn.chatTurnSets[currentTempSetNo].request.entries
-			);
-			const recentChatTurnString = JSON.stringify(getRecentTurnsForMemory());
-
-			const tempChatTurnCdo: TempChatTurnCdo = { sessionId, sequence, inputJsonString, userId };
-
 			const result: TempChatTurn = await receiveBotResponse.mutateAsync({
-				tempChatTurnCdo,
-				characterInfo,
-				profileInfo,
-				aiModelInfo,
-				recentChatTurnString,
-				isScene,
+				request: {
+					sessionId,
+					sequence,
+					entries: tempChatTurn.chatTurnSets[currentTempSetNo].request.entries,
+					modelName: aiModelInfo.model,
+					isScene,
+				},
+				onDelta: (text) => setStreamingText((current) => current + text),
+				onStatus: setStreamingStage,
+				signal: streamController.signal,
 			});
 
 			if (result) {
@@ -312,16 +362,20 @@ export const ChatPage: FC<{
 			setPageError(`Failed to regenerate response: ${err.message || 'Unknown error'}`);
 		} finally {
 			setIsProcessing(false);
+			setStreamingText('');
+			setStreamingStage(undefined);
+			if (streamAbortControllerRef.current === streamController) {
+				streamAbortControllerRef.current = undefined;
+			}
 		}
 	}, [
 		tempChatTurn,
 		aiModelInfo,
-		sessionInfo,
+		sessionId,
+		isScene,
 		receiveBotResponse,
 		changeTempChatTurn,
-		characterInfo,
-		profileInfo,
-		getRecentTurnsForMemory,
+		updateSessionOnNewMessage,
 		currentTempSetNo,
 		chatTurns.length,
 	]);
@@ -375,6 +429,8 @@ export const ChatPage: FC<{
 		onFocusTurn: setFocusedTurnIndex, // Pass down the setter
 		currentTempSetNo,
 		changeTempSetNo: setCurrentTempSetNo,
+		streamingText,
+		streamingStage,
 	};
 
 	const userInputProps = {

@@ -1,9 +1,8 @@
 // src/client/hooks/useChatApi.ts
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
+import { apiClient, genApiUrl } from '../../util/clientApiHelpers.js';
 import { ChatTurn } from '@rita-berenice/shared/domain';
-import { Payload } from '@rita-berenice/shared/util';
 import { ChatResponse } from '@rita-berenice/shared/api';
 import { MODULE_NAMES } from '@rita-berenice/shared/config';
 
@@ -47,8 +46,8 @@ export const useChatApi = () => {
 			queryKey: ['chat', 'list', 'getAllDisplayTurns', sessionId], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAMES.CHAT, 'getAllDisplayTurns', [sessionId]);
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<ChatResponse>(response.data.payload);
+				const response = await apiClient.get<ChatResponse>(url);
+				return response.data;
 			},
 			enabled: !!sessionId, // Only run the query if sessionId is available
 		});
@@ -61,8 +60,8 @@ export const useChatApi = () => {
 			queryKey: ['chat', 'detail', 'getChatTurnBySequence', sessionId, sequence], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAMES.CHAT, 'getChatTurnBySequence', [sessionId, sequence]);
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<ChatResponse>(response.data.payload);
+				const response = await apiClient.get<ChatResponse>(url);
+				return response.data;
 			},
 			enabled: !!sessionId && typeof sequence === 'number', // Only run if both are available
 		});
@@ -79,8 +78,8 @@ export const useChatApi = () => {
 	// >({
 	//     mutationFn: async ({ sessionId, queryTexts, where }) => {
 	//         const url = genApiUrl(MODULE_NAMES.CHAT, 'queryChatTurns');
-	//         const response = await apiClient.post<Payload>(url, { sessionId, queryTexts, where });
-	//         return decompressData<ChatResponse>(response.data.payload);
+	//         const response = await apiClient.post<ChatResponse>(url, { sessionId, queryTexts, where });
+	//         return response.data;
 	//     },
 	// });
 

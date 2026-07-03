@@ -2,7 +2,6 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { CollectionType } from '../db/chroma.type.js';
 
-import zlib from 'zlib';
 import { ApiError } from '@rita-berenice/shared/domain';
 import { convertArrayToString, toKebabCase } from '@rita-berenice/shared/util';
 
@@ -138,9 +137,3 @@ export function genRoutePattern(
 
 	return path;
 }
-
-export const compressData = (data: any): string => {
-	const jsonPayload = JSON.stringify(data);
-	const compressed = zlib.gzipSync(jsonPayload);
-	return compressed.toString('base64');
-};

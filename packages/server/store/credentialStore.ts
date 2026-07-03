@@ -6,6 +6,7 @@ import { ValidationResult, UserApiKeys } from '@rita-berenice/shared/domain';
 import { buildCredentialId, encryptValue, decryptValue } from '@rita-berenice/shared/util';
 import { Collection } from 'chromadb';
 import chromaDbClient from '../db/chromaDbClient.js';
+import { getCredentialEnv } from '../config/env.js';
 
 // ✅ API Response Types
 interface OpenAIUsageResponse {
@@ -21,11 +22,7 @@ interface GoogleErrorResponse {
 }
 
 const { getCredentialCollection, upsertRecord, getRecordById } = chromaDbClient;
-const ENCRYPTION_KEY = process.env.SECRET_ENCRYPTION_KEY;
-
-if (!ENCRYPTION_KEY) {
-	throw new Error('SERVER_ENCRYPTION_KEY is required for credential storage.');
-}
+const { SECRET_ENCRYPTION_KEY } = getCredentialEnv();
 
 export const credentialStore = {
 	_credentialCollection: null as Collection | null,
@@ -221,7 +218,7 @@ export const credentialStore = {
 			await Promise.all(
 				Object.entries(apiKeys).map(async ([key, value]) => {
 					if (value) {
-						encryptedKeys[key] = await encryptValue(value, ENCRYPTION_KEY!);
+						encryptedKeys[key] = await encryptValue(value, SECRET_ENCRYPTION_KEY);
 					}
 				})
 			);
@@ -260,7 +257,7 @@ export const credentialStore = {
 						try {
 							decryptedKeys[key as keyof UserApiKeys] = await decryptValue(
 								encryptedValue,
-								ENCRYPTION_KEY!
+								SECRET_ENCRYPTION_KEY
 							);
 						} catch (decryptError) {
 							console.error(`[CredentialService] Failed to decrypt key for user ${userId}:`, decryptError);

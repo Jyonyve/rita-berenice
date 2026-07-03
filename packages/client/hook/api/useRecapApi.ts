@@ -1,10 +1,9 @@
 // src/client/hooks/useRecapApi.ts
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
+import { apiClient, genApiUrl } from '../../util/clientApiHelpers.js';
 import { METADATA_TYPES, MODULE_NAMES } from '@rita-berenice/shared/config';
 import { RecapInfo } from '@rita-berenice/shared/domain';
-import { Payload } from '@rita-berenice/shared/util';
 
 /**
  * A client-side hook for interacting with the RECAP API endpoints,
@@ -43,8 +42,8 @@ export const useRecapApi = () => {
 			queryKey: ['recaps', 'list', 'getRecapsBySessionId', sessionId, type], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getRecapsBySessionId', [sessionId, type]);
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<RecapInfo[]>(response.data.payload);
+				const response = await apiClient.get<RecapInfo[]>(url);
+				return response.data;
 			},
 			enabled: !!sessionId && !!type,
 		});

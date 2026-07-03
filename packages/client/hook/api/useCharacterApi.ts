@@ -1,9 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
+import { apiClient, genApiUrl } from '../../util/clientApiHelpers.js';
 import { MODULE_NAMES } from '@rita-berenice/shared/config';
 import { CharacterResponse } from '@rita-berenice/shared/api';
 import { CharacterCdo, CharacterInfo } from '@rita-berenice/shared/domain';
-import { Payload } from '@rita-berenice/shared/util';
 
 export const useCharacterApi = () => {
 	const MODULE_NAME = MODULE_NAMES.CHARACTER;
@@ -14,8 +13,8 @@ export const useCharacterApi = () => {
 			queryKey: ['characters', 'list', 'getAllCharacters'], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getAllCharacters');
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<CharacterResponse>(response.data.payload);
+				const response = await apiClient.get<CharacterResponse>(url);
+				return response.data;
 			},
 		});
 
@@ -24,8 +23,8 @@ export const useCharacterApi = () => {
 			queryKey: ['characters', 'detail', 'getCharacter', characterId], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getCharacter', [characterId]);
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<CharacterResponse>(response.data.payload);
+				const response = await apiClient.get<CharacterResponse>(url);
+				return response.data;
 			},
 			enabled: !!characterId,
 		});
@@ -35,8 +34,8 @@ export const useCharacterApi = () => {
 			queryKey: ['characters', 'list', 'getCharactersByShowName', showName], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getCharactersByShowName', [showName]);
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<CharacterResponse>(response.data.payload);
+				const response = await apiClient.get<CharacterResponse>(url);
+				return response.data;
 			},
 			enabled: !!showName,
 		});
@@ -46,8 +45,8 @@ export const useCharacterApi = () => {
 			queryKey: ['characters', 'list', 'getCharactersByUserId', userId], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getCharactersByUserId', [userId]);
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<CharacterResponse>(response.data.payload);
+				const response = await apiClient.get<CharacterResponse>(url);
+				return response.data;
 			},
 			enabled: !!userId,
 		});

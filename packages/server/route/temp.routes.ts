@@ -5,14 +5,12 @@ import { tempStore } from '../store/tempStore.js';
 import { COLLECTIONS } from '../db/chroma.type.js';
 import {
 	asyncHandler,
-	compressData,
 	genRoutePattern,
 	validateRequestData,
 	validateSequenceRule,
 	validateServiceId,
 } from '../util/routeHelpers.js';
 import { ApiError } from '@rita-berenice/shared/domain';
-import { Payload } from '@rita-berenice/shared/util';
 
 const router: Router = express.Router();
 
@@ -49,7 +47,7 @@ router.post(
  */
 router.get(
 	genRoutePattern('getTempChatTurn', ['sessionId', 'sequence']),
-	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { sessionId, sequence: sequenceParam } = req.params;
 		validateServiceId(sessionId, collectionType);
 		validateRequestData(req.params, 'params', ['sequence'], [validateSequenceRule('sequence')]);
@@ -61,8 +59,7 @@ router.get(
 		);
 
 		const response = await tempStore.getTempChatTurn(sessionId, sequence);
-		const payload = compressData(response);
-		res.status(200).json({ payload });
+		res.status(200).json(response);
 	})
 );
 
@@ -77,7 +74,7 @@ router.get(
 router.get(
 	// The path will be something like: /api/temp/get-last-temp-turns-for-sessions
 	genRoutePattern('getLastTempTurnsForSessions'),
-	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		// Validate that the sessionIds query parameter exists.
 		validateRequestData(req.query, 'query', ['sessionIds']);
 		const { sessionIds: sessionIdsQueryParam } = req.query;
@@ -94,8 +91,7 @@ router.get(
 
 		// Call the new store function we created.
 		const response = await tempStore.getLastTempTurnsForSessions(sessionIds);
-		const payload = compressData(response);
-		res.status(200).json({ payload });
+		res.status(200).json(response);
 	})
 );
 

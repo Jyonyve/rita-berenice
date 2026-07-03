@@ -6,6 +6,14 @@ import { useScrollEffect } from '../../hook/useScrollEffect.js';
 import ChatLogRow, { ChatLogRowProps } from './ChatLogRow.jsx';
 import { GlassCircularProgress, ScrollGlow } from '../../layout/component/index.js';
 import { DisplayTurn, TempChatTurn } from '@rita-berenice/shared/domain';
+import { ChatGenerationStage } from '@rita-berenice/shared/api';
+
+const streamStatusText: Record<ChatGenerationStage, string> = {
+	preparing: 'Preparing response...',
+	retrieving: 'Recalling memories...',
+	generating: 'Writing...',
+	saving: 'Saving response...',
+};
 
 interface ChatLogProps {
 	allTurns: (DisplayTurn | TempChatTurn)[];
@@ -20,6 +28,8 @@ interface ChatLogProps {
 	onSaveTempTurnText: () => void;
 	onRegenerateResponse: () => void;
 	shouldUseMobileLayout: boolean;
+	streamingText: string;
+	streamingStage?: ChatGenerationStage;
 	focusedTurnIndex: number; // Receive the focused index
 	onFocusTurn: (index: number) => void; // Receive the handler
 }
@@ -30,6 +40,8 @@ export const ChatLog: FC<ChatLogProps> = memo(
 		isLoadingChat,
 		isProcessing,
 		clientError,
+		streamingText,
+		streamingStage,
 		shouldUseMobileLayout,
 		onFocusTurn,
 		...rest
@@ -128,12 +140,30 @@ export const ChatLog: FC<ChatLogProps> = memo(
 						);
 					}}
 					components={{
-						Footer: () =>
-							clientError ? (
-								<Typography color="error" sx={{ p: 1, textAlign: 'center' }}>
-									{clientError}
-								</Typography>
-							) : null,
+						Footer: () => (
+							<>
+								{isProcessing && (streamingText || streamingStage) ? (
+									<Box sx={{ px: 2, py: 1.5 }}>
+										<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
+											<CircularProgress size={14} color="inherit" />
+											<Typography variant="caption" color="text.secondary">
+												{streamingStage ? streamStatusText[streamingStage] : 'Writing...'}
+											</Typography>
+										</Box>
+										{streamingText ? (
+											<Typography sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+												{streamingText}
+											</Typography>
+										) : null}
+									</Box>
+								) : null}
+								{clientError ? (
+									<Typography color="error" sx={{ p: 1, textAlign: 'center' }}>
+										{clientError}
+									</Typography>
+								) : null}
+							</>
+						),
 					}}
 				/>
 			</Box>

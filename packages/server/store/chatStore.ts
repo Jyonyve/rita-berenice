@@ -480,6 +480,17 @@ export const chatStore = {
 		}
 	},
 
+	hasChatTurn: async (chatTurnId: string): Promise<boolean> => {
+		try {
+			const collection = await chatStore._getChatCollection();
+			const result = await getRecordById(collection, chatTurnId);
+			const validatedResult = validateChromaResponse(result, 'getList', collectionType);
+			return validatedResult.ids.length > 0;
+		} catch (error) {
+			handleServiceError(error, 'Error checking chat turn existence', `ChatTurnID: ${chatTurnId}`);
+		}
+	},
+
 	/**
 	 * [OPTIMIZED for Deep Copy & RAG] Fetches full, rich ChatTurn objects for a session.
 	 */

@@ -5,14 +5,12 @@ import { chatStore } from '../store/chatStore.js';
 import { COLLECTIONS } from '../db/chroma.type.js';
 import {
 	asyncHandler,
-	compressData,
 	genRoutePattern,
 	validateRequestData,
 	validateSequenceRule,
 	validateServiceId,
 } from '../util/routeHelpers.js';
 import { ChatTurn } from '@rita-berenice/shared/domain';
-import { Payload } from '@rita-berenice/shared/util';
 
 const router: Router = express.Router();
 const collectionType = COLLECTIONS.CHAT;
@@ -45,7 +43,7 @@ router.post(
 
 router.get(
 	genRoutePattern('getAllChatTurns', ['sessionId']),
-	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { sessionId } = req.params;
 		validateServiceId(sessionId, collectionType);
 		validateRequestData(req.params, 'params', ['sessionId']);
@@ -53,8 +51,7 @@ router.get(
 		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
 
 		const response = await chatStore.getAllChatTurns(sessionId);
-		const payload = compressData(response);
-		res.status(200).json({ payload });
+		res.status(200).json(response);
 	})
 );
 
@@ -66,15 +63,14 @@ router.get(
  */
 router.get(
 	genRoutePattern('getAllDisplayTurns', ['sessionId']),
-	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { sessionId } = req.params;
 		validateServiceId(sessionId, collectionType);
 		const path = genRoutePattern('getAllDisplayTurns', ['sessionId']);
 		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
 
 		const response = await chatStore.getAllDisplayTurns(sessionId);
-		const payload = compressData(response);
-		res.status(200).json({ payload });
+		res.status(200).json(response);
 	})
 );
 
@@ -87,7 +83,7 @@ router.get(
  */
 router.get(
 	genRoutePattern('getChatTurnBySequence', ['sessionId', 'sequence']),
-	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { sessionId, sequence: sequenceParam } = req.params;
 		validateServiceId(sessionId, collectionType);
 		validateRequestData(req.params, 'params', ['sequence'], [validateSequenceRule('sequence')]);
@@ -99,8 +95,7 @@ router.get(
 		);
 
 		const response = await chatStore.getChatTurnBySequence(sessionId, sequence);
-		const payload = compressData(response);
-		res.status(200).json({ payload });
+		res.status(200).json(response);
 	})
 );
 
@@ -121,7 +116,7 @@ router.get(
 // 				ChatResponse,
 // 				{ sessionId: string; queryTexts: string[]; where?: Where; limit?: number }
 // 			>,
-// 			res: Response<Payload>
+// 			res: Response
 // 		): Promise<void> => {
 // 			const { sessionId, queryTexts, where, limit } = req.body;
 // 			validateServiceId(sessionId, collectionType);
@@ -131,8 +126,7 @@ router.get(
 // 			console.log(`API HIT: POST ${path} for session ${sessionId}`);
 
 // 			const response = await chatStore.queryChatTurns(sessionId, queryTexts, where, undefined, limit);
-// 			const payload = compressData(response);
-// 			res.status(200).json({ payload });
+// 			res.status(200).json(response);
 // 		}
 // 	)
 // );

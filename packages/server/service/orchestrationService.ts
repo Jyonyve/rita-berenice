@@ -1,6 +1,6 @@
 // src/server/services/orchestrationService.ts (Updated)
 
-import { MemoryResponse } from '@rita-berenice/shared/api';
+import { ChatGenerationStage, MemoryResponse } from '@rita-berenice/shared/api';
 import { ABORT_TIMEOUT, METADATA_TYPES } from '@rita-berenice/shared/config';
 import {
 	TempChatTurnCdo,
@@ -25,6 +25,13 @@ import { personaEngine } from './personaEngine.js';
 
 const timerLabel = (sequence: number) => `RESPONSE_GENERATION: Turn ${sequence}`;
 
+export interface ReceiveBotResponseOptions {
+	isScene?: boolean;
+	signal?: AbortSignal;
+	onStatus?: (stage: ChatGenerationStage) => void;
+	onDelta?: (delta: string) => void;
+}
+
 /**
  * FINAL VERSION:
  * 클라이언트가 호출하는 메인 엔드포인트.
@@ -37,7 +44,7 @@ export const receiveBotResponse = async (
 	profileInfo: ProfileInfo,
 	aiModelInfo: AiModelInfo,
 	recentChatTurnString: string,
-	isScene?: boolean
+	options: ReceiveBotResponseOptions = {}
 ): Promise<TempChatTurn> => {
 	// --- 1. START TIMER ---
 	console.time(timerLabel(tempChatTurnCdo.sequence));
@@ -45,6 +52,12 @@ export const receiveBotResponse = async (
 	const { sequence, sessionId, inputJsonString } = tempChatTurnCdo;
 
 	const controller = new AbortController();
+	const abortFromCaller = () => controller.abort(options.signal?.reason);
+	if (options.signal?.aborted) {
+		abortFromCaller();
+	} else {
+		options.signal?.addEventListener('abort', abortFromCaller, { once: true });
+	}
 	const timeoutId = setTimeout(() => {
 		console.log(
 			`[Orchestrator] Global ${ABORT_TIMEOUT}s timeout triggered for session ${sessionId}.`
@@ -57,6 +70,7 @@ export const receiveBotResponse = async (
 	);
 
 	try {
+		options.onStatus?.('preparing');
 		// 1. 턴 가져오기 또는 생성
 		let tempTurn = await _getOrCreateTempTurn(sessionId, sequence, tempChatTurnCdo.userId);
 		// --- 2. LOG CHECKPOINT 1 ---
@@ -71,10 +85,16 @@ export const receiveBotResponse = async (
 			profileInfo,
 			aiModelInfo,
 			recentChatTurnString,
-			{ signal: controller.signal, isScene }
+			{
+				signal: controller.signal,
+				isScene: options.isScene,
+				onStatus: options.onStatus,
+				onDelta: options.onDelta,
+			}
 		);
 		console.timeLog(timerLabel(tempTurn.sequence), 'LLM RESPONSE FINISHED.');
 		// 3. 최종 상태 저장
+		options.onStatus?.('saving');
 		await tempStore.saveTempChatTurn(tempTurn);
 		console.timeLog(timerLabel(tempTurn.sequence), 'TEMP TURN SAVED.');
 
@@ -90,6 +110,7 @@ export const receiveBotResponse = async (
 		);
 	} finally {
 		clearTimeout(timeoutId);
+		options.signal?.removeEventListener('abort', abortFromCaller);
 		console.timeEnd(timerLabel(tempChatTurnCdo.sequence));
 		console.log(`[Orchestrator] Execution of receiveBotResponse for session ${sessionId} completed.`);
 	}
@@ -109,14 +130,7 @@ export const finalizeChatTurn = async (chatTurnCdo: ChatTurnCdo): Promise<ChatTu
 	console.log(`[Orchestrator] Finalizing chat turn for session ${sessionId}, sequence ${sequence}.`);
 
 	try {
-		// 1. Enrich the chat turn metadata using the memoryEngine's existing logic
-		//    The enrichChatTurnMetadataViaLlm expects a full ChatTurn, so we build one from the Cdo.
-		//    Note: You might need to add characterId to ChatTurnCdo if enrichChatTurnMetadataViaLlm uses it.
-		const basicChatTurn: ChatTurn = createBasicChatTurn(chatTurnCdo);
-
-		const enrichedChatTurn = await memoryEngine.enrichChatTurnViaLlm(basicChatTurn);
-
-		// 2. Store the fully enriched chat turn in the permanent chat history
+		const enrichedChatTurn = await enrichChatTurn(chatTurnCdo);
 		await chatStore.storeChatTurn(enrichedChatTurn);
 
 		console.log(
@@ -130,6 +144,11 @@ export const finalizeChatTurn = async (chatTurnCdo: ChatTurnCdo): Promise<ChatTu
 			'An unexpected error occurred while finalizing the chat turn.'
 		);
 	}
+};
+
+export const enrichChatTurn = async (chatTurnCdo: ChatTurnCdo): Promise<ChatTurn> => {
+	const basicChatTurn: ChatTurn = createBasicChatTurn(chatTurnCdo);
+	return memoryEngine.enrichChatTurnViaLlm(basicChatTurn);
 };
 
 /**
@@ -188,7 +207,12 @@ async function _generateAndAppendResponse(
 	profileInfo: ProfileInfo,
 	aiModelInfo: AiModelInfo,
 	recentChatTurnString: string,
-	options: { signal?: AbortSignal; isScene?: boolean }
+	options: {
+		signal?: AbortSignal;
+		isScene?: boolean;
+		onStatus?: (stage: ChatGenerationStage) => void;
+		onDelta?: (delta: string) => void;
+	}
 ): Promise<TempChatTurn> {
 	// 1. Recall relevant memories for context.
 	const langCode = detectLanguage(userConversation);
@@ -206,6 +230,7 @@ async function _generateAndAppendResponse(
 	};
 
 	if (recentChatTurn && recentChatTurn.length > 0) {
+		options.onStatus?.('retrieving');
 		console.timeLog(timerLabel(tempTurn.sequence), 'Attempting memory recall...');
 		try {
 			// Overwrite the default memories with the actual recalled data.
@@ -235,13 +260,14 @@ async function _generateAndAppendResponse(
 	}
 
 	// 2. Generate the new persona response.
+	options.onStatus?.('generating');
 	const personaResponse = await personaEngine.generateResponse(
 		recalledMemories,
 		characterInfo,
 		profileInfo,
 		userConversation,
 		aiModelInfo,
-		options
+		{ signal: options.signal, isScene: options.isScene, onDelta: options.onDelta }
 	);
 	console.timeLog(timerLabel(tempTurn.sequence), 'llm generate response finishing.');
 

@@ -39,12 +39,14 @@ import { credentialStore } from './store/credentialStore.js';
 import { ApiErrorResponse } from '@rita-berenice/shared/api';
 import { APPNAME, MODULE_NAMES } from '@rita-berenice/shared/config';
 import { ApiError } from '@rita-berenice/shared/domain';
+import { getServerEnv } from './config/env.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url)); // src/server
-const isProduction = process.env.NODE_ENV === 'production';
-const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
-const host = process.env.HOST || '0.0.0.0';
-const BASE = process.env.BASE || '/'; // Base path for the app
+const serverEnv = getServerEnv();
+const isProduction = serverEnv.NODE_ENV === 'production';
+const PORT = serverEnv.PORT;
+const host = serverEnv.HOST;
+const BASE = serverEnv.BASE; // Base path for the app
 const API_PATH = 'api';
 const AUTH_PATH = 'auth';
 const BASE_API = `/${API_PATH}`;
@@ -57,10 +59,7 @@ const resolve = (p: string) =>
 // --- Template HTML paths ---
 const templateDevHtmlFile = path.resolve(__dirname, '../../index.html');
 const templateProdHtmlBuilt = path.resolve(__dirname, '../client/index.html');
-const SUPERTOKENS_DOMAIN = process.env.SUPERTOKENS_DOMAIN;
-const dashboardAdmins = process.env.DASHBOARD_ADMIN_EMAILS
-	? process.env.DASHBOARD_ADMIN_EMAILS.split(',').map((email) => email.trim())
-	: [];
+const dashboardAdmins = serverEnv.DASHBOARD_ADMIN_EMAILS;
 
 // --- Language detection middleware (Korean-priority) ---
 const detectLanguageMiddleware = (req: Request, res: Response, next: NextFunction) => {
@@ -97,19 +96,18 @@ const detectLanguageMiddleware = (req: Request, res: Response, next: NextFunctio
 };
 
 async function createServer() {
-	if (!SUPERTOKENS_DOMAIN) {
-		throw new Error('invalid supertokens login domain');
-	}
-
 	const app = express();
 
 	supertokens.init({
 		framework: 'express',
-		supertokens: { connectionURI: SUPERTOKENS_DOMAIN, apiKey: process.env.SUPERTOKENS_API_KEY },
+		supertokens: {
+			connectionURI: serverEnv.SUPERTOKENS_DOMAIN,
+			apiKey: serverEnv.SUPERTOKENS_API_KEY,
+		},
 		appInfo: {
 			appName: APPNAME,
-			websiteDomain: process.env.VITE_APP_DOMAIN || localhost,
-			apiDomain: process.env.VITE_API_DOMAIN || localhost,
+			websiteDomain: serverEnv.VITE_APP_DOMAIN || localhost,
+			apiDomain: serverEnv.VITE_API_DOMAIN || localhost,
 			apiBasePath: `/${API_PATH}/${AUTH_PATH}`,
 			websiteBasePath: `/${AUTH_PATH}`,
 		},
@@ -154,7 +152,7 @@ async function createServer() {
 	// --- Core Middleware (Order is important) ---
 	app.use(
 		cors({
-			origin: process.env.VITE_APP_DOMAIN || localhost,
+			origin: serverEnv.VITE_APP_DOMAIN || localhost,
 			allowedHeaders: ['content-type', ...supertokens.getAllCORSHeaders()],
 			credentials: true,
 		})
@@ -361,13 +359,13 @@ async function createServer() {
 				message: err.clientMessage || err.message,
 				details: err.details,
 			};
-			if (process.env.NODE_ENV === 'development' && !err.clientMessage) {
+			if (serverEnv.NODE_ENV === 'development' && !err.clientMessage) {
 				apiErrorResponse.debug = err.message;
 			}
 		} else {
 			console.error('Unhandled Server Error:', err.stack || err);
 			apiErrorResponse = { status: 'error', code: 500, message: 'Internal Server Error' };
-			if (process.env.NODE_ENV === 'development') {
+			if (serverEnv.NODE_ENV === 'development') {
 				apiErrorResponse.debug = err.message;
 			}
 		}

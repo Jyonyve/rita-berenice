@@ -1,10 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
+import { apiClient, genApiUrl } from '../../util/clientApiHelpers.js';
 import { useAuth } from '../../provider/index.js';
 import { MODULE_NAMES } from '@rita-berenice/shared/config';
 import { SessionResponse } from '@rita-berenice/shared/api';
-import { Payload } from '@rita-berenice/shared/util';
 import { SessionInfo } from '@rita-berenice/shared/domain';
 
 export const useSessionApi = () => {
@@ -34,8 +33,8 @@ export const useSessionApi = () => {
 			queryKey: ['sessions', 'list', 'getSessionsByUserId', userId], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getSessionsByUserId', [userId]);
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<SessionResponse>(response.data.payload);
+				const response = await apiClient.get<SessionResponse>(url);
+				return response.data;
 			},
 			enabled: !!userId,
 		});
@@ -45,8 +44,8 @@ export const useSessionApi = () => {
 			queryKey: ['sessions', 'list', 'getSessionsByUserIdAndCharacterId', userId, characterId], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getSessionsByUserIdAndCharacterId', [userId, characterId]);
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<SessionResponse>(response.data.payload);
+				const response = await apiClient.get<SessionResponse>(url);
+				return response.data;
 			},
 			enabled: !!userId && !!characterId,
 		});
@@ -56,8 +55,8 @@ export const useSessionApi = () => {
 			queryKey: ['sessions', 'detail', 'getSession', sessionId], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getSession', [sessionId]);
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<SessionResponse>(response.data.payload);
+				const response = await apiClient.get<SessionResponse>(url);
+				return response.data;
 			},
 			enabled: !!sessionId,
 		});

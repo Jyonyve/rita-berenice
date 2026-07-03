@@ -11,6 +11,8 @@ import { buildChatCompletion } from '../util/llmUtils.js';
 import { createPersonaResponseSchema } from '../util/schemaUtils.js';
 import { logFlow } from '../util/jsonlLogger.js';
 import { parseEntriesToConversation } from '../util/chatParseUtils.js';
+import { StructuredOutputValidationError } from '../util/structuredOutputUtils.js';
+import { PartialJsonStringDecoder } from '../util/partialJsonUtils.js';
 import { MemoryResponse, PersonaResponse } from '@rita-berenice/shared/api';
 import {
 	CharacterInfo,
@@ -36,7 +38,7 @@ export const personaEngine = {
 		profileInfo: ProfileInfo,
 		userConversation: string,
 		aiModelInfo: AiModelInfo,
-		options?: { signal?: AbortSignal; isScene?: boolean }
+		options?: { signal?: AbortSignal; isScene?: boolean; onDelta?: (delta: string) => void }
 	): Promise<PersonaResponse> {
 		console.log(
 			`[personaEngine] Generating response for user ${profileInfo.name} in lang: ${recalledMemories.langCode}...`
@@ -78,29 +80,37 @@ export const personaEngine = {
 		const personaSchema = createPersonaResponseSchema(charName, userName, langCode);
 		logFlow('personaEngine', 'createPersonaResponseSchema', { personaSchema });
 
-		// --- 2. LLM Call ---
-		const rawLlmResponse = await llmService.invokeLlm(
-			messages,
-			aiModelInfo,
-			profileInfo.userId,
-			options,
-			personaSchema
-		);
-
-		// --- 3. Parsing and Correction Logic ---
+		// --- 2. LLM Call and one structured-output repair attempt ---
 		try {
+			const rawLlmResponse = options?.onDelta
+				? await (() => {
+						const decoder = new PartialJsonStringDecoder('response');
+						return llmService.streamLlm(
+							messages,
+							aiModelInfo,
+							profileInfo.userId,
+							(rawDelta) => {
+								const responseDelta = decoder.push(rawDelta);
+								if (responseDelta) options.onDelta?.(responseDelta);
+							},
+							options,
+							personaSchema
+						);
+					})()
+				: await llmService.invokeLlm(messages, aiModelInfo, profileInfo.userId, options, personaSchema);
 			return JSON.parse(rawLlmResponse) as PersonaResponse;
-		} catch (parsingError: any) {
+		} catch (parsingError: unknown) {
+			if (!(parsingError instanceof StructuredOutputValidationError)) {
+				throw parsingError;
+			}
+
 			console.warn(`[personaEngine] Initial response failed parsing. Attempting self-correction.`);
-			logFlow('personaEngine', 'correction.start', {
-				rawResponse: rawLlmResponse,
-				reason: parsingError.message,
-			});
+			logFlow('personaEngine', 'correction.start', { reason: parsingError.message });
 
 			try {
 				const requiredSchema = '{"response": "string", "emotion": "string"}';
 				const correctionPrompt = buildJsonCorrectionPrompt(
-					rawLlmResponse,
+					parsingError.rawOutput,
 					`The JSON was malformed. Reason: ${parsingError.message}.`,
 					requiredSchema
 				);
@@ -111,28 +121,22 @@ export const personaEngine = {
 					),
 				];
 
-				let correctedLlmResponse = await llmService.invokeLlm(
+				const correctedLlmResponse = await llmService.invokeLlm(
 					correctionMessages,
 					DEFAULT_EXTRACTION_MODEL,
 					profileInfo.userId,
-					options
+					options,
+					personaSchema
 				);
 
-				// **THE FIX**: Clean the response from the correction model.
-				// This regex removes the markdown fences (```json ... ```
-				const jsonRegex = new RegExp('```json\\s*([\\s\\S]*?)\\s*```');
-				const match = correctedLlmResponse.match(jsonRegex);
-				if (match && match[1]) {
-					correctedLlmResponse = match[1];
-				}
-
 				return JSON.parse(correctedLlmResponse) as PersonaResponse;
-			} catch (correctionError: any) {
+			} catch (correctionError: unknown) {
 				console.error('[personaEngine] The self-correction attempt also failed.', {
 					originalError: parsingError.message,
-					correctionError: correctionError.message,
+					correctionError:
+						correctionError instanceof Error ? correctionError.message : 'Unknown correction error',
 				});
-				throw new Error(`Self-correction failed. Original raw response was: "${rawLlmResponse}"`);
+				throw new Error('Persona structured-output repair failed.', { cause: correctionError });
 			}
 		}
 	},

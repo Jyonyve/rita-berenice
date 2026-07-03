@@ -4,8 +4,7 @@ import { getLangAlertText } from '../../util/translateUtils.js';
 import { LoreResponse } from '@rita-berenice/shared/api';
 import { MODULE_NAMES, LANG_KEYS } from '@rita-berenice/shared/config';
 import { LoreInfo } from '@rita-berenice/shared/domain';
-import { Payload } from '@rita-berenice/shared/util';
-import { genApiUrl, apiClient, decompressData } from '../../util/clientApiHelpers.js';
+import { genApiUrl, apiClient } from '../../util/clientApiHelpers.js';
 
 /**
  * A client-side hook for interacting with the LORE API endpoints, which handle
@@ -54,8 +53,8 @@ export const useLoreApi = () => {
 			queryKey: ['lore', 'list', 'getLoresByCharacter', characterId], // Separate lore hierarchy
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getLoresByCharacter', [characterId]);
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<LoreResponse>(response.data.payload);
+				const response = await apiClient.get<LoreResponse>(url);
+				return response.data;
 			},
 			enabled: !!characterId,
 		});
@@ -68,8 +67,8 @@ export const useLoreApi = () => {
 			queryKey: ['lore', 'detail', 'getLore', loreId], // Separate lore hierarchy
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getLore', [loreId]);
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<LoreResponse>(response.data.payload);
+				const response = await apiClient.get<LoreResponse>(url);
+				return response.data;
 			},
 			enabled: !!loreId,
 		});

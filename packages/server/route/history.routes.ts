@@ -5,12 +5,10 @@ import express, { type Request, type Response, type Router } from 'express';
 import { historyStore } from '../store/historyStore.js';
 import {
 	asyncHandler,
-	compressData,
 	genRoutePattern,
 	validateRequestData,
 	validateServiceId,
 } from '../util/routeHelpers.js';
-import { Payload } from '@rita-berenice/shared/util';
 import { COLLECTIONS } from '../db/chroma.type.js';
 
 const router: Router = express.Router();
@@ -27,7 +25,7 @@ const collectionType = COLLECTIONS.LORE;
  */
 router.get(
 	genRoutePattern('getHistories', ['characterId']),
-	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { characterId } = req.params;
 		validateServiceId(characterId, collectionType);
 
@@ -35,8 +33,7 @@ router.get(
 		console.log(`API HIT: GET ${path.replace(':characterId', characterId)}`);
 
 		const response = await historyStore.getHistories(characterId);
-		const payload = compressData(response);
-		res.status(200).json({ payload });
+		res.status(200).json(response);
 	})
 );
 
@@ -68,7 +65,7 @@ router.post(
  */
 router.get(
 	genRoutePattern('getHistory', ['historyId']),
-	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { historyId } = req.params;
 		validateServiceId(historyId, collectionType);
 
@@ -76,8 +73,7 @@ router.get(
 		console.log(`API HIT: GET ${path.replace(':historyId', historyId)}`);
 
 		const response = await historyStore.getHistory(historyId);
-		const payload = compressData(response);
-		res.status(200).json({ payload });
+		res.status(200).json(response);
 	})
 );
 
@@ -89,7 +85,7 @@ router.get(
 //  */
 // router.post(
 // 	genRoutePattern('queryHistories'),
-// 	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+// 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 // 		const requiredFields = ['characterId', 'queryTexts'];
 // 		validateRequestData(req.body, 'body', requiredFields);
 
@@ -100,8 +96,7 @@ router.get(
 // 		console.log(`API HIT: POST ${path} for character ${characterId}`);
 
 // 		const response = await loreStore.queryHistories(characterId, queryTexts, options);
-// 		const payload = compressData(response);
-// 		res.status(200).json({ payload });
+// 		res.status(200).json(response);
 // 	})
 // );
 

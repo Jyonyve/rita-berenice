@@ -19,37 +19,27 @@ import { OpenAIEmbeddingFunction } from '@chroma-core/openai';
 import { CohereEmbeddingFunction } from '@chroma-core/cohere';
 import { ChromaResponse, Metadata } from '@rita-berenice/shared/api';
 import { MetadataType } from '@rita-berenice/shared/config';
+import { getChromaEnv } from '../config/env.js';
 
-const openAiApiKey = process.env.OPENAI_API_KEY;
-const cohereApiKey = process.env.COHERE_API_KEY;
-
-if (!cohereApiKey || !openAiApiKey) {
-	throw new Error('FATAL: Both OPENAI_API_KEY and COHERE_API_KEY must be set in environment.');
-}
+const chromaEnv = getChromaEnv();
 
 // ✅ SIMPLIFIED: Direct embedding function assignments
 const embedFnOpenAi = new OpenAIEmbeddingFunction({
-	apiKey: openAiApiKey,
+	apiKey: chromaEnv.OPENAI_API_KEY,
 	modelName: 'text-embedding-3-small',
 });
 
 const embedFnCohere = new CohereEmbeddingFunction({
-	apiKey: cohereApiKey,
+	apiKey: chromaEnv.COHERE_API_KEY,
 	modelName: 'embed-v4.0',
 	inputType: 'search_document',
 });
 
-const host = process.env.CHROMA_HOST;
-const port = Number(process.env.CHROMA_PORT);
-const ssl = process.env.CHROMA_SSL === 'true';
-
-if (!host || !port || isNaN(port) || ssl === undefined) {
-	throw new Error(
-		'ChromaDB environment variables (CHROMA_HOST, CHROMA_PORT, CHROMA_SSL) must be set.'
-	);
-}
-
-const chromaClient = new ChromaClient({ host, port, ssl });
+const chromaClient = new ChromaClient({
+	host: chromaEnv.CHROMA_HOST,
+	port: chromaEnv.CHROMA_PORT,
+	ssl: chromaEnv.CHROMA_SSL,
+});
 const _collectionCache: Map<string, Collection> = new Map();
 
 // ✅ SIMPLIFIED: Direct mapping without chooseEmbeddingFunction

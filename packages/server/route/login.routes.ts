@@ -4,6 +4,7 @@ import Session from 'supertokens-node/recipe/session';
 import { webcrypto } from 'node:crypto';
 import { asyncHandler, genRoutePattern, validateRequestData } from '../util/routeHelpers.js';
 import { DEFAULT_TENANT_ID } from '@rita-berenice/shared/config';
+import { getLoginEnv } from '../config/env.js';
 
 const router: Router = express.Router();
 
@@ -43,10 +44,7 @@ router.post(
 
 		try {
 			// 1. Get private key from environment
-			if (!process.env.PRIVATE_KEY) {
-				throw new Error('Server configuration error: PRIVATE_KEY is not set.');
-			}
-			const privateKeyJwk = JSON.parse(process.env.PRIVATE_KEY);
+			const privateKeyJwk = JSON.parse(getLoginEnv().PRIVATE_KEY);
 			const privateKey = await webcrypto.subtle.importKey(
 				'jwk',
 				privateKeyJwk,

@@ -3,14 +3,8 @@ import express, { type Request, type Response, type Router } from 'express';
 
 import { termStore } from '../store/termStore.js';
 import { COLLECTIONS } from '../db/chroma.type.js';
-import {
-	asyncHandler,
-	compressData,
-	genRoutePattern,
-	validateRequestData,
-} from '../util/routeHelpers.js';
+import { asyncHandler, genRoutePattern, validateRequestData } from '../util/routeHelpers.js';
 import { SessionTermInfo, CharacterTermInfo } from '@rita-berenice/shared/domain';
-import { Payload } from '@rita-berenice/shared/util';
 
 const router: Router = express.Router();
 
@@ -110,7 +104,7 @@ router.post(
  */
 router.get(
 	genRoutePattern('getTermByKorean', ['id', 'koreanTerm', 'type']),
-	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { id, koreanTerm, type } = req.params;
 
 		validateRequestData(req.params, 'params', ['koreanTerm', 'type']);
@@ -121,8 +115,7 @@ router.get(
 		);
 
 		const response = await termStore.getTermByKorean(id, koreanTerm, type as 'session' | 'character');
-		const payload = compressData(response);
-		res.status(200).json({ payload });
+		res.status(200).json(response);
 	})
 );
 
@@ -134,15 +127,14 @@ router.get(
  */
 router.get(
 	genRoutePattern('getTermsBySessionId', ['sessionId']),
-	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { sessionId } = req.params;
 
 		const path = genRoutePattern('getTermsBySessionId', ['sessionId']);
 		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
 
 		const response = await termStore.getTermsBySessionId(sessionId);
-		const payload = compressData(response);
-		res.status(200).json({ payload });
+		res.status(200).json(response);
 	})
 );
 
@@ -154,15 +146,14 @@ router.get(
  */
 router.get(
 	genRoutePattern('getTermsByCharacterId', ['characterId']),
-	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { characterId } = req.params;
 
 		const path = genRoutePattern('getTermsByCharacterId', ['characterId']);
 		console.log(`API HIT: GET ${path.replace(':characterId', characterId)}`);
 
 		const response = await termStore.getTermsByCharacterId(characterId);
-		const payload = compressData(response);
-		res.status(200).json({ payload });
+		res.status(200).json(response);
 	})
 );
 

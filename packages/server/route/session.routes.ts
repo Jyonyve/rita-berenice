@@ -1,15 +1,9 @@
 // server/route/session.routes.ts
 
 import express, { type Request, type Response, type Router } from 'express';
-import {
-	asyncHandler,
-	compressData,
-	genRoutePattern,
-	validateRequestData,
-} from '../util/routeHelpers.js';
+import { asyncHandler, genRoutePattern, validateRequestData } from '../util/routeHelpers.js';
 import { sessionStore } from '../store/sessionStore.js';
 import { SessionInfo } from '@rita-berenice/shared/domain';
-import { Payload } from '@rita-berenice/shared/util';
 
 const router: Router = express.Router();
 
@@ -74,15 +68,14 @@ router.put(
  */
 router.get(
 	genRoutePattern('getSessionsByUserId', ['userId']),
-	asyncHandler(async (req: Request, res: Response<Payload>) => {
+	asyncHandler(async (req: Request, res: Response) => {
 		validateRequestData(req.params, 'params', ['userId']);
 		const { userId } = req.params;
 
 		console.log(`API HIT: GET /api/session/get-sessions-by-user-id/${userId}`);
 
 		const response = await sessionStore.getSessionsByUserId(userId);
-		const payload = compressData(response);
-		res.status(200).json({ payload });
+		res.status(200).json(response);
 	})
 );
 
@@ -96,7 +89,7 @@ router.get(
  */
 router.get(
 	genRoutePattern('getSessionsByUserIdAndCharacterId', ['userId', 'characterId']),
-	asyncHandler(async (req: Request, res: Response<Payload>) => {
+	asyncHandler(async (req: Request, res: Response) => {
 		validateRequestData(req.params, 'params', ['userId', 'characterId']);
 		const { userId, characterId } = req.params;
 
@@ -105,8 +98,7 @@ router.get(
 		);
 
 		const response = await sessionStore.getSessionsByUserIdAndCharacterId(userId, characterId);
-		const payload = compressData(response);
-		res.status(200).json({ payload });
+		res.status(200).json(response);
 	})
 );
 
@@ -120,15 +112,14 @@ router.get(
  */
 router.get(
 	genRoutePattern('getSession', ['sessionId']),
-	asyncHandler(async (req: Request, res: Response<Payload>) => {
+	asyncHandler(async (req: Request, res: Response) => {
 		validateRequestData(req.params, 'params', ['sessionId']);
 		const { sessionId } = req.params;
 
 		console.log(`API HIT: GET /api/session/get-session/${sessionId}`);
 
 		const response = await sessionStore.getSession(sessionId);
-		const payload = compressData(response);
-		res.status(200).json({ payload });
+		res.status(200).json(response);
 	})
 );
 

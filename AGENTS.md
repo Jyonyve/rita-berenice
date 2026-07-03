@@ -35,6 +35,9 @@ Baseline scaffolding:
 - Build client package: `pnpm build:client`
 - Build server package: `pnpm build:server`
 - Typecheck shared/client/server references: `pnpm typecheck`
+- Run focused tests: `pnpm test`
+- Run server tests: `pnpm test:server`
+- Run deterministic RAG retrieval evaluation: `pnpm eval:rag`
 - Check formatting: `pnpm format:check`
 - Run the baseline local gate: `pnpm check`
 - Start all dev tasks through Turbo: `pnpm dev`

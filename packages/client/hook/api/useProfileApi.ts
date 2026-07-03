@@ -1,9 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
+import { apiClient, genApiUrl } from '../../util/clientApiHelpers.js';
 import { MODULE_NAMES } from '@rita-berenice/shared/config';
 import { ProfileCdo, ProfileInfo } from '@rita-berenice/shared/domain';
 import { ProfileResponse } from '@rita-berenice/shared/api';
-import { Payload } from '@rita-berenice/shared/util';
 
 /**
  * A client-side hook for interacting with the PROFILE API endpoints.
@@ -37,8 +36,8 @@ export const useProfileApi = () => {
 			queryKey: ['profiles', 'list', 'getAllProfilesByUserId', userId], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getAllProfilesByUserId', [userId]);
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<ProfileResponse>(response.data.payload);
+				const response = await apiClient.get<ProfileResponse>(url);
+				return response.data;
 			},
 			enabled: !!userId,
 		});
@@ -48,8 +47,8 @@ export const useProfileApi = () => {
 			queryKey: ['profiles', 'detail', 'getProfile', profileId], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getProfile', [profileId]);
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<ProfileResponse>(response.data.payload);
+				const response = await apiClient.get<ProfileResponse>(url);
+				return response.data;
 			},
 			enabled: !!profileId,
 		});
@@ -59,8 +58,8 @@ export const useProfileApi = () => {
 			queryKey: ['profiles', 'detail', 'getProfileBySessionId', sessionId], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getProfileBySessionId', [sessionId]);
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<ProfileResponse>(response.data.payload);
+				const response = await apiClient.get<ProfileResponse>(url);
+				return response.data;
 			},
 			enabled: !!sessionId,
 		});
@@ -70,8 +69,8 @@ export const useProfileApi = () => {
 			queryKey: ['profiles', 'list', 'getProfilesByShowName', showName], // Hierarchical structure
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getProfilesByShowName', [showName]);
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<ProfileResponse>(response.data.payload);
+				const response = await apiClient.get<ProfileResponse>(url);
+				return response.data;
 			},
 			enabled: !!showName,
 		});

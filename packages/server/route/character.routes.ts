@@ -5,7 +5,6 @@ import { COLLECTIONS } from '../db/chroma.type.js';
 import { characterStore } from '../store/characterStore.js';
 import {
 	asyncHandler,
-	compressData,
 	genRoutePattern,
 	validateRequestData,
 	validateServiceId,
@@ -19,7 +18,6 @@ import {
 } from '@rita-berenice/shared/config';
 import { characterUpload, processCharacterImage } from '../util/imageProcessingUtils.js';
 import { CharacterInfo } from '@rita-berenice/shared/domain';
-import { Payload } from '@rita-berenice/shared/util';
 
 const router: Router = express.Router();
 const collectionType = COLLECTIONS.CHARACTER;
@@ -32,13 +30,12 @@ const collectionType = COLLECTIONS.CHARACTER;
  */
 router.get(
 	genRoutePattern('getAllCharacters'),
-	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const path = genRoutePattern('getAllCharacters');
 		console.log(`API HIT: GET ${path}`);
 
 		const response = await characterStore.getAllCharacters();
-		const payload = compressData(response);
-		res.status(200).json({ payload });
+		res.status(200).json(response);
 	})
 );
 
@@ -52,7 +49,7 @@ router.get(
  */
 router.get(
 	genRoutePattern('getCharacter', ['characterId']),
-	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { characterId } = req.params;
 		validateServiceId(characterId, collectionType);
 
@@ -60,8 +57,7 @@ router.get(
 		console.log(`API HIT: GET ${path.replace(':characterId', characterId)}`);
 
 		const response = await characterStore.getCharacter(characterId);
-		const payload = compressData(response);
-		res.status(200).json({ payload });
+		res.status(200).json(response);
 	})
 );
 
@@ -75,7 +71,7 @@ router.get(
  */
 router.get(
 	genRoutePattern('getCharactersByShowName', ['showName']),
-	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		validateRequestData(req.params, 'params', ['showName']);
 		const { showName } = req.params;
 
@@ -83,8 +79,7 @@ router.get(
 		console.log(`API HIT: GET ${path.replace(':showName', showName)}`);
 
 		const response = await characterStore.getCharactersByShowName(showName);
-		const payload = compressData(response);
-		res.status(200).json({ payload });
+		res.status(200).json(response);
 	})
 );
 
@@ -98,7 +93,7 @@ router.get(
  */
 router.get(
 	genRoutePattern('getCharactersByUserId', ['userId']),
-	asyncHandler(async (req: Request, res: Response<Payload>): Promise<void> => {
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		validateRequestData(req.params, 'params', ['userId']);
 		const { userId } = req.params;
 
@@ -106,8 +101,7 @@ router.get(
 		console.log(`API HIT: GET ${path.replace(':userId', userId)}`);
 
 		const response = await characterStore.getCharactersByUserId(userId);
-		const payload = compressData(response);
-		res.status(200).json({ payload });
+		res.status(200).json(response);
 	})
 );
 

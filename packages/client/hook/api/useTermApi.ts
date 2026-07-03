@@ -1,7 +1,7 @@
 // src/client/hooks/useGlossaryApi.ts
 
 import { useQueryClient, useMutation, useQuery } from '@tanstack/react-query';
-import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
+import { apiClient, genApiUrl } from '../../util/clientApiHelpers.js';
 import { MODULE_NAMES } from '@rita-berenice/shared/config';
 import { TermResponse } from '@rita-berenice/shared/api';
 import {
@@ -11,7 +11,6 @@ import {
 	CharacterTermInfo,
 	TermType,
 } from '@rita-berenice/shared/domain';
-import { Payload } from '@rita-berenice/shared/util';
 
 /**
  * A client-side hook for interacting with the GLOSSARY (TERM) API endpoints.
@@ -178,8 +177,8 @@ export const useTermApi = () => {
 					: ['characterTerms', 'detail', 'getTermByKorean', id, koreanTerm], // Separate hierarchies
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getTermByKorean', [id, koreanTerm, type]);
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<TermResponse>(response.data.payload);
+				const response = await apiClient.get<TermResponse>(url);
+				return response.data;
 			},
 			enabled: !!id && !!koreanTerm && !!type,
 			retry: (failureCount, error: any) => (error.response?.status === 404 ? false : failureCount < 3),
@@ -190,8 +189,8 @@ export const useTermApi = () => {
 			queryKey: ['sessionTerms', 'list', 'getTermsBySessionId', sessionId], // Session terms hierarchy
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getTermsBySessionId', [sessionId]);
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<TermResponse>(response.data.payload);
+				const response = await apiClient.get<TermResponse>(url);
+				return response.data;
 			},
 			enabled: !!sessionId,
 		});
@@ -201,8 +200,8 @@ export const useTermApi = () => {
 			queryKey: ['characterTerms', 'list', 'getTermsByCharacterId', characterId], // Character terms hierarchy
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getTermsByCharacterId', [characterId]);
-				const response = await apiClient.get<Payload>(url);
-				return decompressData<TermResponse>(response.data.payload);
+				const response = await apiClient.get<TermResponse>(url);
+				return response.data;
 			},
 			enabled: !!characterId,
 		});

@@ -1,18 +1,29 @@
 // src/client/hooks/useOrchestrationApi.ts
 
 import { useMutation } from '@tanstack/react-query';
-import { apiClient, decompressData, genApiUrl } from '../../util/clientApiHelpers.js';
+import { apiClient, consumeNdjsonStream, genApiUrl } from '../../util/clientApiHelpers.js';
 import { MODULE_NAMES } from '@rita-berenice/shared/config';
+import { ChatTurn, ChatTurnCdo, TempChatTurn } from '@rita-berenice/shared/domain';
 import {
-	ChatTurn,
-	ChatTurnCdo,
-	TempChatTurn,
-	TempChatTurnCdo,
-	CharacterInfo,
-	ProfileInfo,
-	AiModelInfo,
-} from '@rita-berenice/shared/domain';
-import { Payload } from '@rita-berenice/shared/util';
+	ChatGenerationStage,
+	EnqueueFinalizationResponse,
+	FinalizationJobSnapshot,
+	ReceiveBotResponseRequest,
+	ReceiveBotResponseStreamEvent,
+} from '@rita-berenice/shared/api';
+import { ApiError } from '@rita-berenice/shared/domain';
+
+interface ReceiveBotResponseStreamVariables {
+	request: ReceiveBotResponseRequest;
+	onDelta?: (text: string) => void;
+	onStatus?: (stage: ChatGenerationStage) => void;
+	signal?: AbortSignal;
+}
+
+interface EnqueueFinalizationVariables {
+	cdo: ChatTurnCdo;
+	signal?: AbortSignal;
+}
 
 /**
  * A client-side hook for interacting with the main ORCHESTRATION API endpoint,
@@ -21,17 +32,42 @@ import { Payload } from '@rita-berenice/shared/util';
 export const useOrchestrationApi = () => {
 	const MODULE_NAME = MODULE_NAMES.ORCHESTRATION;
 
-	/**
-	 * Finalizes a turn by enriching it and saving it to the permanent CHAT collection.
-	 * This is separate from generating a new response.
-	 */
-	const finalizeChatTurn = useMutation<ChatTurn, Error, ChatTurnCdo>({
-		mutationFn: async (cdo: ChatTurnCdo) => {
-			const url = genApiUrl(MODULE_NAMES.ORCHESTRATION, 'finalizeChatTurn');
-			const response = await apiClient.post<Payload>(url, cdo);
-			return decompressData<ChatTurn>(response.data.payload);
+	const enqueueFinalization = useMutation<
+		EnqueueFinalizationResponse,
+		Error,
+		EnqueueFinalizationVariables
+	>({
+		mutationFn: async ({ cdo, signal }) => {
+			const url = genApiUrl(MODULE_NAMES.ORCHESTRATION, 'enqueueFinalization');
+			const response = await apiClient.post<EnqueueFinalizationResponse>(url, cdo, { signal });
+			return response.data;
 		},
 	});
+
+	const waitForFinalizationJob = async (
+		sessionId: string,
+		sequence: number,
+		signal?: AbortSignal
+	): Promise<ChatTurn> => {
+		const url = genApiUrl(MODULE_NAMES.ORCHESTRATION, 'getFinalizationJob', [sessionId, sequence]);
+
+		while (!signal?.aborted) {
+			const response = await apiClient.get<FinalizationJobSnapshot>(url, { signal });
+			if (response.data.status === 'completed' && response.data.result) {
+				return response.data.result;
+			}
+			if (response.data.status === 'failed') {
+				throw new ApiError(
+					500,
+					response.data.error || 'Chat turn finalization failed.',
+					'The message was saved locally, but memory indexing failed.'
+				);
+			}
+			await new Promise((resolve) => setTimeout(resolve, 1_000));
+		}
+
+		throw new DOMException('Finalization status polling was aborted.', 'AbortError');
+	};
 
 	/**
 	 * Orchestrates the backend flow for generating a new character response.
@@ -41,35 +77,39 @@ export const useOrchestrationApi = () => {
 	const receiveBotResponse = useMutation<
 		TempChatTurn, // Return type on success
 		Error, // Error type
-		{
-			tempChatTurnCdo: TempChatTurnCdo;
-			characterInfo: CharacterInfo;
-			profileInfo: ProfileInfo;
-			aiModelInfo: AiModelInfo;
-			recentChatTurnString: string;
-			isScene?: boolean;
-		} // Variables type
+		ReceiveBotResponseStreamVariables
 	>({
-		mutationFn: async ({
-			tempChatTurnCdo,
-			characterInfo,
-			profileInfo,
-			aiModelInfo,
-			recentChatTurnString,
-			isScene,
-		}) => {
-			const url = genApiUrl(MODULE_NAME, 'receiveBotResponse');
-			const response = await apiClient.post<Payload>(url, {
-				tempChatTurnCdo,
-				characterInfo,
-				profileInfo,
-				aiModelInfo,
-				recentChatTurnString,
-				isScene,
-			});
-			return decompressData<TempChatTurn>(response.data.payload);
+		mutationFn: async ({ request, onDelta, onStatus, signal }) => {
+			const url = genApiUrl(MODULE_NAME, 'receiveBotResponseStream');
+			let completedTurn: TempChatTurn | undefined;
+
+			await consumeNdjsonStream<ReceiveBotResponseStreamEvent>(
+				url,
+				request,
+				(event) => {
+					switch (event.type) {
+						case 'status':
+							onStatus?.(event.stage);
+							break;
+						case 'delta':
+							onDelta?.(event.text);
+							break;
+						case 'complete':
+							completedTurn = event.data;
+							break;
+						case 'error':
+							throw new ApiError(500, event.message, event.clientMessage);
+					}
+				},
+				signal
+			);
+
+			if (!completedTurn) {
+				throw new ApiError(502, 'The response stream ended before completion.');
+			}
+			return completedTurn;
 		},
 	});
 
-	return { receiveBotResponse, finalizeChatTurn };
+	return { receiveBotResponse, enqueueFinalization, waitForFinalizationJob };
 };

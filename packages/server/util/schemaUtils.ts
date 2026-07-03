@@ -1,6 +1,128 @@
 import { curatedEmotionKeywords } from '@rita-berenice/shared/config';
+import { SupportAiModelList } from '@rita-berenice/shared/domain';
 import { convertArrayToString } from '@rita-berenice/shared/util';
 import z from 'zod';
+
+const metadataTypeSchema = z.string().optional();
+
+const chatEntrySchema = z.object({
+	type: z.enum(['dialogue', 'action']),
+	prompt: z.string().min(1),
+});
+
+const chatMessageSchema = z
+	.object({
+		sessionId: z.string().min(1),
+		sequence: z.number().int().nonnegative(),
+		messageType: z.enum(['request', 'response']),
+		role: z.enum(['system', 'user', 'assistant']),
+		showName: z.string().min(1),
+		messageId: z.string().min(1),
+		createdAt: z.string().min(1),
+		updatedAt: z.string().min(1),
+		emotion: z.string().min(1),
+		type: metadataTypeSchema,
+		model: z.string().optional(),
+		entries: z.array(chatEntrySchema).min(1),
+	})
+	.passthrough();
+
+export const TempChatTurnCdoSchema = z
+	.object({
+		sessionId: z.string().min(1),
+		sequence: z.number().int().nonnegative(),
+		userId: z.string().min(1),
+		inputJsonString: z.string().min(1),
+	})
+	.passthrough();
+
+export const CharacterInfoSchema = z
+	.object({
+		characterId: z.string().min(1),
+		userId: z.string().min(1),
+		name: z.string().min(1),
+		showName: z.string().min(1),
+		gender: z.string().min(1),
+		title: z.string(),
+		description: z.string(),
+		instruction: z.string(),
+		worldLoreId: z.string(),
+		firstMessage: z.string(),
+	})
+	.passthrough();
+
+export const ProfileInfoSchema = z
+	.object({
+		profileId: z.string().min(1),
+		sessionId: z.string().min(1),
+		userId: z.string().min(1),
+		name: z.string().min(1),
+		showName: z.string().min(1),
+		gender: z.string().min(1),
+		title: z.string(),
+		description: z.string(),
+	})
+	.passthrough();
+
+export const AiModelInfoSchema = z
+	.object({
+		platform: z.string().min(1),
+		provider: z.string().min(1),
+		model: z.string().min(1),
+		temperature: z.number().optional(),
+		maxTokens: z.number().int().positive(),
+	})
+	.passthrough();
+
+export const ReceiveBotResponseBodySchema = z
+	.object({
+		sessionId: z.string().min(1),
+		sequence: z.number().int().nonnegative(),
+		entries: z.array(chatEntrySchema).min(1),
+		modelName: z
+			.string()
+			.refine((modelName) => SupportAiModelList.includes(modelName as never), {
+				message: 'Unsupported AI model.',
+			}),
+		isScene: z.boolean().optional(),
+	})
+	.strict();
+
+export const ChatTurnCdoSchema = z
+	.object({
+		userId: z.string().min(1),
+		sessionId: z.string().min(1),
+		sequence: z.number().int().nonnegative(),
+		request: chatMessageSchema,
+		response: chatMessageSchema,
+	})
+	.passthrough()
+	.superRefine((turn, context) => {
+		const messages = [
+			{ key: 'request', value: turn.request, expectedType: 'request', expectedRole: 'user' },
+			{ key: 'response', value: turn.response, expectedType: 'response', expectedRole: 'assistant' },
+		] as const;
+
+		for (const message of messages) {
+			if (message.value.sessionId !== turn.sessionId || message.value.sequence !== turn.sequence) {
+				context.addIssue({
+					code: 'custom',
+					path: [message.key],
+					message: 'Message session and sequence must match the chat turn.',
+				});
+			}
+			if (
+				message.value.messageType !== message.expectedType ||
+				message.value.role !== message.expectedRole
+			) {
+				context.addIssue({
+					code: 'custom',
+					path: [message.key],
+					message: 'Message type and role do not match the chat turn position.',
+				});
+			}
+		}
+	});
 
 // Safe type guard to ensure non-empty array
 function ensureNonEmptyArray<T>(arr: T[]): asserts arr is [T, ...T[]] {
