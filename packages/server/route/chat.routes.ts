@@ -2,7 +2,7 @@
 
 import express, { type Request, type Response, type Router } from 'express';
 import { chatStore } from '../store/chatStore.js';
-import { COLLECTIONS } from '../db/chroma.type.js';
+import { RESOURCES } from '../db/resource.type.js';
 import {
 	asyncHandler,
 	genRoutePattern,
@@ -13,7 +13,7 @@ import {
 import { ChatTurn } from '@rita-berenice/shared/domain';
 
 const router: Router = express.Router();
-const collectionType = COLLECTIONS.CHAT;
+const collectionType = RESOURCES.CHAT;
 
 // --- Fixed Chat Turn Operations ---
 

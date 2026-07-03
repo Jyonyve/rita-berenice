@@ -1,158 +1,109 @@
-import { ChromaResponse, ProfileResponse } from '@rita-berenice/shared/api';
-import { METADATA_TYPES } from '@rita-berenice/shared/config';
-import { ProfileMetadata, ProfileCdo, ProfileInfo } from '@rita-berenice/shared/domain';
-import {
-	metadataToProfile,
-	isProfileInfo,
-	createBasicProfileInfo,
-	buildProfileId,
-} from '@rita-berenice/shared/util';
-import { Collection, Where, IncludeEnum } from 'chromadb';
-import { COLLECTIONS, toChromaMetadata } from '../db/chroma.type.js';
-import chromaDbClient from '../db/chromaDbClient.js';
-import { inflateProfileDoc, flatProfileToDoc } from '../util/documentUtils.js';
-import { validateChromaResponse, handleServiceError } from '../util/serviceHelpers.js';
+import { ProfileResponse } from '@rita-berenice/shared/api';
+import { ApiError, ProfileCdo, ProfileInfo } from '@rita-berenice/shared/domain';
+import { buildProfileId, createBasicProfileInfo, isProfileInfo } from '@rita-berenice/shared/util';
+import { eq, ilike } from 'drizzle-orm';
+import { getDatabase } from '../db/postgresClient.js';
+import { profiles } from '../db/schema.js';
+import { handleServiceError } from '../util/serviceHelpers.js';
 
-const { getProfileCollection, upsertRecord, getRecordById, getRecords } = chromaDbClient;
-const collectionType = COLLECTIONS.PROFILE;
+const toResponse = (profileInfos: ProfileInfo[]): ProfileResponse => ({
+	ids: profileInfos.map((profile) => profile.profileId),
+	documents: profileInfos.map((profile) => profile.description),
+	metadatas: profileInfos.map(() => null),
+	profileInfos,
+	profileInfo: profileInfos[0] || null,
+});
 
 export const profileStore = {
-	// Cache for profile collection
-	_profileCollection: null as Collection | null,
-
-	// Get collection with caching
-	_getCollection: async (): Promise<Collection> => {
-		// First check if it's in the cache (non-async operation)
-		if (profileStore._profileCollection) {
-			return profileStore._profileCollection;
-		}
-
-		// If not in cache, fetch it (async operation)
-		const collection = await getProfileCollection();
-		profileStore._profileCollection = collection;
-		return collection;
-	},
-
-	_constructProfile: (results: ChromaResponse): ProfileResponse => {
-		const { ids, documents, metadatas } = results;
-		const profileInfos = ids.map((id, index) => {
-			const metadata = metadatas[index] as unknown as ProfileMetadata;
-			const document = documents[index];
-			const inflatedDoc = inflateProfileDoc(document!);
-			const profileInfo = metadataToProfile(metadata!, inflatedDoc.description);
-			return profileInfo;
-		});
-		return { ids, documents, metadatas, profileInfos, profileInfo: profileInfos[0] || null };
-	},
-
-	// Profile Operations
 	getAllProfilesByUserId: async (userId: string): Promise<ProfileResponse> => {
-		const collection = await profileStore._getCollection();
 		try {
-			const where: Where = {
-				$and: [{ type: { $eq: METADATA_TYPES.PROFILE } }, { userId: { $eq: userId } }],
-			};
-			const rawResults = await getRecords(collection, where);
-			const results = validateChromaResponse(rawResults, 'getList', collectionType);
-			return profileStore._constructProfile(results);
+			const rows = await getDatabase()
+				.select({ data: profiles.data })
+				.from(profiles)
+				.where(eq(profiles.userId, userId));
+			return toResponse(rows.map((row) => row.data));
 		} catch (error) {
-			handleServiceError(
-				error,
-				'An internal error occurred while do [getAllProfilesByUserId].',
-				'Failed to get all profiles:'
-			);
+			handleServiceError(error, `Failed to get profiles for user '${userId}'`);
 		}
 	},
 
 	getProfile: async (profileId: string): Promise<ProfileResponse> => {
-		const collection = await profileStore._getCollection();
 		try {
-			const rawResult = await getRecordById(collection, profileId);
-			const results = validateChromaResponse(rawResult, 'getOne', collectionType);
-			return profileStore._constructProfile(results);
+			const [row] = await getDatabase()
+				.select({ data: profiles.data })
+				.from(profiles)
+				.where(eq(profiles.profileId, profileId))
+				.limit(1);
+			if (!row) throw new ApiError(404, `Profile '${profileId}' not found.`);
+			return toResponse([row.data]);
 		} catch (error) {
-			handleServiceError(
-				error,
-				'An internal error occurred while do [getProfile].',
-				`Failed to get profile with ID ${profileId}:`
-			);
+			handleServiceError(error, `Failed to get profile with ID ${profileId}`);
 		}
 	},
 
 	getProfileBySessionId: async (sessionId: string): Promise<ProfileResponse> => {
-		const collection = await profileStore._getCollection();
-
 		try {
-			const where: Where = {
-				$and: [{ type: { $eq: METADATA_TYPES.PROFILE } }, { sessionId: { $eq: sessionId } }],
-			};
-
-			const rawResults = await getRecords(collection, where, undefined, 1);
-			const results = validateChromaResponse(rawResults, 'getOne', collectionType);
-			return profileStore._constructProfile(results);
+			const [row] = await getDatabase()
+				.select({ data: profiles.data })
+				.from(profiles)
+				.where(eq(profiles.sessionId, sessionId))
+				.limit(1);
+			if (!row) throw new ApiError(404, `Profile for session '${sessionId}' not found.`);
+			return toResponse([row.data]);
 		} catch (error) {
-			handleServiceError(
-				error,
-				'An internal error occurred while do [getProfileBySessionId].',
-				`Failed to get profile with sessionId ${sessionId}:`
-			);
+			handleServiceError(error, `Failed to get profile with sessionId ${sessionId}`);
 		}
 	},
 
 	getProfilesByShowName: async (showName: string): Promise<ProfileResponse> => {
-		const collection = await profileStore._getCollection();
-		const where: Where = {
-			$and: [
-				{ type: { $eq: METADATA_TYPES.PROFILE } },
-				{ showName: { $like: `%${showName}%` } as any }, //NOTE: TS issue
-			],
-		};
 		try {
-			const rawResults = await getRecords(collection, where);
-			const results = validateChromaResponse(rawResults, 'getList', collectionType);
-			return profileStore._constructProfile(results);
+			const rows = await getDatabase()
+				.select({ data: profiles.data })
+				.from(profiles)
+				.where(ilike(profiles.showName, `%${showName}%`));
+			return toResponse(rows.map((row) => row.data));
 		} catch (error) {
-			handleServiceError(
-				error,
-				'An internal error occurred while do [getProfilesByShowName].',
-				`Failed to get profiles by showName '${showName}'`
-			);
+			handleServiceError(error, `Failed to get profiles by showName '${showName}'`);
 		}
 	},
 
-	// In profileService
 	storeProfile: async (profile: ProfileCdo | ProfileInfo): Promise<{ profileId: string }> => {
-		const collection = await profileStore._getCollection();
 		const now = new Date().toISOString();
-		const updatedProfile: ProfileInfo = isProfileInfo(profile)
-			? profile
-			: createBasicProfileInfo(profile);
-
-		const updatedMetadata: ProfileMetadata = {
-			...updatedProfile,
-			profileId:
-				updatedProfile.profileId || buildProfileId(updatedProfile.sessionId, updatedProfile.userId),
-			createdAt: updatedProfile.createdAt || now,
+		const baseProfile = isProfileInfo(profile) ? profile : createBasicProfileInfo(profile);
+		const updatedProfile: ProfileInfo = {
+			...baseProfile,
+			profileId: baseProfile.profileId || buildProfileId(baseProfile.sessionId, baseProfile.userId),
+			createdAt: baseProfile.createdAt || now,
 			updatedAt: now,
 		};
 
-		const documentForEmbedding = flatProfileToDoc(updatedProfile);
-
 		try {
-			const chromaMetadata = toChromaMetadata(updatedMetadata);
-			await upsertRecord(collection, updatedMetadata.profileId, documentForEmbedding, chromaMetadata);
-			return { profileId: updatedMetadata.profileId };
+			await getDatabase()
+				.insert(profiles)
+				.values({
+					profileId: updatedProfile.profileId,
+					sessionId: updatedProfile.sessionId,
+					userId: updatedProfile.userId,
+					showName: updatedProfile.showName,
+					data: updatedProfile,
+					createdAt: updatedProfile.createdAt,
+					updatedAt: updatedProfile.updatedAt,
+				})
+				.onConflictDoUpdate({
+					target: profiles.profileId,
+					set: {
+						sessionId: updatedProfile.sessionId,
+						userId: updatedProfile.userId,
+						showName: updatedProfile.showName,
+						data: updatedProfile,
+						updatedAt: updatedProfile.updatedAt,
+					},
+				});
+			return { profileId: updatedProfile.profileId };
 		} catch (error) {
-			handleServiceError(
-				error,
-				'An internal error occurred while do [storeProfile].',
-				`Failed to store profile: ${updatedMetadata.profileId}`
-			);
+			handleServiceError(error, `Failed to store profile '${updatedProfile.profileId}'`);
 		}
 	},
 
-	// Method to clear the cache
-	clearCollectionCache: (): void => {
-		profileStore._profileCollection = null;
-	},
+	clearCollectionCache: (): void => {},
 };

@@ -1,6 +1,6 @@
 import express, { type Request, type Response, type Router } from 'express';
 import { userStore } from '../store/userStore.js';
-import { COLLECTIONS } from '../db/chroma.type.js';
+import { RESOURCES } from '../db/resource.type.js';
 import {
 	asyncHandler,
 	genRoutePattern,
@@ -17,7 +17,7 @@ import { UserInfo } from '@rita-berenice/shared/domain';
 
 const router: Router = express.Router();
 
-const collectionType = COLLECTIONS.USER;
+const collectionType = RESOURCES.USER;
 
 /**
  * GET /api/user/get-all-users

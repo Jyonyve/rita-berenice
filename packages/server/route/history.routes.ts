@@ -9,11 +9,11 @@ import {
 	validateRequestData,
 	validateServiceId,
 } from '../util/routeHelpers.js';
-import { COLLECTIONS } from '../db/chroma.type.js';
+import { RESOURCES } from '../db/resource.type.js';
 
 const router: Router = express.Router();
 
-const collectionType = COLLECTIONS.LORE;
+const collectionType = RESOURCES.HISTORY;
 
 // --- HISTORY ROUTES ---
 

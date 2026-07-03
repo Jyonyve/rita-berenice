@@ -38,6 +38,9 @@ Baseline scaffolding:
 - Run focused tests: `pnpm test`
 - Run server tests: `pnpm test:server`
 - Run deterministic RAG retrieval evaluation: `pnpm eval:rag`
+- Start local PostgreSQL with pgvector: `pnpm db:up`
+- Generate Drizzle migrations: `pnpm db:generate`
+- Apply Drizzle migrations: `pnpm db:migrate`
 - Check formatting: `pnpm format:check`
 - Run the baseline local gate: `pnpm check`
 - Start all dev tasks through Turbo: `pnpm dev`

@@ -1,7 +1,7 @@
 // src/server/routes/character.routes.ts
 
 import express, { type Request, type Response, type Router } from 'express';
-import { COLLECTIONS } from '../db/chroma.type.js';
+import { RESOURCES } from '../db/resource.type.js';
 import { characterStore } from '../store/characterStore.js';
 import {
 	asyncHandler,
@@ -20,7 +20,7 @@ import { characterUpload, processCharacterImage } from '../util/imageProcessingU
 import { CharacterInfo } from '@rita-berenice/shared/domain';
 
 const router: Router = express.Router();
-const collectionType = COLLECTIONS.CHARACTER;
+const collectionType = RESOURCES.CHARACTER;
 
 /**
  * GET /api/character/get-all-characters

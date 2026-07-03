@@ -3,7 +3,7 @@
 import express, { type Request, type Response, type Router } from 'express';
 
 import { loreStore } from '../store/loreStore.js'; // Assuming store is at this path
-import { COLLECTIONS } from '../db/chroma.type.js';
+import { RESOURCES } from '../db/resource.type.js';
 import {
 	asyncHandler,
 	genRoutePattern,
@@ -13,7 +13,7 @@ import {
 
 const router: Router = express.Router();
 
-const collectionType = COLLECTIONS.LORE;
+const collectionType = RESOURCES.LORE;
 
 // --- LORE ROUTES ---
 

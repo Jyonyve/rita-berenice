@@ -1,12 +1,12 @@
 // src/server/credential/credentialService.ts
 
 import { CredentialResponse } from '@rita-berenice/shared/api';
-import { METADATA_TYPES } from '@rita-berenice/shared/config';
 import { ValidationResult, UserApiKeys } from '@rita-berenice/shared/domain';
-import { buildCredentialId, encryptValue, decryptValue } from '@rita-berenice/shared/util';
-import { Collection } from 'chromadb';
-import chromaDbClient from '../db/chromaDbClient.js';
+import { encryptValue, decryptValue } from '@rita-berenice/shared/util';
 import { getCredentialEnv } from '../config/env.js';
+import { getDatabase } from '../db/postgresClient.js';
+import { credentials } from '../db/schema.js';
+import { eq } from 'drizzle-orm';
 
 // ✅ API Response Types
 interface OpenAIUsageResponse {
@@ -21,22 +21,7 @@ interface GoogleErrorResponse {
 	error?: { message?: string };
 }
 
-const { getCredentialCollection, upsertRecord, getRecordById } = chromaDbClient;
-const { SECRET_ENCRYPTION_KEY } = getCredentialEnv();
-
 export const credentialStore = {
-	_credentialCollection: null as Collection | null,
-
-	// Get collection with caching
-	_getCollection: async (): Promise<Collection> => {
-		if (credentialStore._credentialCollection) {
-			return credentialStore._credentialCollection;
-		}
-		const collection = await getCredentialCollection();
-		credentialStore._credentialCollection = collection;
-		return collection;
-	},
-
 	_validateOpenAI: async (apiKey: string): Promise<ValidationResult> => {
 		try {
 			const response = await fetch('https://api.openai.com/v1/models', {
@@ -198,21 +183,8 @@ export const credentialStore = {
 	 */
 	storeUserApiKeys: async (userId: string, apiKeys: UserApiKeys): Promise<void> => {
 		try {
-			const collection = await credentialStore._getCollection();
-			const credentialId = buildCredentialId(userId);
 			const now = new Date().toISOString();
-
-			// --- Logic to preserve createdAt on update ---
-			const existingRecord = await getRecordById(collection, credentialId).catch(() => null);
-
-			const metadata = {
-				userId,
-				type: METADATA_TYPES.CREDENTIAL,
-				keyType: METADATA_TYPES.APIKEY,
-				createdAt: existingRecord?.metadatas?.[0]?.createdAt || now,
-				updatedAt: now,
-			};
-			// --- End of new logic ---
+			const { SECRET_ENCRYPTION_KEY } = getCredentialEnv();
 
 			const encryptedKeys: Record<string, string> = {};
 			await Promise.all(
@@ -223,9 +195,18 @@ export const credentialStore = {
 				})
 			);
 
-			const secretDocument = JSON.stringify(encryptedKeys);
-
-			await upsertRecord(collection, credentialId, secretDocument, metadata);
+			await getDatabase()
+				.insert(credentials)
+				.values({
+					userId,
+					encryptedData: JSON.stringify(encryptedKeys),
+					createdAt: now,
+					updatedAt: now,
+				})
+				.onConflictDoUpdate({
+					target: credentials.userId,
+					set: { encryptedData: JSON.stringify(encryptedKeys), updatedAt: now },
+				});
 
 			console.log(`[CredentialService] Successfully stored/updated API keys for user ${userId}`);
 		} catch (error) {
@@ -239,16 +220,17 @@ export const credentialStore = {
 	 */
 	getUserApiKeys: async (userId: string): Promise<CredentialResponse> => {
 		try {
-			const collection = await credentialStore._getCollection();
-			const credentialId = buildCredentialId(userId);
-			const result = await getRecordById(collection, credentialId);
-
-			if (!result.documents?.[0]) {
-				console.warn(`[CredentialService] No API keys found for user ${userId}`);
+			const [row] = await getDatabase()
+				.select({ encryptedData: credentials.encryptedData })
+				.from(credentials)
+				.where(eq(credentials.userId, userId))
+				.limit(1);
+			if (!row) {
 				return { userApiKeys: {}, validationResults: {} };
 			}
 
-			const encryptedKeys = JSON.parse(result.documents[0]);
+			const { SECRET_ENCRYPTION_KEY } = getCredentialEnv();
+			const encryptedKeys = JSON.parse(row.encryptedData) as Record<string, string>;
 			const decryptedKeys: UserApiKeys = {};
 
 			await Promise.all(

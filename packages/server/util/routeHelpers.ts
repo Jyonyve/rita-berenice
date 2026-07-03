@@ -1,6 +1,6 @@
 // File: server/util/routeHelpers.ts
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import { CollectionType } from '../db/chroma.type.js';
+import { ResourceType } from '../db/resource.type.js';
 
 import { ApiError } from '@rita-berenice/shared/domain';
 import { convertArrayToString, toKebabCase } from '@rita-berenice/shared/util';
@@ -23,7 +23,7 @@ export const asyncHandler = (
 	};
 };
 
-export const validateServiceId = (serviceId: string, collection: CollectionType) => {
+export const validateServiceId = (serviceId: string, collection: ResourceType) => {
 	if (!serviceId)
 		throw new ApiError(
 			400,

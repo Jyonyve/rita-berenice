@@ -2,7 +2,7 @@
 import express, { type Request, type Response, type Router } from 'express';
 
 import { tempStore } from '../store/tempStore.js';
-import { COLLECTIONS } from '../db/chroma.type.js';
+import { RESOURCES } from '../db/resource.type.js';
 import {
 	asyncHandler,
 	genRoutePattern,
@@ -14,7 +14,7 @@ import { ApiError } from '@rita-berenice/shared/domain';
 
 const router: Router = express.Router();
 
-const collectionType = COLLECTIONS.TEMP; // For validating sessionId if it were used as a serviceId elsewhere
+const collectionType = RESOURCES.TEMP;
 // --- Temporary Chat Turn Operations ---
 
 /**

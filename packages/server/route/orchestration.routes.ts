@@ -3,7 +3,7 @@
 import express, { type Request, type Response, type Router } from 'express';
 import { verifySession } from 'supertokens-node/recipe/session/framework/express';
 import type { SessionRequest } from 'supertokens-node/framework/express';
-import { COLLECTIONS } from '../db/chroma.type.js';
+import { RESOURCES } from '../db/resource.type.js';
 import { asyncHandler, genRoutePattern, validateServiceId } from '../util/routeHelpers.js';
 import {
 	TempChatTurnCdo,
@@ -60,7 +60,7 @@ const getOwnedSession = async (sessionId: string, userId: string) => {
 
 const resolveReceiveBotResponseContext = async (body: ReceiveBotResponseBody, userId: string) => {
 	const { sessionId, sequence, entries, modelName, isScene } = body;
-	validateServiceId(sessionId, COLLECTIONS.CHAT);
+	validateServiceId(sessionId, RESOURCES.CHAT);
 	const sessionInfo = await getOwnedSession(sessionId, userId);
 	if (!sessionInfo.profileId) {
 		throw new ApiError(
@@ -226,7 +226,7 @@ router.post(
 			res: Response
 		): Promise<void> => {
 			const chatTurnCdo = parseRequestBody(ChatTurnCdoSchema, req.body) as ChatTurnCdo;
-			validateServiceId(chatTurnCdo.sessionId, COLLECTIONS.CHAT);
+			validateServiceId(chatTurnCdo.sessionId, RESOURCES.CHAT);
 			const userId = req.session!.getUserId();
 			await getOwnedSession(chatTurnCdo.sessionId, userId);
 			chatTurnCdo.userId = userId;
@@ -242,7 +242,7 @@ router.get(
 	verifySession(),
 	asyncHandler(async (req: SessionRequest, res: Response): Promise<void> => {
 		const { sessionId, sequence: sequenceParam } = req.params;
-		validateServiceId(sessionId, COLLECTIONS.CHAT);
+		validateServiceId(sessionId, RESOURCES.CHAT);
 		const sequence = Number(sequenceParam);
 		if (!Number.isInteger(sequence) || sequence < 0) {
 			throw new ApiError(400, 'Invalid finalization job sequence.');
@@ -272,7 +272,7 @@ router.post(
 			res: Response
 		): Promise<void> => {
 			const chatTurnCdo = parseRequestBody(ChatTurnCdoSchema, req.body) as ChatTurnCdo;
-			validateServiceId(chatTurnCdo.sessionId, COLLECTIONS.CHAT);
+			validateServiceId(chatTurnCdo.sessionId, RESOURCES.CHAT);
 			const userId = req.session!.getUserId();
 			await getOwnedSession(chatTurnCdo.sessionId, userId);
 			chatTurnCdo.userId = userId;

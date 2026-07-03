@@ -2,7 +2,7 @@
 
 import express, { type Request, type Response, type Router } from 'express';
 import { profileStore } from '../store/profileStore.js';
-import { COLLECTIONS } from '../db/chroma.type.js';
+import { RESOURCES } from '../db/resource.type.js';
 import {
 	asyncHandler,
 	genRoutePattern,
@@ -13,7 +13,7 @@ import { ProfileInfo, ProfileMetadata } from '@rita-berenice/shared/domain';
 
 const router: Router = express.Router();
 
-const collectionType = COLLECTIONS.PROFILE;
+const collectionType = RESOURCES.PROFILE;
 
 /**
  * GET /api/profile/get-all-profiles

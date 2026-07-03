@@ -1,6 +1,7 @@
-import { Where } from 'chromadb';
 import { ChromaResponse, Metadata } from '@rita-berenice/shared/api';
 import { get_encoding } from 'tiktoken';
+
+type Where = { $and?: Where[]; [key: string]: unknown };
 
 export function isAndWhere(where: Where): where is { $and: Where[] } {
 	return where && '$and' in where && Array.isArray((where as any).$and);

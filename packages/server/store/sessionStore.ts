@@ -1,150 +1,103 @@
-// server/services/sessionStore.ts
-
-import { Collection, Where } from 'chromadb';
-import { chromaDbClient } from '../db/chromaDbClient.js';
-import { COLLECTIONS, toChromaMetadata } from '../db/chroma.type.js';
-import { ChromaResponse, SessionResponse } from '@rita-berenice/shared/api';
-import { SessionMetadata, SessionInfo } from '@rita-berenice/shared/domain';
-import { metadataToSession, buildSessionId } from '@rita-berenice/shared/util';
-import { parseEntriesToConversation } from '../util/chatParseUtils.js';
-import { inflateSessionDoc, flatSessionToDoc } from '../util/documentUtils.js';
-import { handleServiceError, validateChromaResponse } from '../util/serviceHelpers.js';
+import { SessionResponse } from '@rita-berenice/shared/api';
+import { ApiError, SessionInfo } from '@rita-berenice/shared/domain';
 import { METADATA_TYPES } from '@rita-berenice/shared/config';
+import { buildSessionId } from '@rita-berenice/shared/util';
+import { and, desc, eq } from 'drizzle-orm';
+import { getDatabase } from '../db/postgresClient.js';
+import { sessions } from '../db/schema.js';
+import { parseEntriesToConversation } from '../util/chatParseUtils.js';
+import { handleServiceError } from '../util/serviceHelpers.js';
 
-// Destructure chromaDbClient methods
-const { getSessionCollection, addRecord, updateRecord, getRecordById, getRecords } = chromaDbClient; // Assume getSessionCollection is added to chromaDbClient
-const collectionType = COLLECTIONS.SESSION;
+const toResponse = (sessionInfos: SessionInfo[]): SessionResponse => ({
+	ids: sessionInfos.map((session) => session.sessionId),
+	documents: sessionInfos.map((session) => session.lastCharMessage),
+	metadatas: sessionInfos.map(() => null),
+	sessionInfos,
+	sessionInfo: sessionInfos[0] || null,
+});
+
+const persistSession = async (sessionInfo: SessionInfo): Promise<void> => {
+	await getDatabase()
+		.insert(sessions)
+		.values({
+			sessionId: sessionInfo.sessionId,
+			userId: sessionInfo.userId,
+			characterId: sessionInfo.characterId,
+			profileId: sessionInfo.profileId,
+			status: sessionInfo.status,
+			data: sessionInfo,
+			createdAt: sessionInfo.createdAt,
+			updatedAt: sessionInfo.updatedAt,
+		})
+		.onConflictDoUpdate({
+			target: sessions.sessionId,
+			set: {
+				profileId: sessionInfo.profileId,
+				status: sessionInfo.status,
+				data: sessionInfo,
+				updatedAt: sessionInfo.updatedAt,
+			},
+		});
+};
+
+const requireSession = async (sessionId: string): Promise<SessionInfo> => {
+	const [row] = await getDatabase()
+		.select({ data: sessions.data })
+		.from(sessions)
+		.where(eq(sessions.sessionId, sessionId))
+		.limit(1);
+	if (!row) throw new ApiError(404, `Session '${sessionId}' not found.`);
+	return row.data;
+};
 
 export const sessionStore = {
-	// --- Caching and Collection Getter (following your existing pattern) ---
-	_sessionCollection: null as Collection | null,
-
-	async _getCollection(): Promise<Collection> {
-		if (sessionStore._sessionCollection) return sessionStore._sessionCollection;
-		const collection = await getSessionCollection(); // Create this in chromaDbClient
-		sessionStore._sessionCollection = collection;
-		return collection;
-	},
-
-	_constructSession: (results: ChromaResponse): SessionResponse => {
-		const { ids, documents, metadatas } = results;
-		const sessionInfos = ids.map((id, index) => {
-			const metadata = metadatas[index] as unknown as SessionMetadata;
-			const document = documents[index];
-			const inflatedDoc = inflateSessionDoc(document!);
-			const sessionInfo = metadataToSession(
-				metadata!,
-				inflatedDoc.lastCharMessage,
-				inflatedDoc.userNote
-			);
-			return sessionInfo;
-		});
-		return {
-			ids,
-			documents,
-			metadatas,
-			sessionInfos: sessionInfos,
-			sessionInfo: sessionInfos[0] || null,
-		};
-	},
-
-	// --- Core CRUD Operations ---
-
-	/**
-	 * Creates a new session record. This should be the first step when a user starts a new chat.
-	 */
 	async createSession(
 		userId: string,
 		characterId: string,
 		firstCharMessage: string,
 		title: string
 	): Promise<{ sessionId: string }> {
-		const collection = await sessionStore._getCollection();
 		const now = new Date().toISOString();
-		const newSessionId = buildSessionId(characterId);
-
-		const metadata: SessionMetadata = {
-			sessionId: newSessionId,
+		const sessionInfo: SessionInfo = {
+			sessionId: buildSessionId(characterId),
 			userId,
 			characterId,
 			profileId: '',
-			title: title || 'New Conversation', // Default title
+			title: title || 'New Conversation',
 			createdAt: now,
 			updatedAt: now,
-			messageCount: 1, // Starts with the first message
+			messageCount: 1,
 			status: 'active',
 			type: METADATA_TYPES.SESSION,
+			lastCharMessage: firstCharMessage,
+			userNote: '',
 		};
-
-		const sessionInfo: SessionInfo = { ...metadata, lastCharMessage: firstCharMessage, userNote: '' };
-
-		// We store the session metadata directly. The document can be a simple string for embedding.
-		const documentForEmbedding = flatSessionToDoc(sessionInfo);
-
 		try {
-			const chromaMetadata = toChromaMetadata(metadata);
-			await addRecord(collection, metadata.sessionId, documentForEmbedding, chromaMetadata);
-			return { sessionId: metadata.sessionId };
-		} catch (error: any) {
-			handleServiceError(
-				error,
-				'An internal error occurred while creating a session.',
-				`Failed to create session ${metadata.sessionId} for user ${userId}`
-			);
-		}
-	},
-
-	/**
-	 * Updates a session's metadata
-	 * !IMPORTANT! No update MessageCount (use another method)
-	 */
-	async updateSession(sessionInfo: SessionInfo): Promise<void> {
-		const collection = await sessionStore._getCollection();
-		const now = new Date().toISOString();
-		try {
-			const { lastCharMessage, userNote, ...sessionMetadata } = sessionInfo;
-
-			const updatedMetadata: SessionMetadata = { ...sessionMetadata, updatedAt: now };
-
-			const newMessage = parseEntriesToConversation(JSON.parse(lastCharMessage));
-			const documentForEmbedding = flatSessionToDoc({
-				...updatedMetadata,
-				lastCharMessage: newMessage,
-				userNote,
-			});
-			const chromaMetadata = toChromaMetadata(updatedMetadata);
-			await updateRecord(collection, updatedMetadata.sessionId, documentForEmbedding, chromaMetadata);
+			await persistSession(sessionInfo);
+			return { sessionId: sessionInfo.sessionId };
 		} catch (error) {
-			handleServiceError(
-				error,
-				'An internal error occurred while do [updateSession].',
-				`Failed to update sessionInfo with ID ${sessionInfo.sessionId}:`
-			);
+			handleServiceError(error, `Failed to create session for user ${userId}`);
 		}
 	},
 
-	/**
-	 * Retrieves all sessions for a given user, sorted by last activity.
-	 */
-	async getSessionsByUserId(userId: string): Promise<SessionResponse> {
-		const collection = await sessionStore._getCollection();
-		const where: Where = {
-			$and: [{ type: { $eq: METADATA_TYPES.SESSION } }, { userId: { $eq: userId } }],
-		};
+	async updateSession(sessionInfo: SessionInfo): Promise<void> {
 		try {
-			const rawResults = await getRecords(collection, where);
-			const results = validateChromaResponse(rawResults, 'getList', collectionType);
+			await persistSession({ ...sessionInfo, updatedAt: new Date().toISOString() });
+		} catch (error) {
+			handleServiceError(error, `Failed to update session '${sessionInfo.sessionId}'`);
+		}
+	},
 
-			// Assuming a constructSession method similar to your other stores
-			const sessionRes = sessionStore._constructSession(results);
-			sessionRes.sessionInfos.sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
-			return sessionRes;
-		} catch (error: any) {
-			handleServiceError(
-				error,
-				'An internal error occurred while fetching user sessions.',
-				`Failed to get sessions for user ${userId}`
-			);
+	async getSessionsByUserId(userId: string): Promise<SessionResponse> {
+		try {
+			const rows = await getDatabase()
+				.select({ data: sessions.data })
+				.from(sessions)
+				.where(eq(sessions.userId, userId))
+				.orderBy(desc(sessions.updatedAt));
+			return toResponse(rows.map((row) => row.data));
+		} catch (error) {
+			handleServiceError(error, `Failed to get sessions for user ${userId}`);
 		}
 	},
 
@@ -152,139 +105,66 @@ export const sessionStore = {
 		userId: string,
 		characterId: string
 	): Promise<SessionResponse> {
-		const collection = await sessionStore._getCollection();
-		const where: Where = {
-			$and: [
-				{ type: { $eq: METADATA_TYPES.SESSION } },
-				{ userId: { $eq: userId } },
-				{ characterId: { $eq: characterId } },
-			],
-		};
 		try {
-			const rawResults = await getRecords(collection, where);
-			const results = validateChromaResponse(rawResults, 'getList', collectionType);
-
-			// Assuming a constructSession method similar to your other stores
-			const sessionRes = sessionStore._constructSession(results);
-			sessionRes.sessionInfos.sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
-			return sessionRes;
-		} catch (error: any) {
-			handleServiceError(
-				error,
-				'An internal error occurred while fetching user sessions.',
-				`Failed to get sessions for user ${userId}`
-			);
-		}
-	},
-
-	getSession: async (sessionId: string): Promise<SessionResponse> => {
-		const collection = await sessionStore._getCollection();
-		try {
-			const rawResult = await getRecordById(collection, sessionId);
-			const results = validateChromaResponse(rawResult, 'getOne', collectionType);
-			return sessionStore._constructSession(results);
+			const rows = await getDatabase()
+				.select({ data: sessions.data })
+				.from(sessions)
+				.where(and(eq(sessions.userId, userId), eq(sessions.characterId, characterId)))
+				.orderBy(desc(sessions.updatedAt));
+			return toResponse(rows.map((row) => row.data));
 		} catch (error) {
-			handleServiceError(
-				error,
-				'An internal error occurred while do [getSession].',
-				`Failed to get user with ID ${sessionId}:`
-			);
+			handleServiceError(error, `Failed to get sessions for user ${userId}`);
 		}
 	},
 
-	/**
-	 * Updates a session's metadata, typically after a new message is added.
-	 */
+	async getSession(sessionId: string): Promise<SessionResponse> {
+		try {
+			return toResponse([await requireSession(sessionId)]);
+		} catch (error) {
+			handleServiceError(error, `Failed to get session '${sessionId}'`);
+		}
+	},
+
 	async updateSessionOnNewMessage(sessionId: string, latestCharMessage: string): Promise<void> {
-		const collection = await sessionStore._getCollection();
-		const now = new Date().toISOString();
 		try {
-			const sessionInfo = (await sessionStore.getSession(sessionId)).sessionInfo;
-			const { lastCharMessage, userNote, ...sessionMetadata } = sessionInfo;
-
-			const updatedMetadata: SessionMetadata = {
-				...sessionMetadata,
-				updatedAt: now,
-				messageCount: sessionMetadata.messageCount + 1,
-			};
-			const { latestCharMessage: entries } = JSON.parse(latestCharMessage);
-			const lastConversation = parseEntriesToConversation(entries);
-			const documentForEmbedding = flatSessionToDoc({
-				...updatedMetadata,
-				lastCharMessage: lastConversation,
-				userNote,
+			const current = await requireSession(sessionId);
+			const parsed = JSON.parse(latestCharMessage) as { latestCharMessage: unknown };
+			const entries = Array.isArray(parsed.latestCharMessage) ? parsed.latestCharMessage : [];
+			await persistSession({
+				...current,
+				lastCharMessage: parseEntriesToConversation(entries as never),
+				messageCount: current.messageCount + 1,
+				updatedAt: new Date().toISOString(),
 			});
-			const chromaMetadata = toChromaMetadata(updatedMetadata);
-			await updateRecord(collection, updatedMetadata.sessionId, documentForEmbedding, chromaMetadata);
 		} catch (error) {
-			handleServiceError(
-				error,
-				'An internal error occurred while do [updateSessionOnNewMessage].',
-				`Failed to update sessionInfo Message with ID ${sessionId}:`
-			);
+			handleServiceError(error, `Failed to update session message '${sessionId}'`);
 		}
 	},
 
-	/**
-	 * Updates a session's metadata, typically after a new message is added.
-	 */
 	async updateSessionTitle(sessionId: string, title: string): Promise<void> {
-		const collection = await sessionStore._getCollection();
-		const now = new Date().toISOString();
 		try {
-			const sessionInfo = (await sessionStore.getSession(sessionId)).sessionInfo;
-			const newSessionInfo: SessionInfo = { ...sessionInfo, title, updatedAt: now };
-			const documentForEmbedding = flatSessionToDoc(newSessionInfo);
-			const { lastCharMessage, userNote, ...updatedMetadata } = newSessionInfo;
-			await updateRecord(collection, updatedMetadata.sessionId, documentForEmbedding, updatedMetadata);
+			const current = await requireSession(sessionId);
+			await persistSession({ ...current, title, updatedAt: new Date().toISOString() });
 		} catch (error) {
-			handleServiceError(
-				error,
-				'An internal error occurred while do [updateSessionOnNewMessage].',
-				`Failed to update sessionInfo Message with ID ${sessionId}:`
-			);
+			handleServiceError(error, `Failed to update session title '${sessionId}'`);
 		}
 	},
 
-	/**
-	 * Updates a session's metadata, typically after a new message is added.
-	 */
-	async updateSessionUserNote(sessionId: string, newUserNote: string): Promise<void> {
-		const collection = await sessionStore._getCollection();
-		const now = new Date().toISOString();
+	async updateSessionUserNote(sessionId: string, userNote: string): Promise<void> {
 		try {
-			const sessionInfo = (await sessionStore.getSession(sessionId)).sessionInfo;
-			const newSessionInfo: SessionInfo = { ...sessionInfo, updatedAt: now, userNote: newUserNote };
-			const documentForEmbedding = flatSessionToDoc(newSessionInfo);
-			const { lastCharMessage, userNote, ...updatedMetadata } = newSessionInfo;
-			await updateRecord(collection, updatedMetadata.sessionId, documentForEmbedding, updatedMetadata);
+			const current = await requireSession(sessionId);
+			await persistSession({ ...current, userNote, updatedAt: new Date().toISOString() });
 		} catch (error) {
-			handleServiceError(
-				error,
-				'An internal error occurred while do [updateSessionOnNewMessage].',
-				`Failed to update sessionInfo Message with ID ${sessionId}:`
-			);
+			handleServiceError(error, `Failed to update session note '${sessionId}'`);
 		}
 	},
 
-	/**
-	 * Updates a session's metadata, typically after a new message is added.
-	 */
 	async initSessionProfileId(sessionId: string, profileId: string): Promise<void> {
-		const collection = await sessionStore._getCollection();
-		const now = new Date().toISOString();
 		try {
-			const sessionInfo = (await sessionStore.getSession(sessionId)).sessionInfo;
-			const newSessionInfo: SessionInfo = { ...sessionInfo, profileId, updatedAt: now };
-			const documentForEmbedding = flatSessionToDoc(newSessionInfo);
-			const { lastCharMessage, ...updatedMetadata } = newSessionInfo;
-			await updateRecord(collection, updatedMetadata.sessionId, documentForEmbedding, updatedMetadata);
+			const current = await requireSession(sessionId);
+			await persistSession({ ...current, profileId, updatedAt: new Date().toISOString() });
 		} catch (error) {
-			handleServiceError(
-				error,
-				'An internal error occurred while do [initSessionProfileId].',
-				`Failed to update sessionInfo Message with ID ${sessionId}:`
-			);
+			handleServiceError(error, `Failed to initialize session profile '${sessionId}'`);
 		}
 	},
 };

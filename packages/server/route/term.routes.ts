@@ -2,13 +2,13 @@
 import express, { type Request, type Response, type Router } from 'express';
 
 import { termStore } from '../store/termStore.js';
-import { COLLECTIONS } from '../db/chroma.type.js';
+import { RESOURCES } from '../db/resource.type.js';
 import { asyncHandler, genRoutePattern, validateRequestData } from '../util/routeHelpers.js';
 import { SessionTermInfo, CharacterTermInfo } from '@rita-berenice/shared/domain';
 
 const router: Router = express.Router();
 
-const collectionType = COLLECTIONS.TERM;
+const collectionType = RESOURCES.TERM;
 
 /**
  * POST /api/glossary/store-session-term

@@ -1,6 +1,6 @@
 import { ChromaResponse } from '@rita-berenice/shared/api';
 import { ApiError } from '@rita-berenice/shared/domain';
-import { CollectionType } from '../db/chroma.type.js';
+import { ResourceType } from '../db/resource.type.js';
 
 /**
  * Handles errors caught in service methods.
@@ -72,7 +72,7 @@ const _validateChromaResult = (
 export const validateChromaResponse = (
 	chromaResponse: ChromaResponse, // Assumes chromaDbClient now always returns this or throws its own Error
 	operationType: 'getOne' | 'getList',
-	collectionType: CollectionType
+	collectionType: ResourceType
 ): ChromaResponse => {
 	// 1. Structural Validation (Defense in depth)
 	if (!_validateChromaResult(chromaResponse)) {

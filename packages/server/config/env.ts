@@ -28,12 +28,14 @@ const serverEnvSchema = z.object({
 	DASHBOARD_ADMIN_EMAILS: commaSeparatedListSchema,
 });
 
-const chromaEnvSchema = z.object({
+const embeddingEnvSchema = z.object({
 	OPENAI_API_KEY: z.string().min(1, 'OPENAI_API_KEY is required for embeddings'),
-	COHERE_API_KEY: z.string().min(1, 'COHERE_API_KEY is required for temp embeddings'),
-	CHROMA_HOST: z.string().min(1, 'CHROMA_HOST is required'),
-	CHROMA_PORT: portSchema,
-	CHROMA_SSL: booleanStringSchema.default(false),
+});
+
+const databaseEnvSchema = z.object({
+	DATABASE_URL: z.string().url('DATABASE_URL must be a PostgreSQL URL'),
+	DATABASE_SSL: booleanStringSchema.default(false),
+	DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),
 });
 
 const credentialEnvSchema = z.object({
@@ -59,7 +61,8 @@ const parseEnv = <T>(schema: z.ZodSchema<T>, env: NodeJS.ProcessEnv): T => {
 };
 
 let cachedServerEnv: z.infer<typeof serverEnvSchema> | undefined;
-let cachedChromaEnv: z.infer<typeof chromaEnvSchema> | undefined;
+let cachedEmbeddingEnv: z.infer<typeof embeddingEnvSchema> | undefined;
+let cachedDatabaseEnv: z.infer<typeof databaseEnvSchema> | undefined;
 let cachedCredentialEnv: z.infer<typeof credentialEnvSchema> | undefined;
 
 export const getServerEnv = () => {
@@ -67,9 +70,14 @@ export const getServerEnv = () => {
 	return cachedServerEnv;
 };
 
-export const getChromaEnv = () => {
-	cachedChromaEnv ??= parseEnv(chromaEnvSchema, process.env);
-	return cachedChromaEnv;
+export const getEmbeddingEnv = () => {
+	cachedEmbeddingEnv ??= parseEnv(embeddingEnvSchema, process.env);
+	return cachedEmbeddingEnv;
+};
+
+export const getDatabaseEnv = () => {
+	cachedDatabaseEnv ??= parseEnv(databaseEnvSchema, process.env);
+	return cachedDatabaseEnv;
 };
 
 export const getCredentialEnv = () => {

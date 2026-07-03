@@ -1,2 +1,3 @@
-export * from './chromaDbClient.js';
-export * from './chroma.type.js';
+export * from './postgresClient.js';
+export * from './resource.type.js';
+export * from './schema.js';
