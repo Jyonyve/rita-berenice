@@ -38,19 +38,20 @@ function initializePortraits(): void {
 	console.log('[PortraitUtil] Initializing all character and lore portraits...');
 
 	// This glob pattern is more explicit and reliable for finding files in subdirectories.
-	const allImageModules = import.meta.glob<string>('/public/assets/character/**/*.{webp,avif}', {
-		eager: true,
-		import: 'default',
-	}) as Record<string, string>;
+	const allImageModules = import.meta.glob<string>(
+		'../../../public/assets/character/**/*.{webp,avif}',
+		{ eager: true, import: 'default', query: '?url' }
+	) as Record<string, string>;
 
 	const emotionFilenameRegex = /_(\d+)\.(webp|avif)$/;
 
 	for (const path in allImageModules) {
 		// Create the correct web-accessible URL by removing the '/public' prefix.
-		const finalImageUrl = path.replace('/public', '');
+		const sourceImagePath = path.slice(path.indexOf('/assets/'));
+		const finalImageUrl = allImageModules[path];
 
 		// ✅ RESTORED: First, check if the path is for a lore image.
-		const loreInfo = getLoreInfoFromPath(finalImageUrl);
+		const loreInfo = getLoreInfoFromPath(sourceImagePath);
 		if (loreInfo) {
 			const { characterId, historyId } = loreInfo;
 			const loreMap = lorePortraitsMap.get(characterId) || new Map<string, string>();
@@ -61,10 +62,10 @@ function initializePortraits(): void {
 		}
 
 		// If it's not a lore image, process it as a standard emotion portrait.
-		const characterId = getCharacterIdFromPath(finalImageUrl);
+		const characterId = getCharacterIdFromPath(sourceImagePath);
 		if (!characterId) continue;
 
-		const match = finalImageUrl.match(emotionFilenameRegex);
+		const match = sourceImagePath.match(emotionFilenameRegex);
 		if (!match || !match[1]) continue;
 
 		// ✅ FIXED: Use match[1] for first capture group (emotion number)

@@ -26,6 +26,7 @@
 		"data:monday:recall": "pnpm --filter @rita-berenice/migration monday:recall",
 		"data:monday:enrich": "pnpm --filter @rita-berenice/migration monday:enrich",
 		"data:monday:chat-smoke": "pnpm --filter @rita-berenice/migration monday:chat-smoke",
+		"data:monday:transfer": "pnpm --filter @rita-berenice/migration monday:transfer",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
 		"lint": "pnpm format:check",
