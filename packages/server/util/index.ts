@@ -8,3 +8,4 @@ export * from './jsonlLogger.js';
 export * from './chatParseUtils.js';
 export * from './documentUtils.js';
 export * from './imageProcessingUtils.js';
+export * from './authUtils.js';

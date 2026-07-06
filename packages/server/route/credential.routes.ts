@@ -1,9 +1,12 @@
 // src/server/routes/credentialRoutes.ts
 import express, { type Request, type Response, type Router } from 'express';
+import { verifySession } from 'supertokens-node/recipe/session/framework/express';
 import { asyncHandler, genRoutePattern, validateRequestData } from '../util/routeHelpers.js';
+import { assertSessionUser } from '../util/authUtils.js';
 import { credentialStore } from '../store/credentialStore.js';
 
 const router: Router = express.Router();
+router.use(verifySession());
 
 /**
  * POST /api/credential/validate-api-keys
@@ -30,7 +33,7 @@ router.get(
 	genRoutePattern('getUserApiKeys', ['userId']),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		validateRequestData(req.params, 'params', ['userId']);
-		const { userId } = req.params;
+		const userId = assertSessionUser(req, req.params.userId);
 
 		console.log(`API HIT: GET /api/credential/get-user-api-keys/${userId}`);
 
@@ -47,7 +50,8 @@ router.post(
 	genRoutePattern('storeUserApiKeys'),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		validateRequestData(req.body, 'body', ['userId', 'apiKeys']);
-		const { userId, apiKeys } = req.body;
+		const { apiKeys } = req.body;
+		const userId = assertSessionUser(req, req.body.userId);
 
 		console.log(`API HIT: POST /api/credential/store-user-api-keys`);
 
@@ -65,7 +69,8 @@ router.put(
 	genRoutePattern('updateUserApiKey'),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		validateRequestData(req.body, 'body', ['userId', 'keyType', 'keyValue']);
-		const { userId, keyType, keyValue } = req.body;
+		const { keyType, keyValue } = req.body;
+		const userId = assertSessionUser(req, req.body.userId);
 
 		console.log(`API HIT: PUT /api/credential/update-user-api-key`);
 

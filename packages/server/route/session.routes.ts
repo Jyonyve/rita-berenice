@@ -1,11 +1,14 @@
 // server/route/session.routes.ts
 
 import express, { type Request, type Response, type Router } from 'express';
+import { verifySession } from 'supertokens-node/recipe/session/framework/express';
 import { asyncHandler, genRoutePattern, validateRequestData } from '../util/routeHelpers.js';
+import { assertOwnedProfile, assertOwnedSession, assertSessionUser } from '../util/authUtils.js';
 import { sessionStore } from '../store/sessionStore.js';
 import { SessionInfo } from '@rita-berenice/shared/domain';
 
 const router: Router = express.Router();
+router.use(verifySession());
 
 /**
  * POST /api/session/create-session
@@ -22,7 +25,8 @@ router.post(
 	genRoutePattern('createSession'),
 	asyncHandler(async (req: Request, res: Response) => {
 		validateRequestData(req.body, 'body', ['userId', 'characterId']);
-		const { userId, characterId, firstCharMessage = '', title = '' } = req.body;
+		const { characterId, firstCharMessage = '', title = '' } = req.body;
+		const userId = assertSessionUser(req, req.body.userId);
 
 		console.log(`API HIT: POST /api/session/create-session for user ${userId}`);
 
@@ -49,6 +53,10 @@ router.put(
 
 		// Now you can safely destructure knowing all fields are present
 		const sessionInfo: SessionInfo = req.body;
+		const storedSession = await assertOwnedSession(req, sessionInfo.sessionId);
+		sessionInfo.userId = assertSessionUser(req, sessionInfo.userId);
+		sessionInfo.characterId = storedSession.characterId;
+		sessionInfo.profileId = storedSession.profileId;
 
 		console.log(`API HIT: PUT /api/session/update-session-on for session ${sessionInfo.sessionId}`);
 
@@ -70,7 +78,7 @@ router.get(
 	genRoutePattern('getSessionsByUserId', ['userId']),
 	asyncHandler(async (req: Request, res: Response) => {
 		validateRequestData(req.params, 'params', ['userId']);
-		const { userId } = req.params;
+		const userId = assertSessionUser(req, req.params.userId);
 
 		console.log(`API HIT: GET /api/session/get-sessions-by-user-id/${userId}`);
 
@@ -91,7 +99,8 @@ router.get(
 	genRoutePattern('getSessionsByUserIdAndCharacterId', ['userId', 'characterId']),
 	asyncHandler(async (req: Request, res: Response) => {
 		validateRequestData(req.params, 'params', ['userId', 'characterId']);
-		const { userId, characterId } = req.params;
+		const { characterId } = req.params;
+		const userId = assertSessionUser(req, req.params.userId);
 
 		console.log(
 			`API HIT: GET /api/session/get-sessions-by-user-id-and-character-id/${userId}/${characterId}`
@@ -115,6 +124,7 @@ router.get(
 	asyncHandler(async (req: Request, res: Response) => {
 		validateRequestData(req.params, 'params', ['sessionId']);
 		const { sessionId } = req.params;
+		await assertOwnedSession(req, sessionId);
 
 		console.log(`API HIT: GET /api/session/get-session/${sessionId}`);
 
@@ -137,6 +147,7 @@ router.put(
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		validateRequestData(req.body, 'body', ['sessionId', 'latestCharMessage']);
 		const { sessionId, latestCharMessage } = req.body;
+		await assertOwnedSession(req, sessionId);
 
 		console.log(`API HIT: PUT /api/session/update-session-on-new-message for session ${sessionId}`);
 
@@ -160,6 +171,11 @@ router.put(
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		validateRequestData(req.body, 'body', ['sessionId', 'profileId']);
 		const { sessionId, profileId } = req.body;
+		await assertOwnedSession(req, sessionId);
+		const profile = await assertOwnedProfile(req, profileId);
+		if (profile.sessionId !== sessionId) {
+			throw new Error(`Profile '${profileId}' does not belong to session '${sessionId}'.`);
+		}
 
 		console.log(`API HIT: PUT /api/session/init-session-profile-id for session ${sessionId}`);
 
@@ -183,6 +199,7 @@ router.put(
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		validateRequestData(req.body, 'body', ['sessionId', 'title']);
 		const { sessionId, title } = req.body;
+		await assertOwnedSession(req, sessionId);
 
 		console.log(`API HIT: PUT /api/session/update-session-title for session ${sessionId}`);
 

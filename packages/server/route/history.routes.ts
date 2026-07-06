@@ -1,6 +1,7 @@
 // src/server/routes/lore.routes.ts
 
 import express, { type Request, type Response, type Router } from 'express';
+import { verifySession } from 'supertokens-node/recipe/session/framework/express';
 
 import { historyStore } from '../store/historyStore.js';
 import {
@@ -10,6 +11,7 @@ import {
 	validateServiceId,
 } from '../util/routeHelpers.js';
 import { RESOURCES } from '../db/resource.type.js';
+import { assertOwnedCharacter, getSessionUserId } from '../util/authUtils.js';
 
 const router: Router = express.Router();
 
@@ -45,9 +47,12 @@ router.get(
  */
 router.post(
 	genRoutePattern('storeHistory'),
+	verifySession(),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		validateRequestData(req.body, 'body', ['characterId', 'content', 'sequence']);
 		const { characterId, historyId } = req.body;
+		await assertOwnedCharacter(req, characterId);
+		req.body.userId = getSessionUserId(req);
 
 		const path = genRoutePattern('storeHistory');
 		console.log(`API HIT: POST ${path} for character ${characterId}, historyId ${historyId}`);

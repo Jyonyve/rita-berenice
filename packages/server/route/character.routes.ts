@@ -1,6 +1,7 @@
 // src/server/routes/character.routes.ts
 
 import express, { type Request, type Response, type Router } from 'express';
+import { verifySession } from 'supertokens-node/recipe/session/framework/express';
 import { RESOURCES } from '../db/resource.type.js';
 import { characterStore } from '../store/characterStore.js';
 import {
@@ -18,6 +19,12 @@ import {
 } from '@rita-berenice/shared/config';
 import { characterUpload, processCharacterImage } from '../util/imageProcessingUtils.js';
 import { CharacterInfo } from '@rita-berenice/shared/domain';
+import {
+	assertCharacterOwnerIfExists,
+	assertOwnedCharacter,
+	assertSessionUser,
+	getSessionUserId,
+} from '../util/authUtils.js';
 
 const router: Router = express.Router();
 const collectionType = RESOURCES.CHARACTER;
@@ -93,9 +100,10 @@ router.get(
  */
 router.get(
 	genRoutePattern('getCharactersByUserId', ['userId']),
+	verifySession(),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		validateRequestData(req.params, 'params', ['userId']);
-		const { userId } = req.params;
+		const userId = assertSessionUser(req, req.params.userId);
 
 		const path = genRoutePattern('getCharactersByUserId', ['userId']);
 		console.log(`API HIT: GET ${path.replace(':userId', userId)}`);
@@ -115,6 +123,7 @@ router.get(
  */
 router.post(
 	genRoutePattern('storeCharacter'),
+	verifySession(),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const requiredFields = [
 			'title',
@@ -130,6 +139,8 @@ router.post(
 		validateRequestData(req.body, 'body', requiredFields);
 
 		const characterInfo = req.body as CharacterInfo;
+		await assertCharacterOwnerIfExists(req, characterInfo.characterId);
+		characterInfo.userId = getSessionUserId(req);
 		const path = genRoutePattern('storeCharacter');
 		console.log(`API HIT: POST ${path} for character: ${characterInfo.name}`);
 
@@ -146,11 +157,13 @@ router.post(
  */
 router.post(
 	genRoutePattern('uploadCharacterImage'),
+	verifySession(),
 	characterUpload.single('image'), // 'image' is the field name from frontend FormData
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		validateRequestData(req.body, 'body', ['characterId', 'emotionKey']);
 
 		const { characterId, emotionKey, crop } = req.body; // crop comes from FormData body, not file
+		await assertOwnedCharacter(req, characterId);
 		const file = req.file;
 
 		if (!file) {
@@ -185,10 +198,12 @@ router.post(
  */
 router.post(
 	genRoutePattern('createCharacterFolder'),
+	verifySession(),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		validateRequestData(req.body, 'body', ['characterId']);
 
 		const { characterId } = req.body;
+		await assertOwnedCharacter(req, characterId);
 		const routePath = genRoutePattern('createCharacterFolder');
 		console.log(`API HIT: POST ${routePath} for character: ${characterId}`);
 

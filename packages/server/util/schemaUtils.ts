@@ -10,16 +10,16 @@ const chatEntrySchema = z.object({
 	prompt: z.string().min(1),
 });
 
-const chatMessageSchema = z
+const chatTurnInputMessageSchema = z
 	.object({
 		sessionId: z.string().min(1),
 		sequence: z.number().int().nonnegative(),
 		messageType: z.enum(['request', 'response']),
 		role: z.enum(['system', 'user', 'assistant']),
 		showName: z.string().min(1),
-		messageId: z.string().min(1),
-		createdAt: z.string().min(1),
-		updatedAt: z.string().min(1),
+		messageId: z.string(),
+		createdAt: z.string(),
+		updatedAt: z.string(),
 		emotion: z.string().min(1),
 		type: metadataTypeSchema,
 		model: z.string().optional(),
@@ -93,8 +93,8 @@ export const ChatTurnCdoSchema = z
 		userId: z.string().min(1),
 		sessionId: z.string().min(1),
 		sequence: z.number().int().nonnegative(),
-		request: chatMessageSchema,
-		response: chatMessageSchema,
+		request: chatTurnInputMessageSchema,
+		response: chatTurnInputMessageSchema,
 	})
 	.passthrough()
 	.superRefine((turn, context) => {

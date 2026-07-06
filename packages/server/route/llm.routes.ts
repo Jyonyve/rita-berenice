@@ -1,5 +1,6 @@
 // src/server/routes/ai.routes.ts (or chatGeneration.routes.ts)
 import express, { type Request, type Response, type Router } from 'express';
+import { verifySession } from 'supertokens-node/recipe/session/framework/express';
 
 import { llmService } from '../service/llmService.js';
 import {
@@ -9,10 +10,12 @@ import {
 	validateRequestData,
 } from '../util/routeHelpers.js';
 import { isValidAiModelInfo } from '@rita-berenice/shared/util';
+import { assertSessionUser } from '../util/authUtils.js';
 
 // Import the necessary server-side utils
 
 const router: Router = express.Router();
+router.use(verifySession());
 
 /**
  * POST /api/llm/invoke-llm
@@ -35,11 +38,12 @@ router.post(
 			},
 		];
 		validateRequestData(req.body, 'body', requiredFields, customValidations);
+		const authenticatedUserId = assertSessionUser(req, userId);
 
 		const path = genRoutePattern('invokeLlm');
 		console.log(`API HIT: POST ${path} with model ${aiModelInfo.model}`);
 
-		const assistantResponse = await llmService.invokeLlm(prompt, aiModelInfo, userId, {
+		const assistantResponse = await llmService.invokeLlm(prompt, aiModelInfo, authenticatedUserId, {
 			signal: (req as Request & { signal: AbortSignal }).signal,
 		});
 		res.status(200).json({ response: assistantResponse });
@@ -72,11 +76,12 @@ router.post(
 			},
 		];
 		validateRequestData(req.body, 'body', requiredFields, customValidations);
+		const authenticatedUserId = assertSessionUser(req, userId);
 
 		const path = genRoutePattern('invokeLlmFromMessages');
 		console.log(`API HIT: POST ${path} with model ${aiModelInfo.model}`);
 
-		const assistantResponse = await llmService.invokeLlm(messages, aiModelInfo, userId, {
+		const assistantResponse = await llmService.invokeLlm(messages, aiModelInfo, authenticatedUserId, {
 			signal: (req as Request & { signal: AbortSignal }).signal,
 		});
 		res.status(200).json({ response: assistantResponse });
@@ -94,11 +99,12 @@ router.post(
 	asyncHandler(async (req: Request, res: Response<{ translation: string }>): Promise<void> => {
 		const { koreanTerm, userId } = req.body;
 		validateRequestData(req.body, 'body', ['koreanTerm', 'userId']);
+		const authenticatedUserId = assertSessionUser(req, userId);
 
 		const path = genRoutePattern('translateProperNoun');
 		console.log(`API HIT: POST ${path} for term "${koreanTerm}"`);
 
-		const translation = await llmService.translateProperNoun(koreanTerm, userId);
+		const translation = await llmService.translateProperNoun(koreanTerm, authenticatedUserId);
 		res.status(200).json({ translation });
 	})
 );
@@ -114,11 +120,12 @@ router.post(
 	asyncHandler(async (req: Request, res: Response<{ nouns: string[] }>): Promise<void> => {
 		const { textToAnalyze, userId } = req.body;
 		validateRequestData(req.body, 'body', ['textToAnalyze', 'userId']);
+		const authenticatedUserId = assertSessionUser(req, userId);
 
 		const path = genRoutePattern('extractProperNouns');
 		console.log(`API HIT: POST ${path}`);
 
-		const nouns = await llmService.extractProperNouns(textToAnalyze, userId);
+		const nouns = await llmService.extractProperNouns(textToAnalyze, authenticatedUserId);
 		res.status(200).json({ nouns });
 	})
 );

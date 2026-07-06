@@ -18,7 +18,7 @@
 		"db:generate": "drizzle-kit generate --config drizzle.config.ts",
 		"db:migrate": "drizzle-kit migrate --config drizzle.config.ts",
 		"db:studio": "drizzle-kit studio --config drizzle.config.ts",
-		"test": "tsx --test service/llmService.test.ts util/structuredOutputUtils.test.ts util/partialJsonUtils.test.ts util/backgroundJobQueue.test.ts util/languageUtils.test.ts eval/ragEvaluation.test.ts",
+		"test": "tsx --test service/llmService.test.ts util/structuredOutputUtils.test.ts util/partialJsonUtils.test.ts util/backgroundJobQueue.test.ts util/languageUtils.test.ts util/authUtils.test.ts util/schemaUtils.test.ts eval/ragEvaluation.test.ts",
 		"eval:rag": "tsx --test eval/ragEvaluation.test.ts"
 	},
 	"dependencies": {

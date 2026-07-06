@@ -3,6 +3,7 @@ import {
 	buildChatTurnId,
 	buildHistoryId,
 	buildLoreId,
+	buildMessageId,
 	buildProfileId,
 	buildUserShowName,
 } from './buildIdUtils.js';
@@ -113,8 +114,22 @@ export const createBasicChatTurn = (cdo: ChatTurnCdo): ChatTurn => {
 	const chatTurnId = buildChatTurnId(cdo.sessionId, cdo.sequence);
 	const profileId = buildProfileId(cdo.sessionId, cdo.userId);
 	const { characterId } = parseSessionId(cdo.sessionId);
+	const request = {
+		...cdo.request,
+		messageId: buildMessageId(cdo.sessionId, cdo.sequence, 'request'),
+		createdAt: cdo.request.createdAt || now,
+		updatedAt: now,
+	};
+	const response = {
+		...cdo.response,
+		messageId: buildMessageId(cdo.sessionId, cdo.sequence, 'response'),
+		createdAt: cdo.response.createdAt || now,
+		updatedAt: now,
+	};
 	return {
 		...cdo,
+		request,
+		response,
 		createdAt: now,
 		updatedAt: now,
 		chatTurnId,

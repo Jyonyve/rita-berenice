@@ -1,6 +1,7 @@
 // src/server/routes/chat.routes.ts
 
 import express, { type Request, type Response, type Router } from 'express';
+import { verifySession } from 'supertokens-node/recipe/session/framework/express';
 import { chatStore } from '../store/chatStore.js';
 import { RESOURCES } from '../db/resource.type.js';
 import {
@@ -11,8 +12,10 @@ import {
 	validateServiceId,
 } from '../util/routeHelpers.js';
 import { ChatTurn } from '@rita-berenice/shared/domain';
+import { assertOwnedSession, getSessionUserId } from '../util/authUtils.js';
 
 const router: Router = express.Router();
+router.use(verifySession());
 const collectionType = RESOURCES.CHAT;
 
 // --- Fixed Chat Turn Operations ---
@@ -30,6 +33,10 @@ router.post(
 		validateServiceId(req.body.sessionId, collectionType);
 		const requiredFields: (keyof ChatTurn)[] = ['sessionId', 'sequence', 'request', 'response'];
 		validateRequestData(req.body, 'body', requiredFields);
+		const session = await assertOwnedSession(req, req.body.sessionId);
+		req.body.userId = getSessionUserId(req);
+		req.body.characterId = session.characterId;
+		req.body.profileId = session.profileId;
 
 		const path = genRoutePattern('storeChatTurn');
 		console.log(
@@ -47,6 +54,7 @@ router.get(
 		const { sessionId } = req.params;
 		validateServiceId(sessionId, collectionType);
 		validateRequestData(req.params, 'params', ['sessionId']);
+		await assertOwnedSession(req, sessionId);
 		const path = genRoutePattern('getAllChatTurns', ['sessionId']);
 		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
 
@@ -66,6 +74,7 @@ router.get(
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { sessionId } = req.params;
 		validateServiceId(sessionId, collectionType);
+		await assertOwnedSession(req, sessionId);
 		const path = genRoutePattern('getAllDisplayTurns', ['sessionId']);
 		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
 
@@ -87,6 +96,7 @@ router.get(
 		const { sessionId, sequence: sequenceParam } = req.params;
 		validateServiceId(sessionId, collectionType);
 		validateRequestData(req.params, 'params', ['sequence'], [validateSequenceRule('sequence')]);
+		await assertOwnedSession(req, sessionId);
 		const sequence = parseInt(sequenceParam, 10);
 
 		const path = genRoutePattern('getChatTurnBySequence', ['sessionId', 'sequence']);

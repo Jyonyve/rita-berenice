@@ -1,6 +1,7 @@
 // src/server/routes/profile.routes.ts
 
 import express, { type Request, type Response, type Router } from 'express';
+import { verifySession } from 'supertokens-node/recipe/session/framework/express';
 import { profileStore } from '../store/profileStore.js';
 import { RESOURCES } from '../db/resource.type.js';
 import {
@@ -10,8 +11,11 @@ import {
 	validateServiceId,
 } from '../util/routeHelpers.js';
 import { ProfileInfo, ProfileMetadata } from '@rita-berenice/shared/domain';
+import { buildProfileId } from '@rita-berenice/shared/util';
+import { assertOwnedProfile, assertOwnedSession, assertSessionUser } from '../util/authUtils.js';
 
 const router: Router = express.Router();
+router.use(verifySession());
 
 const collectionType = RESOURCES.PROFILE;
 
@@ -24,7 +28,7 @@ const collectionType = RESOURCES.PROFILE;
 router.get(
 	genRoutePattern('getAllProfilesByUserId', ['userId']),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { userId } = req.params;
+		const userId = assertSessionUser(req, req.params.userId);
 		const path = genRoutePattern('getAllProfilesByUserId', ['userId']);
 		console.log(`API HIT: GET ${path}`);
 
@@ -46,6 +50,7 @@ router.get(
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { profileId } = req.params;
 		validateServiceId(profileId, collectionType);
+		await assertOwnedProfile(req, profileId);
 
 		const path = genRoutePattern('getProfile', ['profileId']);
 		console.log(`API HIT: GET ${path.replace(':profileId', profileId)}`);
@@ -68,6 +73,7 @@ router.get(
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { sessionId } = req.params;
 		validateServiceId(sessionId, collectionType);
+		await assertOwnedSession(req, sessionId);
 
 		const path = genRoutePattern('getProfileBySessionId', ['sessionId']);
 		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
@@ -116,6 +122,9 @@ router.post(
 		): Promise<void> => {
 			const requiredFields: (keyof ProfileMetadata)[] = ['name', 'sessionId', 'userId'];
 			validateRequestData(req.body, 'body', requiredFields);
+			await assertOwnedSession(req, req.body.sessionId);
+			req.body.userId = assertSessionUser(req, req.body.userId);
+			req.body.profileId = buildProfileId(req.body.sessionId, req.body.userId);
 
 			const path = genRoutePattern('storeProfile');
 			console.log(`API HIT: POST ${path} for profile: ${req.body?.name}`);

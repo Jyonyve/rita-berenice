@@ -1,12 +1,15 @@
 // src/server/routes/persona.routes.ts
 
 import express, { type Request, type Response, type Router } from 'express';
+import { verifySession } from 'supertokens-node/recipe/session/framework/express';
 import { personaEngine } from '../service/personaEngine.js';
 import { MemoryResponse } from '@rita-berenice/shared/api';
 import { CharacterInfo, ProfileInfo, ChatMessage, AiModelInfo } from '@rita-berenice/shared/domain';
 import { genRoutePattern, asyncHandler, validateRequestData } from '../util/routeHelpers.js';
+import { assertOwnedCharacter, assertOwnedProfile, assertOwnedSession } from '../util/authUtils.js';
 
 const router: Router = express.Router();
+router.use(verifySession());
 
 // Define a type for the complex request body for clarity and type safety
 type GenerateResponseRequestBody = {
@@ -39,6 +42,15 @@ router.post(
 			'aiModelInfo',
 		];
 		validateRequestData(req.body, 'body', requiredFields);
+		const session = await assertOwnedSession(req, currentUserRequest.sessionId);
+		const storedCharacter = await assertOwnedCharacter(req, characterInfo.characterId);
+		const storedProfile = await assertOwnedProfile(req, profileInfo.profileId);
+		if (
+			session.characterId !== storedCharacter.characterId ||
+			session.profileId !== storedProfile.profileId
+		) {
+			throw new Error('Persona resources do not belong to the same session.');
+		}
 
 		const path = genRoutePattern('generateResponse');
 		console.log(`API HIT: POST ${path} for character ${characterInfo.name}`);
@@ -46,8 +58,8 @@ router.post(
 		// Call the personaEngine with all necessary data and the request's AbortSignal
 		const response = await personaEngine.generateResponse(
 			recalledMemories,
-			characterInfo,
-			profileInfo,
+			storedCharacter,
+			storedProfile,
 			currentUserRequest,
 			aiModelInfo,
 			{ signal: (req as any).signal } // Pass the signal for cancellation handling

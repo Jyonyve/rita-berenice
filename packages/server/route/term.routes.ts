@@ -1,12 +1,15 @@
 // src/server/routes/glossary.routes.ts
 import express, { type Request, type Response, type Router } from 'express';
+import { verifySession } from 'supertokens-node/recipe/session/framework/express';
 
 import { termStore } from '../store/termStore.js';
 import { RESOURCES } from '../db/resource.type.js';
 import { asyncHandler, genRoutePattern, validateRequestData } from '../util/routeHelpers.js';
 import { SessionTermInfo, CharacterTermInfo } from '@rita-berenice/shared/domain';
+import { assertOwnedCharacter, assertOwnedSession, assertSessionUser } from '../util/authUtils.js';
 
 const router: Router = express.Router();
+router.use(verifySession());
 
 const collectionType = RESOURCES.TERM;
 
@@ -22,6 +25,7 @@ router.post(
 	asyncHandler(async (req: Request, res: Response<{ termId: string }>): Promise<void> => {
 		const requiredFields: (keyof SessionTermInfo)[] = ['koreanTerm', 'sessionId'];
 		validateRequestData(req.body, 'body', requiredFields);
+		await assertOwnedSession(req, req.body.sessionId);
 
 		const path = genRoutePattern('storeSessionTerm');
 		console.log(
@@ -45,6 +49,7 @@ router.post(
 	asyncHandler(async (req: Request, res: Response<{ termId: string }>): Promise<void> => {
 		const requiredFields: (keyof CharacterTermInfo)[] = ['koreanTerm', 'characterId'];
 		validateRequestData(req.body, 'body', requiredFields);
+		await assertOwnedCharacter(req, req.body.characterId);
 
 		const path = genRoutePattern('storeCharacterTerm');
 		console.log(
@@ -66,6 +71,9 @@ router.post(
 	genRoutePattern('storeSessionTerms'),
 	asyncHandler(async (req: Request, res: Response<{ termIds: string[] }>): Promise<void> => {
 		validateRequestData(req.body, 'body', ['terms']);
+		await Promise.all(
+			req.body.terms.map((term: SessionTermInfo) => assertOwnedSession(req, term.sessionId))
+		);
 
 		const path = genRoutePattern('storeSessionTerms');
 		console.log(`API HIT: POST ${path} for bulk storing ${req.body.terms.length} session terms`);
@@ -85,6 +93,9 @@ router.post(
 	genRoutePattern('storeCharacterTerms'),
 	asyncHandler(async (req: Request, res: Response<{ termIds: string[] }>): Promise<void> => {
 		validateRequestData(req.body, 'body', ['terms']);
+		await Promise.all(
+			req.body.terms.map((term: CharacterTermInfo) => assertOwnedCharacter(req, term.characterId))
+		);
 
 		const path = genRoutePattern('storeCharacterTerms');
 		console.log(`API HIT: POST ${path} for bulk storing ${req.body.terms.length} character terms`);
@@ -108,6 +119,11 @@ router.get(
 		const { id, koreanTerm, type } = req.params;
 
 		validateRequestData(req.params, 'params', ['koreanTerm', 'type']);
+		if (type === 'session') {
+			await assertOwnedSession(req, id);
+		} else {
+			await assertOwnedCharacter(req, id);
+		}
 
 		const path = genRoutePattern('getTermByKorean', ['id', 'koreanTerm', 'type']);
 		console.log(
@@ -129,6 +145,7 @@ router.get(
 	genRoutePattern('getTermsBySessionId', ['sessionId']),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { sessionId } = req.params;
+		await assertOwnedSession(req, sessionId);
 
 		const path = genRoutePattern('getTermsBySessionId', ['sessionId']);
 		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
@@ -148,6 +165,7 @@ router.get(
 	genRoutePattern('getTermsByCharacterId', ['characterId']),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { characterId } = req.params;
+		await assertOwnedCharacter(req, characterId);
 
 		const path = genRoutePattern('getTermsByCharacterId', ['characterId']);
 		console.log(`API HIT: GET ${path.replace(':characterId', characterId)}`);
@@ -169,13 +187,15 @@ router.post(
 	asyncHandler(async (req: Request, res: Response<object>): Promise<void> => {
 		const { sessionId, koreanTermsToEnsure, userId } = req.body;
 		validateRequestData(req.body, 'body', ['sessionId', 'koreanTermsToEnsure', 'userId']);
+		await assertOwnedSession(req, sessionId);
+		const authenticatedUserId = assertSessionUser(req, userId);
 
 		const path = genRoutePattern('ensureAndGetTermsForPrompt');
 		console.log(`API HIT: POST ${path} for session ${sessionId}`);
 
 		const termMap = await termStore.ensureAndGetTermsForPrompt(
 			sessionId,
-			userId,
+			authenticatedUserId,
 			koreanTermsToEnsure
 		);
 		// Convert Map to a plain object for JSON serialization
@@ -194,6 +214,7 @@ router.delete(
 	genRoutePattern('clearSessionCache', ['sessionId']),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { sessionId } = req.params;
+		await assertOwnedSession(req, sessionId);
 
 		const path = genRoutePattern('clearSessionCache', ['sessionId']);
 		console.log(`API HIT: DELETE ${path.replace(':sessionId', sessionId)}`);
@@ -213,6 +234,7 @@ router.delete(
 	genRoutePattern('clearCharacterCache', ['characterId']),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { characterId } = req.params;
+		await assertOwnedCharacter(req, characterId);
 
 		const path = genRoutePattern('clearCharacterCache', ['characterId']);
 		console.log(`API HIT: DELETE ${path.replace(':characterId', characterId)}`);
