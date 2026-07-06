@@ -479,7 +479,10 @@ export function RootLayout() {
 			<ReloadToHome />
 
 			{/* main box */}
-			<Box component="main" sx={{ flex: 1, overflowY: 'auto' }}>
+			<Box
+				component="main"
+				sx={{ flex: 1, minHeight: 0, overflowY: headerInfo?.sessionId ? 'hidden' : 'auto' }}
+			>
 				<Outlet context={outletContextValue} />
 			</Box>
 

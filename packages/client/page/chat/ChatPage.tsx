@@ -528,31 +528,38 @@ export const ChatPage: FC<{
 				<GlassPaper
 					key="chat-page"
 					className="paper"
-					sx={{ position: 'relative', zIndex: 3, display: 'flex', flexDirection: 'column' }}
+					sx={{
+						position: 'relative',
+						zIndex: 3,
+						display: 'flex',
+						flexDirection: 'column',
+						height: '100%',
+						minHeight: 0,
+						overflow: 'hidden',
+					}}
 				>
 					<Grid
 						container
 						spacing={containerSpacing}
 						sx={{
 							height: '100%',
-
 							flex: 1,
-							// FIXED: Let content flow naturally within the padded container
 							width: '100%',
+							maxWidth: 1600,
+							minHeight: 0,
 							margin: 0,
+							mx: 'auto',
+							flexWrap: 'nowrap',
 						}}
 					>
 						{/* Portrait Section - Properly contained */}
 						<Grid
-							size={{
-								md: 4,
-								// lg: 3, xl: 2.5
-							}}
+							size={{ md: 4, lg: 3, xl: 3 }}
 							sx={(theme) => ({
 								position: 'sticky',
 								top: theme.spacing(2),
 								alignSelf: 'flex-start',
-								height: `calc(100vh - var(--header-height) - var(--footer-height) - ${theme.spacing(8)})`,
+								height: '100%',
 								display: 'flex',
 								alignItems: 'flex-start',
 								justifyContent: 'center',
@@ -563,6 +570,7 @@ export const ChatPage: FC<{
 								sx={{
 									height: '100%',
 									width: '100%',
+									maxWidth: 440,
 									display: 'flex',
 									justifyContent: 'center',
 									alignItems: 'flex-start',
@@ -574,7 +582,7 @@ export const ChatPage: FC<{
 
 						{/* Chat Area Section - Takes remaining space */}
 						<Grid
-							size={{ md: 8, lg: 9, xl: 9.5 }}
+							size={{ md: 8, lg: 9, xl: 9 }}
 							sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0 }}
 						>
 							<Box

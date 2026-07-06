@@ -106,6 +106,8 @@ export const ChatLog: FC<ChatLogProps> = memo(
 					display: 'flex',
 					flexDirection: 'column',
 					minHeight: 0,
+					minWidth: 0,
+					overflow: 'hidden',
 					py: 1,
 				}}
 			>
