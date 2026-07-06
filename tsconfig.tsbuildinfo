@@ -1,0 +1,1 @@
+{"root":["./src/index.ts","./src/vite-env.d.ts","./src/component/index.ts","./src/domain/chattypes.ts","./src/domain/index.ts","./src/hooks/index.ts","./src/hooks/usechat.ts","./src/services/index.ts","./src/utils/index.ts","./src/app.tsx","./src/main.tsx","./src/services/aiservice.tsx","./src/services/chromaservice.tsx","./vite.config.ts"],"version":"5.8.2"}

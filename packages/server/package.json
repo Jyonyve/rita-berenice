@@ -1,0 +1,55 @@
+{
+	"name": "@rita-berenice/server",
+	"version": "1.0.0",
+	"private": true,
+	"type": "module",
+	"main": "./index.js",
+	"exports": {
+		"./db": "./db/index.js",
+		"./route": "./route/index.js",
+		"./service": "./service/index.js",
+		"./store": "./store/index.js",
+		"./util": "./util/index.js"
+	},
+	"scripts": {
+		"build": "tsc --project tsconfig.json",
+		"clean": "rimraf ../../dist/server",
+		"dev": "tsx watch --exclude ../client/node_modules/** --exclude ../../.vite_cache/** --env-file ../../.env ./server.ts",
+		"db:generate": "drizzle-kit generate --config drizzle.config.ts",
+		"db:migrate": "drizzle-kit migrate --config drizzle.config.ts",
+		"db:studio": "drizzle-kit studio --config drizzle.config.ts",
+		"test": "tsx --test service/llmService.test.ts util/structuredOutputUtils.test.ts util/partialJsonUtils.test.ts util/backgroundJobQueue.test.ts util/languageUtils.test.ts util/authUtils.test.ts util/schemaUtils.test.ts eval/ragEvaluation.test.ts",
+		"eval:rag": "tsx --test eval/ragEvaluation.test.ts"
+	},
+	"dependencies": {
+		"@langchain/anthropic": "^0.3.30",
+		"@langchain/core": "^0.3.78",
+		"@langchain/google-genai": "^0.2.18",
+		"@langchain/openai": "^0.6.14",
+		"@rita-berenice/shared": "workspace:*",
+		"compression": "^1.8.1",
+		"cors": "^2.8.5",
+		"drizzle-orm": "^0.45.2",
+		"express": "^5.1.0",
+		"franc": "^6.2.0",
+		"multer": "^2.0.2",
+		"openai": "^6.0.1",
+		"pg": "^8.22.0",
+		"sharp": "^0.34.4",
+		"sirv": "^3.0.2",
+		"supertokens-node": "^23.0.1",
+		"tiktoken": "^1.0.22",
+		"zod": "^4.1.11"
+	},
+	"devDependencies": {
+		"@types/compression": "^1.8.1",
+		"@types/cors": "^2.8.19",
+		"@types/express": "^5.0.3",
+		"@types/multer": "^2.0.0",
+		"@types/pg": "^8.20.0",
+		"cross-env": "^10.1.0",
+		"drizzle-kit": "^0.31.10",
+		"tsc-alias": "^1.8.16",
+		"vite-plugin-node-polyfills": "^0.24.0"
+	}
+}
