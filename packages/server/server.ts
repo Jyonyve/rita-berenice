@@ -2,6 +2,7 @@
 
 import path from 'node:path';
 import fs from 'node:fs/promises'; // Use promises for async file reading
+import { createServer as createHttpServer } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import express, { type Request, type Response, type NextFunction } from 'express';
 import compression from 'compression'; // Add compression middleware
@@ -29,13 +30,11 @@ import loreRoutes from './route/lore.routes.js';
 import termRoutes from './route/term.routes.js';
 import personaRoutes from './route/persona.routes.js';
 import orchestrationRoutes from './route/orchestration.routes.js';
-import loginRoutes from './route/login.routes.js';
 import sessionRoutes from './route/session.routes.js';
 import userRoutes from './route/user.routes.js';
 import credentialRoutes from './route/credential.routes.js';
 import historyRoutes from './route/history.routes.js';
-import { userStore } from './store/userStore.js';
-import { credentialStore } from './store/credentialStore.js';
+import { ensureLocalUser } from './service/userProvisioningService.js';
 import { ApiErrorResponse } from '@rita-berenice/shared/api';
 import { APPNAME, MODULE_NAMES } from '@rita-berenice/shared/config';
 import { ApiError } from '@rita-berenice/shared/domain';
@@ -97,6 +96,7 @@ const detectLanguageMiddleware = (req: Request, res: Response, next: NextFunctio
 
 async function createServer() {
 	const app = express();
+	const httpServer = createHttpServer(app);
 
 	supertokens.init({
 		framework: 'express',
@@ -126,11 +126,7 @@ async function createServer() {
 
 							if (response.status === 'OK') {
 								try {
-									await UserRoles.addRoleToUser('public', response.user.id, 'user');
-
-									const userCdo = { userId: response.user.id, email: response.user.emails[0] };
-									await userStore.storeUser(userCdo);
-									await credentialStore.initializeDefaultApiKeys(response.user.id);
+									await ensureLocalUser(response.user.id);
 
 									console.log('✅ User successfully synced to database:', response.user.id);
 								} catch (error) {
@@ -189,19 +185,11 @@ async function createServer() {
 	let vite: ViteDevServer | undefined;
 	if (!isProduction) {
 		vite = await createViteServer({
-			server: {
-				middlewareMode: true,
-				// Add performance optimizations
-				hmr: { port: 3001 },
-			},
+			cacheDir: path.resolve(__dirname, '../../.vite_cache/ssr-host'),
+			server: { middlewareMode: true, hmr: { server: httpServer } },
 			appType: 'custom',
 			base: BASE,
 			root: path.resolve(__dirname, '../client'),
-			// Add SSR optimizations
-			optimizeDeps: {
-				// Pre-bundle during server start for SSR
-				force: true,
-			},
 			ssr: {
 				// Optimize SSR deps
 				noExternal: ['@mui/material', '@mui/system', '@emotion/react', '@emotion/styled'],
@@ -236,7 +224,6 @@ async function createServer() {
 	app.use(`${BASE_API}/${MODULE_NAMES.SESSION}`, sessionRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.PERSONA}`, personaRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.ORCHESTRATION}`, orchestrationRoutes);
-	app.use(`${BASE_API}/${MODULE_NAMES.LOGIN}`, loginRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.USER}`, userRoutes);
 	app.use(`${BASE_API}/${MODULE_NAMES.CREDENTIAL}`, credentialRoutes);
 
@@ -375,11 +362,26 @@ async function createServer() {
 		res.status(apiErrorResponse.code).json(apiErrorResponse);
 	});
 
-	app.listen(PORT, host, () => {
+	httpServer.listen(PORT, host, () => {
 		console.log(`Server started successfully.`);
 		console.log(`Mode: ${isProduction ? 'Production' : 'Development'}`);
 		console.log(`Listening on http://${host}:${PORT}${BASE}`);
 	});
+
+	let isShuttingDown = false;
+	const shutdown = async (signal: NodeJS.Signals) => {
+		if (isShuttingDown) {
+			return;
+		}
+		isShuttingDown = true;
+		console.log(`Received ${signal}. Shutting down...`);
+
+		await vite?.close();
+		httpServer.close(() => process.exit(0));
+	};
+
+	process.once('SIGINT', () => void shutdown('SIGINT'));
+	process.once('SIGTERM', () => void shutdown('SIGTERM'));
 }
 
 // --- Initialize Server ---

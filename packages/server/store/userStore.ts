@@ -15,6 +15,19 @@ const toResponse = (userInfos: UserInfo[]): UserResponse => ({
 });
 
 export const userStore = {
+	findUser: async (userId: string): Promise<UserInfo | null> => {
+		try {
+			const [row] = await getDatabase()
+				.select({ data: users.data })
+				.from(users)
+				.where(eq(users.userId, userId))
+				.limit(1);
+			return row?.data ?? null;
+		} catch (error) {
+			handleServiceError(error, `Failed to find user with ID ${userId}`);
+		}
+	},
+
 	getAllUsers: async (): Promise<UserResponse> => {
 		try {
 			const rows = await getDatabase().select({ data: users.data }).from(users);

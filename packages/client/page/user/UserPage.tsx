@@ -23,21 +23,19 @@ import {
 	ListItemText,
 	ListItemButton,
 } from '@mui/material';
-import {
-	Edit as EditIcon,
-	Email as EmailIcon,
-	Badge as BadgeIcon,
-	ContactMail as ContactIcon,
-	Schedule as ScheduleIcon,
-	PhotoCamera as PhotoCameraIcon,
-	Save as SaveIcon,
-	Cancel as CancelIcon,
-	People as PeopleIcon,
-	Chat as ChatIcon,
-	Key as KeyIcon,
-	ExpandLess,
-	ExpandMore,
-} from '@mui/icons-material';
+import EditIcon from '@mui/icons-material/Edit';
+import EmailIcon from '@mui/icons-material/Email';
+import BadgeIcon from '@mui/icons-material/Badge';
+import ContactIcon from '@mui/icons-material/ContactMail';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
+import SaveIcon from '@mui/icons-material/Save';
+import CancelIcon from '@mui/icons-material/Cancel';
+import PeopleIcon from '@mui/icons-material/People';
+import ChatIcon from '@mui/icons-material/Chat';
+import KeyIcon from '@mui/icons-material/Key';
+import ExpandLess from '@mui/icons-material/ExpandLess';
+import ExpandMore from '@mui/icons-material/ExpandMore';
 
 import {
 	GlassCard,

@@ -14,7 +14,7 @@ import {
 import { FC, useState, useRef, ChangeEvent, useEffect } from 'react';
 
 import { useForm, Controller } from 'react-hook-form';
-import { CloudUpload } from '@mui/icons-material';
+import CloudUpload from '@mui/icons-material/CloudUpload';
 import { useCharacterApi, useLoreApi } from '../../hook/api/index.js';
 import {
 	GlassButton,

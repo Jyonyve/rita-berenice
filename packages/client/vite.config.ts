@@ -100,21 +100,6 @@ export default defineConfig(({ mode }) => {
 			write: true,
 		},
 
-		optimizeDeps: {
-			include: [
-				'@emotion/react',
-				'@emotion/styled',
-				'@emotion/cache',
-				'@mui/material',
-				'@mui/icons-material',
-				'react',
-				'react-dom',
-				'react-router',
-			],
-
-			force: true,
-		},
-
 		esbuild: { target: 'es2022', logOverride: { 'this-is-undefined-in-esm': 'silent' } },
 
 		resolve: { alias: { '@rita-berenice/shared': path.resolve(__dirname, '../shared') } },

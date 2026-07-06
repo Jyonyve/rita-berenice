@@ -186,7 +186,7 @@ export function RootLayout() {
 		userId,
 	} = useAuth();
 	const { updateSessionTitle } = useSessionApi();
-	const { data: userRes } = useUserApi().getUser(userId || '');
+	const { data: userRes } = useUserApi().getMe(isLoggedIn);
 	const headerRef = useRef<HTMLElement>(null);
 	const footerRef = useRef<HTMLElement>(null);
 

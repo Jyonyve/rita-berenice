@@ -44,10 +44,6 @@ const credentialEnvSchema = z.object({
 		.min(1, 'SECRET_ENCRYPTION_KEY is required for credential storage'),
 });
 
-const loginEnvSchema = z.object({
-	PRIVATE_KEY: z.string().min(1, 'PRIVATE_KEY is required for asymmetric login'),
-});
-
 const parseEnv = <T>(schema: z.ZodSchema<T>, env: NodeJS.ProcessEnv): T => {
 	const result = schema.safeParse(env);
 	if (result.success) {
@@ -84,5 +80,3 @@ export const getCredentialEnv = () => {
 	cachedCredentialEnv ??= parseEnv(credentialEnvSchema, process.env);
 	return cachedCredentialEnv;
 };
-
-export const getLoginEnv = () => parseEnv(loginEnvSchema, process.env);

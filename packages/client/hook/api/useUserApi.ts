@@ -10,6 +10,17 @@ export const useUserApi = () => {
 
 	// === QUERIES ===
 
+	const getMe = (enabled = true) =>
+		useQuery<UserResponse, Error>({
+			queryKey: ['users', 'detail', 'me'],
+			queryFn: async () => {
+				const url = genApiUrl(MODULE_NAME, 'getMe');
+				const response = await apiClient.get<UserResponse>(url);
+				return response.data;
+			},
+			enabled,
+		});
+
 	/**
 	 * Fetch all users - List operation
 	 */
@@ -95,6 +106,7 @@ export const useUserApi = () => {
 		onSuccess: (data, variables) => {
 			// Invalidate the specific user detail
 			queryClient.invalidateQueries({ queryKey: ['users', 'detail', 'getUser', data.userId] });
+			queryClient.invalidateQueries({ queryKey: ['users', 'detail', 'me'] });
 
 			// Invalidate all user lists since a new/updated user affects all lists
 			queryClient.invalidateQueries({ queryKey: ['users', 'list'] });
@@ -168,6 +180,7 @@ export const useUserApi = () => {
 
 	return {
 		// Queries
+		getMe,
 		getAllUsers,
 		getUser,
 		getUserByShowName,

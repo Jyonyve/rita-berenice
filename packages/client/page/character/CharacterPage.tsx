@@ -1,7 +1,7 @@
 import { Box, Grid, IconButton, List, Tooltip, Typography } from '@mui/material';
 import { FC, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Edit as EditIcon } from '@mui/icons-material';
+import EditIcon from '@mui/icons-material/Edit';
 import {
 	GlassButton,
 	GlassCard,

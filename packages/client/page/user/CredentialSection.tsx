@@ -16,7 +16,10 @@ import {
 	TextFieldProps,
 	CircularProgress,
 } from '@mui/material';
-import { Visibility, VisibilityOff, CheckCircle, Warning } from '@mui/icons-material';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import CheckCircle from '@mui/icons-material/CheckCircle';
+import Warning from '@mui/icons-material/Warning';
 import { useForm, Controller, useWatch } from 'react-hook-form';
 import { GlassButton, GlassCard } from '../../layout/component/index.js';
 import { useCredentialApi } from '../../hook/api/useCredentialApi.js';

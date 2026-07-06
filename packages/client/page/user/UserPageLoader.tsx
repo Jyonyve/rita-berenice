@@ -11,7 +11,7 @@ import { LANG_KEYS } from '@rita-berenice/shared/config';
 export function UserPageLoader() {
 	const { userId } = useAuth();
 	if (!userId) return null;
-	const { data: userRes, isLoading } = useUserApi().getUser(userId);
+	const { data: userRes, isLoading } = useUserApi().getMe();
 	const { data: charRes } = useCharacterApi().getCharactersByUserId(userId);
 	const { data: sessRes } = useSessionApi().getSessionsByUserId(userId);
 	const { data: credRes } = useCredentialApi().getUserApiKeys(userId);

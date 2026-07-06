@@ -13,7 +13,6 @@ import React, {
 import { useSessionContext } from 'supertokens-auth-react/recipe/session/index.js';
 import { signOut } from 'supertokens-auth-react/recipe/session/index.js';
 import { useUserApi } from '../hook/api/useUserApi.js';
-import { cryptoState } from '../cryptoState.js';
 import { UserInfo } from '@rita-berenice/shared/domain';
 
 // --- Define the shape of our unified context ---
@@ -38,7 +37,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 	// 1. Hooks and State
 	const session = useSessionContext();
-	const { getUser, storeUser } = useUserApi();
+	const { getMe } = useUserApi();
 
 	// Session-derived state
 	const isSessionLoading = session.loading;
@@ -68,36 +67,33 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 		data: userQueryData,
 		refetch: refetchUserQuery,
 		isLoading: isUserQueryLoading, // Use this to track loading state
-	} = getUser(userId || ''); // Pass userId, or empty string to keep it disabled until userId is available
+	} = getMe(isLoggedIn);
 
 	// 2. Core Logic Functions
 
 	// This is now the primary function to get the latest user profile and update the auth state.
-	const fetchAndSetUserProfile = useCallback(
-		async (currentUserId: string) => {
-			// console.log(`🔵 [Auth] Fetching profile for userId: ${currentUserId}`);
-			try {
-				// Use the refetch function from useQuery to guarantee fresh data
-				const { data: freshUserData } = await refetchUserQuery();
-				// console.log('✅ [Auth] Fetched user data:', freshUserData);
+	const fetchAndSetUserProfile = useCallback(async () => {
+		// console.log(`🔵 [Auth] Fetching profile for userId: ${currentUserId}`);
+		try {
+			// Use the refetch function from useQuery to guarantee fresh data
+			const { data: freshUserData } = await refetchUserQuery();
+			// console.log('✅ [Auth] Fetched user data:', freshUserData);
 
-				if (freshUserData?.userInfo) {
-					// console.log('✅ [Auth] User profile found. Setting state.');
-					setUserProfile(freshUserData.userInfo);
-					setNeedsProfileSetup(false);
-				} else {
-					// console.log('🟡 [Auth] User profile NOT found in DB. User needs profile setup.');
-					setUserProfile(undefined);
-					setNeedsProfileSetup(true);
-				}
-			} catch (error) {
-				console.error('❌ [Auth] Error fetching user profile:', error);
+			if (freshUserData?.userInfo) {
+				// console.log('✅ [Auth] User profile found. Setting state.');
+				setUserProfile(freshUserData.userInfo);
+				setNeedsProfileSetup(false);
+			} else {
+				// console.log('🟡 [Auth] User profile NOT found in DB. User needs profile setup.');
 				setUserProfile(undefined);
-				setNeedsProfileSetup(true); // Assume setup is needed on error
+				setNeedsProfileSetup(true);
 			}
-		},
-		[refetchUserQuery]
-	);
+		} catch (error) {
+			console.error('❌ [Auth] Error fetching user profile:', error);
+			setUserProfile(undefined);
+			setNeedsProfileSetup(true); // Assume setup is needed on error
+		}
+	}, [refetchUserQuery]);
 
 	// This function now only triggers the mutation. The state update is handled by the useEffect hook.
 	const createUserProfile = async (): Promise<void> => {
@@ -109,7 +105,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
 		// console.log(`🔵 [Auth] Creating/storing profile for userId: ${userId} with email: ${email}`);
 		try {
-			await storeUser({ userId, email });
+			await refetchUserQuery();
 			console.log(
 				'✅ [Auth] storeUser mutation successful. The `onSuccess` callback will invalidate and trigger a refetch.'
 			);
@@ -123,7 +119,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 	// Exposed function to allow other parts of the app to trigger a manual refresh.
 	const refetchProfile = useCallback(() => {
 		if (userId) {
-			fetchAndSetUserProfile(userId);
+			fetchAndSetUserProfile();
 		}
 	}, [userId, fetchAndSetUserProfile]);
 
@@ -134,30 +130,6 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 	};
 
 	// 3. Effects
-	useEffect(() => {
-		async function fetchAndStoreKey() {
-			try {
-				const response = await fetch('/api/login/get-public-key');
-				if (!response.ok) {
-					throw new Error(`Failed to fetch public key: ${response.statusText}`);
-				}
-				const jwk = await response.json();
-				const key = await window.crypto.subtle.importKey(
-					'jwk',
-					jwk,
-					{ name: 'RSA-OAEP', hash: 'SHA-256' },
-					true,
-					['encrypt']
-				);
-				// --- CRITICAL: Store the key in the shared state object ---
-				cryptoState.publicKey = key;
-			} catch (error) {
-				console.error('Failed to fetch public key:', error);
-			}
-		}
-		fetchAndStoreKey();
-	}, []);
-
 	// Main effect to sync the user profile with the React Query data source
 	useEffect(() => {
 		// console.log('🔵 [Auth] Query data changed:', userQueryData);
@@ -176,7 +148,7 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 	useEffect(() => {
 		if (isLoggedIn && userId) {
 			console.log('🔵 [Auth] Session is active. Initial check/fetch of profile.');
-			fetchAndSetUserProfile(userId);
+			fetchAndSetUserProfile();
 		} else if (!isLoggedIn && !isSessionLoading) {
 			console.log('🔵 [Auth] Session ended. Clearing profile state.');
 			setUserProfile(undefined);

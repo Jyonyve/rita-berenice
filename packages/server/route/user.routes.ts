@@ -1,5 +1,8 @@
 import express, { type Request, type Response, type Router } from 'express';
+import type { SessionRequest } from 'supertokens-node/framework/express';
+import { verifySession } from 'supertokens-node/recipe/session/framework/express';
 import { userStore } from '../store/userStore.js';
+import { ensureLocalUser } from '../service/userProvisioningService.js';
 import { RESOURCES } from '../db/resource.type.js';
 import {
 	asyncHandler,
@@ -13,11 +16,30 @@ import fs from 'fs';
 import path from 'path';
 import { UserResponse } from '@rita-berenice/shared/api';
 import { BASE_USER_IMAGE_DIR, RUNTIME_USER_IMAGE_DIR } from '@rita-berenice/shared/config';
-import { UserInfo } from '@rita-berenice/shared/domain';
+import { ApiError, UserInfo } from '@rita-berenice/shared/domain';
 
 const router: Router = express.Router();
 
 const collectionType = RESOURCES.USER;
+router.use(verifySession());
+
+const getAuthenticatedUserId = (req: Request) => (req as SessionRequest).session!.getUserId();
+
+const assertSelf = (req: Request, requestedUserId: string) => {
+	const authenticatedUserId = getAuthenticatedUserId(req);
+	if (requestedUserId !== authenticatedUserId) {
+		throw new ApiError(403, 'The requested user does not match the authenticated session.');
+	}
+	return authenticatedUserId;
+};
+
+router.get(
+	genRoutePattern('getMe'),
+	asyncHandler(async (req: Request, res: Response<UserResponse>): Promise<void> => {
+		const response = await ensureLocalUser(getAuthenticatedUserId(req));
+		res.status(200).json(response);
+	})
+);
 
 /**
  * GET /api/user/get-all-users
@@ -43,6 +65,7 @@ router.get(
 	asyncHandler(async (req: Request, res: Response<UserResponse>): Promise<void> => {
 		const { userId } = req.params;
 		validateServiceId(userId, collectionType);
+		assertSelf(req, userId);
 
 		const path = genRoutePattern('getUser', ['userId']);
 		console.log(`API HIT: GET ${path.replace(':userId', userId)}`);
@@ -97,6 +120,10 @@ router.get(
 	asyncHandler(async (req: Request, res: Response<UserResponse>): Promise<void> => {
 		const { email } = req.params;
 		validateRequestData(req.params, 'params', ['email']);
+		const currentUser = await ensureLocalUser(getAuthenticatedUserId(req));
+		if (currentUser.userInfo.email !== email) {
+			throw new ApiError(403, 'The requested email does not match the authenticated session.');
+		}
 
 		const path = genRoutePattern('getUserByEmail', ['email']);
 		console.log(`API HIT: GET ${path.replace(':email', email)}`);
@@ -115,10 +142,16 @@ router.post(
 	asyncHandler(async (req: Request, res: Response<{ userId: string }>): Promise<void> => {
 		const requiredFields: (keyof UserInfo)[] = ['userId', 'showName', 'email', 'gender'];
 		validateRequestData(req.body, 'body', requiredFields);
+		const userId = assertSelf(req, req.body.userId);
+		const currentUser = await ensureLocalUser(userId);
 		const path = genRoutePattern('storeUser');
-		console.log(`API HIT: POST ${path} for user: ${req.body?.userId}`);
+		console.log(`API HIT: POST ${path} for user: ${userId}`);
 
-		const response = await userStore.storeUser(req.body);
+		const response = await userStore.storeUser({
+			...req.body,
+			userId,
+			email: currentUser.userInfo.email,
+		});
 		res.status(201).json(response);
 	})
 );
@@ -134,6 +167,7 @@ router.post(
 		validateRequestData(req.body, 'body', ['userId']);
 
 		const { userId, crop } = req.body; // crop comes from FormData body
+		assertSelf(req, userId);
 		const file = req.file;
 
 		if (!file) {
@@ -168,6 +202,7 @@ router.delete(
 		validateRequestData(req.body, 'body', ['userId']);
 
 		const { userId } = req.body;
+		assertSelf(req, userId);
 		const routePath = genRoutePattern('deleteUserAvatar');
 		console.log(`API HIT: DELETE ${routePath} for user: ${userId}`);
 
@@ -198,6 +233,7 @@ router.post(
 		validateRequestData(req.body, 'body', ['userId']);
 
 		const { userId } = req.body;
+		assertSelf(req, userId);
 		const routePath = genRoutePattern('createUserFolder');
 		console.log(`API HIT: POST ${routePath} for user: ${userId}`);
 
