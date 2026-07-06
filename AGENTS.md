@@ -52,6 +52,8 @@ Baseline scaffolding:
 - Smoke-test semantic recall for the Monday fixture: `pnpm data:monday:recall`
 - Enrich the Monday fixture with structured RAG metadata: `pnpm data:monday:enrich`
 - Run Monday retrieval plus persona generation smoke test: `pnpm data:monday:chat-smoke`
+- Extract resumable raw Rofan chat pages and episode summaries: `pnpm data:rofan:extract -- --chat-id <id> --login --episodes`
+- Test the Rofan extraction parser/normalizer: `pnpm data:rofan:test`
 
 Package-local commands:
 

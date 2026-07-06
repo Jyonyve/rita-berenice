@@ -14,6 +14,8 @@
 		"monday:enrich": "tsx --env-file ../../.env monday/importMonday.ts enrich",
 		"monday:chat-smoke": "tsx --env-file ../../.env monday/importMonday.ts chat-smoke",
 		"monday:transfer": "tsx --env-file ../../.env monday/transferMondayOwnership.ts",
+		"rofan:extract": "tsx rofan/extractChatLogs.ts",
+		"rofan:test": "tsx --test rofan/extractChatLogs.test.ts",
 		"proxy:chromadb": "fly proxy 8000:8000 -a chromadb-flyio",
 		"init:char": "tsx --env-file ../../.env character/initCharacter.ts",
 		"check:char": "tsx --env-file ../../.env character/checkCharacter.ts",

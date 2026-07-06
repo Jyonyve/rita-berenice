@@ -19,6 +19,7 @@ packages/client/asset
 packages/migration/chat/progress
 packages/migration/chat/result
 packages/migration/chat/*.json
+packages/migration/rofan/data
 packages/migration/recap/exported
 packages/migration/recap/output
 

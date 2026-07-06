@@ -79,3 +79,6 @@ coverage/
 # 🗂️ Misc
 # ===================================
 *.local
+
+# Generated migration extraction data
+packages/migration/rofan/data/
