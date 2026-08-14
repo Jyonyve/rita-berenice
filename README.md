@@ -103,7 +103,6 @@ If a command requires unavailable local services or secrets, report that clearly
 ## Deployment
 
 - `.github/workflows/ci.yml` runs formatting, typecheck, and package builds.
-- `.github/workflows/fly-deploy.yml` deploys the server app to Fly.io from `main`.
 - `.github/workflows/deploy.yml` builds the static client for GitHub Pages from the `mock` branch.
 
 ## License
