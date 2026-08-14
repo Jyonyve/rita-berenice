@@ -585,6 +585,7 @@ async function createServer() {
 
 // --- Initialize Server ---
 createServer().catch((err) => {
+	console.error('[server] startup failed:', err);
 	flowLogger.error('server', 'startup.failed', serializeError(err));
 	process.exit(1);
 });
