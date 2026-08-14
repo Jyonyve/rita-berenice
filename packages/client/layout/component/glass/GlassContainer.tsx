@@ -6,7 +6,7 @@ import { getGlassEffect } from '../../../style/glassEffect.js';
 import { HoverContext } from '../index.js';
 
 const StyledGlassContainer = styled(Card)(({ theme }) => ({
-	...getGlassEffect(theme.palette.mode),
+	...getGlassEffect(theme.palette.mode, { noGlow: true }),
 	backgroundColor: 'transparent',
 	borderRadius: Number(theme.shape.borderRadius) * 2,
 	display: 'flex',

@@ -1,4 +1,4 @@
-import { EmotionValue } from '../config/emotionConstants.js';
+import { EmotionValue, PortraitUrlMap } from '../config/emotionConstants.js';
 import { LangCode } from '../config/langConstants.js';
 import {
 	CharacterInfo,
@@ -12,9 +12,11 @@ import {
 	SessionInfo,
 	SessionTermInfo,
 	TempChatTurn,
-	UserApiKeys,
 	UserInfo,
 	ValidationResult,
+	ChatEntry,
+	ApiKeyType,
+	DocumentInfo,
 } from '../domain/index.js';
 
 export interface ApiErrorResponse {
@@ -42,11 +44,15 @@ export type ChromaResponse = {
 export type CharacterResponse = ChromaResponse & {
 	characterInfo: CharacterInfo;
 	characterInfos: CharacterInfo[];
+	characterPortraits: Record<string, PortraitUrlMap>;
+	characterAvatars: Record<string, PortraitUrlMap>;
 };
 
 export type ProfileResponse = ChromaResponse & {
 	profileInfo: ProfileInfo;
 	profileInfos: ProfileInfo[];
+	profilePortraits: Record<string, string>;
+	profileAvatars: Record<string, string>;
 };
 
 export type ChatResponse = ChromaResponse & { chatTurns: ChatTurn[]; displayTurns: DisplayTurn[] };
@@ -68,6 +74,7 @@ export type HistoryResponse = ChromaResponse & {
 	historyContent: string;
 	historyInfos: HistoryInfo[];
 	historyContents: string[];
+	historyImageUrls: Record<string, string>;
 };
 
 export type RecapResponse = ChromaResponse & {
@@ -95,6 +102,8 @@ export type MemoryResponse = {
 	longTermHistory: ChatTurn[]; // Semantically relevant past turns
 	relevantLore: LoreInfo[];
 	relevantHistory: HistoryInfo[];
+	relevantDocuments?: DocumentInfo[];
+	relevantRecaps?: RecapInfo[];
 	factualRecapSummary?: string;
 	relationshipRecapSummary?: string;
 };
@@ -108,7 +117,26 @@ export type SessionResponse = ChromaResponse & {
 	sessionInfos: SessionInfo[];
 };
 
-export type CredentialResponse = {
-	userApiKeys: UserApiKeys;
-	validationResults: Record<string, ValidationResult>;
+export type CredentialMetadataResponse = { configuredKeyTypes: ApiKeyType[] };
+
+export type CredentialValidationResponse = { validationResults: Record<string, ValidationResult> };
+
+export type ModelCatalogEntry = {
+	id: string;
+	name: string;
+	platform: 'openrouter' | 'direct';
+	provider: 'openai' | 'anthropic' | 'google';
+	contextWindow: number;
+	maxOutputTokens: number;
+	recommendedOutputTokens: number;
+	supportsTemperature: boolean;
+	source: 'live' | 'fallback';
 };
+
+export type ModelCatalogResponse = {
+	models: ModelCatalogEntry[];
+	refreshedAt: string;
+	source: 'live' | 'fallback';
+};
+
+export type DocumentResponse = { documentInfo: DocumentInfo; documentInfos: DocumentInfo[] };

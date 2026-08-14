@@ -1,4 +1,4 @@
-import React, { FC } from 'react';
+import React, { FC, ReactNode } from 'react';
 import { Box, Chip, ChipProps } from '@mui/material';
 import { GlassPortrait, GlassPortraitProps } from './glass/index.js';
 
@@ -9,6 +9,7 @@ interface PortraitWithChipProps {
 	alt?: string;
 	sx?: GlassPortraitProps['sx'];
 	chipSx?: ChipProps['sx'];
+	bottomRightOverlay?: ReactNode;
 }
 
 export const PortraitWithChip: FC<PortraitWithChipProps> = ({
@@ -17,9 +18,10 @@ export const PortraitWithChip: FC<PortraitWithChipProps> = ({
 	alt,
 	sx,
 	chipSx,
+	bottomRightOverlay,
 }) => {
 	return (
-		<Box sx={{ position: 'relative', display: 'inline-block', lineHeight: 0 }}>
+		<Box sx={{ position: 'relative', display: 'inline-block', maxWidth: '100%', lineHeight: 0 }}>
 			<GlassPortrait hover={false} imageUrl={imageUrl} alt={alt || label} sx={sx} />
 			<Chip
 				label={label}
@@ -37,6 +39,7 @@ export const PortraitWithChip: FC<PortraitWithChipProps> = ({
 					...chipSx, // Allow for external overrides
 				}}
 			/>
+			{bottomRightOverlay}
 		</Box>
 	);
 };

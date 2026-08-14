@@ -15,7 +15,12 @@ import { routeConstants } from '../../routeConstants.js';
 import { GlassCircularProgress } from '../../layout/component/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { DEFAULT_EMOTION, LANG_KEYS } from '@rita-berenice/shared/config';
-import { ProfileCdo, ChatMessage, TempChatTurn } from '@rita-berenice/shared/domain';
+import {
+	ProfileCdo,
+	ChatMessage,
+	TempChatTurn,
+	SessionContentPolicy,
+} from '@rita-berenice/shared/domain';
 import { buildMessageId } from '@rita-berenice/shared/util';
 
 export function NewChatPageLoader() {
@@ -27,6 +32,7 @@ export function NewChatPageLoader() {
 	// Ensure state exists before destructuring
 	const characterId: string = state?.characterId || '';
 	const profileData: ProfileCdo | undefined = state?.profileData;
+	const contentPolicy: SessionContentPolicy = state?.contentPolicy === 'adult' ? 'adult' : 'general';
 
 	// --- API and State Hooks ---
 	const {
@@ -56,6 +62,7 @@ export function NewChatPageLoader() {
 					userId,
 					characterId: characterRes.characterInfo.characterId,
 					firstCharMessage: characterRes.characterInfo.firstMessage,
+					contentPolicy,
 				});
 
 				// Step 2: Create Profile with the new sessionId
@@ -133,6 +140,7 @@ export function NewChatPageLoader() {
 		characterRes,
 		characterId,
 		profileData,
+		contentPolicy,
 		navigate,
 		createSession,
 		saveTempChatTurn,

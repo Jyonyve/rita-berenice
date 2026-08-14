@@ -3,11 +3,11 @@ import sharp from 'sharp';
 import fs from 'fs';
 import path from 'path';
 import multer from 'multer';
+import { randomUUID } from 'node:crypto';
 import {
 	LIMIT_5MB,
-	BASE_CHARACTER_IMAGE_DIR,
-	BASE_USER_IMAGE_DIR,
 	RUNTIME_CHARACTER_IMAGE_DIR,
+	RUNTIME_PROFILE_IMAGE_DIR,
 	RUNTIME_USER_IMAGE_DIR,
 	SUPPORTED_IMAGE_EXTENSIONS,
 	SUPPORTED_IMAGE_MIMETYPES,
@@ -17,6 +17,18 @@ import {
 	getUnsupportedImageError,
 	ImageFormat,
 } from '@rita-berenice/shared/config';
+import { flowLogger } from './jsonlLogger.js';
+import {
+	appendImageAssetVersion,
+	deleteImageAsset,
+	getImageAsset,
+	getCharacterImageStorageDir,
+	getLoreImageStorageDir,
+	getProfileImageStorageDir,
+	getUserImageStorageDir,
+	isObjectImageStorageConfigured,
+	putImageAsset,
+} from './imageStorageUtils.js';
 
 // ==================== Types ====================
 export interface CropConfig {
@@ -58,22 +70,22 @@ const createImageUpload = (maxFileSize: number = LIMIT_5MB) => {
 export const imageUpload = createImageUpload();
 export const avatarUpload = createImageUpload(LIMIT_5MB);
 export const characterUpload = createImageUpload(LIMIT_5MB);
+export const profileUpload = createImageUpload(LIMIT_5MB);
 
 // ==================== Helper Functions ====================
 /**
  * Creates directory if it doesn't exist
  */
 export const ensureDirectoryExists = (directoryPath: string): void => {
-	const fullPath = path.join(process.cwd(), directoryPath);
-	if (!fs.existsSync(fullPath)) {
-		fs.mkdirSync(fullPath, { recursive: true });
-		console.log(`Created directory: ${fullPath}`);
+	if (!fs.existsSync(directoryPath)) {
+		fs.mkdirSync(directoryPath, { recursive: true });
+		flowLogger.info('imageProcessingUtils', 'directory.created', { directoryPath });
 	}
 };
 
 /**
- * Applies format-specific processing without quality reduction
- * All formats use lossless/maximum quality settings
+ * Applies lossless/maximum-quality format settings.
+ * New runtime images use lossless WebP because it encodes much faster than lossless AVIF.
  */
 const applyFormat = (processor: sharp.Sharp, format: ImageFormat): sharp.Sharp => {
 	switch (format) {
@@ -128,11 +140,8 @@ export const processUserAvatar = async (
 		...options,
 	};
 
-	const uploadDir = `${BASE_USER_IMAGE_DIR}/${userId}`;
-	ensureDirectoryExists(uploadDir);
-
 	const fileName = `image.${config.format}`;
-	const filePath = path.join(process.cwd(), uploadDir, fileName);
+	const runtimePath = `${RUNTIME_USER_IMAGE_DIR}/${userId}/${fileName}`;
 
 	let processor = sharp(buffer);
 
@@ -145,15 +154,14 @@ export const processUserAvatar = async (
 	// Apply lossless WebP format
 	processor = applyFormat(processor, config.format);
 
-	await processor.toFile(filePath);
-
-	return `${RUNTIME_USER_IMAGE_DIR}/${userId}/${fileName}`;
+	const version = await putImageAsset(runtimePath, await processor.toBuffer());
+	return appendImageAssetVersion(runtimePath, version);
 };
 
 /**
  * Processes character portrait image
  * - Client sends already cropped WebP from canvas
- * - Server converts to lossless AVIF with 5:7 aspect ratio
+ * - Server converts to lossless WebP with 5:7 aspect ratio
  */
 export const processCharacterImage = async (
 	buffer: Buffer,
@@ -168,38 +176,267 @@ export const processCharacterImage = async (
 		...options,
 	};
 
-	const uploadDir = `${BASE_CHARACTER_IMAGE_DIR}/${characterId}`;
+	const uploadDir = getCharacterImageStorageDir(characterId);
 	ensureDirectoryExists(uploadDir);
 
 	const fileName = `${characterId}_${emotionKey}.${config.format}`;
-	const filePath = path.join(process.cwd(), uploadDir, fileName);
+	const filePath = path.join(uploadDir, fileName);
 
 	let processor = sharp(buffer);
 
 	// Calculate dimensions for aspect ratio if specified
 	if (config.aspectRatio) {
-		const dimensions = calculateAspectRatioDimensions(
-			config.aspectRatio,
-			IMAGE_PROCESSING_CONFIG.CHARACTER_PORTRAIT.baseSize
-		);
+		const dimensions = IMAGE_PROCESSING_CONFIG.CHARACTER_PORTRAIT.dimensions;
 		processor = processor.resize(dimensions.width, dimensions.height, {
 			fit: 'cover',
 			position: 'center',
 		});
 	}
 
-	// Apply lossless AVIF format
+	// Apply the configured lossless runtime format
 	processor = applyFormat(processor, config.format);
 
-	await processor.toFile(filePath);
+	if (isObjectImageStorageConfigured()) {
+		await putImageAsset(
+			`${RUNTIME_CHARACTER_IMAGE_DIR}/${characterId}/${fileName}`,
+			await processor.toBuffer()
+		);
+	} else {
+		await processor.toFile(filePath);
+	}
 
 	return `${RUNTIME_CHARACTER_IMAGE_DIR}/${characterId}/${fileName}`;
+};
+
+/** Processes and replaces a full portrait and its required square avatar as one asset pair. */
+export const processCharacterImagePair = async (
+	portraitBuffer: Buffer,
+	avatarBuffer: Buffer,
+	characterId: string,
+	emotionKey: number
+): Promise<{ portraitPath: string; avatarPath: string }> => {
+	const portraitConfig = IMAGE_PROCESSING_CONFIG.CHARACTER_PORTRAIT;
+	const avatarConfig = IMAGE_PROCESSING_CONFIG.CHARACTER_AVATAR;
+	const uploadDir = getCharacterImageStorageDir(characterId);
+	ensureDirectoryExists(uploadDir);
+
+	const portraitFileName = `${characterId}_${emotionKey}.${portraitConfig.format}`;
+	const avatarFileName = `${characterId}_${emotionKey}_a.${avatarConfig.format}`;
+	const portraitFilePath = path.join(uploadDir, portraitFileName);
+	const avatarFilePath = path.join(uploadDir, avatarFileName);
+	const portraitRuntimePath = `${RUNTIME_CHARACTER_IMAGE_DIR}/${characterId}/${portraitFileName}`;
+	const avatarRuntimePath = `${RUNTIME_CHARACTER_IMAGE_DIR}/${characterId}/${avatarFileName}`;
+	const portraitDimensions = portraitConfig.dimensions;
+
+	const [portraitOutput, avatarOutput] = await Promise.all([
+		applyFormat(
+			sharp(portraitBuffer).resize(portraitDimensions.width, portraitDimensions.height, {
+				fit: 'cover',
+				position: 'center',
+			}),
+			portraitConfig.format
+		).toBuffer(),
+		applyFormat(
+			sharp(avatarBuffer).resize(avatarConfig.dimensions.width, avatarConfig.dimensions.height, {
+				fit: 'cover',
+				position: 'center',
+			}),
+			avatarConfig.format
+		).toBuffer(),
+	]);
+
+	if (isObjectImageStorageConfigured()) {
+		const previousAssets = await Promise.all([
+			getImageAsset(portraitRuntimePath),
+			getImageAsset(avatarRuntimePath),
+		]);
+
+		const writeResults = await Promise.allSettled([
+			putImageAsset(portraitRuntimePath, portraitOutput),
+			putImageAsset(avatarRuntimePath, avatarOutput),
+		]);
+		const failedWrite = writeResults.find(
+			(result): result is PromiseRejectedResult => result.status === 'rejected'
+		);
+
+		if (failedWrite) {
+			for (const [index, runtimePath] of [portraitRuntimePath, avatarRuntimePath].entries()) {
+				const previousAsset = previousAssets[index];
+				if (previousAsset) {
+					await putImageAsset(runtimePath, previousAsset.body, previousAsset.contentType);
+				} else {
+					await deleteImageAsset(runtimePath);
+				}
+			}
+			throw failedWrite.reason;
+		}
+
+		return { portraitPath: portraitRuntimePath, avatarPath: avatarRuntimePath };
+	}
+
+	const token = randomUUID();
+	const targets = [portraitFilePath, avatarFilePath];
+	const temporaryPaths = targets.map((target) => `${target}.${token}.tmp`);
+	const backupPaths = targets.map((target) => `${target}.${token}.bak`);
+	const hadExistingTarget = targets.map((target) => fs.existsSync(target));
+	const backedUpTargets = targets.map(() => false);
+	const committedTargets = targets.map(() => false);
+
+	await Promise.all([
+		fs.promises.writeFile(temporaryPaths[0], portraitOutput),
+		fs.promises.writeFile(temporaryPaths[1], avatarOutput),
+	]);
+
+	try {
+		for (let index = 0; index < targets.length; index += 1) {
+			if (hadExistingTarget[index]) {
+				fs.renameSync(targets[index], backupPaths[index]);
+				backedUpTargets[index] = true;
+			}
+		}
+		for (let index = 0; index < targets.length; index += 1) {
+			fs.renameSync(temporaryPaths[index], targets[index]);
+			committedTargets[index] = true;
+		}
+	} catch (error) {
+		for (let index = 0; index < targets.length; index += 1) {
+			if (committedTargets[index] && fs.existsSync(targets[index])) fs.unlinkSync(targets[index]);
+		}
+		for (let index = 0; index < targets.length; index += 1) {
+			if (backedUpTargets[index] && fs.existsSync(backupPaths[index])) {
+				fs.renameSync(backupPaths[index], targets[index]);
+			}
+		}
+		throw error;
+	} finally {
+		for (const temporaryPath of temporaryPaths) {
+			if (fs.existsSync(temporaryPath)) fs.unlinkSync(temporaryPath);
+		}
+		for (const backupPath of backupPaths) {
+			if (fs.existsSync(backupPath)) fs.unlinkSync(backupPath);
+		}
+	}
+
+	return {
+		portraitPath: `${RUNTIME_CHARACTER_IMAGE_DIR}/${characterId}/${portraitFileName}`,
+		avatarPath: `${RUNTIME_CHARACTER_IMAGE_DIR}/${characterId}/${avatarFileName}`,
+	};
+};
+
+/** Processes and replaces a session profile portrait and avatar as one asset pair. */
+export const processProfileImagePair = async (
+	portraitBuffer: Buffer,
+	avatarBuffer: Buffer,
+	profileId: string
+): Promise<{ portraitPath: string; avatarPath: string }> => {
+	const portraitConfig = IMAGE_PROCESSING_CONFIG.PROFILE_PORTRAIT;
+	const avatarConfig = IMAGE_PROCESSING_CONFIG.PROFILE_AVATAR;
+	const uploadDir = getProfileImageStorageDir(profileId);
+	ensureDirectoryExists(uploadDir);
+
+	// Match character asset naming. The current single pair is Neutral (emotion key 0).
+	const portraitFileName = `${profileId}_0.${portraitConfig.format}`;
+	const avatarFileName = `${profileId}_0_a.${avatarConfig.format}`;
+	const portraitFilePath = path.join(uploadDir, portraitFileName);
+	const avatarFilePath = path.join(uploadDir, avatarFileName);
+	const portraitRuntimePath = `${RUNTIME_PROFILE_IMAGE_DIR}/${profileId}/${portraitFileName}`;
+	const avatarRuntimePath = `${RUNTIME_PROFILE_IMAGE_DIR}/${profileId}/${avatarFileName}`;
+
+	const [portraitOutput, avatarOutput] = await Promise.all([
+		applyFormat(
+			sharp(portraitBuffer).resize(portraitConfig.dimensions.width, portraitConfig.dimensions.height, {
+				fit: 'cover',
+				position: 'center',
+			}),
+			portraitConfig.format
+		).toBuffer(),
+		applyFormat(
+			sharp(avatarBuffer).resize(avatarConfig.dimensions.width, avatarConfig.dimensions.height, {
+				fit: 'cover',
+				position: 'center',
+			}),
+			avatarConfig.format
+		).toBuffer(),
+	]);
+
+	if (isObjectImageStorageConfigured()) {
+		const previousAssets = await Promise.all([
+			getImageAsset(portraitRuntimePath),
+			getImageAsset(avatarRuntimePath),
+		]);
+		const writeResults = await Promise.allSettled([
+			putImageAsset(portraitRuntimePath, portraitOutput),
+			putImageAsset(avatarRuntimePath, avatarOutput),
+		]);
+		const failedWrite = writeResults.find(
+			(result): result is PromiseRejectedResult => result.status === 'rejected'
+		);
+
+		if (failedWrite) {
+			for (const [index, runtimePath] of [portraitRuntimePath, avatarRuntimePath].entries()) {
+				const previousAsset = previousAssets[index];
+				if (previousAsset) {
+					await putImageAsset(runtimePath, previousAsset.body, previousAsset.contentType);
+				} else {
+					await deleteImageAsset(runtimePath);
+				}
+			}
+			throw failedWrite.reason;
+		}
+
+		return { portraitPath: portraitRuntimePath, avatarPath: avatarRuntimePath };
+	}
+
+	const token = randomUUID();
+	const targets = [portraitFilePath, avatarFilePath];
+	const temporaryPaths = targets.map((target) => `${target}.${token}.tmp`);
+	const backupPaths = targets.map((target) => `${target}.${token}.bak`);
+	const hadExistingTarget = targets.map((target) => fs.existsSync(target));
+	const backedUpTargets = targets.map(() => false);
+	const committedTargets = targets.map(() => false);
+
+	await Promise.all([
+		fs.promises.writeFile(temporaryPaths[0], portraitOutput),
+		fs.promises.writeFile(temporaryPaths[1], avatarOutput),
+	]);
+
+	try {
+		for (let index = 0; index < targets.length; index += 1) {
+			if (hadExistingTarget[index]) {
+				fs.renameSync(targets[index], backupPaths[index]);
+				backedUpTargets[index] = true;
+			}
+		}
+		for (let index = 0; index < targets.length; index += 1) {
+			fs.renameSync(temporaryPaths[index], targets[index]);
+			committedTargets[index] = true;
+		}
+	} catch (error) {
+		for (let index = 0; index < targets.length; index += 1) {
+			if (committedTargets[index] && fs.existsSync(targets[index])) fs.unlinkSync(targets[index]);
+		}
+		for (let index = 0; index < targets.length; index += 1) {
+			if (backedUpTargets[index] && fs.existsSync(backupPaths[index])) {
+				fs.renameSync(backupPaths[index], targets[index]);
+			}
+		}
+		throw error;
+	} finally {
+		for (const temporaryPath of temporaryPaths) {
+			if (fs.existsSync(temporaryPath)) fs.unlinkSync(temporaryPath);
+		}
+		for (const backupPath of backupPaths) {
+			if (fs.existsSync(backupPath)) fs.unlinkSync(backupPath);
+		}
+	}
+
+	return { portraitPath: portraitRuntimePath, avatarPath: avatarRuntimePath };
 };
 
 /**
  * Processes lore image
  * - Client sends already cropped WebP from canvas
- * - Server converts to lossless AVIF with 5:7 aspect ratio
+ * - Server converts to lossless WebP with 5:7 aspect ratio
  */
 export const processLoreImage = async (
 	buffer: Buffer,
@@ -213,11 +450,11 @@ export const processLoreImage = async (
 		...options,
 	};
 
-	const uploadDir = `${BASE_CHARACTER_IMAGE_DIR}/lore/${loreId}`;
+	const uploadDir = getLoreImageStorageDir(loreId);
 	ensureDirectoryExists(uploadDir);
 
 	const fileName = `${loreId}_lore.${config.format}`;
-	const filePath = path.join(process.cwd(), uploadDir, fileName);
+	const filePath = path.join(uploadDir, fileName);
 
 	let processor = sharp(buffer);
 
@@ -233,7 +470,14 @@ export const processLoreImage = async (
 	}
 
 	processor = applyFormat(processor, config.format);
-	await processor.toFile(filePath);
+	if (isObjectImageStorageConfigured()) {
+		await putImageAsset(
+			`${RUNTIME_CHARACTER_IMAGE_DIR}/lore/${loreId}/${fileName}`,
+			await processor.toBuffer()
+		);
+	} else {
+		await processor.toFile(filePath);
+	}
 
 	return `${RUNTIME_CHARACTER_IMAGE_DIR}/lore/${loreId}/${fileName}`;
 };
@@ -248,13 +492,9 @@ export const deleteUserAvatar = async (userId: string): Promise<void> => {
 	const formats = getDeletionFormats(currentFormat);
 
 	for (const format of formats) {
-		const filePath = path.join(process.cwd(), `${BASE_USER_IMAGE_DIR}/${userId}/image.${format}`);
-		if (fs.existsSync(filePath)) {
-			fs.unlinkSync(filePath);
-			console.log(`Deleted avatar: ${filePath}`);
-			break;
-		}
+		await deleteImageAsset(`${RUNTIME_USER_IMAGE_DIR}/${userId}/image.${format}`);
 	}
+	flowLogger.info('imageProcessingUtils', 'avatar.deleted', { userId });
 };
 
 /**
@@ -268,17 +508,14 @@ export const deleteCharacterImage = async (
 	const currentFormat = IMAGE_PROCESSING_CONFIG.CHARACTER_PORTRAIT.format;
 	const formats = getDeletionFormats(currentFormat);
 
-	for (const format of formats) {
-		const filePath = path.join(
-			process.cwd(),
-			`${BASE_CHARACTER_IMAGE_DIR}/${characterId}/${characterId}_${emotionKey}.${format}`
-		);
-		if (fs.existsSync(filePath)) {
-			fs.unlinkSync(filePath);
-			console.log(`Deleted character image: ${filePath}`);
-			break;
+	for (const suffix of ['', '_a']) {
+		for (const format of formats) {
+			await deleteImageAsset(
+				`${RUNTIME_CHARACTER_IMAGE_DIR}/${characterId}/${characterId}_${emotionKey}${suffix}.${format}`
+			);
 		}
 	}
+	flowLogger.info('imageProcessingUtils', 'characterImage.deleted', { characterId, emotionKey });
 };
 
 /**
@@ -290,14 +527,7 @@ export const deleteLoreImage = async (loreId: string): Promise<void> => {
 	const formats = getDeletionFormats(currentFormat);
 
 	for (const format of formats) {
-		const filePath = path.join(
-			process.cwd(),
-			`${BASE_CHARACTER_IMAGE_DIR}/lore/${loreId}/${loreId}_lore.${format}`
-		);
-		if (fs.existsSync(filePath)) {
-			fs.unlinkSync(filePath);
-			console.log(`Deleted lore image: ${filePath}`);
-			break;
-		}
+		await deleteImageAsset(`${RUNTIME_CHARACTER_IMAGE_DIR}/lore/${loreId}/${loreId}_lore.${format}`);
 	}
+	flowLogger.info('imageProcessingUtils', 'loreImage.deleted', { loreId });
 };

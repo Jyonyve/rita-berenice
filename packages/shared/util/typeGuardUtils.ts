@@ -28,7 +28,7 @@ import {
 	UserInfo,
 	WorldLoreCdo,
 } from '../domain/index.js';
-import { NA } from '../config/constants.js';
+import { DEFAULT_CHARACTER_VISIBILITY, NA } from '../config/constants.js';
 import { DEFAULT_EMOTION } from '../config/emotionConstants.js';
 import { DEFAULT_USER_AVATAR } from '../config/imageConstants.js';
 
@@ -80,6 +80,7 @@ export const createBasicCharacterInfo = (cdo: CharacterCdo): CharacterInfo => {
 		characterId,
 		variant,
 		type: 'character',
+		visibility: DEFAULT_CHARACTER_VISIBILITY,
 		createdAt: now,
 		updatedAt: now,
 		firstMessage: '',

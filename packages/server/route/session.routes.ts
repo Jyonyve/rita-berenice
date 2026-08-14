@@ -5,7 +5,7 @@ import { verifySession } from 'supertokens-node/recipe/session/framework/express
 import { asyncHandler, genRoutePattern, validateRequestData } from '../util/routeHelpers.js';
 import { assertOwnedProfile, assertOwnedSession, assertSessionUser } from '../util/authUtils.js';
 import { sessionStore } from '../store/sessionStore.js';
-import { SessionInfo } from '@rita-berenice/shared/domain';
+import { ApiError, SessionContentPolicy, SessionInfo } from '@rita-berenice/shared/domain';
 
 const router: Router = express.Router();
 router.use(verifySession());
@@ -27,10 +27,18 @@ router.post(
 		validateRequestData(req.body, 'body', ['userId', 'characterId']);
 		const { characterId, firstCharMessage = '', title = '' } = req.body;
 		const userId = assertSessionUser(req, req.body.userId);
+		const contentPolicy: SessionContentPolicy = req.body.contentPolicy ?? 'general';
+		if (contentPolicy !== 'general' && contentPolicy !== 'adult') {
+			throw new ApiError(400, 'Invalid session content policy.');
+		}
 
-		console.log(`API HIT: POST /api/session/create-session for user ${userId}`);
-
-		const response = await sessionStore.createSession(userId, characterId, firstCharMessage, title);
+		const response = await sessionStore.createSession(
+			userId,
+			characterId,
+			firstCharMessage,
+			title,
+			contentPolicy
+		);
 
 		res.status(201).json(response); // 201 for resource creation
 	})
@@ -57,8 +65,10 @@ router.put(
 		sessionInfo.userId = assertSessionUser(req, sessionInfo.userId);
 		sessionInfo.characterId = storedSession.characterId;
 		sessionInfo.profileId = storedSession.profileId;
-
-		console.log(`API HIT: PUT /api/session/update-session-on for session ${sessionInfo.sessionId}`);
+		sessionInfo.contentPolicy = sessionInfo.contentPolicy ?? storedSession.contentPolicy ?? 'general';
+		if (sessionInfo.contentPolicy !== 'general' && sessionInfo.contentPolicy !== 'adult') {
+			throw new ApiError(400, 'Invalid session content policy.');
+		}
 
 		await sessionStore.updateSession(sessionInfo);
 
@@ -80,8 +90,6 @@ router.get(
 		validateRequestData(req.params, 'params', ['userId']);
 		const userId = assertSessionUser(req, req.params.userId);
 
-		console.log(`API HIT: GET /api/session/get-sessions-by-user-id/${userId}`);
-
 		const response = await sessionStore.getSessionsByUserId(userId);
 		res.status(200).json(response);
 	})
@@ -101,10 +109,6 @@ router.get(
 		validateRequestData(req.params, 'params', ['userId', 'characterId']);
 		const { characterId } = req.params;
 		const userId = assertSessionUser(req, req.params.userId);
-
-		console.log(
-			`API HIT: GET /api/session/get-sessions-by-user-id-and-character-id/${userId}/${characterId}`
-		);
 
 		const response = await sessionStore.getSessionsByUserIdAndCharacterId(userId, characterId);
 		res.status(200).json(response);
@@ -126,8 +130,6 @@ router.get(
 		const { sessionId } = req.params;
 		await assertOwnedSession(req, sessionId);
 
-		console.log(`API HIT: GET /api/session/get-session/${sessionId}`);
-
 		const response = await sessionStore.getSession(sessionId);
 		res.status(200).json(response);
 	})
@@ -148,8 +150,6 @@ router.put(
 		validateRequestData(req.body, 'body', ['sessionId', 'latestCharMessage']);
 		const { sessionId, latestCharMessage } = req.body;
 		await assertOwnedSession(req, sessionId);
-
-		console.log(`API HIT: PUT /api/session/update-session-on-new-message for session ${sessionId}`);
 
 		await sessionStore.updateSessionOnNewMessage(sessionId, latestCharMessage);
 
@@ -177,8 +177,6 @@ router.put(
 			throw new Error(`Profile '${profileId}' does not belong to session '${sessionId}'.`);
 		}
 
-		console.log(`API HIT: PUT /api/session/init-session-profile-id for session ${sessionId}`);
-
 		await sessionStore.initSessionProfileId(sessionId, profileId);
 
 		res.status(204).send(); // 204 No Content is appropriate for successful updates with no body
@@ -201,11 +199,25 @@ router.put(
 		const { sessionId, title } = req.body;
 		await assertOwnedSession(req, sessionId);
 
-		console.log(`API HIT: PUT /api/session/update-session-title for session ${sessionId}`);
-
 		await sessionStore.updateSessionTitle(sessionId, title);
 
 		res.status(204).send(); // 204 No Content is appropriate for successful updates with no body
+	})
+);
+
+/** Updates the content policy used for future responses in an owned session. */
+router.put(
+	genRoutePattern('updateSessionContentPolicy'),
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		validateRequestData(req.body, 'body', ['sessionId', 'contentPolicy']);
+		const { sessionId, contentPolicy } = req.body;
+		await assertOwnedSession(req, sessionId);
+		if (contentPolicy !== 'general' && contentPolicy !== 'adult') {
+			throw new ApiError(400, 'Invalid session content policy.');
+		}
+
+		await sessionStore.updateSessionContentPolicy(sessionId, contentPolicy);
+		res.status(204).send();
 	})
 );
 

@@ -12,13 +12,14 @@ import {
 	FormControl,
 	InputLabel,
 } from '@mui/material';
-import { SUPPORTED_MODEL_INFO } from '@rita-berenice/shared/config';
+import { LANG_KEYS, SUPPORTED_MODEL_INFO } from '@rita-berenice/shared/config';
 import { ChatRoleType } from '@rita-berenice/shared/domain';
 import { format } from 'date-fns';
+import { getLangText } from './translateUtils.js';
 
 export const useErrorDialog = (initialMessage?: string) => {
 	const [open, setOpen] = useState(false);
-	const [message, setMessage] = useState(initialMessage ?? '에러가 발생하였습니다.');
+	const [message, setMessage] = useState(initialMessage ?? getLangText(LANG_KEYS.ERROR_OCCURRED));
 
 	const showError = (msg: string) => {
 		setMessage(msg);
@@ -34,7 +35,7 @@ export const useErrorDialog = (initialMessage?: string) => {
 		closeDialog,
 		ErrorDialog: (
 			<Dialog open={open} onClose={closeDialog}>
-				<DialogTitle>Error</DialogTitle>
+				<DialogTitle>{getLangText(LANG_KEYS.ERROR)}</DialogTitle>
 				<DialogContent>{message}</DialogContent>
 				<DialogActions>
 					<Button onClick={closeDialog} color="primary">
@@ -64,10 +65,10 @@ export const SelectAiModel = ({ id }: { id?: string }) => {
 
 	return (
 		<FormControl sx={{ m: 1, minWidth: 120 }}>
-			<InputLabel htmlFor={id}>AI Models</InputLabel>
-			<Select defaultValue="" id={id} label="AI Models">
+			<InputLabel htmlFor={id}>{getLangText(LANG_KEYS.AI_MODELS)}</InputLabel>
+			<Select defaultValue="" id={id} label={getLangText(LANG_KEYS.AI_MODELS)}>
 				{/* <MenuItem value="">
-					<em>None</em>
+					<em>{getLangText(LANG_KEYS.NONE)}</em>
 				</MenuItem> */}
 				{extractAiModelSelect()}
 			</Select>

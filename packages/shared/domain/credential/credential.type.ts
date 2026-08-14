@@ -15,7 +15,17 @@ export interface UserApiKeys {
 	groqApiKey?: string;
 }
 
+export const API_KEY_TYPES = [
+	'openaiApiKey',
+	'anthropicApiKey',
+	'googleApiKey',
+	'openrouterApiKey',
+	'groqApiKey',
+] as const satisfies readonly (keyof UserApiKeys)[];
+
+export type ApiKeyType = (typeof API_KEY_TYPES)[number];
+
 export interface UpdateApiKeyRequest {
-	keyType: keyof UserApiKeys;
+	keyType: ApiKeyType;
 	keyValue: string;
 }

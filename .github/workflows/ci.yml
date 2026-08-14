@@ -1,7 +1,7 @@
 name: CI
 
 on:
- pull_request:
+ workflow_dispatch:
  push:
   branches:
    - main
@@ -20,6 +20,7 @@ jobs:
      uses: actions/setup-node@v5
      with:
       node-version: 22
+      package-manager-cache: false
 
    - name: Enable pnpm
      run: corepack enable pnpm && corepack install -g pnpm@10.18.0
@@ -27,17 +28,5 @@ jobs:
    - name: Install dependencies
      run: pnpm install --frozen-lockfile
 
-   - name: Check formatting
-     run: pnpm format:check
-
-   - name: Typecheck
-     run: pnpm typecheck
-
-   - name: Build shared
-     run: pnpm build:shared
-
-   - name: Build server
-     run: pnpm build:server
-
-   - name: Build client
-     run: pnpm build:client
+   - name: Run repository checks
+     run: pnpm check

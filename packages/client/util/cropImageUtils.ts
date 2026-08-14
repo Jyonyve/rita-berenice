@@ -15,15 +15,16 @@ const createImage = (url: string): Promise<HTMLImageElement> =>
 
 /**
  * Crops an image using canvas and returns a Blob
- * Uses shared config for format and quality (WebP 100%)
+ * Uses shared config for a bounded, lossless PNG intermediate
  *
  * @param imageSrc - Source image URL (data: or blob:)
  * @param pixelCrop - Crop area coordinates from react-easy-crop
- * @returns Promise<Blob> - Cropped image as WebP blob
+ * @returns Promise<Blob> - Cropped image as a lossless PNG blob
  */
 export const getCroppedImageBlob = async (
 	imageSrc: string,
-	pixelCrop: { x: number; y: number; width: number; height: number }
+	pixelCrop: { x: number; y: number; width: number; height: number },
+	outputSize: { width: number; height: number }
 ): Promise<Blob> => {
 	const image = await createImage(imageSrc);
 	const canvas = document.createElement('canvas');
@@ -33,9 +34,13 @@ export const getCroppedImageBlob = async (
 		throw new Error('Could not create canvas context');
 	}
 
-	// Set canvas to crop dimensions
-	canvas.width = pixelCrop.width;
-	canvas.height = pixelCrop.height;
+	// Encode only the pixels retained by the server. Keeping full-resolution phone
+	// crops here can make lossless WebP inputs larger than the upload limit even
+	// though Sharp immediately resizes them to these final dimensions.
+	canvas.width = outputSize.width;
+	canvas.height = outputSize.height;
+	ctx.imageSmoothingEnabled = true;
+	ctx.imageSmoothingQuality = 'high';
 
 	// Draw the cropped portion of the image
 	ctx.drawImage(
@@ -46,8 +51,8 @@ export const getCroppedImageBlob = async (
 		pixelCrop.height,
 		0,
 		0,
-		pixelCrop.width,
-		pixelCrop.height
+		outputSize.width,
+		outputSize.height
 	);
 
 	// Convert to blob using shared CANVAS_OUTPUT_CONFIG
@@ -60,7 +65,7 @@ export const getCroppedImageBlob = async (
 					reject(new Error('Canvas encoding failed'));
 				}
 			},
-			`image/${CANVAS_OUTPUT_CONFIG.format}`, // 'image/webp'
+			`image/${CANVAS_OUTPUT_CONFIG.format}`, // 'image/png'
 			CANVAS_OUTPUT_CONFIG.quality // 1.0
 		);
 	});
@@ -73,9 +78,9 @@ export const getCroppedImageBlob = async (
  * @param originalFileName - Original file name
  * @returns File object with .webp extension
  */
-export const blobToWebpFile = (blob: Blob, originalFileName: string): File => {
+export const blobToCanvasImageFile = (blob: Blob, originalFileName: string): File => {
 	const nameWithoutExt = originalFileName.replace(/\.[^.]+$/, '');
-	return new File([blob], `${nameWithoutExt}.webp`, {
+	return new File([blob], `${nameWithoutExt}.${CANVAS_OUTPUT_CONFIG.format}`, {
 		type: `image/${CANVAS_OUTPUT_CONFIG.format}`,
 	});
 };
@@ -99,7 +104,7 @@ export interface CroppedImageResult {
  *
  * @example
  * const result = processCroppedImage(blob, 'avatar.jpg');
- * // result.file -> File('avatar.webp', ...)
+ * // result.file -> File('avatar.png', ...)
  * // result.previewUrl -> 'blob:http://...'
  * // Remember to revoke: URL.revokeObjectURL(result.previewUrl)
  */
@@ -111,8 +116,8 @@ export const processCroppedImage = (
 		throw new Error('Invalid blob provided');
 	}
 
-	// Convert blob to File with .webp extension
-	const file = blobToWebpFile(croppedBlob, originalFileName);
+	// Preserve the configured intermediate format in the multipart filename and MIME type.
+	const file = blobToCanvasImageFile(croppedBlob, originalFileName);
 
 	// Create preview URL
 	const previewUrl = URL.createObjectURL(croppedBlob);

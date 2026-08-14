@@ -1,12 +1,18 @@
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, inArray } from 'drizzle-orm';
 import { Metadata } from '@rita-berenice/shared/api';
 import { METADATA_TYPES } from '@rita-berenice/shared/config';
 import { RecapInfo } from '@rita-berenice/shared/domain';
 import { recapToMetadata } from '@rita-berenice/shared/util';
 import { getDatabase } from '../db/postgresClient.js';
 import { recaps } from '../db/schema.js';
-import { replaceMemoryEmbedding, searchMemoryEmbeddings } from '../service/embeddingService.js';
+import {
+	QueryEmbeddingCache,
+	searchMemoryEmbeddings,
+	searchMemoryEmbeddingsByKeywords,
+} from '../service/embeddingService.js';
+import { embeddingJobService } from '../service/embeddingJobService.js';
 import { recapToDocument } from '../util/documentUtils.js';
+import { RagTraceContext } from '../util/ragTraceUtils.js';
 import { FilterCriteria } from '../util/schemaUtils.js';
 
 type RecapType = typeof METADATA_TYPES.RECAP | typeof METADATA_TYPES.RELATIONSHIP;
@@ -39,7 +45,7 @@ export const recapStore = {
 					updatedAt: recapInfo.updatedAt || now,
 				},
 			});
-		await replaceMemoryEmbedding({
+		embeddingJobService.enqueue({
 			sourceType: 'recap',
 			sourceId: recapInfo.recapId,
 			userId: recapInfo.userId,
@@ -66,7 +72,9 @@ export const recapStore = {
 		type: RecapType,
 		filterCriteria?: FilterCriteria,
 		_whereDocument?: unknown,
-		limit = 10
+		limit = 10,
+		queryEmbeddingCache?: QueryEmbeddingCache,
+		ragTraceContext?: RagTraceContext
 	): Promise<RecapInfo[]> {
 		const all = await recapStore.getRecapsBySessionId(sessionId, type);
 		const requested = [
@@ -85,9 +93,41 @@ export const recapStore = {
 		const results = await searchMemoryEmbeddings(
 			queryTexts,
 			{ sourceType: 'recap', sessionId, sourceIds: candidates.map((item) => item.recapId) },
-			limit
+			limit,
+			queryEmbeddingCache,
+			ragTraceContext
 		);
 		const byId = new Map(candidates.map((item) => [item.recapId, item]));
 		return results.map((result) => byId.get(result.sourceId)).filter(Boolean) as RecapInfo[];
+	},
+
+	async queryRecapsByKeywords(
+		sessionId: string,
+		keywords: string[],
+		type: RecapType,
+		excludeIds: string[] = [],
+		limit = 100
+	): Promise<RecapInfo[]> {
+		const embeddingRows = await searchMemoryEmbeddingsByKeywords(
+			keywords,
+			{ sourceType: 'recap', sessionId },
+			{ excludeSourceIds: excludeIds, limit }
+		);
+		const sourceIds = embeddingRows.map((row) => row.sourceId);
+		if (!sourceIds.length) return [];
+
+		const rows = await getDatabase()
+			.select({ data: recaps.data })
+			.from(recaps)
+			.where(
+				and(
+					eq(recaps.sessionId, sessionId),
+					eq(recaps.recapType, type),
+					inArray(recaps.recapId, sourceIds)
+				)
+			)
+			.limit(sourceIds.length);
+		const byId = new Map(rows.map((row) => [row.data.recapId, row.data]));
+		return sourceIds.map((sourceId) => byId.get(sourceId)).filter(Boolean) as RecapInfo[];
 	},
 };

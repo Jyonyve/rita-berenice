@@ -1,6 +1,6 @@
 // src/shared/domain/character/CharacterInterfaces.ts
 // if type is stored as metadata, it should be premitive type.
-import { GENDER_OPTION, METADATA_TYPES } from '../../config/constants.js';
+import { CharacterVisibility, GENDER_OPTION, METADATA_TYPES } from '../../config/constants.js';
 import { EmotionKey } from '../../config/emotionConstants.js';
 
 export interface BeingMetadata {
@@ -19,10 +19,12 @@ export interface CharacterMetadata extends BeingMetadata {
 	variant: string;
 	contact: string;
 	type: typeof METADATA_TYPES.CHARACTER;
+	visibility: CharacterVisibility;
 }
 export interface CharacterDocument {
-	description: string;
-	instruction: string;
+	description: string; // Public character introduction and baseline LLM context
+	worldIntroduction: string; // Public, character-scoped world introduction and baseline LLM context
+	instruction: string; // Persona and response instructions for the LLM
 	worldLoreId: string;
 	firstMessage: string; // optional
 }
@@ -45,6 +47,7 @@ export type CharacterCdo = Pick<
 	| 'title'
 	| 'contact'
 	| 'description'
+	| 'worldIntroduction'
 	| 'instruction'
 	| 'gender'
 	| 'name'

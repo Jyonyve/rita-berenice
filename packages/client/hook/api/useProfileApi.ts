@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient, genApiUrl } from '../../util/clientApiHelpers.js';
+import { apiClient, genApiUrl, type ApiRequestConfig } from '../../util/clientApiHelpers.js';
 import { MODULE_NAMES } from '@rita-berenice/shared/config';
 import { ProfileCdo, ProfileInfo } from '@rita-berenice/shared/domain';
 import { ProfileResponse } from '@rita-berenice/shared/api';
@@ -27,6 +27,31 @@ export const useProfileApi = () => {
 			});
 
 			// Invalidate all profile lists since a new/updated profile affects all lists
+			queryClient.invalidateQueries({ queryKey: ['profiles', 'list'] });
+		},
+	});
+
+	const uploadProfileImage = useMutation<
+		{ profileId: string; portraitPath: string; avatarPath: string },
+		Error,
+		FormData
+	>({
+		mutationFn: async (formData) => {
+			const url = genApiUrl(MODULE_NAME, 'uploadProfileImage');
+			const requestConfig: ApiRequestConfig = {
+				_suppressToast: true,
+				headers: { 'Content-Type': undefined },
+			};
+			const response = await apiClient.post<{
+				profileId: string;
+				portraitPath: string;
+				avatarPath: string;
+			}>(url, formData, requestConfig);
+			return response.data;
+		},
+		onSuccess: ({ profileId }) => {
+			queryClient.invalidateQueries({ queryKey: ['profiles', 'detail', 'getProfile', profileId] });
+			queryClient.invalidateQueries({ queryKey: ['profiles', 'detail'] });
 			queryClient.invalidateQueries({ queryKey: ['profiles', 'list'] });
 		},
 	});
@@ -77,6 +102,7 @@ export const useProfileApi = () => {
 
 	return {
 		storeProfile: storeProfile.mutateAsync,
+		uploadProfileImage: uploadProfileImage.mutateAsync,
 		getAllProfilesByUserId,
 		getProfile,
 		getProfileBySessionId,

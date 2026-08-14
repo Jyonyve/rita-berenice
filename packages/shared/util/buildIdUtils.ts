@@ -3,7 +3,7 @@ import {
 	ChatMessageType,
 	LoreIndexContentType,
 	RecapIndexContentType,
-} from '@rita-berenice/shared/domain';
+} from '../domain/index.js';
 import { customAlphabet } from 'nanoid';
 import { LangCode } from '../config/langConstants.js';
 import { generateNickName } from '../config/nicknameConstants.js';
@@ -28,6 +28,7 @@ export const SUFFIX = {
 	HISTORY: 'history',
 	TERM: 'term',
 	CREDENTIAL: 'credential',
+	DOCUMENT: 'document',
 } as const;
 export type SuffixType = (typeof SUFFIX)[keyof typeof SUFFIX];
 
@@ -54,6 +55,10 @@ export const buildLoreId = (userId: string) => {
 
 export const buildHistoryId = (userId: string) => {
 	return `${userId}_${_genNanoId(4)}_${SUFFIX.HISTORY}`;
+};
+
+export const buildDocumentId = (sessionId: string) => {
+	return `${sessionId}_${_genNanoId(8)}_${SUFFIX.DOCUMENT}`;
 };
 
 /* chat id */

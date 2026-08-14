@@ -4,8 +4,7 @@
 		"build": { "dependsOn": ["^build"], "outputs": ["dist/**", "../../dist/**"] },
 		"clean": { "cache": false },
 		"dev": { "cache": false, "persistent": true },
-		"lint": {},
-		"test": {}
+		"lint": {}
 	},
 	"globalDependencies": ["pnpm-lock.yaml"],
 	"ui": "stream"

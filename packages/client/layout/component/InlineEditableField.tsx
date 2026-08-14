@@ -1,11 +1,17 @@
 import React, { useState, useEffect, FC, useRef } from 'react';
-import { TextField, Typography, IconButton, Box, TypographyProps } from '@mui/material';
+import { TextField, Typography, IconButton, Box, TypographyProps, Tooltip } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import { LANG_KEYS } from '@rita-berenice/shared/config';
+import { getLangText } from '../../util/translateUtils.js';
+import { HeaderIconButton } from './HeaderIconButton.js';
 
 interface InlineEditableFieldProps {
 	initialValue: string;
 	onSave: (newValue: string) => void;
 	onCancel?: () => void;
+	onTextClick?: () => void;
+	showEditButton?: boolean;
 	disabled?: boolean;
 	typographyProps?: TypographyProps;
 	textFieldProps?: {
@@ -20,6 +26,8 @@ export const InlineEditableField: FC<InlineEditableFieldProps> = ({
 	initialValue,
 	onSave,
 	onCancel,
+	onTextClick,
+	showEditButton = false,
 	disabled = false,
 	typographyProps,
 	textFieldProps = { variant: 'standard', size: 'small' },
@@ -71,6 +79,21 @@ export const InlineEditableField: FC<InlineEditableFieldProps> = ({
 		}
 	};
 
+	const handleTextClick = () => {
+		if (onTextClick) {
+			onTextClick();
+			return;
+		}
+		setIsEditing(true);
+	};
+
+	const handleTextKeyDown = (event: React.KeyboardEvent) => {
+		if (event.key === 'Enter' || event.key === ' ') {
+			event.preventDefault();
+			handleTextClick();
+		}
+	};
+
 	if (disabled) {
 		return (
 			<Typography {...typographyProps} color="text.secondary" noWrap>
@@ -90,36 +113,49 @@ export const InlineEditableField: FC<InlineEditableFieldProps> = ({
 					{...textFieldProps}
 					sx={typographyProps}
 				/>
-				<IconButton
+				<HeaderIconButton
 					onClick={handleSave}
 					size="small"
-					sx={{ p: '2px', color: 'success.main' }}
-					aria-label="Save changes"
+					aria-label={getLangText(LANG_KEYS.SAVE_CHANGES)}
 				>
-					<CheckIcon sx={{ fontSize: '6px' }} />
-				</IconButton>
+					<CheckIcon sx={{ fontSize: 14 }} />
+				</HeaderIconButton>
 			</Box>
 		);
 	}
 
 	return (
 		<Box
-			onClick={() => setIsEditing(true)}
 			sx={{
 				display: 'flex',
 				alignItems: 'center',
-				gap: 0.5,
-				cursor: 'pointer',
-				'&:hover .edit-icon': { opacity: 1 },
+				gap: 0.25,
+				minWidth: 0,
+				'& > .MuiTypography-root': { cursor: 'pointer' },
 			}}
 		>
-			<Typography {...typographyProps} noWrap>
+			<Typography
+				{...typographyProps}
+				noWrap
+				role="button"
+				tabIndex={0}
+				onClick={handleTextClick}
+				onKeyDown={handleTextKeyDown}
+			>
 				{value}
 			</Typography>
-			{/* <EditIcon
-				className="edit-icon"
-				sx={{ fontSize: '14px', color: 'text.secondary', opacity: 0.5, transition: 'opacity 0.2s' }}
-			/> */}
+			{showEditButton && (
+				<Tooltip title={getLangText(LANG_KEYS.EDIT)}>
+					<HeaderIconButton
+						size="small"
+						onClick={() => setIsEditing(true)}
+						aria-label={getLangText(LANG_KEYS.EDIT)}
+						sx={{ p: 0.25, flexShrink: 0 }}
+					>
+						<EditOutlinedIcon sx={{ fontSize: 14 }} />
+					</HeaderIconButton>
+				</Tooltip>
+			)}
 		</Box>
 	);
 };

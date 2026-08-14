@@ -3,6 +3,7 @@ import React, { FC, Fragment } from 'react';
 import { useSessionApi } from '../../hook/api/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { GlassCircularProgress } from '../../layout/component/glass/index.js';
+import { SafeRichText } from '../../layout/component/SafeRichText.js';
 import { formatTimestamp } from '../../util/styleUtils.jsx';
 import { LANG_KEYS } from '@rita-berenice/shared/config';
 
@@ -101,7 +102,9 @@ export const SessionPreviewList: FC<{
 											</Typography>
 										</Box>
 										{/* --- ROW 2: Message Snippet --- */}
-										<Typography
+										<SafeRichText
+											text={info.lastCharMessage}
+											localizeNarrativeDirections
 											variant="body2"
 											color="text.secondary"
 											sx={{
@@ -112,9 +115,7 @@ export const SessionPreviewList: FC<{
 												WebkitBoxOrient: 'vertical',
 												WebkitLineClamp: 2,
 											}}
-										>
-											{info.lastCharMessage}
-										</Typography>
+										/>
 									</Box>
 								}
 							/>

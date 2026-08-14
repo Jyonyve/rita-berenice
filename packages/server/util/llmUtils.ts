@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 
-import { logFlow } from './jsonlLogger.js';
+import { flowLogger } from './jsonlLogger.js';
 
 import { ChromaResponse, Metadata } from '@rita-berenice/shared/api';
 import {
@@ -12,6 +12,7 @@ import {
 } from '@rita-berenice/shared/domain';
 import { ChatCompletion } from 'openai/resources/index.mjs';
 import { MessageContentText, MessageContent } from '@langchain/core/messages';
+import { parseChatEntries } from '@rita-berenice/shared/util';
 
 export function isDirectOpenAIClient(llm: any): llm is OpenAI {
 	// Check for a unique property or method of the OpenAI client instance
@@ -60,9 +61,7 @@ export const extractJsonFromLlmResponse = (rawResponse: string): string => {
  * @returns An array of structured ChatEntry objects.
  */
 export const sanitizeLlmResponse = (text: string): ChatEntry[] => {
-	logFlow('TextTransform', 'Starting full LLM response sanitization and parsing', {
-		inputLength: text?.length ?? 0,
-	});
+	flowLogger.info('TextTransform', 'sanitizeLlmResponse.start', { inputLength: text?.length ?? 0 });
 
 	if (!text || text.trim() === '') {
 		return [];
@@ -76,48 +75,13 @@ export const sanitizeLlmResponse = (text: string): ChatEntry[] => {
 		.replace(/[“”‟„]/g, '"') // All double quotes to standard "
 		.replace(/[‘’‚‛]/g, "'"); // All single quotes to standard '
 
-	// Step 4: Split into lines for processing
-	const lines = sanitizedText
-		.split('\n')
-		.map((line) => line.trim())
-		.filter((line) => line.length > 0);
+	const entries = parseChatEntries(sanitizedText, 'quoted-dialogue');
 
-	if (lines.length === 0) {
-		return [];
-	}
-
-	// Step 5: Classify and group lines in a single pass
-	const entries: ChatEntry[] = [];
-	let currentEntry: ChatEntry | null = null;
-
-	for (const line of lines) {
-		// A line is dialogue if it's enclosed in quotes.
-		const isDialogue = line.startsWith('"') && line.endsWith('"');
-		const type = isDialogue ? 'dialogue' : 'action';
-		const prompt = isDialogue ? line.substring(1, line.length - 1).trim() : line;
-
-		if (prompt === '') continue; // Skip empty prompts after trimming quotes
-
-		if (currentEntry && currentEntry.type === type) {
-			// Append to the existing entry of the same type
-			currentEntry.prompt += '\n' + prompt;
-		} else {
-			// Push the previous entry (if it exists) and start a new one
-			if (currentEntry) {
-				entries.push(currentEntry);
-			}
-			currentEntry = { type, prompt };
-		}
-	}
-
-	// Don't forget the last entry
-	if (currentEntry) {
-		entries.push(currentEntry);
-	}
-
-	logFlow('TextTransform', 'LLM response processing complete', {
+	flowLogger.info('TextTransform', 'sanitizeLlmResponse.complete', {
 		outputEntryCount: entries.length,
-		result: entries,
+		dialogueEntryCount: entries.filter((entry) => entry.type === 'dialogue').length,
+		actionEntryCount: entries.filter((entry) => entry.type === 'action').length,
+		outputLength: entries.reduce((total, entry) => total + entry.prompt.length, 0),
 	});
 
 	return entries;

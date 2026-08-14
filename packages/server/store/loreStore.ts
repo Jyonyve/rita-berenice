@@ -1,15 +1,17 @@
 import { and, eq } from 'drizzle-orm';
 import { LoreResponse, Metadata } from '@rita-berenice/shared/api';
-import { LoreInfo } from '@rita-berenice/shared/domain';
+import { ApiError, LoreInfo } from '@rita-berenice/shared/domain';
 import { loreToMetadata } from '@rita-berenice/shared/util';
 import { getDatabase } from '../db/postgresClient.js';
 import { lores } from '../db/schema.js';
 import {
 	deleteMemoryEmbeddings,
-	replaceMemoryEmbedding,
+	QueryEmbeddingCache,
 	searchMemoryEmbeddings,
 } from '../service/embeddingService.js';
+import { embeddingJobService } from '../service/embeddingJobService.js';
 import { loreToDocument } from '../util/documentUtils.js';
+import { RagTraceContext } from '../util/ragTraceUtils.js';
 import { FilterCriteria } from '../util/schemaUtils.js';
 
 const emptyResponse = (): LoreResponse => ({
@@ -50,10 +52,29 @@ const matchesCriteria = (item: LoreInfo, criteria?: FilterCriteria) => {
 	return requested.length === 0 || requested.some((value) => searchable.includes(value));
 };
 
+export const filterLoreCandidates = (
+	items: LoreInfo[],
+	userId: string,
+	characterIds: string | string[],
+	sessionId?: string,
+	filterCriteria?: FilterCriteria
+): LoreInfo[] => {
+	const ids = Array.isArray(characterIds) ? characterIds : [characterIds];
+	return items.filter(
+		(item) =>
+			item.userId === userId &&
+			(item.sessionId
+				? item.sessionId === sessionId
+				: item.category === 'World' ||
+					item.characterIds.some((id) => ids.includes(id)) ||
+					matchesCriteria(item, filterCriteria))
+	);
+};
+
 export const loreStore = {
 	storeLore: async (loreInfo: LoreInfo): Promise<{ loreId: string }> => {
 		const now = new Date().toISOString();
-		await getDatabase()
+		const storedRows = await getDatabase()
 			.insert(lores)
 			.values({
 				loreId: loreInfo.loreId,
@@ -66,15 +87,19 @@ export const loreStore = {
 			})
 			.onConflictDoUpdate({
 				target: lores.loreId,
+				setWhere: eq(lores.userId, loreInfo.userId),
 				set: {
-					userId: loreInfo.userId,
 					loreType: loreInfo.type,
 					category: loreInfo.category,
 					data: loreInfo,
 					updatedAt: loreInfo.updatedAt || now,
 				},
-			});
-		await replaceMemoryEmbedding({
+			})
+			.returning({ loreId: lores.loreId });
+		if (storedRows.length === 0) {
+			throw new ApiError(403, `Lore '${loreInfo.loreId}' is owned by another user.`);
+		}
+		embeddingJobService.enqueue({
 			sourceType: 'lore',
 			sourceId: loreInfo.loreId,
 			userId: loreInfo.userId,
@@ -84,55 +109,91 @@ export const loreStore = {
 		return { loreId: loreInfo.loreId };
 	},
 
-	getLore: async (loreId: string): Promise<LoreResponse> => {
-		const row = await getDatabase().query.lores.findFirst({ where: eq(lores.loreId, loreId) });
+	getLore: async (loreId: string, userId: string): Promise<LoreResponse> => {
+		const row = await getDatabase().query.lores.findFirst({
+			where: and(eq(lores.loreId, loreId), eq(lores.userId, userId)),
+		});
 		return row ? toResponse([row.data]) : emptyResponse();
 	},
 
-	getLoresByCharacter: async (characterId: string): Promise<LoreResponse> => {
-		const rows = await getDatabase().select({ data: lores.data }).from(lores);
-		return toResponse(
-			rows.map((row) => row.data).filter((item) => item.characterIds.includes(characterId))
-		);
-	},
-
-	getWorldLores: async (userId?: string): Promise<LoreResponse> => {
-		const conditions = [eq(lores.category, 'World')];
-		if (userId) conditions.push(eq(lores.userId, userId));
+	getLoresByCharacter: async (characterId: string, userId: string): Promise<LoreResponse> => {
 		const rows = await getDatabase()
 			.select({ data: lores.data })
 			.from(lores)
-			.where(and(...conditions));
+			.where(eq(lores.userId, userId));
+		return toResponse(
+			rows
+				.map((row) => row.data)
+				.filter(
+					(item) => item.userId === userId && !item.sessionId && item.characterIds.includes(characterId)
+				)
+		);
+	},
+
+	getLoresBySession: async (
+		sessionId: string,
+		characterId: string,
+		userId: string
+	): Promise<LoreResponse> => {
+		const rows = await getDatabase()
+			.select({ data: lores.data })
+			.from(lores)
+			.where(eq(lores.userId, userId));
+		return toResponse(
+			filterLoreCandidates(
+				rows.map((row) => row.data),
+				userId,
+				characterId,
+				sessionId
+			)
+		);
+	},
+
+	getWorldLores: async (userId: string): Promise<LoreResponse> => {
+		const rows = await getDatabase()
+			.select({ data: lores.data })
+			.from(lores)
+			.where(and(eq(lores.category, 'World'), eq(lores.userId, userId)));
 		return toResponse(rows.map((row) => row.data));
 	},
 
-	deleteLore: async (loreId: string): Promise<void> => {
-		await getDatabase().delete(lores).where(eq(lores.loreId, loreId));
-		await deleteMemoryEmbeddings('lore', loreId);
+	deleteLore: async (loreId: string, userId: string): Promise<void> => {
+		const deletedRows = await getDatabase()
+			.delete(lores)
+			.where(and(eq(lores.loreId, loreId), eq(lores.userId, userId)))
+			.returning({ loreId: lores.loreId });
+		if (deletedRows.length > 0) await deleteMemoryEmbeddings('lore', loreId);
 	},
 
 	queryLores: async (
 		characterIds: string | string[],
+		userId: string,
+		sessionId: string,
 		queryTexts: string[],
 		filterCriteria?: FilterCriteria,
 		_whereDocument?: unknown,
-		limit = 10
+		limit = 10,
+		queryEmbeddingCache?: QueryEmbeddingCache,
+		ragTraceContext?: RagTraceContext
 	): Promise<LoreResponse> => {
-		const ids = Array.isArray(characterIds) ? characterIds : [characterIds];
-		const rows = await getDatabase().select({ data: lores.data }).from(lores);
-		const candidates = rows
-			.map((row) => row.data)
-			.filter(
-				(item) =>
-					item.category === 'World' ||
-					item.characterIds.some((id) => ids.includes(id)) ||
-					matchesCriteria(item, filterCriteria)
-			);
+		const rows = await getDatabase()
+			.select({ data: lores.data })
+			.from(lores)
+			.where(eq(lores.userId, userId));
+		const candidates = filterLoreCandidates(
+			rows.map((row) => row.data),
+			userId,
+			characterIds,
+			sessionId,
+			filterCriteria
+		);
 		if (!candidates.length) return emptyResponse();
 		const results = await searchMemoryEmbeddings(
 			queryTexts,
-			{ sourceType: 'lore', sourceIds: candidates.map((item) => item.loreId) },
-			limit
+			{ sourceType: 'lore', userId, sourceIds: candidates.map((item) => item.loreId) },
+			limit,
+			queryEmbeddingCache,
+			ragTraceContext
 		);
 		const byId = new Map(candidates.map((item) => [item.loreId, item]));
 		return toResponse(

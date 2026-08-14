@@ -1,5 +1,6 @@
 import { ChromaResponse, Metadata } from '@rita-berenice/shared/api';
 import { get_encoding } from 'tiktoken';
+import { flowLogger, serializeError } from './jsonlLogger.js';
 
 type Where = { $and?: Where[]; [key: string]: unknown };
 
@@ -27,7 +28,7 @@ export const getTokenCount = (text: string): number => {
 		if (encoding) {
 			encoding.free();
 		}
-		console.error('[QueryUtils] Token counting failed:', error);
+		flowLogger.warn('queryUtils', 'tokenCount.failed', serializeError(error));
 		return Math.ceil(text.length / 4); // Fallback estimation
 	}
 };

@@ -2,7 +2,7 @@
 
 ## Project Context
 
-This repo is `rita-berenice`, a pnpm/Turbo TypeScript monorepo for a RAG AI character chatbot.
+This repo is `rita-berenice`, a pnpm/Turbo TypeScript monorepo for a personal-use AI character and long-term-memory RAG framework.
 
 Use `pnpm`, not npm or yarn. The root `packageManager` is currently `pnpm@10.18.0`.
 
@@ -20,7 +20,7 @@ Baseline scaffolding:
 
 - `.env.example` documents required local environment variables without secrets.
 - `docs/agentic-coding.md` explains the human-facing agentic coding workflow for this repo.
-- `.github/workflows/ci.yml` runs install plus shared, server, and client builds.
+- `.github/workflows/ci.yml` runs install plus formatting, typechecking, and package builds.
 - `.github/codex/prompts/review.md` is the reusable prompt for future Codex PR review automation.
 - `.agents/skills/rag-change` provides the repeatable workflow for RAG, LLM, prompt, model, schema, and memory changes.
 - `.agents/skills/tooling-upgrade` provides the repeatable workflow for package scripts, CI, TypeScript, formatting, Docker, and dependency/tooling changes.
@@ -34,14 +34,12 @@ Baseline scaffolding:
 - Build client package: `pnpm build:client`
 - Build server package: `pnpm build:server`
 - Typecheck shared/client/server references: `pnpm typecheck`
-- Run focused tests: `pnpm test`
-- Run server tests: `pnpm test:server`
-- Run deterministic RAG retrieval evaluation: `pnpm eval:rag`
 - Start local PostgreSQL, pgvector, and SuperTokens: `pnpm db:up`
 - Generate Drizzle migrations: `pnpm db:generate`
 - Apply Drizzle migrations: `pnpm db:migrate`
 - Check formatting: `pnpm format:check`
 - Run the baseline local gate: `pnpm check`
+- Clear Vite dev optimizer cache after Windows cache lock/rename errors: `pnpm clean:vite`
 - Start the Express SSR/API host with Vite middleware: `pnpm dev`
 - Start the standalone Vite client only: `pnpm dev:client`
 - Start production server after build: `pnpm start`
@@ -60,18 +58,18 @@ Package-local commands:
 - `client` depends on `shared`.
 - `server` depends on `shared`.
 - The server is both the API server and the SSR host.
-- ChromaDB is currently used for vector retrieval and as the primary persistence layer for many app records.
+- PostgreSQL with `pgvector` is the active persistence and vector retrieval layer.
 - `server/service/llmService.ts` is the central LLM provider adapter.
 - `server/service/orchestrationService.ts` coordinates chat response generation and turn finalization.
 - `server/service/memoryEngine.ts` coordinates RAG memory recall.
 - `server/service/ragQueryService.ts` transforms user queries for retrieval.
-- `server/store/*Store.ts` modules own persistence and Chroma reconstruction logic.
+- `server/store/*Store.ts` modules own persistence and retrieval-facing data access.
 - `shared/domain`, `shared/api`, and `shared/config` are the cross-package contract surface.
 
 ## Agentic Coding Rules
 
 - Use repo-local skills when the task matches them:
-  - `rag-change` for RAG, LLM, prompt, schema, Chroma retrieval, or model behavior changes.
+  - `rag-change` for RAG, LLM, prompt, schema, retrieval, or model behavior changes.
   - `tooling-upgrade` for scripts, CI, TypeScript, formatting, Docker, dependency, or workspace changes.
 - Read the relevant package manifest and existing local patterns before editing.
 - Keep changes scoped to the smallest package/module that owns the behavior.
@@ -79,6 +77,7 @@ Package-local commands:
 - Do not make broad dependency upgrades unless explicitly requested.
 - Do not read, print, or modify `.env` files or secret-bearing files. Use `.env.example` for documentation.
 - Do not commit generated runtime data, logs, local caches, or build output.
+- Ask before running destructive database operations.
 - Preserve existing user data shape unless the task explicitly includes a migration plan.
 - Prefer shared Zod/runtime contracts for API boundary changes instead of only TypeScript types.
 - For LLM output changes, keep schema validation and fallback behavior explicit.
@@ -98,13 +97,6 @@ Run the narrowest relevant check first:
 
 If a command cannot be run because required environment variables or services are unavailable, report that clearly and explain what was still verified.
 
-For AI/RAG behavior changes, prefer focused tests or fixtures over manual inspection when possible:
-
-- Prompt assembly snapshots.
-- Structured-output parsing and repair tests.
-- Retriever ranking tests with fixed query/result fixtures.
-- Mocked provider tests for LLM adapter behavior.
-
 ## Frontend Conventions
 
 - Use existing MUI, Emotion, and local glass UI patterns.
@@ -121,6 +113,11 @@ For AI/RAG behavior changes, prefer focused tests or fixtures over manual inspec
 - Be careful with token budgeting: distinguish model context window from maximum output tokens.
 - Avoid replacing HTTP compression with custom payload wrapping unless there is a clear need.
 - Prefer structured logging over ad hoc console output when touching observability.
+- Character exposure is controlled by `CharacterInfo.visibility`
+  (`CHARACTER_VISIBILITY.PRIVATE`/`PUBLIC` in `shared/config/constants.ts`). Server-side
+  filtering (`filterCharacterResponseByViewer`/`assertCharacterVisibleToUser` in
+  `server/store/characterStore.ts`) is authoritative; the client mirrors it as
+  defense-in-depth.
 
 ## Documentation Expectations
 

@@ -14,7 +14,7 @@ export const GlassMetallicIconButton: ComponentType<GlassMetallicIconButtonProps
 	IconButton,
 	{ shouldForwardProp: (prop) => prop !== 'colorVariant' && prop !== 'glowColorVariant' }
 )<GlassMetallicIconButtonProps>(({ theme, colorVariant = 'primary', glowColorVariant }) => {
-	const baseGlassStyle = getGlassEffect(theme.palette.mode);
+	const baseGlassStyle = getGlassEffect(theme.palette.mode, { noGlow: true });
 
 	// Determine colors for the BORDER (based on colorVariant)
 	let borderColors;

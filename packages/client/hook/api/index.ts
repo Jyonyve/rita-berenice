@@ -12,3 +12,5 @@ export * from './useTermApi.js';
 export * from './useUserApi.js';
 export * from './useCredentialApi.js';
 export * from './useHistoryApi.js';
+export * from './useLlmApi.js';
+export * from './useDocumentApi.js';

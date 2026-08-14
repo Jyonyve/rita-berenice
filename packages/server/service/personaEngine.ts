@@ -3,25 +3,33 @@
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 
 import {
-	buildJsonCorrectionPrompt,
+	buildContradictedResponseRevisionPrompt,
 	buildLongTermMemoryPrompt,
+	buildPersonaResponseContract,
 	buildStaticSystemPrompt,
 } from '../util/templateUtils.js';
 import { buildChatCompletion } from '../util/llmUtils.js';
 import { createPersonaResponseSchema } from '../util/schemaUtils.js';
-import { logFlow } from '../util/jsonlLogger.js';
+import { flowLogger } from '../util/jsonlLogger.js';
 import { parseEntriesToConversation } from '../util/chatParseUtils.js';
 import { StructuredOutputValidationError } from '../util/structuredOutputUtils.js';
 import { PartialJsonStringDecoder } from '../util/partialJsonUtils.js';
 import { MemoryResponse, PersonaResponse } from '@rita-berenice/shared/api';
-import {
-	CharacterInfo,
-	ProfileInfo,
-	AiModelInfo,
-	DEFAULT_EXTRACTION_MODEL,
-	ChatTurn,
-} from '@rita-berenice/shared/domain';
+import { CharacterInfo, ProfileInfo, AiModelInfo, ChatTurn } from '@rita-berenice/shared/domain';
 import { llmService } from './llmService.js';
+
+export type PersonaGroundingDecision =
+	| 'not_applicable'
+	| 'supported'
+	| 'contradicted'
+	| 'uncertain';
+
+type PersonaGenerationOptions = {
+	signal?: AbortSignal;
+	adultContentEnabled?: boolean;
+	onDelta?: (delta: string) => void;
+	onGroundingDecision?: (decision: PersonaGroundingDecision) => void;
+};
 
 export const personaEngine = {
 	/**
@@ -38,100 +46,149 @@ export const personaEngine = {
 		profileInfo: ProfileInfo,
 		userConversation: string,
 		aiModelInfo: AiModelInfo,
-		options?: { signal?: AbortSignal; isScene?: boolean; onDelta?: (delta: string) => void }
+		options?: PersonaGenerationOptions
 	): Promise<PersonaResponse> {
-		console.log(
-			`[personaEngine] Generating response for user ${profileInfo.name} in lang: ${recalledMemories.langCode}...`
-		);
 		const { langCode, shortTermHistory } = recalledMemories;
 		const { showName: charName } = characterInfo;
 		const { showName: userName } = profileInfo;
+		const logContext = {
+			userId: profileInfo.userId,
+			characterId: characterInfo.characterId,
+			sessionId: profileInfo.sessionId,
+			model: aiModelInfo.model,
+			langCode,
+			adultContentEnabled: Boolean(options?.adultContentEnabled),
+			streaming: Boolean(options?.onDelta),
+		};
 
-		// --- 1. Assemble Prompt Components ---
-
-		// 1a. Static System Prompt (Core Rules & Persona)
-		const staticSystemPrompt = buildStaticSystemPrompt(
+		const messages = buildPersonaMessages(
+			recalledMemories,
 			characterInfo,
 			profileInfo,
-			langCode,
-			options?.isScene
+			userConversation,
+			options?.adultContentEnabled
 		);
-		// 1b. Long-Term Memory Prompt (RAG Content)
-		// CORRECTION: Pass all necessary arguments for complete formatting.
-		const longTermMemoryContent = buildLongTermMemoryPrompt(recalledMemories, langCode);
-
-		// 1c. Short-Term History Messages (Verbatim recent chat)
-		// REFACTOR: Use the dedicated builder function for cleanliness.
-		const shortTermMessages = buildShortTermHistoryMessages(shortTermHistory);
-
-		// --- 2. Assemble Final Messages Array ---
-		// This structure is optimal and correct.
-		const messages: ChatCompletionMessageParam[] = [
-			// First: Core rules and persona
-			buildChatCompletion('system', staticSystemPrompt),
-			// Second (optional): Background knowledge from RAG
-			...(longTermMemoryContent ? [buildChatCompletion('system', longTermMemoryContent)] : []),
-			// Third: Recent conversation verbatim
-			...shortTermMessages,
-			// Last: The current user input
-			buildChatCompletion('user', userConversation, profileInfo.showName),
-		];
 
 		const personaSchema = createPersonaResponseSchema(charName, userName, langCode);
-		logFlow('personaEngine', 'createPersonaResponseSchema', { personaSchema });
+		flowLogger.info('personaEngine', 'generateResponse.start', {
+			...logContext,
+			messageCount: messages.length,
+			shortTermCount: shortTermHistory.length,
+			longTermCount: recalledMemories.longTermHistory.length,
+			loreCount: recalledMemories.relevantLore.length,
+			historyCount: recalledMemories.relevantHistory.length,
+			hasFactualRecap: Boolean(recalledMemories.factualRecapSummary),
+			hasRelationshipRecap: Boolean(recalledMemories.relationshipRecapSummary),
+		});
 
 		// --- 2. LLM Call and one structured-output repair attempt ---
 		try {
-			const rawLlmResponse = options?.onDelta
+			let response = options?.onDelta
 				? await (() => {
-						const decoder = new PartialJsonStringDecoder('response');
-						return llmService.streamLlm(
-							messages,
-							aiModelInfo,
-							profileInfo.userId,
-							(rawDelta) => {
-								const responseDelta = decoder.push(rawDelta);
-								if (responseDelta) options.onDelta?.(responseDelta);
-							},
-							options,
-							personaSchema
-						);
+						const responseDecoder = new PartialJsonStringDecoder('response');
+						const groundingDecoder = new PartialJsonStringDecoder('groundingDecision');
+						let streamedDecision = '';
+						let bufferedResponse = '';
+						return llmService
+							.streamStructuredLlm(
+								messages,
+								aiModelInfo,
+								profileInfo.userId,
+								(rawDelta) => {
+									streamedDecision += groundingDecoder.push(rawDelta);
+									bufferedResponse += responseDecoder.push(rawDelta);
+
+									if (!isPersonaGroundingDecision(streamedDecision)) return;
+									if (streamedDecision === 'contradicted') {
+										bufferedResponse = '';
+										return;
+									}
+									if (bufferedResponse) {
+										options.onDelta?.(bufferedResponse);
+										bufferedResponse = '';
+									}
+								},
+								personaSchema,
+								options
+							)
+							.then((streamedResponse) => {
+								if (streamedResponse.groundingDecision !== 'contradicted' && bufferedResponse) {
+									options.onDelta?.(bufferedResponse);
+								}
+								return streamedResponse;
+							});
 					})()
-				: await llmService.invokeLlm(messages, aiModelInfo, profileInfo.userId, options, personaSchema);
-			return JSON.parse(rawLlmResponse) as PersonaResponse;
+				: await llmService.invokeStructuredLlm(
+						messages,
+						aiModelInfo,
+						profileInfo.userId,
+						personaSchema,
+						options
+					);
+
+			if (response.groundingDecision === 'contradicted') {
+				flowLogger.warn('personaEngine', 'groundingRevision.start', {
+					...logContext,
+					rejectedResponseLength: response.response.length,
+				});
+				response = await reviseContradictedResponse(
+					messages,
+					response.response,
+					charName,
+					userName,
+					langCode,
+					aiModelInfo,
+					profileInfo.userId,
+					personaSchema,
+					options
+				);
+				flowLogger.info('personaEngine', 'groundingRevision.complete', {
+					...logContext,
+					groundingDecision: response.groundingDecision,
+					responseLength: response.response.length,
+				});
+			}
+			flowLogger.info('personaEngine', 'generateResponse.complete', {
+				...logContext,
+				groundingDecision: response.groundingDecision,
+				emotion: response.emotion,
+				responseLength: response.response.length,
+			});
+			options?.onGroundingDecision?.(response.groundingDecision);
+			return { response: response.response, emotion: response.emotion };
 		} catch (parsingError: unknown) {
 			if (!(parsingError instanceof StructuredOutputValidationError)) {
 				throw parsingError;
 			}
 
-			console.warn(`[personaEngine] Initial response failed parsing. Attempting self-correction.`);
-			logFlow('personaEngine', 'correction.start', { reason: parsingError.message });
+			flowLogger.warn('personaEngine', 'structuredOutput.repairStart', {
+				...logContext,
+				reason: parsingError.message,
+				rawOutputLength: parsingError.rawOutput.length,
+			});
 
 			try {
-				const requiredSchema = '{"response": "string", "emotion": "string"}';
-				const correctionPrompt = buildJsonCorrectionPrompt(
-					parsingError.rawOutput,
-					`The JSON was malformed. Reason: ${parsingError.message}.`,
-					requiredSchema
-				);
-				const correctionMessages: ChatCompletionMessageParam[] = [
-					buildChatCompletion(
-						'user',
-						`You are an expert at fixing malformed JSON. Please correct the following text to match the required schema. Your output must be ONLY the raw JSON object, with no markdown fences or other text.\n\n${correctionPrompt}`
-					),
-				];
-
-				const correctedLlmResponse = await llmService.invokeLlm(
-					correctionMessages,
-					DEFAULT_EXTRACTION_MODEL,
+				const repairedResponse = await llmService.repairStructuredLlmOutput(
+					parsingError,
 					profileInfo.userId,
-					options,
-					personaSchema
+					personaSchema,
+					{
+						requiredSchema:
+							'{"groundingDecision": "not_applicable | supported | contradicted | uncertain", "response": "string", "emotion": "string"}',
+						signal: options?.signal,
+					}
 				);
-
-				return JSON.parse(correctedLlmResponse) as PersonaResponse;
+				flowLogger.info('personaEngine', 'structuredOutput.repairComplete', {
+					...logContext,
+					groundingDecision: repairedResponse.groundingDecision,
+					emotion: repairedResponse.emotion,
+					responseLength: repairedResponse.response.length,
+				});
+				options?.onGroundingDecision?.(repairedResponse.groundingDecision);
+				return { response: repairedResponse.response, emotion: repairedResponse.emotion };
 			} catch (correctionError: unknown) {
-				console.error('[personaEngine] The self-correction attempt also failed.', {
+				flowLogger.error('personaEngine', 'structuredOutput.repairFailed', {
+					...logContext,
 					originalError: parsingError.message,
 					correctionError:
 						correctionError instanceof Error ? correctionError.message : 'Unknown correction error',
@@ -140,6 +197,83 @@ export const personaEngine = {
 			}
 		}
 	},
+};
+
+const isPersonaGroundingDecision = (value: string): value is PersonaGroundingDecision =>
+	['not_applicable', 'supported', 'contradicted', 'uncertain'].includes(value);
+
+const reviseContradictedResponse = async (
+	messages: ChatCompletionMessageParam[],
+	rejectedResponse: string,
+	characterName: string,
+	userName: string,
+	langCode: MemoryResponse['langCode'],
+	aiModelInfo: AiModelInfo,
+	userId: string,
+	personaSchema: ReturnType<typeof createPersonaResponseSchema>,
+	options?: PersonaGenerationOptions
+) => {
+	const revisionMessages: ChatCompletionMessageParam[] = [
+		...messages,
+		buildChatCompletion(
+			'system',
+			buildContradictedResponseRevisionPrompt(characterName, userName, langCode)
+		),
+		buildChatCompletion('user', `Rejected draft:\n${rejectedResponse}`),
+	];
+
+	if (!options?.onDelta) {
+		return llmService.invokeStructuredLlm(
+			revisionMessages,
+			aiModelInfo,
+			userId,
+			personaSchema,
+			options
+		);
+	}
+
+	const decoder = new PartialJsonStringDecoder('response');
+	return llmService.streamStructuredLlm(
+		revisionMessages,
+		aiModelInfo,
+		userId,
+		(rawDelta) => {
+			const responseDelta = decoder.push(rawDelta);
+			if (responseDelta) options.onDelta?.(responseDelta);
+		},
+		personaSchema,
+		options
+	);
+};
+
+export const buildPersonaMessages = (
+	recalledMemories: MemoryResponse,
+	characterInfo: CharacterInfo,
+	profileInfo: ProfileInfo,
+	userConversation: string,
+	adultContentEnabled?: boolean
+): ChatCompletionMessageParam[] => {
+	const { langCode, shortTermHistory } = recalledMemories;
+	const staticSystemPrompt = buildStaticSystemPrompt(
+		characterInfo,
+		profileInfo,
+		langCode,
+		adultContentEnabled
+	);
+	const longTermMemoryContent = buildLongTermMemoryPrompt(recalledMemories, langCode);
+	const responseContract = buildPersonaResponseContract(
+		characterInfo.showName,
+		profileInfo.showName,
+		langCode
+	);
+
+	return [
+		buildChatCompletion('system', staticSystemPrompt),
+		...(longTermMemoryContent ? [buildChatCompletion('system', longTermMemoryContent)] : []),
+		buildChatCompletion('system', responseContract),
+		...buildShortTermHistoryMessages(shortTermHistory),
+		buildChatCompletion('user', userConversation, profileInfo.showName),
+	];
 };
 
 const buildShortTermHistoryMessages = (

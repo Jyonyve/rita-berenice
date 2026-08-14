@@ -4,6 +4,7 @@ import { ResourceType } from '../db/resource.type.js';
 
 import { ApiError } from '@rita-berenice/shared/domain';
 import { convertArrayToString, toKebabCase } from '@rita-berenice/shared/util';
+import { flowLogger } from './jsonlLogger.js';
 
 /** Router part */
 export type CustomValidationRule = {
@@ -21,6 +22,22 @@ export const asyncHandler = (
 	return (req: Request, res: Response, next: NextFunction) => {
 		Promise.resolve(fn(req, res, next)).catch(next);
 	};
+};
+
+export const apiRequestLogger = (req: Request, res: Response, next: NextFunction): void => {
+	const startedAt = performance.now();
+
+	res.on('finish', () => {
+		flowLogger.info('api', 'request.complete', {
+			method: req.method,
+			path: req.path,
+			statusCode: res.statusCode,
+			durationMs: Math.round(performance.now() - startedAt),
+			contentLength: res.getHeader('content-length') ?? null,
+		});
+	});
+
+	next();
 };
 
 export const validateServiceId = (serviceId: string, collection: ResourceType) => {

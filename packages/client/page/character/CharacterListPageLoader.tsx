@@ -6,11 +6,11 @@ import { GlassCircularProgress } from '../../layout/component/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { useLocation } from 'react-router';
 import { useAuth } from '../../provider/AuthProvider.tsx';
-import { LANG_KEYS } from '@rita-berenice/shared/config';
+import { CHARACTER_VISIBILITY, LANG_KEYS } from '@rita-berenice/shared/config';
 
 export function CharacterListPageLoader() {
 	const { state } = useLocation();
-	const { userId, isAdmin } = useAuth();
+	const { userId } = useAuth();
 	const { getAllCharacters, getCharactersByUserId } = useCharacterApi();
 
 	const isMine = !!state?.isMine;
@@ -36,9 +36,16 @@ export function CharacterListPageLoader() {
 		);
 	}
 
-	const filteredCharacter = isAdmin
-		? characterRes?.characterInfos
-		: characterRes?.characterInfos.filter((char) => char.userId !== 'sunfish');
+	// Defense-in-depth alongside server-side filtering: hide 'private' characters
+	// that the current user does not own.
+	const filteredCharacter = characterRes?.characterInfos.filter(
+		(char) => char.userId === userId || char.visibility !== CHARACTER_VISIBILITY.PRIVATE
+	);
 
-	return <CharacterListPage characterInfos={filteredCharacter || []} />;
+	return (
+		<CharacterListPage
+			characterInfos={filteredCharacter || []}
+			characterPortraits={characterRes?.characterPortraits ?? {}}
+		/>
+	);
 }

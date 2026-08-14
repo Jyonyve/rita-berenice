@@ -7,7 +7,7 @@ import { getLangText } from '../../util/translateUtils.js';
 import { ProfileForm } from './ProfileForm.js';
 import { HistoryPreviewList } from './HistoryPreviewList.jsx';
 import { LANG_KEYS } from '@rita-berenice/shared/config';
-import { ProfileCdo } from '@rita-berenice/shared/domain';
+import { ProfileCdo, SessionContentPolicy } from '@rita-berenice/shared/domain';
 
 interface TabPanelProps {
 	children?: React.ReactNode;
@@ -30,7 +30,7 @@ const TabPanel: FC<TabPanelProps> = ({ children, value, index, ...other }) => (
 export const ProfileHistoryTabs: FC<{
 	userId: string;
 	characterId: string;
-	onSubmit: (profileData: ProfileCdo) => Promise<void>;
+	onSubmit: (profileData: ProfileCdo, contentPolicy?: SessionContentPolicy) => Promise<void>;
 	onHistory: (historyId: string) => void;
 }> = ({ userId, characterId, onSubmit, onHistory }) => {
 	const [tabValue, setTabValue] = useState(0);
@@ -44,7 +44,7 @@ export const ProfileHistoryTabs: FC<{
 			<Tabs
 				value={tabValue}
 				onChange={handleTabChange}
-				aria-label="profile card tabs"
+				aria-label={getLangText(LANG_KEYS.PROFILE_CARD_TABS)}
 				variant="fullWidth"
 				sx={{ borderBottom: 1, borderColor: 'rgba(255, 255, 255, 0.22)' }}
 			>

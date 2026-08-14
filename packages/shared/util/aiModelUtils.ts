@@ -14,10 +14,13 @@ const PLATFORM_LOCAL = 'local';
 const DEFAULT_TEMPERATURE = 0.85;
 const DEFAULT_MAX_TOKEN = 1500;
 
+const getDefaultTemperature = (modelName: AllModelNames): number | undefined =>
+	MODEL_LIMITS_INFO[modelName]?.supportsTemperature === false ? undefined : DEFAULT_TEMPERATURE;
+
 /**
  * Gets the AiModelInfo structure for a given model name based on supportAiModelInfo.
  * Does NOT include API keys. This is purely for identifying the model's details.
- * @param modelName - The full name of the model (e.g., 'openai/gpt-4o', 'google/gemini-pro:free', 'ollama/llama3').
+ * @param modelName - The configured model name (for example, 'openai/gpt-5.6-terra' or 'gemini-3.5-flash').
  * @returns AiModelInfo structure without API key, or a default free model if not found.
  */
 export const getAiModelInfo = (modelName: AllModelNames): AiModelInfo => {
@@ -30,8 +33,8 @@ export const getAiModelInfo = (modelName: AllModelNames): AiModelInfo => {
 
 		// Get the appropriate maxTokens
 		const getMaxTokens = (): number => {
-			if (modelLimits?.maxOutputTokens) {
-				return modelLimits.maxOutputTokens;
+			if (modelLimits?.recommendedOutputTokens) {
+				return modelLimits.recommendedOutputTokens;
 			}
 			return DEFAULT_MAX_TOKEN;
 		};
@@ -50,7 +53,7 @@ export const getAiModelInfo = (modelName: AllModelNames): AiModelInfo => {
 						provider: providerPart,
 						model: modelName,
 						maxTokens: getMaxTokens(),
-						temperature: DEFAULT_TEMPERATURE,
+						temperature: getDefaultTemperature(modelName),
 					} as AiModelInfo;
 				}
 			}
@@ -68,7 +71,7 @@ export const getAiModelInfo = (modelName: AllModelNames): AiModelInfo => {
 						provider: providerKey,
 						model: modelName,
 						maxTokens: getMaxTokens(),
-						temperature: DEFAULT_TEMPERATURE,
+						temperature: getDefaultTemperature(modelName),
 					} as AiModelInfo;
 				}
 			}

@@ -3,6 +3,7 @@
 // ==================== File Paths ====================
 export const RUNTIME_CHARACTER_IMAGE_DIR = '/assets/character' as const;
 export const RUNTIME_USER_IMAGE_DIR = '/assets/user' as const;
+export const RUNTIME_PROFILE_IMAGE_DIR = '/assets/profile' as const;
 export const DEFAULT_USER_AVATAR = '/assets/user/new_user.webp' as const;
 export const DEFAULT_CHARACTER_AVATAR = '/assets/character/new_character.webp' as const;
 export const BASE_CHARACTER_IMAGE_DIR = `public${RUNTIME_CHARACTER_IMAGE_DIR}` as const;
@@ -72,12 +73,28 @@ export const IMAGE_PROCESSING_CONFIG = {
 		aspectRatio: ASPECT_RATIO_STRINGS.USER,
 	},
 	CHARACTER_PORTRAIT: {
-		format: IMAGE_FORMATS.AVIF as ImageFormat,
+		format: IMAGE_FORMATS.WEBP as ImageFormat,
 		aspectRatio: ASPECT_RATIO_STRINGS.CHARACTER,
 		baseSize: 700,
+		dimensions: { width: 500, height: 700 },
+	},
+	CHARACTER_AVATAR: {
+		format: IMAGE_FORMATS.WEBP as ImageFormat,
+		dimensions: { width: 512, height: 512 },
+		aspectRatio: ASPECT_RATIO_STRINGS.USER,
+	},
+	PROFILE_PORTRAIT: {
+		format: IMAGE_FORMATS.WEBP as ImageFormat,
+		aspectRatio: ASPECT_RATIO_STRINGS.CHARACTER,
+		dimensions: { width: 500, height: 700 },
+	},
+	PROFILE_AVATAR: {
+		format: IMAGE_FORMATS.WEBP as ImageFormat,
+		dimensions: { width: 512, height: 512 },
+		aspectRatio: ASPECT_RATIO_STRINGS.USER,
 	},
 	LORE_IMAGE: {
-		format: IMAGE_FORMATS.AVIF as ImageFormat,
+		format: IMAGE_FORMATS.WEBP as ImageFormat,
 		aspectRatio: ASPECT_RATIO_STRINGS.LORE,
 		baseSize: 600,
 	},
@@ -86,18 +103,15 @@ export const IMAGE_PROCESSING_CONFIG = {
 // ==================== Canvas Configuration ====================
 /**
  * Canvas output configuration for client-side cropping
- * - Format: Always WebP (best browser support for encoding)
- * - Quality: 1.0 (100%) for maximum quality preservation
+ * - Format: PNG for a consistently lossless browser-to-server intermediate
+ * - Quality: 1.0 (ignored by PNG encoders, retained for the canvas API)
  *
- * Note: Quality range is 0.0-1.0 for canvas.toBlob()
- * - 1.0 (100%): Maximum quality, no compression artifacts
- *
- * The WebP file will then be converted to AVIF (lossless) on the server,
- * preserving the maximum quality from the client-side crop.
+ * The bounded PNG is decoded by the server and stored as lossless WebP. Using
+ * PNG here avoids browser-specific WebP quality behavior, especially on iOS.
  */
 export const CANVAS_OUTPUT_CONFIG = {
-	format: IMAGE_FORMATS.WEBP as ImageFormat,
-	quality: 1.0, // 100% - maximum quality, no quality loss
+	format: IMAGE_FORMATS.PNG as ImageFormat,
+	quality: 1.0,
 } as const;
 
 // ==================== Helper Functions ====================

@@ -5,8 +5,14 @@ import { Card, styled, PaperProps, CardContent, CardContentProps } from '@mui/ma
 import { getGlassEffect } from '../../../style/glassEffect.js';
 import { HoverContext } from '../index.js';
 
-const StyledGlassContainer = styled(Card)(({ theme }) => ({
-	...getGlassEffect(theme.palette.mode),
+interface StyledGlassContainerProps {
+	noGlow?: boolean;
+}
+
+const StyledGlassContainer = styled(Card, {
+	shouldForwardProp: (prop) => prop !== 'noGlow',
+})<StyledGlassContainerProps>(({ theme, noGlow = false }) => ({
+	...getGlassEffect(theme.palette.mode, { noGlow }),
 	backgroundColor: 'transparent',
 	borderRadius: Number(theme.shape.borderRadius) * 2,
 	display: 'flex',
@@ -16,14 +22,16 @@ const StyledGlassContainer = styled(Card)(({ theme }) => ({
 
 interface GlassCardProps extends PaperProps {
 	contentProps?: CardContentProps;
+	noGlow?: boolean;
 }
 
-export const GlassCard: FC<GlassCardProps> = ({ children, sx, contentProps, ...rest }) => {
+export const GlassCard: FC<GlassCardProps> = ({ children, sx, contentProps, noGlow, ...rest }) => {
 	// This internal state management is perfectly correct.
 	const [isHovering, setIsHovering] = useState(false);
 
 	return (
 		<StyledGlassContainer
+			noGlow={noGlow}
 			elevation={4}
 			{...rest}
 			onMouseEnter={() => setIsHovering(true)}

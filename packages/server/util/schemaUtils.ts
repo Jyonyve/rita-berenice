@@ -1,5 +1,4 @@
-import { curatedEmotionKeywords } from '@rita-berenice/shared/config';
-import { SupportAiModelList } from '@rita-berenice/shared/domain';
+import { curatedEmotionKeywords, REQUEST_CHARACTER_LIMIT } from '@rita-berenice/shared/config';
 import { convertArrayToString } from '@rita-berenice/shared/util';
 import z from 'zod';
 
@@ -45,6 +44,7 @@ export const CharacterInfoSchema = z
 		gender: z.string().min(1),
 		title: z.string(),
 		description: z.string(),
+		worldIntroduction: z.string().default(''),
 		instruction: z.string(),
 		worldLoreId: z.string(),
 		firstMessage: z.string(),
@@ -79,14 +79,19 @@ export const ReceiveBotResponseBodySchema = z
 		sessionId: z.string().min(1),
 		sequence: z.number().int().nonnegative(),
 		entries: z.array(chatEntrySchema).min(1),
-		modelName: z
-			.string()
-			.refine((modelName) => SupportAiModelList.includes(modelName as never), {
-				message: 'Unsupported AI model.',
-			}),
-		isScene: z.boolean().optional(),
+		modelName: z.string().min(1),
 	})
-	.strict();
+	.strict()
+	.superRefine((body, context) => {
+		const requestLength = body.entries.reduce((total, entry) => total + entry.prompt.length, 0);
+		if (requestLength > REQUEST_CHARACTER_LIMIT) {
+			context.addIssue({
+				code: 'custom',
+				path: ['entries'],
+				message: `Request must not exceed ${REQUEST_CHARACTER_LIMIT} characters.`,
+			});
+		}
+	});
 
 export const ChatTurnCdoSchema = z
 	.object({
@@ -151,19 +156,26 @@ export const createPersonaResponseSchema = (
 ) =>
 	z
 		.object({
+			groundingDecision: z
+				.enum(['not_applicable', 'supported', 'contradicted', 'uncertain'])
+				.describe(
+					langCode === 'kor'
+						? `현재 사용자 입력의 사실 전제를 기억 근거와 먼저 비교한다. 단순 요청은 not_applicable, 근거와 일치하면 supported, 근거와 충돌하면 contradicted, 판단 근거가 없거나 지시 대상이 모호하면 uncertain.`
+						: `Before writing the response, compare factual premises in the current user input with memory evidence. Use not_applicable for ordinary requests, supported when evidence agrees, contradicted when evidence conflicts, and uncertain when evidence is absent or the reference is ambiguous.`
+				),
 			response: z
 				.string()
 				.describe(
 					langCode === 'kor'
-						? `${charName}의 3인칭 서술. 1000-2000자. 서술은 '~다'로 끝남. 문단 변경, 대화시 줄바꿈(\\n) 사용.`
-						: `Third-person narration for ${charName}. 1000-2000 chars. Use \\n between narration/dialogue/paragraph.`
+						? `${charName}의 3인칭 서술. 가장 앞선 직접 대화 근거의 화자, 행위자, 대상, 행위 방향을 보존한다. groundingDecision이 contradicted이면 거짓 전제를 명확히 부정하고 뒤에서 다시 인정하지 않는다. uncertain이면 설정이나 기록을 언급하지 않고 인물답게 짧게 확인한다. 1000-2000자. 서술은 '~다'로 끝남. 문단 변경, 대화시 줄바꿈(\\n) 사용.`
+						: `Third-person narration for ${charName}. Preserve the speaker, actor, recipient, and action direction from the earliest direct conversation evidence. If groundingDecision is contradicted, explicitly deny the false premise and never admit it later. If uncertain, ask briefly in character without mentioning settings or records. 1000-2000 chars. Use \\n between narration/dialogue/paragraph.`
 				),
 			emotion: z.enum(emotionList).describe('Single emotion word from the provided list.'),
 		})
 		.describe(
 			langCode === 'kor'
-				? `${charName} 캐릭터의 응답 구조. 3인칭 서술과 감정을 포함한 JSON 객체.`
-				: `Response structure for character ${charName}. JSON object containing third-person narration and emotion.`
+				? `${charName} 캐릭터의 응답 구조. 먼저 근거 판단을 확정한 뒤 3인칭 서술과 감정을 생성하는 JSON 객체.`
+				: `Response structure for character ${charName}. JSON object that commits to a grounding decision before generating third-person narration and emotion.`
 		);
 
 /**
@@ -563,6 +575,16 @@ export const createNerSchema = () =>
 		.describe(
 			'Named Entity Recognition schema: Structured extraction of proper nouns from text for terminology management and glossary building.'
 		);
+
+export const createGlossaryExtractionSchema = () =>
+	z.object({
+		terms: z.array(
+			z.object({
+				koreanTerm: z.string().min(1).describe('The exact Korean source term.'),
+				englishTerm: z.string().min(1).describe('The concise canonical English equivalent.'),
+			})
+		),
+	});
 
 export const RagFilterSchema = z
 	.object({

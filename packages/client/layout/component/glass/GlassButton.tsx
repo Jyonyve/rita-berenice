@@ -12,7 +12,7 @@ interface GlassButtonProps extends ButtonProps {
 export const GlassButton: ComponentType<GlassButtonProps> = styled(Button, {
 	shouldForwardProp: (prop) => prop !== 'colorVariant',
 })<GlassButtonProps>(({ theme, colorVariant = 'default' }) => {
-	const baseGlassStyle = getGlassEffect(theme.palette.mode);
+	const baseGlassStyle = getGlassEffect(theme.palette.mode, { noGlow: true });
 	const glowColor = getColor(theme, colorVariant);
 
 	return {

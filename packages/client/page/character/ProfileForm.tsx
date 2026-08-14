@@ -15,16 +15,34 @@ import {
 	Select,
 	Stack,
 	CardActions,
+	FormControlLabel,
+	Avatar,
 } from '@mui/material';
-import { FC, useEffect, useState } from 'react';
+import CloudUpload from '@mui/icons-material/CloudUpload';
+import { ChangeEvent, FC, useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { GlassButton, SolidMetallicButton } from '../../layout/component/index.js';
+import { GlassButton, ImageCropModal, SolidMetallicButton } from '../../layout/component/index.js';
+import { AdultSwitch } from '../../layout/component/AdultSwitch.js';
 import { innerSpacing } from '../../style/index.js';
 import { getGenderSelectLabel, getLangText } from '../../util/translateUtils.js';
 import { ProfilePreviewList } from './ProfilePreviewList.jsx';
 import { useResponsive } from '../../hook/useResponsive.js';
-import { LANG_KEYS, REQUEST_CHARACTER_LIMIT } from '@rita-berenice/shared/config';
-import { ProfileInfo, ProfileCdo } from '@rita-berenice/shared/domain';
+import {
+	getImageInputAccept,
+	LANG_KEYS,
+	LIMIT_5MB,
+	REQUEST_CHARACTER_LIMIT,
+	SUPPORTED_IMAGE_MIMETYPES,
+} from '@rita-berenice/shared/config';
+import { ProfileInfo, ProfileCdo, SessionContentPolicy } from '@rita-berenice/shared/domain';
+import { useProfileApi } from '../../hook/api/useProfileApi.js';
+import { useToast } from '../../provider/ToastProvider.js';
+import { cleanupBlobUrl, processCroppedImage } from '../../util/cropImageUtils.js';
+import {
+	getCharacterCropAspect,
+	getCharacterCropOutputSize,
+	type CharacterCropStage,
+} from './characterImageCrop.js';
 
 const modalStyle = {
 	position: 'absolute',
@@ -74,9 +92,14 @@ export interface ProfileFormProps {
 	userId: string;
 	mode: 'create' | 'edit';
 	profile?: ProfileInfo; // Required for edit mode
+	portraitUrl?: string;
+	avatarUrl?: string;
 	open?: boolean; // For modal mode (edit)
 	onClose?: () => void; // For modal mode (edit)
-	onSubmit: (profileData: ProfileCdo | ProfileInfo) => Promise<void>;
+	onSubmit: (
+		profileData: ProfileCdo | ProfileInfo,
+		contentPolicy?: SessionContentPolicy
+	) => Promise<void>;
 	showTemplateSelector?: boolean; // Only for create mode
 }
 
@@ -84,6 +107,8 @@ export const ProfileForm: FC<ProfileFormProps> = ({
 	userId,
 	mode,
 	profile,
+	portraitUrl,
+	avatarUrl,
 	open = true, // Default true for inline usage
 	onClose,
 	onSubmit,
@@ -97,12 +122,35 @@ export const ProfileForm: FC<ProfileFormProps> = ({
 	} = useForm<ProfileCdo>({ defaultValues: getInitialFormData(userId, profile), mode: 'onBlur' });
 
 	const { isSmallScreen } = useResponsive();
+	const { addToast } = useToast();
+	const { uploadProfileImage } = useProfileApi();
 	const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
 	const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+	const [contentPolicy, setContentPolicy] = useState<SessionContentPolicy>('general');
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	const [cropModalOpen, setCropModalOpen] = useState(false);
+	const [cropStage, setCropStage] = useState<CharacterCropStage>('portrait');
+	const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
+	const [pendingPortraitCrop, setPendingPortraitCrop] = useState<{
+		file: File;
+		previewUrl: string;
+	} | null>(null);
+	const [modalImageUrl, setModalImageUrl] = useState('');
+	const [localPortraitUrl, setLocalPortraitUrl] = useState(portraitUrl);
+	const [localAvatarUrl, setLocalAvatarUrl] = useState(avatarUrl);
+	const [isUploadingImage, setIsUploadingImage] = useState(false);
 
 	useEffect(() => {
 		reset(getInitialFormData(userId, profile));
 	}, [userId, profile, reset]);
+
+	useEffect(() => {
+		setLocalPortraitUrl(portraitUrl);
+		setLocalAvatarUrl(avatarUrl);
+	}, [portraitUrl, avatarUrl]);
+
+	useEffect(() => () => cleanupBlobUrl(localPortraitUrl), [localPortraitUrl]);
+	useEffect(() => () => cleanupBlobUrl(localAvatarUrl), [localAvatarUrl]);
 
 	const handleOpenTemplateModal = () => setIsTemplateModalOpen(true);
 	const handleCloseTemplateModal = () => setIsTemplateModalOpen(false);
@@ -117,7 +165,83 @@ export const ProfileForm: FC<ProfileFormProps> = ({
 	};
 
 	const onFormSubmit = (data: ProfileCdo) => {
-		onSubmit(data);
+		onSubmit(data, mode === 'create' ? contentPolicy : undefined);
+	};
+
+	const resetCropFlow = () => {
+		cleanupBlobUrl(pendingPortraitCrop?.previewUrl);
+		setPendingImageFile(null);
+		setPendingPortraitCrop(null);
+		setModalImageUrl('');
+		setCropModalOpen(false);
+		setCropStage('portrait');
+		if (fileInputRef.current) fileInputRef.current.value = '';
+	};
+
+	const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
+		const file = event.target.files?.[0];
+		if (!file) return;
+		if (!SUPPORTED_IMAGE_MIMETYPES.includes(file.type as never)) {
+			addToast('Unsupported image type.', 'error');
+			return;
+		}
+		if (file.size > LIMIT_5MB) {
+			addToast('Image must be 5 MB or smaller.', 'error');
+			return;
+		}
+
+		const reader = new FileReader();
+		reader.onload = ({ target }) => {
+			if (typeof target?.result !== 'string') return;
+			setPendingImageFile(file);
+			setModalImageUrl(target.result);
+			setCropStage('portrait');
+			setCropModalOpen(true);
+		};
+		reader.onerror = () => addToast('Could not read the image.', 'error');
+		reader.readAsDataURL(file);
+	};
+
+	const handleCropComplete = async (croppedBlob: Blob) => {
+		if (!pendingImageFile || !profile?.profileId) return;
+		const croppedImage = processCroppedImage(croppedBlob, pendingImageFile.name);
+
+		if (cropStage === 'portrait') {
+			cleanupBlobUrl(pendingPortraitCrop?.previewUrl);
+			setPendingPortraitCrop(croppedImage);
+			setModalImageUrl(croppedImage.previewUrl);
+			setCropStage('avatar');
+			return;
+		}
+
+		if (!pendingPortraitCrop) throw new Error('Portrait crop is required before avatar crop.');
+		setIsUploadingImage(true);
+		try {
+			const formData = new FormData();
+			formData.append('image', pendingPortraitCrop.file);
+			formData.append('avatar', croppedImage.file);
+			formData.append('profileId', profile.profileId);
+			await uploadProfileImage(formData);
+
+			cleanupBlobUrl(localPortraitUrl);
+			cleanupBlobUrl(localAvatarUrl);
+			setLocalPortraitUrl(pendingPortraitCrop.previewUrl);
+			setLocalAvatarUrl(croppedImage.previewUrl);
+			setPendingPortraitCrop(null);
+			addToast('Profile portrait and avatar saved.', 'success');
+		} catch (error) {
+			cleanupBlobUrl(croppedImage.previewUrl);
+			cleanupBlobUrl(pendingPortraitCrop.previewUrl);
+			setPendingPortraitCrop(null);
+			addToast(error instanceof Error ? error.message : 'Could not save profile images.', 'error');
+		} finally {
+			setIsUploadingImage(false);
+			setPendingImageFile(null);
+			setModalImageUrl('');
+			setCropModalOpen(false);
+			setCropStage('portrait');
+			if (fileInputRef.current) fileInputRef.current.value = '';
+		}
 	};
 
 	// Create the form content
@@ -156,18 +280,73 @@ export const ProfileForm: FC<ProfileFormProps> = ({
 			</Box>
 
 			<Stack spacing={innerSpacing}>
+				{mode === 'edit' && profile && (
+					<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+						<Box
+							sx={{
+								position: 'relative',
+								width: { xs: 150, sm: 180 },
+								aspectRatio: '5 / 7',
+								borderRadius: 1.5,
+								overflow: 'visible',
+								border: '1px solid',
+								borderColor: 'divider',
+								bgcolor: 'rgba(0, 0, 0, 0.2)',
+							}}
+						>
+							{localPortraitUrl ? (
+								<Box
+									component="img"
+									src={localPortraitUrl}
+									alt={`${profile.showName} portrait`}
+									sx={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }}
+								/>
+							) : (
+								<Box sx={{ width: '100%', height: '100%' }} />
+							)}
+							<Avatar
+								src={localAvatarUrl}
+								alt={`${profile.showName} avatar`}
+								sx={{
+									position: 'absolute',
+									right: -8,
+									bottom: -8,
+									width: 52,
+									height: 52,
+									border: '2px solid',
+									borderColor: 'background.paper',
+								}}
+							>
+								{profile.showName.slice(0, 1)}
+							</Avatar>
+						</Box>
+						<Button
+							component="label"
+							variant="outlined"
+							startIcon={<CloudUpload />}
+							disabled={isUploadingImage}
+						>
+							{isUploadingImage ? 'Saving image…' : 'Select profile image'}
+							<input
+								ref={fileInputRef}
+								type="file"
+								hidden
+								accept={getImageInputAccept()}
+								onChange={handleImageUpload}
+							/>
+						</Button>
+					</Box>
+				)}
 				<Grid container spacing={innerSpacing}>
 					<Grid size={{ xs: 12, md: 4 }}>
 						<Controller
 							name="showName"
-							disabled={mode === 'edit'}
 							control={control}
 							rules={{ required: getLangText(LANG_KEYS.SHOW_NAME_REQUIRED) }}
 							render={({ field }) => (
 								<TextField
 									{...field}
 									fullWidth
-									disabled={mode === 'edit'}
 									label={getLangText(LANG_KEYS.SHOWNAME)}
 									error={!!errors.showName}
 									helperText={errors.showName?.message}
@@ -180,7 +359,6 @@ export const ProfileForm: FC<ProfileFormProps> = ({
 					<Grid size={{ xs: 12, md: 8 }}>
 						<Controller
 							name="name"
-							disabled={mode === 'edit'}
 							control={control}
 							rules={{ required: getLangText(LANG_KEYS.NAME_REQUIRED) }}
 							render={({ field }) => (
@@ -202,7 +380,6 @@ export const ProfileForm: FC<ProfileFormProps> = ({
 						<FormControl fullWidth required>
 							<Controller
 								name="gender"
-								disabled={mode === 'edit'}
 								control={control}
 								rules={{ required: getLangText(LANG_KEYS.GENDER_REQUIRED) }}
 								render={({ field }) => (
@@ -263,8 +440,32 @@ export const ProfileForm: FC<ProfileFormProps> = ({
 				/>
 			</Stack>
 
-			<CardActions sx={{ justifyContent: 'space-between', px: 0 }}>
-				{mode === 'create' && <TextField fullWidth label={getLangText(LANG_KEYS.SESSION_TITLE)} />}
+			<CardActions sx={{ justifyContent: 'space-between', alignItems: 'flex-start', px: 0 }}>
+				{mode === 'create' && (
+					<Box
+						sx={{
+							display: 'flex',
+							flexDirection: { xs: 'column', sm: 'row' },
+							alignItems: { xs: 'stretch', sm: 'center' },
+							gap: 1,
+							minWidth: 0,
+							width: '100%',
+						}}
+					>
+						<TextField fullWidth label={getLangText(LANG_KEYS.SESSION_TITLE)} />
+						<FormControlLabel
+							control={
+								<AdultSwitch
+									checked={contentPolicy === 'adult'}
+									onChange={(_, checked) => setContentPolicy(checked ? 'adult' : 'general')}
+									inputProps={{ 'aria-label': getLangText(LANG_KEYS.ADULT_SESSION) }}
+								/>
+							}
+							label={getLangText(LANG_KEYS.ADULT_SESSION)}
+							sx={{ m: 0, flexShrink: 0, alignSelf: { xs: 'flex-start', sm: 'auto' } }}
+						/>
+					</Box>
+				)}
 
 				<>
 					{mode === 'edit' && onClose && (
@@ -304,6 +505,18 @@ export const ProfileForm: FC<ProfileFormProps> = ({
 						</Box>
 					</Box>
 				</Modal>
+			)}
+
+			{pendingImageFile && modalImageUrl && (
+				<ImageCropModal
+					imageSrc={modalImageUrl}
+					open={cropModalOpen}
+					onClose={resetCropFlow}
+					onCropComplete={handleCropComplete}
+					aspect={getCharacterCropAspect(cropStage)}
+					outputSize={getCharacterCropOutputSize(cropStage)}
+					title={cropStage === 'portrait' ? 'Crop profile portrait' : 'Crop profile avatar'}
+				/>
 			)}
 		</Box>
 	);

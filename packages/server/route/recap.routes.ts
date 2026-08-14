@@ -26,8 +26,6 @@ router.post(
 		recapInfo.userId = getSessionUserId(req);
 		recapInfo.characterId = session.characterId;
 
-		console.log(`API HIT: POST /api/recap/store for recap ${recapInfo.recapId}`);
-
 		const response = await recapStore.storeRecap(recapInfo);
 		res.status(201).json(response); // Returns { recapId: string }
 	})
@@ -48,8 +46,6 @@ router.get(
 			return res.status(400).json({ error: 'Invalid recap type specified.' });
 		}
 
-		console.log(`API HIT: GET /api/recap/get-by-session/${sessionId}/${type}`);
-
 		const response = await recapStore.getRecapsBySessionId(sessionId, type);
 		res.status(200).json(response);
 	})
@@ -65,8 +61,6 @@ router.post(
 		validateRequestData(req.body, 'body', ['sessionId', 'queryTexts', 'type']);
 		const { sessionId, queryTexts, type, filterCriteria, whereDocument, limit } = req.body;
 		await assertOwnedSession(req, sessionId);
-
-		console.log(`API HIT: POST /api/recap/query for session ${sessionId}`);
 
 		const response = await recapStore.queryRecaps(
 			sessionId,

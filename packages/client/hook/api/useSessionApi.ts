@@ -4,7 +4,7 @@ import { apiClient, genApiUrl } from '../../util/clientApiHelpers.js';
 import { useAuth } from '../../provider/index.js';
 import { MODULE_NAMES } from '@rita-berenice/shared/config';
 import { SessionResponse } from '@rita-berenice/shared/api';
-import { SessionInfo } from '@rita-berenice/shared/domain';
+import { SessionContentPolicy, SessionInfo } from '@rita-berenice/shared/domain';
 
 export const useSessionApi = () => {
 	const MODULE_NAME = MODULE_NAMES.SESSION;
@@ -15,7 +15,12 @@ export const useSessionApi = () => {
 	const createSession = useMutation<
 		{ sessionId: string },
 		Error,
-		{ userId: string; characterId: string; firstCharMessage: string }
+		{
+			userId: string;
+			characterId: string;
+			firstCharMessage: string;
+			contentPolicy: SessionContentPolicy;
+		}
 	>({
 		mutationFn: async (variables) => {
 			const url = genApiUrl(MODULE_NAME, 'createSession');
@@ -131,6 +136,21 @@ export const useSessionApi = () => {
 		},
 	});
 
+	const updateSessionContentPolicy = useMutation<
+		void,
+		Error,
+		{ sessionId: string; contentPolicy: SessionContentPolicy }
+	>({
+		mutationFn: async (variables) => {
+			const url = genApiUrl(MODULE_NAME, 'updateSessionContentPolicy');
+			await apiClient.put(url, variables);
+		},
+		onSuccess: (_, variables) => {
+			queryClient.invalidateQueries({ queryKey: ['sessions', 'detail', variables.sessionId] });
+			queryClient.invalidateQueries({ queryKey: ['sessions', 'list', userId] });
+		},
+	});
+
 	/**
 	 * Performs a full update of a session's editable info.
 	 */
@@ -157,6 +177,7 @@ export const useSessionApi = () => {
 		updateSessionOnNewMessage: updateSessionOnNewMessage.mutateAsync,
 		updateSessionUserNote: updateSessionUserNote.mutateAsync,
 		updateSessionTitle: updateSessionTitle.mutateAsync,
+		updateSessionContentPolicy: updateSessionContentPolicy.mutateAsync,
 		getSessionsByUserIdAndCharacterId,
 	};
 };

@@ -8,19 +8,22 @@ import { ComponentType } from 'react';
 interface GlassMenuItemProps extends MenuItemProps {
 	colorVariant?: ColorVariant;
 	compact?: boolean;
+	noGlow?: boolean;
 }
 
 /**
- * A styled MenuItem with a "glassy" outer glow on hover.
- * The glow color is controlled by the `colorVariant` prop.
+ * A styled MenuItem with a glassy hover state.
+ * The glow color is controlled by the `colorVariant` prop, while `noGlow`
+ * preserves the hover feedback without rendering the outer glow.
  * The `compact` prop enables a tighter layout for mobile devices.
  */
 export const GlassMenuItem: ComponentType<GlassMenuItemProps> = styled(MenuItem, {
 	// Ensure custom props aren't passed down to the DOM
-	shouldForwardProp: (prop) => prop !== 'colorVariant' && prop !== 'compact',
-})<GlassMenuItemProps>(({ theme, colorVariant = 'primary', compact = false }) => {
+	shouldForwardProp: (prop) => prop !== 'colorVariant' && prop !== 'compact' && prop !== 'noGlow',
+})<GlassMenuItemProps>(({ theme, colorVariant = 'primary', compact = false, noGlow = false }) => {
 	// Get the glow color dynamically based on the colorVariant prop
 	const glowColor = getColor(theme, colorVariant);
+	const interactionColor = alpha(glowColor, theme.palette.mode === 'dark' ? 0.12 : 0.08);
 
 	return {
 		// Base styling
@@ -47,9 +50,15 @@ export const GlassMenuItem: ComponentType<GlassMenuItemProps> = styled(MenuItem,
 		},
 
 		// Hover state with dynamic glow color
-		'&:hover': { backgroundColor: 'transparent', boxShadow: `0 0 8px 2px ${alpha(glowColor, 0.6)}` },
+		'&:hover': {
+			backgroundColor: interactionColor,
+			boxShadow: noGlow ? 'none' : `0 0 8px 2px ${alpha(glowColor, 0.6)}`,
+		},
 
 		// Focus state for accessibility
-		'&:focus': { backgroundColor: 'transparent', boxShadow: `0 0 6px 1px ${alpha(glowColor, 0.4)}` },
+		'&:focus': {
+			backgroundColor: interactionColor,
+			boxShadow: noGlow ? 'none' : `0 0 6px 1px ${alpha(glowColor, 0.4)}`,
+		},
 	};
 });

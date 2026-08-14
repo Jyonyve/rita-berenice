@@ -11,6 +11,7 @@ export interface GlassPortraitProps extends BoxProps {
 	fit?: 'cover' | 'contain';
 	aspectRatio?: number;
 	hover?: boolean; // The custom prop for controlling hover state
+	noGlow?: boolean;
 }
 
 export const GlassPortrait: FC<GlassPortraitProps> = (props) => {
@@ -21,6 +22,7 @@ export const GlassPortrait: FC<GlassPortraitProps> = (props) => {
 		fit = 'cover',
 		aspectRatio = ASPECT_RATIOS.CHARACTER,
 		hover,
+		noGlow = false,
 		sx = {}, // sx is also destructured to be merged manually
 		onMouseEnter,
 		onMouseLeave,
@@ -29,7 +31,7 @@ export const GlassPortrait: FC<GlassPortraitProps> = (props) => {
 
 	const [isSelfHovering, setIsSelfHovering] = useState(false);
 	const hoverFromContext = useHoverState();
-	const isHovering = hover !== undefined ? hover : hoverFromContext || isSelfHovering;
+	const isHovering = !noGlow && (hover !== undefined ? hover : hoverFromContext || isSelfHovering);
 
 	const theme = useTheme();
 	const glowColor = getColor(theme, colorVariant);
@@ -67,7 +69,7 @@ export const GlassPortrait: FC<GlassPortraitProps> = (props) => {
       0px 6px ${glowSize}px ${glowColor},
       inset 1px 1px 2px rgba(255, 255, 255, 0.25)
     `,
-		'& > img': { filter: 'brightness(1.15) saturate(1.1) contrast(1.05)' },
+		'& > img': { filter: 'brightness(1) saturate(1.1) contrast(1.05)' },
 	};
 
 	const containerSx: SxProps<Theme> = {

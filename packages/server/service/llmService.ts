@@ -7,22 +7,43 @@ import { BaseMessage, SystemMessage, HumanMessage, AIMessage } from '@langchain/
 
 import { credentialStore } from '../store/credentialStore.js';
 
-import { buildNerPrompt, buildTermTranslationPrompt } from '../util/templateUtils.js';
-import { logFlow } from '../util/jsonlLogger.js';
+import {
+	buildGlossaryExtractionPrompt,
+	buildJsonCorrectionPrompt,
+	buildNerPrompt,
+	buildTermTranslationPrompt,
+} from '../util/templateUtils.js';
+import { flowLogger } from '../util/jsonlLogger.js';
 
 import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { ChatOpenAI } from '@langchain/openai';
 import { buildChatCompletion, convertMessageContentToString } from '../util/llmUtils.js';
 import { AiModelInfo, DEFAULT_EXTRACTION_MODEL } from '@rita-berenice/shared/domain';
-import { ZodObject } from 'zod';
+import { ZodObject, ZodType } from 'zod';
 import { buildTokenBudget, TokenBudget } from '../util/tokenBudgetUtils.js';
 import {
 	parseStructuredLlmOutput,
 	StructuredOutputValidationError,
 } from '../util/structuredOutputUtils.js';
-import { createNerSchema } from '../util/schemaUtils.js';
+import { createGlossaryExtractionSchema, createNerSchema } from '../util/schemaUtils.js';
 import { getEmbeddingEnv } from '../config/env.js';
+
+interface StructuredOutputRepairOptions {
+	requiredSchema: string;
+	repairModelInfo?: AiModelInfo;
+	signal?: AbortSignal;
+}
+
+const buildModelLogContext = (
+	aiModelInfo: AiModelInfo,
+	userId?: string
+): Record<string, unknown> => ({
+	platform: aiModelInfo.platform,
+	provider: aiModelInfo.provider,
+	model: aiModelInfo.model,
+	...(userId ? { userId } : {}),
+});
 
 const normalizeMessageContent = (content: unknown): string => {
 	if (!content) return '';
@@ -42,7 +63,7 @@ const convertToLangChainMessages = (messages: ChatCompletionMessageParam[]): Bas
 			case 'assistant':
 				return new AIMessage({ content: msg.content as string });
 			default:
-				console.warn(`[llmService] Unknown role "${msg.role}", treating as user.`);
+				flowLogger.warn('llmService', 'messageRole.unknown', { role: msg.role });
 				return new HumanMessage({ content: msg.content as string });
 		}
 	});
@@ -64,6 +85,124 @@ const calculateTokenBudget = (
 	}
 };
 
+const nativeStructuredOutputProviders = new Set(['openai', 'anthropic', 'google']);
+
+const shouldUseNativeStructuredOutput = (aiModelInfo: AiModelInfo, expectsJson: boolean): boolean =>
+	expectsJson &&
+	aiModelInfo.platform === 'direct' &&
+	nativeStructuredOutputProviders.has(aiModelInfo.provider);
+
+const addFormatInstructions = (
+	messages: ChatCompletionMessageParam[],
+	zodSchema: ZodType
+): ChatCompletionMessageParam[] => {
+	const parser = StructuredOutputParser.fromZodSchema(zodSchema as any);
+	return [buildChatCompletion('system', parser.getFormatInstructions()), ...messages];
+};
+
+const parseStructuredOutputWithLogging = <T>(
+	rawOutput: string,
+	zodSchema: ZodType<T>,
+	context: Record<string, unknown>
+): T => {
+	try {
+		return parseStructuredLlmOutput(rawOutput, zodSchema);
+	} catch (error) {
+		if (error instanceof StructuredOutputValidationError) {
+			flowLogger.warn('llmService', 'structuredOutput.parseFailed', {
+				...context,
+				reason: error.message,
+				rawOutputLength: error.rawOutput.length,
+			});
+		}
+		throw error;
+	}
+};
+
+const invokeStructuredLlmCore = async <T>(
+	messages: ChatCompletionMessageParam[],
+	aiModelInfo: AiModelInfo,
+	userId: string,
+	zodSchema: ZodType<T>,
+	options?: { signal?: AbortSignal }
+): Promise<T> => {
+	const useStructuredOutput = shouldUseNativeStructuredOutput(aiModelInfo, true);
+	const requestMessages = useStructuredOutput
+		? messages
+		: addFormatInstructions(messages, zodSchema);
+	const logContext = buildModelLogContext(aiModelInfo, userId);
+
+	await llmService.validateTokenCount(requestMessages, aiModelInfo);
+
+	const llmClient = await llmService.createLlmInstance(aiModelInfo, userId);
+	const langChainMessages = convertToLangChainMessages(requestMessages);
+
+	if (useStructuredOutput) {
+		flowLogger.info('llmService', 'structuredOutput.native', {
+			...buildModelLogContext(aiModelInfo, userId),
+			messageCount: requestMessages.length,
+		});
+		const structuredLlm = llmClient.withStructuredOutput(zodSchema, {
+			name: 'json_output_tool',
+			includeRaw: true,
+		});
+		const result = await structuredLlm.invoke(langChainMessages, { signal: options?.signal });
+
+		if (result.parsed) {
+			return parseStructuredOutputWithLogging(JSON.stringify(result.parsed), zodSchema, logContext);
+		}
+
+		const raw: AIMessage = result.raw;
+		flowLogger.warn('llmService', 'structuredOutput.nativeParseFallback', {
+			...buildModelLogContext(aiModelInfo, userId),
+		});
+		return parseStructuredOutputWithLogging(
+			convertMessageContentToString(raw.content),
+			zodSchema,
+			logContext
+		);
+	}
+
+	flowLogger.info('llmService', 'structuredOutput.manual', {
+		...buildModelLogContext(aiModelInfo, userId),
+		messageCount: requestMessages.length,
+	});
+	const responseMessage = await llmClient.invoke(langChainMessages, { signal: options?.signal });
+	return parseStructuredOutputWithLogging(
+		convertMessageContentToString(responseMessage.content),
+		zodSchema,
+		logContext
+	);
+};
+
+const streamStructuredLlmCore = async <T>(
+	messages: ChatCompletionMessageParam[],
+	aiModelInfo: AiModelInfo,
+	userId: string,
+	onRawDelta: (delta: string) => void,
+	zodSchema: ZodType<T>,
+	options?: { signal?: AbortSignal }
+): Promise<T> => {
+	const requestMessages = addFormatInstructions(messages, zodSchema);
+	const logContext = buildModelLogContext(aiModelInfo, userId);
+
+	await llmService.validateTokenCount(requestMessages, aiModelInfo);
+
+	const llmClient = await llmService.createLlmInstance(aiModelInfo, userId);
+	const langChainMessages = convertToLangChainMessages(requestMessages);
+	const responseStream = await llmClient.stream(langChainMessages, { signal: options?.signal });
+
+	let rawOutput = '';
+	for await (const chunk of responseStream) {
+		const delta = convertMessageContentToString(chunk.content);
+		if (!delta) continue;
+		rawOutput += delta;
+		onRawDelta(delta);
+	}
+
+	return parseStructuredOutputWithLogging(rawOutput, zodSchema, logContext);
+};
+
 /**
  * 순수 LLM 호출 서비스.
  * 데이터의 내용을 가공하지 않으며, 오직 API 통신과 응답 반환 책임만 가집니다.
@@ -74,7 +213,7 @@ export const llmService = {
 	 */
 	createLlmInstance: async (aiInfo: AiModelInfo, userId: string) => {
 		const { platform, provider, model, temperature, maxTokens } = aiInfo;
-		const { userApiKeys } = await credentialStore.getUserApiKeys(userId);
+		const userApiKeys = await credentialStore.getDecryptedUserApiKeys(userId);
 
 		if (platform === 'openrouter') {
 			if (!userApiKeys.openrouterApiKey) {
@@ -87,10 +226,7 @@ export const llmService = {
 				maxTokens,
 				configuration: {
 					baseURL: 'https://openrouter.ai/api/v1',
-					defaultHeaders: {
-						'HTTP-Referer': 'https://github.com/Jyonyve/rita-berenice',
-						'X-Title': 'Rita Berenice',
-					},
+					defaultHeaders: { 'X-Title': 'Rita Berenice' },
 				},
 			});
 		}
@@ -132,20 +268,20 @@ export const llmService = {
 		messages: ChatCompletionMessageParam[],
 		aiInfo: AiModelInfo
 	): Promise<void> => {
-		const { model } = aiInfo;
 		const budget = calculateTokenBudget(messages, aiInfo);
 		if (!budget) {
-			console.warn(
-				`[llmService.validateTokenCount] No model limits defined for ${model}. Skipping token validation.`
-			);
+			flowLogger.warn('llmService', 'tokenBudget.missingModelLimits', buildModelLogContext(aiInfo));
 			return;
 		}
 
 		try {
-			console.log(
-				`[llmService.validateTokenCount] Model: ${model}, Input: ${budget.inputTokens}, ` +
-					`Reserved output: ${budget.reservedOutputTokens}, Context: ${budget.contextWindow}`
-			);
+			flowLogger.info('llmService', 'tokenBudget.validated', {
+				...buildModelLogContext(aiInfo),
+				inputTokens: budget.inputTokens,
+				reservedOutputTokens: budget.reservedOutputTokens,
+				contextWindow: budget.contextWindow,
+				availableInputTokens: budget.availableInputTokens,
+			});
 
 			if (budget.inputTokens > budget.availableInputTokens) {
 				throw new Error(
@@ -154,10 +290,10 @@ export const llmService = {
 				);
 			}
 		} catch (error: any) {
-			console.error(
-				'[llmService.validateTokenCount] A critical error occurred during token validation:',
-				error.message
-			);
+			flowLogger.error('llmService', 'tokenBudget.failed', {
+				...buildModelLogContext(aiInfo),
+				error: error.message,
+			});
 			// **FIX**: Re-throw the error to stop the invokeLlm process immediately.
 			throw new Error(`Token validation failed: ${error.message}`);
 		}
@@ -166,6 +302,40 @@ export const llmService = {
 	/**
 	 * A hybrid LLM invocation function that uses the best strategy for each model type.
 	 */
+	invokeStructuredLlm: async <T>(
+		messages: ChatCompletionMessageParam[],
+		aiModelInfo: AiModelInfo,
+		userId: string,
+		zodSchema: ZodType<T>,
+		options?: { signal?: AbortSignal }
+	): Promise<T> => {
+		return invokeStructuredLlmCore(messages, aiModelInfo, userId, zodSchema, options);
+	},
+
+	repairStructuredLlmOutput: async <T>(
+		parsingError: StructuredOutputValidationError,
+		userId: string,
+		zodSchema: ZodType<T>,
+		repairOptions: StructuredOutputRepairOptions
+	): Promise<T> => {
+		const repairModelInfo = repairOptions.repairModelInfo ?? DEFAULT_EXTRACTION_MODEL;
+		const correctionPrompt = buildJsonCorrectionPrompt(
+			parsingError.rawOutput,
+			`The JSON was malformed. Reason: ${parsingError.message}.`,
+			repairOptions.requiredSchema
+		);
+		const correctionMessages: ChatCompletionMessageParam[] = [
+			buildChatCompletion(
+				'user',
+				`You are an expert at fixing malformed JSON. Please correct the following text to match the required schema. Your output must be ONLY the raw JSON object, with no markdown fences or other text.\n\n${correctionPrompt}`
+			),
+		];
+
+		return llmService.invokeStructuredLlm(correctionMessages, repairModelInfo, userId, zodSchema, {
+			signal: repairOptions.signal,
+		});
+	},
+
 	invokeLlm: async (
 		messages: ChatCompletionMessageParam[],
 		aiModelInfo: AiModelInfo,
@@ -173,68 +343,27 @@ export const llmService = {
 		options?: { signal?: AbortSignal },
 		zodSchema?: ZodObject
 	): Promise<string> => {
-		// This flag determines if we should attempt to sanitize the output as JSON.
-		const expectsJson = !!zodSchema;
-
-		const useStructuredOutput =
-			expectsJson && aiModelInfo.provider === 'google' && aiModelInfo.platform !== 'openrouter';
-
 		try {
-			let requestMessages = messages;
-			if (!useStructuredOutput && zodSchema) {
-				const parser = StructuredOutputParser.fromZodSchema(zodSchema as any);
-				const formatInstructions = parser.getFormatInstructions();
-				requestMessages = [buildChatCompletion('system', formatInstructions), ...requestMessages];
+			if (zodSchema) {
+				return JSON.stringify(
+					await invokeStructuredLlmCore(messages, aiModelInfo, userId, zodSchema, options)
+				);
 			}
 
-			await llmService.validateTokenCount(requestMessages, aiModelInfo);
+			await llmService.validateTokenCount(messages, aiModelInfo);
 
 			const llmClient = await llmService.createLlmInstance(aiModelInfo, userId);
-			const langChainMessages = convertToLangChainMessages(requestMessages);
-
-			let rawOutput: string; // This will hold the raw string from the LLM
-
-			if (useStructuredOutput) {
-				// --- STRATEGY 1: For Strict Models (Gemini) ---
-				console.log(`[llmService] Using withStructuredOutput for model: ${aiModelInfo.model}`);
-				const structuredLlm = llmClient.withStructuredOutput(zodSchema, {
-					name: 'json_output_tool',
-					includeRaw: true,
-				});
-				const result = await structuredLlm.invoke(langChainMessages, { signal: options?.signal });
-
-				if (result.parsed) {
-					rawOutput = JSON.stringify(result.parsed);
-				} else {
-					const raw: AIMessage = result.raw;
-					console.warn('[llmService] Compliant model failed parsing. Falling back to raw text.');
-					// The raw message content is the most likely place for the unparsed text
-					rawOutput = convertMessageContentToString(raw.content);
-				}
-			} else {
-				// --- STRATEGY 2: Manual Handling for Creative Models (Claude/GPT) ---
-				console.log(`[llmService] Using manual parsing for model: ${aiModelInfo.model}`);
-
-				const responseMessage = await llmClient.invoke(langChainMessages, { signal: options?.signal });
-				rawOutput = convertMessageContentToString(responseMessage.content);
-			}
-
-			// --- 2. CENTRALIZED SANITIZATION ---
-			// If we expected JSON, clean the output. Otherwise, return it as is.
-			// This is the single point of sanitization for the entire application.
-			if (zodSchema) {
-				return JSON.stringify(parseStructuredLlmOutput(rawOutput, zodSchema));
-			}
-
-			return rawOutput; // Return the raw text for non-JSON calls
+			const langChainMessages = convertToLangChainMessages(messages);
+			const responseMessage = await llmClient.invoke(langChainMessages, { signal: options?.signal });
+			return convertMessageContentToString(responseMessage.content);
 		} catch (error: any) {
 			if (error instanceof StructuredOutputValidationError) {
 				throw error;
 			}
-			console.error(
-				`[llmService.invokeLlm] A critical, non-recoverable error occurred:`,
-				error.message
-			);
+			flowLogger.error('llmService', 'invoke.failed', {
+				...buildModelLogContext(aiModelInfo, userId),
+				error: error.message,
+			});
 			throw new Error(`[llmService] LLM invocation failed: ${error.message}`);
 		}
 	},
@@ -242,6 +371,17 @@ export const llmService = {
 	/**
 	 * Streams raw model text while preserving the same final structured-output contract as invokeLlm.
 	 */
+	streamStructuredLlm: async <T>(
+		messages: ChatCompletionMessageParam[],
+		aiModelInfo: AiModelInfo,
+		userId: string,
+		onRawDelta: (delta: string) => void,
+		zodSchema: ZodType<T>,
+		options?: { signal?: AbortSignal }
+	): Promise<T> => {
+		return streamStructuredLlmCore(messages, aiModelInfo, userId, onRawDelta, zodSchema, options);
+	},
+
 	streamLlm: async (
 		messages: ChatCompletionMessageParam[],
 		aiModelInfo: AiModelInfo,
@@ -251,17 +391,16 @@ export const llmService = {
 		zodSchema?: ZodObject
 	): Promise<string> => {
 		try {
-			let requestMessages = messages;
 			if (zodSchema) {
-				const parser = StructuredOutputParser.fromZodSchema(zodSchema as any);
-				const formatInstructions = parser.getFormatInstructions();
-				requestMessages = [buildChatCompletion('system', formatInstructions), ...requestMessages];
+				return JSON.stringify(
+					await streamStructuredLlmCore(messages, aiModelInfo, userId, onRawDelta, zodSchema, options)
+				);
 			}
 
-			await llmService.validateTokenCount(requestMessages, aiModelInfo);
+			await llmService.validateTokenCount(messages, aiModelInfo);
 
 			const llmClient = await llmService.createLlmInstance(aiModelInfo, userId);
-			const langChainMessages = convertToLangChainMessages(requestMessages);
+			const langChainMessages = convertToLangChainMessages(messages);
 			const responseStream = await llmClient.stream(langChainMessages, { signal: options?.signal });
 
 			let rawOutput = '';
@@ -272,16 +411,16 @@ export const llmService = {
 				onRawDelta(delta);
 			}
 
-			if (zodSchema) {
-				return JSON.stringify(parseStructuredLlmOutput(rawOutput, zodSchema));
-			}
 			return rawOutput;
 		} catch (error: unknown) {
 			if (error instanceof StructuredOutputValidationError) {
 				throw error;
 			}
 			const message = error instanceof Error ? error.message : 'Unknown streaming error';
-			console.error('[llmService.streamLlm] A critical streaming error occurred:', message);
+			flowLogger.error('llmService', 'stream.failed', {
+				...buildModelLogContext(aiModelInfo, userId),
+				error: message,
+			});
 			throw new Error(`[llmService] LLM streaming failed: ${message}`, { cause: error });
 		}
 	},
@@ -297,7 +436,11 @@ export const llmService = {
 		const messages: ChatCompletionMessageParam[] = [{ role: 'user', content: prompt }];
 		const translation = await llmService.invokeLlm(messages, aiModelInfo, userId);
 
-		logFlow('llmService', 'translateProperNoun', { translation });
+		flowLogger.info('llmService', 'translateProperNoun.complete', {
+			userId,
+			termLength: koreanTerm.length,
+			translationLength: translation.length,
+		});
 
 		// 번역 결과는 JSON이 아니므로, 일반 텍스트로 처리합니다.
 		return translation.replace(/["'.]/g, '').trim();
@@ -313,23 +456,43 @@ export const llmService = {
 
 		// MODIFIED: 'invokeLlm'에 맞게 messages 배열을 생성하여 전달합니다.
 		const messages: ChatCompletionMessageParam[] = [{ role: 'user', content: prompt }];
-		const jsonResponse = await llmService.invokeLlm(
+		const nerResponse = await llmService.invokeStructuredLlm(
 			messages,
 			aiModelInfo,
 			userId,
-			undefined,
 			nerSchema
 		);
 
-		logFlow('llmService', 'extractProperNouns', { jsonResponse });
+		flowLogger.info('llmService', 'extractProperNouns.complete', {
+			userId,
+			textLength: textToAnalyze.length,
+			properNounCount: nerResponse.properNouns.length,
+		});
+		return nerResponse.properNouns;
+	},
 
-		try {
-			// invokeLlm은 이미 JSON 문자열을 반환하므로, 바로 파싱합니다.
-			const parsed = JSON.parse(jsonResponse) as { properNouns: string[] };
-			return parsed.properNouns;
-		} catch {
-			console.warn('[llmService.extractProperNouns] Failed to parse JSON response for NER.');
-			return [];
-		}
+	extractGlossaryTerms: async (
+		textToAnalyze: string,
+		userId: string
+	): Promise<Array<{ koreanTerm: string; englishTerm: string }>> => {
+		const prompt = buildGlossaryExtractionPrompt(textToAnalyze);
+		const response = await llmService.invokeStructuredLlm(
+			[{ role: 'user', content: prompt }],
+			DEFAULT_EXTRACTION_MODEL,
+			userId,
+			createGlossaryExtractionSchema()
+		);
+		const uniqueTerms = new Map<string, string>();
+		response.terms.forEach(({ koreanTerm, englishTerm }) => {
+			const korean = koreanTerm.trim();
+			const english = englishTerm.trim();
+			if (korean && english && !uniqueTerms.has(korean)) uniqueTerms.set(korean, english);
+		});
+		flowLogger.info('llmService', 'extractGlossaryTerms.complete', {
+			userId,
+			textLength: textToAnalyze.length,
+			termCount: uniqueTerms.size,
+		});
+		return [...uniqueTerms].map(([koreanTerm, englishTerm]) => ({ koreanTerm, englishTerm }));
 	},
 };

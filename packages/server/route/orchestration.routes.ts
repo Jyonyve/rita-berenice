@@ -11,9 +11,7 @@ import {
 	ChatTurn,
 	ChatTurnCdo,
 	ApiError,
-	AllModelNames,
 } from '@rita-berenice/shared/domain';
-import { getAiModelInfo } from '@rita-berenice/shared/util';
 import { RECENT_CHAT_TURN } from '@rita-berenice/shared/config';
 import { receiveBotResponse, finalizeChatTurn } from '../service/orchestrationService.js';
 import { ChatTurnCdoSchema, ReceiveBotResponseBodySchema } from '../util/schemaUtils.js';
@@ -24,6 +22,8 @@ import { chatStore } from '../store/chatStore.js';
 import z from 'zod';
 import { ReceiveBotResponseStreamEvent } from '@rita-berenice/shared/api';
 import { finalizationJobService } from '../service/finalizationJobService.js';
+import { modelCatalogService } from '../service/modelCatalogService.js';
+import { getSessionUserId } from '../util/authUtils.js';
 
 const router: Router = express.Router();
 
@@ -46,8 +46,7 @@ interface ReceiveBotResponseBody {
 	sessionId: string;
 	sequence: number;
 	entries: { type: 'dialogue' | 'action'; prompt: string }[];
-	modelName: AllModelNames;
-	isScene?: boolean;
+	modelName: string;
 }
 
 const getOwnedSession = async (sessionId: string, userId: string) => {
@@ -59,7 +58,7 @@ const getOwnedSession = async (sessionId: string, userId: string) => {
 };
 
 const resolveReceiveBotResponseContext = async (body: ReceiveBotResponseBody, userId: string) => {
-	const { sessionId, sequence, entries, modelName, isScene } = body;
+	const { sessionId, sequence, entries, modelName } = body;
 	validateServiceId(sessionId, RESOURCES.CHAT);
 	const sessionInfo = await getOwnedSession(sessionId, userId);
 	if (!sessionInfo.profileId) {
@@ -90,7 +89,7 @@ const resolveReceiveBotResponseContext = async (body: ReceiveBotResponseBody, us
 		userId,
 		inputJsonString: JSON.stringify(entries),
 	};
-	const aiModelInfo = getAiModelInfo(modelName);
+	const aiModelInfo = await modelCatalogService.resolveAiModelInfo(modelName);
 	const recentChatTurnString = JSON.stringify(
 		chatResponse.chatTurns.sort((a, b) => a.sequence - b.sequence).slice(-RECENT_CHAT_TURN)
 	);
@@ -98,7 +97,7 @@ const resolveReceiveBotResponseContext = async (body: ReceiveBotResponseBody, us
 	return {
 		sessionId,
 		sequence,
-		isScene,
+		adultContentEnabled: sessionInfo.contentPolicy === 'adult',
 		tempChatTurnCdo,
 		characterInfo,
 		profileInfo,
@@ -129,12 +128,8 @@ router.post(
 				ReceiveBotResponseBodySchema,
 				req.body
 			) as unknown as ReceiveBotResponseBody;
-			const userId = req.session!.getUserId();
+			const userId = getSessionUserId(req);
 			const context = await resolveReceiveBotResponseContext(parsedBody, userId);
-			const { sessionId, sequence } = context;
-
-			const path = genRoutePattern('receiveBotResponse');
-			console.log(`API HIT: POST ${path} for session ${sessionId}, turn ${sequence}`);
 
 			// Call the main orchestration service function with the unpacked request body
 			const response = await receiveBotResponse(
@@ -143,7 +138,7 @@ router.post(
 				context.profileInfo,
 				context.aiModelInfo,
 				context.recentChatTurnString,
-				{ isScene: context.isScene }
+				{ adultContentEnabled: context.adultContentEnabled }
 			);
 
 			res.status(200).json(response);
@@ -163,7 +158,7 @@ router.post(
 				ReceiveBotResponseBodySchema,
 				req.body
 			) as unknown as ReceiveBotResponseBody;
-			const userId = req.session!.getUserId();
+			const userId = getSessionUserId(req);
 			const context = await resolveReceiveBotResponseContext(parsedBody, userId);
 
 			res.status(200);
@@ -187,7 +182,7 @@ router.post(
 					context.aiModelInfo,
 					context.recentChatTurnString,
 					{
-						isScene: context.isScene,
+						adultContentEnabled: context.adultContentEnabled,
 						signal: disconnectController.signal,
 						onStatus: (stage) => writeStreamEvent(res, { type: 'status', stage }),
 						onDelta: (text) => writeStreamEvent(res, { type: 'delta', text }),
@@ -227,7 +222,7 @@ router.post(
 		): Promise<void> => {
 			const chatTurnCdo = parseRequestBody(ChatTurnCdoSchema, req.body) as ChatTurnCdo;
 			validateServiceId(chatTurnCdo.sessionId, RESOURCES.CHAT);
-			const userId = req.session!.getUserId();
+			const userId = getSessionUserId(req);
 			await getOwnedSession(chatTurnCdo.sessionId, userId);
 			chatTurnCdo.userId = userId;
 
@@ -248,7 +243,7 @@ router.get(
 			throw new ApiError(400, 'Invalid finalization job sequence.');
 		}
 
-		const userId = req.session!.getUserId();
+		const userId = getSessionUserId(req);
 		await getOwnedSession(sessionId, userId);
 		const job = await finalizationJobService.get(sessionId, sequence);
 		if (!job) {
@@ -273,14 +268,9 @@ router.post(
 		): Promise<void> => {
 			const chatTurnCdo = parseRequestBody(ChatTurnCdoSchema, req.body) as ChatTurnCdo;
 			validateServiceId(chatTurnCdo.sessionId, RESOURCES.CHAT);
-			const userId = req.session!.getUserId();
+			const userId = getSessionUserId(req);
 			await getOwnedSession(chatTurnCdo.sessionId, userId);
 			chatTurnCdo.userId = userId;
-
-			const path = genRoutePattern('finalizeChatTurn');
-			console.log(
-				`API HIT: POST ${path} for session ${chatTurnCdo.sessionId}, sequence ${chatTurnCdo.sequence}`
-			);
 
 			// Call the finalization service function
 			const enrichedChatTurn = await finalizeChatTurn(chatTurnCdo);

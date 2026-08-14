@@ -50,6 +50,8 @@ export const EditCharacterPageLoader = () => {
 			<CharacterForm
 				mode="edit"
 				characterInfo={characterRes.characterInfo}
+				portraitUrls={characterRes.characterPortraits[characterId]}
+				avatarUrls={characterRes.characterAvatars[characterId]}
 				userId={userId}
 				onCancel={handleGoCharacterPage}
 				onSuccess={handleGoCharacterPage}

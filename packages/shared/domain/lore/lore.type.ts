@@ -29,6 +29,8 @@ export type LoreCategory =
 interface BaseLoreMetadata {
 	loreId: string;
 	userId: string;
+	/** When present, this lore is visible only inside the specified session. */
+	sessionId?: string;
 	createdAt: string;
 	updatedAt: string;
 	title: string;
@@ -87,9 +89,12 @@ export interface MiscLoreInfo extends MiscLoreMetadata {
 // --- CDO TYPES ---
 export type WorldLoreCdo = Pick<
 	WorldLoreInfo,
-	'content' | 'title' | 'userId' | 'characterIds' | 'category'
+	'content' | 'title' | 'userId' | 'characterIds' | 'category' | 'sessionId'
 >;
-export type MiscLoreCdo = Pick<MiscLoreInfo, 'content' | 'title' | 'userId' | 'characterIds'>;
+export type MiscLoreCdo = Pick<
+	MiscLoreInfo,
+	'content' | 'title' | 'userId' | 'characterIds' | 'sessionId'
+>;
 
 // Union types for easier handling
 export type LoreMetadata = WorldLoreMetadata | MiscLoreMetadata;

@@ -1,5 +1,5 @@
 import Session from 'supertokens-web-js/recipe/session/index.js';
-import axios, { AxiosRequestConfig } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { ApiError } from '@rita-berenice/shared/domain';
 import { toKebabCase } from '@rita-berenice/shared/util';
 
@@ -7,7 +7,16 @@ export type ApiRequestConfig = AxiosRequestConfig & {
 	_suppressToast?: boolean;
 	_suppress404Error?: boolean;
 	_retry?: boolean;
+	_sessionAccessToken?: string;
 };
+
+type ToastHandler = (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
+
+interface SessionClient {
+	doesSessionExist: () => Promise<boolean>;
+	getAccessToken: () => Promise<string | undefined>;
+	attemptRefreshingSession: () => Promise<boolean>;
+}
 
 // API 클라이언트 인스턴스 생성
 export const apiClient = axios.create({
@@ -15,30 +24,32 @@ export const apiClient = axios.create({
 	headers: { 'Content-Type': 'application/json' },
 });
 
-// Hook-safe 방식으로 toast handler 주입
-export function setupApiClient(
-	addToast: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void
-) {
-	// 요청 인터셉터: 요청 로그 출력
-	apiClient.interceptors.request.use(async (config) => {
-		// First, check if a session exists. This is a cheap, non-network call.
-		if (await Session.doesSessionExist()) {
-			// Only if a session exists, get the token and attach it.
-			const token = await Session.getAccessToken();
+let apiClientInitialized = false;
+let toastHandler: ToastHandler | undefined;
+
+export const installSessionInterceptors = (
+	client: AxiosInstance,
+	sessionClient: SessionClient,
+	getToastHandler: () => ToastHandler | undefined
+) => {
+	let hasNotifiedSessionExpiry = false;
+	let notifiedExpiredToken: string | undefined;
+
+	const requestInterceptor = client.interceptors.request.use(async (config) => {
+		if (await sessionClient.doesSessionExist()) {
+			const token = await sessionClient.getAccessToken();
 			config.headers = config.headers || {};
 			config.headers.Authorization = `Bearer ${token}`;
+			(config as ApiRequestConfig)._sessionAccessToken = token;
 		}
 
 		return config;
 	});
-	// 응답 인터셉터: 에러 처리
-	// In your apiClient setup file
-	apiClient.interceptors.response.use(
+
+	const responseInterceptor = client.interceptors.response.use(
 		(response) => response,
 		async (error) => {
 			const originalRequest = error.config as ApiRequestConfig;
-			// 1. The Suppression Override: This is the most important check.
-			// It runs before any other logic.
 			if (error?.response?.status === 404 && originalRequest._suppress404Error) {
 				console.log(
 					'%cINTERCEPTOR: Suppressing expected 404 as requested. Please ignore the 404 error console.',
@@ -47,26 +58,46 @@ export function setupApiClient(
 				return Promise.resolve({ data: null });
 			}
 
-			// 2. Session Refresh Logic: This runs only for non-suppressed errors.
 			if (error?.response?.status === 401 && !originalRequest._retry) {
 				originalRequest._retry = true;
-				const refreshResult = await Session.attemptRefreshingSession();
-				if (refreshResult) {
-					return apiClient(originalRequest);
-				} else {
-					addToast('Your session has expired. Please log in again.', 'error');
+				if (await sessionClient.attemptRefreshingSession()) {
+					return client(originalRequest);
 				}
+
+				const failedToken = originalRequest._sessionAccessToken;
+				if (!hasNotifiedSessionExpiry || notifiedExpiredToken !== failedToken) {
+					getToastHandler()?.('Your session has expired. Please log in again.', 'error');
+					hasNotifiedSessionExpiry = true;
+					notifiedExpiredToken = failedToken;
+				}
+
+				return Promise.reject(processApiError(error));
 			}
 
-			// 3. General Error Processing: For all other errors, standardize them.
 			const processedError = processApiError(error);
 			if (!originalRequest._suppressToast) {
-				addToast(processedError.clientMessage || 'An unexpected error occurred.', 'error');
+				getToastHandler()?.(processedError.clientMessage || 'An unexpected error occurred.', 'error');
 			}
-			// Reject with the standardized error for TanStack Query's retry logic to use.
 			return Promise.reject(processedError);
 		}
 	);
+
+	return () => {
+		client.interceptors.request.eject(requestInterceptor);
+		client.interceptors.response.eject(responseInterceptor);
+	};
+};
+
+export function initializeApiClient() {
+	if (apiClientInitialized) return;
+	installSessionInterceptors(apiClient, Session, () => toastHandler);
+	apiClientInitialized = true;
+}
+
+// Hook-safe 방식으로 toast handler 주입
+export function setupApiClient(addToast: ToastHandler) {
+	toastHandler = addToast;
+	initializeApiClient();
 }
 
 export const processApiError = (err: unknown): ApiError => {

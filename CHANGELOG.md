@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.0] - 2026-08-14
+
+### Added
+
+- Personal-use AI character and long-term-memory RAG framework release.
+- Vite React 19 SSR/browser client, Express 5 SSR/API server, and shared contract package.
+- PostgreSQL with `pgvector` as the active persistence and vector retrieval layer.
+- SuperTokens-backed authentication and REST API hardening.
+
+### Changed
+
+- Repository restructured into a pnpm/Turbo TypeScript monorepo.
+- Provider-specific LLM details kept behind `server/service/llmService.ts`.
+- RAG memory recall, orchestration, persona generation, and persistence concerns separated.
+
 ## [1.0.0] - 2025-06-30
 
 ### Added
@@ -15,13 +30,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `vite`, `express`, `react`, `emotion`, `mui` 기반 SSR 렌더링 구성
 - `tsconfig`, `vite.config.ts`, `server.ts`, `entry-server.tsx` 등 주요 구성 완료
 - `import alias` 적용 및 경로 정리 (`#server/*`, `#client/*`, `@rita-berenice/shared/*`)
-
-### Changed
-
-- `pnpm`을 도입하여 패키지 관리 방식을 `yarn` → `pnpm`으로 전환
-- `tsc-alias`로 서버 빌드 후 alias 자동 치환 구조 설정
-
-### Notes
-
-- 아직 DB나 API 로직은 연결되지 않았음 (기본 틀만 구성 완료)
-- ChromaDB, LangChain 등은 향후 통합 예정

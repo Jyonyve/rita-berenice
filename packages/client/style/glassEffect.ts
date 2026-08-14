@@ -1,8 +1,12 @@
 // src/styles/effects.ts
 
+import { alpha } from '@mui/material';
 import { ColorMode } from '../provider/ColorModeProvider.jsx';
+import { silver } from './colors.js';
 
 // src/styles/effects.ts
+type GlassInteractionStyle = { background: string; boxShadow: string };
+
 type GlassEffectType = {
 	// --- Base Glass Styles ---
 	background: string;
@@ -13,8 +17,22 @@ type GlassEffectType = {
 	transition: string;
 
 	// --- Hover State (Subtly Dimmed) ---
-	'&:hover'?: { background: string; boxShadow: string };
+	'&:hover'?: GlassInteractionStyle;
+	'&:focus-within'?: GlassInteractionStyle;
+	'&:active'?: GlassInteractionStyle;
 };
+
+interface GlassEffectOptions {
+	withHover?: boolean;
+	noGlow?: boolean;
+}
+
+const addGlow = (style: GlassInteractionStyle, active = false): GlassInteractionStyle => ({
+	...style,
+	boxShadow: `${style.boxShadow}, ${
+		active ? `0 0 18px 3px ${alpha(silver.main, 0.42)}` : `0 0 14px 2px ${alpha(silver.main, 0.32)}`
+	}`,
+});
 
 /**
  * A reusable style object for creating a DARK MODE glassmorphism effect.
@@ -72,21 +90,22 @@ export const glassEffectLight = {
 	},
 };
 
-export function getGlassEffect(
-	mode: ColorMode,
-	options?: { withHover?: boolean }
-): GlassEffectType {
-	// Default to including the hover effect if not specified
-	const { withHover = true } = options || {};
+export function getGlassEffect(mode: ColorMode, options?: GlassEffectOptions): GlassEffectType {
+	const { withHover = true, noGlow = false } = options || {};
 
 	const baseStyle = mode === 'dark' ? glassEffect : glassEffectLight;
+	const { '&:hover': baseHover, ...rest } = baseStyle;
 
-	if (withHover) {
-		// If hover is enabled, return the full style object
-		return baseStyle;
-	} else {
-		// If hover is disabled, create a new object without the '&:hover' key
-		const { '&:hover': hover, ...rest } = baseStyle;
-		return rest;
-	}
+	if (!withHover || !baseHover) return rest;
+	if (noGlow) return { ...rest, '&:hover': baseHover };
+
+	const interactionStyle = addGlow(baseHover);
+	const activeStyle = addGlow(baseHover, true);
+
+	return {
+		...rest,
+		'&:hover': interactionStyle,
+		'&:focus-within': interactionStyle,
+		'&:active': activeStyle,
+	};
 }

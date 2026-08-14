@@ -3,7 +3,7 @@
 import React from 'react';
 import { Typography, TypographyProps, useTheme } from '@mui/material';
 import { logoFontFamily, titleFontFamily } from '../../style/typography.js';
-import { ColorVariant, getColor } from '../../style/colors.js';
+import { ColorVariant, getColorSet } from '../../style/colors.js';
 import { useHoverState } from './index.js';
 
 // The props interface is correct. We will use 'hover' for clarity.
@@ -15,28 +15,33 @@ interface RomanticTitleProps extends TypographyProps {
 }
 
 export const RomanticTitle = (props: RomanticTitleProps) => {
-	// *** THIS IS THE FIX ***
-	// Manually destructure all of your custom props.
-	// The '...rest' object will now only contain valid props for the Typography component.
-	const { logo, colorVariant, hover, noGlow, sx, ...rest } = props;
+	const { logo, color, colorVariant, hover, noGlow, sx, ...rest } = props;
 
 	const hoverFromContext = useHoverState();
-	const isHovering = hover !== undefined ? hover : hoverFromContext;
+	const isHovering = hover != undefined ? hover : hoverFromContext;
 	const theme = useTheme();
-	const glowColor = getColor(theme, colorVariant || 'primary');
-	const glowStyles = { textShadow: `0 0 8px ${glowColor}` };
+	const selectedVariant = colorVariant ?? (logo ? 'logo' : 'default');
+	const colorSet = getColorSet(theme, selectedVariant);
+	const hasPalettePriority = colorVariant != undefined || logo;
+	const glowStyles = { textShadow: `0 0 8px ${colorSet.light}` };
 
 	return (
-		// The 'rest' object is safely passed, as it no longer contains 'hover'.
 		<Typography
 			{...rest}
+			color={color}
 			sx={{
 				fontFamily: logo ? logoFontFamily : titleFontFamily,
+				...(color == undefined && { color: colorSet.main }),
 				whiteSpace: 'nowrap',
 				transition: 'text-shadow 0.3s ease-in-out',
 				...(isHovering && glowStyles),
 				...(!noGlow && { '&:hover': glowStyles }),
 				...sx,
+				...(hasPalettePriority && {
+					color: colorSet.main,
+					...(isHovering && glowStyles),
+					...(!noGlow && { '&:hover': glowStyles }),
+				}),
 			}}
 		/>
 	);

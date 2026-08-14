@@ -7,6 +7,7 @@ export const RESOURCES = {
 	TEMP: 'temp',
 	TERM: 'term',
 	USER: 'user',
+	DOCUMENT: 'document',
 } as const;
 
 export type ResourceType = (typeof RESOURCES)[keyof typeof RESOURCES];

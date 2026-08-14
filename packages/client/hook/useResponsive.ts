@@ -10,22 +10,29 @@ export const useResponsive = () => {
 	const theme = useTheme();
 
 	const isSmallScreen = useMediaQuery(theme.breakpoints.down('md'));
-	const isTabletPortrait = useMediaQuery(
-		'(min-width: 768px) and (max-width: 1024px) and (orientation: portrait)'
-	);
-	const hasEnoughSpaceForDesktop = useMediaQuery('(min-width: 1200px)');
-	const isWideTablet = useMediaQuery(
-		'(min-width: 1024px) and (max-width: 1199px) and (orientation: landscape)'
-	);
+	const isTabletScreen = useMediaQuery(theme.breakpoints.between('md', 'lg'));
+	const isDesktopScreen = useMediaQuery(theme.breakpoints.up('lg'));
+	const isPortrait = useMediaQuery('(orientation: portrait)');
 
-	const shouldUseMobileLayout =
-		isSmallScreen || isTabletPortrait || (!hasEnoughSpaceForDesktop && !isWideTablet);
+	const isMobileScreen = isSmallScreen;
+	const isTabletPortrait = isTabletScreen && isPortrait;
+	const hasEnoughSpaceForDesktop = isDesktopScreen;
+	const isWideTablet = isTabletScreen && !isPortrait;
+
+	const shouldUseMobileLayout = isMobileScreen;
+	const shouldUseTabletLayout = isTabletScreen;
+	const layoutMode = isMobileScreen ? 'mobile' : isTabletScreen ? 'tablet' : 'desktop';
 
 	return {
 		isSmallScreen,
+		isMobileScreen,
+		isTabletScreen,
+		isDesktopScreen,
 		isTabletPortrait,
 		hasEnoughSpaceForDesktop,
 		isWideTablet,
 		shouldUseMobileLayout,
+		shouldUseTabletLayout,
+		layoutMode,
 	};
 };

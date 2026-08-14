@@ -26,15 +26,7 @@ export default defineConfig(({ mode }) => {
 		publicDir: '../../public',
 		ssr: {
 			external: allBuiltinModules,
-			noExternal: [
-				'@mui/material',
-				'@mui/icons-material',
-				'@emotion/react',
-				'@emotion/styled',
-				'@emotion/cache',
-				'@emotion/server',
-				'react-router',
-			],
+			noExternal: [/^@mui\//, /^@emotion\//, 'react-router'],
 			target: 'node',
 		},
 
@@ -52,12 +44,17 @@ export default defineConfig(({ mode }) => {
 			'import.meta.env.VITE_APP_DOMAIN': JSON.stringify(
 				env.VITE_APP_DOMAIN || 'http://localhost:3000'
 			),
-			'import.meta.env.VITE_SUPERTOKENS_DOMAIN': JSON.stringify(env.VITE_SUPERTOKENS_DOMAIN || ''),
 			'import.meta.env.VITE_APP_ENV': JSON.stringify(env.VITE_APP_ENV || mode),
 		},
 
-		server: { host: '0.0.0.0', port: 3000, strictPort: true },
-		preview: { host: '0.0.0.0', port: 3000, strictPort: true },
+		server: {
+			host: '0.0.0.0',
+			port: 3000,
+			strictPort: false,
+			open: true,
+			watch: { ignored: ['**/public/assets/character/**'] },
+		},
+		preview: { host: '0.0.0.0', port: 3000, strictPort: false },
 
 		build: {
 			outDir: '../../dist/client',
@@ -102,6 +99,9 @@ export default defineConfig(({ mode }) => {
 
 		esbuild: { target: 'es2022', logOverride: { 'this-is-undefined-in-esm': 'silent' } },
 
-		resolve: { alias: { '@rita-berenice/shared': path.resolve(__dirname, '../shared') } },
+		resolve: {
+			alias: { '@rita-berenice/shared': path.resolve(__dirname, '../shared') },
+			dedupe: ['react', 'react-dom', '@emotion/react', '@emotion/styled', '@emotion/cache'],
+		},
 	};
 });

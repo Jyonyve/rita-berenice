@@ -1,13 +1,13 @@
-# Rita-Berenice
+# Rita-Berenice v2
 
-Rita-Berenice is a pnpm/Turbo TypeScript monorepo for a RAG AI character chatbot.
+Rita-Berenice v2 is a pnpm/Turbo TypeScript monorepo for a personal-use AI character and long-term-memory RAG framework.
 
-The app combines a Vite React client, an Express SSR/API server, and shared domain contracts for a RAG-powered character chat experience.
+It combines a Vite React client, an Express SSR/API server, shared domain contracts, and PostgreSQL/pgvector persistence.
 
 ## Packages
 
 - `packages/client`: React 19 + Vite client and SSR entrypoints.
-- `packages/server`: Express API/SSR server, Chroma stores, RAG services, and LLM orchestration.
+- `packages/server`: Express API/SSR server, PostgreSQL stores, RAG services, and LLM orchestration.
 - `packages/shared`: shared API, domain, config, and utility contracts.
 
 ## Setup
@@ -32,6 +32,35 @@ On Windows PowerShell:
 Copy-Item .env.example .env
 ```
 
+## Local Development
+
+Start the local PostgreSQL, pgvector, and SuperTokens services:
+
+```bash
+pnpm db:up
+```
+
+The default local service values from `.env.example` are:
+
+- `DATABASE_URL=postgresql://rita:rita@localhost:5432/rita_berenice`
+- `DATABASE_SSL=false`
+- `SUPERTOKENS_CONNECTION_URI=http://localhost:3567`
+- `AUTH_IDENTITY_NAMESPACE=supertokens-dev`
+
+Apply database migrations, then start the combined Express SSR/API host with Vite middleware:
+
+```bash
+pnpm db:migrate
+pnpm dev
+```
+
+Open `http://localhost:3000`.
+
+Use `pnpm db:down` to stop the local Docker services.
+
+If Vite reports a Windows `EPERM` rename error under `.vite_cache`, stop `pnpm dev`, run
+`pnpm clean:vite`, then start `pnpm dev` again.
+
 ## Common Commands
 
 ```bash
@@ -53,7 +82,7 @@ pnpm check
 This repo includes project-level guidance for Codex and other coding agents:
 
 - `AGENTS.md`: always-on repository rules and verification expectations.
-- `.agents/skills/rag-change`: workflow for RAG, LLM, prompt, schema, memory, Chroma, and model changes.
+- `.agents/skills/rag-change`: workflow for RAG, LLM, prompt, schema, memory, and model changes.
 - `.agents/skills/tooling-upgrade`: workflow for scripts, CI, Docker, TypeScript, pnpm, formatting, and dependency/tooling changes.
 - `docs/agentic-coding.md`: human-facing guide to the agentic workflow.
 - `.github/codex/prompts/review.md`: reusable prompt for future Codex PR review automation.

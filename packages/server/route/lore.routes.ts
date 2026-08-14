@@ -2,6 +2,7 @@
 
 import express, { type Request, type Response, type Router } from 'express';
 import { verifySession } from 'supertokens-node/recipe/session/framework/express';
+import { ApiError } from '@rita-berenice/shared/domain';
 
 import { loreStore } from '../store/loreStore.js'; // Assuming store is at this path
 import { RESOURCES } from '../db/resource.type.js';
@@ -11,7 +12,7 @@ import {
 	validateRequestData,
 	validateServiceId,
 } from '../util/routeHelpers.js';
-import { assertOwnedCharacter, getSessionUserId } from '../util/authUtils.js';
+import { assertOwnedCharacter, assertOwnedSession, getSessionUserId } from '../util/authUtils.js';
 
 const router: Router = express.Router();
 
@@ -27,14 +28,34 @@ const collectionType = RESOURCES.LORE;
  */
 router.get(
 	genRoutePattern('getLoresByCharacter', ['characterId']),
+	verifySession(),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { characterId } = req.params;
 		validateServiceId(characterId, collectionType);
+		await assertOwnedCharacter(req, characterId);
 
-		const path = genRoutePattern('getLoresByCharacter', ['characterId']);
-		console.log(`API HIT: GET ${path.replace(':characterId', characterId)}`);
+		const response = await loreStore.getLoresByCharacter(characterId, getSessionUserId(req));
+		res.status(200).json(response);
+	})
+);
 
-		const response = await loreStore.getLoresByCharacter(characterId);
+/**
+ * GET /api/lore/get-lores-by-session/:sessionId
+ * Retrieves character/world lore plus lore scoped to this exact session.
+ */
+router.get(
+	genRoutePattern('getLoresBySession', ['sessionId']),
+	verifySession(),
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		const { sessionId } = req.params;
+		validateServiceId(sessionId, collectionType);
+		const session = await assertOwnedSession(req, sessionId);
+
+		const response = await loreStore.getLoresBySession(
+			sessionId,
+			session.characterId,
+			getSessionUserId(req)
+		);
 		res.status(200).json(response);
 	})
 );
@@ -47,14 +68,12 @@ router.get(
  */
 router.get(
 	genRoutePattern('getLore', ['loreId']),
+	verifySession(),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { loreId } = req.params;
 		validateServiceId(loreId, collectionType);
 
-		const path = genRoutePattern('getLore', ['loreId']);
-		console.log(`API HIT: GET ${path.replace(':loreId', loreId)}`);
-
-		const response = await loreStore.getLore(loreId);
+		const response = await loreStore.getLore(loreId, getSessionUserId(req));
 		res.status(200).json(response);
 	})
 );
@@ -69,13 +88,21 @@ router.post(
 	genRoutePattern('storeLore'),
 	verifySession(),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		validateRequestData(req.body, 'body', ['characterId', 'content']);
-		const { characterId, loreId } = req.body;
-		await assertOwnedCharacter(req, characterId);
-		req.body.userId = getSessionUserId(req);
+		validateRequestData(req.body, 'body', ['content']);
+		const characterIds = Array.isArray(req.body.characterIds) ? req.body.characterIds : [];
+		await Promise.all(
+			characterIds.map((characterId: string) => assertOwnedCharacter(req, characterId))
+		);
 
-		const path = genRoutePattern('storeLore');
-		console.log(`API HIT: POST ${path} for character ${characterId}, loreId ${loreId}`);
+		if (req.body.sessionId) {
+			const session = await assertOwnedSession(req, req.body.sessionId);
+			if (!characterIds.includes(session.characterId)) {
+				req.body.characterIds = [...characterIds, session.characterId];
+			}
+		} else if (req.body.category !== 'World' && characterIds.length === 0) {
+			throw new ApiError(400, 'Character lore must reference at least one owned character.');
+		}
+		req.body.userId = getSessionUserId(req);
 
 		const response = await loreStore.storeLore(req.body);
 		res.status(201).json(response);
@@ -96,9 +123,6 @@ router.post(
 
 // 		const { characterId, queryTexts, options } = req.body;
 // 		validateServiceId(characterId, collectionType);
-
-// 		const path = genRoutePattern('queryLores');
-// 		console.log(`API HIT: POST ${path} for character ${characterId}`);
 
 // 		const response = await loreStore.queryLores(characterId, queryTexts, options);
 // 		res.status(200).json(response);

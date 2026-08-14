@@ -1,5 +1,6 @@
 import {
 	boolean,
+	check,
 	index,
 	integer,
 	jsonb,
@@ -10,6 +11,7 @@ import {
 	uniqueIndex,
 	vector,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import {
 	CharacterInfo,
 	ChatTurn,
@@ -23,6 +25,7 @@ import {
 	TempChatTurn,
 	UserApiKeys,
 	UserInfo,
+	DocumentInfo,
 } from '@rita-berenice/shared/domain';
 
 const timestamps = {
@@ -52,6 +55,23 @@ export const credentials = pgTable('credentials', {
 	encryptedData: text('encrypted_data').notNull(),
 	...timestamps,
 });
+
+export const authIdentities = pgTable(
+	'auth_identities',
+	{
+		authNamespace: text('auth_namespace').notNull(),
+		providerUserId: text('provider_user_id').notNull(),
+		userId: text('user_id')
+			.notNull()
+			.references(() => users.userId, { onDelete: 'cascade' }),
+		...timestamps,
+	},
+	(table) => [
+		primaryKey({ columns: [table.authNamespace, table.providerUserId] }),
+		uniqueIndex('auth_identities_namespace_user_unique').on(table.authNamespace, table.userId),
+		index('auth_identities_user_id_idx').on(table.userId),
+	]
+);
 
 export const characters = pgTable(
 	'characters',
@@ -190,6 +210,42 @@ export const recaps = pgTable(
 	(table) => [index('recaps_session_type_idx').on(table.sessionId, table.recapType)]
 );
 
+export const documents = pgTable(
+	'documents',
+	{
+		documentId: text('document_id').primaryKey(),
+		userId: text('user_id')
+			.notNull()
+			.references(() => users.userId, { onDelete: 'cascade' }),
+		sessionId: text('session_id')
+			.notNull()
+			.references(() => sessions.sessionId, { onDelete: 'cascade' }),
+		characterId: text('character_id')
+			.notNull()
+			.references(() => characters.characterId, { onDelete: 'cascade' }),
+		origin: text('origin').notNull(),
+		status: text('status').notNull().default('draft'),
+		retrievalEnabled: boolean('retrieval_enabled').notNull().default(false),
+		data: jsonb('data').$type<DocumentInfo>().notNull(),
+		...timestamps,
+	},
+	(table) => [
+		index('documents_user_session_idx').on(table.userId, table.sessionId),
+		index('documents_retrieval_idx').on(
+			table.userId,
+			table.sessionId,
+			table.status,
+			table.retrievalEnabled
+		),
+		check('documents_origin_check', sql`${table.origin} in ('manual', 'generated')`),
+		check('documents_status_check', sql`${table.status} in ('draft', 'approved', 'archived')`),
+		check(
+			'documents_retrieval_requires_approval_check',
+			sql`not ${table.retrievalEnabled} or ${table.status} = 'approved'`
+		),
+	]
+);
+
 export const terms = pgTable(
 	'terms',
 	{
@@ -261,6 +317,7 @@ export const memoryEmbeddings = pgTable(
 export type DatabaseSchema = {
 	users: typeof users;
 	credentials: typeof credentials;
+	authIdentities: typeof authIdentities;
 	characters: typeof characters;
 	sessions: typeof sessions;
 	profiles: typeof profiles;
@@ -269,6 +326,7 @@ export type DatabaseSchema = {
 	lores: typeof lores;
 	histories: typeof histories;
 	recaps: typeof recaps;
+	documents: typeof documents;
 	terms: typeof terms;
 	finalizationJobs: typeof finalizationJobs;
 	memoryEmbeddings: typeof memoryEmbeddings;

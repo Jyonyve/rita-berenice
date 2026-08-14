@@ -42,9 +42,10 @@ export const metadataToCharacter = (
 	description: string,
 	instruction: string,
 	worldLoreId: string,
-	firstMessage: string
+	firstMessage: string,
+	worldIntroduction = ''
 ): CharacterInfo => {
-	return { ...metadata, description, instruction, worldLoreId, firstMessage };
+	return { ...metadata, description, worldIntroduction, instruction, worldLoreId, firstMessage };
 };
 
 export const metadataToProfile = (metadata: ProfileMetadata, description: string): ProfileInfo => {
@@ -203,6 +204,7 @@ export const loreToMetadata = (loreInfo: LoreInfo): LoreMetadata => {
 		type: loreInfo.type,
 		loreId: loreInfo.loreId,
 		userId: loreInfo.userId,
+		sessionId: loreInfo.sessionId,
 		createdAt: loreInfo.createdAt,
 		updatedAt: loreInfo.updatedAt,
 		title: loreInfo.title,

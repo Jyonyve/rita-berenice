@@ -13,6 +13,7 @@ import {
 import { ProfileInfo, ProfileMetadata } from '@rita-berenice/shared/domain';
 import { buildProfileId } from '@rita-berenice/shared/util';
 import { assertOwnedProfile, assertOwnedSession, assertSessionUser } from '../util/authUtils.js';
+import { processProfileImagePair, profileUpload } from '../util/imageProcessingUtils.js';
 
 const router: Router = express.Router();
 router.use(verifySession());
@@ -29,8 +30,6 @@ router.get(
 	genRoutePattern('getAllProfilesByUserId', ['userId']),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const userId = assertSessionUser(req, req.params.userId);
-		const path = genRoutePattern('getAllProfilesByUserId', ['userId']);
-		console.log(`API HIT: GET ${path}`);
 
 		const response = await profileStore.getAllProfilesByUserId(userId);
 		res.status(200).json(response);
@@ -52,9 +51,6 @@ router.get(
 		validateServiceId(profileId, collectionType);
 		await assertOwnedProfile(req, profileId);
 
-		const path = genRoutePattern('getProfile', ['profileId']);
-		console.log(`API HIT: GET ${path.replace(':profileId', profileId)}`);
-
 		const response = await profileStore.getProfile(profileId);
 		res.status(200).json(response);
 	})
@@ -75,9 +71,6 @@ router.get(
 		validateServiceId(sessionId, collectionType);
 		await assertOwnedSession(req, sessionId);
 
-		const path = genRoutePattern('getProfileBySessionId', ['sessionId']);
-		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
-
 		const response = await profileStore.getProfileBySessionId(sessionId);
 		res.status(200).json(response);
 	})
@@ -96,9 +89,6 @@ router.get(
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { showName } = req.params;
 		validateRequestData(req.params, 'params', ['showName']);
-
-		const path = genRoutePattern('getProfilesByShowName', ['showName']);
-		console.log(`API HIT: GET ${path.replace(':showName', showName)}`);
 
 		const response = await profileStore.getProfilesByShowName(showName);
 		res.status(200).json(response);
@@ -126,13 +116,45 @@ router.post(
 			req.body.userId = assertSessionUser(req, req.body.userId);
 			req.body.profileId = buildProfileId(req.body.sessionId, req.body.userId);
 
-			const path = genRoutePattern('storeProfile');
-			console.log(`API HIT: POST ${path} for profile: ${req.body?.name}`);
-
 			const response = await profileStore.storeProfile(req.body);
 			res.status(201).json(response);
 		}
 	)
+);
+
+router.post(
+	genRoutePattern('uploadProfileImage'),
+	profileUpload.fields([
+		{ name: 'image', maxCount: 1 },
+		{ name: 'avatar', maxCount: 1 },
+	]),
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		validateRequestData(req.body, 'body', ['profileId']);
+		const { profileId } = req.body;
+		await assertOwnedProfile(req, profileId);
+
+		const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+		const portraitFile = files?.image?.[0];
+		const avatarFile = files?.avatar?.[0];
+		if (!portraitFile || !avatarFile) {
+			res.status(400).json({ error: 'Both profile portrait and avatar image files are required' });
+			return;
+		}
+
+		const imagePaths = await processProfileImagePair(
+			portraitFile.buffer,
+			avatarFile.buffer,
+			profileId
+		);
+		res
+			.status(200)
+			.json({
+				success: true,
+				message: 'Profile portrait and avatar uploaded successfully',
+				...imagePaths,
+				profileId,
+			});
+	})
 );
 
 export default router;

@@ -1,6 +1,7 @@
 import { FC } from 'react';
 import { useLanguage } from '../../provider/LanguageProvider.js';
-import { Switch } from '@mui/material';
+import { alpha, Switch } from '@mui/material';
+import { silver } from '../../style/colors.js';
 
 export const LanguageSwitch: FC = () => {
 	const { lang, toggleLang } = useLanguage();
@@ -19,6 +20,8 @@ export const LanguageSwitch: FC = () => {
 			size="medium"
 			sx={{
 				'& .MuiSwitch-thumb': {
+					boxShadow: `0 0 3px ${alpha(silver.main, 0.72)}, 0 0 7px ${alpha(silver.light, 0.42)}`,
+					transition: 'box-shadow 0.3s ease-in-out',
 					'&:before': {
 						content: lang === 'kor' ? '"한"' : '"EN"',
 						position: 'absolute',

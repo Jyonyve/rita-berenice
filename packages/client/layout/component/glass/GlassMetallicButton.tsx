@@ -14,7 +14,7 @@ export const GlassMetallicButton: ComponentType<GlassMetallicButtonProps> = styl
 	shouldForwardProp: (prop) => prop !== 'colorVariant',
 	// Set a default colorVariant, so the button is visually appealing by default
 })<GlassMetallicButtonProps>(({ theme, colorVariant = 'primary' }) => {
-	const baseGlassStyle = getGlassEffect(theme.palette.mode);
+	const baseGlassStyle = getGlassEffect(theme.palette.mode, { noGlow: true });
 
 	let metallicColors;
 	if (colorVariant === 'gold') {

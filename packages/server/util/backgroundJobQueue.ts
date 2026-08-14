@@ -20,6 +20,12 @@ interface BackgroundJobQueueOptions<TInput, TResult> {
 	maxAttempts?: number;
 	retryDelayMs?: number;
 	maxRetainedJobs?: number;
+	onChange?: (snapshot: BackgroundJobSnapshot<TResult>, input: TInput) => Promise<void> | void;
+	onChangeError?: (
+		error: unknown,
+		snapshot: BackgroundJobSnapshot<TResult>,
+		input: TInput
+	) => Promise<void> | void;
 }
 
 export class BackgroundJobQueue<TInput, TResult> {
@@ -55,6 +61,7 @@ export class BackgroundJobQueue<TInput, TResult> {
 		this.jobs.set(jobId, job);
 		this.pendingJobIds.push(jobId);
 		this.trimRetainedJobs();
+		void this.notifyChange(job);
 		this.scheduleProcessing();
 		return this.toSnapshot(job);
 	}
@@ -73,6 +80,7 @@ export class BackgroundJobQueue<TInput, TResult> {
 		};
 		this.jobs.set(jobId, job);
 		this.trimRetainedJobs();
+		void this.notifyChange(job);
 		return this.toSnapshot(job);
 	}
 
@@ -107,17 +115,20 @@ export class BackgroundJobQueue<TInput, TResult> {
 			job.attempts += 1;
 			job.updatedAt = new Date().toISOString();
 			job.error = undefined;
+			await this.notifyChange(job);
 
 			try {
 				job.result = await this.options.worker(job.input);
 				job.status = 'completed';
 				job.updatedAt = new Date().toISOString();
+				await this.notifyChange(job);
 				return;
 			} catch (error) {
 				job.error = error instanceof Error ? error.message : 'Unknown background job error';
 				job.updatedAt = new Date().toISOString();
 				if (job.attempts < job.maxAttempts) {
 					job.status = 'retrying';
+					await this.notifyChange(job);
 					await new Promise((resolve) =>
 						setTimeout(resolve, this.retryDelayMs * 2 ** (job.attempts - 1))
 					);
@@ -126,6 +137,7 @@ export class BackgroundJobQueue<TInput, TResult> {
 		}
 		job.status = 'failed';
 		job.updatedAt = new Date().toISOString();
+		await this.notifyChange(job);
 	}
 
 	private toSnapshot(job: BackgroundJob<TInput, TResult>): BackgroundJobSnapshot<TResult> {
@@ -142,6 +154,15 @@ export class BackgroundJobQueue<TInput, TResult> {
 		while (this.jobs.size > this.maxRetainedJobs && removableJobs.length > 0) {
 			const job = removableJobs.shift();
 			if (job) this.jobs.delete(job.jobId);
+		}
+	}
+
+	private async notifyChange(job: BackgroundJob<TInput, TResult>): Promise<void> {
+		const snapshot = this.toSnapshot(job);
+		try {
+			await this.options.onChange?.(snapshot, job.input);
+		} catch (error) {
+			await this.options.onChangeError?.(error, snapshot, job.input);
 		}
 	}
 }

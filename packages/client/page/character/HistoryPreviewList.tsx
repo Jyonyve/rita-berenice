@@ -3,6 +3,7 @@ import React, { FC, Fragment } from 'react'; // Import Fragment
 import { useHistoryApi } from '../../hook/api/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { GlassCircularProgress } from '../../layout/component/glass/index.js';
+import { SafeRichText } from '../../layout/component/SafeRichText.js';
 import { LANG_KEYS } from '@rita-berenice/shared/config';
 import { formatTimestamp } from '../../util/styleUtils.jsx';
 
@@ -93,7 +94,8 @@ export const HistoryPreviewList: FC<{
 											</Typography>
 										</Box>
 										{/* --- ROW 2: Message Snippet --- */}
-										<Typography
+										<SafeRichText
+											text={info.content}
 											variant="body2"
 											color="text.secondary"
 											sx={{
@@ -104,9 +106,7 @@ export const HistoryPreviewList: FC<{
 												WebkitBoxOrient: 'vertical',
 												WebkitLineClamp: 2,
 											}}
-										>
-											{info.content}
-										</Typography>
+										/>
 									</Box>
 								}
 							/>

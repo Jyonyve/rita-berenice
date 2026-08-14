@@ -19,14 +19,18 @@ import { tempStore } from '../store/tempStore.js';
 import { parseEntriesToConversation, buildChatMessage } from '../util/chatParseUtils.js';
 import { detectLanguage } from '../util/languageUtils.js';
 import { sanitizeLlmResponse } from '../util/llmUtils.js';
+import {
+	createOperationLogger,
+	flowLogger,
+	OperationLogger,
+	serializeError,
+} from '../util/jsonlLogger.js';
 import { handleServiceError } from '../util/serviceHelpers.js';
 import { memoryEngine } from './memoryEngine.js';
 import { personaEngine } from './personaEngine.js';
 
-const timerLabel = (sequence: number) => `RESPONSE_GENERATION: Turn ${sequence}`;
-
 export interface ReceiveBotResponseOptions {
-	isScene?: boolean;
+	adultContentEnabled?: boolean;
 	signal?: AbortSignal;
 	onStatus?: (stage: ChatGenerationStage) => void;
 	onDelta?: (delta: string) => void;
@@ -46,10 +50,15 @@ export const receiveBotResponse = async (
 	recentChatTurnString: string,
 	options: ReceiveBotResponseOptions = {}
 ): Promise<TempChatTurn> => {
-	// --- 1. START TIMER ---
-	console.time(timerLabel(tempChatTurnCdo.sequence));
-
 	const { sequence, sessionId, inputJsonString } = tempChatTurnCdo;
+	const requestId = `chat:${sessionId}:${sequence}:${Date.now()}`;
+	const logger = createOperationLogger('orchestrationService', 'receiveBotResponse', {
+		requestId,
+		sessionId,
+		turn: sequence,
+		userId: tempChatTurnCdo.userId,
+		model: aiModelInfo.model,
+	});
 
 	const controller = new AbortController();
 	const abortFromCaller = () => controller.abort(options.signal?.reason);
@@ -59,22 +68,18 @@ export const receiveBotResponse = async (
 		options.signal?.addEventListener('abort', abortFromCaller, { once: true });
 	}
 	const timeoutId = setTimeout(() => {
-		console.log(
-			`[Orchestrator] Global ${ABORT_TIMEOUT}s timeout triggered for session ${sessionId}.`
-		);
+		logger.warn('timeout', { timeoutSeconds: ABORT_TIMEOUT });
 		controller.abort();
 	}, ABORT_TIMEOUT * 1000);
 
-	console.log(
-		`[Orchestrator: ${aiModelInfo.model}] Starting response generation for session ${sessionId}, turn ${sequence}...`
-	);
+	logger.info('start');
 
 	try {
 		options.onStatus?.('preparing');
 		// 1. 턴 가져오기 또는 생성
 		let tempTurn = await _getOrCreateTempTurn(sessionId, sequence, tempChatTurnCdo.userId);
 		// --- 2. LOG CHECKPOINT 1 ---
-		console.timeLog(timerLabel(tempChatTurnCdo.sequence), 'Temp turn ready.');
+		logger.checkpoint('tempTurn.ready', { existingOptionCount: tempTurn.setCount });
 		const userConverSation = parseEntriesToConversation(JSON.parse(inputJsonString));
 
 		// 2. 새로운 응답 생성 및 추가 (책임 위임)
@@ -87,22 +92,22 @@ export const receiveBotResponse = async (
 			recentChatTurnString,
 			{
 				signal: controller.signal,
-				isScene: options.isScene,
+				adultContentEnabled: options.adultContentEnabled,
 				onStatus: options.onStatus,
 				onDelta: options.onDelta,
+				logger,
 			}
 		);
-		console.timeLog(timerLabel(tempTurn.sequence), 'LLM RESPONSE FINISHED.');
+		logger.checkpoint('llm.responseFinished', { optionCount: tempTurn.setCount });
 		// 3. 최종 상태 저장
 		options.onStatus?.('saving');
 		await tempStore.saveTempChatTurn(tempTurn);
-		console.timeLog(timerLabel(tempTurn.sequence), 'TEMP TURN SAVED.');
+		logger.checkpoint('tempTurn.saved', { optionCount: tempTurn.setCount });
 
-		console.log(
-			`[Orchestrator] Request for turn ${sequence} completed. Temp turn now has ${tempTurn.setCount} options.`
-		);
+		logger.complete({ optionCount: tempTurn.setCount });
 		return tempTurn;
 	} catch (error: any) {
+		logger.error('failed', { error: error instanceof Error ? error.message : String(error) });
 		handleServiceError(
 			error,
 			`[Orchestrator] Failed to process chat request for session ${sessionId}, turn ${sequence}.`,
@@ -111,8 +116,6 @@ export const receiveBotResponse = async (
 	} finally {
 		clearTimeout(timeoutId);
 		options.signal?.removeEventListener('abort', abortFromCaller);
-		console.timeEnd(timerLabel(tempChatTurnCdo.sequence));
-		console.log(`[Orchestrator] Execution of receiveBotResponse for session ${sessionId} completed.`);
 	}
 };
 
@@ -127,17 +130,21 @@ export const receiveBotResponse = async (
  */
 export const finalizeChatTurn = async (chatTurnCdo: ChatTurnCdo): Promise<ChatTurn> => {
 	const { sessionId, sequence } = chatTurnCdo;
-	console.log(`[Orchestrator] Finalizing chat turn for session ${sessionId}, sequence ${sequence}.`);
+	const logger = createOperationLogger('orchestrationService', 'finalizeChatTurn', {
+		sessionId,
+		turn: sequence,
+		userId: chatTurnCdo.userId,
+	});
+	logger.info('start');
 
 	try {
 		const enrichedChatTurn = await enrichChatTurn(chatTurnCdo);
 		await chatStore.storeChatTurn(enrichedChatTurn);
 
-		console.log(
-			`[Orchestrator] Chat turn ${sequence} for session ${sessionId} finalized and stored.`
-		);
+		logger.complete();
 		return enrichedChatTurn;
 	} catch (error: any) {
+		logger.error('failed', serializeError(error));
 		handleServiceError(
 			error,
 			`[Orchestrator] Failed to finalize chat turn for session ${sessionId}, sequence ${sequence}.`,
@@ -165,14 +172,14 @@ const _getOrCreateTempTurn = async (
 		// 1. Attempt to fetch the TempChatTurn.
 		// getTempChatTurn will now throw an ApiError with status 404 if not found.
 		const response = await tempStore.getTempChatTurn(sessionId, sequence);
-		console.log(`[Orchestrator] Existing temp turn found for turn ${sequence}.`);
+		flowLogger.info('orchestrationService', 'tempTurn.found', { sessionId, turn: sequence });
 		// Assuming the response object contains the turn, e.g., { tempChatTurn: ... }
 		return response.tempChatTurn;
 	} catch (error: any) {
 		// 2. Check if the error is the specific "Not Found" error.
 		if (error instanceof ApiError && error.status === 404) {
 			// 3. If it is a 404, the turn doesn't exist. Create a new one.
-			console.log(`[Orchestrator] No existing temp turn found. Creating new for turn ${sequence}.`);
+			flowLogger.info('orchestrationService', 'tempTurn.create', { sessionId, turn: sequence });
 			const now = new Date().toISOString();
 			return {
 				userId,
@@ -188,7 +195,11 @@ const _getOrCreateTempTurn = async (
 			};
 		} else {
 			// 4. For any other error (e.g., 500), re-throw it to be handled by the caller.
-			console.error(`[Orchestrator] An unexpected error occurred in _getOrCreateTempTurn:`, error);
+			flowLogger.error('orchestrationService', 'tempTurn.lookup.failed', {
+				sessionId,
+				turn: sequence,
+				...serializeError(error),
+			});
 			throw error;
 		}
 	}
@@ -209,9 +220,10 @@ async function _generateAndAppendResponse(
 	recentChatTurnString: string,
 	options: {
 		signal?: AbortSignal;
-		isScene?: boolean;
+		adultContentEnabled?: boolean;
 		onStatus?: (stage: ChatGenerationStage) => void;
 		onDelta?: (delta: string) => void;
+		logger?: OperationLogger;
 	}
 ): Promise<TempChatTurn> {
 	// 1. Recall relevant memories for context.
@@ -231,7 +243,7 @@ async function _generateAndAppendResponse(
 
 	if (recentChatTurn && recentChatTurn.length > 0) {
 		options.onStatus?.('retrieving');
-		console.timeLog(timerLabel(tempTurn.sequence), 'Attempting memory recall...');
+		options.logger?.checkpoint('memoryRecall.start', { recentTurnCount: recentChatTurn.length });
 		try {
 			// Overwrite the default memories with the actual recalled data.
 			recalledMemories = await memoryEngine.recallRelevantMemories(
@@ -241,14 +253,19 @@ async function _generateAndAppendResponse(
 				recentChatTurn,
 				langCode
 			);
-			// --- 2. LOG CHECKPOINT 2 ---
-			console.timeLog(timerLabel(tempTurn.sequence), 'Memory recall finish. completed.');
+			options.logger?.checkpoint('memoryRecall.complete', {
+				shortTermCount: recalledMemories.shortTermHistory.length,
+				longTermCount: recalledMemories.longTermHistory.length,
+				loreCount: recalledMemories.relevantLore.length,
+				historyCount: recalledMemories.relevantHistory.length,
+				hasFactualRecap: Boolean(recalledMemories.factualRecapSummary),
+				hasRelationshipRecap: Boolean(recalledMemories.relationshipRecapSummary),
+			});
 		} catch (error: any) {
 			// If recall fails with a 404, we log it and proceed.
 			// The `recalledMemories` object will correctly keep its default empty state.
 			if (error instanceof ApiError && error.status === 404) {
-				console.warn(`[Orchestrator] No memories found for session. Proceeding with default context.`);
-				console.timeLog(timerLabel(tempTurn.sequence), 'Memory recall finish. Empty memory.');
+				options.logger?.warn('memoryRecall.empty', { status: 404 });
 			} else {
 				// For any other unexpected error, we re-throw to be handled by the caller.
 				throw error;
@@ -256,20 +273,25 @@ async function _generateAndAppendResponse(
 		}
 	} else {
 		// If there is no history, log it and proceed with the default empty context.
-		console.log(`[Orchestrator] No recent chat history. Skipping memory recall.`);
+		options.logger?.checkpoint('memoryRecall.skipped', { reason: 'no_recent_chat_history' });
 	}
 
 	// 2. Generate the new persona response.
 	options.onStatus?.('generating');
+	options.logger?.checkpoint('personaGeneration.start');
 	const personaResponse = await personaEngine.generateResponse(
 		recalledMemories,
 		characterInfo,
 		profileInfo,
 		userConversation,
 		aiModelInfo,
-		{ signal: options.signal, isScene: options.isScene, onDelta: options.onDelta }
+		{
+			signal: options.signal,
+			adultContentEnabled: options.adultContentEnabled,
+			onDelta: options.onDelta,
+		}
 	);
-	console.timeLog(timerLabel(tempTurn.sequence), 'llm generate response finishing.');
+	options.logger?.checkpoint('personaGeneration.complete', { emotion: personaResponse.emotion });
 
 	const botChatEntries = sanitizeLlmResponse(personaResponse.response);
 	// 3. Create the new bot response message.

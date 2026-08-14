@@ -41,5 +41,11 @@ export function HistoryPageLoader() {
 		);
 	}
 
-	return <HistoryPage historyInfo={historyRes?.historyInfo} userId={userId ?? ''} />;
+	return (
+		<HistoryPage
+			historyInfo={historyRes.historyInfo}
+			imageUrl={historyRes.historyImageUrls[historyRes.historyInfo.historyId]}
+			userId={userId ?? ''}
+		/>
+	);
 }

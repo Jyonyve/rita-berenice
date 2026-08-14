@@ -16,16 +16,18 @@ import { getCharacterImageArray } from '../../util/portraitUtils.js';
 import { getLangAlertText, getLangText } from '../../util/translateUtils.js';
 import { SessionPreviewList } from './SessionPreviewList.jsx';
 import { ProfileHistoryTabs } from './ProfileHistoryTab.jsx';
-import { SolidMetallicButton, RomanticTitle } from '../../layout/component/index.js';
+import { RomanticTitle, SafeRichText, SolidMetallicButton } from '../../layout/component/index.js';
 import { CharacterForm } from './CharacterForm.jsx'; // Import the form
-import { LANG_KEYS } from '@rita-berenice/shared/config';
-import { CharacterInfo, ProfileCdo } from '@rita-berenice/shared/domain';
+import { LANG_KEYS, PortraitUrlMap } from '@rita-berenice/shared/config';
+import { CharacterInfo, ProfileCdo, SessionContentPolicy } from '@rita-berenice/shared/domain';
 
-const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string; isMine: boolean }> = ({
-	characterInfo,
-	userId,
-	isMine,
-}) => {
+const CharacterPage: FC<{
+	characterInfo: CharacterInfo;
+	portraitUrls?: PortraitUrlMap;
+	avatarUrls?: PortraitUrlMap;
+	userId: string;
+	isMine: boolean;
+}> = ({ characterInfo, portraitUrls, avatarUrls, userId, isMine }) => {
 	const { openLoginModal, isLoggedIn } = useAuth();
 	const navigate = useNavigate();
 	const { addToast } = useToast();
@@ -43,7 +45,10 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string; isMine: 
 		navigate(`/${routeConstants.CHAT}/${sessionId}`);
 	};
 
-	const handleStartNewSession = async (profileCdo: ProfileCdo) => {
+	const handleStartNewSession = async (
+		profileCdo: ProfileCdo,
+		contentPolicy: SessionContentPolicy = 'general'
+	) => {
 		if (import.meta.env.VITE_APP_MODE === 'static') {
 			addToast(getLangAlertText(LANG_KEYS.STATIC_SESSION_DISABLE), 'error');
 			return;
@@ -55,7 +60,7 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string; isMine: 
 
 		navigate(`/${routeConstants.CHAT}`, {
 			replace: true,
-			state: { characterId: characterId, profileData: profileCdo },
+			state: { characterId: characterId, profileData: profileCdo, contentPolicy },
 		});
 	};
 
@@ -74,7 +79,7 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string; isMine: 
 	};
 
 	// Portrait: pick default or first available
-	const portraits = getCharacterImageArray(characterId);
+	const portraits = getCharacterImageArray(portraitUrls);
 
 	// If editing, show the form instead of the display
 	if (isEditing) {
@@ -83,6 +88,8 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string; isMine: 
 				mode="edit"
 				userId={userId}
 				characterInfo={characterInfo}
+				portraitUrls={portraitUrls}
+				avatarUrls={avatarUrls}
 				onCancel={handleEditCancel}
 				onSuccess={handleEditSuccess}
 			/>
@@ -128,7 +135,7 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string; isMine: 
 				{/* Right Column */}
 				<Grid size={{ xs: 12, md: 8 }}>
 					<Box display="flex" flexDirection="column" gap={2}>
-						{/* Title and Description Card */}
+						{/* Character identity */}
 						<GlassCard variant="outlined">
 							<Box sx={{ mt: 1, ml: 1 }}>
 								{/* Title with inline edit button */}
@@ -149,10 +156,28 @@ const CharacterPage: FC<{ characterInfo: CharacterInfo; userId: string; isMine: 
 										</Tooltip>
 									)}
 								</Box>
-								<Typography variant="body2" mt={1} ml={0}>
-									{characterInfo.description}
-								</Typography>
+								{characterInfo.title && (
+									<Typography variant="body1" color="text.secondary" mt={1}>
+										{characterInfo.title}
+									</Typography>
+								)}
 							</Box>
+						</GlassCard>
+
+						{characterInfo.worldIntroduction && (
+							<GlassCard variant="outlined">
+								<Typography variant="subtitle1" color="text.secondary" mb={1}>
+									{getLangText(LANG_KEYS.WORLD_INTRODUCTION)}
+								</Typography>
+								<SafeRichText text={characterInfo.worldIntroduction} variant="body2" />
+							</GlassCard>
+						)}
+
+						<GlassCard variant="outlined">
+							<Typography variant="subtitle1" color="text.secondary" mb={1}>
+								{getLangText(LANG_KEYS.DESCRIPTION)}
+							</Typography>
+							<SafeRichText text={characterInfo.description} variant="body2" />
 						</GlassCard>
 
 						{isLoggedIn && (

@@ -10,6 +10,7 @@ import {
 	FormHelperText,
 	Chip,
 	Stack,
+	Avatar,
 } from '@mui/material';
 import { FC, useState, useRef, ChangeEvent, useEffect } from 'react';
 
@@ -41,23 +42,33 @@ import {
 	PortraitWithChip,
 } from '../../layout/component/index.js';
 import {
+	EmotionKey,
 	EmotionValue,
 	DEFAULT_EMOTION,
 	LANG_KEYS,
 	LIMIT_5MB,
 	REQUEST_CHARACTER_LIMIT,
-	ASPECT_RATIOS,
 	SUPPORTED_IMAGE_MIMETYPES,
 	getImageInputAccept,
+	PortraitUrlMap,
 } from '@rita-berenice/shared/config';
 import { UploadedCharacterImage, CharacterInfo, CharacterCdo } from '@rita-berenice/shared/domain';
 import { isCharacterInfo, createBasicCharacterInfo } from '@rita-berenice/shared/util';
-import { blobToWebpFile, cleanupBlobUrl, processCroppedImage } from '../../util/cropImageUtils.js';
+import { cleanupBlobUrl, processCroppedImage } from '../../util/cropImageUtils.js';
+import { runRetriableQueue } from '../../util/retriableQueue.js';
+import {
+	getCharacterCropAspect,
+	getCharacterCropOutputSize,
+	type CharacterCropStage,
+} from './characterImageCrop.js';
 
 // 🎨 Constants
 const AUTO_SLIDE_DELAY = 100;
 const TOAST_DURATION = 1500;
 const EMPTY_IMAGE_HEIGHT = 300;
+const IMAGE_UPLOAD_CONCURRENCY = 2;
+const IMAGE_UPLOAD_MAX_ATTEMPTS = 3;
+const IMAGE_UPLOAD_RETRY_DELAY_MS = 750;
 
 // 🎨 Helper Functions
 const getVisibleImages = (images: UploadedCharacterImage[]) =>
@@ -70,17 +81,35 @@ type Props = {
 	mode: 'create' | 'edit';
 	userId: string;
 	characterInfo?: CharacterInfo;
+	portraitUrls?: PortraitUrlMap;
+	avatarUrls?: PortraitUrlMap;
 	onCancel: () => void;
 	onSuccess: (characterId: string) => void;
 };
 
-export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel, onSuccess }) => {
+export const CharacterForm: FC<Props> = ({
+	mode,
+	userId,
+	characterInfo,
+	portraitUrls,
+	avatarUrls,
+	onCancel,
+	onSuccess,
+}) => {
 	const { addToast } = useToast();
-	const { storeCharacter, uploadCharacterImage, createCharacterFolder, deleteCharacterImage } =
-		useCharacterApi();
+	const {
+		storeCharacter,
+		uploadCharacterImage,
+		createCharacterFolder,
+		deleteCharacterImage,
+		refreshCharacterImages,
+	} = useCharacterApi();
 	const { storeLore } = useLoreApi();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const swiperRef = useRef<SwiperClass | null>(null);
+	const pendingCreateIdentityRef = useRef<
+		Pick<CharacterInfo, 'characterId' | 'variant' | 'createdAt'> | undefined
+	>(undefined);
 
 	const {
 		control,
@@ -93,6 +122,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 			title: '',
 			contact: '',
 			description: '',
+			worldIntroduction: '',
 			instruction: '',
 			gender: 'other',
 			name: '',
@@ -109,9 +139,17 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 	const [uploadedImages, setUploadedCharacterImages] = useState<UploadedCharacterImage[]>([]);
 	const [selectedEmotion, setSelectedEmotion] = useState<EmotionValue>(DEFAULT_EMOTION);
 	const [cropModalOpen, setCropModalOpen] = useState(false);
+	const [cropStage, setCropStage] = useState<CharacterCropStage>('portrait');
 	const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
+	const [pendingPortraitCrop, setPendingPortraitCrop] = useState<{
+		file: File;
+		previewUrl: string;
+	} | null>(null);
 	const [modalImageUrl, setModalImageUrl] = useState<string>('');
 	const [lastUploadedEmotion, setLastUploadedEmotion] = useState<string | null>(null);
+	const [uploadProgress, setUploadProgress] = useState<{ completed: number; total: number } | null>(
+		null
+	);
 
 	// 🎨 Helper Functions
 	const getEmotionKey = (emotionName: string): number => {
@@ -130,15 +168,21 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 		if (mode === 'edit' && characterInfo?.characterId) {
 			const entries: UploadedCharacterImage[] = getEmotionSelectLabel()
 				.map((opt) => {
-					const url = getImageForEmotion(characterInfo.characterId, opt.key);
+					const url = getImageForEmotion(portraitUrls, opt.key);
 					return url
-						? { file: undefined, emotion: opt.key, emotionKey: opt.emotionKey, preview: url }
+						? {
+								file: undefined,
+								emotion: opt.key,
+								emotionKey: opt.emotionKey,
+								preview: url,
+								avatarPreview: avatarUrls?.[opt.emotionKey as EmotionKey],
+							}
 						: null;
 				})
 				.filter(Boolean) as UploadedCharacterImage[];
 			setUploadedCharacterImages(entries);
 		}
-	}, [mode, characterInfo]);
+	}, [mode, characterInfo, portraitUrls, avatarUrls]);
 
 	useEffect(() => {
 		if (swiperRef.current && uploadedImages.length > 0) {
@@ -169,6 +213,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 				if (img.preview.startsWith('blob:')) {
 					URL.revokeObjectURL(img.preview);
 				}
+				cleanupBlobUrl(img.avatarPreview);
 			});
 
 			// Clean up modal image URL
@@ -198,6 +243,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 
 			setModalImageUrl(result);
 			setPendingImageFile(file);
+			setCropStage('portrait');
 			setCropModalOpen(true);
 		};
 		reader.onerror = () => addToast('Error reading image file', 'error');
@@ -215,11 +261,13 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 
 			if (mode === 'create') {
 				if (item.preview.startsWith('blob:')) URL.revokeObjectURL(item.preview);
+				cleanupBlobUrl(item.avatarPreview);
 				return next.filter((img) => img.emotion !== emotion);
 			} else {
 				// edit: mark delete unless this is a new file in this session
 				if (item.file) {
 					if (item.preview.startsWith('blob:')) URL.revokeObjectURL(item.preview);
+					cleanupBlobUrl(item.avatarPreview);
 					return next.filter((img) => img.emotion !== emotion);
 				}
 				next[idx] = { ...item, toDelete: true };
@@ -233,15 +281,25 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 		if (!pendingImageFile) return;
 
 		try {
-			// Use utility to process blob
-			const { file, previewUrl } = processCroppedImage(croppedBlob, pendingImageFile.name);
+			const croppedImage = processCroppedImage(croppedBlob, pendingImageFile.name);
+			if (cropStage === 'portrait') {
+				cleanupBlobUrl(pendingPortraitCrop?.previewUrl);
+				setPendingPortraitCrop(croppedImage);
+				setModalImageUrl(croppedImage.previewUrl);
+				setCropStage('avatar');
+				return;
+			}
+
+			if (!pendingPortraitCrop) throw new Error('Portrait crop is required before avatar crop.');
 
 			const idx = uploadedImages.findIndex((img) => img.emotion === selectedEmotion);
 			const newImage: UploadedCharacterImage = {
-				file,
+				file: pendingPortraitCrop.file,
+				avatarFile: croppedImage.file,
 				emotion: selectedEmotion,
 				emotionKey: getEmotionKey(selectedEmotion),
-				preview: previewUrl,
+				preview: pendingPortraitCrop.previewUrl,
+				avatarPreview: croppedImage.previewUrl,
 				toDelete: false,
 			};
 
@@ -249,6 +307,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 				const next = [...prev];
 				if (idx >= 0) {
 					cleanupBlobUrl(next[idx].preview); // Use utility
+					cleanupBlobUrl(next[idx].avatarPreview);
 					next[idx] = newImage;
 				} else {
 					next.push(newImage);
@@ -257,26 +316,113 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 			});
 
 			setLastUploadedEmotion(selectedEmotion);
-			addToast(
-				`${getLangText(emotionToLangKey(selectedEmotion))} ${getLangAlertText(LANG_KEYS.IMAGE_UPLOADED_FOR)}`,
-				'success',
-				TOAST_DURATION
-			);
+
+			if (mode === 'edit' && characterInfo?.characterId) {
+				const result = await runRetriableQueue(
+					[newImage],
+					async (image) => uploadImagePair(characterInfo.characterId, image),
+					{
+						concurrency: 1,
+						maxAttempts: IMAGE_UPLOAD_MAX_ATTEMPTS,
+						retryDelayMs: IMAGE_UPLOAD_RETRY_DELAY_MS,
+					}
+				);
+
+				if (result.failed.length > 0) {
+					const failure = result.failed[0].error;
+					const detail = failure instanceof Error ? ` ${failure.message}` : '';
+					addToast(`Image could not be saved after retries.${detail}`, 'error');
+				} else {
+					setUploadedCharacterImages((previous) =>
+						previous.map((image) =>
+							image.emotionKey === newImage.emotionKey
+								? { ...image, file: undefined, avatarFile: undefined }
+								: image
+						)
+					);
+					await refreshCharacterImages(characterInfo.characterId);
+					addToast(`${getEmotionLabel(selectedEmotion)} image saved.`, 'success', TOAST_DURATION);
+				}
+			} else {
+				addToast(
+					`${getLangText(emotionToLangKey(selectedEmotion))} ${getLangAlertText(LANG_KEYS.IMAGE_UPLOADED_FOR)}`,
+					'success',
+					TOAST_DURATION
+				);
+			}
 		} catch (error) {
 			console.error('Error in crop completion:', error);
 			addToast('Failed to process image', 'error');
 		} finally {
-			setPendingImageFile(null);
-			setModalImageUrl('');
-			setCropModalOpen(false);
-			if (fileInputRef.current) fileInputRef.current.value = '';
+			if (cropStage === 'avatar') {
+				setPendingImageFile(null);
+				setPendingPortraitCrop(null);
+				setModalImageUrl('');
+				setCropModalOpen(false);
+				setCropStage('portrait');
+				if (fileInputRef.current) fileInputRef.current.value = '';
+			}
 		}
 	};
 
 	const handleModalClose = () => {
+		cleanupBlobUrl(pendingPortraitCrop?.previewUrl);
 		setCropModalOpen(false);
 		setPendingImageFile(null);
+		setPendingPortraitCrop(null);
 		setModalImageUrl('');
+		setCropStage('portrait');
+	};
+
+	const uploadImagePair = async (
+		characterId: string,
+		image: UploadedCharacterImage
+	): Promise<void> => {
+		const formData = new FormData();
+		formData.append('image', image.file!);
+		formData.append('avatar', image.avatarFile!);
+		formData.append('characterId', characterId);
+		formData.append('emotionKey', image.emotionKey.toString());
+		await uploadCharacterImage(formData);
+	};
+
+	const uploadImagePairs = async (
+		characterId: string,
+		images: UploadedCharacterImage[]
+	): Promise<number> => {
+		const candidates = images.filter((img) => img.file && img.avatarFile && !img.toDelete);
+		if (candidates.length === 0) return 0;
+
+		setUploadProgress({ completed: 0, total: candidates.length });
+		const result = await runRetriableQueue(
+			candidates,
+			async (image) => {
+				await uploadImagePair(characterId, image);
+			},
+			{
+				concurrency: IMAGE_UPLOAD_CONCURRENCY,
+				maxAttempts: IMAGE_UPLOAD_MAX_ATTEMPTS,
+				retryDelayMs: IMAGE_UPLOAD_RETRY_DELAY_MS,
+				onProgress: (completed, total) => setUploadProgress({ completed, total }),
+			}
+		);
+		setUploadProgress(null);
+
+		if (result.failed.length > 0) {
+			const succeededEmotionKeys = new Set(result.succeeded.map((image) => image.emotionKey));
+			setUploadedCharacterImages((previous) =>
+				previous.map((image) =>
+					succeededEmotionKeys.has(image.emotionKey)
+						? { ...image, file: undefined, avatarFile: undefined }
+						: image
+				)
+			);
+			throw new Error(
+				`${result.failed.length} of ${candidates.length} image pairs could not be saved after retries. Save again to resume the remaining images.`
+			);
+		}
+
+		return candidates.length;
 	};
 
 	const uploadPortraits = async (
@@ -284,40 +430,20 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 		images: UploadedCharacterImage[]
 	): Promise<void> => {
 		await createCharacterFolder({ characterId });
-		await Promise.all(
-			images
-				.filter((img) => img.file && !img.toDelete)
-				.map((image) => {
-					const formData = new FormData();
-					formData.append('image', image.file!);
-					formData.append('characterId', characterId);
-					formData.append('emotionKey', image.emotionKey.toString());
-					// Remove crop data - client already cropped
-
-					return uploadCharacterImage(formData);
-				})
-		);
+		await uploadImagePairs(characterId, images);
+		await refreshCharacterImages(characterId);
 	};
 
 	const applyPortraitDiffs = async (characterId: string): Promise<void> => {
 		const deletions = uploadedImages.filter((img) => img.toDelete);
-		await Promise.all(
-			deletions.map((img) => deleteCharacterImage({ characterId, emotionKey: img.emotionKey }))
-		);
+		for (const image of deletions) {
+			await deleteCharacterImage({ characterId, emotionKey: image.emotionKey });
+		}
 
-		const replacements = uploadedImages.filter((img) => img.file && !img.toDelete);
-		if (replacements.length > 0) {
-			await Promise.all(
-				replacements.map((image) => {
-					const formData = new FormData();
-					formData.append('image', image.file!);
-					formData.append('characterId', characterId);
-					formData.append('emotionKey', image.emotionKey.toString());
-					// Remove crop data - client already cropped
+		const uploadedCount = await uploadImagePairs(characterId, uploadedImages);
 
-					return uploadCharacterImage(formData);
-				})
-			);
+		if (deletions.length > 0 || uploadedCount > 0) {
+			await refreshCharacterImages(characterId);
 		}
 	};
 
@@ -329,6 +455,15 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 				payload = { ...data };
 			} else {
 				payload = createBasicCharacterInfo(data);
+				if (pendingCreateIdentityRef.current) {
+					payload = { ...payload, ...pendingCreateIdentityRef.current };
+				} else {
+					pendingCreateIdentityRef.current = {
+						characterId: payload.characterId,
+						variant: payload.variant,
+						createdAt: payload.createdAt,
+					};
+				}
 			}
 
 			const response = await storeCharacter(payload);
@@ -339,8 +474,10 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 			} else {
 				await applyPortraitDiffs(characterId);
 			}
+			pendingCreateIdentityRef.current = undefined;
 			onSuccess(characterId);
 		} catch (error: any) {
+			setUploadProgress(null);
 			addToast(error.message || 'An error occurred while saving the character.', 'error');
 		}
 	};
@@ -352,13 +489,16 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 			? watch('showName') || getLangText(LANG_KEYS.EDIT_CHARACTER)
 			: watch('showName') || getLangText(LANG_KEYS.NEW_CHARACTER);
 	const formSubtitle = watch('title') || getLangText(LANG_KEYS.TITLE_GUIDANCE);
-	const submitButtonText = isSubmitting
+	const baseSubmitButtonText = isSubmitting
 		? mode === 'edit'
 			? getLangText(LANG_KEYS.UPDATING)
 			: getLangText(LANG_KEYS.CREATING)
 		: mode === 'edit'
 			? getLangText(LANG_KEYS.UPDATE)
 			: getLangText(LANG_KEYS.CREATE);
+	const submitButtonText = uploadProgress
+		? `${baseSubmitButtonText} (${uploadProgress.completed}/${uploadProgress.total})`
+		: baseSubmitButtonText;
 
 	return (
 		<GlassPaper key="character-form" className="paper">
@@ -389,7 +529,36 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 										>
 											{visibleImages.map((image) => (
 												<SwiperSlide key={image.emotion}>
-													<PortraitWithChip imageUrl={image.preview} label={getEmotionLabel(image.emotion)} />
+													<Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+														<PortraitWithChip
+															imageUrl={image.preview}
+															label={getEmotionLabel(image.emotion)}
+															bottomRightOverlay={
+																image.avatarPreview ? (
+																	<Avatar
+																		src={image.avatarPreview}
+																		alt={`${getEmotionLabel(image.emotion)} avatar`}
+																		sx={{
+																			position: 'absolute',
+																			right: 8,
+																			bottom: 8,
+																			width: 64,
+																			height: 64,
+																			border: 2,
+																			borderColor: 'background.paper',
+																		}}
+																	/>
+																) : (
+																	<Chip
+																		label={getLangText(LANG_KEYS.AVATAR_MISSING)}
+																		color="warning"
+																		size="small"
+																		sx={{ position: 'absolute', right: 8, bottom: 8 }}
+																	/>
+																)
+															}
+														/>
+													</Box>
 												</SwiperSlide>
 											))}
 										</Swiper>
@@ -581,31 +750,74 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 									{getLangText(LANG_KEYS.CHARACTER_DETAIL)}
 								</Typography>
 								<Grid container spacing={2}>
-									{/* Instruction field */}
 									<Grid size={{ xs: 12 }}>
 										<Controller
-											name="instruction"
+											name="worldIntroduction"
 											control={control}
-											rules={{ required: getLangText(LANG_KEYS.INSTRUCTION_REQUIRED) }}
+											rules={{ required: getLangText(LANG_KEYS.WORLD_INTRODUCTION_REQUIRED) }}
 											render={({ field }) => (
 												<TextField
 													{...field}
 													fullWidth
-													label={getLangText(LANG_KEYS.INSTRUCTION)}
+													label={getLangText(LANG_KEYS.WORLD_INTRODUCTION)}
 													multiline
 													minRows={3}
 													maxRows={10}
-													error={!!errors.instruction}
-													helperText={errors.instruction?.message || getLangText(LANG_KEYS.INSTRUCTION_HELPER)}
-													placeholder={getLangText(LANG_KEYS.INSTRUCTION_PLACEHOLDER)}
+													error={!!errors.worldIntroduction}
+													helperText={
+														errors.worldIntroduction?.message || getLangText(LANG_KEYS.WORLD_INTRODUCTION_HELPER)
+													}
+													placeholder={getLangText(LANG_KEYS.WORLD_INTRODUCTION_PLACEHOLDER)}
 													required
 												/>
 											)}
 										/>
 									</Grid>
 
-									{/* World Lore field */}
 									<Grid size={{ xs: 12 }}>
+										<Controller
+											name="description"
+											control={control}
+											rules={{ required: getLangText(LANG_KEYS.DESCRIPTION_REQUIRED) }}
+											render={({ field }) => (
+												<TextField
+													{...field}
+													fullWidth
+													label={getLangText(LANG_KEYS.DESCRIPTION)}
+													multiline
+													minRows={3}
+													maxRows={10}
+													error={!!errors.description}
+													helperText={errors.description?.message || getLangText(LANG_KEYS.DESCRIPTION_HELPER)}
+													placeholder={getLangText(LANG_KEYS.DESCRIPTION_PLACEHOLDER)}
+													required
+												/>
+											)}
+										/>
+									</Grid>
+
+									{/* Instruction field */}
+									<Grid size={{ xs: 12 }}>
+										<Controller
+											name="instruction"
+											control={control}
+											render={({ field }) => (
+												<TextField
+													{...field}
+													fullWidth
+													label={getLangText(LANG_KEYS.INSTRUCTION)}
+													multiline
+													minRows={3}
+													maxRows={10}
+													helperText={getLangText(LANG_KEYS.INSTRUCTION_HELPER)}
+													placeholder={getLangText(LANG_KEYS.INSTRUCTION_PLACEHOLDER)}
+												/>
+											)}
+										/>
+									</Grid>
+
+									{/* World Lore field */}
+									{/* <Grid size={{ xs: 12 }}>
 										<Controller
 											name="instruction"
 											control={control}
@@ -625,7 +837,7 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 												/>
 											)}
 										/>
-									</Grid>
+									</Grid> */}
 
 									{/* First Message field */}
 									<Grid size={{ xs: 12 }}>
@@ -685,7 +897,9 @@ export const CharacterForm: FC<Props> = ({ mode, userId, characterInfo, onCancel
 						open={cropModalOpen}
 						onClose={handleModalClose}
 						onCropComplete={handleCropComplete}
-						aspect={ASPECT_RATIOS.CHARACTER}
+						aspect={getCharacterCropAspect(cropStage)}
+						outputSize={getCharacterCropOutputSize(cropStage)}
+						title={cropStage === 'portrait' ? 'Crop full portrait' : 'Crop emotion avatar'}
 					/>
 				)}
 			</form>

@@ -4,7 +4,7 @@ import { llmService } from './llmService.js';
 import { termStore } from '../store/termStore.js';
 import { buildChatCompletion } from '../util/llmUtils.js';
 import { FilterCriteria, FilterCriteriaSchema } from '../util/schemaUtils.js';
-import { logFlow } from '../util/jsonlLogger.js';
+import { flowLogger } from '../util/jsonlLogger.js';
 import { buildFilterCriteriaPrompt } from '../util/templateUtils.js';
 import { DEFAULT_EXTRACTION_MODEL, AiModelInfo } from '@rita-berenice/shared/domain';
 
@@ -13,6 +13,7 @@ export interface TransformedQuery {
 	queryTexts: string[];
 	filterCriteria?: FilterCriteria;
 	criticalTerm?: string;
+	termAliases: Array<{ koreanTerm: string; englishTerm: string }>;
 }
 
 export const ragQueryService = {
@@ -27,12 +28,16 @@ export const ragQueryService = {
 		userName: string,
 		charName: string
 	): Promise<TransformedQuery> {
-		console.log('[ragQueryService] Transforming query with translation-first approach...');
-
 		try {
-			const termRes = await termStore.getTermsBySessionId(sessionId);
+			const termRes = await termStore.getTermsForSession(sessionId);
 			const termGuidanceMap = new Map<string, string>();
 			termRes.terms.forEach((t) => termGuidanceMap.set(t.koreanTerm, t.englishTerm));
+			flowLogger.info('ragQueryService', 'transformQuery.start', {
+				sessionId,
+				userId,
+				inputLength: userInput.length,
+				termCount: termGuidanceMap.size,
+			});
 
 			const [translatedUserInput, extractedData] = await Promise.allSettled([
 				ragQueryService._translateToEnglish(userInput, termGuidanceMap, userId),
@@ -59,13 +64,28 @@ export const ragQueryService = {
 				queryTexts: [finalTranslation, ...expandedQueries],
 				filterCriteria: finalExtraction,
 				criticalTerm: finalExtraction.criticalTerm,
+				termAliases: termRes.terms.map(({ koreanTerm, englishTerm }) => ({ koreanTerm, englishTerm })),
 			};
 
-			logFlow('ragQueryService', 'transformQuery', { result });
+			flowLogger.info('ragQueryService', 'transformQuery.complete', {
+				sessionId,
+				userId,
+				inputLength: userInput.length,
+				queryCount: result.queryTexts.length,
+				expandedQueryCount: expandedQueries.length,
+				hasCriticalTerm: Boolean(result.criticalTerm),
+				translationFallback: translatedUserInput.status !== 'fulfilled',
+				extractionFallback: extractedData.status !== 'fulfilled',
+			});
 			return result;
 		} catch (error) {
-			console.error(error, 'Query transformation failed. Falling back to raw query.');
-			return { queryTexts: [userInput] };
+			flowLogger.error('ragQueryService', 'transformQuery.failed', {
+				sessionId,
+				userId,
+				inputLength: userInput.length,
+				error: error instanceof Error ? error.message : String(error),
+			});
+			return { queryTexts: [userInput], termAliases: [] };
 		}
 	},
 
@@ -84,17 +104,7 @@ export const ragQueryService = {
 		const prompt = buildFilterCriteriaPrompt(userInput, termGuidanceMap, userName, charName);
 		const messages = [buildChatCompletion('user', prompt)];
 
-		const jsonString = await llmService.invokeLlm(
-			messages,
-			modelInfo,
-			userId,
-			undefined,
-			FilterCriteriaSchema
-		);
-
-		// --- RE-INSTATED AND CORRECTED ---
-		// Since invokeLlm returns a JSON string, we must parse it to get the object.
-		return JSON.parse(jsonString) as FilterCriteria;
+		return llmService.invokeStructuredLlm(messages, modelInfo, userId, FilterCriteriaSchema);
 	},
 
 	/**
@@ -128,7 +138,7 @@ export const ragQueryService = {
 		// Use LLM for comprehensive translation
 		const translationPrompt = `Translate the following Korean text to English, focusing on preserving semantic meaning and emotional nuance. Pay special attention to relationship terms, emotions, and cultural concepts:
 
-Korean text: ${koreanText}
+Korean text with glossary substitutions: ${processedText}
 
 Provide only the English translation:`;
 
@@ -140,7 +150,12 @@ Provide only the English translation:`;
 			// **FIXED: Return plain text, not JSON.parse**
 			return translatedText.trim() || processedText;
 		} catch (error) {
-			console.warn('Translation failed, using term mapping only:', error);
+			flowLogger.warn('ragQueryService', 'translateToEnglish.failed', {
+				userId,
+				inputLength: koreanText.length,
+				termCount: termGuidanceMap.size,
+				error: error instanceof Error ? error.message : String(error),
+			});
 			return processedText;
 		}
 	},

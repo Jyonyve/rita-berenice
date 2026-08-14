@@ -2,6 +2,8 @@
 
 import { METADATA_TYPES } from '../../config/constants.js';
 
+export type SessionContentPolicy = 'general' | 'adult';
+
 export interface SessionMetadata {
 	sessionId: string; // Unique ID for the session (e.g., a UUID)
 	userId: string; // Foreign key to the User who owns this session
@@ -18,6 +20,7 @@ export interface SessionMetadata {
 export interface SessionDocument {
 	lastCharMessage: string;
 	userNote: string;
+	contentPolicy?: SessionContentPolicy;
 }
 export type SessionInfo = SessionMetadata & SessionDocument;
 

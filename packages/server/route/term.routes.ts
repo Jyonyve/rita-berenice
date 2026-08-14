@@ -27,11 +27,6 @@ router.post(
 		validateRequestData(req.body, 'body', requiredFields);
 		await assertOwnedSession(req, req.body.sessionId);
 
-		const path = genRoutePattern('storeSessionTerm');
-		console.log(
-			`API HIT: POST ${path} for session ${req.body.sessionId}, term "${req.body.koreanTerm}"`
-		);
-
 		const response = await termStore.storeSessionTerm(req.body);
 		res.status(201).json(response);
 	})
@@ -50,11 +45,6 @@ router.post(
 		const requiredFields: (keyof CharacterTermInfo)[] = ['koreanTerm', 'characterId'];
 		validateRequestData(req.body, 'body', requiredFields);
 		await assertOwnedCharacter(req, req.body.characterId);
-
-		const path = genRoutePattern('storeCharacterTerm');
-		console.log(
-			`API HIT: POST ${path} for character ${req.body.characterId}, term "${req.body.koreanTerm}"`
-		);
 
 		const response = await termStore.storeCharacterTerm(req.body);
 		res.status(201).json(response);
@@ -75,9 +65,6 @@ router.post(
 			req.body.terms.map((term: SessionTermInfo) => assertOwnedSession(req, term.sessionId))
 		);
 
-		const path = genRoutePattern('storeSessionTerms');
-		console.log(`API HIT: POST ${path} for bulk storing ${req.body.terms.length} session terms`);
-
 		const response = await termStore.storeSessionTerms(req.body.terms);
 		res.status(201).json(response);
 	})
@@ -96,9 +83,6 @@ router.post(
 		await Promise.all(
 			req.body.terms.map((term: CharacterTermInfo) => assertOwnedCharacter(req, term.characterId))
 		);
-
-		const path = genRoutePattern('storeCharacterTerms');
-		console.log(`API HIT: POST ${path} for bulk storing ${req.body.terms.length} character terms`);
 
 		const response = await termStore.storeCharacterTerms(req.body.terms);
 		res.status(201).json(response);
@@ -125,11 +109,6 @@ router.get(
 			await assertOwnedCharacter(req, id);
 		}
 
-		const path = genRoutePattern('getTermByKorean', ['id', 'koreanTerm', 'type']);
-		console.log(
-			`API HIT: GET ${path.replace(':id', id).replace(':koreanTerm', koreanTerm).replace(':type', type)}`
-		);
-
 		const response = await termStore.getTermByKorean(id, koreanTerm, type as 'session' | 'character');
 		res.status(200).json(response);
 	})
@@ -147,9 +126,6 @@ router.get(
 		const { sessionId } = req.params;
 		await assertOwnedSession(req, sessionId);
 
-		const path = genRoutePattern('getTermsBySessionId', ['sessionId']);
-		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
-
 		const response = await termStore.getTermsBySessionId(sessionId);
 		res.status(200).json(response);
 	})
@@ -166,9 +142,6 @@ router.get(
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { characterId } = req.params;
 		await assertOwnedCharacter(req, characterId);
-
-		const path = genRoutePattern('getTermsByCharacterId', ['characterId']);
-		console.log(`API HIT: GET ${path.replace(':characterId', characterId)}`);
 
 		const response = await termStore.getTermsByCharacterId(characterId);
 		res.status(200).json(response);
@@ -189,9 +162,6 @@ router.post(
 		validateRequestData(req.body, 'body', ['sessionId', 'koreanTermsToEnsure', 'userId']);
 		await assertOwnedSession(req, sessionId);
 		const authenticatedUserId = assertSessionUser(req, userId);
-
-		const path = genRoutePattern('ensureAndGetTermsForPrompt');
-		console.log(`API HIT: POST ${path} for session ${sessionId}`);
 
 		const termMap = await termStore.ensureAndGetTermsForPrompt(
 			sessionId,
@@ -216,9 +186,6 @@ router.delete(
 		const { sessionId } = req.params;
 		await assertOwnedSession(req, sessionId);
 
-		const path = genRoutePattern('clearSessionCache', ['sessionId']);
-		console.log(`API HIT: DELETE ${path.replace(':sessionId', sessionId)}`);
-
 		termStore.clearSessionCache(sessionId);
 		res.status(200).json({ message: `Cache cleared for session ${sessionId}.` });
 	})
@@ -235,9 +202,6 @@ router.delete(
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { characterId } = req.params;
 		await assertOwnedCharacter(req, characterId);
-
-		const path = genRoutePattern('clearCharacterCache', ['characterId']);
-		console.log(`API HIT: DELETE ${path.replace(':characterId', characterId)}`);
 
 		termStore.clearCharacterCache(characterId);
 		res.status(200).json({ message: `Cache cleared for character ${characterId}.` });

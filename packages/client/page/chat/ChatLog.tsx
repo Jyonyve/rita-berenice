@@ -1,4 +1,4 @@
-import { Box, CircularProgress, Typography } from '@mui/material';
+import { Box, CircularProgress, Container, Typography } from '@mui/material';
 import React, { FC, memo, useCallback, useEffect, useRef } from 'react';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 
@@ -7,6 +7,9 @@ import ChatLogRow, { ChatLogRowProps } from './ChatLogRow.jsx';
 import { GlassCircularProgress, ScrollGlow } from '../../layout/component/index.js';
 import { DisplayTurn, TempChatTurn } from '@rita-berenice/shared/domain';
 import { ChatGenerationStage } from '@rita-berenice/shared/api';
+import type { ChatDisplayMode } from './chatDisplayMode.js';
+import { CHAT_FONT_WEIGHT_VALUES, type ChatFontSize, type ChatFontWeight } from './chatFontSize.js';
+import type { PortraitUrlMap } from '@rita-berenice/shared/config';
 
 const streamStatusText: Record<ChatGenerationStage, string> = {
 	preparing: 'Preparing response...',
@@ -32,6 +35,12 @@ interface ChatLogProps {
 	streamingStage?: ChatGenerationStage;
 	focusedTurnIndex: number; // Receive the focused index
 	onFocusTurn: (index: number) => void; // Receive the handler
+	displayMode: ChatDisplayMode;
+	chatFontSize: ChatFontSize;
+	chatFontWeight: ChatFontWeight;
+	characterPortraitUrls?: PortraitUrlMap;
+	characterAvatarUrls?: PortraitUrlMap;
+	profileAvatarUrl?: string;
 }
 
 export const ChatLog: FC<ChatLogProps> = memo(
@@ -44,6 +53,9 @@ export const ChatLog: FC<ChatLogProps> = memo(
 		streamingStage,
 		shouldUseMobileLayout,
 		onFocusTurn,
+		displayMode,
+		chatFontSize,
+		chatFontWeight,
 		...rest
 	}) => {
 		// --- HOOKS ---
@@ -100,6 +112,8 @@ export const ChatLog: FC<ChatLogProps> = memo(
 		return (
 			<Box
 				sx={{
+					'--chat-font-size': `${chatFontSize}px`,
+					'--chat-font-weight': CHAT_FONT_WEIGHT_VALUES[chatFontWeight],
 					width: '100%',
 					height: '100%',
 					position: 'relative',
@@ -133,9 +147,14 @@ export const ChatLog: FC<ChatLogProps> = memo(
 							turn,
 							isTemp,
 							isProcessing: isTemp && isProcessing,
+							displayMode,
 							...rest,
 						};
-						return (
+						return displayMode === 'conversation' ? (
+							<Container maxWidth="md" sx={{ py: 1 }}>
+								<ChatLogRow {...rowProps} />
+							</Container>
+						) : (
 							<Box sx={{ py: 1, px: 1 }}>
 								<ChatLogRow {...rowProps} />
 							</Box>
@@ -153,7 +172,13 @@ export const ChatLog: FC<ChatLogProps> = memo(
 											</Typography>
 										</Box>
 										{streamingText ? (
-											<Typography sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+											<Typography
+												sx={{
+													fontSize: 'var(--chat-font-size)',
+													whiteSpace: 'pre-wrap',
+													overflowWrap: 'anywhere',
+												}}
+											>
 												{streamingText}
 											</Typography>
 										) : null}

@@ -54,7 +54,6 @@ export interface ReceiveBotResponseRequest {
 	sequence: number;
 	entries: ChatEntry[];
 	modelName: AllModelNames;
-	isScene?: boolean;
 }
 
 export type ChatGenerationStage = 'preparing' | 'retrieving' | 'generating' | 'saving';

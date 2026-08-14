@@ -38,11 +38,6 @@ router.post(
 		req.body.characterId = session.characterId;
 		req.body.profileId = session.profileId;
 
-		const path = genRoutePattern('storeChatTurn');
-		console.log(
-			`API HIT: POST ${path} for sessionId: ${req.body.sessionId}, sequence: ${req.body.sequence}`
-		);
-
 		const response = await chatStore.storeChatTurn(req.body);
 		res.status(201).json(response);
 	})
@@ -55,8 +50,6 @@ router.get(
 		validateServiceId(sessionId, collectionType);
 		validateRequestData(req.params, 'params', ['sessionId']);
 		await assertOwnedSession(req, sessionId);
-		const path = genRoutePattern('getAllChatTurns', ['sessionId']);
-		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
 
 		const response = await chatStore.getAllChatTurns(sessionId);
 		res.status(200).json(response);
@@ -75,8 +68,6 @@ router.get(
 		const { sessionId } = req.params;
 		validateServiceId(sessionId, collectionType);
 		await assertOwnedSession(req, sessionId);
-		const path = genRoutePattern('getAllDisplayTurns', ['sessionId']);
-		console.log(`API HIT: GET ${path.replace(':sessionId', sessionId)}`);
 
 		const response = await chatStore.getAllDisplayTurns(sessionId);
 		res.status(200).json(response);
@@ -98,11 +89,6 @@ router.get(
 		validateRequestData(req.params, 'params', ['sequence'], [validateSequenceRule('sequence')]);
 		await assertOwnedSession(req, sessionId);
 		const sequence = parseInt(sequenceParam, 10);
-
-		const path = genRoutePattern('getChatTurnBySequence', ['sessionId', 'sequence']);
-		console.log(
-			`API HIT: GET ${path.replace(':sessionId', sessionId).replace(':sequence', sequenceParam)}`
-		);
 
 		const response = await chatStore.getChatTurnBySequence(sessionId, sequence);
 		res.status(200).json(response);
@@ -131,9 +117,6 @@ router.get(
 // 			const { sessionId, queryTexts, where, limit } = req.body;
 // 			validateServiceId(sessionId, collectionType);
 // 			validateRequestData(req.body, 'body', ['sessionId', 'queryTexts']);
-
-// 			const path = genRoutePattern('queryChatTurns');
-// 			console.log(`API HIT: POST ${path} for session ${sessionId}`);
 
 // 			const response = await chatStore.queryChatTurns(sessionId, queryTexts, where, undefined, limit);
 // 			res.status(200).json(response);
@@ -168,9 +151,6 @@ router.get(
 // 			const { sessionId, queryTexts, messageType, where, whereDocument, limit } = req.body;
 // 			validateServiceId(sessionId, collectionType);
 // 			validateRequestData(req.body, 'body', ['sessionId', 'queryTexts', 'messageType']);
-
-// 			const path = genRoutePattern('queryChatMessages');
-// 			console.log(`API HIT: POST ${path} for session ${sessionId}`);
 
 // 			const results = await chatStore.queryChatMessages(
 // 				sessionId,

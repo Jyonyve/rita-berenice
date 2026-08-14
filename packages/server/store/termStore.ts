@@ -42,6 +42,16 @@ const toResponse = (items: (CharacterTermInfo | SessionTermInfo)[]): TermRespons
 	};
 };
 
+export const mergeTermScopes = (
+	characterTerms: CharacterTermInfo[],
+	sessionTerms: SessionTermInfo[]
+): (CharacterTermInfo | SessionTermInfo)[] => {
+	const merged = new Map<string, CharacterTermInfo | SessionTermInfo>();
+	characterTerms.forEach((term) => merged.set(term.koreanTerm, term));
+	sessionTerms.forEach((term) => merged.set(term.koreanTerm, term));
+	return [...merged.values()];
+};
+
 const upsert = async (item: CharacterTermInfo | SessionTermInfo): Promise<void> => {
 	const now = new Date().toISOString();
 	await getDatabase()
@@ -172,15 +182,28 @@ export const termStore = {
 		return toResponse(rows.map((row) => row.data));
 	},
 
+	getTermsForSession: async (sessionId: string): Promise<TermResponse> => {
+		const { characterId } = parseSessionId(sessionId);
+		const [characterTerms, sessionTerms] = await Promise.all([
+			termStore._getOrBuildCharacterTermMap(characterId),
+			termStore._getOrBuildSessionTermMap(sessionId),
+		]);
+		return toResponse(mergeTermScopes([...characterTerms.values()], [...sessionTerms.values()]));
+	},
+
 	ensureAndGetTermsForPrompt: async (
 		sessionId: string,
 		userId: string,
 		koreanTermsToEnsure: string[]
 	): Promise<Map<string, string>> => {
-		const cache = await termStore._getOrBuildSessionTermMap(sessionId);
+		const { characterId } = parseSessionId(sessionId);
+		const [characterTerms, sessionTerms] = await Promise.all([
+			termStore._getOrBuildCharacterTermMap(characterId),
+			termStore._getOrBuildSessionTermMap(sessionId),
+		]);
 		const result = new Map<string, string>();
 		for (const koreanTerm of new Set(koreanTermsToEnsure.filter(Boolean))) {
-			const existing = cache.get(koreanTerm);
+			const existing = sessionTerms.get(koreanTerm) ?? characterTerms.get(koreanTerm);
 			if (existing) {
 				result.set(koreanTerm, existing.englishTerm);
 				continue;
@@ -189,6 +212,50 @@ export const termStore = {
 			if (!initialTerm?.trim()) continue;
 			await termStore.storeSessionTerm({ sessionId, koreanTerm, initialTerm });
 			result.set(koreanTerm, initialTerm);
+		}
+		return result;
+	},
+
+	ensureAndGetCharacterTerms: async (
+		characterId: string,
+		userId: string,
+		koreanTermsToEnsure: string[]
+	): Promise<Map<string, string>> => {
+		const characterTerms = await termStore._getOrBuildCharacterTermMap(characterId);
+		const result = new Map<string, string>();
+		for (const koreanTerm of new Set(
+			koreanTermsToEnsure.map((term) => term.trim()).filter(Boolean)
+		)) {
+			const existing = characterTerms.get(koreanTerm);
+			if (existing) {
+				result.set(koreanTerm, existing.englishTerm);
+				continue;
+			}
+			const initialTerm = await llmService.translateProperNoun(koreanTerm, userId);
+			if (!initialTerm?.trim()) continue;
+			await termStore.storeCharacterTerm({ characterId, koreanTerm, initialTerm });
+			result.set(koreanTerm, initialTerm);
+		}
+		return result;
+	},
+
+	storeMissingCharacterTermMappings: async (
+		characterId: string,
+		mappings: Array<{ koreanTerm: string; englishTerm: string }>
+	): Promise<Map<string, string>> => {
+		const characterTerms = await termStore._getOrBuildCharacterTermMap(characterId);
+		const result = new Map<string, string>();
+		for (const mapping of mappings) {
+			const koreanTerm = mapping.koreanTerm.trim();
+			const englishTerm = mapping.englishTerm.trim();
+			if (!koreanTerm || !englishTerm || result.has(koreanTerm)) continue;
+			const existing = characterTerms.get(koreanTerm);
+			if (existing) {
+				result.set(koreanTerm, existing.englishTerm);
+				continue;
+			}
+			await termStore.storeCharacterTerm({ characterId, koreanTerm, initialTerm: englishTerm });
+			result.set(koreanTerm, englishTerm);
 		}
 		return result;
 	},

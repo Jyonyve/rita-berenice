@@ -8,12 +8,20 @@ import ReplayIcon from '@mui/icons-material/Replay';
 import SaveIcon from '@mui/icons-material/Save';
 import { Box, IconButton, TextField, Typography, useTheme } from '@mui/material';
 import { FC, useEffect, useState } from 'react';
-import { styleEntryFont } from '../../util/styleUtils.jsx';
 import { GlassCircularProgress, GlassBox } from '../../layout/component/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { parseEntriesToText } from '../../util/chatParseUtils.js';
-import { REQUEST_CHARACTER_LIMIT, LANG_KEYS } from '@rita-berenice/shared/config';
+import {
+	LANG_KEYS,
+	REQUEST_CHARACTER_LIMIT,
+	RESPONSE_EDIT_CHARACTER_LIMIT,
+} from '@rita-berenice/shared/config';
 import { TempChatTurn, ChatMessageSet } from '@rita-berenice/shared/domain';
+import { ConversationEntry } from './ConversationEntry.js';
+import type { ChatDisplayMode } from './chatDisplayMode.js';
+import type { PortraitUrlMap } from '@rita-berenice/shared/config';
+import { getConversationAvatar } from './conversationAvatarUtils.js';
+import { ConversationMessage } from './ConversationMessage.js';
 
 /**
  * Props for the TempTurnDisplay component.
@@ -28,6 +36,10 @@ interface TempTurnDisplayProps {
 	onSaveTempTurnText: () => void;
 	onRegenerate: () => void;
 	changeTempSetNo: (index: number) => void;
+	displayMode: ChatDisplayMode;
+	characterPortraitUrls?: PortraitUrlMap;
+	characterAvatarUrls?: PortraitUrlMap;
+	profileAvatarUrl?: string;
 }
 
 /**
@@ -44,6 +56,10 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 	onSaveTempTurnText,
 	onRegenerate,
 	changeTempSetNo,
+	displayMode,
+	characterPortraitUrls,
+	characterAvatarUrls,
+	profileAvatarUrl,
 }) => {
 	const theme = useTheme();
 	const [isEditing, setIsEditing] = useState(false);
@@ -71,33 +87,25 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 	const handleNextSet = () => changeTempSetNo(currentTempSetNo + 1);
 
 	const isUserTextOverflow = userEditInput.length > REQUEST_CHARACTER_LIMIT;
-	// const isBotTextOverflow = botEditInput.length > RESPONSE_CHARACTER_LIMIT;
+	const isBotTextOverflow = botEditInput.length > RESPONSE_EDIT_CHARACTER_LIMIT;
+	const isConversationMode = displayMode === 'conversation';
+	const avatarUrl = currentSet.response
+		? getConversationAvatar(characterAvatarUrls, characterPortraitUrls, currentSet.response.emotion)
+		: undefined;
 
 	return (
 		<Box
 			className={'turnContainer'}
 			sx={{
 				position: 'relative',
-				// 1. If isEditing, padding is fixed. Otherwise, it's 0 initially.
-				paddingTop: isEditing ? theme.spacing(4.5) : 0,
-				// 2. The transition still applies for the non-editing hover effect.
-				transition: 'padding-top 0.2s ease-in-out',
-
-				// 3. Define the hover-buttons class styles.
+				paddingTop: theme.spacing(4.5),
 				'& .hover-buttons': {
-					// If isEditing, buttons are always visible. Otherwise, they start hidden.
 					opacity: isEditing ? 1 : 0,
 					visibility: isEditing ? 'visible' : 'hidden',
 					transition: 'opacity 0.2s, visibility 0.2s',
+					'@media (hover: none)': { opacity: 1, visibility: 'visible' },
 				},
-
-				// 4. The hover effect only applies when NOT in editing mode.
-				...(!isEditing && {
-					'&:hover': {
-						paddingTop: theme.spacing(4.5),
-						'& .hover-buttons': { opacity: 1, visibility: 'visible' },
-					},
-				}),
+				...(!isEditing && { '&:hover': { '& .hover-buttons': { opacity: 1, visibility: 'visible' } } }),
 			}}
 		>
 			{isEditing ? (
@@ -126,35 +134,38 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 						onChange={(e) => onEditTempTurnText(e.target.value, false)}
 						disabled={isProcessing}
 						slotProps={{
-							htmlInput: { maxLength: parseEntriesToText(currentSet.response.entries).length + 100 },
+							htmlInput: { maxLength: RESPONSE_EDIT_CHARACTER_LIMIT },
 							input: { sx: { fontSize: theme.typography.body2.fontSize } },
 						}}
-						error={isUserTextOverflow} // Use the built-in error prop
+						error={isBotTextOverflow}
 					/>
 				</GlassBox>
+			) : isConversationMode ? (
+				<>
+					<ConversationMessage message={currentSet.request} role="user" avatarUrl={profileAvatarUrl} />
+					{currentSet.response ? (
+						<ConversationMessage message={currentSet.response} role="assistant" avatarUrl={avatarUrl} />
+					) : (
+						<Typography sx={{ fontStyle: 'italic', color: 'gray' }}>
+							<GlassCircularProgress size={12} sx={{ mr: 1 }} /> {getLangText(LANG_KEYS.GEN_RESPONSE)}
+						</Typography>
+					)}
+				</>
 			) : (
 				<>
 					<Box sx={{ mb: 1 }}>
 						{currentSet.request.entries.map((entry, idx) => (
-							<Typography
-								sx={{ whiteSpace: 'pre-line' }}
-								key={`req-${idx}`}
-								className={styleEntryFont('user', entry.type)}
-							>
-								{entry.prompt}
-							</Typography>
+							<Box key={`req-${idx}`}>
+								<ConversationEntry entry={entry} role="user" />
+							</Box>
 						))}
 					</Box>
 					<Box>
 						{currentSet.response ? (
 							currentSet.response.entries.map((entry, idx) => (
-								<Typography
-									sx={{ whiteSpace: 'pre-line' }}
-									key={`res-${idx}`}
-									className={styleEntryFont('assistant', entry.type)}
-								>
-									{entry.prompt}
-								</Typography>
+								<Box key={`res-${idx}`}>
+									<ConversationEntry entry={entry} role="assistant" />
+								</Box>
 							))
 						) : (
 							<Typography sx={{ fontStyle: 'italic', color: 'gray' }}>
@@ -188,7 +199,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 							size="small"
 							onClick={handleCancelEdit}
 							disabled={isProcessing}
-							title="Cancel Edit"
+							title={getLangText(LANG_KEYS.CANCEL_EDIT)}
 						>
 							<CancelIcon sx={{ fontSize: '14px' }} />
 						</IconButton>
@@ -196,9 +207,13 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 							size="small"
 							onClick={handleSaveAndExitEdit}
 							disabled={
-								isProcessing || !userEditInput.trim() || !botEditInput.trim() || isUserTextOverflow
+								isProcessing ||
+								!userEditInput.trim() ||
+								!botEditInput.trim() ||
+								isUserTextOverflow ||
+								isBotTextOverflow
 							}
-							title="Save Changes"
+							title={getLangText(LANG_KEYS.SAVE_CHANGES)}
 							color="secondary"
 						>
 							<SaveIcon sx={{ fontSize: '14px' }} />
@@ -210,7 +225,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 							<>
 								<IconButton
 									size="small"
-									title="Previous Response"
+									title={getLangText(LANG_KEYS.PREVIOUS_RESPONSE)}
 									onClick={handlePrevSet}
 									disabled={currentTempSetNo === 0}
 									sx={{
@@ -236,7 +251,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 								</Typography>
 								<IconButton
 									size="small"
-									title="Next Response"
+									title={getLangText(LANG_KEYS.NEXT_RESPONSE)}
 									onClick={handleNextSet}
 									disabled={currentTempSetNo === tempTurn.chatTurnSets.length - 1}
 									sx={{
@@ -257,7 +272,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 									size="small"
 									onClick={handleStartEdit}
 									disabled={isProcessing}
-									title="Edit this turn"
+									title={getLangText(LANG_KEYS.EDIT_THIS_TURN)}
 									sx={{
 										transition: 'color 0.2s ease-in-out',
 										'&:hover': {
@@ -273,7 +288,7 @@ export const TempTurnDisplay: FC<TempTurnDisplayProps> = ({
 									size="small"
 									onClick={onRegenerate}
 									disabled={isProcessing}
-									title="Regenerate Response"
+									title={getLangText(LANG_KEYS.REGENERATE_RESPONSE)}
 									sx={{
 										transition: 'color 0.2s ease-in-out',
 										'&:hover': {

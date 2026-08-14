@@ -6,3 +6,4 @@ export * from './dbConvertUtils.js';
 export * from './buildIdUtils.js';
 export * from './cryptoUtils.js';
 export * from './emotionUtils.js';
+export * from './chatEntryUtils.js';

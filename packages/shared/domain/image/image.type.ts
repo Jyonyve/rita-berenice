@@ -15,6 +15,8 @@ export interface UploadedImage {
  * Extends UploadedImage with character-specific fields
  */
 export interface UploadedCharacterImage extends UploadedImage {
+	avatarFile?: File;
+	avatarPreview?: string;
 	emotion: string;
 	emotionKey: number;
 	toDelete?: boolean;

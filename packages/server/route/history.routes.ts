@@ -27,12 +27,10 @@ const collectionType = RESOURCES.HISTORY;
  */
 router.get(
 	genRoutePattern('getHistories', ['characterId']),
+	verifySession(),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { characterId } = req.params;
 		validateServiceId(characterId, collectionType);
-
-		const path = genRoutePattern('getHistories', ['characterId']);
-		console.log(`API HIT: GET ${path.replace(':characterId', characterId)}`);
 
 		const response = await historyStore.getHistories(characterId);
 		res.status(200).json(response);
@@ -54,9 +52,6 @@ router.post(
 		await assertOwnedCharacter(req, characterId);
 		req.body.userId = getSessionUserId(req);
 
-		const path = genRoutePattern('storeHistory');
-		console.log(`API HIT: POST ${path} for character ${characterId}, historyId ${historyId}`);
-
 		const response = await historyStore.storeHistory(req.body);
 		res.status(201).json(response);
 	})
@@ -70,12 +65,10 @@ router.post(
  */
 router.get(
 	genRoutePattern('getHistory', ['historyId']),
+	verifySession(),
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		const { historyId } = req.params;
 		validateServiceId(historyId, collectionType);
-
-		const path = genRoutePattern('getHistory', ['historyId']);
-		console.log(`API HIT: GET ${path.replace(':historyId', historyId)}`);
 
 		const response = await historyStore.getHistory(historyId);
 		res.status(200).json(response);
@@ -96,9 +89,6 @@ router.get(
 
 // 		const { characterId, queryTexts, options } = req.body;
 // 		validateServiceId(characterId, collectionType);
-
-// 		const path = genRoutePattern('queryHistories');
-// 		console.log(`API HIT: POST ${path} for character ${characterId}`);
 
 // 		const response = await loreStore.queryHistories(characterId, queryTexts, options);
 // 		res.status(200).json(response);

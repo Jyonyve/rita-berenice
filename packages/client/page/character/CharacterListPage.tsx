@@ -8,7 +8,7 @@ import { RomanticTitle } from '../../layout/component/index.js';
 import { containerSpacing } from '../../style/index.js';
 import { getDefaultImage } from '../../util/portraitUtils.js';
 import { getLangText } from '../../util/translateUtils.js';
-import { DEFAULT_CHARACTER_AVATAR, LANG_KEYS } from '@rita-berenice/shared/config';
+import { DEFAULT_CHARACTER_AVATAR, LANG_KEYS, PortraitUrlMap } from '@rita-berenice/shared/config';
 import { CharacterInfo } from '@rita-berenice/shared/domain';
 
 const characterCardSx = {
@@ -31,9 +31,12 @@ const contentSx = {
 };
 
 // Helper Component: CharacterItem now uses GlassCard
-const CharacterItem: React.FC<{ characterInfo: CharacterInfo }> = ({ characterInfo }) => {
+const CharacterItem: React.FC<{ characterInfo: CharacterInfo; portraitUrls?: PortraitUrlMap }> = ({
+	characterInfo,
+	portraitUrls,
+}) => {
 	const navigate = useNavigate();
-	const defaultImage = getDefaultImage(characterInfo.characterId);
+	const defaultImage = getDefaultImage(portraitUrls);
 	const handleCharacterPage = () => {
 		navigate(`${characterInfo.characterId}`);
 	};
@@ -106,7 +109,13 @@ const NewCharacterItem = () => {
 		</GlassCard>
 	);
 };
-export const CharacterListPage = ({ characterInfos }: { characterInfos: CharacterInfo[] }) => {
+export const CharacterListPage = ({
+	characterInfos,
+	characterPortraits,
+}: {
+	characterInfos: CharacterInfo[];
+	characterPortraits: Record<string, PortraitUrlMap>;
+}) => {
 	if (characterInfos.length === 0) {
 		// Still provide the option to add a character if the list is empty
 		return (
@@ -125,7 +134,10 @@ export const CharacterListPage = ({ characterInfos }: { characterInfos: Characte
 			<Grid container spacing={containerSpacing}>
 				{characterInfos.map((characterInfo) => (
 					<Grid key={characterInfo.characterId} size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>
-						<CharacterItem characterInfo={characterInfo} />
+						<CharacterItem
+							characterInfo={characterInfo}
+							portraitUrls={characterPortraits[characterInfo.characterId]}
+						/>
 					</Grid>
 				))}
 				<Grid key={'add-new-character'} size={{ xs: 6, sm: 4, md: 3, lg: 2 }}>

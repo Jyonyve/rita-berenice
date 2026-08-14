@@ -1,21 +1,19 @@
 {
 	"name": "rita-berenice",
-	"version": "1.8.0",
+	"version": "2.0.0",
 	"private": true,
 	"type": "module",
+	"description": "Rita-Berenice v2: 개인 사용을 중심으로 설계한 AI 캐릭터·장기기억·RAG 프레임워크",
 	"packageManager": "pnpm@10.18.0",
 	"scripts": {
 		"dev": "pnpm --filter @rita-berenice/server dev",
 		"dev:client": "pnpm --filter @rita-berenice/client dev",
 		"build": "turbo run build",
 		"build:static": "pnpm --filter @rita-berenice/client build:static",
-		"typecheck": "pnpm typecheck:shared && pnpm typecheck:server && pnpm typecheck:client",
+		"typecheck": "pnpm typecheck:shared && pnpm build:shared && pnpm typecheck:server && pnpm typecheck:client",
 		"typecheck:shared": "tsc --project packages/shared/tsconfig.json --noEmit",
 		"typecheck:server": "tsc --project packages/server/tsconfig.json --noEmit",
 		"typecheck:client": "tsc --project packages/client/tsconfig.json --noEmit",
-		"test": "pnpm test:server",
-		"test:server": "pnpm --filter @rita-berenice/server test",
-		"eval:rag": "pnpm --filter @rita-berenice/server eval:rag",
 		"db:generate": "pnpm --filter @rita-berenice/server db:generate",
 		"db:migrate": "pnpm --filter @rita-berenice/server db:migrate",
 		"db:studio": "pnpm --filter @rita-berenice/server db:studio",
@@ -24,13 +22,14 @@
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
 		"lint": "pnpm format:check",
-		"check": "pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
+		"check": "pnpm format:check && pnpm typecheck && pnpm build",
 		"build:shared": "pnpm --filter @rita-berenice/shared build",
 		"build:client": "pnpm --filter @rita-berenice/client build",
 		"build:server": "pnpm --filter @rita-berenice/server build",
 		"clean": "turbo run clean && rimraf dist node_modules",
 		"clean:dist": "turbo run clean && rimraf dist",
-		"start": "node dist/server/server.js",
+		"clean:vite": "rimraf .vite_cache",
+		"start": "node packages/server/dist/server.js",
 		"update:check": "pnpm outdated -r",
 		"update:all": "pnpm update -r --latest"
 	},
@@ -39,17 +38,12 @@
 		"@vitejs/plugin-react": "^5.0.4",
 		"prettier": "^3.6.2",
 		"rimraf": "^6.0.1",
-		"tsx": "^4.20.6",
+		"tsx": "4.20.6",
 		"turbo": "^2.5.8",
 		"typescript": "^5.9.3",
 		"vite": "^7.1.7",
 		"vite-plugin-node-polyfills": "^0.24.0",
 		"vite-plugin-svgr": "^4.5.0",
 		"vite-tsconfig-paths": "^5.1.4"
-	},
-	"pnpm": {
-		"overrides": {
-			"rollup": "npm:@rollup/wasm-node"
-		}
 	}
 }

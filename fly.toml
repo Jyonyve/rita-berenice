@@ -6,13 +6,43 @@ primary_region = "sin"
 [build]
   dockerfile = "Dockerfile"
 
+[build.args]
+  VITE_APP_ENV = "production"
+  VITE_API_DOMAIN = "https://rita-berenice.fly.dev"
+  VITE_APP_DOMAIN = "https://rita-berenice.fly.dev"
+
+[deploy]
+  strategy = "rolling"
+
+[env]
+  AUTH_IDENTITY_NAMESPACE = "supertokens-prod"
+  DATABASE_POOL_MAX = "5"
+  DATABASE_SSL = "true"
+  HOST = "0.0.0.0"
+  LOCAL_IMAGE_STORAGE_DIR = "public/assets"
+  PORT = "3000"
+  VITE_API_DOMAIN = "https://rita-berenice.fly.dev"
+  VITE_APP_DOMAIN = "https://rita-berenice.fly.dev"
+
 [http_service]
   auto_start_machines = true
-  auto_stop_machines = true
+  auto_stop_machines = "stop"
   force_https = true
   internal_port = 3000
   min_machines_running = 0
   processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 20
+    hard_limit = 25
+
+  [[http_service.checks]]
+    grace_period = "20s"
+    interval = "15s"
+    method = "GET"
+    path = "/readyz"
+    timeout = "5s"
 
 [[vm]]
   cpu_kind = "shared"

@@ -46,6 +46,8 @@ export function CharacterPageLoader() {
 	return (
 		<CharacterPage
 			characterInfo={characterRes?.characterInfo}
+			portraitUrls={characterRes.characterPortraits[characterId]}
+			avatarUrls={characterRes.characterAvatars[characterId]}
 			userId={userId || ''}
 			isMine={isMine}
 		/>

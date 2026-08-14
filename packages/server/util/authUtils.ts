@@ -4,14 +4,21 @@ import { ApiError } from '@rita-berenice/shared/domain';
 import { characterStore } from '../store/characterStore.js';
 import { profileStore } from '../store/profileStore.js';
 import { sessionStore } from '../store/sessionStore.js';
+import { RITA_USER_ID_CLAIM } from '../service/authIdentityService.js';
 
 type AnyRequest = Request<any, any, any, any>;
 
 export const getSessionUserId = (req: AnyRequest): string => {
-	const userId = (req as SessionRequest).session?.getUserId();
-	if (!userId) {
+	const session = (req as SessionRequest).session;
+	if (!session) {
 		throw new ApiError(401, 'An authenticated session is required.');
 	}
+
+	const userId = session.getAccessTokenPayload()[RITA_USER_ID_CLAIM];
+	if (typeof userId !== 'string' || userId.length === 0) {
+		throw new ApiError(403, 'The authenticated session is not linked to a Rita user. Sign in again.');
+	}
+
 	return userId;
 };
 

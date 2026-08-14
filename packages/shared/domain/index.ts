@@ -12,3 +12,4 @@ export * from './session/index.js';
 export * from './BaseTypes.js';
 export * from './error/index.js';
 export * from './image/index.js';
+export * from './document/index.js';

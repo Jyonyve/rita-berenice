@@ -6,11 +6,14 @@ import { getDatabase } from '../db/postgresClient.js';
 import { histories } from '../db/schema.js';
 import {
 	deleteMemoryEmbeddings,
-	replaceMemoryEmbedding,
+	QueryEmbeddingCache,
 	searchMemoryEmbeddings,
 } from '../service/embeddingService.js';
+import { embeddingJobService } from '../service/embeddingJobService.js';
 import { historyToDocument } from '../util/documentUtils.js';
 import { FilterCriteria } from '../util/schemaUtils.js';
+import { getHistoryImageUrl } from '../util/imageStorageUtils.js';
+import { RagTraceContext } from '../util/ragTraceUtils.js';
 
 const emptyResponse = (): HistoryResponse => ({
 	ids: [],
@@ -20,17 +23,30 @@ const emptyResponse = (): HistoryResponse => ({
 	historyContent: '',
 	historyInfos: [],
 	historyContents: [],
+	historyImageUrls: {},
 });
 
-const toResponse = (items: HistoryInfo[]): HistoryResponse => ({
-	ids: items.map((item) => item.historyId),
-	metadatas: items.map((item) => historyToMetadata(item) as unknown as Metadata),
-	documents: items.map(historyToDocument),
-	historyInfo: items[0] ?? ({} as HistoryInfo),
-	historyContent: items[0]?.content ?? '',
-	historyInfos: items,
-	historyContents: items.map((item) => item.content),
-});
+const toResponse = async (items: HistoryInfo[]): Promise<HistoryResponse> => {
+	const imageEntries = await Promise.all(
+		items.map(
+			async (item) =>
+				[item.historyId, await getHistoryImageUrl(item.characterId, item.historyId)] as const
+		)
+	);
+
+	return {
+		ids: items.map((item) => item.historyId),
+		metadatas: items.map((item) => historyToMetadata(item) as unknown as Metadata),
+		documents: items.map(historyToDocument),
+		historyInfo: items[0] ?? ({} as HistoryInfo),
+		historyContent: items[0]?.content ?? '',
+		historyInfos: items,
+		historyContents: items.map((item) => item.content),
+		historyImageUrls: Object.fromEntries(
+			imageEntries.filter((entry): entry is readonly [string, string] => Boolean(entry[1]))
+		),
+	};
+};
 
 const matchesCriteria = (item: HistoryInfo, criteria?: FilterCriteria) => {
 	if (!criteria) return true;
@@ -74,7 +90,7 @@ export const historyStore = {
 					updatedAt: historyInfo.updatedAt || now,
 				},
 			});
-		await replaceMemoryEmbedding({
+		embeddingJobService.enqueue({
 			sourceType: 'history',
 			sourceId: historyInfo.historyId,
 			userId: historyInfo.userId,
@@ -89,7 +105,7 @@ export const historyStore = {
 		const row = await getDatabase().query.histories.findFirst({
 			where: eq(histories.historyId, historyId),
 		});
-		return row ? toResponse([row.data]) : emptyResponse();
+		return row ? await toResponse([row.data]) : emptyResponse();
 	},
 
 	getHistories: async (characterId: string): Promise<HistoryResponse> => {
@@ -97,7 +113,7 @@ export const historyStore = {
 			.select({ data: histories.data })
 			.from(histories)
 			.where(eq(histories.characterId, characterId));
-		return toResponse(rows.map((row) => row.data));
+		return await toResponse(rows.map((row) => row.data));
 	},
 
 	deleteHistory: async (historyId: string): Promise<void> => {
@@ -110,7 +126,9 @@ export const historyStore = {
 		queryTexts: string[],
 		filterCriteria?: FilterCriteria,
 		_whereDocument?: unknown,
-		limit = 10
+		limit = 10,
+		queryEmbeddingCache?: QueryEmbeddingCache,
+		ragTraceContext?: RagTraceContext
 	): Promise<HistoryResponse> => {
 		const rows = await getDatabase()
 			.select({ data: histories.data })
@@ -123,10 +141,12 @@ export const historyStore = {
 		const results = await searchMemoryEmbeddings(
 			queryTexts,
 			{ sourceType: 'history', characterId, sourceIds: candidates.map((item) => item.historyId) },
-			limit
+			limit,
+			queryEmbeddingCache,
+			ragTraceContext
 		);
 		const byId = new Map(candidates.map((item) => [item.historyId, item]));
-		return toResponse(
+		return await toResponse(
 			results.map((result) => byId.get(result.sourceId)).filter(Boolean) as HistoryInfo[]
 		);
 	},

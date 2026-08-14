@@ -1,6 +1,6 @@
 // client/layout/ImageCropModal.tsx
 import { useState, useCallback, FC, useEffect } from 'react';
-import { Dialog, DialogContent, DialogActions, Button, Box } from '@mui/material';
+import { Dialog, DialogContent, DialogActions, DialogTitle, Button, Box } from '@mui/material';
 import * as ReactEasyCrop from 'react-easy-crop';
 import { getCroppedImageBlob } from '../../util/index.js';
 
@@ -10,8 +10,10 @@ interface ImageCropModalProps {
 	imageSrc: string;
 	open: boolean;
 	onClose: () => void;
-	onCropComplete: (croppedBlob: Blob) => void; // Changed from croppedAreaPixels to Blob
+	onCropComplete: (croppedBlob: Blob) => void | Promise<void>;
 	aspect: number;
+	outputSize: { width: number; height: number };
+	title?: string;
 }
 
 export const ImageCropModal: FC<ImageCropModalProps> = ({
@@ -20,6 +22,8 @@ export const ImageCropModal: FC<ImageCropModalProps> = ({
 	onClose,
 	onCropComplete,
 	aspect = 5 / 7,
+	outputSize,
+	title,
 }) => {
 	const [crop, setCrop] = useState({ x: 0, y: 0 });
 	const [zoom, setZoom] = useState(1);
@@ -39,9 +43,8 @@ export const ImageCropModal: FC<ImageCropModalProps> = ({
 		try {
 			setIsProcessing(true);
 			// Use the crop utility to get actual cropped blob
-			const croppedBlob = await getCroppedImageBlob(imageSrc, croppedAreaPixels);
-			onCropComplete(croppedBlob);
-			onClose();
+			const croppedBlob = await getCroppedImageBlob(imageSrc, croppedAreaPixels, outputSize);
+			await onCropComplete(croppedBlob);
 		} catch (error) {
 			console.error('Error cropping image:', error);
 			// You can add toast notification here if available
@@ -50,14 +53,11 @@ export const ImageCropModal: FC<ImageCropModalProps> = ({
 		}
 	};
 
-	// Cleanup blob URL when modal closes
 	useEffect(() => {
-		return () => {
-			if (imageSrc && imageSrc.startsWith('blob:')) {
-				URL.revokeObjectURL(imageSrc);
-			}
-		};
-	}, [imageSrc]);
+		setCrop({ x: 0, y: 0 });
+		setZoom(1);
+		setCroppedAreaPixels(null);
+	}, [imageSrc, open]);
 
 	return (
 		<Dialog
@@ -68,8 +68,9 @@ export const ImageCropModal: FC<ImageCropModalProps> = ({
 			slots={{ transition: undefined }}
 			transitionDuration={200}
 		>
+			{title ? <DialogTitle>{title}</DialogTitle> : null}
 			<DialogContent>
-				<Box sx={{ position: 'relative', height: 400 }}>
+				<Box sx={(theme) => ({ position: 'relative', height: { xs: '50dvh', sm: theme.spacing(50) } })}>
 					<Cropper
 						image={imageSrc}
 						crop={crop}

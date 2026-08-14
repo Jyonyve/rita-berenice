@@ -42,7 +42,20 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 	// Session-derived state
 	const isSessionLoading = session.loading;
 	const isLoggedIn = !session.loading && session.doesSessionExist;
-	const userId = isLoggedIn ? session.userId : undefined;
+	const claimedRitaUserId =
+		!session.loading && typeof session.accessTokenPayload?.ritaUserId === 'string'
+			? session.accessTokenPayload.ritaUserId
+			: undefined;
+
+	// The server resolves the stable Rita identity from the authenticated SuperTokens session.
+	// Prefer the signed access-token claim, but use the authenticated `/user/me` response as the
+	// canonical fallback when the browser session context has not exposed the custom claim yet.
+	const {
+		data: userQueryData,
+		refetch: refetchUserQuery,
+		isLoading: isUserQueryLoading,
+	} = getMe(isLoggedIn);
+	const userId = isLoggedIn ? (claimedRitaUserId ?? userQueryData?.userInfo?.userId) : undefined;
 	// 1. Add this at the top of your component (after getting session)
 	const currentRoles: string[] =
 		!session.loading && Array.isArray(session.accessTokenPayload?.['st-role']?.v)
@@ -60,14 +73,6 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 	// Profile state
 	const [userProfile, setUserProfile] = useState<UserInfo>();
 	const [needsProfileSetup, setNeedsProfileSetup] = useState(false);
-
-	// --- React Query for User Data ---
-	// This hook is the single source of truth for the current user's profile data.
-	const {
-		data: userQueryData,
-		refetch: refetchUserQuery,
-		isLoading: isUserQueryLoading, // Use this to track loading state
-	} = getMe(isLoggedIn);
 
 	// 2. Core Logic Functions
 
@@ -137,24 +142,22 @@ export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
 			if (userQueryData?.userInfo) {
 				setUserProfile(userQueryData.userInfo);
 				setNeedsProfileSetup(false);
-			} else if (!userQueryData) {
+			} else {
 				// This handles the case where the user is logged in but has no profile in our DB
+				setUserProfile(undefined);
 				setNeedsProfileSetup(true);
 			}
 		}
 	}, [userQueryData, isLoggedIn, isUserQueryLoading]);
 
-	// Effect to check the profile when the session is first established
+	// The query is enabled when the session is established; only logout cleanup is needed here.
 	useEffect(() => {
-		if (isLoggedIn && userId) {
-			console.log('🔵 [Auth] Session is active. Initial check/fetch of profile.');
-			fetchAndSetUserProfile();
-		} else if (!isLoggedIn && !isSessionLoading) {
+		if (!isLoggedIn && !isSessionLoading) {
 			console.log('🔵 [Auth] Session ended. Clearing profile state.');
 			setUserProfile(undefined);
 			setNeedsProfileSetup(false);
 		}
-	}, [isLoggedIn, userId, isSessionLoading, fetchAndSetUserProfile]);
+	}, [isLoggedIn, isSessionLoading]);
 
 	// Effect to close login modal automatically
 	const prevIsLoggedIn = useRef(isLoggedIn);

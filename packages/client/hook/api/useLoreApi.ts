@@ -42,6 +42,11 @@ export const useLoreApi = () => {
 				// Use Promise.all to wait for all invalidations to be triggered.
 				Promise.all(invalidationPromises);
 			}
+			if (variables.sessionId) {
+				queryClient.invalidateQueries({
+					queryKey: ['lore', 'list', 'getLoresBySession', variables.sessionId],
+				});
+			}
 		},
 	});
 
@@ -59,6 +64,17 @@ export const useLoreApi = () => {
 			enabled: !!characterId,
 		});
 
+	const getLoresBySession = (sessionId: string) =>
+		useQuery<LoreResponse, Error>({
+			queryKey: ['lore', 'list', 'getLoresBySession', sessionId],
+			queryFn: async () => {
+				const url = genApiUrl(MODULE_NAME, 'getLoresBySession', [sessionId]);
+				const response = await apiClient.get<LoreResponse>(url);
+				return response.data;
+			},
+			enabled: !!sessionId,
+		});
+
 	/**
 	 * Fetches a single lore entry by its unique ID.
 	 */
@@ -73,5 +89,5 @@ export const useLoreApi = () => {
 			enabled: !!loreId,
 		});
 
-	return { storeLore: storeLore.mutateAsync, getLoresByCharacter, getLore };
+	return { storeLore: storeLore.mutateAsync, getLoresByCharacter, getLoresBySession, getLore };
 };

@@ -1,94 +1,31 @@
-// src/client/util/portraitUtil.ts
-
 import {
-	PortraitUrlMap,
-	EmotionKey,
-	validEmotionKeys,
 	DEFAULT_EMOTION,
-	validEmotions,
+	EmotionKey,
+	PortraitUrlMap,
 	numberToEmotionWordsMap,
+	validEmotions,
 } from '@rita-berenice/shared/config';
 
-// --- DATA STORES ---
-const allPortraitsMap = new Map<string, PortraitUrlMap>();
-const defaultPortraitsMap = new Map<string, string>();
-const lorePortraitsMap = new Map<string, Map<string, string>>();
+const emotionImageFallbacks: Record<EmotionKey, readonly EmotionKey[]> = {
+	0: [0],
+	1: [1, 7, 6, 13, 11, 9, 0],
+	2: [2, 8, 4, 3, 10, 14, 0],
+	3: [3, 10, 4, 14, 2, 0],
+	4: [4, 3, 10, 14, 2, 0],
+	5: [5, 0],
+	6: [6, 13, 1, 7, 11, 9, 0],
+	7: [7, 1, 6, 13, 11, 9, 0],
+	8: [8, 2, 4, 3, 10, 14, 0],
+	9: [9, 1, 7, 6, 11, 13, 0],
+	10: [10, 3, 4, 14, 2, 0],
+	11: [11, 1, 7, 6, 13, 9, 0],
+	12: [12, 0],
+	13: [13, 6, 1, 7, 11, 9, 0],
+	14: [14, 3, 4, 10, 2, 0],
+};
 
-let isInitialized = false;
-
-// Parses characterId from a URL like /assets/character/charId123/...
-function getCharacterIdFromPath(path: string): string | null {
-	const pattern = /^\/assets\/character\/([^/]+)\//;
-	const match = path.match(pattern);
-	return match ? match[1] : null;
-}
-
-// Parses characterId and historyId from a lore image URL.
-function getLoreInfoFromPath(path: string): { characterId: string; historyId: string } | null {
-	const pattern = /^\/assets\/character\/([^/]+)\/lore\/([^/.]+)\.\w+$/;
-	const match = path.match(pattern);
-	if (match && match[1] && match[2]) {
-		return { characterId: match[1], historyId: match[2] };
-	}
-	return null;
-}
-
-function initializePortraits(): void {
-	if (isInitialized) return;
-	console.log('[PortraitUtil] Initializing all character and lore portraits...');
-
-	// This glob pattern is more explicit and reliable for finding files in subdirectories.
-	const allImageModules = import.meta.glob<string>(
-		'../../../public/assets/character/**/*.{webp,avif}',
-		{ eager: true, import: 'default', query: '?url' }
-	) as Record<string, string>;
-
-	const emotionFilenameRegex = /_(\d+)\.(webp|avif)$/;
-
-	for (const path in allImageModules) {
-		// Create the correct web-accessible URL by removing the '/public' prefix.
-		const sourceImagePath = path.slice(path.indexOf('/assets/'));
-		const finalImageUrl = allImageModules[path];
-
-		// ✅ RESTORED: First, check if the path is for a lore image.
-		const loreInfo = getLoreInfoFromPath(sourceImagePath);
-		if (loreInfo) {
-			const { characterId, historyId } = loreInfo;
-			const loreMap = lorePortraitsMap.get(characterId) || new Map<string, string>();
-			loreMap.set(historyId, finalImageUrl);
-			lorePortraitsMap.set(characterId, loreMap);
-			// continue to the next file, as this is not an emotion portrait.
-			continue;
-		}
-
-		// If it's not a lore image, process it as a standard emotion portrait.
-		const characterId = getCharacterIdFromPath(sourceImagePath);
-		if (!characterId) continue;
-
-		const match = sourceImagePath.match(emotionFilenameRegex);
-		if (!match || !match[1]) continue;
-
-		// ✅ FIXED: Use match[1] for first capture group (emotion number)
-		const imageNumber = parseInt(match[1], 10) as EmotionKey;
-		if (!validEmotionKeys.has(imageNumber)) continue;
-
-		const portraitMap = allPortraitsMap.get(characterId) || {};
-		portraitMap[imageNumber] = finalImageUrl;
-		allPortraitsMap.set(characterId, portraitMap);
-
-		if (imageNumber === getImageNumberForEmotion(DEFAULT_EMOTION)) {
-			defaultPortraitsMap.set(characterId, finalImageUrl);
-		}
-	}
-
-	isInitialized = true;
-	console.log(
-		`[PortraitUtil] Initialization complete. Loaded emotion portraits for ${allPortraitsMap.size} characters and lore images for ${lorePortraitsMap.size} characters.`
-	);
-}
-
-function getImageNumberForEmotion(emotion: string): EmotionKey {
-	const lowerEmotion = emotion.toLowerCase();
+export function getImageNumberForEmotion(emotion: string): EmotionKey {
+	const lowerEmotion = emotion.toLowerCase().trim();
 	if (validEmotions.has(lowerEmotion)) {
 		for (const [numStr, keywords] of Object.entries(numberToEmotionWordsMap)) {
 			if ((keywords as readonly string[]).includes(lowerEmotion)) {
@@ -99,52 +36,37 @@ function getImageNumberForEmotion(emotion: string): EmotionKey {
 	return 0;
 }
 
-// --- (All your PUBLIC API functions remain the same) ---
-
-export function getAllPortraits(characterId: string): PortraitUrlMap | undefined {
-	initializePortraits();
-	return allPortraitsMap.get(characterId);
+export function getImageFallbackKeysForEmotion(emotion: string): readonly EmotionKey[] {
+	return emotionImageFallbacks[getImageNumberForEmotion(emotion)];
 }
 
-export function getDefaultImage(characterId: string): string | undefined {
-	initializePortraits();
-	return defaultPortraitsMap.get(characterId);
+export function getDefaultImage(portraits?: PortraitUrlMap): string | undefined {
+	return portraits?.[getImageNumberForEmotion(DEFAULT_EMOTION)];
 }
 
-export function getImageForEmotion(characterId: string, emotion: string): string | undefined {
-	initializePortraits();
-	const allPortraits = allPortraitsMap.get(characterId);
-	if (!allPortraits) return defaultPortraitsMap.get(characterId);
-
-	const imageNumber = getImageNumberForEmotion(emotion);
-	return allPortraits[imageNumber] ?? defaultPortraitsMap.get(characterId);
+export function getImageForEmotion(
+	portraits: PortraitUrlMap | undefined,
+	emotion: string
+): string | undefined {
+	if (!portraits) return undefined;
+	for (const fallbackKey of getImageFallbackKeysForEmotion(emotion)) {
+		const imageUrl = portraits[fallbackKey];
+		if (imageUrl) return imageUrl;
+	}
+	return undefined;
 }
 
-export function getAllDefaultImageMap(): Map<string, string> {
-	initializePortraits();
-	return defaultPortraitsMap;
-}
-
-export function getCharacterImageArray(characterId: string): string[] {
-	initializePortraits();
-	const portraits = allPortraitsMap.get(characterId);
+export function getCharacterImageArray(portraits?: PortraitUrlMap): string[] {
 	if (!portraits) return [];
-	return Object.values(portraits).filter(Boolean);
+	return Object.entries(portraits)
+		.sort(([left], [right]) => Number(left) - Number(right))
+		.map(([, imageUrl]) => imageUrl)
+		.filter(Boolean);
 }
 
-export function getLoreImage(characterId: string, historyId: string): string | undefined {
-	initializePortraits();
-	const loreMap = lorePortraitsMap.get(characterId);
-	return loreMap ? loreMap.get(historyId) : undefined;
-}
-
-export function getAllLoreImages(characterId: string): Map<string, string> | undefined {
-	initializePortraits();
-	return lorePortraitsMap.get(characterId);
-}
-
-export function getImageUrl(characterId: string, emotion: string): string | undefined {
-	const imagePath = getImageForEmotion(characterId, emotion);
-	if (!imagePath) return undefined;
-	return imagePath;
+export function getImageUrl(
+	portraits: PortraitUrlMap | undefined,
+	emotion: string
+): string | undefined {
+	return getImageForEmotion(portraits, emotion);
 }

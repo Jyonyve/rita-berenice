@@ -1,8 +1,6 @@
 import express, { type Request, type Response, type Router } from 'express';
-import type { SessionRequest } from 'supertokens-node/framework/express';
 import { verifySession } from 'supertokens-node/recipe/session/framework/express';
 import { userStore } from '../store/userStore.js';
-import { ensureLocalUser } from '../service/userProvisioningService.js';
 import { RESOURCES } from '../db/resource.type.js';
 import {
 	asyncHandler,
@@ -11,22 +9,21 @@ import {
 	validateServiceId,
 } from '../util/routeHelpers.js';
 
-import { avatarUpload, processUserAvatar } from '../util/imageProcessingUtils.js';
-import fs from 'fs';
-import path from 'path';
+import { avatarUpload, deleteUserAvatar, processUserAvatar } from '../util/imageProcessingUtils.js';
 import { UserResponse } from '@rita-berenice/shared/api';
-import { BASE_USER_IMAGE_DIR, RUNTIME_USER_IMAGE_DIR } from '@rita-berenice/shared/config';
+import { RUNTIME_USER_IMAGE_DIR } from '@rita-berenice/shared/config';
 import { ApiError, UserInfo } from '@rita-berenice/shared/domain';
+import { flowLogger, serializeError } from '../util/jsonlLogger.js';
+import { ensureImageStorageDirectory } from '../util/imageStorageUtils.js';
+import { getSessionUserId } from '../util/authUtils.js';
 
 const router: Router = express.Router();
 
 const collectionType = RESOURCES.USER;
 router.use(verifySession());
 
-const getAuthenticatedUserId = (req: Request) => (req as SessionRequest).session!.getUserId();
-
 const assertSelf = (req: Request, requestedUserId: string) => {
-	const authenticatedUserId = getAuthenticatedUserId(req);
+	const authenticatedUserId = getSessionUserId(req);
 	if (requestedUserId !== authenticatedUserId) {
 		throw new ApiError(403, 'The requested user does not match the authenticated session.');
 	}
@@ -36,22 +33,7 @@ const assertSelf = (req: Request, requestedUserId: string) => {
 router.get(
 	genRoutePattern('getMe'),
 	asyncHandler(async (req: Request, res: Response<UserResponse>): Promise<void> => {
-		const response = await ensureLocalUser(getAuthenticatedUserId(req));
-		res.status(200).json(response);
-	})
-);
-
-/**
- * GET /api/user/get-all-users
- * Retrieves all registered users from the database.
- */
-router.get(
-	genRoutePattern('getAllUsers'),
-	asyncHandler(async (req: Request, res: Response<UserResponse>): Promise<void> => {
-		const path = genRoutePattern('getAllUsers');
-		console.log(`API HIT: GET ${path}`);
-
-		const response = await userStore.getAllUsers();
+		const response = await userStore.getUser(getSessionUserId(req));
 		res.status(200).json(response);
 	})
 );
@@ -66,9 +48,6 @@ router.get(
 		const { userId } = req.params;
 		validateServiceId(userId, collectionType);
 		assertSelf(req, userId);
-
-		const path = genRoutePattern('getUser', ['userId']);
-		console.log(`API HIT: GET ${path.replace(':userId', userId)}`);
 
 		const response = await userStore.getUser(userId);
 		res.status(200).json(response);
@@ -85,9 +64,6 @@ router.get(
 		const { showName } = req.params;
 		validateRequestData(req.params, 'params', ['showName']);
 
-		const path = genRoutePattern('getUserByShowName', ['showName']);
-		console.log(`API HIT: GET ${path.replace(':showName', showName)}`);
-
 		const response = await userStore.getUserByShowName(showName);
 		res.status(200).json(response);
 	})
@@ -103,9 +79,6 @@ router.get(
 		const { showName } = req.params;
 		validateRequestData(req.params, 'params', ['showName']);
 
-		const path = genRoutePattern('checkShowNameExists', ['showName']);
-		console.log(`API HIT: GET ${path.replace(':showName', showName)}`);
-
 		const exists = await userStore.checkShowNameExists(showName);
 		res.status(200).json({ exists, available: !exists, showName });
 	})
@@ -120,13 +93,10 @@ router.get(
 	asyncHandler(async (req: Request, res: Response<UserResponse>): Promise<void> => {
 		const { email } = req.params;
 		validateRequestData(req.params, 'params', ['email']);
-		const currentUser = await ensureLocalUser(getAuthenticatedUserId(req));
+		const currentUser = await userStore.getUser(getSessionUserId(req));
 		if (currentUser.userInfo.email !== email) {
 			throw new ApiError(403, 'The requested email does not match the authenticated session.');
 		}
-
-		const path = genRoutePattern('getUserByEmail', ['email']);
-		console.log(`API HIT: GET ${path.replace(':email', email)}`);
 
 		const response = await userStore.getUserByEmail(email);
 		res.status(200).json(response);
@@ -143,9 +113,7 @@ router.post(
 		const requiredFields: (keyof UserInfo)[] = ['userId', 'showName', 'email', 'gender'];
 		validateRequestData(req.body, 'body', requiredFields);
 		const userId = assertSelf(req, req.body.userId);
-		const currentUser = await ensureLocalUser(userId);
-		const path = genRoutePattern('storeUser');
-		console.log(`API HIT: POST ${path} for user: ${userId}`);
+		const currentUser = await userStore.getUser(userId);
 
 		const response = await userStore.storeUser({
 			...req.body,
@@ -175,9 +143,6 @@ router.post(
 			return;
 		}
 
-		const routePath = genRoutePattern('uploadUserAvatar');
-		console.log(`API HIT: POST ${routePath} for user: ${userId}`);
-
 		try {
 			// Parse crop data if provided (stringified JSON from FormData)
 			const cropConfig = crop ? JSON.parse(crop) : undefined;
@@ -186,7 +151,7 @@ router.post(
 
 			res.status(200).json({ avatarUrl, success: true, message: 'Avatar uploaded successfully' });
 		} catch (error) {
-			console.error('Error processing avatar:', error);
+			flowLogger.error('user.routes', 'avatar.process.failed', { userId, ...serializeError(error) });
 			res.status(500).json({ error: 'Failed to process avatar' });
 		}
 	})
@@ -203,21 +168,13 @@ router.delete(
 
 		const { userId } = req.body;
 		assertSelf(req, userId);
-		const routePath = genRoutePattern('deleteUserAvatar');
-		console.log(`API HIT: DELETE ${routePath} for user: ${userId}`);
 
 		try {
-			const fileName = 'image.webp';
-			const filePath = path.join(process.cwd(), `${BASE_USER_IMAGE_DIR}/${userId}/${fileName}`);
-
-			if (fs.existsSync(filePath)) {
-				fs.unlinkSync(filePath);
-				console.log(`Deleted avatar: ${filePath}`);
-			}
+			await deleteUserAvatar(userId);
 
 			res.status(200).json({ success: true, message: 'Avatar deleted successfully' });
 		} catch (error) {
-			console.error('Error deleting avatar:', error);
+			flowLogger.error('user.routes', 'avatar.delete.failed', { userId, ...serializeError(error) });
 			res.status(500).json({ error: 'Failed to delete avatar' });
 		}
 	})
@@ -234,18 +191,10 @@ router.post(
 
 		const { userId } = req.body;
 		assertSelf(req, userId);
-		const routePath = genRoutePattern('createUserFolder');
-		console.log(`API HIT: POST ${routePath} for user: ${userId}`);
-
-		// ✅ Use constant for directory path
-		const uploadDir = `${BASE_USER_IMAGE_DIR}/${userId}`;
-		const fullUploadPath = path.join(process.cwd(), uploadDir);
 
 		try {
-			if (!fs.existsSync(fullUploadPath)) {
-				fs.mkdirSync(fullUploadPath, { recursive: true });
-				console.log(`Created directory: ${fullUploadPath}`);
-			}
+			ensureImageStorageDirectory(`${RUNTIME_USER_IMAGE_DIR}/${userId}`);
+			flowLogger.info('user.routes', 'userFolder.ready', { userId });
 
 			// ✅ Use constant for URL path
 			res
@@ -256,7 +205,10 @@ router.post(
 					path: `${RUNTIME_USER_IMAGE_DIR}/${userId}`,
 				});
 		} catch (error) {
-			console.error('Error creating directory:', error);
+			flowLogger.error('user.routes', 'userFolder.create.failed', {
+				userId,
+				...serializeError(error),
+			});
 			res.status(500).json({ error: 'Failed to create user folder' });
 		}
 	})

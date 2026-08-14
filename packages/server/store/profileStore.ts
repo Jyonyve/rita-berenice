@@ -5,14 +5,32 @@ import { eq, ilike } from 'drizzle-orm';
 import { getDatabase } from '../db/postgresClient.js';
 import { profiles } from '../db/schema.js';
 import { handleServiceError } from '../util/serviceHelpers.js';
+import { getProfileImageUrls } from '../util/imageStorageUtils.js';
 
-const toResponse = (profileInfos: ProfileInfo[]): ProfileResponse => ({
-	ids: profileInfos.map((profile) => profile.profileId),
-	documents: profileInfos.map((profile) => profile.description),
-	metadatas: profileInfos.map(() => null),
-	profileInfos,
-	profileInfo: profileInfos[0] || null,
-});
+const toResponse = async (profileInfos: ProfileInfo[]): Promise<ProfileResponse> => {
+	const imagePairs = await Promise.all(
+		profileInfos.map(async ({ profileId }) => ({
+			profileId,
+			...(await getProfileImageUrls(profileId)),
+		}))
+	);
+
+	return {
+		ids: profileInfos.map((profile) => profile.profileId),
+		documents: profileInfos.map((profile) => profile.description),
+		metadatas: profileInfos.map(() => null),
+		profileInfos,
+		profileInfo: profileInfos[0] || null,
+		profilePortraits: Object.fromEntries(
+			imagePairs.flatMap(({ profileId, portraitUrl }) =>
+				portraitUrl ? [[profileId, portraitUrl]] : []
+			)
+		),
+		profileAvatars: Object.fromEntries(
+			imagePairs.flatMap(({ profileId, avatarUrl }) => (avatarUrl ? [[profileId, avatarUrl]] : []))
+		),
+	};
+};
 
 export const profileStore = {
 	getAllProfilesByUserId: async (userId: string): Promise<ProfileResponse> => {
@@ -21,7 +39,7 @@ export const profileStore = {
 				.select({ data: profiles.data })
 				.from(profiles)
 				.where(eq(profiles.userId, userId));
-			return toResponse(rows.map((row) => row.data));
+			return await toResponse(rows.map((row) => row.data));
 		} catch (error) {
 			handleServiceError(error, `Failed to get profiles for user '${userId}'`);
 		}
@@ -35,7 +53,7 @@ export const profileStore = {
 				.where(eq(profiles.profileId, profileId))
 				.limit(1);
 			if (!row) throw new ApiError(404, `Profile '${profileId}' not found.`);
-			return toResponse([row.data]);
+			return await toResponse([row.data]);
 		} catch (error) {
 			handleServiceError(error, `Failed to get profile with ID ${profileId}`);
 		}
@@ -49,7 +67,7 @@ export const profileStore = {
 				.where(eq(profiles.sessionId, sessionId))
 				.limit(1);
 			if (!row) throw new ApiError(404, `Profile for session '${sessionId}' not found.`);
-			return toResponse([row.data]);
+			return await toResponse([row.data]);
 		} catch (error) {
 			handleServiceError(error, `Failed to get profile with sessionId ${sessionId}`);
 		}
@@ -61,7 +79,7 @@ export const profileStore = {
 				.select({ data: profiles.data })
 				.from(profiles)
 				.where(ilike(profiles.showName, `%${showName}%`));
-			return toResponse(rows.map((row) => row.data));
+			return await toResponse(rows.map((row) => row.data));
 		} catch (error) {
 			handleServiceError(error, `Failed to get profiles by showName '${showName}'`);
 		}

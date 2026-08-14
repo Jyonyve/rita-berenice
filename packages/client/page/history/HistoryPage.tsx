@@ -6,15 +6,17 @@ import { GlassCard, GlassPaper, GlassPortraitSlider } from '../../layout/compone
 import { useToast } from '../../provider/ToastProvider.jsx';
 
 import { containerSpacing } from '../../style/index.js';
-import { getLoreImage } from '../../util/portraitUtils.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { HistoryInfo } from '@rita-berenice/shared/domain';
 
-const HistoryPage: FC<{ historyInfo: HistoryInfo; userId: string }> = ({ historyInfo, userId }) => {
+const HistoryPage: FC<{ historyInfo: HistoryInfo; imageUrl?: string; userId: string }> = ({
+	historyInfo,
+	imageUrl,
+	userId,
+}) => {
 	const navigate = useNavigate();
 	const { addToast } = useToast();
 	// Portrait: pick default or first available
-	const portraits = getLoreImage(historyInfo.characterId, historyInfo.historyId);
 
 	return (
 		<GlassPaper key="history-page" className="paper">
@@ -47,8 +49,8 @@ const HistoryPage: FC<{ historyInfo: HistoryInfo; userId: string }> = ({ history
 					}}
 				>
 					<Box sx={{ height: '100%', width: '100%', display: 'flex' }}>
-						{!!portraits ? (
-							<GlassPortraitSlider imageUrls={[portraits]} />
+						{!!imageUrl ? (
+							<GlassPortraitSlider imageUrls={[imageUrl]} />
 						) : (
 							<Box width={200} height={200} bgcolor="#eee" borderRadius={3} />
 						)}

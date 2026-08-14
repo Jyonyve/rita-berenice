@@ -20,11 +20,12 @@ import {
 	NotFoundPage,
 	HistoryPageLoader,
 	UserPageLoader,
+	DocumentPage,
 } from './page/index.js';
 import { useLanguage } from './provider/LanguageProvider.jsx';
 
 export function App() {
-	const { CHARACTER, CHAT, USER, HISTORY } = routeConstants;
+	const { CHARACTER, CHAT, USER, HISTORY, DOCUMENT } = routeConstants;
 	const { addToast } = useToast();
 	const { lang } = useLanguage();
 	const [hasMounted, setHasMounted] = useState(false);
@@ -36,7 +37,7 @@ export function App() {
 
 	return (
 		<Routes>
-			<Route path="/" element={<RootLayout />}>
+			<Route element={<RootLayout headerMode="site" />}>
 				<Route index element={<MainLandingPage />} />
 				{hasMounted && getSuperTokensRoutesForReactRouterDom(reactRouter, [EmailPasswordPreBuiltUI])}
 				{/* User */}
@@ -49,7 +50,14 @@ export function App() {
 					}
 				/>
 				{/* character  */}
-				<Route path={`${CHARACTER}`} element={<CharacterListPageLoader />} />
+				<Route
+					path={`${CHARACTER}`}
+					element={
+						<SessionAuth>
+							<CharacterListPageLoader />
+						</SessionAuth>
+					}
+				/>
 				<Route
 					path={`${CHARACTER}/new`}
 					element={
@@ -58,7 +66,14 @@ export function App() {
 						</SessionAuth>
 					}
 				/>
-				<Route path={`${CHARACTER}/:characterId`} element={<CharacterPageLoader />} />
+				<Route
+					path={`${CHARACTER}/:characterId`}
+					element={
+						<SessionAuth>
+							<CharacterPageLoader />
+						</SessionAuth>
+					}
+				/>
 				<Route
 					path={`${CHARACTER}/new`}
 					element={
@@ -93,6 +108,10 @@ export function App() {
 						</SessionAuth>
 					}
 				/>
+				{/* Fallback route for any path that doesn't match */}
+				<Route path="*" element={<NotFoundPage />} />
+			</Route>
+			<Route element={<RootLayout headerMode="session" />}>
 				<Route
 					path={`${CHAT}/:sessionId`}
 					element={
@@ -101,8 +120,14 @@ export function App() {
 						</SessionAuth>
 					}
 				/>
-				{/* Fallback route for any path that doesn't match */}
-				<Route path="*" element={<NotFoundPage />} />
+				<Route
+					path={`${DOCUMENT}/:sessionId`}
+					element={
+						<SessionAuth>
+							<DocumentPage />
+						</SessionAuth>
+					}
+				/>
 			</Route>
 		</Routes>
 	);

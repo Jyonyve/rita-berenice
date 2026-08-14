@@ -17,7 +17,7 @@ Start each task by identifying the owner package:
 
 Use the repo-local skills when relevant:
 
-- `rag-change`: RAG, LLM, prompt, schema, Chroma retrieval, memory, or model behavior.
+- `rag-change`: RAG, LLM, prompt, schema, retrieval, memory, or model behavior.
 - `tooling-upgrade`: package scripts, CI, Docker, TypeScript, formatting, pnpm, Turbo, or dependencies.
 
 Run the narrowest useful gate first:
@@ -36,7 +36,7 @@ Use `pnpm check` before handing off broad changes.
 ## What Agents Should Avoid
 
 - Do not read or print `.env` files.
-- Do not run destructive database or data-maintenance commands without explicit approval.
+- Do not run destructive database operations without explicit approval.
 - Do not change stored data shapes without a migration plan.
 - Do not add broad dependency upgrades while doing unrelated work.
 - Do not commit generated logs, build output, caches, or local runtime data.

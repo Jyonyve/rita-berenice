@@ -17,12 +17,14 @@ coverage/
 # 📝 Logs
 # ===================================
 *.log
+*.jsonl
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-**/logs/
+logs/
+packages/server/logs/
 
 
 # ===================================
@@ -48,9 +50,10 @@ Thumbs.db
 *.sw?
 
 # VSCode
-.vscode/
+.vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+!.vscode/launch.json
 
 # JetBrains IDEs
 .idea/
@@ -81,5 +84,12 @@ coverage/
 # ===================================
 *.local
 
-# Generated migration extraction data
-packages/migration/rofan/data/
+# Runtime uploads live in per-entity directories. Repository-owned defaults such
+# as new_user.webp, new_character.webp, and future top-level defaults remain trackable.
+public/assets/user/*/
+public/assets/character/*/
+public/assets/profile/*/
+
+# Local database backups can contain private Rita data.
+.migration-backups/
+

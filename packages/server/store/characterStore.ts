@@ -1,18 +1,90 @@
 import { CharacterResponse } from '@rita-berenice/shared/api';
+import { DEFAULT_CHARACTER_VISIBILITY, CHARACTER_VISIBILITY } from '@rita-berenice/shared/config';
 import { CharacterCdo, CharacterInfo, ApiError } from '@rita-berenice/shared/domain';
 import { createBasicCharacterInfo, isCharacterInfo } from '@rita-berenice/shared/util';
 import { desc, eq, ilike } from 'drizzle-orm';
 import { getDatabase } from '../db/postgresClient.js';
 import { characters } from '../db/schema.js';
 import { handleServiceError } from '../util/serviceHelpers.js';
+import { getCharacterAvatarUrls, getCharacterPortraitUrls } from '../util/imageStorageUtils.js';
 
-const toResponse = (characterInfos: CharacterInfo[]): CharacterResponse => ({
-	ids: characterInfos.map((character) => character.characterId),
-	documents: characterInfos.map((character) => character.description),
-	metadatas: characterInfos.map(() => null),
-	characterInfos,
-	characterInfo: characterInfos[0] || null,
+const normalizeCharacter = (character: CharacterInfo): CharacterInfo => ({
+	...character,
+	worldIntroduction: character.worldIntroduction ?? '',
+	visibility: character.visibility ?? DEFAULT_CHARACTER_VISIBILITY,
 });
+
+const toResponse = async (rawCharacterInfos: CharacterInfo[]): Promise<CharacterResponse> => {
+	const characterInfos = rawCharacterInfos.map(normalizeCharacter);
+	const characterPortraits = Object.fromEntries(
+		await Promise.all(
+			characterInfos.map(async (character) => [
+				character.characterId,
+				await getCharacterPortraitUrls(character.characterId),
+			])
+		)
+	);
+	const characterAvatars = Object.fromEntries(
+		await Promise.all(
+			characterInfos.map(async (character) => [
+				character.characterId,
+				await getCharacterAvatarUrls(character.characterId),
+			])
+		)
+	);
+
+	return {
+		ids: characterInfos.map((character) => character.characterId),
+		documents: characterInfos.map((character) => character.description),
+		metadatas: characterInfos.map(() => null),
+		characterInfos,
+		characterInfo: characterInfos[0] || null,
+		characterPortraits,
+		characterAvatars,
+	};
+};
+
+// Drops 'private' characters that do not belong to the requesting viewer so that
+// visibility is enforced server-side regardless of client-side filtering.
+export const filterCharacterResponseByViewer = (
+	response: CharacterResponse,
+	viewerUserId: string
+): CharacterResponse => {
+	const visibleInfos = response.characterInfos.filter(
+		(character) =>
+			character.userId === viewerUserId || character.visibility !== CHARACTER_VISIBILITY.PRIVATE
+	);
+	const visibleIds = new Set(visibleInfos.map((character) => character.characterId));
+	return {
+		...response,
+		ids: visibleInfos.map((character) => character.characterId),
+		documents: visibleInfos.map((character) => character.description),
+		metadatas: visibleInfos.map(() => null),
+		characterInfos: visibleInfos,
+		characterInfo: visibleInfos[0] || null,
+		characterPortraits: Object.fromEntries(
+			Object.entries(response.characterPortraits).filter(([characterId]) =>
+				visibleIds.has(characterId)
+			)
+		),
+		characterAvatars: Object.fromEntries(
+			Object.entries(response.characterAvatars).filter(([characterId]) => visibleIds.has(characterId))
+		),
+	};
+};
+
+// Throws 404 when the single requested character is private and the viewer is not its owner.
+export const assertCharacterVisibleToUser = (
+	response: CharacterResponse,
+	viewerUserId: string
+): CharacterResponse => {
+	const character = response.characterInfo;
+	if (!character) throw new ApiError(404, 'Character not found.');
+	if (character.visibility === CHARACTER_VISIBILITY.PRIVATE && character.userId !== viewerUserId) {
+		throw new ApiError(404, `Character '${character.characterId}' not found.`);
+	}
+	return response;
+};
 
 export const characterStore = {
 	getAllCharacters: async (): Promise<CharacterResponse> => {
@@ -21,7 +93,7 @@ export const characterStore = {
 				.select({ data: characters.data })
 				.from(characters)
 				.orderBy(desc(characters.updatedAt));
-			return toResponse(rows.map((row) => row.data));
+			return await toResponse(rows.map((row) => row.data));
 		} catch (error) {
 			handleServiceError(error, 'Failed to get all characters.');
 		}
@@ -35,7 +107,7 @@ export const characterStore = {
 				.where(eq(characters.characterId, characterId))
 				.limit(1);
 			if (!row) throw new ApiError(404, `Character '${characterId}' not found.`);
-			return toResponse([row.data]);
+			return await toResponse([row.data]);
 		} catch (error) {
 			handleServiceError(error, `Failed to get character with ID ${characterId}`);
 		}
@@ -48,7 +120,7 @@ export const characterStore = {
 				.from(characters)
 				.where(ilike(characters.showName, `%${showName}%`))
 				.orderBy(desc(characters.updatedAt));
-			return toResponse(rows.map((row) => row.data));
+			return await toResponse(rows.map((row) => row.data));
 		} catch (error) {
 			handleServiceError(error, `Failed to get characters by showName '${showName}'`);
 		}
@@ -61,7 +133,7 @@ export const characterStore = {
 				.from(characters)
 				.where(eq(characters.userId, userId))
 				.orderBy(desc(characters.updatedAt));
-			return toResponse(rows.map((row) => row.data));
+			return await toResponse(rows.map((row) => row.data));
 		} catch (error) {
 			handleServiceError(error, `Failed to get characters by userId '${userId}'`);
 		}
@@ -76,6 +148,8 @@ export const characterStore = {
 			: createBasicCharacterInfo(character);
 		const updatedCharacter: CharacterInfo = {
 			...baseCharacter,
+			worldIntroduction: baseCharacter.worldIntroduction ?? '',
+			visibility: baseCharacter.visibility ?? DEFAULT_CHARACTER_VISIBILITY,
 			createdAt: baseCharacter.createdAt || now,
 			updatedAt: now,
 		};

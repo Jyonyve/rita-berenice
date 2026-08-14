@@ -15,6 +15,20 @@
 			"when": 1783061944208,
 			"tag": "0001_elite_doorman",
 			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "7",
+			"when": 1784613664975,
+			"tag": "0002_parallel_moonstone",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "7",
+			"when": 1784871553681,
+			"tag": "0003_sharp_clint_barton",
+			"breakpoints": true
 		}
 	]
 }

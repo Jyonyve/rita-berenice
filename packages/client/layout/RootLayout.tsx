@@ -3,42 +3,27 @@ import { Outlet, useNavigate } from 'react-router';
 import {
 	Box,
 	Container,
-	Toolbar,
 	Typography,
 	CssBaseline,
 	IconButton,
 	Modal,
-	Avatar,
 	Dialog,
 	DialogContent,
 	useTheme,
 	useMediaQuery,
 } from '@mui/material';
-import { useColorMode } from '../provider/ColorModeProvider.jsx';
 import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpassword/prebuiltui.js';
 import { AuthPage } from 'supertokens-auth-react/ui/index.js';
-import {
-	GlassPaper,
-	GlassAppBar,
-	GlassFooter,
-	GlassMenuItem,
-	GlassPortrait,
-	GlassMenu,
-} from './component/glass/index.js';
-import { RomanticTitle } from './component/RomanticTitle.js';
-import { gold, silver } from '../style/colors.js';
+import { GlassPaper, GlassFooter, GlassPortrait } from './component/glass/index.js';
 import { routeConstants } from '../routeConstants.js';
 import { getLangText } from '../util/translateUtils.js';
 import { useAuth } from '../provider/AuthProvider.jsx';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import ImageIcon from '@mui/icons-material/Image';
 import CloseIcon from '@mui/icons-material/Close';
-import { useSessionApi, useUserApi } from '../hook/api/index.js';
-import { InlineEditableField } from './component/InlineEditableField.js';
+import { useSessionApi } from '../hook/api/index.js';
 import ReloadToHome from './component/ReloadToHome.js';
-import { titleFontFamily } from '../style/typography.js';
-import { LanguageSwitch, ThemeSwitch } from './component/index.js';
 import { APPNAME, LANG_KEYS } from '@rita-berenice/shared/config';
+import { SiteHeader } from './SiteHeader.js';
+import { SessionHeader, type SessionHeaderInfo } from './SessionHeader.js';
 
 interface LoginModalProps {
 	loginOpen: boolean;
@@ -158,23 +143,22 @@ const ImageModal: FC<ImageModalProps> = ({ open, onClose, imageUrl, characterId 
 	);
 };
 
-export interface HeaderInfo {
-	characterId: string;
-	profileShowName: string;
-	avatarUrl?: string;
-	mobileImageUrl?: string;
-	sessionId?: string;
-	sessionTitle?: string;
-	editModalOpen?: boolean;
-}
+export type HeaderInfo = SessionHeaderInfo;
 export type HeaderContextType = {
 	setHeaderInfo: (info?: HeaderInfo) => void;
+	setSessionHeaderHidden: (hidden: boolean) => void;
 	headerInfo?: HeaderInfo;
 };
 
-export function RootLayout() {
-	const { mode, toggleMode } = useColorMode();
+type RootLayoutProps = { headerMode: 'site' | 'session' };
+
+type VisualViewportBounds = { height: string; left: string; top: string; width: string };
+
+const emptySessionHeaderInfo: SessionHeaderInfo = { characterId: '', profileShowName: '' };
+
+export function RootLayout({ headerMode }: RootLayoutProps) {
 	const isSmallScreen = useMediaQuery((theme) => theme.breakpoints.down('md'));
+	const [visualViewportBounds, setVisualViewportBounds] = useState<VisualViewportBounds>();
 	const navigate = useNavigate();
 	const {
 		isSessionLoading,
@@ -184,14 +168,17 @@ export function RootLayout() {
 		closeLoginModal,
 		logout,
 		userId,
+		userProfile,
 	} = useAuth();
 	const { updateSessionTitle } = useSessionApi();
-	const { data: userRes } = useUserApi().getMe(isLoggedIn);
 	const headerRef = useRef<HTMLElement>(null);
 	const footerRef = useRef<HTMLElement>(null);
 
 	const [headerInfo, setHeaderInfo] = useState<HeaderInfo>();
+	const [sessionHeaderHidden, setSessionHeaderHidden] = useState(false);
 	const [imageModalOpen, setImageModalOpen] = useState(false);
+	const activeHeaderInfo =
+		headerMode === 'session' ? (headerInfo ?? emptySessionHeaderInfo) : undefined;
 
 	// State for controlling the dropdown menu
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -212,6 +199,53 @@ export function RootLayout() {
 		}
 	}, []);
 
+	useLayoutEffect(() => {
+		const visualViewport = window.visualViewport;
+		if (!visualViewport) return;
+		let animationFrame: number | undefined;
+
+		const syncVisualViewportBounds = () => {
+			if (visualViewport.scale === 1) {
+				const nextBounds = {
+					height: `${Math.round(visualViewport.height)}px`,
+					left: `${Math.round(visualViewport.offsetLeft)}px`,
+					top: `${Math.round(visualViewport.offsetTop)}px`,
+					width: `${Math.round(visualViewport.width)}px`,
+				};
+				document.documentElement.style.setProperty('--visual-viewport-height', nextBounds.height);
+				document.documentElement.style.setProperty('--visual-viewport-offset-top', nextBounds.top);
+
+				setVisualViewportBounds((currentBounds) =>
+					currentBounds &&
+					currentBounds.height === nextBounds.height &&
+					currentBounds.left === nextBounds.left &&
+					currentBounds.top === nextBounds.top &&
+					currentBounds.width === nextBounds.width
+						? currentBounds
+						: nextBounds
+				);
+			}
+		};
+
+		const updateVisualViewportBounds = () => {
+			syncVisualViewportBounds();
+			if (animationFrame !== undefined) window.cancelAnimationFrame(animationFrame);
+			animationFrame = window.requestAnimationFrame(syncVisualViewportBounds);
+		};
+
+		updateVisualViewportBounds();
+		visualViewport.addEventListener('resize', updateVisualViewportBounds);
+		visualViewport.addEventListener('scroll', updateVisualViewportBounds);
+
+		return () => {
+			if (animationFrame !== undefined) window.cancelAnimationFrame(animationFrame);
+			visualViewport.removeEventListener('resize', updateVisualViewportBounds);
+			visualViewport.removeEventListener('scroll', updateVisualViewportBounds);
+			document.documentElement.style.removeProperty('--visual-viewport-height');
+			document.documentElement.style.removeProperty('--visual-viewport-offset-top');
+		};
+	}, []);
+
 	const handleSessionTitleSave = (sessionTitle: string) => {
 		if (headerInfo?.sessionId) {
 			updateSessionTitle({ sessionId: headerInfo.sessionId, title: sessionTitle });
@@ -223,7 +257,7 @@ export function RootLayout() {
 	}, []);
 
 	const outletContextValue = useMemo(
-		() => ({ setHeaderInfo: handleSetHeaderInfo, headerInfo }),
+		() => ({ setHeaderInfo: handleSetHeaderInfo, setSessionHeaderHidden, headerInfo }),
 		[headerInfo, handleSetHeaderInfo]
 	);
 
@@ -287,201 +321,78 @@ export function RootLayout() {
 	return (
 		<Box
 			sx={{
+				position: visualViewportBounds ? 'fixed' : 'relative',
+				top: visualViewportBounds?.top ?? 0,
+				left: visualViewportBounds?.left ?? 0,
 				display: 'flex',
 				flexDirection: 'column',
-
-				height: '100vh',
+				width: visualViewportBounds?.width ?? '100%',
+				height: visualViewportBounds?.height ?? '100vh',
+				maxHeight: visualViewportBounds?.height ?? '100vh',
+				overflow: 'hidden',
+				...(visualViewportBounds
+					? {}
+					: { '@supports (height: 100dvh)': { height: '100dvh', maxHeight: '100dvh' } }),
 				backgroundColor: (theme) => theme.palette.background.default,
 			}}
 		>
 			<CssBaseline />
-			<GlassAppBar sx={{ width: '100%', position: 'sticky' }} ref={headerRef}>
-				<Toolbar
-					sx={(theme) => ({
-						justifyContent: 'space-between',
-						[theme.breakpoints.down('md')]: {
-							pr: 1, // bring left/right content closer
-						},
-					})}
-				>
-					<Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1, overflow: 'hidden' }}>
-						{!headerInfo?.mobileImageUrl && (
-							<RomanticTitle
-								logo
-								variant="h6"
-								component="div"
-								onClick={() => navigate('/')}
-								role="button"
-								sx={{ pr: 2 }}
-							>
-								{APPNAME}
-							</RomanticTitle>
-						)}
-						{headerInfo && (
-							<Box
-								sx={{
-									display: 'flex',
-									alignItems: 'center',
-									pr: 1,
-									pt: 0.5,
-									pb: 0.5,
-									gap: 1,
-									minWidth: 0, // Prevent overflow
-								}}
-							>
-								<Box
-									role="button"
-									onClick={() => goCharacterPage(headerInfo.characterId)}
-									sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-								>
-									<Avatar src={headerInfo.avatarUrl} variant="circular">
-										<AccountCircleIcon />
-									</Avatar>
-								</Box>
-
-								{/* ✅ Responsive container for profile and session info */}
-								<Box
-									sx={{
-										display: 'flex',
-										flexDirection: 'column',
-										alignItems: 'flex-start',
-										gap: 0.2,
-										minWidth: 0, // Prevent overflow
-									}}
-								>
-									{/* Profile name - opens modal */}
-									<Typography
-										variant="body2"
-										fontFamily={titleFontFamily}
-										role="button"
-										color="secondary"
-										onClick={handleProfileModalOpen}
-										sx={{ '&:hover': { textDecoration: 'underline' }, whiteSpace: 'nowrap' }}
-									>
-										{headerInfo.profileShowName}
-									</Typography>
-									{headerInfo.sessionId && headerInfo.sessionTitle && (
-										<InlineEditableField
-											initialValue={headerInfo.sessionTitle}
-											onSave={handleSessionTitleSave}
-											typographyProps={{
-												color: 'textPrimary',
-												variant: 'caption',
-												sx: { maxWidth: isSmallScreen ? '200px' : '150px' },
-											}}
-											textFieldProps={{ variant: 'standard', size: 'small' }}
-										/>
-									)}
-								</Box>
-							</Box>
-						)}
-						{!isSmallScreen && (
-							<RomanticTitle
-								variant="subtitle1"
-								colorVariant="silver"
-								component="div"
-								onClick={() => navigate(`/${routeConstants.CHARACTER}`)}
-								role="button"
-								sx={{ px: 1 }}
-							>
-								{getLangText(LANG_KEYS.CHARACTERS)}
-							</RomanticTitle>
-						)}
-					</Box>
-
-					<Box sx={{ display: 'flex', alignItems: 'center' }}>
-						{headerInfo && headerInfo.mobileImageUrl && (
-							<IconButton
-								onClick={handleImageModalOpen}
-								aria-label="view character image"
-								sx={{
-									color: 'silver',
-									transition: 'all 0.3s ease-in-out',
-									'&:hover': { color: silver.main },
-								}}
-							>
-								<ImageIcon />
-							</IconButton>
-						)}
-						{!isLoggedIn && <LanguageSwitch />}
-						{!isSessionLoading && (
-							<>
-								<IconButton
-									onClick={isLoggedIn ? handleMenuOpen : openLoginModal}
-									aria-label={isLoggedIn ? 'account of current user' : 'login'}
-									aria-controls={isMenuOpen ? 'account-menu' : undefined}
-									aria-haspopup="true"
-								>
-									<AccountCircleIcon
-										sx={{
-											color: isLoggedIn ? gold.main : 'grey',
-											transition: 'all 0.3s ease-in-out',
-											'&:hover': { color: gold.main, filter: `drop-shadow(0 0 6px ${gold.light})` },
-										}}
-									/>
-								</IconButton>
-								<GlassMenu
-									id="account-menu"
-									anchorEl={anchorEl}
-									open={isMenuOpen}
-									onClose={handleMenuClose}
-									// No onClick here - we handle it per MenuItem
-								>
-									{/* These menu items WILL close the menu */}
-									<GlassMenuItem
-										onClick={() => {
-											goUserPage();
-											handleMenuClose(); // Close menu after action
-										}}
-										colorVariant="silver"
-										sx={{ alignItems: 'center', my: 1 }}
-									>
-										<Avatar src={userRes?.userInfo?.avatarUrl} variant="circular" sx={{ mr: 2 }} />
-										<Typography variant="subtitle1">{getLangText(LANG_KEYS.USER_INFO)}</Typography>
-									</GlassMenuItem>
-
-									<GlassMenuItem
-										onClick={() => {
-											goMyCharacterListPage();
-											handleMenuClose(); // Close menu after action
-										}}
-										colorVariant="silver"
-									>
-										{getLangText(LANG_KEYS.MY_CHARACTERS)}
-									</GlassMenuItem>
-
-									<GlassMenuItem
-										onClick={() => {
-											onLogout();
-											handleMenuClose(); // Close menu after action
-										}}
-										colorVariant="silver"
-									>
-										{getLangText(LANG_KEYS.LOGOUT)}
-									</GlassMenuItem>
-
-									{/* This last MenuItem will NOT close the menu */}
-
-									<Box
-										sx={{ display: 'flex', width: '100%', justifyContent: 'space-around', mb: 1, mt: 2 }}
-										onClick={(e) => e.stopPropagation()}
-									>
-										<ThemeSwitch />
-										<LanguageSwitch />
-									</Box>
-								</GlassMenu>
-							</>
-						)}
-					</Box>
-				</Toolbar>
-			</GlassAppBar>
+			{!activeHeaderInfo ? (
+				<SiteHeader
+					headerRef={headerRef}
+					isLoggedIn={isLoggedIn}
+					isSessionLoading={isSessionLoading}
+					isMenuOpen={isMenuOpen}
+					menuAnchor={anchorEl}
+					userAvatarUrl={userProfile?.avatarUrl}
+					onHome={() => navigate('/')}
+					onCharacters={() => navigate(`/${routeConstants.CHARACTER}`)}
+					onAccountMenuOpen={handleMenuOpen}
+					onAccountMenuClose={handleMenuClose}
+					onLogin={openLoginModal}
+					onUser={goUserPage}
+					onMyCharacters={goMyCharacterListPage}
+					onLogout={onLogout}
+				/>
+			) : (
+				<SessionHeader
+					info={activeHeaderInfo}
+					isSmallScreen={isSmallScreen}
+					hidden={isSmallScreen && sessionHeaderHidden}
+					isLoggedIn={isLoggedIn}
+					isSessionLoading={isSessionLoading}
+					isMenuOpen={isMenuOpen}
+					menuAnchor={anchorEl}
+					userAvatarUrl={userProfile?.avatarUrl}
+					onCharacter={() =>
+						activeHeaderInfo.characterId && goCharacterPage(activeHeaderInfo.characterId)
+					}
+					onProfile={handleProfileModalOpen}
+					onSession={() =>
+						activeHeaderInfo.sessionId &&
+						navigate(`/${routeConstants.CHAT}/${activeHeaderInfo.sessionId}`)
+					}
+					onSessionTitleSave={handleSessionTitleSave}
+					onDocuments={() =>
+						activeHeaderInfo.sessionId &&
+						navigate(`/${routeConstants.DOCUMENT}/${activeHeaderInfo.sessionId}`)
+					}
+					onImage={handleImageModalOpen}
+					onAccountMenuOpen={handleMenuOpen}
+					onAccountMenuClose={handleMenuClose}
+					onLogin={openLoginModal}
+					onUser={goUserPage}
+					onMyCharacters={goMyCharacterListPage}
+					onLogout={onLogout}
+				/>
+			)}
 			{/* Reload detector */}
 			<ReloadToHome />
 
 			{/* main box */}
 			<Box
 				component="main"
-				sx={{ flex: 1, minHeight: 0, overflowY: headerInfo?.sessionId ? 'hidden' : 'auto' }}
+				sx={{ flex: 1, minHeight: 0, overflowY: headerMode === 'session' ? 'hidden' : 'auto' }}
 			>
 				<Outlet context={outletContextValue} />
 			</Box>
@@ -492,8 +403,8 @@ export function RootLayout() {
 			<ImageModal
 				open={imageModalOpen}
 				onClose={handleImageModalClose}
-				imageUrl={headerInfo?.mobileImageUrl}
-				characterId={headerInfo?.characterId}
+				imageUrl={activeHeaderInfo?.mobileImageUrl}
+				characterId={activeHeaderInfo?.characterId}
 			/>
 
 			{/* Footer */}
@@ -505,7 +416,7 @@ export function RootLayout() {
 					<Container maxWidth="sm">
 						<Typography variant="body2" color="text.secondary" align="center">
 							{`Copyright © ${APPNAME} `}
-							{'2025'}
+							{'2025-2026'}
 							{'.'}
 						</Typography>
 					</Container>

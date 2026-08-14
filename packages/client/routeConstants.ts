@@ -6,4 +6,5 @@ export const routeConstants = {
 	ERROR: 'error',
 	AUTH: 'auth',
 	API: 'api',
+	DOCUMENT: 'document',
 } as const;

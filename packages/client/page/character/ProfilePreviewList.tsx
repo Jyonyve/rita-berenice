@@ -5,6 +5,7 @@ import { FC, Fragment } from 'react';
 import { useProfileApi } from '../../hook/api/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { GlassCircularProgress } from '../../layout/component/glass/index.js';
+import { SafeRichText } from '../../layout/component/SafeRichText.js';
 import { LANG_KEYS } from '@rita-berenice/shared/config';
 import { ProfileInfo } from '@rita-berenice/shared/domain';
 
@@ -69,10 +70,14 @@ export const ProfilePreviewList: FC<{
 									</Typography>
 								}
 								secondary={
-									<Typography variant="body2" color="text.secondary" noWrap>
-										{profile.description}
-									</Typography>
+									<SafeRichText
+										text={profile.description}
+										variant="body2"
+										color="text.secondary"
+										sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+									/>
 								}
+								disableTypography
 							/>
 						</ListItemButton>
 					</ListItem>

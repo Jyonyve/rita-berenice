@@ -3,6 +3,7 @@ import express, { type Request, type Response, type Router } from 'express';
 import { verifySession } from 'supertokens-node/recipe/session/framework/express';
 
 import { llmService } from '../service/llmService.js';
+import { modelCatalogService } from '../service/modelCatalogService.js';
 import {
 	asyncHandler,
 	CustomValidationRule,
@@ -16,6 +17,13 @@ import { assertSessionUser } from '../util/authUtils.js';
 
 const router: Router = express.Router();
 router.use(verifySession());
+
+router.get(
+	genRoutePattern('getModelCatalog'),
+	asyncHandler(async (_req: Request, res: Response): Promise<void> => {
+		res.status(200).json(await modelCatalogService.getCatalog());
+	})
+);
 
 /**
  * POST /api/llm/invoke-llm
@@ -39,9 +47,6 @@ router.post(
 		];
 		validateRequestData(req.body, 'body', requiredFields, customValidations);
 		const authenticatedUserId = assertSessionUser(req, userId);
-
-		const path = genRoutePattern('invokeLlm');
-		console.log(`API HIT: POST ${path} with model ${aiModelInfo.model}`);
 
 		const assistantResponse = await llmService.invokeLlm(prompt, aiModelInfo, authenticatedUserId, {
 			signal: (req as Request & { signal: AbortSignal }).signal,
@@ -78,9 +83,6 @@ router.post(
 		validateRequestData(req.body, 'body', requiredFields, customValidations);
 		const authenticatedUserId = assertSessionUser(req, userId);
 
-		const path = genRoutePattern('invokeLlmFromMessages');
-		console.log(`API HIT: POST ${path} with model ${aiModelInfo.model}`);
-
 		const assistantResponse = await llmService.invokeLlm(messages, aiModelInfo, authenticatedUserId, {
 			signal: (req as Request & { signal: AbortSignal }).signal,
 		});
@@ -101,9 +103,6 @@ router.post(
 		validateRequestData(req.body, 'body', ['koreanTerm', 'userId']);
 		const authenticatedUserId = assertSessionUser(req, userId);
 
-		const path = genRoutePattern('translateProperNoun');
-		console.log(`API HIT: POST ${path} for term "${koreanTerm}"`);
-
 		const translation = await llmService.translateProperNoun(koreanTerm, authenticatedUserId);
 		res.status(200).json({ translation });
 	})
@@ -121,9 +120,6 @@ router.post(
 		const { textToAnalyze, userId } = req.body;
 		validateRequestData(req.body, 'body', ['textToAnalyze', 'userId']);
 		const authenticatedUserId = assertSessionUser(req, userId);
-
-		const path = genRoutePattern('extractProperNouns');
-		console.log(`API HIT: POST ${path}`);
 
 		const nouns = await llmService.extractProperNouns(textToAnalyze, authenticatedUserId);
 		res.status(200).json({ nouns });

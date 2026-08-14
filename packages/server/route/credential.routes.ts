@@ -4,6 +4,7 @@ import { verifySession } from 'supertokens-node/recipe/session/framework/express
 import { asyncHandler, genRoutePattern, validateRequestData } from '../util/routeHelpers.js';
 import { assertSessionUser } from '../util/authUtils.js';
 import { credentialStore } from '../store/credentialStore.js';
+import { API_KEY_TYPES, type ApiKeyType, type UserApiKeys } from '@rita-berenice/shared/domain';
 
 const router: Router = express.Router();
 router.use(verifySession());
@@ -17,8 +18,7 @@ router.post(
 	asyncHandler(async (req: Request, res: Response): Promise<void> => {
 		validateRequestData(req.body, 'body', ['apiKeys']);
 		const { apiKeys } = req.body;
-
-		console.log(`API HIT: POST /api/credential/validate-api-keys`);
+		assertApiKeys(apiKeys);
 
 		const validationResults = await credentialStore.validateApiKeys(apiKeys);
 		res.status(200).json(validationResults);
@@ -27,7 +27,7 @@ router.post(
 
 /**
  * GET /api/credential/get-user-api-keys/:userId
- * Retrieves encrypted API keys for a user
+ * Retrieves configured API key names without exposing key values
  */
 router.get(
 	genRoutePattern('getUserApiKeys', ['userId']),
@@ -35,9 +35,7 @@ router.get(
 		validateRequestData(req.params, 'params', ['userId']);
 		const userId = assertSessionUser(req, req.params.userId);
 
-		console.log(`API HIT: GET /api/credential/get-user-api-keys/${userId}`);
-
-		const response = await credentialStore.getUserApiKeys(userId);
+		const response = await credentialStore.getUserApiKeyMetadata(userId);
 		res.status(200).json(response);
 	})
 );
@@ -52,8 +50,7 @@ router.post(
 		validateRequestData(req.body, 'body', ['userId', 'apiKeys']);
 		const { apiKeys } = req.body;
 		const userId = assertSessionUser(req, req.body.userId);
-
-		console.log(`API HIT: POST /api/credential/store-user-api-keys`);
+		assertApiKeys(apiKeys);
 
 		await credentialStore.storeUserApiKeys(userId, apiKeys);
 
@@ -71,8 +68,9 @@ router.put(
 		validateRequestData(req.body, 'body', ['userId', 'keyType', 'keyValue']);
 		const { keyType, keyValue } = req.body;
 		const userId = assertSessionUser(req, req.body.userId);
-
-		console.log(`API HIT: PUT /api/credential/update-user-api-key`);
+		if (!API_KEY_TYPES.includes(keyType as ApiKeyType) || typeof keyValue !== 'string') {
+			throw new Error('Invalid API key update request.');
+		}
 
 		await credentialStore.updateUserApiKey(userId, keyType, keyValue);
 
@@ -81,3 +79,14 @@ router.put(
 );
 
 export default router;
+
+function assertApiKeys(value: unknown): asserts value is UserApiKeys {
+	if (!value || typeof value !== 'object' || Array.isArray(value)) {
+		throw new Error('Invalid API keys.');
+	}
+	for (const [keyType, keyValue] of Object.entries(value)) {
+		if (!API_KEY_TYPES.includes(keyType as ApiKeyType) || typeof keyValue !== 'string') {
+			throw new Error('Invalid API keys.');
+		}
+	}
+}

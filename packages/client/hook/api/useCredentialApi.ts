@@ -1,7 +1,10 @@
 // src/client/hook/api/useCredentialApi.ts
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient, genApiUrl } from '../../util/clientApiHelpers.js';
-import { CredentialResponse } from '@rita-berenice/shared/api';
+import {
+	CredentialMetadataResponse,
+	CredentialValidationResponse,
+} from '@rita-berenice/shared/api';
 import { MODULE_NAMES } from '@rita-berenice/shared/config';
 import { UserApiKeys } from '@rita-berenice/shared/domain';
 
@@ -10,12 +13,12 @@ export const useCredentialApi = () => {
 	const queryClient = useQueryClient();
 
 	// GET - Returns stored user API key metadata
-	const getUserApiKeys = (userId: string) =>
-		useQuery<CredentialResponse, Error>({
+	const getUserApiKeyMetadata = (userId: string) =>
+		useQuery<CredentialMetadataResponse, Error>({
 			queryKey: ['credentials', 'getUserApiKeys', userId],
 			queryFn: async () => {
 				const url = genApiUrl(MODULE_NAME, 'getUserApiKeys', [userId]);
-				const response = await apiClient.get<CredentialResponse>(url);
+				const response = await apiClient.get<CredentialMetadataResponse>(url);
 				return response.data;
 			},
 			enabled: !!userId,
@@ -48,19 +51,19 @@ export const useCredentialApi = () => {
 	});
 
 	const validateUserApiKeys = useMutation<
-		CredentialResponse, // ✅ Use CredentialResponse
+		CredentialValidationResponse,
 		Error,
 		{ apiKeys: UserApiKeys }
 	>({
 		mutationFn: async ({ apiKeys }) => {
 			const url = genApiUrl(MODULE_NAME, 'validateApiKeys');
-			const response = await apiClient.post<CredentialResponse>(url, { apiKeys });
+			const response = await apiClient.post<CredentialValidationResponse>(url, { apiKeys });
 			return response.data;
 		},
 	});
 
 	return {
-		getUserApiKeys,
+		getUserApiKeyMetadata,
 		storeUserApiKeys: storeUserApiKeys.mutateAsync,
 		updateUserApiKey: updateUserApiKey.mutateAsync,
 		validateUserApiKeys: validateUserApiKeys.mutateAsync,

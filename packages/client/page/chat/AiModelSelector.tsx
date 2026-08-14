@@ -3,59 +3,116 @@
 import { alpha, FormControl, InputLabel, ListSubheader } from '@mui/material';
 import { GlassMenuItem, GlassSelect } from '../../layout/component/glass/index.js';
 import { glassEffect, glassEffectLight } from '../../style/glassEffect.js';
-import { SUPPORTED_MODEL_INFO } from '@rita-berenice/shared/config';
-import { AllModelNames } from '@rita-berenice/shared/domain';
+import { silver } from '../../style/colors.js';
+import { LANG_KEYS, SELECTABLE_MODEL_INFO } from '@rita-berenice/shared/config';
+import type { ModelCatalogEntry } from '@rita-berenice/shared/api';
+import { getLangText } from '../../util/translateUtils.js';
+
+type ModelOption = Pick<ModelCatalogEntry, 'id' | 'name' | 'platform' | 'provider'>;
+
+const fallbackOptions: ModelOption[] = Object.entries(SELECTABLE_MODEL_INFO).flatMap(
+	([platform, providers]) =>
+		Object.entries(providers).flatMap(([provider, models]) =>
+			models.map((id) => ({
+				id,
+				name: id.split('/').at(-1) ?? id,
+				platform: platform as ModelOption['platform'],
+				provider: provider as ModelOption['provider'],
+			}))
+		)
+);
+
+const groupOptions = <K extends string>(
+	options: ModelOption[],
+	getKey: (option: ModelOption) => K
+): Map<K, ModelOption[]> => {
+	const groups = new Map<K, ModelOption[]>();
+	for (const option of options) {
+		const key = getKey(option);
+		groups.set(key, [...(groups.get(key) ?? []), option]);
+	}
+	return groups;
+};
+
 export const AiModelSelector = ({
 	modelName,
 	onAiModel,
+	models,
+	disableMenuTransition = false,
+	compact = false,
 }: {
-	modelName: AllModelNames;
-	onAiModel: (modelName: AllModelNames) => void;
+	modelName: string;
+	onAiModel: (modelName: string) => void;
+	models?: ModelCatalogEntry[];
+	disableMenuTransition?: boolean;
+	compact?: boolean;
 }) => {
 	const handleModelChange = (eventValue: string) => {
 		onAiModel(eventValue);
 	};
-	const modelOptions = Object.entries(SUPPORTED_MODEL_INFO).flatMap(([platform, providers]) => {
+	const options = models?.length ? models : fallbackOptions;
+	const groupedOptions = groupOptions(options, (option) => option.platform);
+	const modelOptions = Array.from(groupedOptions.entries()).flatMap(([platform, platformModels]) => {
 		// THE FIX: The platform header now has the prominent, uppercase style.
 		const platformHeader = (
 			<ListSubheader
 				key={platform}
+				disableSticky
 				sx={(theme) => ({
-					fontSize: '0.75rem',
-					fontStyle: 'italic',
-					color: theme.palette.text.secondary,
-					backgroundColor: alpha(theme.palette.background.default, 0.9),
+					px: compact ? 1.5 : 2,
+					pt: 0.5,
+					fontSize: compact ? '0.7rem' : '0.75rem',
+					fontWeight: 700,
+					letterSpacing: '0.08em',
+					textTransform: 'uppercase',
+					color: theme.palette.primary.main,
+					backgroundColor: alpha(theme.palette.background.default, 0.82),
 					borderBottom: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
-					lineHeight: '24px',
-					py: 0.5,
+					lineHeight: '28px',
 				})}
 			>
 				{platform}
 			</ListSubheader>
 		);
 
-		const providerItems = Object.entries(providers).flatMap(([provider, models]) => {
+		const providerItems = Array.from(
+			groupOptions(platformModels, (option) => option.provider).entries()
+		).flatMap(([provider, providerModels]) => {
 			// THE FIX: The provider sub-header now has the subtler, italic style.
 			const providerHeader = (
 				<ListSubheader
 					key={`${platform}-${provider}`}
+					disableSticky
 					sx={(theme) => ({
-						pl: 4,
+						px: compact ? 2 : 4,
 						bgcolor: 'transparent',
-						py: 0.5,
-						fontWeight: 'bold',
-						fontSize: '0.8rem',
+						fontWeight: 600,
+						fontSize: compact ? '0.7rem' : '0.8rem',
+						lineHeight: '26px',
 						textTransform: 'uppercase',
-						color: theme.palette.primary.dark,
+						color: theme.palette.text.secondary,
 					})}
 				>
 					{provider}
 				</ListSubheader>
 			);
 
-			const modelItems = models.map((modelName) => (
-				<GlassMenuItem key={modelName} value={modelName} sx={{ pl: 6, py: 0.5 }}>
-					{platform === 'openrouter' ? modelName.split('/').pop() : modelName}
+			const modelItems = providerModels.map((model) => (
+				<GlassMenuItem
+					key={model.id}
+					value={model.id}
+					sx={{
+						pl: compact ? 2.5 : 6,
+						pr: 1.5,
+						py: 0.5,
+						minHeight: compact ? 36 : undefined,
+						fontSize: compact ? '0.875rem' : undefined,
+						overflow: 'hidden',
+						textOverflow: 'ellipsis',
+						whiteSpace: 'nowrap',
+					}}
+				>
+					{model.name}
 				</GlassMenuItem>
 			));
 
@@ -67,24 +124,56 @@ export const AiModelSelector = ({
 	});
 
 	return (
-		<FormControl variant="outlined" size="small">
-			<InputLabel id="ai-model-select-label" sx={{ color: 'text.secondary' }}>
-				AI Model
-			</InputLabel>
+		<FormControl
+			variant="outlined"
+			size="small"
+			sx={{ width: '100%', minWidth: 0, height: compact ? 38 : undefined }}
+		>
+			{/* <InputLabel id="ai-model-select-label" sx={{ color: 'text.secondary' }}>
+				{getLangText(LANG_KEYS.AI_MODEL)}
+			</InputLabel> */}
 			<GlassSelect
 				labelId="ai-model-select-label"
 				id="ai-model-select"
 				value={modelName || ''}
-				label="AI Model"
+				// label={getLangText(LANG_KEYS.AI_MODEL)}
+				renderValue={(selected) =>
+					options.find((option) => option.id === selected)?.name ?? `${selected}`
+				}
 				onChange={(e) => handleModelChange(`${e.target.value}`)}
+				sx={(theme) => ({
+					minWidth: 0,
+					height: compact ? 38 : undefined,
+					...(compact && {
+						transition: theme.transitions.create(['background-color', 'border-color', 'box-shadow'], {
+							duration: 200,
+						}),
+						'&:hover, &.Mui-focused': {
+							boxShadow: `0 0 8px 1px ${alpha(silver.main, theme.palette.mode === 'dark' ? 0.62 : 0.48)}`,
+						},
+					}),
+					'& .MuiSelect-select': {
+						overflow: 'hidden',
+						textOverflow: 'ellipsis',
+						whiteSpace: 'nowrap',
+						fontSize: compact ? '0.9rem' : undefined,
+					},
+				})}
 				MenuProps={{
+					transitionDuration: disableMenuTransition ? 0 : undefined,
 					PaperProps: {
 						className: 'hide-scrollbar',
 						sx: (theme) => {
 							const styleObject = theme.palette.mode === 'dark' ? glassEffect : glassEffectLight;
 							const { '&:hover': hoverStyles, ...baseStyles } = styleObject;
 
-							return { ...baseStyles, ...hoverStyles };
+							return {
+								...baseStyles,
+								...hoverStyles,
+								maxWidth: compact ? 'calc(100vw - 32px)' : undefined,
+								maxHeight: compact ? 'min(55dvh, 420px)' : undefined,
+								overflowX: 'hidden',
+							};
 						},
 					},
 				}}

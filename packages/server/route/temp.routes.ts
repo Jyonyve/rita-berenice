@@ -35,9 +35,6 @@ router.post(
 		await assertOwnedSession(req, sessionId);
 		req.body.userId = getSessionUserId(req);
 
-		const path = genRoutePattern('saveTempChatTurn');
-		console.log(`API HIT: POST ${path} for session ${sessionId}, sequence ${sequence}`);
-
 		const response = await tempStore.saveTempChatTurn(req.body);
 		res.status(200).json(response);
 	})
@@ -58,11 +55,6 @@ router.get(
 		validateRequestData(req.params, 'params', ['sequence'], [validateSequenceRule('sequence')]);
 		await assertOwnedSession(req, sessionId);
 		const sequence = parseInt(sequenceParam, 10);
-
-		const path = genRoutePattern('getTempChatTurn', ['sessionId', 'sequence']);
-		console.log(
-			`API HIT: GET ${path.replace(':sessionId', sessionId).replace(':sequence', sequenceParam)}`
-		);
 
 		const response = await tempStore.getTempChatTurn(sessionId, sequence);
 		res.status(200).json(response);
@@ -92,9 +84,6 @@ router.get(
 		}
 		const sessionIds = sessionIdsQueryParam.split(',');
 		await Promise.all(sessionIds.map((sessionId) => assertOwnedSession(req, sessionId)));
-
-		const path = genRoutePattern('getLastTempTurnsForSessions');
-		console.log(`API HIT: GET ${path} for ${sessionIds.length} sessions`);
 
 		// Call the new store function we created.
 		const response = await tempStore.getLastTempTurnsForSessions(sessionIds);

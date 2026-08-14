@@ -10,13 +10,13 @@ import { LANG_KEYS } from '@rita-berenice/shared/config';
 
 export function UserPageLoader() {
 	const { userId } = useAuth();
-	if (!userId) return null;
-	const { data: userRes, isLoading } = useUserApi().getMe();
-	const { data: charRes } = useCharacterApi().getCharactersByUserId(userId);
-	const { data: sessRes } = useSessionApi().getSessionsByUserId(userId);
-	const { data: credRes } = useCredentialApi().getUserApiKeys(userId);
+	const queryUserId = userId ?? '';
+	const { data: userRes, isLoading } = useUserApi().getMe(!!userId);
+	const { data: charRes } = useCharacterApi().getCharactersByUserId(queryUserId);
+	const { data: sessRes } = useSessionApi().getSessionsByUserId(queryUserId);
+	const { data: credRes } = useCredentialApi().getUserApiKeyMetadata(queryUserId);
 
-	if (isLoading || !userRes || !charRes || !sessRes || !credRes) {
+	if (!userId || isLoading || !userRes || !charRes || !sessRes || !credRes) {
 		return (
 			<Container
 				sx={{
@@ -37,7 +37,7 @@ export function UserPageLoader() {
 			userInfo={userRes.userInfo}
 			myCharacters={charRes?.characterInfos}
 			mySessions={sessRes.sessionInfos}
-			userApiKeys={credRes.userApiKeys}
+			configuredKeyTypes={credRes.configuredKeyTypes}
 			isMine={userRes.userInfo.userId === userId}
 		/>
 	);

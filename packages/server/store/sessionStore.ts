@@ -1,5 +1,5 @@
 import { SessionResponse } from '@rita-berenice/shared/api';
-import { ApiError, SessionInfo } from '@rita-berenice/shared/domain';
+import { ApiError, SessionContentPolicy, SessionInfo } from '@rita-berenice/shared/domain';
 import { METADATA_TYPES } from '@rita-berenice/shared/config';
 import { buildSessionId } from '@rita-berenice/shared/util';
 import { and, desc, eq } from 'drizzle-orm';
@@ -64,7 +64,8 @@ export const sessionStore = {
 		userId: string,
 		characterId: string,
 		firstCharMessage: string,
-		title: string
+		title: string,
+		contentPolicy: SessionContentPolicy
 	): Promise<{ sessionId: string }> {
 		const now = new Date().toISOString();
 		const sessionInfo: SessionInfo = {
@@ -80,6 +81,7 @@ export const sessionStore = {
 			type: METADATA_TYPES.SESSION,
 			lastCharMessage: firstCharMessage,
 			userNote: '',
+			contentPolicy,
 		};
 		try {
 			await persistSession(sessionInfo);
@@ -165,6 +167,18 @@ export const sessionStore = {
 			await persistSession({ ...current, userNote, updatedAt: new Date().toISOString() });
 		} catch (error) {
 			handleServiceError(error, `Failed to update session note '${sessionId}'`);
+		}
+	},
+
+	async updateSessionContentPolicy(
+		sessionId: string,
+		contentPolicy: SessionContentPolicy
+	): Promise<void> {
+		try {
+			const current = await requireSession(sessionId);
+			await persistSession({ ...current, contentPolicy, updatedAt: new Date().toISOString() });
+		} catch (error) {
+			handleServiceError(error, `Failed to update session content policy '${sessionId}'`);
 		}
 	},
 

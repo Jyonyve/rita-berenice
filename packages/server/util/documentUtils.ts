@@ -34,8 +34,14 @@ export const chatTurnToDocument = (chatTurn: ChatTurn): string => {
 };
 
 export const flatCharacterToDoc = (character: CharacterInfo) => {
-	const { description, instruction, worldLoreId, firstMessage } = character;
-	const document: CharacterDocument = { description, instruction, worldLoreId, firstMessage };
+	const { description, worldIntroduction, instruction, worldLoreId, firstMessage } = character;
+	const document: CharacterDocument = {
+		description,
+		worldIntroduction,
+		instruction,
+		worldLoreId,
+		firstMessage,
+	};
 	return JSON.stringify(document).trim();
 };
 
@@ -43,6 +49,7 @@ export const inflateCharacterDoc = (document: string): CharacterDocument => {
 	const parsed = JSON.parse(document);
 	return {
 		description: parsed.description,
+		worldIntroduction: parsed.worldIntroduction ?? '',
 		instruction: parsed.instruction,
 		worldLoreId: parsed.worldLoreId,
 		firstMessage: parsed.firstMessage,

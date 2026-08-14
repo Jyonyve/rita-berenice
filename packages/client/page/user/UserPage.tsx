@@ -50,7 +50,7 @@ import {
 	getLangText,
 } from '../../util/translateUtils.js';
 import { useDateFormatter, useResponsive } from '../../hook/index.js';
-import { useCredentialApi, useUserApi } from '../../hook/api/index.js';
+import { useUserApi } from '../../hook/api/index.js';
 import { useToast } from '../../provider/ToastProvider.jsx';
 import { ImageCropModal, RomanticTitle } from '../../layout/component/index.js';
 import { useNavigate } from 'react-router';
@@ -60,20 +60,20 @@ import {
 	LANG_KEYS,
 	LIMIT_5MB,
 	ASPECT_RATIOS,
+	IMAGE_PROCESSING_CONFIG,
 	SUPPORTED_IMAGE_MIMETYPES,
 	getImageInputAccept,
 } from '@rita-berenice/shared/config';
 import {
 	CharacterInfo,
 	SessionInfo,
-	UserApiKeys,
+	ApiKeyType,
 	UploadedImage,
-	ValidationResult,
 	UserUdo,
 	UserInfo,
 } from '@rita-berenice/shared/domain';
 import { routeConstants } from '../../routeConstants.ts';
-import { blobToWebpFile, cleanupBlobUrl, processCroppedImage } from '../../util/cropImageUtils.ts';
+import { cleanupBlobUrl, processCroppedImage } from '../../util/cropImageUtils.ts';
 
 // Helper to get gender color
 const getGenderColor = (gender: GENDER_OPTION) => {
@@ -93,9 +93,9 @@ export const UserPage: FC<{
 	userInfo: UserInfo;
 	myCharacters: CharacterInfo[];
 	mySessions: SessionInfo[];
-	userApiKeys: UserApiKeys;
+	configuredKeyTypes: ApiKeyType[];
 	isMine: boolean;
-}> = ({ userInfo, myCharacters, mySessions, userApiKeys, isMine }) => {
+}> = ({ userInfo, myCharacters, mySessions, configuredKeyTypes, isMine }) => {
 	const navigate = useNavigate();
 	const { formatDate, formatRelativeDate } = useDateFormatter();
 	const {
@@ -107,7 +107,6 @@ export const UserPage: FC<{
 	} = useResponsive();
 	const { addToast } = useToast();
 	const { storeUser, uploadUserAvatar, createUserFolder } = useUserApi();
-	const { validateUserApiKeys } = useCredentialApi();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	const [isEditing, setIsEditing] = useState(false);
@@ -122,8 +121,6 @@ export const UserPage: FC<{
 	// Detail section
 	const [sessionsExpanded, setSessionsExpanded] = useState(false);
 
-	const [validationResults, setValidationResults] = useState<Record<string, ValidationResult>>({});
-	const [isValidatingApiKeys, setIsValidatingApiKeys] = useState(false);
 	const [apiKeysExpanded, setApiKeysExpanded] = useState(false);
 
 	const methods = useForm<UserUdo>({
@@ -171,51 +168,6 @@ export const UserPage: FC<{
 			}
 		};
 	}, []);
-
-	// Credential
-	// ✅ Validate API keys when data loads
-	const validateApiKeys = async (keysToValidate: UserApiKeys) => {
-		const keysWithValues = Object.fromEntries(
-			Object.entries(keysToValidate).filter(([, value]) => value && value.trim() !== '')
-		) as UserApiKeys;
-
-		if (Object.keys(keysWithValues).length === 0) {
-			setValidationResults({});
-			return;
-		}
-
-		setIsValidatingApiKeys(true);
-		try {
-			const results = await validateUserApiKeys({ apiKeys: keysWithValues });
-			setValidationResults(results.validationResults || {});
-		} catch (error) {
-			console.error('API key validation failed:', error);
-			// Set error state for all keys
-			const errorResults: Record<string, ValidationResult> = {};
-			Object.keys(keysWithValues).forEach((key) => {
-				errorResults[key] = {
-					valid: false,
-					platform: 'direct',
-					errorMessage: getLangText(LANG_KEYS.VALIDATION_FAILED_NETWORK_ERROR),
-				};
-			});
-			setValidationResults(errorResults);
-		} finally {
-			setIsValidatingApiKeys(false);
-		}
-	};
-
-	// ✅ Validate on initial load
-	useEffect(() => {
-		if (userApiKeys && Object.keys(userApiKeys).length > 0) {
-			validateApiKeys(userApiKeys);
-		}
-	}, [userApiKeys]);
-
-	// ✅ Callback for re-validation after save
-	const handleApiKeysUpdated = async (updatedKeys: UserApiKeys) => {
-		await validateApiKeys(updatedKeys);
-	};
 
 	// Session
 	const handleGoSession = (sessionId: string) => {
@@ -673,20 +625,14 @@ export const UserPage: FC<{
 														{apiKeysExpanded ? <ExpandLess /> : <ExpandMore />}
 													</IconButton>
 													<Typography variant="h6" fontWeight="bold" color="secondary">
-														{Object.values(userApiKeys || {}).filter((key) => key && key.trim() !== '').length}
+														{configuredKeyTypes.length}
 													</Typography>
 												</Box>
 											</Box>
 
 											<Collapse in={apiKeysExpanded} timeout="auto" unmountOnExit>
 												<Box sx={{ mt: 1, px: 1 }}>
-													<CredentialSection
-														userId={userInfo.userId}
-														userApiKeys={userApiKeys}
-														validationResults={validationResults}
-														isValidating={isValidatingApiKeys}
-														onApiKeysUpdated={handleApiKeysUpdated}
-													/>
+													<CredentialSection userId={userInfo.userId} configuredKeyTypes={configuredKeyTypes} />
 												</Box>
 											</Collapse>
 										</Box>
@@ -717,6 +663,7 @@ export const UserPage: FC<{
 							onClose={handleModalClose}
 							onCropComplete={handleCropComplete}
 							aspect={ASPECT_RATIOS.USER} // Square aspect ratio for user avatars
+							outputSize={IMAGE_PROCESSING_CONFIG.USER_AVATAR.dimensions}
 						/>
 					)}
 				</form>

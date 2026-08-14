@@ -1,6 +1,6 @@
 // src/client/page/ChatPageLoader.tsx
 import React, { useEffect, useMemo, useState, useCallback, createContext, useContext } from 'react';
-import { useLocation, useNavigate, useOutletContext, useParams } from 'react-router';
+import { useNavigate, useOutletContext, useParams } from 'react-router';
 import {
 	Typography,
 	CircularProgress,
@@ -23,7 +23,7 @@ import { saveMessagesToCache } from '../../util/idbUtils.js';
 import { ChatPage } from './ChatPage.jsx';
 import { useAuth } from '../../provider/AuthProvider.jsx';
 import { HeaderContextType } from '../../layout/RootLayout.jsx';
-import { getDefaultImage, getImageForEmotion } from '../../util/portraitUtils.js';
+import { getImageForEmotion } from '../../util/portraitUtils.js';
 import { GlassCircularProgress } from '../../layout/component/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
 import { ProfileForm } from '../character/ProfileForm.tsx';
@@ -31,6 +31,7 @@ import { useResponsive } from '../../hook/useResponsive.js';
 import { DEFAULT_EMOTION, LANG_KEYS } from '@rita-berenice/shared/config';
 import { ProfileInfo, ProfileCdo } from '@rita-berenice/shared/domain';
 import { parseSessionId } from '@rita-berenice/shared/util';
+import { getConversationAvatar } from './conversationAvatarUtils.js';
 
 // Create Emotion Context for ChatPage communication
 interface EmotionContextType {
@@ -54,9 +55,9 @@ export const useEmotionContext = () => {
 export function ChatPageLoader() {
 	const navigate = useNavigate();
 	const { sessionId } = useParams();
-	const { state } = useLocation();
-	const { isSessionLoading, userId } = useAuth();
-	const { setHeaderInfo, headerInfo } = useOutletContext<HeaderContextType>();
+	const { isSessionLoading, userId, userProfile } = useAuth();
+	const { setHeaderInfo, setSessionHeaderHidden, headerInfo } =
+		useOutletContext<HeaderContextType>();
 
 	// --- RESPONSIVE DETECTION (moved from ChatPage) ---
 	const { shouldUseMobileLayout } = useResponsive();
@@ -115,17 +116,22 @@ export function ChatPageLoader() {
 	// Generate image URL based on current emotion
 	const imageUrl = useMemo(() => {
 		if (characterRes?.characterInfo) {
-			return getImageForEmotion(characterRes.characterInfo.characterId, currentEmotion) || '';
+			return (
+				getImageForEmotion(
+					characterRes.characterPortraits[characterRes.characterInfo.characterId],
+					currentEmotion
+				) || ''
+			);
 		}
 		return '';
 	}, [characterRes, currentEmotion]);
 
 	// --- HEADER INFO MANAGEMENT (enhanced) ---
 	useEffect(() => {
-		if (characterRes?.characterInfo && profileRes?.profileInfo && state) {
+		if (characterRes?.characterInfo && profileRes?.profileInfo && sessionRes?.sessionInfo) {
 			const info = characterRes.characterInfo;
 			const profile = profileRes.profileInfo;
-			const sessionTitle = state.title as string;
+			const sessionTitle = sessionRes.sessionInfo.title;
 
 			// This part remains the same. You are correctly creating a new object.
 			setHeaderInfo({
@@ -133,15 +139,27 @@ export function ChatPageLoader() {
 				profileShowName: profile.showName,
 				sessionId,
 				sessionTitle,
-				avatarUrl: getDefaultImage(info.characterId),
-				mobileImageUrl: shouldUseMobileLayout ? imageUrl : undefined,
+				avatarUrl: getConversationAvatar(
+					characterRes.characterAvatars[info.characterId],
+					characterRes.characterPortraits[info.characterId],
+					DEFAULT_EMOTION
+				),
+				mobileImageUrl: imageUrl,
 			});
 		}
 
 		return () => {
 			setHeaderInfo(undefined);
 		};
-	}, [characterRes, profileRes, setHeaderInfo, shouldUseMobileLayout, imageUrl, state, sessionId]);
+	}, [
+		characterRes,
+		profileRes,
+		sessionRes,
+		setHeaderInfo,
+		shouldUseMobileLayout,
+		imageUrl,
+		sessionId,
+	]);
 
 	useEffect(() => {
 		if (headerInfo?.editModalOpen) {
@@ -159,7 +177,7 @@ export function ChatPageLoader() {
 	}, [allTurnsRes]);
 
 	// Handle error states
-	if (isCharacterError || isProfileError || isTurnsError) {
+	if (isCharacterError || isProfileError || isTurnsError || isSessionError) {
 		return <Typography color="error">{getLangText(LANG_KEYS.FAILED_LOAD_CHAT)}</Typography>;
 	}
 
@@ -201,6 +219,10 @@ export function ChatPageLoader() {
 				profileInfo={profileInfo}
 				sessionInfo={sessionInfo}
 				userId={userId}
+				characterPortraitUrls={characterRes.characterPortraits[characterInfo.characterId]}
+				characterAvatarUrls={characterRes.characterAvatars[characterInfo.characterId]}
+				profileAvatarUrl={profileRes.profileAvatars[profileInfo.profileId] ?? userProfile?.avatarUrl}
+				onMobileInputFocusChange={setSessionHeaderHidden}
 			/>
 
 			{/* Mobile Image Modal */}
@@ -253,6 +275,8 @@ export function ChatPageLoader() {
 					userId={userId}
 					mode="edit"
 					profile={profileInfo}
+					portraitUrl={profileRes.profilePortraits[profileInfo.profileId]}
+					avatarUrl={profileRes.profileAvatars[profileInfo.profileId]}
 					open={isEditModalOpen}
 					onClose={handleCloseEditModal}
 					onSubmit={handleEditSubmit}

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiClient, genApiUrl } from '../../util/clientApiHelpers.js';
+import { apiClient, genApiUrl, type ApiRequestConfig } from '../../util/clientApiHelpers.js';
 import { MODULE_NAMES } from '@rita-berenice/shared/config';
 import { CharacterResponse } from '@rita-berenice/shared/api';
 import { CharacterCdo, CharacterInfo } from '@rita-berenice/shared/domain';
@@ -74,23 +74,19 @@ export const useCharacterApi = () => {
 
 	/**
 	 * Uploads a character image.
-	 * This affects the character's data (image paths), so we invalidate the character detail.
+	 * The form refreshes character queries once after its upload/delete batch finishes.
 	 */
 	const uploadCharacterImage = useMutation<any, Error, FormData>({
 		mutationFn: async (formData) => {
 			const url = genApiUrl(MODULE_NAME, 'uploadCharacterImage');
-			const response = await apiClient.post(url, formData, {
-				headers: { 'Content-Type': 'multipart/form-data' },
-			});
+			const requestConfig: ApiRequestConfig = {
+				_suppressToast: true,
+				// Override apiClient's JSON default. Axios/browser will add the required
+				// multipart boundary for this FormData body.
+				headers: { 'Content-Type': undefined },
+			};
+			const response = await apiClient.post(url, formData, requestConfig);
 			return response.data;
-		},
-		onSuccess: (data, variables) => {
-			// If the response includes characterId, invalidate that specific character
-			if (data?.characterId) {
-				queryClient.invalidateQueries({
-					queryKey: ['characters', 'detail', 'getCharacter', data.characterId],
-				});
-			}
 		},
 	});
 
@@ -103,13 +99,16 @@ export const useCharacterApi = () => {
 			const response = await apiClient.delete(url, { data });
 			return response.data;
 		},
-		onSuccess: (_, variables) => {
-			// Invalidate the specific character to update its image list
-			queryClient.invalidateQueries({
-				queryKey: ['characters', 'detail', 'getCharacter', variables.characterId],
-			});
-		},
 	});
+
+	const refreshCharacterImages = async (characterId: string): Promise<void> => {
+		await Promise.all([
+			queryClient.invalidateQueries({
+				queryKey: ['characters', 'detail', 'getCharacter', characterId],
+			}),
+			queryClient.invalidateQueries({ queryKey: ['characters', 'list'] }),
+		]);
+	};
 
 	/**
 	 * Creates a character folder on the server.
@@ -131,6 +130,7 @@ export const useCharacterApi = () => {
 		storeCharacter: storeCharacter.mutateAsync,
 		uploadCharacterImage: uploadCharacterImage.mutateAsync,
 		deleteCharacterImage: deleteCharacterImage.mutateAsync,
+		refreshCharacterImages,
 		createCharacterFolder: createCharacterFolder.mutateAsync,
 	};
 };

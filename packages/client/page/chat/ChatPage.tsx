@@ -13,44 +13,83 @@ import {
 	DialogContent,
 	TextField,
 	DialogActions,
+	Typography,
 } from '@mui/material';
-import { useOrchestrationApi, useTempChatApi, useSessionApi } from '../../hook/api/index.js';
+import {
+	useLlmApi,
+	useOrchestrationApi,
+	useTempChatApi,
+	useSessionApi,
+} from '../../hook/api/index.js';
 import { useChatState } from '../../hook/state/useChatState.js';
 import { GlassButton, GlassPaper, GlassPortrait } from '../../layout/component/glass/index.js';
 import { containerSpacing } from '../../style/index.js';
+import { chatSurfaceStyles } from '../../style/chatStyles.js';
+import { mobileVisualViewportDialogSx } from '../../style/mobileDialogStyles.js';
 import { useEmotionContext } from './ChatPageLoader.jsx';
-import { getLangText, parseTextToEntries, useErrorDialog } from '../../util/index.js';
+import { getLangText, parseTextToEntries } from '../../util/index.js';
 import { useResponsive } from '../../hook/useResponsive.js';
-import { DEFAULT_EMOTION, LANG_KEYS } from '@rita-berenice/shared/config';
+import { DEFAULT_CHAT_MODEL, DEFAULT_EMOTION, LANG_KEYS } from '@rita-berenice/shared/config';
 import {
 	CharacterInfo,
 	ProfileInfo,
 	SessionInfo,
-	AiModelInfo,
-	DEFAULT_EXTRACTION_MODEL,
-	AllModelNames,
 	ChatTurnCdo,
 	TempChatTurn,
+	SessionContentPolicy,
 } from '@rita-berenice/shared/domain';
-import {
-	createBasicChatTurn,
-	getAiModelInfo,
-	isValidAiModelInfo,
-} from '@rita-berenice/shared/util';
+import type { PortraitUrlMap } from '@rita-berenice/shared/config';
+import { createBasicChatTurn } from '@rita-berenice/shared/util';
 import { ChatGenerationStage } from '@rita-berenice/shared/api';
+import {
+	DEFAULT_CHAT_DISPLAY_MODE,
+	getChatDisplayModeStorageKey,
+	readChatDisplayMode,
+	type ChatDisplayMode,
+	writeChatDisplayMode,
+} from './chatDisplayMode.js';
+import {
+	DEFAULT_CHAT_FONT_SIZE,
+	DEFAULT_CHAT_FONT_WEIGHT,
+	getChatFontSizeStorageKey,
+	getChatFontWeightStorageKey,
+	readChatFontSize,
+	readChatFontWeight,
+	type ChatFontSize,
+	type ChatFontWeight,
+	writeChatFontSize,
+	writeChatFontWeight,
+} from './chatFontSize.js';
 
 export const ChatPage: FC<{
 	characterInfo: CharacterInfo;
 	profileInfo: ProfileInfo;
 	sessionInfo: SessionInfo;
 	userId: string;
-}> = ({ characterInfo, profileInfo, sessionInfo, userId }) => {
+	characterPortraitUrls?: PortraitUrlMap;
+	characterAvatarUrls?: PortraitUrlMap;
+	profileAvatarUrl?: string;
+	onMobileInputFocusChange: (focused: boolean) => void;
+}> = ({
+	characterInfo,
+	profileInfo,
+	sessionInfo,
+	userId,
+	characterPortraitUrls,
+	characterAvatarUrls,
+	profileAvatarUrl,
+	onMobileInputFocusChange,
+}) => {
 	const { receiveBotResponse, enqueueFinalization, waitForFinalizationJob } = useOrchestrationApi();
 	const { saveTempChatTurn, getTempChatTurn } = useTempChatApi();
-	const { updateSessionOnNewMessage, updateSessionUserNote } = useSessionApi();
-	const { showError } = useErrorDialog();
-
+	const { updateSessionOnNewMessage, updateSessionUserNote, updateSessionContentPolicy } =
+		useSessionApi();
+	const { getModelCatalog } = useLlmApi();
+	const { data: modelCatalog } = getModelCatalog();
 	const sessionId = sessionInfo.sessionId;
+	const displayModeStorageKey = useMemo(() => getChatDisplayModeStorageKey(userId), [userId]);
+	const chatFontSizeStorageKey = useMemo(() => getChatFontSizeStorageKey(userId), [userId]);
+	const chatFontWeightStorageKey = useMemo(() => getChatFontWeightStorageKey(userId), [userId]);
 
 	// Get emotion context from Loader
 	const { setCurrentEmotion, imageUrl } = useEmotionContext();
@@ -95,9 +134,15 @@ export const ChatPage: FC<{
 	const [pageError, setPageError] = useState<string>();
 	const [userEditInput, setUserEditInput] = useState('');
 	const [botEditInput, setBotEditInput] = useState('');
-	const [aiModelInfo, setAiModelInfo] = useState<AiModelInfo>(DEFAULT_EXTRACTION_MODEL);
+	const [modelName, setModelName] = useState(DEFAULT_CHAT_MODEL);
+	const [displayMode, setDisplayMode] = useState<ChatDisplayMode>(DEFAULT_CHAT_DISPLAY_MODE);
+	const [chatFontSize, setChatFontSize] = useState<ChatFontSize>(DEFAULT_CHAT_FONT_SIZE);
+	const [chatFontWeight, setChatFontWeight] = useState<ChatFontWeight>(DEFAULT_CHAT_FONT_WEIGHT);
+	const [contentPolicy, setContentPolicy] = useState<SessionContentPolicy>(
+		sessionInfo.contentPolicy ?? 'general'
+	);
+	const [isContentPolicyUpdating, setIsContentPolicyUpdating] = useState(false);
 	const [focusedTurnIndex, setFocusedTurnIndex] = useState(-1);
-	const [isScene, setIsScene] = useState(false);
 
 	// Modal state
 	const [isUserNoteModalOpen, setIsUserNoteModalOpen] = useState(false);
@@ -112,7 +157,41 @@ export const ChatPage: FC<{
 		[]
 	);
 
-	const allTurns = tempChatTurn ? [...chatTurns, tempChatTurn] : chatTurns;
+	useEffect(() => {
+		setDisplayMode(
+			readChatDisplayMode(
+				typeof window === 'undefined' ? undefined : window.localStorage,
+				displayModeStorageKey
+			)
+		);
+	}, [displayModeStorageKey]);
+
+	useEffect(() => {
+		setChatFontSize(
+			readChatFontSize(
+				typeof window === 'undefined' ? undefined : window.localStorage,
+				chatFontSizeStorageKey
+			)
+		);
+	}, [chatFontSizeStorageKey]);
+
+	useEffect(() => {
+		setChatFontWeight(
+			readChatFontWeight(
+				typeof window === 'undefined' ? undefined : window.localStorage,
+				chatFontWeightStorageKey
+			)
+		);
+	}, [chatFontWeightStorageKey]);
+
+	useEffect(() => {
+		setContentPolicy(sessionInfo.contentPolicy ?? 'general');
+	}, [sessionInfo.contentPolicy]);
+
+	const allTurns = useMemo(
+		() => (tempChatTurn ? [...chatTurns, tempChatTurn] : chatTurns),
+		[chatTurns, tempChatTurn]
+	);
 
 	// --- HANDLERS ---
 
@@ -132,6 +211,23 @@ export const ChatPage: FC<{
 		setIsUserNoteModalOpen(false);
 	}, [editingUserNote, updateSessionUserNote]);
 
+	const handleContentPolicy = useCallback(
+		async (nextPolicy: SessionContentPolicy) => {
+			const previousPolicy = contentPolicy;
+			setContentPolicy(nextPolicy);
+			setIsContentPolicyUpdating(true);
+			try {
+				await updateSessionContentPolicy({ sessionId, contentPolicy: nextPolicy });
+			} catch (error) {
+				setContentPolicy(previousPolicy);
+				setPageError(error instanceof Error ? error.message : 'Failed to update session policy.');
+			} finally {
+				setIsContentPolicyUpdating(false);
+			}
+		},
+		[contentPolicy, sessionId, updateSessionContentPolicy]
+	);
+
 	// Simplified: just update emotion in Loader context
 	const handleCharacterImage = useCallback(
 		(emotion: string) => {
@@ -140,17 +236,17 @@ export const ChatPage: FC<{
 		[setCurrentEmotion]
 	);
 
-	const handleScene = useCallback(
-		(event: ChangeEvent<HTMLInputElement>, checked: boolean) => {
-			setIsScene(checked);
-		},
-		[setIsScene]
-	);
-
 	useEffect(() => {
-		if (focusedTurnIndex < 0 || focusedTurnIndex >= allTurns.length) return;
+		if (allTurns.length === 0) {
+			handleCharacterImage(DEFAULT_EMOTION);
+			return;
+		}
 
-		const focusedTurn = allTurns[focusedTurnIndex];
+		const targetTurnIndex =
+			focusedTurnIndex >= 0 && focusedTurnIndex < allTurns.length
+				? focusedTurnIndex
+				: allTurns.length - 1;
+		const focusedTurn = allTurns[targetTurnIndex];
 		if (!focusedTurn) {
 			handleCharacterImage(DEFAULT_EMOTION);
 		} else if (focusedTurn) {
@@ -167,20 +263,51 @@ export const ChatPage: FC<{
 		}
 	}, [focusedTurnIndex, currentTempSetNo, allTurns, handleCharacterImage]);
 
-	const handleAiModel = useCallback(
-		(modelName: AllModelNames) => {
-			const newAiInfo = getAiModelInfo(modelName);
+	useEffect(() => {
+		if (!modelCatalog?.models.length) return;
+		if (!modelCatalog.models.some((model) => model.id === modelName)) {
+			setModelName(modelCatalog.models[0].id);
+		}
+	}, [modelCatalog, modelName]);
 
-			if (!isValidAiModelInfo(newAiInfo)) {
-				const errorMsg = `Invalid or unsupported AI model selected: ${modelName}`;
-				showError(errorMsg);
-				return;
-			}
+	const handleAiModel = useCallback((selectedModelName: string) => {
+		setModelName(selectedModelName);
+	}, []);
 
-			console.log('Setting AI model to:', newAiInfo);
-			setAiModelInfo(newAiInfo);
+	const handleDisplayMode = useCallback(
+		(mode: ChatDisplayMode) => {
+			setDisplayMode(mode);
+			writeChatDisplayMode(
+				typeof window === 'undefined' ? undefined : window.localStorage,
+				displayModeStorageKey,
+				mode
+			);
 		},
-		[showError]
+		[displayModeStorageKey]
+	);
+
+	const handleChatFontSize = useCallback(
+		(fontSize: ChatFontSize) => {
+			setChatFontSize(fontSize);
+			writeChatFontSize(
+				typeof window === 'undefined' ? undefined : window.localStorage,
+				chatFontSizeStorageKey,
+				fontSize
+			);
+		},
+		[chatFontSizeStorageKey]
+	);
+
+	const handleChatFontWeight = useCallback(
+		(fontWeight: ChatFontWeight) => {
+			setChatFontWeight(fontWeight);
+			writeChatFontWeight(
+				typeof window === 'undefined' ? undefined : window.localStorage,
+				chatFontWeightStorageKey,
+				fontWeight
+			);
+		},
+		[chatFontWeightStorageKey]
 	);
 
 	const finalizeTurnInBackground = useCallback(
@@ -243,8 +370,7 @@ export const ChatPage: FC<{
 						sessionId,
 						sequence: newTempSequence,
 						entries: parseTextToEntries(userInput),
-						modelName: aiModelInfo.model,
-						isScene,
+						modelName,
 					},
 					onDelta: (text) => setStreamingText((current) => current + text),
 					onStatus: setStreamingStage,
@@ -272,6 +398,8 @@ export const ChatPage: FC<{
 
 				// 3. THIRD: Update UI state with the new temp turn
 				changeTempChatTurn(newTempTurnResult);
+				setCurrentTempSetNo(0);
+				handleCharacterImage(newTempTurnResult.chatTurnSets[0].response.emotion);
 				setFocusedTurnIndex(chatTurns.length); // The index of the new temp turn
 				setUserInput('');
 
@@ -284,8 +412,10 @@ export const ChatPage: FC<{
 				});
 			}
 		} catch (err: any) {
-			console.error('Send Message Error:', err);
-			setPageError(`An error occurred: ${err.clientMessage || err.message || 'Unknown error'}`);
+			if (!streamController.signal.aborted) {
+				console.error('Send Message Error:', err);
+				setPageError(`An error occurred: ${err.clientMessage || err.message || 'Unknown error'}`);
+			}
 		} finally {
 			setIsProcessing(false);
 			setStreamingText('');
@@ -299,11 +429,11 @@ export const ChatPage: FC<{
 		userInput,
 		userId,
 		sessionId,
-		aiModelInfo,
-		isScene,
+		modelName,
 		tempChatTurn,
 		currentTempSetNo,
 		finalizeTurnInBackground,
+		handleCharacterImage,
 		receiveBotResponse,
 		addChatTurn,
 		changeTempChatTurn,
@@ -312,8 +442,12 @@ export const ChatPage: FC<{
 		chatTurns.length, // Keep this dependency
 	]);
 
+	const handleCancelGeneration = useCallback(() => {
+		streamAbortControllerRef.current?.abort();
+	}, []);
+
 	const handleRegenerateResponse = useCallback(async () => {
-		if (!aiModelInfo) {
+		if (!modelName) {
 			setPageError('Cannot regenerate: Missing data or AI model info.');
 			return;
 		}
@@ -336,8 +470,7 @@ export const ChatPage: FC<{
 					sessionId,
 					sequence,
 					entries: tempChatTurn.chatTurnSets[currentTempSetNo].request.entries,
-					modelName: aiModelInfo.model,
-					isScene,
+					modelName,
 				},
 				onDelta: (text) => setStreamingText((current) => current + text),
 				onStatus: setStreamingStage,
@@ -347,6 +480,7 @@ export const ChatPage: FC<{
 			if (result) {
 				const newSetIndex = result.chatTurnSets.length - 1;
 				changeTempChatTurn(result);
+				handleCharacterImage(result.chatTurnSets[newSetIndex].response.emotion);
 				setCurrentTempSetNo(newSetIndex);
 				setFocusedTurnIndex(chatTurns.length);
 
@@ -358,8 +492,10 @@ export const ChatPage: FC<{
 				});
 			}
 		} catch (err: any) {
-			console.error('Regenerate Error:', err);
-			setPageError(`Failed to regenerate response: ${err.message || 'Unknown error'}`);
+			if (!streamController.signal.aborted) {
+				console.error('Regenerate Error:', err);
+				setPageError(`Failed to regenerate response: ${err.message || 'Unknown error'}`);
+			}
 		} finally {
 			setIsProcessing(false);
 			setStreamingText('');
@@ -370,11 +506,11 @@ export const ChatPage: FC<{
 		}
 	}, [
 		tempChatTurn,
-		aiModelInfo,
+		modelName,
 		sessionId,
-		isScene,
 		receiveBotResponse,
 		changeTempChatTurn,
+		handleCharacterImage,
 		updateSessionOnNewMessage,
 		currentTempSetNo,
 		chatTurns.length,
@@ -431,26 +567,66 @@ export const ChatPage: FC<{
 		changeTempSetNo: setCurrentTempSetNo,
 		streamingText,
 		streamingStage,
+		displayMode,
+		chatFontSize,
+		chatFontWeight,
+		characterPortraitUrls,
+		characterAvatarUrls,
+		profileAvatarUrl,
 	};
 
 	const userInputProps = {
-		sessionInfo,
+		userId,
 		value: userInput,
 		isProcessing,
 		isDisabled: isInputDisabled,
 		onChange: handleUserInput,
 		onSend: handleSendMessage,
-		modelName: aiModelInfo.model,
+		onCancel: handleCancelGeneration,
+		modelName,
+		models: modelCatalog?.models,
 		onAiModel: handleAiModel,
-		isScene,
-		onScene: handleScene,
+		displayMode,
+		onDisplayMode: handleDisplayMode,
+		chatFontSize,
+		onChatFontSize: handleChatFontSize,
+		chatFontWeight,
+		onChatFontWeight: handleChatFontWeight,
+		contentPolicy,
+		isContentPolicyUpdating,
+		onContentPolicy: handleContentPolicy,
 		onOpenUserNoteModal: handleOpenUserNoteModal,
+		isMobileLayout: shouldUseMobileLayout,
+		onFocusChange: onMobileInputFocusChange,
 	};
 
 	// --- RENDER ---
 	return (
 		<>
-			{shouldUseMobileLayout ? (
+			{displayMode === 'conversation' ? (
+				<Box
+					sx={(theme) => ({
+						position: 'relative',
+						zIndex: 3,
+						height: '100%',
+						minHeight: 0,
+						display: 'flex',
+						flexDirection: 'column',
+						backgroundColor:
+							theme.palette.mode === 'light'
+								? chatSurfaceStyles.light.conversationCanvas
+								: theme.palette.background.default,
+						overflow: 'hidden',
+					})}
+				>
+					<Box sx={{ flexGrow: 1, minHeight: 0, overflow: 'hidden' }}>
+						<ChatLog {...chatLogProps} />
+					</Box>
+					<Box sx={{ flexShrink: 0, minWidth: 0 }}>
+						<UserInput {...userInputProps} />
+					</Box>
+				</Box>
+			) : shouldUseMobileLayout ? (
 				<>
 					{/* Mobile Background */}
 					<Box
@@ -472,15 +648,20 @@ export const ChatPage: FC<{
 
 					{/* Mobile Overlay */}
 					<Box
-						sx={{
-							position: 'absolute',
-							top: 0,
-							left: 0,
-							right: 0,
-							bottom: 0,
-							backgroundColor: 'rgba(0, 0, 0, 0.6)',
-							backdropFilter: 'blur(2px)',
-							zIndex: 2,
+						sx={(theme) => {
+							const bookSurface = chatSurfaceStyles[theme.palette.mode];
+
+							return {
+								position: 'absolute',
+								top: 0,
+								left: 0,
+								right: 0,
+								bottom: 0,
+								backgroundColor: bookSurface.bookOverlay,
+								backdropFilter: bookSurface.bookBackdropFilter,
+								WebkitBackdropFilter: bookSurface.bookBackdropFilter,
+								zIndex: 2,
+							};
 						}}
 					/>
 
@@ -490,16 +671,16 @@ export const ChatPage: FC<{
 							display: 'flex',
 							flexDirection: 'column',
 							height: '100%',
+							minHeight: 0,
 							position: 'relative',
 							zIndex: 10,
-							// paddingTop: 'env(safe-area-inset-top)',
-							// paddingBottom: 'env(safe-area-inset-bottom)',
 						}}
 					>
 						{/* Mobile Chat */}
 						<Box
 							sx={{
 								flexGrow: 1,
+								minHeight: 0,
 								overflow: 'hidden',
 								backdropFilter: 'blur(2px)',
 								WebkitBackdropFilter: 'blur(2px)',
@@ -514,9 +695,10 @@ export const ChatPage: FC<{
 						<Box
 							sx={{
 								flexShrink: 0,
+								paddingBottom: 'env(safe-area-inset-bottom)',
 								backdropFilter: 'blur(10px)',
 								WebkitBackdropFilter: 'blur(10px)',
-								'& input': { fontSize: '16px' }, // avoid iOS zoom
+								'& input, & textarea': { fontSize: '16px' }, // avoid iOS focus zoom
 							}}
 						>
 							<UserInput {...userInputProps} />
@@ -605,7 +787,13 @@ export const ChatPage: FC<{
 				</GlassPaper>
 			)}
 			{/* User Note Edit Modal */}
-			<Dialog open={isUserNoteModalOpen} onClose={handleCloseUserNoteModal} maxWidth="md" fullWidth>
+			<Dialog
+				open={isUserNoteModalOpen}
+				onClose={handleCloseUserNoteModal}
+				maxWidth="md"
+				fullWidth
+				sx={mobileVisualViewportDialogSx}
+			>
 				<DialogTitle>{`${getLangText(LANG_KEYS.USER_NOTE)}`}</DialogTitle>
 				<DialogContent>
 					<TextField
@@ -615,6 +803,7 @@ export const ChatPage: FC<{
 						multiline
 						rows={6}
 						value={editingUserNote}
+						sx={{ '& .MuiInputBase-input': { fontSize: { xs: '16px', md: 'inherit' } } }}
 						onChange={(e) => setEditingUserNote(e.target.value)}
 						placeholder={getLangText(LANG_KEYS.USER_NOTE_PLACEHOLDER)}
 					/>

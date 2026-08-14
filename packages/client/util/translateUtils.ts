@@ -24,6 +24,12 @@ export const setCurrentLang = (lang: LangCode): void => {
 	currentLang = lang;
 };
 
+export const initializeTranslationLanguage = (lang: unknown): LangCode => {
+	const resolvedLang = lang === 'kor' || lang === 'eng' ? lang : DEFAULT_LANG;
+	setCurrentLang(resolvedLang);
+	return resolvedLang;
+};
+
 // 🎯 Function to get current language
 export const getCurrentLang = (): LangCode => {
 	return currentLang;

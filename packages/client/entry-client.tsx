@@ -8,6 +8,8 @@ import Session from 'supertokens-auth-react/recipe/session/index.js';
 import { routeConstants } from './routeConstants.js';
 import { superTokenUiStyle } from './style/superTokensUi.js';
 import { createEmotionCache } from './util/index.js';
+import { initializeApiClient } from './util/clientApiHelpers.js';
+import { initializeTranslationLanguage } from './util/translateUtils.js';
 import { AppProviders } from './AppProviders.js';
 import { App } from './App.js';
 
@@ -24,16 +26,15 @@ SuperTokens.init({
 	recipeList: [EmailPassword.init(), Session.init()],
 });
 
-const getServerDetectedLang = () => {
-	if (typeof window !== 'undefined' && (window as any).__INITIAL_LANG__) {
-		return (window as any).__INITIAL_LANG__;
-	}
-	return 'eng';
-};
+// Install session-aware API handling before hydration can start authenticated queries.
+initializeApiClient();
+
+const initialLang = initializeTranslationLanguage(
+	(window as Window & { __INITIAL_LANG__?: unknown }).__INITIAL_LANG__
+);
 
 function ClientApp() {
 	const clientSideEmotionCache = createEmotionCache();
-	const initialLang = getServerDetectedLang();
 	return (
 		<BrowserRouter basename={import.meta.env.BASE_URL}>
 			<AppProviders emotionCache={clientSideEmotionCache} initialLang={initialLang}>

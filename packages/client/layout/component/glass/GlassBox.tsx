@@ -5,7 +5,7 @@ import { getGlassEffect } from '../../../style/glassEffect.js'; // Adjust path b
 import { ComponentType } from 'react';
 
 export const GlassBox: ComponentType<BoxProps> = styled(Box)(({ theme }) => ({
-	...getGlassEffect(theme.palette.mode),
+	...getGlassEffect(theme.palette.mode, { noGlow: true }),
 
 	// Ensure the box's own background color is fully transparent
 	backgroundColor: 'transparent',

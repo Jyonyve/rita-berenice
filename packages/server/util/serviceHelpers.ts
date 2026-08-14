@@ -1,6 +1,7 @@
 import { ChromaResponse } from '@rita-berenice/shared/api';
 import { ApiError } from '@rita-berenice/shared/domain';
 import { ResourceType } from '../db/resource.type.js';
+import { flowLogger, serializeError } from './jsonlLogger.js';
 
 /**
  * Handles errors caught in service methods.
@@ -24,12 +25,11 @@ export function handleServiceError(
 	}
 	// 1. Log the error immediately with its context, regardless of type.
 	// This ensures you always have visibility in your server logs.
-	console.error(
-		`Service Error - ${contextMessage}:`,
-		// If it's an ApiError, its message is already descriptive. Otherwise, use the raw message.
-		caughtError.message || caughtError,
-		caughtError.stack || ''
-	);
+	flowLogger.error('serviceHelpers', 'service.error', {
+		contextMessage,
+		status: caughtError instanceof ApiError ? caughtError.status : undefined,
+		...serializeError(caughtError),
+	});
 
 	// 2. If it's already a standardized ApiError, just re-throw it.
 	if (caughtError instanceof ApiError) {
@@ -77,10 +77,15 @@ export const validateChromaResponse = (
 	// 1. Structural Validation (Defense in depth)
 	if (!_validateChromaResult(chromaResponse)) {
 		// This case should be rare if chromaDbClient._returnResponse is robust
-		console.error(
-			`[validateAndProcessChromaResponse] Malformed ChromaResponse for ${collectionType}, operation ${operationType}:`,
-			chromaResponse
-		);
+		flowLogger.error('serviceHelpers', 'chromaResponse.malformed', {
+			collectionType,
+			operationType,
+			responseShape: {
+				hasIds: Array.isArray((chromaResponse as any)?.ids),
+				hasDocuments: Array.isArray((chromaResponse as any)?.documents),
+				hasMetadatas: Array.isArray((chromaResponse as any)?.metadatas),
+			},
+		});
 		throw new ApiError(
 			500,
 			`Unexpected data structure from database for ${collectionType}.`,

@@ -1,12 +1,21 @@
 // src/server/credential/credentialService.ts
 
-import { CredentialResponse } from '@rita-berenice/shared/api';
-import { ValidationResult, UserApiKeys } from '@rita-berenice/shared/domain';
+import {
+	CredentialMetadataResponse,
+	CredentialValidationResponse,
+} from '@rita-berenice/shared/api';
+import {
+	API_KEY_TYPES,
+	type ApiKeyType,
+	type ValidationResult,
+	type UserApiKeys,
+} from '@rita-berenice/shared/domain';
 import { encryptValue, decryptValue } from '@rita-berenice/shared/util';
 import { getCredentialEnv } from '../config/env.js';
 import { getDatabase } from '../db/postgresClient.js';
 import { credentials } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
+import { flowLogger, serializeError } from '../util/jsonlLogger.js';
 
 // ✅ API Response Types
 interface OpenAIUsageResponse {
@@ -208,17 +217,43 @@ export const credentialStore = {
 					set: { encryptedData: JSON.stringify(encryptedKeys), updatedAt: now },
 				});
 
-			console.log(`[CredentialService] Successfully stored/updated API keys for user ${userId}`);
+			flowLogger.info('credentialStore', 'apiKeys.store.complete', { userId });
 		} catch (error) {
-			console.error(`[CredentialService] Failed to store API keys for user ${userId}:`, error);
+			flowLogger.error('credentialStore', 'apiKeys.store.failed', {
+				userId,
+				...serializeError(error),
+			});
 			throw error;
 		}
 	},
 
-	/**
-	 * Retrieves and decrypts API keys for a user.
-	 */
-	getUserApiKeys: async (userId: string): Promise<CredentialResponse> => {
+	/** Returns only which keys exist; encrypted or plaintext values never leave the server. */
+	getUserApiKeyMetadata: async (userId: string): Promise<CredentialMetadataResponse> => {
+		try {
+			const [row] = await getDatabase()
+				.select({ encryptedData: credentials.encryptedData })
+				.from(credentials)
+				.where(eq(credentials.userId, userId))
+				.limit(1);
+			if (!row) return { configuredKeyTypes: [] };
+
+			const encryptedKeys = JSON.parse(row.encryptedData) as Record<string, unknown>;
+			return {
+				configuredKeyTypes: API_KEY_TYPES.filter(
+					(keyType) => typeof encryptedKeys[keyType] === 'string' && encryptedKeys[keyType] !== ''
+				),
+			};
+		} catch (error) {
+			flowLogger.error('credentialStore', 'apiKeyMetadata.retrieve.failed', {
+				userId,
+				...serializeError(error),
+			});
+			return { configuredKeyTypes: [] };
+		}
+	},
+
+	/** Server-only access to decrypted API keys. Never return this value from a route. */
+	getDecryptedUserApiKeys: async (userId: string): Promise<UserApiKeys> => {
 		try {
 			const [row] = await getDatabase()
 				.select({ encryptedData: credentials.encryptedData })
@@ -226,7 +261,7 @@ export const credentialStore = {
 				.where(eq(credentials.userId, userId))
 				.limit(1);
 			if (!row) {
-				return { userApiKeys: {}, validationResults: {} };
+				return {};
 			}
 
 			const { SECRET_ENCRYPTION_KEY } = getCredentialEnv();
@@ -242,32 +277,39 @@ export const credentialStore = {
 								SECRET_ENCRYPTION_KEY
 							);
 						} catch (decryptError) {
-							console.error(`[CredentialService] Failed to decrypt key for user ${userId}:`, decryptError);
+							flowLogger.error('credentialStore', 'apiKeys.decrypt.failed', {
+								userId,
+								keyType: key,
+								...serializeError(decryptError),
+							});
 						}
 					}
 				})
 			);
-			return { userApiKeys: decryptedKeys, validationResults: {} };
+			return decryptedKeys;
 		} catch (error) {
-			console.error(`[CredentialService] Failed to retrieve API keys for user ${userId}:`, error);
-			return { userApiKeys: {}, validationResults: {} };
+			flowLogger.error('credentialStore', 'apiKeys.retrieve.failed', {
+				userId,
+				...serializeError(error),
+			});
+			return {};
 		}
 	},
 
 	/**
 	 * Updates a single API key for a user.
 	 */
-	updateUserApiKey: async (
-		userId: string,
-		keyType: keyof UserApiKeys,
-		keyValue: string
-	): Promise<void> => {
+	updateUserApiKey: async (userId: string, keyType: ApiKeyType, keyValue: string): Promise<void> => {
 		try {
-			const existingKeys = await credentialStore.getUserApiKeys(userId);
+			const existingKeys = await credentialStore.getDecryptedUserApiKeys(userId);
 			const updatedKeys = { ...existingKeys, [keyType]: keyValue };
-			await credentialStore.storeUserApiKeys(userId, updatedKeys.userApiKeys);
+			await credentialStore.storeUserApiKeys(userId, updatedKeys);
 		} catch (error) {
-			console.error(`[CredentialService] Failed to update ${keyType} for user ${userId}:`, error);
+			flowLogger.error('credentialStore', 'apiKey.update.failed', {
+				userId,
+				keyType,
+				...serializeError(error),
+			});
 			throw error;
 		}
 	},
@@ -290,11 +332,11 @@ export const credentialStore = {
 
 		if (Object.keys(validKeys).length > 0) {
 			await credentialStore.storeUserApiKeys(userId, validKeys);
-			console.log(`[CredentialService] Initialized default API keys for user ${userId}`);
+			flowLogger.info('credentialStore', 'apiKeys.defaultInitialized', { userId });
 		}
 	},
 
-	validateApiKeys: async (apiKeys: UserApiKeys): Promise<CredentialResponse> => {
+	validateApiKeys: async (apiKeys: UserApiKeys): Promise<CredentialValidationResponse> => {
 		const validationResults: Record<string, ValidationResult> = {};
 
 		const validationPromises = Object.entries(apiKeys).map(async ([keyType, keyValue]) => {
@@ -335,6 +377,6 @@ export const credentialStore = {
 
 		await Promise.all(validationPromises);
 
-		return { userApiKeys: apiKeys, validationResults };
+		return { validationResults };
 	},
 };

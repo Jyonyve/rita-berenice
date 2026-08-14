@@ -1,11 +1,29 @@
 // src/styles/theme.ts
 
-import { createTheme, Theme } from '@mui/material/styles';
+import { alpha, createTheme, Theme } from '@mui/material/styles';
 import { typography } from './typography.js';
 import { darkPalette, lightPalette } from './colors.js';
 import { chatStyles } from './chatStyles.ts';
 
 // --- THEME CREATION ---
+
+export const getGlobalScrollbarStyles = (theme: Theme) => ({
+	'*': {
+		scrollbarWidth: 'thin',
+		scrollbarColor: `${alpha(theme.palette.text.primary, 0.28)} transparent`,
+		'&::-webkit-scrollbar': { width: 6, height: 6 },
+		'&::-webkit-scrollbar-track': { backgroundColor: 'transparent' },
+		'&::-webkit-scrollbar-thumb': {
+			backgroundColor: alpha(theme.palette.text.primary, 0.22),
+			borderRadius: 999,
+			border: '1px solid transparent',
+			backgroundClip: 'padding-box',
+		},
+		'&:hover::-webkit-scrollbar-thumb': { backgroundColor: alpha(theme.palette.text.primary, 0.38) },
+		'&::-webkit-scrollbar-thumb:active': { backgroundColor: alpha(theme.palette.text.primary, 0.52) },
+		'&::-webkit-scrollbar-corner': { backgroundColor: 'transparent' },
+	},
+});
 
 export const getTheme = (mode: 'light' | 'dark') => {
 	const theme = createTheme({
@@ -66,6 +84,7 @@ export const getTheme = (mode: 'light' | 'dark') => {
 			},
 			MuiCssBaseline: {
 				styleOverrides: {
+					...getGlobalScrollbarStyles(theme),
 					// --- BASE & BOX-SIZING ---
 					'*, *::before, *::after': {
 						boxSizing: 'border-box',
@@ -77,6 +96,7 @@ export const getTheme = (mode: 'light' | 'dark') => {
 						height: '100%',
 						margin: 0,
 						padding: 0,
+						backgroundColor: theme.palette.mode === 'dark' ? '#1a1a1a' : theme.palette.background.default,
 						// Smooth background transition
 						transition: 'background-color 0.3s ease',
 					},
@@ -114,7 +134,7 @@ export const getTheme = (mode: 'light' | 'dark') => {
 					},
 
 					// --- CHAT COMPONENT STYLES ---
-					...chatStyles, // Merge chat styles here
+					...chatStyles,
 				},
 			},
 		},

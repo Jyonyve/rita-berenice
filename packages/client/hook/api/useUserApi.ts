@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient, genApiUrl } from '../../util/clientApiHelpers.js';
 import { UserResponse } from '@rita-berenice/shared/api';
 import { MODULE_NAMES } from '@rita-berenice/shared/config';
-import { UserCdo, UserInfo } from '@rita-berenice/shared/domain';
+import { ApiError, UserCdo, UserInfo } from '@rita-berenice/shared/domain';
 
 export const useUserApi = () => {
 	const MODULE_NAME = MODULE_NAMES.USER;
@@ -19,19 +19,8 @@ export const useUserApi = () => {
 				return response.data;
 			},
 			enabled,
-		});
-
-	/**
-	 * Fetch all users - List operation
-	 */
-	const getAllUsers = () =>
-		useQuery<UserResponse, Error>({
-			queryKey: ['users', 'list', 'getAllUsers'], // Hierarchical structure
-			queryFn: async () => {
-				const url = genApiUrl(MODULE_NAME, 'getAllUsers');
-				const response = await apiClient.get<UserResponse>(url);
-				return response.data;
-			},
+			retry: (failureCount, error) =>
+				!(error instanceof ApiError && error.status === 401) && failureCount < 3,
 		});
 
 	/**
@@ -181,7 +170,6 @@ export const useUserApi = () => {
 	return {
 		// Queries
 		getMe,
-		getAllUsers,
 		getUser,
 		getUserByShowName,
 		getUserByEmail,

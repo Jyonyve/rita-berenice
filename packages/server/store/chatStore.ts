@@ -1,4 +1,4 @@
-import { and, asc, eq, lt } from 'drizzle-orm';
+import { and, asc, eq, inArray, lt } from 'drizzle-orm';
 import { ChatResponse, Metadata } from '@rita-berenice/shared/api';
 import { ChatTurn, DisplayTurn } from '@rita-berenice/shared/domain';
 import { buildChatTurnId, chatTurnToMetadata } from '@rita-berenice/shared/util';
@@ -6,10 +6,13 @@ import { getDatabase } from '../db/postgresClient.js';
 import { chatTurns as chatTurnTable } from '../db/schema.js';
 import {
 	deleteMemoryEmbeddings,
-	replaceMemoryEmbedding,
+	QueryEmbeddingCache,
+	searchMemoryEmbeddingsByKeywords,
 	searchMemoryEmbeddings,
 } from '../service/embeddingService.js';
+import { embeddingJobService } from '../service/embeddingJobService.js';
 import { chatTurnToDocument } from '../util/documentUtils.js';
+import { RagTraceContext } from '../util/ragTraceUtils.js';
 import { FilterCriteria } from '../util/schemaUtils.js';
 
 const emptyResponse = (): ChatResponse => ({
@@ -93,7 +96,7 @@ const upsertTurn = async (turn: ChatTurn): Promise<void> => {
 				updatedAt: turn.updatedAt || now,
 			},
 		});
-	await replaceMemoryEmbedding({
+	embeddingJobService.enqueue({
 		sourceType: 'chat',
 		sourceId: turn.chatTurnId,
 		userId: turn.userId,
@@ -166,12 +169,28 @@ export const chatStore = {
 		return row ? toResponse([row.data]) : emptyResponse();
 	},
 
+	getChatTurnsBySequences: async (sessionId: string, sequences: number[]): Promise<ChatResponse> => {
+		const uniqueSequences = [...new Set(sequences)];
+		if (!uniqueSequences.length) return emptyResponse();
+
+		const rows = await getDatabase()
+			.select({ data: chatTurnTable.data })
+			.from(chatTurnTable)
+			.where(
+				and(eq(chatTurnTable.sessionId, sessionId), inArray(chatTurnTable.sequence, uniqueSequences))
+			)
+			.orderBy(asc(chatTurnTable.sequence));
+		return toResponse(rows.map((row) => row.data));
+	},
+
 	queryChatTurns: async (
 		sessionId: string,
 		queryTexts: string[],
 		filterCriteria?: FilterCriteria,
 		_whereDocument?: unknown,
-		limit = 10
+		limit = 10,
+		queryEmbeddingCache?: QueryEmbeddingCache,
+		ragTraceContext?: RagTraceContext
 	): Promise<ChatResponse> => {
 		const rows = await getDatabase()
 			.select({ data: chatTurnTable.data })
@@ -187,12 +206,38 @@ export const chatStore = {
 		const results = await searchMemoryEmbeddings(
 			queryWithEmotion,
 			{ sourceType: 'chat', sessionId, sourceIds: candidates.map((turn) => turn.chatTurnId) },
-			limit
+			limit,
+			queryEmbeddingCache,
+			ragTraceContext
 		);
 		const byId = new Map(candidates.map((turn) => [turn.chatTurnId, turn]));
 		return toResponse(
 			results.map((result) => byId.get(result.sourceId)).filter(Boolean) as ChatTurn[]
 		);
+	},
+
+	queryChatTurnsByKeywords: async (
+		sessionId: string,
+		keywords: string[],
+		excludeIds: string[] = [],
+		limit = 100
+	): Promise<ChatResponse> => {
+		const embeddingRows = await searchMemoryEmbeddingsByKeywords(
+			keywords,
+			{ sourceType: 'chat', sessionId },
+			{ excludeSourceIds: excludeIds, limit }
+		);
+		const sourceIds = embeddingRows.map((row) => row.sourceId);
+		if (!sourceIds.length) return emptyResponse();
+
+		const rows = await getDatabase()
+			.select({ data: chatTurnTable.data })
+			.from(chatTurnTable)
+			.where(and(eq(chatTurnTable.sessionId, sessionId), inArray(chatTurnTable.chatTurnId, sourceIds)))
+			.limit(sourceIds.length);
+		const byId = new Map(rows.map((row) => [row.data.chatTurnId, row.data]));
+
+		return toResponse(sourceIds.map((sourceId) => byId.get(sourceId)).filter(Boolean) as ChatTurn[]);
 	},
 
 	_deleteChatTurn: async (chatTurnId: string): Promise<void> => {

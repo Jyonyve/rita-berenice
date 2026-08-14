@@ -12,3 +12,4 @@ export { default as sessionRoutes } from './session.routes.js';
 export { default as recapRoutes } from './recap.routes.js';
 export { default as userRoutes } from './user.routes.js';
 export { default as credentialRoutes } from './credential.routes.js';
+export { default as documentRoutes } from './document.routes.js';

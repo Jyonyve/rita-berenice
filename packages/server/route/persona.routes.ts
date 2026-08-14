@@ -52,9 +52,6 @@ router.post(
 			throw new Error('Persona resources do not belong to the same session.');
 		}
 
-		const path = genRoutePattern('generateResponse');
-		console.log(`API HIT: POST ${path} for character ${characterInfo.name}`);
-
 		// Call the personaEngine with all necessary data and the request's AbortSignal
 		const response = await personaEngine.generateResponse(
 			recalledMemories,
