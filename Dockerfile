@@ -105,6 +105,8 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/packages/client/dist ./packages/client/dist
 COPY --from=builder /app/packages/server/dist ./packages/server/dist
+# Deploy-time schema migrations need the committed migration files in the runtime image.
+COPY packages/server/db/migrations ./packages/server/db/migrations
 RUN mkdir -p node_modules/@rita-berenice \
     && ln -s ../../packages/shared node_modules/@rita-berenice/shared
 

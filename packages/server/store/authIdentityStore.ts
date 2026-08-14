@@ -27,4 +27,12 @@ export const authIdentityStore = {
 
 		return identity ?? null;
 	},
+
+	create: async (authNamespace: string, providerUserId: string, userId: string): Promise<void> => {
+		const now = new Date().toISOString();
+		await getDatabase()
+			.insert(authIdentities)
+			.values({ authNamespace, providerUserId, userId, createdAt: now, updatedAt: now })
+			.onConflictDoNothing();
+	},
 };

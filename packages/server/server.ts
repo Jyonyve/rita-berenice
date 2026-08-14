@@ -39,6 +39,7 @@ import credentialRoutes from './route/credential.routes.js';
 import historyRoutes from './route/history.routes.js';
 import documentRoutes from './route/document.routes.js';
 import { buildRitaAccessTokenPayload } from './service/authIdentityService.js';
+import { provisionUserOnSignup } from './service/userProvisioningService.js';
 import { finalizationJobService } from './service/finalizationJobService.js';
 import { ApiErrorResponse } from '@rita-berenice/shared/api';
 import { APPNAME, MODULE_NAMES } from '@rita-berenice/shared/config';
@@ -224,7 +225,23 @@ async function createServer() {
 		recipeList: [
 			UserRoles.init(),
 			Dashboard.init({ admins: dashboardAdmins }),
-			EmailPassword.init(),
+			EmailPassword.init({
+				override: {
+					apis: (originalImplementation) => ({
+						...originalImplementation,
+						signUpPOST: async (input) => {
+							if (!originalImplementation.signUpPOST) {
+								throw new Error('signUpPOST is not available');
+							}
+							const response = await originalImplementation.signUpPOST(input);
+							if (response.status === 'OK' && serverEnv.AUTO_PROVISION_USERS) {
+								await provisionUserOnSignup(response.user.id, response.user.emails[0]);
+							}
+							return response;
+						},
+					}),
+				},
+			}),
 			Session.init({
 				override: {
 					functions: (originalImplementation) => ({

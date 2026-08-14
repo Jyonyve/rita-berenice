@@ -54,6 +54,13 @@ pnpm db:migrate
 pnpm dev
 ```
 
+For workflows that cannot use `drizzle-kit` (deploy-time runners), the app ships a lightweight
+migration runner based on `drizzle-orm`:
+
+```bash
+DATABASE_URL=... DATABASE_SSL=true pnpm --filter @rita-berenice/server db:migrate:run
+```
+
 Open `http://localhost:3000`.
 
 Use `pnpm db:down` to stop the local Docker services.
@@ -103,7 +110,11 @@ If a command requires unavailable local services or secrets, report that clearly
 ## Deployment
 
 - `.github/workflows/ci.yml` runs formatting, typecheck, and package builds.
+- `.github/workflows/fly-deploy-demo.yml` deploys the demo app (`rita-berenice-demo.fly.dev`) from `main`.
 - `.github/workflows/deploy.yml` builds the static client for GitHub Pages from the `mock` branch.
+- The demo `fly.toml` uses `release_command` to apply committed schema migrations automatically
+  before each deploy, and sets `AUTO_PROVISION_USERS=true` so a fresh SuperTokens signup creates
+  the linked Rita user and identity mapping automatically.
 
 ## License
 

@@ -34,6 +34,9 @@ const serverEnvSchema = z.object({
 	LOCAL_IMAGE_STORAGE_DIR: z.string().min(1).default('public/assets'),
 	DASHBOARD_ADMIN_EMAILS: commaSeparatedListSchema,
 	RITA_RAG_TRACE: booleanStringSchema.default(false),
+	// When true, a fresh SuperTokens signup also creates the linked Rita user and
+	// identity mapping automatically. Kept off by default to preserve manual administration.
+	AUTO_PROVISION_USERS: booleanStringSchema.default(false),
 });
 
 const embeddingEnvSchema = z.object({
