@@ -26,6 +26,7 @@ const chatTurnInputMessageSchema = z
 	})
 	.passthrough();
 
+// NOT WIRED: no caller yet. Kept intentionally for future use — do not remove as dead code.
 export const TempChatTurnCdoSchema = z
 	.object({
 		sessionId: z.string().min(1),
@@ -35,6 +36,7 @@ export const TempChatTurnCdoSchema = z
 	})
 	.passthrough();
 
+// NOT WIRED: no caller yet. Kept intentionally for future use — do not remove as dead code.
 export const CharacterInfoSchema = z
 	.object({
 		characterId: z.string().min(1),
@@ -51,6 +53,7 @@ export const CharacterInfoSchema = z
 	})
 	.passthrough();
 
+// NOT WIRED: no caller yet. Kept intentionally for future use — do not remove as dead code.
 export const ProfileInfoSchema = z
 	.object({
 		profileId: z.string().min(1),
@@ -64,6 +67,7 @@ export const ProfileInfoSchema = z
 	})
 	.passthrough();
 
+// NOT WIRED: no caller yet. Kept intentionally for future use — do not remove as dead code.
 export const AiModelInfoSchema = z
 	.object({
 		platform: z.string().min(1),
@@ -293,6 +297,8 @@ export const createChatTurnMetadataSchema = (charEng: string, userEng: string) =
  * Creates a comprehensive Zod schema for validating all metadata of a LORE entry.
  * Aligns directly with the LoreInfo interface.
  */
+// NOT WIRED: planned output contract for `buildLoreMetadataPrompt` (lore metadata enrichment).
+// Kept intentionally — do not remove as dead code.
 export const createLoreMetadataSchema = (availableCharacterIds: string[]) => {
 	return z
 		.object({
@@ -348,6 +354,8 @@ export const createLoreMetadataSchema = (availableCharacterIds: string[]) => {
  * Creates a comprehensive Zod schema for validating all metadata of a HISTORY entry.
  * Aligns directly with the HistoryInfo interface.
  */
+// NOT WIRED: planned output contract for `buildHistoryMetadataPrompt` (history metadata
+// enrichment). Kept intentionally — do not remove as dead code.
 export const createHistoryMetadataSchema = (
 	availableCharacterIds: string[],
 	existingHistoryEntries: { originalTitle: string; historyId: string }[]
@@ -449,6 +457,8 @@ export const createHistoryMetadataSchema = (
  * @param existingLoreIds - A list of valid lore IDs for reference linking.
  * @param existingHistoryIds - A list of valid history IDs for reference linking.
  */
+// NOT WIRED: planned output contract for `buildFactualRecapPrompt` (server-side recap
+// generation). Kept intentionally — do not remove as dead code.
 export const createFactualRecapSchema = (
 	availableKeywords: string[],
 	availableTopics: string[],
@@ -510,6 +520,8 @@ export const createFactualRecapSchema = (
  * @param existingLoreIds - A list of valid lore IDs for reference linking.
  * @param existingHistoryIds - A list of valid history IDs for reference linking.
  */
+// NOT WIRED: planned output contract for the commented-out relationship recap prompt in
+// `templateUtils.ts`. Kept intentionally — do not remove as dead code.
 export const createRelationshipRecapSchema = (
 	availableKeywords: string[],
 	availableTopics: string[],
@@ -586,6 +598,8 @@ export const createGlossaryExtractionSchema = () =>
 		),
 	});
 
+// NOT WIRED: no caller yet. `FilterCriteriaSchema` is the one used by `ragQueryService`.
+// Kept intentionally for future use — do not remove as dead code.
 export const RagFilterSchema = z
 	.object({
 		entities: z

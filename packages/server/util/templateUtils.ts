@@ -133,6 +133,7 @@ const buildCharacterBaselinePrompt = (
  * Token-optimized system prompt that preserves ALL content while maximizing structural efficiency.
  * Korean-aware optimization that respects sentence structure and meaning.
  */
+// NOT WIRED: no caller yet. Kept intentionally for future use — do not remove as dead code.
 export const buildPersonaSystemPrompt = (
 	characterInfo: CharacterInfo,
 	profileInfo: ProfileInfo,
@@ -467,6 +468,9 @@ export const buildLongTermMemoryPrompt = (
 	return `${header}\n\n${sections.join('\n\n')}`;
 };
 
+// NOT WIRED: planned for LLM lore metadata enrichment (summary, keywords, topics, entities)
+// before `loreStore.storeLore`, mirroring `memoryEngine.enrichChatTurnViaLlm` for chat turns.
+// Pairs with `createLoreMetadataSchema`. Kept intentionally — do not remove as dead code.
 export const buildLoreMetadataPrompt = (
 	originalTitle: string,
 	content: string,
@@ -622,6 +626,8 @@ ${termGuidanceInstruction}
  * This version is simplified; the output structure is now enforced by a Zod schema.
  * It also includes an optional terminology guidance map for term consistency.
  */
+// NOT WIRED: planned for history timeline extraction. Kept intentionally — do not remove as
+// dead code.
 export const buildHistoryTimelinePrompt = (
 	existingEventsPreview: string,
 	currentEventTitle: string,
@@ -665,12 +671,20 @@ ${termGuidanceInstruction}
 };
 
 // --- RECAP GENERATION PROMPTS ---
+//
+// This whole region is planned work, not abandoned code. Session recaps are currently created
+// through the recap API by the client; nothing on the server generates them yet. The prompts
+// below (including the commented-out relationship recap and story document builders) are the
+// drafts for that flow. Do not delete them as dead code.
 
 /**
  * Builds the prompt for an LLM to create a "Factual Ledger" and extract metadata from chat turns.
  * This version is simplified; the output structure is now enforced by a Zod schema.
  * It also includes an optional terminology guidance map for term consistency.
  */
+// NOT WIRED: planned for server-side factual recap generation. Recaps are currently written
+// through the recap API only. Pairs with `createFactualRecapSchema`. Kept intentionally — do
+// not remove as dead code.
 export const buildFactualRecapPrompt = (
 	userName: string,
 	charName: string,
@@ -975,6 +989,8 @@ ${termGuidanceInstruction}
  * This version is simplified; the output structure is now enforced by a Zod schema.
  * It also includes an optional terminology guidance map for term consistency.
  */
+// NOT WIRED: planned for LLM history metadata enrichment before `historyStore.storeHistory`.
+// Pairs with `createHistoryMetadataSchema`. Kept intentionally — do not remove as dead code.
 export const buildHistoryMetadataPrompt = (
 	originalTitle: string,
 	content: string,
@@ -1185,6 +1201,8 @@ ${termGuidanceInstruction}
 	return prompt;
 };
 
+// NOT WIRED: no caller yet. `enhanceScenePrompt` is the variant currently used by
+// `buildStaticSystemPrompt`. Kept intentionally for future use — do not remove as dead code.
 export const enhanceNarrativePrompt = (userName: string, langCode: LangCode = 'kor') => {
 	return langCode === 'kor'
 		? `[서사 스타일 지시문]
