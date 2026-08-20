@@ -82,6 +82,10 @@ Package-local commands:
 - Prefer shared Zod/runtime contracts for API boundary changes instead of only TypeScript types.
 - For LLM output changes, keep schema validation and fallback behavior explicit.
 - For RAG retrieval changes, preserve or add a way to compare retrieval quality before and after the change.
+- Exports marked `NOT WIRED` (see `server/util/templateUtils.ts` and `server/util/schemaUtils.ts`)
+  have no caller on purpose: they are drafts for planned lore, history, and recap enrichment flows.
+  Do not delete them as dead code, and do not "clean up" the commented-out prompt builders next to
+  them. Having no caller is not evidence that code is unwanted in this repo.
 
 ## Verification Expectations
 
