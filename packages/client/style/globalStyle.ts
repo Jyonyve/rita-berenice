@@ -97,6 +97,13 @@ export const getTheme = (mode: 'light' | 'dark') => {
 						margin: 0,
 						padding: 0,
 						backgroundColor: theme.palette.mode === 'dark' ? '#1a1a1a' : theme.palette.background.default,
+						// Chat entries sit directly on the character portrait in book mode, so they
+						// carry a drop shadow instead of a backdrop blur. Dark mode needs a much
+						// heavier shadow: light text over a photo has far less inherent contrast.
+						'--chat-text-shadow':
+							theme.palette.mode === 'dark'
+								? '0 1px 3px rgba(0, 0, 0, 0.85), 0 0 10px rgba(0, 0, 0, 0.55)'
+								: '0 1px 2px rgba(255, 255, 255, 0.75), 0 1px 3px rgba(0, 0, 0, 0.22)',
 						// Smooth background transition
 						transition: 'background-color 0.3s ease',
 					},

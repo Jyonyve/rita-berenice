@@ -13,7 +13,7 @@ const __dirname = path.dirname(__filename);
 const nodeBuiltinModules = builtinModules.map((m) => `node:${m}`);
 const allBuiltinModules = [...new Set([...builtinModules, ...nodeBuiltinModules])];
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, isSsrBuild }) => {
 	const isStaticBuild = mode === 'static';
 	const isProduction = mode === 'production';
 	const rootDir = path.resolve(__dirname, '../../');
@@ -25,14 +25,19 @@ export default defineConfig(({ mode }) => {
 		envDir: rootDir,
 		publicDir: '../../public',
 		ssr: {
-			external: allBuiltinModules,
-			noExternal: [/^@mui\//, /^@emotion\//, 'react-router'],
+			// `@emotion/server` is a Node-side library (html-tokenize -> readable-stream). Bundling it
+			// into the SSR output drags CommonJS Node internals in and breaks the bundle at import time,
+			// so it stays external while the browser-facing emotion/MUI packages keep being inlined.
+			external: [...allBuiltinModules, '@emotion/server', '@emotion/server/create-instance'],
+			noExternal: [/^@mui\//, /^@emotion\/(?!server)/, 'react-router'],
 			target: 'node',
 		},
 
 		plugins: [
 			react({ jsxImportSource: '@emotion/react', babel: { plugins: ['@emotion/babel-plugin'] } }),
-			nodePolyfills({ protocolImports: true }),
+			// Browser polyfills for Node builtins must never be injected into the SSR bundle: they would
+			// shadow the real `util`/`buffer`/`stream` that server-side dependencies rely on.
+			...(isSsrBuild ? [] : [nodePolyfills({ protocolImports: true })]),
 			tsconfigPaths({ root: '../../' }),
 			svgr(),
 		],
@@ -66,25 +71,31 @@ export default defineConfig(({ mode }) => {
 			chunkSizeWarningLimit: 5000,
 
 			rollupOptions: {
-				input: path.resolve(__dirname, 'index.html'),
+				// The HTML entry and the vendor-chunk split below describe the browser bundle only.
+				// Vite supplies its own entry for `--ssr`, and manual chunking there produces circular
+				// vendor chunks that break CommonJS interop (react-is) at import time.
+				input: isSsrBuild ? undefined : path.resolve(__dirname, 'index.html'),
 				output: {
-					manualChunks(id) {
-						if (id.includes('node_modules')) {
-							if (id.includes('@mui') || id.includes('@emotion')) {
-								return 'vendor-mui';
-							}
-							if (id.includes('react')) {
-								return 'vendor-react';
-							}
-							if (id.includes('supertokens')) {
-								return 'vendor-auth';
-							}
-							if (id.includes('langchain')) {
-								return 'vendor-langchain';
-							}
-							return 'vendor';
-						}
-					},
+					manualChunks: isSsrBuild
+						? undefined
+						: (id: string) => {
+								if (id.includes('node_modules')) {
+									if (id.includes('@mui') || id.includes('@emotion')) {
+										return 'vendor-mui';
+									}
+									if (id.includes('react')) {
+										return 'vendor-react';
+									}
+									if (id.includes('supertokens')) {
+										return 'vendor-auth';
+									}
+									if (id.includes('langchain')) {
+										return 'vendor-langchain';
+									}
+									return 'vendor';
+								}
+								return undefined;
+							},
 					chunkFileNames: (chunkInfo) => {
 						const facadeModuleId = chunkInfo.facadeModuleId
 							? chunkInfo.facadeModuleId.split('/').pop()

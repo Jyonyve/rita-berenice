@@ -11,7 +11,8 @@ export const SessionPreviewList: FC<{
 	userId: string;
 	characterId: string;
 	handleSessionStart: (sessionId: string) => void;
-}> = ({ userId, characterId, handleSessionStart }) => {
+	localizeDirections?: boolean;
+}> = ({ userId, characterId, handleSessionStart, localizeDirections }) => {
 	const {
 		data: sessionRes,
 		isLoading,
@@ -104,7 +105,7 @@ export const SessionPreviewList: FC<{
 										{/* --- ROW 2: Message Snippet --- */}
 										<SafeRichText
 											text={info.lastCharMessage}
-											localizeNarrativeDirections
+											localizeDirections={localizeDirections}
 											variant="body2"
 											color="text.secondary"
 											sx={{

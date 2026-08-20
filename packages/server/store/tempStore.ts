@@ -1,15 +1,12 @@
 import { TempChatResponse } from '@rita-berenice/shared/api';
 import { ApiError, TempChatTurn } from '@rita-berenice/shared/domain';
 import { buildTempChatTurnId } from '@rita-berenice/shared/util';
-import { and, desc, eq, gte, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { getDatabase } from '../db/postgresClient.js';
 import { tempChatTurns } from '../db/schema.js';
 import { handleServiceError } from '../util/serviceHelpers.js';
 
 const toResponse = (turns: TempChatTurn[]): TempChatResponse => ({
-	ids: turns.map((turn) => turn.tempTurnId),
-	documents: turns.map(() => null),
-	metadatas: turns.map(() => null),
 	tempChatTurns: turns,
 	tempChatTurn: turns[0] ?? null,
 });
@@ -67,11 +64,10 @@ export const tempStore = {
 	getLastTempTurnsForSessions: async (sessionIds: string[]): Promise<TempChatResponse> => {
 		if (sessionIds.length === 0) return toResponse([]);
 		try {
-			const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 			const rows = await getDatabase()
 				.select({ data: tempChatTurns.data })
 				.from(tempChatTurns)
-				.where(and(inArray(tempChatTurns.sessionId, sessionIds), gte(tempChatTurns.updatedAt, since)))
+				.where(inArray(tempChatTurns.sessionId, sessionIds))
 				.orderBy(desc(tempChatTurns.updatedAt));
 
 			const latestBySession = new Map<string, TempChatTurn>();
@@ -83,6 +79,16 @@ export const tempStore = {
 			return toResponse([...latestBySession.values()]);
 		} catch (error) {
 			handleServiceError(error, 'Failed to fetch recent temporary chat turns.');
+		}
+	},
+
+	deleteTempChatTurn: async (sessionId: string, sequence: number): Promise<void> => {
+		try {
+			await getDatabase()
+				.delete(tempChatTurns)
+				.where(and(eq(tempChatTurns.sessionId, sessionId), eq(tempChatTurns.sequence, sequence)));
+		} catch (error) {
+			handleServiceError(error, `Failed to delete temp turn ${sessionId}/${sequence}.`);
 		}
 	},
 

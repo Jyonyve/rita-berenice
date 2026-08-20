@@ -1,5 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
-import { loadAllCachedMessagesForSession, saveMessagesToCache } from '../../util/idbUtils.js';
+import {
+	clearSessionCache,
+	loadAllCachedMessagesForSession,
+	saveMessagesToCache,
+} from '../../util/idbUtils.js';
 import { useChatApi, useTempChatApi } from '../api/index.js';
 import { DisplayTurn, TempChatTurn } from '@rita-berenice/shared/domain';
 import { RECENT_CHAT_TURN } from '@rita-berenice/shared/config';
@@ -22,10 +26,33 @@ export const useChatState = (sessionId: string) => {
 	} = useChatApi().getAllDisplayTurns(sessionId);
 
 	// --- UTILITY FUNCTIONS ---
+	// Copies before sorting: the API turns handed in here belong to react-query's cache, and
+	// sorting them in place mutates cached data other consumers read.
 	const _sortTurns = useCallback(
-		(turns: DisplayTurn[]) => turns.sort((a, b) => a.sequence - b.sequence),
+		(turns: DisplayTurn[]) => [...turns].sort((a, b) => a.sequence - b.sequence),
 		[]
 	);
+
+	// Reuses the existing object for every turn that did not actually change. Replacing the whole
+	// array wholesale gives each row new props, and new props make Virtuoso re-measure every row -
+	// which is what shifts the scroll position when a revalidation lands.
+	const _mergeTurns = useCallback((current: DisplayTurn[], incoming: DisplayTurn[]) => {
+		const currentBySequence = new Map(current.map((turn) => [turn.sequence, turn]));
+		let hasChanged = current.length !== incoming.length;
+
+		const merged = incoming.map((nextTurn, index) => {
+			const previousTurn = currentBySequence.get(nextTurn.sequence);
+			if (previousTurn && JSON.stringify(previousTurn) === JSON.stringify(nextTurn)) {
+				// Order counts as a change even when the turn itself is untouched.
+				if (current[index] !== previousTurn) hasChanged = true;
+				return previousTurn;
+			}
+			hasChanged = true;
+			return nextTurn;
+		});
+
+		return hasChanged ? merged : current;
+	}, []);
 
 	const clearChatState = useCallback(() => {
 		setChatTurns([]);
@@ -73,12 +100,10 @@ export const useChatState = (sessionId: string) => {
 
 		if (apiResponse?.displayTurns) {
 			const sortedApiTurns = _sortTurns(apiResponse.displayTurns);
-			setChatTurns((currentTurns) =>
-				JSON.stringify(sortedApiTurns) === JSON.stringify(currentTurns) ? currentTurns : sortedApiTurns
-			);
+			setChatTurns((currentTurns) => _mergeTurns(currentTurns, sortedApiTurns));
 			saveMessagesToCache(sortedApiTurns);
 		}
-	}, [apiResponse, isApiError, apiError, _sortTurns]);
+	}, [apiResponse, isApiError, apiError, _sortTurns, _mergeTurns]);
 
 	// --- STATE UPDATERS & GETTERS ---
 
@@ -112,6 +137,18 @@ export const useChatState = (sessionId: string) => {
 		setTempChatTurn(temp);
 	}, []);
 
+	// Deleting a turn hard-deletes it and everything after it (tail truncation, not
+	// renumbering). The IndexedDB cache has no per-row delete, so the whole session's local
+	// cache is cleared here to avoid resurrecting deleted turns on next load; it gets
+	// re-populated from the server response as usual.
+	const removeChatTurnsFromSequence = useCallback(
+		async (fromSequence: number) => {
+			setChatTurns((previousTurns) => previousTurns.filter((turn) => turn.sequence < fromSequence));
+			await clearSessionCache(sessionId);
+		},
+		[sessionId]
+	);
+
 	const getCurrentSequence = useCallback((): number => {
 		if (chatTurns.length === 0) return -1;
 		return chatTurns[chatTurns.length - 1].sequence; // Last item is newest
@@ -135,6 +172,7 @@ export const useChatState = (sessionId: string) => {
 		addChatTurn,
 		addChatTurns,
 		changeTempChatTurn,
+		removeChatTurnsFromSequence,
 		clearChatState,
 		getCurrentSequence,
 		getNextSequence,

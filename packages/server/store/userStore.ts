@@ -7,9 +7,6 @@ import { users } from '../db/schema.js';
 import { handleServiceError } from '../util/serviceHelpers.js';
 
 const toResponse = (userInfos: UserInfo[]): UserResponse => ({
-	ids: userInfos.map((user) => user.userId),
-	documents: userInfos.map((user) => user.email),
-	metadatas: userInfos.map(() => null),
 	userInfos,
 	userInfo: userInfos[0] || null,
 });

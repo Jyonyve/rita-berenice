@@ -114,7 +114,7 @@ export const LANG_KEYS = {
 
 	INVALID_FILE_TYPE: 'INVALID_FILE_TYPE',
 	FILE_TOO_LARGE: 'FILE_TOO_LARGE',
-	IMAGE_UPLOADED_FOR: 'IMAGE_UPLOADED_FOR',
+	IMAGE_STAGED_FOR: 'IMAGE_STAGED_FOR',
 	FAILED_TO_CREATE_CHARACTER: 'FAILED_TO_CREATE_CHARACTER',
 	ERROR_CREATING_CHARACTER: 'ERROR_CREATING_CHARACTER',
 	SHOW_NAME_REQUIRED: 'SHOW_NAME_REQUIRED',
@@ -221,6 +221,8 @@ export const LANG_KEYS = {
 	EDIT_THIS_TURN: 'EDIT_THIS_TURN',
 	REGENERATE_RESPONSE: 'REGENERATE_RESPONSE',
 	AI_MODEL: 'AI_MODEL',
+	DELETE_FROM_HERE: 'DELETE_FROM_HERE',
+	CONFIRM_DELETE_CHAT_TURN: 'CONFIRM_DELETE_CHAT_TURN',
 } as const;
 export type LangKey = keyof typeof LANG_KEYS;
 
@@ -316,6 +318,11 @@ export const langConstants: LangRecord = {
 	EDIT_THIS_TURN: { kor: '이 턴 편집', eng: 'Edit this turn' },
 	REGENERATE_RESPONSE: { kor: '응답 다시 생성', eng: 'Regenerate response' },
 	AI_MODEL: { kor: 'AI 모델', eng: 'AI Model' },
+	DELETE_FROM_HERE: { kor: '여기부터 삭제', eng: 'Delete from here' },
+	CONFIRM_DELETE_CHAT_TURN: {
+		kor: '이 턴과 이후의 모든 턴이 영구히 삭제됩니다. 계속할까요?',
+		eng: 'This turn and every turn after it will be permanently deleted. Continue?',
+	},
 	ADULT_SESSION: { kor: '성인 세션', eng: 'Adult session' },
 	GENERAL_SESSION: { kor: '일반 세션', eng: 'General session' },
 	SESSIONS_WITH_CHARACTER: { kor: '지난 이야기', eng: 'Past Sessions' },
@@ -553,9 +560,9 @@ export const alertToastConstants: LangRecord = {
 		kor: '파일이 너무 큽니다. 5MB 미만의 이미지를 업로드해주세요.',
 		eng: 'File is too large. Please upload an image smaller than 5MB.',
 	},
-	IMAGE_UPLOADED_FOR: {
-		kor: '감정 이미지가 업로드되었습니다!',
-		eng: 'Emotion image has been uploaded!',
+	IMAGE_STAGED_FOR: {
+		kor: '감정 이미지가 추가되었습니다. 캐릭터를 생성하면 업로드됩니다.',
+		eng: 'Emotion image added. It will be uploaded when you create the character.',
 	},
 	FAILED_TO_CREATE_CHARACTER: {
 		kor: '캐릭터 생성에 실패했습니다.',

@@ -9,9 +9,14 @@ import { styleEntryFont } from '../../util/styleUtils.jsx';
 interface ConversationEntryProps {
 	entry: ChatEntry;
 	role: ChatRoleType;
+	localizeDirections?: boolean;
 }
 
-export const ConversationEntry: FC<ConversationEntryProps> = ({ entry, role }) => {
+export const ConversationEntry: FC<ConversationEntryProps> = ({
+	entry,
+	role,
+	localizeDirections,
+}) => {
 	const theme = useTheme();
 	const hasEmbeddedActions = containsEmbeddedRoleplayAction(entry.prompt);
 	const colors = getChatTextColors(theme.palette.mode);
@@ -24,7 +29,7 @@ export const ConversationEntry: FC<ConversationEntryProps> = ({ entry, role }) =
 		<SafeRichText
 			text={entry.prompt}
 			role={role}
-			localizeNarrativeDirections
+			localizeDirections={localizeDirections}
 			className={styleEntryFont(role, hasEmbeddedActions ? 'dialogue' : entry.type)}
 			style={chatColorVariables}
 		/>

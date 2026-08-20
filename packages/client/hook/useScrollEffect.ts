@@ -21,15 +21,18 @@ export const useScrollEffect = () => {
 		const target = event.target as HTMLDivElement;
 		const currentScrollTop = target.scrollTop;
 
-		// Determine scroll direction based on scroll position change
+		// Scroll events fire on every frame, so each setState here would re-render the whole
+		// chat log — including Virtuoso's item measurement — dozens of times per second. The
+		// functional updates below return the previous value when nothing actually changed,
+		// which lets React bail out of the re-render entirely.
 		if (currentScrollTop > lastScrollTop.current) {
-			setScrollDirection('down'); // Scrolling down (newer messages)
+			setScrollDirection((prev) => (prev === 'down' ? prev : 'down')); // Scrolling down (newer messages)
 		} else if (currentScrollTop < lastScrollTop.current) {
-			setScrollDirection('up'); // Scrolling up (older messages)
+			setScrollDirection((prev) => (prev === 'up' ? prev : 'up')); // Scrolling up (older messages)
 		}
 
 		lastScrollTop.current = currentScrollTop;
-		setIsScrolling(true);
+		setIsScrolling((prev) => (prev ? prev : true));
 
 		// Clear any existing timeout and set a new one
 		if (scrollTimeoutRef.current) {
@@ -38,8 +41,8 @@ export const useScrollEffect = () => {
 
 		// Reset scrolling state after scroll stops (same as react-window behavior)
 		scrollTimeoutRef.current = setTimeout(() => {
-			setIsScrolling(false);
-			setScrollDirection(null);
+			setIsScrolling((prev) => (prev ? false : prev));
+			setScrollDirection((prev) => (prev === null ? prev : null));
 		}, 150); // 150ms matches typical scroll momentum timing
 	}, []);
 
@@ -91,8 +94,8 @@ export const useScrollEffect = () => {
 	 */
 	const handleIsScrollingChange = useCallback((scrolling: boolean) => {
 		if (!scrolling) {
-			setIsScrolling(false);
-			setScrollDirection(null);
+			setIsScrolling((prev) => (prev ? false : prev));
+			setScrollDirection((prev) => (prev === null ? prev : null));
 		}
 	}, []);
 

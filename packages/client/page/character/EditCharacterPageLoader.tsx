@@ -21,9 +21,12 @@ export const EditCharacterPageLoader = () => {
 		}
 	}, [characterId, navigate]);
 
-	if (!characterId || !userId) return;
+	// The query below is a hook, so the bail-out has to come after it, not before - an early return
+	// here changes the hook order between renders. An empty id keeps the query disabled through
+	// its own `enabled: !!characterId` guard, so nothing is fetched meanwhile.
+	const { data: characterRes, isLoading } = useCharacterApi().getCharacter(characterId ?? '');
 
-	const { data: characterRes, isLoading } = useCharacterApi().getCharacter(characterId);
+	if (!characterId || !userId) return null;
 
 	if (isLoading || !characterRes) {
 		// Use a more descriptive loading state, maybe centered

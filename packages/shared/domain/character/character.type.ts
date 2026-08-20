@@ -20,6 +20,7 @@ export interface CharacterMetadata extends BeingMetadata {
 	contact: string;
 	type: typeof METADATA_TYPES.CHARACTER;
 	visibility: CharacterVisibility;
+	localizeDirections: boolean;
 }
 export interface CharacterDocument {
 	description: string; // Public character introduction and baseline LLM context

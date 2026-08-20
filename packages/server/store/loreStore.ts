@@ -15,9 +15,6 @@ import { RagTraceContext } from '../util/ragTraceUtils.js';
 import { FilterCriteria } from '../util/schemaUtils.js';
 
 const emptyResponse = (): LoreResponse => ({
-	ids: [],
-	metadatas: [],
-	documents: [],
 	loreInfo: {} as LoreInfo,
 	loreContent: '',
 	loreInfos: [],
@@ -25,9 +22,6 @@ const emptyResponse = (): LoreResponse => ({
 });
 
 const toResponse = (items: LoreInfo[]): LoreResponse => ({
-	ids: items.map((item) => item.loreId),
-	metadatas: items.map((item) => loreToMetadata(item) as unknown as Metadata),
-	documents: items.map(loreToDocument),
 	loreInfo: items[0] ?? ({} as LoreInfo),
 	loreContent: items[0]?.content ?? '',
 	loreInfos: items,

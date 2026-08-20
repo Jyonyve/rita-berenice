@@ -16,9 +16,6 @@ const toResponse = async (profileInfos: ProfileInfo[]): Promise<ProfileResponse>
 	);
 
 	return {
-		ids: profileInfos.map((profile) => profile.profileId),
-		documents: profileInfos.map((profile) => profile.description),
-		metadatas: profileInfos.map(() => null),
 		profileInfos,
 		profileInfo: profileInfos[0] || null,
 		profilePortraits: Object.fromEntries(

@@ -1,4 +1,3 @@
-import { Term } from '@rita-berenice/shared/api';
 import {
 	ChatEntry,
 	ChatTurn,
@@ -8,7 +7,6 @@ import {
 	ProfileDocument,
 	LoreInfo,
 	HistoryInfo,
-	TermDocument,
 	RecapInfo,
 	SessionInfo,
 	SessionDocument,
@@ -72,22 +70,6 @@ export const loreToDocument = (lore: LoreInfo): string => {
 
 export const historyToDocument = (history: HistoryInfo): string => {
 	return `Title: ${history.title}\nSummary: ${history.summary}\n\n${history.content}`;
-};
-
-export const flatTermToDoc = (term: Term) => {
-	const { koreanTerm, englishTerm, termId, type } = term;
-	const document: TermDocument = { koreanTerm, englishTerm, termId, type };
-	return JSON.stringify(document).trim();
-};
-
-export const inflateTermDoc = (document: string): TermDocument => {
-	const parsed = JSON.parse(document);
-	return {
-		koreanTerm: parsed.koreanTerm,
-		englishTerm: parsed.englishTerm,
-		termId: parsed.termId,
-		type: parsed.type,
-	};
 };
 
 export const recapToDocument = (recap: RecapInfo) => {

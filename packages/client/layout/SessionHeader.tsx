@@ -27,7 +27,6 @@ export interface SessionHeaderInfo {
 
 type SessionHeaderProps = {
 	info: SessionHeaderInfo;
-	isSmallScreen: boolean;
 	onCharacter: () => void;
 	onProfile: () => void;
 	onSession: () => void;
@@ -39,7 +38,6 @@ type SessionHeaderProps = {
 
 export function SessionHeader({
 	info,
-	isSmallScreen,
 	onCharacter,
 	onProfile,
 	onSession,
@@ -121,38 +119,35 @@ export function SessionHeader({
 								typographyProps={{
 									color: 'textPrimary',
 									variant: 'caption',
-									sx: { maxWidth: isSmallScreen ? '180px' : '320px' },
+									sx: { maxWidth: { xs: '180px', md: '320px' } },
 								}}
 								textFieldProps={{ variant: 'standard', size: 'small' }}
 							/>
 						)}
 					</Box>
-					{!isSmallScreen && (
-						<RomanticTitle
-							variant="subtitle1"
-							colorVariant="silver"
-							component="div"
-							onClick={onDocuments}
-							role="button"
-							sx={{ px: 1, whiteSpace: 'nowrap' }}
-						>
-							{getLangText(LANG_KEYS.SESSION_DOCUMENTS)}
-						</RomanticTitle>
-					)}
+					<RomanticTitle
+						variant="subtitle1"
+						colorVariant="silver"
+						component="div"
+						onClick={onDocuments}
+						role="button"
+						sx={{ display: { xs: 'none', md: 'block' }, px: 1, whiteSpace: 'nowrap' }}
+					>
+						{getLangText(LANG_KEYS.SESSION_DOCUMENTS)}
+					</RomanticTitle>
 				</Box>
 
 				<Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-					{isSmallScreen && (
-						<Tooltip title={getLangText(LANG_KEYS.SESSION_DOCUMENTS)}>
-							<HeaderIconButton
-								size="small"
-								onClick={onDocuments}
-								aria-label={getLangText(LANG_KEYS.SESSION_DOCUMENTS)}
-							>
-								<DescriptionOutlinedIcon />
-							</HeaderIconButton>
-						</Tooltip>
-					)}
+					<Tooltip title={getLangText(LANG_KEYS.SESSION_DOCUMENTS)}>
+						<HeaderIconButton
+							size="small"
+							onClick={onDocuments}
+							aria-label={getLangText(LANG_KEYS.SESSION_DOCUMENTS)}
+							sx={{ display: { xs: 'inline-flex', md: 'none' } }}
+						>
+							<DescriptionOutlinedIcon />
+						</HeaderIconButton>
+					</Tooltip>
 					{info.mobileImageUrl && (
 						<Tooltip title={getLangText(LANG_KEYS.VIEW_CHARACTER_IMAGE)}>
 							<HeaderIconButton onClick={onImage} aria-label={getLangText(LANG_KEYS.VIEW_CHARACTER_IMAGE)}>

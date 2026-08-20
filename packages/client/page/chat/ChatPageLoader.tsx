@@ -8,7 +8,6 @@ import {
 	Dialog,
 	DialogContent,
 	IconButton,
-	useMediaQuery,
 	useTheme,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -19,7 +18,6 @@ import {
 	useTempChatApi,
 	useSessionApi,
 } from '../../hook/api/index.js';
-import { saveMessagesToCache } from '../../util/idbUtils.js';
 import { ChatPage } from './ChatPage.jsx';
 import { useAuth } from '../../provider/AuthProvider.jsx';
 import { HeaderContextType } from '../../layout/RootLayout.jsx';
@@ -83,10 +81,17 @@ export function ChatPageLoader() {
 		}
 	}, [sessionId, navigate]);
 
-	if (!sessionId || !userId) return;
+	// Every hook below has to run on each render, so the "no session yet" bail-out cannot happen
+	// here - it lives with the other early returns further down, after the last hook. Until the
+	// route params resolve, the queries receive an empty id and stay disabled by their own
+	// `enabled: !!id` guards, so nothing is fetched.
+	const safeSessionId = sessionId ?? '';
 
 	// ------------ Fetching Data ------------
-	const characterId = useMemo(() => parseSessionId(sessionId)?.characterId || '', [sessionId]);
+	const characterId = useMemo(
+		() => parseSessionId(safeSessionId)?.characterId || '',
+		[safeSessionId]
+	);
 
 	const {
 		data: characterRes,
@@ -99,19 +104,17 @@ export function ChatPageLoader() {
 		data: profileRes,
 		isLoading: isLoadingProfile,
 		isError: isProfileError,
-	} = getProfileBySessionId(sessionId);
+	} = getProfileBySessionId(safeSessionId);
 
-	const {
-		data: allTurnsRes,
-		isLoading: isLoadingTurns,
-		isError: isTurnsError,
-	} = useChatApi().getAllDisplayTurns(sessionId);
+	// Subscribed here only for the error gate below; useChatState owns the data for this query.
+	const { isLoading: isLoadingTurns, isError: isTurnsError } =
+		useChatApi().getAllDisplayTurns(safeSessionId);
 
 	const {
 		data: sessionRes,
 		isLoading: isLoadingSession,
 		isError: isSessionError,
-	} = useSessionApi().getSession(sessionId);
+	} = useSessionApi().getSession(safeSessionId);
 
 	// Generate image URL based on current emotion
 	const imageUrl = useMemo(() => {
@@ -126,6 +129,14 @@ export function ChatPageLoader() {
 		return '';
 	}, [characterRes, currentEmotion]);
 
+	// Emotion context value. Memoized: an unmemoized object re-renders every consumer on every
+	// render of this loader, and the loader re-renders whenever RootLayout's header state moves.
+	// It has to be declared here, above the early returns below, to stay an unconditional hook.
+	const emotionContextValue: EmotionContextType = useMemo(
+		() => ({ currentEmotion, setCurrentEmotion, imageUrl, showMobileImage, setShowMobileImage }),
+		[currentEmotion, imageUrl, showMobileImage]
+	);
+
 	// --- HEADER INFO MANAGEMENT (enhanced) ---
 	useEffect(() => {
 		if (characterRes?.characterInfo && profileRes?.profileInfo && sessionRes?.sessionInfo) {
@@ -137,7 +148,7 @@ export function ChatPageLoader() {
 			setHeaderInfo({
 				characterId: info.characterId,
 				profileShowName: profile.showName,
-				sessionId,
+				sessionId: safeSessionId,
 				sessionTitle,
 				avatarUrl: getConversationAvatar(
 					characterRes.characterAvatars[info.characterId],
@@ -147,10 +158,6 @@ export function ChatPageLoader() {
 				mobileImageUrl: imageUrl,
 			});
 		}
-
-		return () => {
-			setHeaderInfo(undefined);
-		};
 	}, [
 		characterRes,
 		profileRes,
@@ -158,8 +165,18 @@ export function ChatPageLoader() {
 		setHeaderInfo,
 		shouldUseMobileLayout,
 		imageUrl,
-		sessionId,
+		safeSessionId,
 	]);
+
+	// Clearing the header belongs to unmount only. While it lived in the effect above it ran on
+	// every dependency change too - and `imageUrl` is a dependency, so each scroll-driven emotion
+	// change blanked the header for a frame (RootLayout falls back to an empty session header)
+	// before refilling it. That blank frame is the header flicker.
+	useEffect(() => {
+		return () => {
+			setHeaderInfo(undefined);
+		};
+	}, [setHeaderInfo]);
 
 	useEffect(() => {
 		if (headerInfo?.editModalOpen) {
@@ -169,12 +186,14 @@ export function ChatPageLoader() {
 		}
 	}, [headerInfo, setHeaderInfo]);
 
-	useEffect(() => {
-		if (allTurnsRes?.displayTurns && allTurnsRes.displayTurns.length > 0) {
-			console.log(`Priming IndexedDB with ${allTurnsRes.displayTurns.length} chat turns...`);
-			saveMessagesToCache(allTurnsRes.displayTurns);
-		}
-	}, [allTurnsRes]);
+	// The IndexedDB priming effect that used to live here was removed: useChatState already writes
+	// the same query result to the same store, so every session load wrote the full turn list
+	// twice.
+
+	// Nothing to render without a session or a signed-in user. The redirect effect above already
+	// sends a missing sessionId to the not-found route; this only keeps the render empty until it
+	// does. It sits below every hook so the hook order never changes between renders.
+	if (!sessionId || !userId) return null;
 
 	// Handle error states
 	if (isCharacterError || isProfileError || isTurnsError || isSessionError) {
@@ -202,15 +221,6 @@ export function ChatPageLoader() {
 	const characterInfo = characterRes.characterInfo;
 	const profileInfo = profileRes.profileInfo;
 	const sessionInfo = sessionRes.sessionInfo;
-
-	// Emotion context value
-	const emotionContextValue: EmotionContextType = {
-		currentEmotion,
-		setCurrentEmotion,
-		imageUrl,
-		showMobileImage,
-		setShowMobileImage,
-	};
 
 	return (
 		<EmotionContext.Provider value={emotionContextValue}>

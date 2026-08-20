@@ -9,9 +9,6 @@ import { parseEntriesToConversation } from '../util/chatParseUtils.js';
 import { handleServiceError } from '../util/serviceHelpers.js';
 
 const toResponse = (sessionInfos: SessionInfo[]): SessionResponse => ({
-	ids: sessionInfos.map((session) => session.sessionId),
-	documents: sessionInfos.map((session) => session.lastCharMessage),
-	metadatas: sessionInfos.map(() => null),
 	sessionInfos,
 	sessionInfo: sessionInfos[0] || null,
 });

@@ -345,7 +345,7 @@ export const CharacterForm: FC<Props> = ({
 				}
 			} else {
 				addToast(
-					`${getLangText(emotionToLangKey(selectedEmotion))} ${getLangAlertText(LANG_KEYS.IMAGE_UPLOADED_FOR)}`,
+					`${getLangText(emotionToLangKey(selectedEmotion))} ${getLangAlertText(LANG_KEYS.IMAGE_STAGED_FOR)}`,
 					'success',
 					TOAST_DURATION
 				);

@@ -10,9 +10,15 @@ interface ConversationMessageProps {
 	message: ChatMessage;
 	role: ChatRoleType;
 	avatarUrl?: string;
+	localizeDirections?: boolean;
 }
 
-export const ConversationMessage: FC<ConversationMessageProps> = ({ message, role, avatarUrl }) => {
+export const ConversationMessage: FC<ConversationMessageProps> = ({
+	message,
+	role,
+	avatarUrl,
+	localizeDirections,
+}) => {
 	const isUser = role === 'user';
 	const avatarFallback = message.showName.trim().charAt(0).toUpperCase();
 
@@ -94,7 +100,7 @@ export const ConversationMessage: FC<ConversationMessageProps> = ({ message, rol
 					>
 						{message.entries.map((entry, index) => (
 							<Box key={`${message.messageId}-${index}`} sx={{ mt: index === 0 ? 0 : 0.5 }}>
-								<ConversationEntry entry={entry} role={role} />
+								<ConversationEntry entry={entry} role={role} localizeDirections={localizeDirections} />
 							</Box>
 						))}
 					</GlassPaper>

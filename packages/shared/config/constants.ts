@@ -25,6 +25,9 @@ export const CHARACTER_VISIBILITY = { PRIVATE: 'private', PUBLIC: 'public' } as 
 export type CharacterVisibility = (typeof CHARACTER_VISIBILITY)[keyof typeof CHARACTER_VISIBILITY];
 export const DEFAULT_CHARACTER_VISIBILITY: CharacterVisibility = CHARACTER_VISIBILITY.PUBLIC;
 
+// Whether {{DIRECTION_TOKEN}} markers in generated chat text are localized into display labels.
+export const DEFAULT_LOCALIZE_DIRECTIONS = true as const;
+
 // Default limit for querying chat logs
 export const DEFAULT_QUERY_LIMIT: number = 10 as const;
 
@@ -44,6 +47,7 @@ export const MODULE_NAMES = {
 	PERSONA: 'persona',
 	ORCHESTRATION: 'orchestration',
 	USER: 'user',
+	DEMO: 'demo',
 	DOCUMENT: 'document',
 } as const;
 export type MODULE_TYPES = (typeof MODULE_NAMES)[keyof typeof MODULE_NAMES];

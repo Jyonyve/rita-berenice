@@ -1,6 +1,4 @@
-import { ChromaResponse } from '@rita-berenice/shared/api';
 import { ApiError } from '@rita-berenice/shared/domain';
-import { ResourceType } from '../db/resource.type.js';
 import { flowLogger, serializeError } from './jsonlLogger.js';
 
 /**
@@ -43,69 +41,5 @@ export function handleServiceError(
 		clientMessage // Client-facing message
 	);
 }
-
-// Your validation function, now as a type guard
-
-// --- Validation Function (throws on error) ---
-const _validateChromaResult = (
-	response: any // Use 'any' for initial check, then guard
-): response is ChromaResponse => {
-	return (
-		response !== null && // Should not be null if chromaDbClient throws for its own errors
-		typeof response === 'object' &&
-		Array.isArray(response.ids) &&
-		Array.isArray(response.documents) && // These should be present even if empty
-		Array.isArray(response.metadatas) // These should be present even if empty
-	);
-};
-
-/**
- * Validates a ChromaResponse received by a service from chromaDbClient.
- * - Checks for structural integrity.
- * - For 'getOne' operations, throws ApiError(404) if no data is found (ids.length === 0).
- * @param chromaResponse The ChromaResponse from chromaDbClient.
- * @param operationType Distinguishes 'getOne' (expects data) from 'getList' (empty is OK).
- * @param collectionType Name of the resource for clearer error messages (e.g., "Character").
- * @returns The validated ChromaResponse.
- * @throws ApiError if validation fails.
- */
-export const validateChromaResponse = (
-	chromaResponse: ChromaResponse, // Assumes chromaDbClient now always returns this or throws its own Error
-	operationType: 'getOne' | 'getList',
-	collectionType: ResourceType
-): ChromaResponse => {
-	// 1. Structural Validation (Defense in depth)
-	if (!_validateChromaResult(chromaResponse)) {
-		// This case should be rare if chromaDbClient._returnResponse is robust
-		flowLogger.error('serviceHelpers', 'chromaResponse.malformed', {
-			collectionType,
-			operationType,
-			responseShape: {
-				hasIds: Array.isArray((chromaResponse as any)?.ids),
-				hasDocuments: Array.isArray((chromaResponse as any)?.documents),
-				hasMetadatas: Array.isArray((chromaResponse as any)?.metadatas),
-			},
-		});
-		throw new ApiError(
-			500,
-			`Unexpected data structure from database for ${collectionType}.`,
-			`An internal error occurred while processing ${collectionType.toLowerCase()} data.`
-		);
-	}
-
-	// 2. "Not Found" check for 'getOne' operations
-	if (operationType === 'getOne' && chromaResponse.ids.length === 0) {
-		throw new ApiError(
-			404,
-			`${collectionType} not found.`, // Developer message
-			`The requested ${collectionType.toLowerCase()} does not exist.` // Client message
-		);
-	}
-
-	// For 'getList' operations, chromaData.ids.length === 0 is a valid "empty list" scenario.
-	// The service method will handle transforming this into an empty array of domain objects.
-
-	return chromaResponse; // Data is structurally valid and (if 'getOne') not empty.
-};
 
 // In the same file as ApiError, e.g., src/server/util/errorHandlers.ts

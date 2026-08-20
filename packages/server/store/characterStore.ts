@@ -1,5 +1,9 @@
 import { CharacterResponse } from '@rita-berenice/shared/api';
-import { DEFAULT_CHARACTER_VISIBILITY, CHARACTER_VISIBILITY } from '@rita-berenice/shared/config';
+import {
+	DEFAULT_CHARACTER_VISIBILITY,
+	DEFAULT_LOCALIZE_DIRECTIONS,
+	CHARACTER_VISIBILITY,
+} from '@rita-berenice/shared/config';
 import { CharacterCdo, CharacterInfo, ApiError } from '@rita-berenice/shared/domain';
 import { createBasicCharacterInfo, isCharacterInfo } from '@rita-berenice/shared/util';
 import { desc, eq, ilike } from 'drizzle-orm';
@@ -12,6 +16,7 @@ const normalizeCharacter = (character: CharacterInfo): CharacterInfo => ({
 	...character,
 	worldIntroduction: character.worldIntroduction ?? '',
 	visibility: character.visibility ?? DEFAULT_CHARACTER_VISIBILITY,
+	localizeDirections: character.localizeDirections ?? DEFAULT_LOCALIZE_DIRECTIONS,
 });
 
 const toResponse = async (rawCharacterInfos: CharacterInfo[]): Promise<CharacterResponse> => {
@@ -34,9 +39,6 @@ const toResponse = async (rawCharacterInfos: CharacterInfo[]): Promise<Character
 	);
 
 	return {
-		ids: characterInfos.map((character) => character.characterId),
-		documents: characterInfos.map((character) => character.description),
-		metadatas: characterInfos.map(() => null),
 		characterInfos,
 		characterInfo: characterInfos[0] || null,
 		characterPortraits,
@@ -57,9 +59,6 @@ export const filterCharacterResponseByViewer = (
 	const visibleIds = new Set(visibleInfos.map((character) => character.characterId));
 	return {
 		...response,
-		ids: visibleInfos.map((character) => character.characterId),
-		documents: visibleInfos.map((character) => character.description),
-		metadatas: visibleInfos.map(() => null),
 		characterInfos: visibleInfos,
 		characterInfo: visibleInfos[0] || null,
 		characterPortraits: Object.fromEntries(
@@ -150,6 +149,7 @@ export const characterStore = {
 			...baseCharacter,
 			worldIntroduction: baseCharacter.worldIntroduction ?? '',
 			visibility: baseCharacter.visibility ?? DEFAULT_CHARACTER_VISIBILITY,
+			localizeDirections: baseCharacter.localizeDirections ?? DEFAULT_LOCALIZE_DIRECTIONS,
 			createdAt: baseCharacter.createdAt || now,
 			updatedAt: now,
 		};

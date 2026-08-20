@@ -7,7 +7,7 @@ import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import remarkBreaks from 'remark-breaks';
 import remarkGfm from 'remark-gfm';
-import { rehypeNarrativeDirectionLabels } from '../../util/conversationMarkupUtils.js';
+import { rehypeDirectionLabels } from '../../util/conversationMarkupUtils.js';
 import { styleEntryFont } from '../../util/styleUtils.jsx';
 
 const SAFE_RICH_TEXT_TAGS = [
@@ -59,7 +59,7 @@ const standardRehypePlugins: NonNullable<Parameters<typeof ReactMarkdown>[0]['re
 ];
 const chatRehypePlugins: NonNullable<Parameters<typeof ReactMarkdown>[0]['rehypePlugins']> = [
 	rehypeRaw,
-	rehypeNarrativeDirectionLabels,
+	rehypeDirectionLabels,
 	[rehypeSanitize, safeRichTextSchema],
 ];
 
@@ -203,7 +203,7 @@ const chatComponents: Record<ChatRoleType, Components> = {
 export interface SafeRichTextProps {
 	text: string;
 	role?: ChatRoleType;
-	localizeNarrativeDirections?: boolean;
+	localizeDirections?: boolean;
 	variant?: TypographyProps['variant'];
 	color?: TypographyProps['color'];
 	className?: string;
@@ -214,7 +214,7 @@ export interface SafeRichTextProps {
 export function SafeRichText({
 	text,
 	role,
-	localizeNarrativeDirections = false,
+	localizeDirections = false,
 	variant,
 	color,
 	className,
@@ -232,7 +232,7 @@ export function SafeRichText({
 		>
 			<ReactMarkdown
 				remarkPlugins={remarkPlugins}
-				rehypePlugins={localizeNarrativeDirections ? chatRehypePlugins : standardRehypePlugins}
+				rehypePlugins={localizeDirections ? chatRehypePlugins : standardRehypePlugins}
 				components={role ? chatComponents[role] : standardComponents}
 			>
 				{text}

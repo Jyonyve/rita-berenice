@@ -191,6 +191,36 @@ export const countQueryTermHits = (text: string, terms: string[]): number => {
 	return terms.filter((term) => normalizedText.includes(term.toLowerCase())).length;
 };
 
+// Down-weights terms that are common across the current candidate pool and up-weights
+// terms that are rare in it, so a term doesn't need to be pre-declared as a stopword to
+// stop dominating the boost score - it only needs to actually be uninformative for this query.
+const computeLocalTermWeights = <T>(
+	items: T[],
+	terms: string[],
+	toSearchText: (item: T) => string
+): Map<string, number> => {
+	const normalizedTexts = items.map((item) => toSearchText(item).toLowerCase());
+	const weights = new Map<string, number>();
+	for (const term of terms) {
+		const lowerTerm = term.toLowerCase();
+		const documentFrequency = normalizedTexts.filter((text) => text.includes(lowerTerm)).length;
+		weights.set(term, Math.log((items.length + 1) / (documentFrequency + 1)) + 1);
+	}
+	return weights;
+};
+
+const countWeightedQueryTermHits = (
+	text: string,
+	terms: string[],
+	weights: Map<string, number>
+): number => {
+	const normalizedText = text.toLowerCase();
+	return terms.reduce((score, term) => {
+		if (!normalizedText.includes(term.toLowerCase())) return score;
+		return score + (weights.get(term) ?? 1);
+	}, 0);
+};
+
 export const boostByQueryTerms = <T>(
 	items: T[],
 	terms: string[],
@@ -198,9 +228,14 @@ export const boostByQueryTerms = <T>(
 ): T[] => {
 	if (!items.length || !terms.length) return items;
 
+	const weights = computeLocalTermWeights(items, terms, toSearchText);
 	return items
-		.map((item, index) => ({ item, index, hitCount: countQueryTermHits(toSearchText(item), terms) }))
-		.sort((left, right) => right.hitCount - left.hitCount || left.index - right.index)
+		.map((item, index) => ({
+			item,
+			index,
+			weightedScore: countWeightedQueryTermHits(toSearchText(item), terms, weights),
+		}))
+		.sort((left, right) => right.weightedScore - left.weightedScore || left.index - right.index)
 		.map(({ item }) => item);
 };
 

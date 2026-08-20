@@ -49,14 +49,16 @@ export const getCachedMessages = async (
 	return relevantMessages;
 };
 
-// No change needed here, as the keyPath is set on the object
+// No change needed here, as the keyPath is set on the object.
+// The puts are issued together and awaited once at the end rather than one at a time: awaiting
+// each put in turn serializes the whole batch, and a session's history can run to thousands of
+// turns, all written while the user is looking at the freshly opened chat.
 export const saveMessagesToCache = async (messages: DisplayTurn[]) => {
+	if (messages.length === 0) return;
 	const db = await initDB();
 	const tx = db.transaction(STORE_NAME, 'readwrite');
-	for (const msg of messages) {
-		await tx.store.put(msg);
-	}
-	await tx.done;
+	const writes = messages.map((msg) => tx.store.put(msg));
+	await Promise.all([...writes, tx.done]);
 };
 
 // This function is now session-specific

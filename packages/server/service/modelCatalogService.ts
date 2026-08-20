@@ -27,7 +27,9 @@ const openRouterResponseSchema = z.object({ data: z.array(openRouterModelSchema)
 type OpenRouterModel = z.infer<typeof openRouterModelSchema>;
 
 type CatalogLane =
+	| 'anthropic-opus'
 	| 'anthropic-sonnet'
+	| 'anthropic-haiku'
 	| 'google-pro'
 	| 'google-flash'
 	| 'openai-sol'
@@ -36,8 +38,14 @@ type CatalogLane =
 const classifyModel = (
 	modelId: string
 ): { provider: ModelCatalogEntry['provider']; lane: CatalogLane } | null => {
+	if (/^anthropic\/claude-opus-\d+(?:\.\d+)?$/.test(modelId)) {
+		return { provider: 'anthropic', lane: 'anthropic-opus' };
+	}
 	if (/^anthropic\/claude-sonnet-\d+(?:\.\d+)?$/.test(modelId)) {
 		return { provider: 'anthropic', lane: 'anthropic-sonnet' };
+	}
+	if (/^anthropic\/claude-haiku-\d+(?:\.\d+)?$/.test(modelId)) {
+		return { provider: 'anthropic', lane: 'anthropic-haiku' };
 	}
 	if (/^google\/gemini-\d+(?:\.\d+)?-pro(?:-preview)?$/.test(modelId)) {
 		return { provider: 'google', lane: 'google-pro' };
@@ -55,7 +63,9 @@ const classifyModel = (
 };
 
 const laneLimits: Record<CatalogLane, number> = {
+	'anthropic-opus': 1,
 	'anthropic-sonnet': 2,
+	'anthropic-haiku': 1,
 	'google-pro': 1,
 	'google-flash': 1,
 	'openai-sol': 1,

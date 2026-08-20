@@ -357,7 +357,6 @@ export function RootLayout({ headerMode }: RootLayoutProps) {
 			) : (
 				<SessionHeader
 					info={activeHeaderInfo}
-					isSmallScreen={isSmallScreen}
 					hidden={isSmallScreen && sessionHeaderHidden}
 					isLoggedIn={isLoggedIn}
 					isSessionLoading={isSessionLoading}
@@ -408,20 +407,27 @@ export function RootLayout({ headerMode }: RootLayoutProps) {
 			/>
 
 			{/* Footer */}
-			{!isSmallScreen && (
-				<GlassFooter
-					ref={footerRef}
-					sx={{ width: '100%', position: 'sticky', bottom: 0, zIndex: (theme) => theme.zIndex.appBar }}
-				>
-					<Container maxWidth="sm">
-						<Typography variant="body2" color="text.secondary" align="center">
-							{`Copyright © ${APPNAME} `}
-							{'2025-2026'}
-							{'.'}
-						</Typography>
-					</Container>
-				</GlassFooter>
-			)}
+			{/* Hidden through CSS breakpoints rather than `!isSmallScreen`: `useMediaQuery` always
+			    reports false during SSR, so a JS branch here renders the footer on the server and drops
+			    it on any client narrower than `md`, which fails hydration (React error #418). */}
+			<GlassFooter
+				ref={footerRef}
+				sx={{
+					display: { xs: 'none', md: 'block' },
+					width: '100%',
+					position: 'sticky',
+					bottom: 0,
+					zIndex: (theme) => theme.zIndex.appBar,
+				}}
+			>
+				<Container maxWidth="sm">
+					<Typography variant="body2" color="text.secondary" align="center">
+						{`Copyright © ${APPNAME} `}
+						{'2025-2026'}
+						{'.'}
+					</Typography>
+				</Container>
+			</GlassFooter>
 		</Box>
 	);
 }

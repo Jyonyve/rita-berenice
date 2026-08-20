@@ -19,9 +19,12 @@ export function HistoryPageLoader() {
 		}
 	}, [historyId, navigate]);
 
-	if (!historyId) return;
+	// The query below is a hook, so the "no historyId" bail-out has to come after it, not before -
+	// an early return here changes the hook order between renders. An empty id keeps the query
+	// disabled through its own `enabled: !!historyId` guard, so nothing is fetched meanwhile.
+	const { data: historyRes, isLoading } = useHistoryApi().getHistory(historyId ?? '');
 
-	const { data: historyRes, isLoading } = useHistoryApi().getHistory(historyId);
+	if (!historyId) return null;
 
 	if (isLoading || !historyRes) {
 		// Use a more descriptive loading state, maybe centered

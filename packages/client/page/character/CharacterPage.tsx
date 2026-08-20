@@ -192,6 +192,7 @@ const CharacterPage: FC<{
 											userId={userId}
 											characterId={characterId}
 											handleSessionStart={handleSessionStart}
+											localizeDirections={characterInfo.localizeDirections}
 										/>
 									</List>
 								</GlassCard>

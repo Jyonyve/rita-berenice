@@ -20,10 +20,13 @@ const chatTextColors = {
 	dark: {
 		userLabel: '#00A9FF',
 		assistantLabel: '#A0E9FF',
-		userDialogue: '#0b8bda',
-		userAction: '#989898',
-		assistantDialogue: '#dcdcdc',
-		assistantAction: '#daaa2e',
+		// Body colours match the reference reading app: a lighter indigo for user dialogue and
+		// a more saturated amber for character action, both of which hold up better than the
+		// previous pair now that the book background is sharp rather than blurred.
+		userDialogue: '#818CF8',
+		userAction: '#A3A3A3',
+		assistantDialogue: '#FFFFFF',
+		assistantAction: '#FFC200',
 	},
 	light: {
 		userLabel: '#315F6B',
@@ -43,10 +46,26 @@ export const chatSurfaceStyles = {
 		userMessage: 'rgba(248, 245, 238, 0.72)',
 		userMessageHover: 'rgba(255, 252, 246, 0.86)',
 		assistantMessage: 'rgba(255, 252, 246, 0.58)',
+		// The book background is a plain veil, not a blur: the portrait behind it stays sharp
+		// and --chat-text-shadow carries the extra separation. The veil opacity itself is
+		// deliberately unchanged - lightening it to show more of the portrait was tried and
+		// made the text hard to read.
 		bookOverlay: 'rgba(248, 245, 238, 0.84)',
-		bookBackdropFilter: 'blur(2px) saturate(0.78)',
+		bookBackdropFilter: 'none',
+		// A second veil behind the input bar only. The portrait is sized with `cover`, so its
+		// darkest region - clothing and shadow - usually lands at the bottom of the screen,
+		// and 16% of that showing through the main veil is enough to read as a dark band under
+		// light text chrome. Composited over bookOverlay this leaves roughly 7% of the
+		// portrait visible there instead.
+		bookInputVeil: 'rgba(248, 245, 238, 0.55)',
 	},
-	dark: { bookOverlay: 'rgba(0, 0, 0, 0.6)', bookBackdropFilter: 'blur(2px)' },
+	// Dark mode needs no extra veil: the portrait's dark bottom is what the theme wants there
+	// anyway, and stacking a second layer made the input visibly darker than the chat area.
+	dark: {
+		bookOverlay: 'rgba(0, 0, 0, 0.6)',
+		bookBackdropFilter: 'none',
+		bookInputVeil: 'transparent',
+	},
 } as const;
 
 // Chat entry colors are supplied through element-scoped CSS variables so the
@@ -59,7 +78,7 @@ export const chatStyles = {
 		fontWeight: 'var(--chat-font-weight, 400)',
 		color: 'var(--chat-dialogue-color)',
 		backgroundColor: 'transparent',
-		textShadow: '1px 1px 3px rgba(0, 0, 0, 0.15)',
+		textShadow: 'var(--chat-text-shadow)',
 		paddingBottom: '1em',
 		paddingTop: '1em',
 	},
@@ -70,7 +89,7 @@ export const chatStyles = {
 		fontStyle: 'italic',
 		color: 'var(--chat-action-color)',
 		backgroundColor: 'transparent',
-		textShadow: '1px 1px 3px rgba(0, 0, 0, 0.15)',
+		textShadow: 'var(--chat-text-shadow)',
 	},
 
 	// Assistant message styles
@@ -79,7 +98,7 @@ export const chatStyles = {
 		fontWeight: 'var(--chat-font-weight, 400)',
 		color: 'var(--chat-dialogue-color)',
 		backgroundColor: 'transparent',
-		textShadow: '1px 1px 3px rgba(0, 0, 0, 0.15)',
+		textShadow: 'var(--chat-text-shadow)',
 		paddingBottom: '1em',
 		paddingTop: '1em',
 	},
@@ -90,7 +109,7 @@ export const chatStyles = {
 		fontStyle: 'italic',
 		color: 'var(--chat-action-color)',
 		backgroundColor: 'transparent',
-		textShadow: '1px 1px 3px rgba(0, 0, 0, 0.15)',
+		textShadow: 'var(--chat-text-shadow)',
 	},
 
 	// Turn container with button positioning

@@ -54,5 +54,24 @@ export const useTempChatApi = () => {
 			retry: false,
 		});
 
-	return { saveTempChatTurn: saveTempChatTurn.mutateAsync, getTempChatTurn };
+	/**
+	 * Deletes a temporary chat turn (and all of its candidate response sets).
+	 */
+	const deleteTempChatTurn = useMutation<void, Error, { sessionId: string; sequence: number }>({
+		mutationFn: async ({ sessionId, sequence }) => {
+			const url = genApiUrl(MODULE_NAMES.TEMP, 'deleteTempChatTurn', [sessionId, sequence]);
+			await apiClient.delete(url);
+		},
+		onSuccess: (data, variables) => {
+			queryClient.invalidateQueries({
+				queryKey: ['tempChat', 'detail', 'getTempChatTurn', variables.sessionId, variables.sequence],
+			});
+		},
+	});
+
+	return {
+		saveTempChatTurn: saveTempChatTurn.mutateAsync,
+		getTempChatTurn,
+		deleteTempChatTurn: deleteTempChatTurn.mutateAsync,
+	};
 };

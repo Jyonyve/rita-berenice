@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm';
-import { Metadata, Term, TermResponse } from '@rita-berenice/shared/api';
+import { Term, TermResponse } from '@rita-berenice/shared/api';
 import { METADATA_TYPES } from '@rita-berenice/shared/config';
 import {
 	CharacterTermCdo,
@@ -18,7 +18,6 @@ import {
 import { getDatabase } from '../db/postgresClient.js';
 import { terms } from '../db/schema.js';
 import { llmService } from '../service/llmService.js';
-import { flatTermToDoc } from '../util/documentUtils.js';
 
 const toResponse = (items: (CharacterTermInfo | SessionTermInfo)[]): TermResponse => {
 	const promptTerms: Term[] = items.map((item) => ({
@@ -28,9 +27,6 @@ const toResponse = (items: (CharacterTermInfo | SessionTermInfo)[]): TermRespons
 		englishTerm: item.englishTerm,
 	}));
 	return {
-		ids: items.map((item) => item.termId),
-		documents: promptTerms.map(flatTermToDoc),
-		metadatas: items as unknown as Metadata[],
 		terms: promptTerms,
 		term: promptTerms[0],
 		characterTermInfos: items.filter(

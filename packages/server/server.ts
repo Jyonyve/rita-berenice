@@ -379,7 +379,18 @@ async function createServer() {
 			gzip: true,
 			brotli: true,
 		};
-		app.use(BASE, sirv(resolve('dist/client'), serveOptions));
+		// `dist/client/index.html` is the SSR *template*, not a servable page: it still contains the
+		// <!--app-html--> / <!--emotion-styles--> / <!--server-data--> placeholders. sirv answers a bare
+		// directory request with that file, which would bypass the SSR handler below and ship an empty
+		// #root to the browser (React then fails hydration with error #418). Let the document requests
+		// fall through to SSR and keep sirv for real static assets only.
+		const serveStaticAssets = sirv(resolve('dist/client'), serveOptions);
+		app.use(BASE, (req: Request, res: Response, next: NextFunction) => {
+			if (req.path === '/' || req.path === '/index.html') {
+				return next();
+			}
+			return serveStaticAssets(req, res, next);
+		});
 	}
 
 	// --- API Routes ---

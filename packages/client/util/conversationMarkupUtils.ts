@@ -1,4 +1,4 @@
-export const NARRATIVE_DIRECTION_LABELS = {
+export const DIRECTION_LABELS = {
 	THIRD_PARTY: '제3자 개입',
 	MOOD_SHIFT: '분위기 반전',
 	FORESHADOW: '복선 회수',
@@ -9,7 +9,7 @@ export const NARRATIVE_DIRECTION_LABELS = {
 	CONTINUE: '이어서 진행',
 } as const;
 
-export type NarrativeDirectionToken = keyof typeof NARRATIVE_DIRECTION_LABELS;
+export type DirectionToken = keyof typeof DIRECTION_LABELS;
 
 interface RichTextAstNode {
 	type: string;
@@ -20,22 +20,20 @@ interface RichTextAstNode {
 
 const DIRECTION_TOKEN_PATTERN = /\{\{([A-Z][A-Z0-9_]*)\}\}/g;
 
-export const localizeNarrativeDirectionText = (text: string): string =>
+export const localizeDirectionText = (text: string): string =>
 	text.replace(DIRECTION_TOKEN_PATTERN, (original, token: string) =>
-		token in NARRATIVE_DIRECTION_LABELS
-			? NARRATIVE_DIRECTION_LABELS[token as NarrativeDirectionToken]
-			: original
+		token in DIRECTION_LABELS ? DIRECTION_LABELS[token as DirectionToken] : original
 	);
 
 const localizeRichTextAstTextNodes = (node: RichTextAstNode): void => {
 	if (node.type === 'element' && (node.tagName === 'code' || node.tagName === 'pre')) return;
 	if (node.type === 'text' && node.value) {
-		node.value = localizeNarrativeDirectionText(node.value);
+		node.value = localizeDirectionText(node.value);
 	}
 	node.children?.forEach(localizeRichTextAstTextNodes);
 };
 
-export const rehypeNarrativeDirectionLabels =
+export const rehypeDirectionLabels =
 	() =>
 	(tree: RichTextAstNode): void => {
 		localizeRichTextAstTextNodes(tree);

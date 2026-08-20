@@ -16,9 +16,6 @@ import { getHistoryImageUrl } from '../util/imageStorageUtils.js';
 import { RagTraceContext } from '../util/ragTraceUtils.js';
 
 const emptyResponse = (): HistoryResponse => ({
-	ids: [],
-	metadatas: [],
-	documents: [],
 	historyInfo: {} as HistoryInfo,
 	historyContent: '',
 	historyInfos: [],
@@ -35,9 +32,6 @@ const toResponse = async (items: HistoryInfo[]): Promise<HistoryResponse> => {
 	);
 
 	return {
-		ids: items.map((item) => item.historyId),
-		metadatas: items.map((item) => historyToMetadata(item) as unknown as Metadata),
-		documents: items.map(historyToDocument),
 		historyInfo: items[0] ?? ({} as HistoryInfo),
 		historyContent: items[0]?.content ?? '',
 		historyInfos: items,

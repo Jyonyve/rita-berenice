@@ -30,8 +30,13 @@ export interface ApiErrorResponse {
 export type Metadata = Record<string, string | number | boolean | null>;
 
 /**
- * Standard ChromaDB response format used across all modules.
- * Compatible with ChromaDB v2+ GetResult and QueryResult after type conversion.
+ * Vector-search result shape, matching ChromaDB v2+ GetResult / QueryResult after type conversion.
+ *
+ * This is the retrieval path's own type and nothing else: the semantic ranking helpers in
+ * `queryUtils` / `llmUtils` take it directly. The module responses below deliberately do NOT
+ * extend it - they used to, which forced every CRUD read to build `documents` and `metadatas`
+ * that no caller ever read. Attaching a vector store later means adapting its results into this
+ * type, not putting these fields back onto the CRUD responses.
  */
 export type ChromaResponse = {
 	ids: string[];
@@ -40,36 +45,33 @@ export type ChromaResponse = {
 	distances?: (number | null)[] | null | undefined;
 };
 
-// Response types using type intersection for better TypeScript compatibility
-export type CharacterResponse = ChromaResponse & {
+// Module responses: domain payloads only.
+export type CharacterResponse = {
 	characterInfo: CharacterInfo;
 	characterInfos: CharacterInfo[];
 	characterPortraits: Record<string, PortraitUrlMap>;
 	characterAvatars: Record<string, PortraitUrlMap>;
 };
 
-export type ProfileResponse = ChromaResponse & {
+export type ProfileResponse = {
 	profileInfo: ProfileInfo;
 	profileInfos: ProfileInfo[];
 	profilePortraits: Record<string, string>;
 	profileAvatars: Record<string, string>;
 };
 
-export type ChatResponse = ChromaResponse & { chatTurns: ChatTurn[]; displayTurns: DisplayTurn[] };
+export type ChatResponse = { chatTurns: ChatTurn[]; displayTurns: DisplayTurn[] };
 
-export type TempChatResponse = ChromaResponse & {
-	tempChatTurns: TempChatTurn[];
-	tempChatTurn: TempChatTurn;
-};
+export type TempChatResponse = { tempChatTurns: TempChatTurn[]; tempChatTurn: TempChatTurn };
 
-export type LoreResponse = ChromaResponse & {
+export type LoreResponse = {
 	loreInfo: LoreInfo;
 	loreContent: string;
 	loreInfos: LoreInfo[];
 	loreContents: string[];
 };
 
-export type HistoryResponse = ChromaResponse & {
+export type HistoryResponse = {
 	historyInfo: HistoryInfo;
 	historyContent: string;
 	historyInfos: HistoryInfo[];
@@ -77,14 +79,14 @@ export type HistoryResponse = ChromaResponse & {
 	historyImageUrls: Record<string, string>;
 };
 
-export type RecapResponse = ChromaResponse & {
+export type RecapResponse = {
 	recapInfo: RecapInfo;
 	recapInfos: RecapInfo[];
 	recapContent: string;
 	recapContents: string[];
 };
 
-export type TermResponse = ChromaResponse & {
+export type TermResponse = {
 	term: Term;
 	terms: Term[];
 	characterTermInfos: CharacterTermInfo[];
@@ -110,12 +112,9 @@ export type MemoryResponse = {
 
 export type PersonaResponse = { response: string; emotion: EmotionValue };
 
-export type UserResponse = ChromaResponse & { userInfo: UserInfo; userInfos: UserInfo[] };
+export type UserResponse = { userInfo: UserInfo; userInfos: UserInfo[] };
 
-export type SessionResponse = ChromaResponse & {
-	sessionInfo: SessionInfo;
-	sessionInfos: SessionInfo[];
-};
+export type SessionResponse = { sessionInfo: SessionInfo; sessionInfos: SessionInfo[] };
 
 export type CredentialMetadataResponse = { configuredKeyTypes: ApiKeyType[] };
 

@@ -16,6 +16,7 @@ import {
 	Typography,
 } from '@mui/material';
 import {
+	useChatApi,
 	useLlmApi,
 	useOrchestrationApi,
 	useTempChatApi,
@@ -28,7 +29,9 @@ import { chatSurfaceStyles } from '../../style/chatStyles.js';
 import { mobileVisualViewportDialogSx } from '../../style/mobileDialogStyles.js';
 import { useEmotionContext } from './ChatPageLoader.jsx';
 import { getLangText, parseTextToEntries } from '../../util/index.js';
+import { getCharacterImageArray } from '../../util/portraitUtils.js';
 import { useResponsive } from '../../hook/useResponsive.js';
+import { preloadImage, usePreloadImages } from '../../hook/useImagePreload.js';
 import { DEFAULT_CHAT_MODEL, DEFAULT_EMOTION, LANG_KEYS } from '@rita-berenice/shared/config';
 import {
 	CharacterInfo,
@@ -82,6 +85,7 @@ export const ChatPage: FC<{
 }) => {
 	const { receiveBotResponse, enqueueFinalization, waitForFinalizationJob } = useOrchestrationApi();
 	const { saveTempChatTurn, getTempChatTurn } = useTempChatApi();
+	const { updateChatTurn, deleteChatTurnsFromSequence } = useChatApi();
 	const { updateSessionOnNewMessage, updateSessionUserNote, updateSessionContentPolicy } =
 		useSessionApi();
 	const { getModelCatalog } = useLlmApi();
@@ -95,6 +99,49 @@ export const ChatPage: FC<{
 	const { setCurrentEmotion, imageUrl } = useEmotionContext();
 	const { shouldUseMobileLayout } = useResponsive();
 
+	// A character caps out at 15 portraits, so warming the whole set up front is cheap and
+	// means an emotion swap never waits on the network.
+	const portraitUrls = useMemo(
+		() => getCharacterImageArray(characterPortraitUrls),
+		[characterPortraitUrls]
+	);
+	usePreloadImages(portraitUrls);
+
+	// --- MOBILE BACKGROUND CROSSFADE ---
+	// backgroundImage swaps are not animatable in CSS - they snap instantly, which reads as
+	// choppy on mobile. Two alternating layers crossfade via opacity instead.
+	const [bgSlots, setBgSlots] = useState<[string, string]>([imageUrl, '']);
+	const [activeBgSlot, setActiveBgSlot] = useState<0 | 1>(0);
+
+	useEffect(() => {
+		if (!imageUrl || imageUrl === bgSlots[activeBgSlot]) return;
+		let cancelled = false;
+		let frame = 0;
+		const nextSlot = activeBgSlot === 0 ? 1 : 0;
+
+		// Wait for the image to be paintable before starting the fade. Without this the
+		// crossfade can run against an undecoded layer and land on a blank frame, which
+		// looks worse than the instant swap it replaced.
+		void preloadImage(imageUrl).then(() => {
+			if (cancelled) return;
+			setBgSlots((prev) => {
+				const next: [string, string] = [...prev];
+				next[nextSlot] = imageUrl;
+				return next;
+			});
+			// Let the new layer paint at opacity 0 first, otherwise there is no start value
+			// for the transition to run from.
+			frame = requestAnimationFrame(() => {
+				if (!cancelled) setActiveBgSlot(nextSlot);
+			});
+		});
+
+		return () => {
+			cancelled = true;
+			if (frame) cancelAnimationFrame(frame);
+		};
+	}, [imageUrl]);
+
 	// --- HOOKS ---
 	const {
 		chatTurns,
@@ -103,6 +150,7 @@ export const ChatPage: FC<{
 		clientError,
 		addChatTurn,
 		changeTempChatTurn,
+		removeChatTurnsFromSequence,
 		getNextSequence,
 	} = useChatState(sessionId);
 
@@ -516,11 +564,14 @@ export const ChatPage: FC<{
 		chatTurns.length,
 	]);
 
-	const handleEditTempTurnText = (value: string, req: boolean) => {
+	// Both handlers below are memoized because they are part of ChatLog's props: a new function
+	// identity on every render defeats ChatLog's memo, so the whole list would re-render (and
+	// re-measure) whenever this page re-renders - which it does on every emotion change.
+	const handleEditTempTurnText = useCallback((value: string, req: boolean) => {
 		req ? setUserEditInput(value) : setBotEditInput(value);
-	};
+	}, []);
 
-	const handleSaveTempTurnText = async () => {
+	const handleSaveTempTurnText = useCallback(async () => {
 		if (!tempChatTurn) return;
 
 		const currentTurnSet = tempChatTurn.chatTurnSets[currentTempSetNo];
@@ -539,7 +590,50 @@ export const ChatPage: FC<{
 		changeTempChatTurn(updateTempTurn);
 		setUserEditInput('');
 		setBotEditInput('');
-	};
+	}, [
+		tempChatTurn,
+		currentTempSetNo,
+		userEditInput,
+		botEditInput,
+		saveTempChatTurn,
+		changeTempChatTurn,
+	]);
+
+	const handleUpdateFixedTurn = useCallback(
+		async (sequence: number, userText: string, botText: string) => {
+			const existingTurn = chatTurns.find((turn) => turn.sequence === sequence);
+			if (!existingTurn) return;
+			const request = { ...existingTurn.request, entries: parseTextToEntries(userText) };
+			const response = { ...existingTurn.response, entries: parseTextToEntries(botText) };
+			await updateChatTurn({ sessionId, sequence, request, response });
+			await addChatTurn({ ...existingTurn, request, response, updatedAt: new Date().toISOString() });
+		},
+		[chatTurns, sessionId, updateChatTurn, addChatTurn]
+	);
+
+	const handleDeleteTurnsFromSequence = useCallback(
+		async (sequence: number) => {
+			// Deleting turn N also un-fixes turn N-1: N's own request was authored in
+			// reaction to N-1's already-picked response, so keeping N-1 fixed while N is gone
+			// makes little sense. This also means N-1's original temp candidates (never
+			// deleted) resurface as the next temp turn after the new latest fixed turn, ready
+			// to reroll/reselect through the existing temp-turn UI.
+			const targetSequence = Math.max(sequence - 1, 0);
+			await deleteChatTurnsFromSequence({ sessionId, sequence: targetSequence });
+			await removeChatTurnsFromSequence(targetSequence);
+			if (tempChatTurn && tempChatTurn.sequence >= targetSequence) {
+				changeTempChatTurn(undefined);
+			}
+			setFocusedTurnIndex(-1);
+		},
+		[
+			sessionId,
+			deleteChatTurnsFromSequence,
+			removeChatTurnsFromSequence,
+			tempChatTurn,
+			changeTempChatTurn,
+		]
+	);
 
 	const handleUserInput = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
 		setUserInput(e.target.value);
@@ -560,8 +654,10 @@ export const ChatPage: FC<{
 		onEditTempTurnText: handleEditTempTurnText,
 		onSaveTempTurnText: handleSaveTempTurnText,
 		onRegenerateResponse: handleRegenerateResponse,
+		onUpdateFixedTurn: handleUpdateFixedTurn,
+		onDeleteTurnsFromSequence: handleDeleteTurnsFromSequence,
 		shouldUseMobileLayout,
-		focusedTurnIndex, // Pass down the state
+		// focusedTurnIndex intentionally stays here and is not passed down - see ChatLogProps.
 		onFocusTurn: setFocusedTurnIndex, // Pass down the setter
 		currentTempSetNo,
 		changeTempSetNo: setCurrentTempSetNo,
@@ -573,6 +669,7 @@ export const ChatPage: FC<{
 		characterPortraitUrls,
 		characterAvatarUrls,
 		profileAvatarUrl,
+		localizeDirections: characterInfo.localizeDirections,
 	};
 
 	const userInputProps = {
@@ -628,23 +725,30 @@ export const ChatPage: FC<{
 				</Box>
 			) : shouldUseMobileLayout ? (
 				<>
-					{/* Mobile Background */}
-					<Box
-						sx={{
-							position: 'absolute',
-							top: 0,
-							left: 0,
-							right: 0,
-							bottom: 0,
-							backgroundImage: imageUrl ? `url(${imageUrl})` : 'none',
-							backgroundSize: 'cover',
-							backgroundPosition: 'center',
-							backgroundRepeat: 'no-repeat',
-							backgroundAttachment: 'fixed',
-							zIndex: 1,
-							transition: 'background-image 0.3s ease-in-out',
-						}}
-					/>
+					{/* Mobile Background (two layers crossfade via opacity) */}
+					<Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}>
+						{([0, 1] as const).map((slot) =>
+							bgSlots[slot] ? (
+								<Box
+									key={slot}
+									sx={{
+										position: 'absolute',
+										top: 0,
+										left: 0,
+										right: 0,
+										bottom: 0,
+										backgroundImage: `url(${bgSlots[slot]})`,
+										backgroundSize: 'cover',
+										backgroundPosition: 'center',
+										backgroundRepeat: 'no-repeat',
+										backgroundAttachment: 'fixed',
+										opacity: activeBgSlot === slot ? 1 : 0,
+										transition: 'opacity 0.4s ease-in-out',
+									}}
+								/>
+							) : null
+						)}
+					</Box>
 
 					{/* Mobile Overlay */}
 					<Box
@@ -682,8 +786,6 @@ export const ChatPage: FC<{
 								flexGrow: 1,
 								minHeight: 0,
 								overflow: 'hidden',
-								backdropFilter: 'blur(2px)',
-								WebkitBackdropFilter: 'blur(2px)',
 								WebkitOverflowScrolling: 'touch',
 								overscrollBehavior: 'contain',
 							}}
@@ -693,13 +795,12 @@ export const ChatPage: FC<{
 
 						{/* Mobile Input */}
 						<Box
-							sx={{
+							sx={(theme) => ({
 								flexShrink: 0,
 								paddingBottom: 'env(safe-area-inset-bottom)',
-								backdropFilter: 'blur(10px)',
-								WebkitBackdropFilter: 'blur(10px)',
+								backgroundColor: chatSurfaceStyles[theme.palette.mode].bookInputVeil,
 								'& input, & textarea': { fontSize: '16px' }, // avoid iOS focus zoom
-							}}
+							})}
 						>
 							<UserInput {...userInputProps} />
 						</Box>

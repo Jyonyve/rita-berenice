@@ -91,4 +91,25 @@ router.get(
 	})
 );
 
+/**
+ * DELETE /api/temp/delete-temp-chat-turn/:sessionId/:sequence
+ * Deletes a temporary chat turn (and all of its candidate response sets).
+ * @param {string} sessionId - The session ID of the turn.
+ * @param {number} sequence - The sequence number of the turn.
+ * @returns {object} A success message.
+ */
+router.delete(
+	genRoutePattern('deleteTempChatTurn', ['sessionId', 'sequence']),
+	asyncHandler(async (req: Request, res: Response): Promise<void> => {
+		const { sessionId, sequence: sequenceParam } = req.params;
+		validateServiceId(sessionId, collectionType);
+		validateRequestData(req.params, 'params', ['sequence'], [validateSequenceRule('sequence')]);
+		await assertOwnedSession(req, sessionId);
+		const sequence = parseInt(sequenceParam, 10);
+
+		await tempStore.deleteTempChatTurn(sessionId, sequence);
+		res.status(200).json({ success: true });
+	})
+);
+
 export default router;

@@ -66,6 +66,55 @@ export const useChatApi = () => {
 			enabled: !!sessionId && typeof sequence === 'number', // Only run if both are available
 		});
 
+	/**
+	 * Edits an already-finalized turn's request and/or response content in place.
+	 */
+	const updateChatTurn = useMutation<
+		{ chatTurnId: string },
+		Error,
+		{
+			sessionId: string;
+			sequence: number;
+			request?: ChatTurn['request'];
+			response?: ChatTurn['response'];
+		}
+	>({
+		mutationFn: async ({ sessionId, sequence, request, response }) => {
+			const url = genApiUrl(MODULE_NAMES.CHAT, 'updateChatTurn', [sessionId, sequence]);
+			const apiResponse = await apiClient.patch<{ chatTurnId: string }>(url, { request, response });
+			return apiResponse.data;
+		},
+		onSuccess: (data, variables) => {
+			queryClient.invalidateQueries({
+				queryKey: ['chat', 'detail', 'getChatTurnBySequence', variables.sessionId, variables.sequence],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ['chat', 'list', 'getAllDisplayTurns', variables.sessionId],
+			});
+		},
+	});
+
+	/**
+	 * Deletes the turn at the given sequence and every turn after it in the session
+	 * (tail truncation, not renumbering).
+	 */
+	const deleteChatTurnsFromSequence = useMutation<
+		{ deletedCount: number },
+		Error,
+		{ sessionId: string; sequence: number }
+	>({
+		mutationFn: async ({ sessionId, sequence }) => {
+			const url = genApiUrl(MODULE_NAMES.CHAT, 'deleteChatTurnsFromSequence', [sessionId, sequence]);
+			const response = await apiClient.delete<{ deletedCount: number }>(url);
+			return response.data;
+		},
+		onSuccess: (data, variables) => {
+			queryClient.invalidateQueries({
+				queryKey: ['chat', 'list', 'getAllDisplayTurns', variables.sessionId],
+			});
+		},
+	});
+
 	// /**
 	//  * Performs a semantic search over finalized chat turns.
 	//  * Uses useMutation because it's a POST request (search/query) and does not represent
@@ -85,6 +134,8 @@ export const useChatApi = () => {
 
 	return {
 		storeChatTurn: storeChatTurn.mutateAsync,
+		updateChatTurn: updateChatTurn.mutateAsync,
+		deleteChatTurnsFromSequence: deleteChatTurnsFromSequence.mutateAsync,
 		getAllDisplayTurns,
 		getChatTurnBySequence,
 		// queryChatTurns
