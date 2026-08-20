@@ -124,5 +124,8 @@ If a command cannot be run because required environment variables or services ar
 - Update this file when recurring agent mistakes or repo conventions become clear.
 - Add or update `.env.example` when adding required environment variables.
 - Document new scripts in `package.json` and, when useful, in README.
+- `README.md` (Korean) and `README.en.md` (English) are the same document in two languages. When one
+  changes, update the other in the same commit. Do not let claims, structure, or level of detail
+  diverge between them.
 - Keep CI commands aligned with the package scripts agents are expected to run locally.
 - For agentic workflows that are repeated often, prefer a repo skill under `.agents/skills/` instead of bloating this file.
