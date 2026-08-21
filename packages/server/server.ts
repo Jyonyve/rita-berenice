@@ -5,7 +5,12 @@ import fs from 'node:fs/promises'; // Use promises for async file reading
 import { createServer as createHttpServer } from 'node:http';
 import { createConnection, createServer as createTcpServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
-import express, { type Request, type Response, type NextFunction } from 'express';
+import express, {
+	type Request,
+	type RequestHandler,
+	type Response,
+	type NextFunction,
+} from 'express';
 import compression from 'compression'; // Add compression middleware
 import type { ViteDevServer } from 'vite';
 
@@ -42,7 +47,12 @@ import { buildRitaAccessTokenPayload } from './service/authIdentityService.js';
 import { ensureProvisionedUser } from './service/userProvisioningService.js';
 import { finalizationJobService } from './service/finalizationJobService.js';
 import { ApiErrorResponse } from '@rita-berenice/shared/api';
-import { APPNAME, MODULE_NAMES } from '@rita-berenice/shared/config';
+import {
+	APPNAME,
+	DEFAULT_CHARACTER_AVATAR,
+	DEFAULT_USER_AVATAR,
+	MODULE_NAMES,
+} from '@rita-berenice/shared/config';
 import { ApiError } from '@rita-berenice/shared/domain';
 import { getServerEnv } from './config/env.js';
 import { getDatabase } from './db/postgresClient.js';
@@ -303,41 +313,58 @@ async function createServer() {
 	// --- Vite Development Server Middleware (Development ONLY) ---
 	let vite: ViteDevServer | undefined;
 	const runtimeImagePrefixes = ['/assets/character', '/assets/profile', '/assets/user'] as const;
+	// The bundled default avatars sit under the same prefixes as uploaded images, but they are
+	// static app assets: they ship with the client build, never exist in object storage, and are
+	// rendered before a character or user has any image of its own. Routing them through the
+	// runtime handlers below answered 401 to anonymous viewers and 404 to everyone else. Let them
+	// fall through to the ordinary static asset handling instead.
+	const bundledDefaultImagePaths = new Set<string>([DEFAULT_CHARACTER_AVATAR, DEFAULT_USER_AVATAR]);
+	const skipBundledDefaults =
+		(runtimePrefix: string, handler: RequestHandler): RequestHandler =>
+		(req, res, next) =>
+			bundledDefaultImagePaths.has(`${runtimePrefix}${req.path}`) ? next() : handler(req, res, next);
+
 	for (const runtimePrefix of runtimeImagePrefixes) {
 		if (isObjectImageStorageConfigured()) {
 			app.use(
 				runtimePrefix,
-				verifySession(),
-				asyncHandler(async (req: Request, res: Response): Promise<void> => {
-					const decodedPath = req.path
-						.split('/')
-						.map((segment) => decodeURIComponent(segment))
-						.join('/');
-					const asset = await getImageAsset(`${runtimePrefix}${decodedPath}`);
-					if (!asset) {
-						res.status(404).end();
-						return;
-					}
-
-					res.setHeader('Content-Type', asset.contentType);
-					res.setHeader('Cache-Control', 'private, no-cache');
-					if (asset.etag) {
-						res.setHeader('ETag', asset.etag);
-						if (req.headers['if-none-match'] === asset.etag) {
-							res.status(304).end();
+				skipBundledDefaults(runtimePrefix, verifySession()),
+				skipBundledDefaults(
+					runtimePrefix,
+					asyncHandler(async (req: Request, res: Response): Promise<void> => {
+						const decodedPath = req.path
+							.split('/')
+							.map((segment) => decodeURIComponent(segment))
+							.join('/');
+						const asset = await getImageAsset(`${runtimePrefix}${decodedPath}`);
+						if (!asset) {
+							res.status(404).end();
 							return;
 						}
-					}
-					res.status(200).send(asset.body);
-				})
+
+						res.setHeader('Content-Type', asset.contentType);
+						res.setHeader('Cache-Control', 'private, no-cache');
+						if (asset.etag) {
+							res.setHeader('ETag', asset.etag);
+							if (req.headers['if-none-match'] === asset.etag) {
+								res.status(304).end();
+								return;
+							}
+						}
+						res.status(200).send(asset.body);
+					})
+				)
 			);
 		} else {
 			app.use(
 				runtimePrefix,
-				verifySession(),
-				express.static(
-					path.join(ensureLocalImageStorageRoot(), runtimePrefix.slice('/assets/'.length)),
-					{ fallthrough: false, maxAge: 0 }
+				skipBundledDefaults(runtimePrefix, verifySession()),
+				skipBundledDefaults(
+					runtimePrefix,
+					express.static(
+						path.join(ensureLocalImageStorageRoot(), runtimePrefix.slice('/assets/'.length)),
+						{ fallthrough: false, maxAge: 0 }
+					)
 				)
 			);
 		}

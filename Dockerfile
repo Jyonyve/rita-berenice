@@ -66,13 +66,17 @@ RUN pnpm --filter @rita-berenice/shared build
 RUN pnpm --parallel --filter @rita-berenice/client --filter @rita-berenice/server build
 
 # Runtime character and user images live in private object storage in production.
-# Vite copies public assets into both browser and SSR output, so remove those
-# runtime-only directories before copying build artifacts into production.
-RUN rm -rf \
+# Vite copies public assets into both browser and SSR output, so drop the per-entity
+# upload directories before copying build artifacts into production. Only the nested
+# directories go: the top-level defaults (new_character.webp, new_user.webp) are static
+# app assets the client renders before anything has been uploaded, and deleting them
+# left every placeholder avatar broken in the deployed image.
+RUN find \
     /app/dist/client/assets/character \
     /app/dist/client/assets/user \
     /app/packages/client/dist/ssr/assets/character \
-    /app/packages/client/dist/ssr/assets/user
+    /app/packages/client/dist/ssr/assets/user \
+    -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
 
 # Stage 4: Production image (minimal)
 FROM base AS production
