@@ -77,7 +77,7 @@ export const removeCharacterFromLore = (
 // --- CHAT TURN HELPERS ---
 
 /**
- * Converts a rich ChatTurn object into the lean metadata format for storing the primary document in ChromaDB.
+ * Converts a rich ChatTurn object into the lean metadata format for storing the primary document in the vector store.
  * This function no longer handles stringifying arrays for indexed fields. That logic is now in the store layer.
  */
 export const chatTurnToMetadata = (chatTurn: ChatTurn): ChatTurnMetadata => {
@@ -197,7 +197,7 @@ export const metadataToDisplayTurn = (metadata: ChatTurnMetadata): DisplayTurn =
 // --- LORE & HISTORY HELPERS ---
 
 /**
- * Converts a rich LoreInfo object into the lean metadata format for ChromaDB.
+ * Converts a rich LoreInfo object into the lean metadata format for the vector store.
  */
 export const loreToMetadata = (loreInfo: LoreInfo): LoreMetadata => {
 	const baseMetadata = {
@@ -254,7 +254,7 @@ export const metadataToLore = (
 };
 
 /**
- * Converts a rich HistoryInfo object into the lean metadata format for ChromaDB.
+ * Converts a rich HistoryInfo object into the lean metadata format for the vector store.
  */
 export const historyToMetadata = (historyInfo: HistoryInfo): HistoryMetadata => {
 	return {
@@ -395,7 +395,7 @@ export const removeEmotionNuance = (
 // --- RECAP HELPERS ---
 
 /**
- * Converts a rich RecapInfo object into the lean metadata format for storing the primary document in ChromaDB.
+ * Converts a rich RecapInfo object into the lean metadata format for storing the primary document in the vector store.
  * This function no longer handles stringifying the `flagsArray`. That logic is now in the store layer,
  * which is responsible for creating the individual search index records.
  */

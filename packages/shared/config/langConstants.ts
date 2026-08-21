@@ -34,6 +34,10 @@ export const LANG_KEYS = {
 	MY_SESSIONS: 'MY_SESSIONS',
 	USER_NOTE: 'USER_NOTE',
 	LOGOUT: 'LOGOUT',
+	SIGNED_IN_SUCCESS: 'SIGNED_IN_SUCCESS',
+	REGISTER_API_KEY: 'REGISTER_API_KEY',
+	API_KEY_MISSING: 'API_KEY_MISSING',
+	API_KEY_REJECTED: 'API_KEY_REJECTED',
 	EDIT: 'EDIT',
 	SAVE: 'SAVE',
 	SAVE_ANYWAY: 'SAVE_ANYWAY',
@@ -349,6 +353,7 @@ export const langConstants: LangRecord = {
 	MY_CHARACTERS: { kor: '내 캐릭터', eng: 'My Characters' },
 	MY_SESSIONS: { kor: '내 대화', eng: 'My Sessions' },
 	LOGOUT: { kor: '로그아웃', eng: 'Logout' },
+	REGISTER_API_KEY: { kor: '키 등록', eng: 'Add key' },
 	EDIT: { kor: '수정', eng: 'Edit' },
 	SEND: { kor: '보내기', eng: 'Send' },
 	TITLE: { kor: '한줄 소개', eng: 'Tagline' },
@@ -584,5 +589,15 @@ export const alertToastConstants: LangRecord = {
 	HISTORY_SAVED_SUCCESS: {
 		kor: '캐릭터 스토리가 성공적으로 저장되었습니다.',
 		eng: 'Character History saved successfully!',
+	},
+	SIGNED_IN_SUCCESS: { kor: '로그인되었습니다.', eng: 'You are signed in.' },
+	// Both are prefixed with the provider label at the call site, e.g. `OpenRouter API 키가 ...`.
+	API_KEY_MISSING: {
+		kor: 'API 키가 등록되지 않았습니다. 키를 등록해야 대화할 수 있습니다.',
+		eng: 'API key is not registered. Add one to start chatting.',
+	},
+	API_KEY_REJECTED: {
+		kor: 'API 키가 거부되었습니다. 키를 확인하거나 교체해주세요.',
+		eng: 'API key was rejected. Check it or replace it.',
 	},
 };

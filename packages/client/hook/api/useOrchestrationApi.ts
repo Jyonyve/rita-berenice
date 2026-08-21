@@ -98,7 +98,12 @@ export const useOrchestrationApi = () => {
 							completedTurn = event.data;
 							break;
 						case 'error':
-							throw new ApiError(500, event.message, event.clientMessage);
+							// `details` carries the actionable-failure marker (missing/rejected API key)
+							// so the caller can prompt for the key instead of only printing text.
+							throw new ApiError(500, event.message, event.clientMessage, {
+								code: event.code,
+								keyType: event.keyType,
+							});
 					}
 				},
 				signal

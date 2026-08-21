@@ -34,9 +34,12 @@ const serverEnvSchema = z.object({
 	LOCAL_IMAGE_STORAGE_DIR: z.string().min(1).default('public/assets'),
 	DASHBOARD_ADMIN_EMAILS: commaSeparatedListSchema,
 	RITA_RAG_TRACE: booleanStringSchema.default(false),
-	// When true, a fresh SuperTokens signup also creates the linked Rita user and
-	// identity mapping automatically. Kept off by default to preserve manual administration.
-	AUTO_PROVISION_USERS: booleanStringSchema.default(false),
+	// When true, a SuperTokens signup (and any sign-in without a mapping yet) also creates
+	// the linked Rita user and identity mapping automatically. On by default: session
+	// creation resolves the `ritaUserId` claim and hard-fails with a 403 when no mapping
+	// exists, so with this off a signup produces a locked-out account. Set
+	// AUTO_PROVISION_USERS=false to go back to manual identity-mapping administration.
+	AUTO_PROVISION_USERS: booleanStringSchema.default(true),
 });
 
 const embeddingEnvSchema = z.object({

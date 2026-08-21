@@ -75,7 +75,11 @@ Package-local commands:
 - Keep changes scoped to the smallest package/module that owns the behavior.
 - Do not introduce npm/yarn lockfiles.
 - Do not make broad dependency upgrades unless explicitly requested.
-- Do not read, print, or modify `.env` files or secret-bearing files. Use `.env.example` for documentation.
+- Reading `.env` is allowed when it is needed to diagnose which environment the app is actually
+  talking to (database host, SuperTokens connection URI, feature flags). Do not print secret
+  values into the transcript, do not paste them into commits, issues, or external services, and
+  do not modify `.env`. Quote the minimum needed — a hostname or a flag value, never a key or
+  password. Keep `.env.example` as the documentation surface for required variables.
 - Do not commit generated runtime data, logs, local caches, or build output.
 - Ask before running destructive database operations.
 - Preserve existing user data shape unless the task explicitly includes a migration plan.

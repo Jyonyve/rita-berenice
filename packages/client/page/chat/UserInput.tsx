@@ -2,7 +2,9 @@
 
 import {
 	alpha,
+	Alert,
 	Box,
+	Button,
 	IconButton,
 	Switch,
 	TextField,
@@ -12,7 +14,7 @@ import {
 	Tooltip,
 	Typography,
 } from '@mui/material';
-import React, { ChangeEventHandler, FC, useEffect, useState } from 'react';
+import React, { ChangeEventHandler, FC, useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GlassMenu, GlassMenuItem } from '../../layout/component/glass/index.js';
 import { useToast } from '../../provider/ToastProvider.jsx';
@@ -26,7 +28,12 @@ import StopCircleOutlinedIcon from '@mui/icons-material/StopCircleOutlined';
 import SendRoundedIcon from '@mui/icons-material/SendRounded';
 import NoteAltOutlinedIcon from '@mui/icons-material/NoteAltOutlined';
 import { LANG_KEYS, REQUEST_CHARACTER_LIMIT } from '@rita-berenice/shared/config';
-import type { SessionContentPolicy } from '@rita-berenice/shared/domain';
+import {
+	API_KEY_TYPE_LABELS,
+	getRequiredApiKeyType,
+	type ApiKeyType,
+	type SessionContentPolicy,
+} from '@rita-berenice/shared/domain';
 import type { ModelCatalogEntry } from '@rita-berenice/shared/api';
 import type { ChatDisplayMode } from './chatDisplayMode.js';
 import {
@@ -38,6 +45,7 @@ import {
 	type ChatFontWeight,
 } from './chatFontSize.js';
 import { ApiKeyDialog } from './ApiKeyDialog.js';
+import { useCredentialApi } from '../../hook/api/useCredentialApi.js';
 import { AdultSwitch } from '../../layout/component/AdultSwitch.js';
 import { HeaderIconButton } from '../../layout/component/HeaderIconButton.js';
 import { SESSION_CONTROLS_ID } from '../../layout/SessionHeader.js';
@@ -66,6 +74,9 @@ interface UserInputProps {
 	onOpenUserNoteModal: () => void;
 	isMobileLayout: boolean;
 	onFocusChange: (focused: boolean) => void;
+	/** Set when a send failed on an API key problem; opens the dialog on that provider. */
+	apiKeyPrompt?: ApiKeyType;
+	onApiKeyPromptHandled?: () => void;
 }
 
 export const UserInput: FC<UserInputProps> = ({
@@ -91,10 +102,35 @@ export const UserInput: FC<UserInputProps> = ({
 	onOpenUserNoteModal,
 	isMobileLayout,
 	onFocusChange,
+	apiKeyPrompt,
+	onApiKeyPromptHandled,
 }) => {
 	const { addToast } = useToast();
 	const theme = useTheme();
 	const [apiKeyDialogOpen, setApiKeyDialogOpen] = useState(false);
+	const [dialogKeyType, setDialogKeyType] = useState<ApiKeyType>();
+
+	// Every chat request runs on the user's own key, so a model whose key is missing cannot
+	// produce anything. Say so before the send rather than after a wasted round trip.
+	const { data: apiKeyMetadata } = useCredentialApi().getUserApiKeyMetadata(userId);
+	const selectedModel = models?.find((model) => model.id === modelName);
+	const requiredKeyType = selectedModel
+		? getRequiredApiKeyType(selectedModel.platform, selectedModel.provider)
+		: undefined;
+	const isRequiredKeyMissing = Boolean(
+		requiredKeyType && apiKeyMetadata && !apiKeyMetadata.configuredKeyTypes.includes(requiredKeyType)
+	);
+
+	const openApiKeyDialog = useCallback((keyType?: ApiKeyType) => {
+		setDialogKeyType(keyType);
+		setApiKeyDialogOpen(true);
+	}, []);
+
+	useEffect(() => {
+		if (!apiKeyPrompt) return;
+		openApiKeyDialog(apiKeyPrompt);
+		onApiKeyPromptHandled?.();
+	}, [apiKeyPrompt, openApiKeyDialog, onApiKeyPromptHandled]);
 
 	// State for controlling the settings dropdown menu
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -191,6 +227,20 @@ export const UserInput: FC<UserInputProps> = ({
 				'& .MuiInputBase-input': { fontSize: { xs: '16px', md: theme.typography.body2.fontSize } },
 			}}
 		>
+			{isRequiredKeyMissing && requiredKeyType ? (
+				<Alert
+					severity="warning"
+					variant="outlined"
+					sx={{ mb: 1, py: 0, alignItems: 'center' }}
+					action={
+						<Button size="small" color="inherit" onClick={() => openApiKeyDialog(requiredKeyType)}>
+							{getLangText(LANG_KEYS.REGISTER_API_KEY)}
+						</Button>
+					}
+				>
+					{`${API_KEY_TYPE_LABELS[requiredKeyType]} ${getLangAlertText(LANG_KEYS.API_KEY_MISSING)}`}
+				</Alert>
+			) : null}
 			<Box>
 				<TextField
 					placeholder={getLangText(LANG_KEYS.MESSAGE_PLACEHOLDER)}
@@ -248,7 +298,7 @@ export const UserInput: FC<UserInputProps> = ({
 						<GlassMenuItem
 							onClick={() => {
 								handleMenuClose();
-								setApiKeyDialogOpen(true);
+								openApiKeyDialog(requiredKeyType);
 							}}
 							colorVariant="silver"
 							compact
@@ -422,6 +472,7 @@ export const UserInput: FC<UserInputProps> = ({
 			<ApiKeyDialog
 				open={apiKeyDialogOpen}
 				userId={userId}
+				initialKeyType={dialogKeyType}
 				onClose={() => setApiKeyDialogOpen(false)}
 			/>
 		</Box>

@@ -28,7 +28,7 @@ import { containerSpacing } from '../../style/index.js';
 import { chatSurfaceStyles } from '../../style/chatStyles.js';
 import { mobileVisualViewportDialogSx } from '../../style/mobileDialogStyles.js';
 import { useEmotionContext } from './ChatPageLoader.jsx';
-import { getLangText, parseTextToEntries } from '../../util/index.js';
+import { getLangAlertText, getLangText, parseTextToEntries } from '../../util/index.js';
 import { getCharacterImageArray } from '../../util/portraitUtils.js';
 import { useResponsive } from '../../hook/useResponsive.js';
 import { preloadImage, usePreloadImages } from '../../hook/useImagePreload.js';
@@ -40,6 +40,10 @@ import {
 	ChatTurnCdo,
 	TempChatTurn,
 	SessionContentPolicy,
+	API_KEY_ERROR_CODES,
+	API_KEY_TYPE_LABELS,
+	isApiKeyErrorCode,
+	type ApiKeyType,
 } from '@rita-berenice/shared/domain';
 import type { PortraitUrlMap } from '@rita-berenice/shared/config';
 import { createBasicChatTurn } from '@rita-berenice/shared/util';
@@ -63,6 +67,28 @@ import {
 	writeChatFontSize,
 	writeChatFontWeight,
 } from './chatFontSize.js';
+
+/**
+ * Recognises the actionable API key failures the server marks, and renders them in the
+ * viewer's language. Anything else stays on the generic error path.
+ */
+const readApiKeyFailure = (
+	error: unknown
+): { message: string; keyType?: ApiKeyType } | undefined => {
+	const details = (error as { details?: { code?: unknown; keyType?: unknown } } | undefined)
+		?.details;
+	if (!isApiKeyErrorCode(details?.code)) return undefined;
+
+	const keyType = details?.keyType as ApiKeyType | undefined;
+	const providerLabel = keyType ? API_KEY_TYPE_LABELS[keyType] : '';
+	const text = getLangAlertText(
+		details.code === API_KEY_ERROR_CODES.missing
+			? LANG_KEYS.API_KEY_MISSING
+			: LANG_KEYS.API_KEY_REJECTED
+	);
+
+	return { message: providerLabel ? `${providerLabel} ${text}` : text, keyType };
+};
 
 export const ChatPage: FC<{
 	characterInfo: CharacterInfo;
@@ -180,6 +206,9 @@ export const ChatPage: FC<{
 	const streamAbortControllerRef = useRef<AbortController | undefined>(undefined);
 	const finalizationControllersRef = useRef(new Set<AbortController>());
 	const [pageError, setPageError] = useState<string>();
+	// Set when a send fails because the user's API key is missing or was refused, so the
+	// input area can open the key dialog on the right provider instead of just showing text.
+	const [apiKeyPrompt, setApiKeyPrompt] = useState<ApiKeyType>();
 	const [userEditInput, setUserEditInput] = useState('');
 	const [botEditInput, setBotEditInput] = useState('');
 	const [modelName, setModelName] = useState(DEFAULT_CHAT_MODEL);
@@ -317,6 +346,8 @@ export const ChatPage: FC<{
 			setModelName(modelCatalog.models[0].id);
 		}
 	}, [modelCatalog, modelName]);
+
+	const clearApiKeyPrompt = useCallback(() => setApiKeyPrompt(undefined), []);
 
 	const handleAiModel = useCallback((selectedModelName: string) => {
 		setModelName(selectedModelName);
@@ -462,7 +493,13 @@ export const ChatPage: FC<{
 		} catch (err: any) {
 			if (!streamController.signal.aborted) {
 				console.error('Send Message Error:', err);
-				setPageError(`An error occurred: ${err.clientMessage || err.message || 'Unknown error'}`);
+				const apiKeyFailure = readApiKeyFailure(err);
+				if (apiKeyFailure) {
+					setPageError(apiKeyFailure.message);
+					setApiKeyPrompt(apiKeyFailure.keyType);
+				} else {
+					setPageError(`An error occurred: ${err.clientMessage || err.message || 'Unknown error'}`);
+				}
 			}
 		} finally {
 			setIsProcessing(false);
@@ -695,6 +732,8 @@ export const ChatPage: FC<{
 		onOpenUserNoteModal: handleOpenUserNoteModal,
 		isMobileLayout: shouldUseMobileLayout,
 		onFocusChange: onMobileInputFocusChange,
+		apiKeyPrompt,
+		onApiKeyPromptHandled: clearApiKeyPrompt,
 	};
 
 	// --- RENDER ---

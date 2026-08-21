@@ -663,7 +663,7 @@ export const FilterCriteriaSchema = z
 			.describe("The relevant time period, in English (e.g., 'Childhood', 'Reign')."),
 	})
 	.describe(
-		'Filter criteria schema: English-normalized search parameters for ChromaDB metadata filtering and RAG system querying.'
+		'Filter criteria schema: English-normalized search parameters for vector-store metadata filtering and RAG system querying.'
 	);
 
 // This is the data structure that will be passed to chatStore

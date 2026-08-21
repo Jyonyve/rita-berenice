@@ -11,6 +11,7 @@ import {
 	ChatTurn,
 	ChatTurnCdo,
 	ApiError,
+	ApiKeyError,
 } from '@rita-berenice/shared/domain';
 import { RECENT_CHAT_TURN } from '@rita-berenice/shared/config';
 import { receiveBotResponse, finalizeChatTurn } from '../service/orchestrationService.js';
@@ -203,6 +204,11 @@ router.post(
 						type: 'error',
 						message: apiError.message,
 						clientMessage: apiError.clientMessage,
+						// Forwarded so the client can react to an actionable failure - a missing or
+						// rejected API key - instead of only printing the text.
+						...(apiError instanceof ApiKeyError
+							? { code: apiError.code, keyType: apiError.keyType }
+							: {}),
 					});
 				}
 			} finally {

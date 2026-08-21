@@ -1,7 +1,7 @@
 import { GENDER_OPTION, METADATA_TYPES } from '../../config/constants.js';
 
 /**
- * Metadata for a user document stored in ChromaDB.
+ * Metadata for a user document stored in the vector store.
  * Uses userId from Supertokens as the primary key.
  */
 export interface UserMetadata {
@@ -21,7 +21,7 @@ export interface UserMetadata {
 	createdAt: string;
 	/** Last update timestamp in ISO format */
 	updatedAt: string;
-	/** Document type identifier for ChromaDB */
+	/** Document type identifier for the vector store */
 	type: typeof METADATA_TYPES.USER;
 	/** Optional URL to user's avatar image in public folder */
 	avatarUrl: string;

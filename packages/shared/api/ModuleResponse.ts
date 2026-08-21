@@ -30,15 +30,15 @@ export interface ApiErrorResponse {
 export type Metadata = Record<string, string | number | boolean | null>;
 
 /**
- * Vector-search result shape, matching ChromaDB v2+ GetResult / QueryResult after type conversion.
+ * Vector-search result shape returned by the pgvector retrieval path.
  *
  * This is the retrieval path's own type and nothing else: the semantic ranking helpers in
  * `queryUtils` / `llmUtils` take it directly. The module responses below deliberately do NOT
  * extend it - they used to, which forced every CRUD read to build `documents` and `metadatas`
- * that no caller ever read. Attaching a vector store later means adapting its results into this
- * type, not putting these fields back onto the CRUD responses.
+ * that no caller ever read. Swapping in a different vector store means adapting its results into
+ * this type, not putting these fields back onto the CRUD responses.
  */
-export type ChromaResponse = {
+export type VectorSearchResponse = {
 	ids: string[];
 	metadatas: (Metadata | null)[];
 	documents: (string | null)[];

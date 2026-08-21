@@ -7,7 +7,7 @@ export type RecapIndexContentType = 'RECAP_FLAG';
 
 // --- 1. The Primary Document Metadata ---
 /**
- * Metadata for a primary RECAP or RELATIONSHIP document stored in ChromaDB.
+ * Metadata for a primary RECAP or RELATIONSHIP document stored in the vector store.
  * This document contains the main content for semantic search.
  * All array-like fields intended for filtering have been removed.
  */

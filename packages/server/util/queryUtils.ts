@@ -1,4 +1,4 @@
-import { ChromaResponse, Metadata } from '@rita-berenice/shared/api';
+import { VectorSearchResponse, Metadata } from '@rita-berenice/shared/api';
 import { get_encoding } from 'tiktoken';
 import { flowLogger, serializeError } from './jsonlLogger.js';
 
@@ -95,7 +95,7 @@ const calculateRecencyScore = (updatedAt?: string, nowMs: number = Date.now()): 
 	return Math.max(0, 1 - age / SEMANTIC_RANKING_CONFIG.RECENT_WINDOW_MS);
 };
 
-// Extract distance from various ChromaDB distance formats
+// Extract distance from various vector-store distance formats
 const extractDistance = (distanceRaw: any): number | null => {
 	if (Array.isArray(distanceRaw)) {
 		return distanceRaw[0] ?? null;
@@ -104,10 +104,10 @@ const extractDistance = (distanceRaw: any): number | null => {
 };
 
 /**
- * Complete semantic ranking pipeline for ChromaDB query results
+ * Complete semantic ranking pipeline for vector-search query results
  */
 export const reRankSemanticResults = (
-	queryResults: ChromaResponse[],
+	queryResults: VectorSearchResponse[],
 	limit?: number,
 	options?: {
 		semanticWeight?: number;

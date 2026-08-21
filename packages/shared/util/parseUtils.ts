@@ -36,7 +36,7 @@ export const parseChatTurnToMetadata = (turn: ChatTurn): ChatTurnMetadata => {
 		requestJson: JSON.stringify(turn.request),
 		responseJson: JSON.stringify(turn.response),
 
-		// Enriched metadata (flattened for ChromaDB)
+		// Enriched metadata (flattened for the vector store)
 		summary: turn.summary || NA,
 
 		// Flattened emotion objects

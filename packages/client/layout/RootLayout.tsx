@@ -1,4 +1,12 @@
-import React, { FC, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, {
+	FC,
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+} from 'react';
 import { Outlet, useNavigate } from 'react-router';
 import {
 	Box,
@@ -16,8 +24,9 @@ import { EmailPasswordPreBuiltUI } from 'supertokens-auth-react/recipe/emailpass
 import { AuthPage } from 'supertokens-auth-react/ui/index.js';
 import { GlassPaper, GlassFooter, GlassPortrait } from './component/glass/index.js';
 import { routeConstants } from '../routeConstants.js';
-import { getLangText } from '../util/translateUtils.js';
+import { getLangAlertText, getLangText } from '../util/translateUtils.js';
 import { useAuth } from '../provider/AuthProvider.jsx';
+import { useToast } from '../provider/ToastProvider.jsx';
 import CloseIcon from '@mui/icons-material/Close';
 import { useSessionApi } from '../hook/api/index.js';
 import ReloadToHome from './component/ReloadToHome.js';
@@ -171,6 +180,22 @@ export function RootLayout({ headerMode }: RootLayoutProps) {
 		userProfile,
 	} = useAuth();
 	const { updateSessionTitle } = useSessionApi();
+	const { addToast } = useToast();
+
+	// The auth UI is mounted inside the login modal, so a successful sign-up or sign-in has
+	// no page transition of its own to signal success. Confirm it explicitly the moment the
+	// session settles; the modal unmounts on that same state change.
+	const previousIsLoggedIn = useRef<boolean | undefined>(undefined);
+	useEffect(() => {
+		if (isSessionLoading) return;
+
+		const previous = previousIsLoggedIn.current;
+		previousIsLoggedIn.current = isLoggedIn;
+		if (previous === false && isLoggedIn) {
+			addToast(getLangAlertText(LANG_KEYS.SIGNED_IN_SUCCESS), 'success');
+		}
+	}, [isSessionLoading, isLoggedIn, addToast]);
+
 	const headerRef = useRef<HTMLElement>(null);
 	const footerRef = useRef<HTMLElement>(null);
 

@@ -28,13 +28,15 @@ interface ApiKeyDialogProps {
 	open: boolean;
 	userId: string;
 	onClose: () => void;
+	/** Preselects the provider, so a prompt about a specific key opens on that provider. */
+	initialKeyType?: ApiKeyType;
 }
 
-export function ApiKeyDialog({ open, userId, onClose }: ApiKeyDialogProps) {
+export function ApiKeyDialog({ open, userId, onClose, initialKeyType }: ApiKeyDialogProps) {
 	const { addToast } = useToast();
 	const credentialApi = useCredentialApi();
 	const { data } = credentialApi.getUserApiKeyMetadata(userId);
-	const [keyType, setKeyType] = useState<ApiKeyType>('openrouterApiKey');
+	const [keyType, setKeyType] = useState<ApiKeyType>(initialKeyType ?? 'openrouterApiKey');
 	const [keyValue, setKeyValue] = useState('');
 	const [showKey, setShowKey] = useState(false);
 	const [saving, setSaving] = useState(false);
@@ -45,8 +47,15 @@ export function ApiKeyDialog({ open, userId, onClose }: ApiKeyDialogProps) {
 		if (!open) {
 			setKeyValue('');
 			setShowKey(false);
+			return;
 		}
-	}, [open]);
+		// Reopening for a different provider has to move the selection, since the state above
+		// only seeds it on first mount.
+		if (initialKeyType) {
+			setKeyType(initialKeyType);
+			setKeyValue('');
+		}
+	}, [open, initialKeyType]);
 
 	const save = async () => {
 		if (!keyValue.trim()) return;

@@ -53,8 +53,9 @@ import { useDateFormatter, useResponsive } from '../../hook/index.js';
 import { useUserApi } from '../../hook/api/index.js';
 import { useToast } from '../../provider/ToastProvider.jsx';
 import { ImageCropModal, RomanticTitle } from '../../layout/component/index.js';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { CredentialSection } from './CredentialSection.tsx';
+import { API_KEY_SETUP_PARAM, API_KEY_SETUP_VALUE } from './apiKeyConfig.js';
 import {
 	GENDER_OPTION,
 	LANG_KEYS,
@@ -121,7 +122,21 @@ export const UserPage: FC<{
 	// Detail section
 	const [sessionsExpanded, setSessionsExpanded] = useState(false);
 
-	const [apiKeysExpanded, setApiKeysExpanded] = useState(false);
+	// A fresh signup is redirected here with the API key setup parameter, because no chat can
+	// run until the account stores a provider key. Open the section and bring it into view
+	// rather than leaving it collapsed behind an accordion the new user has never seen.
+	const [searchParams] = useSearchParams();
+	const isApiKeySetupRequested =
+		isMine && searchParams.get(API_KEY_SETUP_PARAM) === API_KEY_SETUP_VALUE;
+	const [apiKeysExpanded, setApiKeysExpanded] = useState(isApiKeySetupRequested);
+	const apiKeySectionRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (!isApiKeySetupRequested) return;
+
+		setApiKeysExpanded(true);
+		apiKeySectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+	}, [isApiKeySetupRequested]);
 
 	const methods = useForm<UserUdo>({
 		defaultValues: {
@@ -608,7 +623,7 @@ export const UserPage: FC<{
 
 									{/* ✅ API Keys Section - Only for owner */}
 									{isMine && (
-										<Box>
+										<Box ref={apiKeySectionRef}>
 											<Box display="flex" justifyContent="space-between" alignItems="center">
 												<Stack direction="row" spacing={1} alignItems="center">
 													<KeyIcon fontSize="small" sx={{ color: 'text.secondary' }} />

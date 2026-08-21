@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 
 import { flowLogger } from './jsonlLogger.js';
 
-import { ChromaResponse, Metadata } from '@rita-berenice/shared/api';
+import { VectorSearchResponse, Metadata } from '@rita-berenice/shared/api';
 import {
 	ChatEntry,
 	DefaultAiRole,
@@ -175,7 +175,7 @@ export const computeRecencyScore = (updatedAt?: string): number => {
 	return Math.max(0, Math.min(1, score));
 };
 
-// Extract distance from various ChromaDB distance formats
+// Extract distance from various vector-store distance formats
 export const extractDistance = (distanceRaw: any): number | null => {
 	if (Array.isArray(distanceRaw)) {
 		return distanceRaw[0] ?? null;
@@ -184,11 +184,11 @@ export const extractDistance = (distanceRaw: any): number | null => {
 };
 
 /**
- * Flatten ChromaDB query results into hits array
- * @param queryResults Array of ChromaResponse from queryRecords
+ * Flatten vector-search query results into hits array
+ * @param queryResults Array of VectorSearchResponse from queryRecords
  * @returns Flattened array of hits with distances
  */
-export const flattenQueryResults = (queryResults: ChromaResponse[]): RankableHit[] => {
+export const flattenQueryResults = (queryResults: VectorSearchResponse[]): RankableHit[] => {
 	const hits: RankableHit[] = [];
 
 	for (const group of queryResults) {
@@ -255,22 +255,22 @@ export const rankBySemanticScore = (
 };
 
 /**
- * Re-ranks ChromaDB results based on a combination of semantic distance and recency.
- * @param response The raw response from a ChromaDB query.
+ * Re-ranks vector-search results based on a combination of semantic distance and recency.
+ * @param response The raw response from a vector-search query.
  * @param decayRate A factor controlling how quickly older items lose relevance (e.g., 0.1).
  * @param semanticWeight Weight for semantic similarity (default: 0.7)
  * @param recencyWeight Weight for recency (default: 0.3)
- * @returns The same ChromaResponse object, but with its contents sorted by the new combined score.
+ * @returns The same VectorSearchResponse object, but with its contents sorted by the new combined score.
  */
 /**
- * Re-ranks ChromaDB results based on semantic distance and recency.
+ * Re-ranks vector-search results based on semantic distance and recency.
  */
 export function reRankByRecency<T extends { updatedAt: string }>(
-	response: ChromaResponse & { contents?: T[] },
+	response: VectorSearchResponse & { contents?: T[] },
 	decayRate: number = 0.05,
 	semanticWeight: number = 0.7,
 	recencyWeight: number = 0.3
-): ChromaResponse & { contents?: T[] } {
+): VectorSearchResponse & { contents?: T[] } {
 	// Early return if not enough data
 	if (!response.contents?.length || !response.distances?.length || !response.documents?.length) {
 		return response;

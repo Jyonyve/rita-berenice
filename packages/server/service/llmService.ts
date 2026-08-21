@@ -19,7 +19,14 @@ import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { ChatOpenAI } from '@langchain/openai';
 import { buildChatCompletion, convertMessageContentToString } from '../util/llmUtils.js';
-import { AiModelInfo, DEFAULT_EXTRACTION_MODEL } from '@rita-berenice/shared/domain';
+import {
+	AiModelInfo,
+	ApiError,
+	ApiKeyError,
+	API_KEY_TYPE_LABELS,
+	DEFAULT_EXTRACTION_MODEL,
+	getRequiredApiKeyType,
+} from '@rita-berenice/shared/domain';
 import { ZodObject, ZodType } from 'zod';
 import { buildTokenBudget, TokenBudget } from '../util/tokenBudgetUtils.js';
 import {
@@ -27,7 +34,6 @@ import {
 	StructuredOutputValidationError,
 } from '../util/structuredOutputUtils.js';
 import { createGlossaryExtractionSchema, createNerSchema } from '../util/schemaUtils.js';
-import { getEmbeddingEnv } from '../config/env.js';
 
 interface StructuredOutputRepairOptions {
 	requiredSchema: string;
@@ -207,6 +213,40 @@ const streamStructuredLlmCore = async <T>(
  * 순수 LLM 호출 서비스.
  * 데이터의 내용을 가공하지 않으며, 오직 API 통신과 응답 반환 책임만 가집니다.
  */
+/**
+ * Recognises a provider refusing the user's key, so a wrong or expired key reads as such
+ * instead of as a generic "LLM invocation failed".
+ *
+ * Each SDK reports this differently - OpenAI and Anthropic set `status`, Google only says
+ * "API key not valid" in the message - so both the status and the text are inspected.
+ * Returns undefined when the failure is anything else.
+ */
+const asProviderAuthError = (error: unknown, aiModelInfo: AiModelInfo): ApiKeyError | undefined => {
+	const keyType = getRequiredApiKeyType(
+		aiModelInfo.platform,
+		aiModelInfo.provider as string | undefined
+	);
+	if (!keyType) return undefined;
+
+	const candidate = error as
+		| { status?: unknown; statusCode?: unknown; response?: { status?: unknown }; message?: unknown }
+		| undefined;
+	const status = [candidate?.status, candidate?.statusCode, candidate?.response?.status].find(
+		(value) => typeof value === 'number'
+	);
+	const message = typeof candidate?.message === 'string' ? candidate.message : '';
+	const looksUnauthorized =
+		status === 401 ||
+		status === 403 ||
+		/(401|403)|unauthorized|invalid[_ ]api[_ ]key|api key not valid|incorrect api key|authentication[_ ]error/i.test(
+			message
+		);
+
+	return looksUnauthorized
+		? new ApiKeyError('rejected', keyType, API_KEY_TYPE_LABELS[keyType])
+		: undefined;
+};
+
 export const llmService = {
 	/**
 	 * LLM 클라이언트 인스턴스를 생성합니다.
@@ -214,13 +254,24 @@ export const llmService = {
 	createLlmInstance: async (aiInfo: AiModelInfo, userId: string) => {
 		const { platform, provider, model, temperature, maxTokens } = aiInfo;
 		const userApiKeys = await credentialStore.getDecryptedUserApiKeys(userId);
+		// Every chat request runs on the user's own key. There is deliberately no server-side
+		// fallback: the server's OPENAI_API_KEY funds embeddings only, and letting chat borrow
+		// it silently billed the operator for a user whose key was simply never registered.
+		const requireUserKey = (keyValue: string | undefined): string => {
+			const keyType = getRequiredApiKeyType(platform, provider as string | undefined);
+			if (!keyType) {
+				throw new ApiError(400, `[llmService] Unsupported platform/provider: ${platform}/${provider}`);
+			}
+			if (!keyValue) {
+				throw new ApiKeyError('missing', keyType, API_KEY_TYPE_LABELS[keyType]);
+			}
+			return keyValue;
+		};
 
 		if (platform === 'openrouter') {
-			if (!userApiKeys.openrouterApiKey) {
-				throw new Error(`[llmService] API key for platform 'openrouter' not found.`);
-			}
+			const openrouterApiKey = requireUserKey(userApiKeys.openrouterApiKey);
 			return new ChatOpenAI({
-				apiKey: userApiKeys.openrouterApiKey,
+				apiKey: openrouterApiKey,
 				model,
 				temperature,
 				maxTokens,
@@ -235,29 +286,32 @@ export const llmService = {
 		if (platform === 'direct') {
 			switch (provider) {
 				case 'openai':
-					const openaiApiKey = userApiKeys.openaiApiKey || getEmbeddingEnv().OPENAI_API_KEY;
-					return new ChatOpenAI({ apiKey: openaiApiKey, model, temperature, maxTokens, user: userId });
+					return new ChatOpenAI({
+						apiKey: requireUserKey(userApiKeys.openaiApiKey),
+						model,
+						temperature,
+						maxTokens,
+						user: userId,
+					});
 				case 'anthropic':
-					if (!userApiKeys.anthropicApiKey) throw new Error('[llmService] Anthropic API key not found.');
 					return new ChatAnthropic({
-						apiKey: userApiKeys.anthropicApiKey,
+						apiKey: requireUserKey(userApiKeys.anthropicApiKey),
 						model,
 						temperature,
 						maxTokens,
 					});
 				case 'google':
-					if (!userApiKeys.googleApiKey) throw new Error('[llmService] Google API key not found.');
 					return new ChatGoogleGenerativeAI({
-						apiKey: userApiKeys.googleApiKey,
+						apiKey: requireUserKey(userApiKeys.googleApiKey),
 						model,
 						temperature,
 						maxOutputTokens: maxTokens,
 					});
 				default:
-					throw new Error(`[llmService] Unsupported direct provider: ${provider}`);
+					throw new ApiError(400, `[llmService] Unsupported direct provider: ${provider}`);
 			}
 		}
-		throw new Error(`[llmService] Unsupported platform: ${platform}`);
+		throw new ApiError(400, `[llmService] Unsupported platform: ${platform}`);
 	},
 
 	/**
@@ -360,10 +414,20 @@ export const llmService = {
 			if (error instanceof StructuredOutputValidationError) {
 				throw error;
 			}
+			// An ApiError already carries a message meant for the user; re-wrapping it here
+			// would bury it under the generic "invocation failed" text.
+			if (error instanceof ApiError) {
+				throw error;
+			}
+			const authError = asProviderAuthError(error, aiModelInfo);
 			flowLogger.error('llmService', 'invoke.failed', {
 				...buildModelLogContext(aiModelInfo, userId),
 				error: error.message,
+				apiKeyRejected: authError !== undefined,
 			});
+			if (authError) {
+				throw authError;
+			}
 			throw new Error(`[llmService] LLM invocation failed: ${error.message}`);
 		}
 	},
@@ -416,11 +480,19 @@ export const llmService = {
 			if (error instanceof StructuredOutputValidationError) {
 				throw error;
 			}
+			if (error instanceof ApiError) {
+				throw error;
+			}
 			const message = error instanceof Error ? error.message : 'Unknown streaming error';
+			const authError = asProviderAuthError(error, aiModelInfo);
 			flowLogger.error('llmService', 'stream.failed', {
 				...buildModelLogContext(aiModelInfo, userId),
 				error: message,
+				apiKeyRejected: authError !== undefined,
 			});
+			if (authError) {
+				throw authError;
+			}
 			throw new Error(`[llmService] LLM streaming failed: ${message}`, { cause: error });
 		}
 	},

@@ -1,4 +1,5 @@
 import { ChatRoleType } from '../domain/chat/chat.type.js';
+import type { ApiKeyType } from '../domain/credential/credential.type.js';
 import { AiModelInfo, AllModelNames } from '../domain/aimodel/index.js';
 import { ChatEntry, ChatTurn, DisplayTurn, TempChatTurn } from '../domain/chat/chat.type.js';
 
@@ -62,7 +63,14 @@ export type ReceiveBotResponseStreamEvent =
 	| { type: 'status'; stage: ChatGenerationStage }
 	| { type: 'delta'; text: string }
 	| { type: 'complete'; data: TempChatTurn }
-	| { type: 'error'; message: string; clientMessage?: string };
+	| {
+			type: 'error';
+			message: string;
+			clientMessage?: string;
+			/** Set for failures the user can act on, e.g. a missing or rejected API key. */
+			code?: string;
+			keyType?: ApiKeyType;
+	  };
 
 export type FinalizationJobStatus = 'queued' | 'running' | 'retrying' | 'completed' | 'failed';
 

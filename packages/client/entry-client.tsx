@@ -6,6 +6,7 @@ import SuperTokens from 'supertokens-auth-react';
 import EmailPassword from 'supertokens-auth-react/recipe/emailpassword/index.js';
 import Session from 'supertokens-auth-react/recipe/session/index.js';
 import { routeConstants } from './routeConstants.js';
+import { API_KEY_SETUP_PARAM, API_KEY_SETUP_VALUE } from './page/user/apiKeyConfig.js';
 import { superTokenUiStyle } from './style/superTokensUi.js';
 import { createEmotionCache } from './util/index.js';
 import { initializeApiClient } from './util/clientApiHelpers.js';
@@ -23,6 +24,23 @@ SuperTokens.init({
 	},
 	style: superTokenUiStyle,
 	enableDebugLogs: false,
+	// SuperTokens defaults to `/` on success, which drops every authenticated user on the
+	// landing page with nothing to do. Split the two cases instead:
+	//   - a brand-new account has no provider API key yet and cannot chat until it has one,
+	//     so send it straight to the API key section of the profile page;
+	//   - a returning sign-in goes to the character list, the actual starting point.
+	// The signup destination deliberately outranks `redirectToPath`: whatever protected page
+	// sent the user to auth is still unusable without a key.
+	getRedirectionURL: async (context) => {
+		if (context.action !== 'SUCCESS') {
+			return undefined;
+		}
+		if (context.createdNewUser) {
+			return `/${routeConstants.USER}?${API_KEY_SETUP_PARAM}=${API_KEY_SETUP_VALUE}`;
+		}
+
+		return context.redirectToPath ?? `/${routeConstants.CHARACTER}`;
+	},
 	recipeList: [EmailPassword.init(), Session.init()],
 });
 

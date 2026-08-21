@@ -29,3 +29,40 @@ export interface UpdateApiKeyRequest {
 	keyType: ApiKeyType;
 	keyValue: string;
 }
+
+/**
+ * Maps a chat model's platform/provider pair onto the API key it needs.
+ *
+ * Both sides depend on this: the server refuses to build an LLM client without the key,
+ * and the client warns before sending rather than burning a request that cannot succeed.
+ * Returns undefined for combinations that carry no key requirement.
+ */
+export const getRequiredApiKeyType = (
+	platform: string,
+	provider?: string
+): ApiKeyType | undefined => {
+	if (platform === 'openrouter') return 'openrouterApiKey';
+	if (platform !== 'direct') return undefined;
+
+	switch (provider) {
+		case 'openai':
+			return 'openaiApiKey';
+		case 'anthropic':
+			return 'anthropicApiKey';
+		case 'google':
+			return 'googleApiKey';
+		case 'groq':
+			return 'groqApiKey';
+		default:
+			return undefined;
+	}
+};
+
+/** Human-facing provider label for the key type, used in "register your X key" messages. */
+export const API_KEY_TYPE_LABELS: Record<ApiKeyType, string> = {
+	openaiApiKey: 'OpenAI',
+	anthropicApiKey: 'Anthropic',
+	googleApiKey: 'Google',
+	openrouterApiKey: 'OpenRouter',
+	groqApiKey: 'Groq',
+};
