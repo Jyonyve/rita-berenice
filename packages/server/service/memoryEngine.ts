@@ -2,8 +2,12 @@
 
 import { MemoryResponse } from '@rita-berenice/shared/api';
 import { LangCode, DEFAULT_EMOTION, NA } from '@rita-berenice/shared/config';
-import { ChatTurn, DEFAULT_EXTRACTION_MODEL, RecapInfo } from '@rita-berenice/shared/domain';
-import { parseSessionId, convertArrayToString } from '@rita-berenice/shared/util';
+import { ChatTurn, RecapInfo } from '@rita-berenice/shared/domain';
+import {
+	parseSessionId,
+	convertArrayToString,
+	resolveUtilityModelInfo,
+} from '@rita-berenice/shared/util';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { characterStore } from '../store/characterStore.js';
 import { chatStore } from '../store/chatStore.js';
@@ -42,7 +46,12 @@ export const memoryEngine = {
 		userConversation: string,
 		userId: string,
 		recentChatTurns: ChatTurn[],
-		langCode: LangCode
+		langCode: LangCode,
+		// The model the caller is about to generate with. Query transformation is an LLM call like
+		// any other, so it has to run on a provider this user holds a key for. Required: every
+		// caller already has a model in hand, and defaulting it would silently send the RAG calls
+		// back to OpenAI for a user who never registered an OpenAI key.
+		chatModelName: string
 	): Promise<MemoryResponse> {
 		const { characterId } = parseSessionId(sessionId);
 		const INITIAL_QUERY_LIMIT = 30;
@@ -64,7 +73,8 @@ export const memoryEngine = {
 				sessionId,
 				userId,
 				request.showName,
-				response.showName
+				response.showName,
+				resolveUtilityModelInfo(chatModelName)
 			);
 			flowLogger.info('memoryEngine', 'queryTransformed', {
 				sessionId,
@@ -334,6 +344,9 @@ export const memoryEngine = {
 	): Promise<ChatTurn> {
 		const { sessionId, userId } = turn;
 		const { characterId } = parseSessionId(sessionId);
+		// Enrichment must run on the same provider that generated the turn. Pinning it to
+		// DEFAULT_EXTRACTION_MODEL made every finalization fail for accounts with no OpenAI key.
+		const utilityModelInfo = resolveUtilityModelInfo(turn.response.model);
 
 		try {
 			// 1. Extract named entities to ensure they are in the glossary.
@@ -342,7 +355,7 @@ export const memoryEngine = {
 			)}\n${parseEntriesToConversation(turn.response.entries)}`;
 			const extractedKpns = options.skipTermNormalization
 				? []
-				: await llmService.extractProperNouns(textForNer, userId);
+				: await llmService.extractProperNouns(textForNer, userId, utilityModelInfo);
 
 			// 2. Fetch all necessary context for the enrichment prompt.
 			const [profileInfo, charInfo, loreRes, historyRes, termGuidanceMap] = await Promise.all([
@@ -350,7 +363,7 @@ export const memoryEngine = {
 				characterStore.getCharacter(characterId),
 				loreStore.getLoresBySession(sessionId, characterId, userId),
 				historyStore.getHistories(characterId),
-				termStore.ensureAndGetTermsForPrompt(sessionId, userId, extractedKpns),
+				termStore.ensureAndGetTermsForPrompt(sessionId, userId, extractedKpns, utilityModelInfo),
 			]);
 
 			const loreContexts = mapLoreContexts(loreRes.loreInfos);
@@ -387,6 +400,8 @@ export const memoryEngine = {
 				characterId,
 				chatTurnId: turn.chatTurnId,
 				sequence: turn.sequence,
+				turnModel: turn.response.model,
+				utilityModel: utilityModelInfo.model,
 				extractedProperNounCount: extractedKpns.length,
 				loreContextCount: loreContexts.length,
 				historyContextCount: historyContexts.length,
@@ -395,7 +410,7 @@ export const memoryEngine = {
 
 			const enrichment = await llmService.invokeStructuredLlm(
 				messages,
-				DEFAULT_EXTRACTION_MODEL,
+				utilityModelInfo,
 				userId,
 				zodSchema
 			);

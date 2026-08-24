@@ -42,7 +42,15 @@ export const buildCharacterGlossarySource = (
 		.join('\n\n');
 
 const scanCharacterGlossary: CharacterGlossaryWorker = async (input) => {
-	const extractedTerms = await llmService.extractGlossaryTerms(input.sourceText, input.userId);
+	// Character creation has no chat turn to inherit a provider from, so the model is chosen from
+	// the keys this user has registered. Pinned to OpenAI, this call failed outright for anyone
+	// who chats on Google or OpenRouter.
+	const utilityModelInfo = await llmService.resolveUserUtilityModelInfo(input.userId);
+	const extractedTerms = await llmService.extractGlossaryTerms(
+		input.sourceText,
+		input.userId,
+		utilityModelInfo
+	);
 	const resolvedTerms = await termStore.storeMissingCharacterTermMappings(
 		input.characterId,
 		extractedTerms

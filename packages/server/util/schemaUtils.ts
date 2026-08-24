@@ -84,6 +84,7 @@ export const ReceiveBotResponseBodySchema = z
 		sequence: z.number().int().nonnegative(),
 		entries: z.array(chatEntrySchema).min(1),
 		modelName: z.string().min(1),
+		intent: z.enum(['new', 'reroll']).optional(),
 	})
 	.strict()
 	.superRefine((body, context) => {

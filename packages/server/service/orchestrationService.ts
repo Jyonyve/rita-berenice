@@ -1,6 +1,10 @@
 // src/server/services/orchestrationService.ts (Updated)
 
-import { ChatGenerationStage, MemoryResponse } from '@rita-berenice/shared/api';
+import {
+	ChatGenerationStage,
+	MemoryResponse,
+	ReceiveBotResponseIntent,
+} from '@rita-berenice/shared/api';
 import { ABORT_TIMEOUT, METADATA_TYPES } from '@rita-berenice/shared/config';
 import {
 	TempChatTurnCdo,
@@ -30,6 +34,7 @@ import { memoryEngine } from './memoryEngine.js';
 import { personaEngine } from './personaEngine.js';
 
 export interface ReceiveBotResponseOptions {
+	intent?: ReceiveBotResponseIntent;
 	adultContentEnabled?: boolean;
 	signal?: AbortSignal;
 	onStatus?: (stage: ChatGenerationStage) => void;
@@ -81,6 +86,8 @@ export const receiveBotResponse = async (
 		// --- 2. LOG CHECKPOINT 1 ---
 		logger.checkpoint('tempTurn.ready', { existingOptionCount: tempTurn.setCount });
 		const userConverSation = parseEntriesToConversation(JSON.parse(inputJsonString));
+		// Checked before generating, so a rejected request costs nothing.
+		assertRerollRequestMatches(tempTurn, userConverSation, options.intent ?? 'new', logger);
 
 		// 2. 새로운 응답 생성 및 추가 (책임 위임)
 		tempTurn = await _generateAndAppendResponse(
@@ -138,7 +145,7 @@ export const finalizeChatTurn = async (chatTurnCdo: ChatTurnCdo): Promise<ChatTu
 	logger.info('start');
 
 	try {
-		const enrichedChatTurn = await enrichChatTurn(chatTurnCdo);
+		const enrichedChatTurn = await enrichChatTurn(createBasicChatTurn(chatTurnCdo));
 		await chatStore.storeChatTurn(enrichedChatTurn);
 
 		logger.complete();
@@ -153,10 +160,13 @@ export const finalizeChatTurn = async (chatTurnCdo: ChatTurnCdo): Promise<ChatTu
 	}
 };
 
-export const enrichChatTurn = async (chatTurnCdo: ChatTurnCdo): Promise<ChatTurn> => {
-	const basicChatTurn: ChatTurn = createBasicChatTurn(chatTurnCdo);
-	return memoryEngine.enrichChatTurnViaLlm(basicChatTurn);
-};
+/**
+ * Takes the already-built basic turn rather than the CDO so the caller can store that exact turn
+ * first and enrich the same object. Building it twice would stamp two different `createdAt`
+ * values for one turn.
+ */
+export const enrichChatTurn = async (basicChatTurn: ChatTurn): Promise<ChatTurn> =>
+	memoryEngine.enrichChatTurnViaLlm(basicChatTurn);
 
 /**
  * [HELPER] Retrieves an existing TempChatTurn or creates a new one if it doesn't exist.
@@ -207,6 +217,54 @@ const _getOrCreateTempTurn = async (
 // In src/server/services/orchestrationService.ts
 
 /**
+ * [HELPER] Keeps a reroll from turning into a second, unrelated question on the same turn.
+ *
+ * A temp turn models one request with several candidate responses; `fixedSetNo` later picks one
+ * response for that one request. Two *different* requests sharing a turn is a state the model
+ * cannot express - finalizing it keeps whichever set is picked and silently drops the other. That
+ * is what happened in the public demo: turn 6 failed to finalize, the client's next-sequence
+ * counter never advanced, and the user's next question landed on sequence 6 as setNo 1 beside an
+ * unrelated setNo 0.
+ *
+ * The root cause was that `receiveBotResponse` could not tell the two intents apart - a reroll and
+ * a new message were the same call with the same shape. `intent` now carries that, and a reroll
+ * claiming to reuse a request it does not match is refused before any generation is paid for.
+ *
+ * A mismatch under intent 'new' is only logged, not refused: the send path computes its sequence
+ * from finalized turns alone, so a turn still awaiting finalization can legitimately produce this
+ * shape, and rejecting it would break ordinary chatting. Storing the basic turn before enrichment
+ * (see finalizationJobService) is what keeps the sequence moving; this log is here to show whether
+ * any case survives that fix.
+ *
+ * Exported for tests; nothing outside this module calls it.
+ */
+export const assertRerollRequestMatches = (
+	tempTurn: TempChatTurn,
+	userConversation: string,
+	intent: ReceiveBotResponseIntent,
+	logger?: OperationLogger
+): void => {
+	const existingRequest = tempTurn.chatTurnSets[0]?.request;
+	if (!existingRequest) return;
+
+	const existingConversation = parseEntriesToConversation(existingRequest.entries);
+	if (existingConversation.trim() === userConversation.trim()) return;
+
+	if (intent === 'reroll') {
+		throw new ApiError(
+			409,
+			`[Orchestrator] Reroll for turn ${tempTurn.sequence} of session ${tempTurn.sessionId} does not match the request already stored on that turn.`,
+			'This message changed since it was sent. Reload the conversation and try again.'
+		);
+	}
+
+	logger?.warn('tempTurn.requestMismatch', {
+		existingSetCount: tempTurn.setCount,
+		fixedSetNo: tempTurn.fixedSetNo,
+	});
+};
+
+/**
  * [HELPER] Generates a new AI response and adds it to the temp turn's options.
  * This is the core business logic for a single response generation.F
  * @private
@@ -251,7 +309,8 @@ async function _generateAndAppendResponse(
 				userConversation,
 				tempTurn.userId,
 				recentChatTurn,
-				langCode
+				langCode,
+				aiModelInfo.model
 			);
 			options.logger?.checkpoint('memoryRecall.complete', {
 				shortTermCount: recalledMemories.shortTermHistory.length,

@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import { Term, TermResponse } from '@rita-berenice/shared/api';
 import { METADATA_TYPES } from '@rita-berenice/shared/config';
 import {
+	AiModelInfo,
 	CharacterTermCdo,
 	CharacterTermInfo,
 	SessionTermCdo,
@@ -190,7 +191,8 @@ export const termStore = {
 	ensureAndGetTermsForPrompt: async (
 		sessionId: string,
 		userId: string,
-		koreanTermsToEnsure: string[]
+		koreanTermsToEnsure: string[],
+		utilityModelInfo?: AiModelInfo
 	): Promise<Map<string, string>> => {
 		const { characterId } = parseSessionId(sessionId);
 		const [characterTerms, sessionTerms] = await Promise.all([
@@ -204,7 +206,7 @@ export const termStore = {
 				result.set(koreanTerm, existing.englishTerm);
 				continue;
 			}
-			const initialTerm = await llmService.translateProperNoun(koreanTerm, userId);
+			const initialTerm = await llmService.translateProperNoun(koreanTerm, userId, utilityModelInfo);
 			if (!initialTerm?.trim()) continue;
 			await termStore.storeSessionTerm({ sessionId, koreanTerm, initialTerm });
 			result.set(koreanTerm, initialTerm);
@@ -215,7 +217,8 @@ export const termStore = {
 	ensureAndGetCharacterTerms: async (
 		characterId: string,
 		userId: string,
-		koreanTermsToEnsure: string[]
+		koreanTermsToEnsure: string[],
+		utilityModelInfo?: AiModelInfo
 	): Promise<Map<string, string>> => {
 		const characterTerms = await termStore._getOrBuildCharacterTermMap(characterId);
 		const result = new Map<string, string>();
@@ -227,7 +230,7 @@ export const termStore = {
 				result.set(koreanTerm, existing.englishTerm);
 				continue;
 			}
-			const initialTerm = await llmService.translateProperNoun(koreanTerm, userId);
+			const initialTerm = await llmService.translateProperNoun(koreanTerm, userId, utilityModelInfo);
 			if (!initialTerm?.trim()) continue;
 			await termStore.storeCharacterTerm({ characterId, koreanTerm, initialTerm });
 			result.set(koreanTerm, initialTerm);

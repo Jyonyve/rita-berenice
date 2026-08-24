@@ -103,7 +103,12 @@ router.post(
 		validateRequestData(req.body, 'body', ['koreanTerm', 'userId']);
 		const authenticatedUserId = assertSessionUser(req, userId);
 
-		const translation = await llmService.translateProperNoun(koreanTerm, authenticatedUserId);
+		// No chat turn behind this endpoint, so the utility model comes from the caller's own keys.
+		const translation = await llmService.translateProperNoun(
+			koreanTerm,
+			authenticatedUserId,
+			await llmService.resolveUserUtilityModelInfo(authenticatedUserId)
+		);
 		res.status(200).json({ translation });
 	})
 );
@@ -121,7 +126,11 @@ router.post(
 		validateRequestData(req.body, 'body', ['textToAnalyze', 'userId']);
 		const authenticatedUserId = assertSessionUser(req, userId);
 
-		const nouns = await llmService.extractProperNouns(textToAnalyze, authenticatedUserId);
+		const nouns = await llmService.extractProperNouns(
+			textToAnalyze,
+			authenticatedUserId,
+			await llmService.resolveUserUtilityModelInfo(authenticatedUserId)
+		);
 		res.status(200).json({ nouns });
 	})
 );

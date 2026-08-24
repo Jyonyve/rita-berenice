@@ -278,6 +278,15 @@ export const finalizationJobs = pgTable(
 		input: jsonb('input').notNull(),
 		result: jsonb('result').$type<ChatTurn>(),
 		error: text('error'),
+		// Nullable and additive: existing rows keep their history, and a job that never hit an
+		// actionable failure simply has none. `error` alone could not tell a missing API key
+		// apart from any other failure without matching on message text.
+		errorCode: text('error_code'),
+		keyType: text('key_type'),
+		// How many times a startup resume has already picked this job back up. A job that fails
+		// for a permanent reason - quota exhausted, a revoked key - would otherwise be retried on
+		// every single restart forever, spending real money each time.
+		resumeCount: integer('resume_count').notNull().default(0),
 		lockedAt: timestamp('locked_at', { withTimezone: true, mode: 'string' }),
 		...timestamps,
 	},

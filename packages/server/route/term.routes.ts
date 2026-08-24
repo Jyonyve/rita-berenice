@@ -3,6 +3,7 @@ import express, { type Request, type Response, type Router } from 'express';
 import { verifySession } from 'supertokens-node/recipe/session/framework/express';
 
 import { termStore } from '../store/termStore.js';
+import { llmService } from '../service/llmService.js';
 import { RESOURCES } from '../db/resource.type.js';
 import { asyncHandler, genRoutePattern, validateRequestData } from '../util/routeHelpers.js';
 import { SessionTermInfo, CharacterTermInfo } from '@rita-berenice/shared/domain';
@@ -163,10 +164,13 @@ router.post(
 		await assertOwnedSession(req, sessionId);
 		const authenticatedUserId = assertSessionUser(req, userId);
 
+		// Reaches translateProperNoun for any unknown term, and this endpoint has no turn model, so
+		// the utility model is chosen from the caller's registered keys.
 		const termMap = await termStore.ensureAndGetTermsForPrompt(
 			sessionId,
 			authenticatedUserId,
-			koreanTermsToEnsure
+			koreanTermsToEnsure,
+			await llmService.resolveUserUtilityModelInfo(authenticatedUserId)
 		);
 		// Convert Map to a plain object for JSON serialization
 		const response = Object.fromEntries(termMap);

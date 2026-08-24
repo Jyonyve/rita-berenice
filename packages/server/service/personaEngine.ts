@@ -175,6 +175,9 @@ export const personaEngine = {
 					{
 						requiredSchema:
 							'{"groundingDecision": "not_applicable | supported | contradicted | uncertain", "response": "string", "emotion": "string"}',
+						// Without this the repair ran on DEFAULT_EXTRACTION_MODEL, so a user chatting on
+						// Google or OpenRouter had a repair attempt demand an OpenAI key they never had.
+						sourceModelInfo: aiModelInfo,
 						signal: options?.signal,
 					}
 				);

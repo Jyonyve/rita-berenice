@@ -9,6 +9,18 @@ export interface BackgroundJobSnapshot<TResult> {
 	updatedAt: string;
 	result?: TResult;
 	error?: string;
+	/**
+	 * Structured detail about the last failure, produced by `readErrorMeta`. The plain `error`
+	 * string is written for humans; this is what a caller can branch on - telling "the user has no
+	 * API key for this provider" apart from "the model returned nonsense" needs a code, not a
+	 * substring match on a message.
+	 */
+	errorMeta?: BackgroundJobErrorMeta;
+}
+
+export interface BackgroundJobErrorMeta {
+	code?: string;
+	keyType?: string;
 }
 
 interface BackgroundJob<TInput, TResult> extends BackgroundJobSnapshot<TResult> {
@@ -26,6 +38,8 @@ interface BackgroundJobQueueOptions<TInput, TResult> {
 		snapshot: BackgroundJobSnapshot<TResult>,
 		input: TInput
 	) => Promise<void> | void;
+	/** Extracts branchable detail from a worker failure. Returning undefined records nothing. */
+	readErrorMeta?: (error: unknown) => BackgroundJobErrorMeta | undefined;
 }
 
 export class BackgroundJobQueue<TInput, TResult> {
@@ -115,6 +129,7 @@ export class BackgroundJobQueue<TInput, TResult> {
 			job.attempts += 1;
 			job.updatedAt = new Date().toISOString();
 			job.error = undefined;
+			job.errorMeta = undefined;
 			await this.notifyChange(job);
 
 			try {
@@ -125,6 +140,7 @@ export class BackgroundJobQueue<TInput, TResult> {
 				return;
 			} catch (error) {
 				job.error = error instanceof Error ? error.message : 'Unknown background job error';
+				job.errorMeta = this.options.readErrorMeta?.(error);
 				job.updatedAt = new Date().toISOString();
 				if (job.attempts < job.maxAttempts) {
 					job.status = 'retrying';

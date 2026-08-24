@@ -26,7 +26,10 @@ export const ragQueryService = {
 		sessionId: string,
 		userId: string,
 		userName: string,
-		charName: string
+		charName: string,
+		// Defaults to the old behaviour only for callers with no turn model in scope. Callers on
+		// the chat path pass the turn's utility model so a user without an OpenAI key can search.
+		utilityModelInfo: AiModelInfo = DEFAULT_EXTRACTION_MODEL
 	): Promise<TransformedQuery> {
 		try {
 			const termRes = await termStore.getTermsForSession(sessionId);
@@ -40,11 +43,11 @@ export const ragQueryService = {
 			});
 
 			const [translatedUserInput, extractedData] = await Promise.allSettled([
-				ragQueryService._translateToEnglish(userInput, termGuidanceMap, userId),
+				ragQueryService._translateToEnglish(userInput, termGuidanceMap, userId, utilityModelInfo),
 				ragQueryService._extractAndTranslateData(
 					userInput, // Raw Korean for better term mapping
 					termGuidanceMap,
-					DEFAULT_EXTRACTION_MODEL,
+					utilityModelInfo,
 					userId,
 					userName,
 					charName
@@ -126,7 +129,8 @@ export const ragQueryService = {
 	async _translateToEnglish(
 		koreanText: string,
 		termGuidanceMap: Map<string, string>,
-		userId: string
+		userId: string,
+		utilityModelInfo: AiModelInfo = DEFAULT_EXTRACTION_MODEL
 	): Promise<string> {
 		// First, apply known term mappings
 		let processedText = koreanText;
@@ -145,7 +149,7 @@ Provide only the English translation:`;
 		const messages = [buildChatCompletion('user', translationPrompt)];
 
 		try {
-			const translatedText = await llmService.invokeLlm(messages, DEFAULT_EXTRACTION_MODEL, userId);
+			const translatedText = await llmService.invokeLlm(messages, utilityModelInfo, userId);
 
 			// **FIXED: Return plain text, not JSON.parse**
 			return translatedText.trim() || processedText;

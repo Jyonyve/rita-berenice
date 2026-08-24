@@ -6,6 +6,11 @@ import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { BaseMessage, SystemMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
 
 import { credentialStore } from '../store/credentialStore.js';
+import { JSON_REPAIR_MODEL_TIER } from '@rita-berenice/shared/config';
+import {
+	resolveUtilityModelInfo,
+	resolveUtilityModelInfoForKeyTypes,
+} from '@rita-berenice/shared/util';
 
 import {
 	buildGlossaryExtractionPrompt,
@@ -37,9 +42,27 @@ import { createGlossaryExtractionSchema, createNerSchema } from '../util/schemaU
 
 interface StructuredOutputRepairOptions {
 	requiredSchema: string;
+	/** The model that produced the malformed output. Repair is routed from it. */
+	sourceModelInfo?: AiModelInfo;
+	/** Explicit override, still honoured; it wins over the tier setting. */
 	repairModelInfo?: AiModelInfo;
 	signal?: AbortSignal;
 }
+
+/**
+ * Chooses the model that repairs malformed structured output.
+ *
+ * An explicit `repairModelInfo` always wins. Otherwise `JSON_REPAIR_MODEL_TIER` decides between
+ * the utility tier and the model that produced the output; see that constant for why repair is
+ * the one path here worth watching separately.
+ */
+const resolveRepairModelInfo = (repairOptions: StructuredOutputRepairOptions): AiModelInfo => {
+	if (repairOptions.repairModelInfo) return repairOptions.repairModelInfo;
+	if (!repairOptions.sourceModelInfo) return DEFAULT_EXTRACTION_MODEL;
+	return JSON_REPAIR_MODEL_TIER === 'turn'
+		? repairOptions.sourceModelInfo
+		: resolveUtilityModelInfo(repairOptions.sourceModelInfo.model);
+};
 
 const buildModelLogContext = (
 	aiModelInfo: AiModelInfo,
@@ -372,7 +395,7 @@ export const llmService = {
 		zodSchema: ZodType<T>,
 		repairOptions: StructuredOutputRepairOptions
 	): Promise<T> => {
-		const repairModelInfo = repairOptions.repairModelInfo ?? DEFAULT_EXTRACTION_MODEL;
+		const repairModelInfo = resolveRepairModelInfo(repairOptions);
 		const correctionPrompt = buildJsonCorrectionPrompt(
 			parsingError.rawOutput,
 			`The JSON was malformed. Reason: ${parsingError.message}.`,
@@ -498,10 +521,36 @@ export const llmService = {
 	},
 
 	/**
+	 * Picks the utility model for work with no chat turn behind it, from the providers this user
+	 * has registered a key for.
+	 *
+	 * Reads key *metadata* only - `getUserApiKeyMetadata` never decrypts anything - so choosing a
+	 * model does not put a secret in scope. This exists because pinning these paths to
+	 * `DEFAULT_EXTRACTION_MODEL` reproduced the finalization incident somewhere else: an account
+	 * with only a Google key could chat but could not create a character.
+	 */
+	resolveUserUtilityModelInfo: async (userId: string): Promise<AiModelInfo> => {
+		const { configuredKeyTypes } = await credentialStore.getUserApiKeyMetadata(userId);
+		const utilityModelInfo = resolveUtilityModelInfoForKeyTypes(configuredKeyTypes);
+		flowLogger.info('llmService', 'utilityModel.resolvedFromKeys', {
+			userId,
+			configuredKeyCount: configuredKeyTypes.length,
+			platform: utilityModelInfo.platform,
+			provider: utilityModelInfo.provider,
+			model: utilityModelInfo.model,
+		});
+		return utilityModelInfo;
+	},
+
+	/**
 	 * Translates a proper noun using the default free chat model.
 	 */
-	translateProperNoun: async (koreanTerm: string, userId: string): Promise<string> => {
-		const aiModelInfo = DEFAULT_EXTRACTION_MODEL;
+	translateProperNoun: async (
+		koreanTerm: string,
+		userId: string,
+		utilityModelInfo?: AiModelInfo
+	): Promise<string> => {
+		const aiModelInfo = utilityModelInfo ?? DEFAULT_EXTRACTION_MODEL;
 		const prompt = buildTermTranslationPrompt(koreanTerm);
 
 		// MODIFIED: 'invokeLlm'에 맞게 messages 배열을 생성하여 전달합니다.
@@ -521,8 +570,12 @@ export const llmService = {
 	/**
 	 * Extracts proper nouns from text using the default Google AI model.
 	 */
-	extractProperNouns: async (textToAnalyze: string, userId: string): Promise<string[]> => {
-		const aiModelInfo = DEFAULT_EXTRACTION_MODEL;
+	extractProperNouns: async (
+		textToAnalyze: string,
+		userId: string,
+		utilityModelInfo?: AiModelInfo
+	): Promise<string[]> => {
+		const aiModelInfo = utilityModelInfo ?? DEFAULT_EXTRACTION_MODEL;
 		const prompt = buildNerPrompt(textToAnalyze);
 		const nerSchema = createNerSchema();
 
@@ -545,12 +598,13 @@ export const llmService = {
 
 	extractGlossaryTerms: async (
 		textToAnalyze: string,
-		userId: string
+		userId: string,
+		utilityModelInfo?: AiModelInfo
 	): Promise<Array<{ koreanTerm: string; englishTerm: string }>> => {
 		const prompt = buildGlossaryExtractionPrompt(textToAnalyze);
 		const response = await llmService.invokeStructuredLlm(
 			[{ role: 'user', content: prompt }],
-			DEFAULT_EXTRACTION_MODEL,
+			utilityModelInfo ?? DEFAULT_EXTRACTION_MODEL,
 			userId,
 			createGlossaryExtractionSchema()
 		);

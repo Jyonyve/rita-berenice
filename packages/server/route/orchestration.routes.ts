@@ -21,7 +21,7 @@ import { characterStore } from '../store/characterStore.js';
 import { profileStore } from '../store/profileStore.js';
 import { chatStore } from '../store/chatStore.js';
 import z from 'zod';
-import { ReceiveBotResponseStreamEvent } from '@rita-berenice/shared/api';
+import { ReceiveBotResponseIntent, ReceiveBotResponseStreamEvent } from '@rita-berenice/shared/api';
 import { finalizationJobService } from '../service/finalizationJobService.js';
 import { modelCatalogService } from '../service/modelCatalogService.js';
 import { getSessionUserId } from '../util/authUtils.js';
@@ -48,6 +48,7 @@ interface ReceiveBotResponseBody {
 	sequence: number;
 	entries: { type: 'dialogue' | 'action'; prompt: string }[];
 	modelName: string;
+	intent?: ReceiveBotResponseIntent;
 }
 
 const getOwnedSession = async (sessionId: string, userId: string) => {
@@ -59,7 +60,7 @@ const getOwnedSession = async (sessionId: string, userId: string) => {
 };
 
 const resolveReceiveBotResponseContext = async (body: ReceiveBotResponseBody, userId: string) => {
-	const { sessionId, sequence, entries, modelName } = body;
+	const { sessionId, sequence, entries, modelName, intent } = body;
 	validateServiceId(sessionId, RESOURCES.CHAT);
 	const sessionInfo = await getOwnedSession(sessionId, userId);
 	if (!sessionInfo.profileId) {
@@ -98,6 +99,7 @@ const resolveReceiveBotResponseContext = async (body: ReceiveBotResponseBody, us
 	return {
 		sessionId,
 		sequence,
+		intent,
 		adultContentEnabled: sessionInfo.contentPolicy === 'adult',
 		tempChatTurnCdo,
 		characterInfo,
@@ -139,7 +141,7 @@ router.post(
 				context.profileInfo,
 				context.aiModelInfo,
 				context.recentChatTurnString,
-				{ adultContentEnabled: context.adultContentEnabled }
+				{ adultContentEnabled: context.adultContentEnabled, intent: context.intent }
 			);
 
 			res.status(200).json(response);
@@ -184,6 +186,7 @@ router.post(
 					context.recentChatTurnString,
 					{
 						adultContentEnabled: context.adultContentEnabled,
+						intent: context.intent,
 						signal: disconnectController.signal,
 						onStatus: (stage) => writeStreamEvent(res, { type: 'status', stage }),
 						onDelta: (text) => writeStreamEvent(res, { type: 'delta', text }),
