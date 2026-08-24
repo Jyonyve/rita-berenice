@@ -70,6 +70,25 @@ export const documentToEmbeddingContent = (document: DocumentInfo): string =>
 		.filter((line): line is string => line !== undefined)
 		.join('\n');
 
+/**
+ * The metadata stored alongside a document's embedding.
+ *
+ * Shared with the migration backfill so the two write paths cannot drift: an
+ * embedding written by a backfill has to be indistinguishable from one written
+ * when the document was approved here.
+ */
+export const documentToEmbeddingMetadata = (document: DocumentInfo) => ({
+	title: document.title,
+	origin: document.origin,
+	groundingMode: document.groundingMode,
+	issuer: document.issuer ?? null,
+	viewpoint: document.viewpoint ?? null,
+	claimMode: document.claimMode ?? 'unknown',
+	eventKey: document.eventKey ?? null,
+	timelineOrder: document.timelineOrder ?? null,
+	inWorldTime: document.inWorldTime ?? null,
+});
+
 export const applyDocumentDraftUpdate = (
 	document: DocumentInfo,
 	input: DocumentDraftUpdate,
@@ -405,17 +424,7 @@ export const documentStore = {
 				characterId: approved.characterId,
 				sessionId: approved.sessionId,
 				content: documentToEmbeddingContent(approved),
-				metadata: {
-					title: approved.title,
-					origin: approved.origin,
-					groundingMode: approved.groundingMode,
-					issuer: approved.issuer ?? null,
-					viewpoint: approved.viewpoint ?? null,
-					claimMode: approved.claimMode ?? 'unknown',
-					eventKey: approved.eventKey ?? null,
-					timelineOrder: approved.timelineOrder ?? null,
-					inWorldTime: approved.inWorldTime ?? null,
-				},
+				metadata: documentToEmbeddingMetadata(approved),
 			});
 		return rows[0].data;
 	},
@@ -451,17 +460,7 @@ export const documentStore = {
 				characterId: updated.characterId,
 				sessionId: updated.sessionId,
 				content: documentToEmbeddingContent(updated),
-				metadata: {
-					title: updated.title,
-					origin: updated.origin,
-					groundingMode: updated.groundingMode,
-					issuer: updated.issuer ?? null,
-					viewpoint: updated.viewpoint ?? null,
-					claimMode: updated.claimMode ?? 'unknown',
-					eventKey: updated.eventKey ?? null,
-					timelineOrder: updated.timelineOrder ?? null,
-					inWorldTime: updated.inWorldTime ?? null,
-				},
+				metadata: documentToEmbeddingMetadata(updated),
 			});
 		} else {
 			embeddingJobService.invalidate({ sourceType: 'document', sourceId: documentId });
