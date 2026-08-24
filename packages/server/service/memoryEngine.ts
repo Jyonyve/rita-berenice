@@ -2,7 +2,7 @@
 
 import { MemoryResponse } from '@rita-berenice/shared/api';
 import { LangCode, DEFAULT_EMOTION, NA } from '@rita-berenice/shared/config';
-import { ChatTurn, RecapInfo } from '@rita-berenice/shared/domain';
+import { ChatTurn, HistoryInfo, RecapInfo } from '@rita-berenice/shared/domain';
 import {
 	parseSessionId,
 	convertArrayToString,
@@ -161,6 +161,11 @@ export const memoryEngine = {
 				boostTerms,
 				relevantRecaps || []
 			);
+			const keywordFallbackHistories = await getKeywordFallbackHistories(
+				characterId,
+				boostTerms,
+				relevantHistoryRes.historyInfos || []
+			);
 			const boostedChatTurns = boostByQueryTerms(
 				boostByCriticalTerm([...semanticChatTurns, ...keywordFallbackChatTurns], criticalTerm),
 				boostTerms,
@@ -172,7 +177,10 @@ export const memoryEngine = {
 				(lore) => JSON.stringify(lore)
 			);
 			const boostedHistory = boostByQueryTerms(
-				boostByCriticalTerm(relevantHistoryRes.historyInfos || [], criticalTerm),
+				boostByCriticalTerm(
+					[...(relevantHistoryRes.historyInfos || []), ...keywordFallbackHistories],
+					criticalTerm
+				),
 				boostTerms,
 				(history) => JSON.stringify(history)
 			);
@@ -272,6 +280,7 @@ export const memoryEngine = {
 					keywordFallbackChat: keywordFallbackChatTurns.length,
 					lore: boostedLore.length,
 					history: boostedHistory.length,
+					keywordFallbackHistory: keywordFallbackHistories.length,
 					recap: boostedRecaps.length,
 					document: selectedDocuments.length,
 					keywordFallbackRecap: keywordFallbackRecaps.length,
@@ -298,6 +307,7 @@ export const memoryEngine = {
 				boostTerms,
 				keywordFallbackIds: {
 					chat: keywordFallbackChatTurns.map((turn) => turn.chatTurnId),
+					history: keywordFallbackHistories.map((history) => history.historyId),
 					recap: keywordFallbackRecaps.map((recap) => recap.recapId),
 				},
 				selectedIds: {
@@ -464,6 +474,37 @@ const getKeywordFallbackChatTurns = async (
 		.sort((left, right) => right.hitCount - left.hitCount || left.index - right.index)
 		.slice(0, limit)
 		.map((item) => item.turn);
+};
+
+const getKeywordFallbackHistories = async (
+	characterId: string,
+	boostTerms: string[],
+	existingHistories: HistoryInfo[],
+	limit = 10
+): Promise<HistoryInfo[]> => {
+	if (!boostTerms.length) return [];
+
+	const existingIds = new Set(existingHistories.map((history) => history.historyId));
+	const keywordCandidateHistories =
+		(
+			await historyStore.queryHistoriesByKeywords(
+				characterId,
+				boostTerms,
+				[...existingIds],
+				Math.max(limit * 5, 50)
+			)
+		).historyInfos || [];
+
+	return keywordCandidateHistories
+		.map((history, index) => ({
+			history,
+			index,
+			hitCount: countQueryTermHits(JSON.stringify(history), boostTerms),
+		}))
+		.filter((item) => item.hitCount > 0)
+		.sort((left, right) => right.hitCount - left.hitCount || left.index - right.index)
+		.slice(0, limit)
+		.map((item) => item.history);
 };
 
 const getKeywordFallbackRecaps = async (

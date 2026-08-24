@@ -209,9 +209,11 @@ export const chatStore = {
 			.select({ data: chatTurnTable.data })
 			.from(chatTurnTable)
 			.where(eq(chatTurnTable.sessionId, sessionId));
-		const candidates = rows
-			.map((row) => row.data)
-			.filter((turn) => matchesCriteria(turn, filterCriteria));
+		const items = rows.map((row) => row.data);
+		// Same English-criteria caveat as historyStore.queryHistories: an exact-match
+		// pre-filter must not empty the candidate pool before vector search runs.
+		const matched = items.filter((turn) => matchesCriteria(turn, filterCriteria));
+		const candidates = matched.length > 0 ? matched : items;
 		if (!candidates.length) return emptyResponse();
 		const queryWithEmotion = filterCriteria?.emotion
 			? [...queryTexts, `conversation with ${filterCriteria.emotion} emotion`]

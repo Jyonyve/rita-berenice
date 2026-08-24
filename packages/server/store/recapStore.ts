@@ -84,11 +84,15 @@ export const recapStore = {
 		]
 			.filter(Boolean)
 			.map((value) => String(value).toLowerCase());
-		const candidates = requested.length
-			? all.filter((item) =>
-					requested.some((value) => (item.flagList ?? []).some((flag) => flag.toLowerCase() === value))
-				)
-			: all;
+		const flagged =
+			requested.length > 0
+				? all.filter((item) =>
+						requested.some((value) => (item.flagList ?? []).some((flag) => flag.toLowerCase() === value))
+					)
+				: all;
+		// Flags are English snake_case while criteria values are free-form English phrases,
+		// so an exact-match miss must not empty the pool before vector search runs.
+		const candidates = flagged.length > 0 ? flagged : all;
 		if (!candidates.length) return [];
 		const results = await searchMemoryEmbeddings(
 			queryTexts,

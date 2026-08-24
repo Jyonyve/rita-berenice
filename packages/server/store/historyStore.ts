@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { HistoryResponse, Metadata } from '@rita-berenice/shared/api';
 import { HistoryInfo } from '@rita-berenice/shared/domain';
 import { historyToMetadata } from '@rita-berenice/shared/util';
@@ -8,6 +8,7 @@ import {
 	deleteMemoryEmbeddings,
 	QueryEmbeddingCache,
 	searchMemoryEmbeddings,
+	searchMemoryEmbeddingsByKeywords,
 } from '../service/embeddingService.js';
 import { embeddingJobService } from '../service/embeddingJobService.js';
 import { historyToDocument } from '../util/documentUtils.js';
@@ -128,9 +129,13 @@ export const historyStore = {
 			.select({ data: histories.data })
 			.from(histories)
 			.where(eq(histories.characterId, characterId));
-		const candidates = rows
-			.map((row) => row.data)
-			.filter((item) => matchesCriteria(item, filterCriteria));
+		const items = rows.map((row) => row.data);
+		// Criteria values are LLM-extracted and normalized to English, while the metadata
+		// lists they are matched against follow the data's own language. An exact-match
+		// miss therefore says nothing about relevance, so an empty pre-filter falls open
+		// instead of skipping vector search entirely.
+		const matched = items.filter((item) => matchesCriteria(item, filterCriteria));
+		const candidates = matched.length > 0 ? matched : items;
 		if (!candidates.length) return emptyResponse();
 		const results = await searchMemoryEmbeddings(
 			queryTexts,
@@ -142,6 +147,34 @@ export const historyStore = {
 		const byId = new Map(candidates.map((item) => [item.historyId, item]));
 		return await toResponse(
 			results.map((result) => byId.get(result.sourceId)).filter(Boolean) as HistoryInfo[]
+		);
+	},
+
+	// Mirrors chatStore.queryChatTurnsByKeywords / recapStore.queryRecapsByKeywords: a
+	// keyword pass over the embedded Korean document text rescues retrieval when the
+	// semantic search missed. History is character-scoped because it has no session.
+	queryHistoriesByKeywords: async (
+		characterId: string,
+		keywords: string[],
+		excludeIds: string[] = [],
+		limit = 100
+	): Promise<HistoryResponse> => {
+		const embeddingRows = await searchMemoryEmbeddingsByKeywords(
+			keywords,
+			{ sourceType: 'history', characterId },
+			{ excludeSourceIds: excludeIds, limit }
+		);
+		const sourceIds = embeddingRows.map((row) => row.sourceId);
+		if (!sourceIds.length) return emptyResponse();
+
+		const rows = await getDatabase()
+			.select({ data: histories.data })
+			.from(histories)
+			.where(and(eq(histories.characterId, characterId), inArray(histories.historyId, sourceIds)))
+			.limit(sourceIds.length);
+		const byId = new Map(rows.map((row) => [row.data.historyId, row.data]));
+		return toResponse(
+			sourceIds.map((sourceId) => byId.get(sourceId)).filter(Boolean) as HistoryInfo[]
 		);
 	},
 
