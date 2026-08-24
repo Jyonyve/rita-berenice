@@ -38,6 +38,7 @@ export const LANG_KEYS = {
 	REGISTER_API_KEY: 'REGISTER_API_KEY',
 	API_KEY_MISSING: 'API_KEY_MISSING',
 	API_KEY_REJECTED: 'API_KEY_REJECTED',
+	TURN_ENRICHMENT_FAILED: 'TURN_ENRICHMENT_FAILED',
 	EDIT: 'EDIT',
 	SAVE: 'SAVE',
 	SAVE_ANYWAY: 'SAVE_ANYWAY',
@@ -599,5 +600,12 @@ export const alertToastConstants: LangRecord = {
 	API_KEY_REJECTED: {
 		kor: 'API 키가 거부되었습니다. 키를 확인하거나 교체해주세요.',
 		eng: 'API key was rejected. Check it or replace it.',
+	},
+	// Deliberately does not mention embeddings. The old wording said "memory indexing failed",
+	// which sent the diagnosis of a missing-API-key incident down the embedding path first.
+	// What actually fails here is the LLM metadata pass: summary, keywords, emotion.
+	TURN_ENRICHMENT_FAILED: {
+		kor: '대화는 저장됐지만 요약·키워드 생성에 실패했습니다. 다음 확정 시 다시 시도됩니다.',
+		eng: 'The message was saved, but its summary and keywords could not be generated. It will be retried.',
 	},
 };

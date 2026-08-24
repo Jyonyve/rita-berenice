@@ -50,11 +50,21 @@ export interface BasicLlmRequestFormat {
 	aiModelInfo: AiModelInfo;
 }
 
+/**
+ * A reroll and a new message were previously the same call with the same shape, so the server
+ * could not tell "regenerate this request" from "here is my next question" - and a temp turn that
+ * failed to finalize quietly collected two unrelated requests as candidate responses for one turn.
+ * The caller now says which it means.
+ */
+export type ReceiveBotResponseIntent = 'new' | 'reroll';
+
 export interface ReceiveBotResponseRequest {
 	sessionId: string;
 	sequence: number;
 	entries: ChatEntry[];
 	modelName: AllModelNames;
+	/** Absent means 'new'; older clients predate this field. */
+	intent?: ReceiveBotResponseIntent;
 }
 
 export type ChatGenerationStage = 'preparing' | 'retrieving' | 'generating' | 'saving';
@@ -83,6 +93,13 @@ export interface FinalizationJobSnapshot {
 	updatedAt: string;
 	result?: ChatTurn;
 	error?: string;
+	/**
+	 * Set when the failure is one the user can act on - today, a missing or rejected API key.
+	 * The client reuses the same rendering it already uses for a failed chat request, so a
+	 * finalization that died on a missing key says so instead of blaming memory indexing.
+	 */
+	errorCode?: string;
+	keyType?: ApiKeyType;
 }
 
 export interface EnqueueFinalizationResponse {

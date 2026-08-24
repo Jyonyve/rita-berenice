@@ -88,6 +88,69 @@ export const MODEL_LIMITS_INFO: Record<
 	'gpt-4o-mini': { contextWindow: 128_000, maxOutputTokens: 16_384, recommendedOutputTokens: 2_048 },
 };
 
+/**
+ * The model used for the utility calls that support a chat turn - metadata enrichment, NER,
+ * glossary extraction, query translation - keyed by the platform and provider of the model that
+ * produced the turn itself.
+ *
+ * These calls used to run unconditionally on `DEFAULT_EXTRACTION_MODEL` (direct/openai
+ * `gpt-4o-mini`). That is a bug, not a cost choice: an account that chats on Google or OpenRouter
+ * has no OpenAI key, so every utility call threw `ApiKeyError('missing', 'openaiApiKey')` and the
+ * finalization job failed three times while the chat response itself had succeeded. Staying on the
+ * turn's own platform keeps the whole request on the one key the user actually registered.
+ *
+ * Every entry must already exist in `SUPPORTED_MODEL_INFO` and `MODEL_LIMITS_INFO`; this map only
+ * points at models, it never introduces one. Where a provider has no genuinely cheap tier on a
+ * platform (OpenRouter's Anthropic and OpenAI lines), the cheapest *offered* model is used - the
+ * point is key compatibility first, price second.
+ */
+export const UTILITY_MODEL_INFO: Record<string, Record<string, string>> = {
+	openrouter: {
+		anthropic: 'anthropic/claude-sonnet-4.6',
+		google: 'google/gemini-3.5-flash',
+		openai: 'openai/gpt-5.6-terra',
+	},
+	direct: {
+		openai: 'gpt-4o-mini',
+		anthropic: 'claude-haiku-4-5-20251001',
+		google: 'gemini-3.6-flash',
+	},
+} as const;
+
+/**
+ * The order utility work falls back through when there is no turn to take a provider from.
+ *
+ * Character glossary scanning and the standalone NER/translation endpoints have no chat turn in
+ * scope, so `UTILITY_MODEL_INFO` has nothing to key on. Leaving them pinned to
+ * `DEFAULT_EXTRACTION_MODEL` reproduced the original incident at a different entry point: an
+ * account with no OpenAI key could chat fine but could not create a character. The caller instead
+ * walks this list and takes the first provider the user has actually registered a key for.
+ *
+ * `direct/openai` is first so that nothing changes for accounts that already have an OpenAI key -
+ * they keep the same model and the same cost as before. The rest run direct before OpenRouter
+ * (no routing markup) and cheap tiers before expensive ones.
+ */
+export const UTILITY_MODEL_PREFERENCE: ReadonlyArray<{ platform: string; provider: string }> = [
+	{ platform: 'direct', provider: 'openai' },
+	{ platform: 'direct', provider: 'google' },
+	{ platform: 'direct', provider: 'anthropic' },
+	{ platform: 'openrouter', provider: 'google' },
+	{ platform: 'openrouter', provider: 'openai' },
+	{ platform: 'openrouter', provider: 'anthropic' },
+] as const;
+
+/**
+ * Which tier repairs a model's malformed JSON.
+ *
+ * `'utility'` keeps repair on the same key as everything else, which is why it is the default: a
+ * user with only a Google key could otherwise have a repair attempt fail on a missing OpenAI key.
+ * Repair is different in kind from the other utility calls, though - it asks a model to fix
+ * another model's broken output, and a cheaper model may fix it less often. If repair failures
+ * rise, flip this one constant to `'turn'` to repair on the model that produced the output. It is
+ * deliberately the only switch needed to revert this path on its own.
+ */
+export const JSON_REPAIR_MODEL_TIER: 'utility' | 'turn' = 'utility';
+
 export const correctAiModelInfo: Record<string, Record<string, string[]>> = {
 	openrouter: {
 		anthropic: ['anthropic/claude-sonnet-4.6'],

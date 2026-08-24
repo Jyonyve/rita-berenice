@@ -1,11 +1,18 @@
 // src/shared/util/aiModelUtils.ts
 
-import { MODEL_LIMITS_INFO, SUPPORTED_MODEL_INFO } from '../config/supportAiModelInfo.js';
+import {
+	MODEL_LIMITS_INFO,
+	SUPPORTED_MODEL_INFO,
+	UTILITY_MODEL_INFO,
+	UTILITY_MODEL_PREFERENCE,
+} from '../config/supportAiModelInfo.js';
 import {
 	AllModelNames,
 	AiModelInfo,
+	ApiKeyType,
 	DEFAULT_EXTRACTION_MODEL,
 	AiPlatform,
+	getRequiredApiKeyType,
 } from '../domain/index.js';
 
 // --- Constants (Client-safe) ---
@@ -86,6 +93,107 @@ export const getAiModelInfo = (modelName: AllModelNames): AiModelInfo => {
 		console.error(`Error getting AI Model info for "${modelName}":`, error);
 		return DEFAULT_EXTRACTION_MODEL;
 	}
+};
+
+/**
+ * Utility calls run at a low temperature - they extract and translate, they do not perform.
+ * Models that reject the parameter still get `undefined`.
+ */
+const UTILITY_TEMPERATURE = 0.3;
+
+const getUtilityTemperature = (modelName: string): number | undefined =>
+	MODEL_LIMITS_INFO[modelName]?.supportsTemperature === false ? undefined : UTILITY_TEMPERATURE;
+
+/**
+ * Derives platform and provider from a model name without requiring the model to be listed.
+ *
+ * The listed-model lookup in `getAiModelInfo` is not enough here: OpenRouter's catalog is fetched
+ * live, so a turn can legitimately run on a model this file has never heard of. Falling back to
+ * `DEFAULT_EXTRACTION_MODEL` for those would reintroduce exactly the cross-provider key failure
+ * this resolution exists to prevent, so the OpenRouter `provider/model` shape is read directly.
+ */
+const parseModelOrigin = (
+	modelName: string
+): { platform: string; provider: string } | undefined => {
+	if (modelName.includes('/')) {
+		const [providerPart] = modelName.split('/');
+		return providerPart ? { platform: PLATFORM_OPENROUTER, provider: providerPart } : undefined;
+	}
+
+	for (const [platformKey, providers] of Object.entries(SUPPORTED_MODEL_INFO)) {
+		if (platformKey === PLATFORM_OPENROUTER) continue;
+		for (const [providerKey, models] of Object.entries(providers)) {
+			if (Array.isArray(models) && models.includes(modelName)) {
+				return { platform: platformKey, provider: providerKey };
+			}
+		}
+	}
+	return undefined;
+};
+
+const buildUtilityModelInfo = (
+	platform: string,
+	provider: string,
+	modelName: string
+): AiModelInfo =>
+	({
+		platform,
+		provider,
+		model: modelName,
+		maxTokens: MODEL_LIMITS_INFO[modelName]?.recommendedOutputTokens ?? DEFAULT_MAX_TOKEN,
+		temperature: getUtilityTemperature(modelName),
+	}) as AiModelInfo;
+
+/**
+ * Picks the model for the utility calls that support a chat turn, from the model that produced
+ * the turn.
+ *
+ * Resolution order, which is the whole point of the function:
+ * 1. Read the turn model's platform and provider.
+ * 2. Look them up in `UTILITY_MODEL_INFO`.
+ * 3. With no mapping, fall back to the turn's own model - never to another provider's, because
+ *    that is what left accounts without an OpenAI key unable to finalize a turn.
+ *
+ * Only a missing or unreadable turn model reaches `DEFAULT_EXTRACTION_MODEL`. Entry points with no
+ * turn in scope use `resolveUtilityModelInfoForKeyTypes` instead.
+ */
+export const resolveUtilityModelInfo = (turnModelName?: string): AiModelInfo => {
+	if (!turnModelName) return DEFAULT_EXTRACTION_MODEL;
+
+	const origin = parseModelOrigin(turnModelName);
+	if (!origin) return DEFAULT_EXTRACTION_MODEL;
+
+	const utilityModelName = UTILITY_MODEL_INFO[origin.platform]?.[origin.provider] ?? turnModelName;
+
+	return buildUtilityModelInfo(origin.platform, origin.provider, utilityModelName);
+};
+
+/**
+ * Picks the utility model for work that has no chat turn to inherit a provider from - character
+ * glossary scanning, the standalone NER and translation endpoints.
+ *
+ * Takes the key types the user has registered (never the keys themselves) and returns the first
+ * entry in `UTILITY_MODEL_PREFERENCE` they can actually pay for. Falling back to
+ * `DEFAULT_EXTRACTION_MODEL` when none match is deliberate: it leaves the existing "no OpenAI key
+ * configured" error in place rather than inventing a different failure for a user who has
+ * registered nothing at all.
+ */
+export const resolveUtilityModelInfoForKeyTypes = (
+	configuredKeyTypes: readonly ApiKeyType[]
+): AiModelInfo => {
+	const configured = new Set(configuredKeyTypes);
+
+	for (const { platform, provider } of UTILITY_MODEL_PREFERENCE) {
+		const keyType = getRequiredApiKeyType(platform, provider);
+		if (!keyType || !configured.has(keyType)) continue;
+
+		const modelName = UTILITY_MODEL_INFO[platform]?.[provider];
+		if (!modelName) continue;
+
+		return buildUtilityModelInfo(platform, provider, modelName);
+	}
+
+	return DEFAULT_EXTRACTION_MODEL;
 };
 
 /**
