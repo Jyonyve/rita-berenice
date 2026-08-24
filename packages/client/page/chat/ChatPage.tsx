@@ -418,15 +418,22 @@ export const ChatPage: FC<{
 						return;
 					}
 					console.error('Background chat finalization failed:', error);
-					setPageError(
-						'The message remains visible, but memory indexing failed. It will be retried when finalized again.'
-					);
+					// A finalization can fail for a reason the user can fix - most often a provider key
+					// the enrichment pass needs. Saying "memory indexing failed" for that sent the last
+					// incident's diagnosis to the embedding pipeline instead of to the missing key.
+					const apiKeyFailure = readApiKeyFailure(error);
+					if (apiKeyFailure) {
+						setPageError(apiKeyFailure.message);
+						setApiKeyPrompt(apiKeyFailure.keyType);
+					} else {
+						setPageError(getLangAlertText(LANG_KEYS.TURN_ENRICHMENT_FAILED));
+					}
 				} finally {
 					finalizationControllersRef.current.delete(controller);
 				}
 			})();
 		},
-		[addChatTurn, enqueueFinalization, waitForFinalizationJob]
+		[addChatTurn, enqueueFinalization, waitForFinalizationJob, setApiKeyPrompt]
 	);
 
 	const handleSendMessage = useCallback(async () => {
@@ -450,6 +457,7 @@ export const ChatPage: FC<{
 						sequence: newTempSequence,
 						entries: parseTextToEntries(userInput),
 						modelName,
+						intent: 'new',
 					},
 					onDelta: (text) => setStreamingText((current) => current + text),
 					onStatus: setStreamingStage,
@@ -556,6 +564,9 @@ export const ChatPage: FC<{
 					sequence,
 					entries: tempChatTurn.chatTurnSets[currentTempSetNo].request.entries,
 					modelName,
+					// Says outright that this reuses the stored request, so the server can refuse a
+					// reroll that would otherwise become a second, unrelated question on one turn.
+					intent: 'reroll',
 				},
 				onDelta: (text) => setStreamingText((current) => current + text),
 				onStatus: setStreamingStage,

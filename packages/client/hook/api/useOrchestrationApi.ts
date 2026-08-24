@@ -57,11 +57,13 @@ export const useOrchestrationApi = () => {
 				return response.data.result;
 			}
 			if (response.data.status === 'failed') {
-				throw new ApiError(
-					500,
-					response.data.error || 'Chat turn finalization failed.',
-					'The message was saved locally, but memory indexing failed.'
-				);
+				// `details` mirrors the chat-stream error shape so the caller can reuse the same
+				// API-key handling. Without it a finalization that died on a missing key was
+				// reported as an indexing problem, which is what made the demo incident hard to read.
+				throw new ApiError(500, response.data.error || 'Chat turn finalization failed.', undefined, {
+					code: response.data.errorCode,
+					keyType: response.data.keyType,
+				});
 			}
 			await new Promise((resolve) => setTimeout(resolve, 1_000));
 		}
