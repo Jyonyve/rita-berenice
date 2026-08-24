@@ -448,9 +448,38 @@ export const ChatPage: FC<{
 		let newTempTurnResult = null;
 
 		try {
-			// 1. FIRST: Generate the new temp turn (AI response)
 			if (userInput.trim()) {
-				const newTempSequence = getNextSequence();
+				// 1. FIRST: Fix the displayed temp turn. Its picked set becomes turn N, which frees
+				// the new message from landing on the same sequence - the server would otherwise
+				// merge it into the still-unfixed turn as a second, unrelated candidate set, and
+				// the streamed response would be lost when the picked set is what gets finalized.
+				let heldTurnFixed = false;
+				if (tempChatTurn && tempChatTurn.chatTurnSets.length > 0) {
+					const pickedTurnSet = tempChatTurn.chatTurnSets[currentTempSetNo];
+					if (pickedTurnSet) {
+						finalizeTurnInBackground({
+							userId,
+							sessionId: tempChatTurn.sessionId,
+							sequence: tempChatTurn.sequence,
+							request: pickedTurnSet.request,
+							response: pickedTurnSet.response,
+						});
+						heldTurnFixed = true;
+					}
+				}
+				// The held turn is fixed (optimistically in chatTurns); drop it from the temp slot so
+				// a failed generation leaves the conversation showing fixed turns only. Fixing first
+				// also keeps the picked exchange instead of holding it hostage to a retry.
+				changeTempChatTurn(undefined);
+				setCurrentTempSetNo(0);
+
+				// 2. THEN: Generate the new temp turn on a fresh sequence. getNextSequence() still
+				// reads the pre-finalization chatTurns closure here, so take the max with the slot
+				// the held turn just vacated.
+				const newTempSequence = Math.max(
+					getNextSequence(),
+					tempChatTurn ? tempChatTurn.sequence + 1 : 0
+				);
 				newTempTurnResult = await receiveBotResponse.mutateAsync({
 					request: {
 						sessionId,
@@ -463,31 +492,12 @@ export const ChatPage: FC<{
 					onStatus: setStreamingStage,
 					signal: streamController.signal,
 				});
-			}
 
-			// 2. SECOND: Only if AI response succeeded, finalize the previous temp turn
-			if (newTempTurnResult) {
-				// Finalize the old turn if it exists
-				if (tempChatTurn && tempChatTurn.chatTurnSets.length > 0) {
-					const pickedTurnSet = tempChatTurn.chatTurnSets[currentTempSetNo];
-					if (pickedTurnSet) {
-						const finalizedTurnCdo: ChatTurnCdo = {
-							userId,
-							sessionId: tempChatTurn.sessionId,
-							sequence: tempChatTurn.sequence,
-							request: pickedTurnSet.request,
-							response: pickedTurnSet.response,
-						};
-
-						finalizeTurnInBackground(finalizedTurnCdo);
-					}
-				}
-
-				// 3. THIRD: Update UI state with the new temp turn
+				// 3. Update UI state with the new temp turn
 				changeTempChatTurn(newTempTurnResult);
 				setCurrentTempSetNo(0);
 				handleCharacterImage(newTempTurnResult.chatTurnSets[0].response.emotion);
-				setFocusedTurnIndex(chatTurns.length); // The index of the new temp turn
+				setFocusedTurnIndex(chatTurns.length + (heldTurnFixed ? 1 : 0));
 				setUserInput('');
 
 				// Update session with latest character message

@@ -86,8 +86,9 @@ export const receiveBotResponse = async (
 		// --- 2. LOG CHECKPOINT 1 ---
 		logger.checkpoint('tempTurn.ready', { existingOptionCount: tempTurn.setCount });
 		const userConverSation = parseEntriesToConversation(JSON.parse(inputJsonString));
-		// Checked before generating, so a rejected request costs nothing.
-		assertRerollRequestMatches(tempTurn, userConverSation, options.intent ?? 'new', logger);
+		// Reconciled before generating, so a rejected reroll costs nothing and a new message
+		// arriving on an occupied slot replaces the stale candidates instead of joining them.
+		reconcileTempTurnRequest(tempTurn, userConverSation, options.intent ?? 'new', logger);
 
 		// 2. 새로운 응답 생성 및 추가 (책임 위임)
 		tempTurn = await _generateAndAppendResponse(
@@ -217,28 +218,24 @@ const _getOrCreateTempTurn = async (
 // In src/server/services/orchestrationService.ts
 
 /**
- * [HELPER] Keeps a reroll from turning into a second, unrelated question on the same turn.
+ * [HELPER] Keeps one temp turn to one request.
  *
  * A temp turn models one request with several candidate responses; `fixedSetNo` later picks one
  * response for that one request. Two *different* requests sharing a turn is a state the model
- * cannot express - finalizing it keeps whichever set is picked and silently drops the other. That
- * is what happened in the public demo: turn 6 failed to finalize, the client's next-sequence
- * counter never advanced, and the user's next question landed on sequence 6 as setNo 1 beside an
- * unrelated setNo 0.
+ * cannot express - finalizing it keeps whichever set is picked and silently drops the other.
  *
- * The root cause was that `receiveBotResponse` could not tell the two intents apart - a reroll and
- * a new message were the same call with the same shape. `intent` now carries that, and a reroll
- * claiming to reuse a request it does not match is refused before any generation is paid for.
- *
- * A mismatch under intent 'new' is only logged, not refused: the send path computes its sequence
- * from finalized turns alone, so a turn still awaiting finalization can legitimately produce this
- * shape, and rejecting it would break ordinary chatting. Storing the basic turn before enrichment
- * (see finalizationJobService) is what keeps the sequence moving; this log is here to show whether
- * any case survives that fix.
+ * - A reroll claiming to reuse a request it does not match is refused before any generation is
+ *   paid for: the client sent something other than what the turn stores.
+ * - A new message arriving on an occupied slot is the next conversation turn, not a candidate
+ *   for the stored one - the client derives its sequence from finalized turns alone, so the
+ *   shape occurs legitimately while a turn is still being finalized. Appending it as an extra
+ *   set is what registered the same question twice in the demo: the streamed response landed
+ *   as setNo 3 of a stale turn while finalization fixed the stale set as the turn. The turn is
+ *   therefore reset, and the incoming message becomes its only request.
  *
  * Exported for tests; nothing outside this module calls it.
  */
-export const assertRerollRequestMatches = (
+export const reconcileTempTurnRequest = (
 	tempTurn: TempChatTurn,
 	userConversation: string,
 	intent: ReceiveBotResponseIntent,
@@ -261,7 +258,11 @@ export const assertRerollRequestMatches = (
 	logger?.warn('tempTurn.requestMismatch', {
 		existingSetCount: tempTurn.setCount,
 		fixedSetNo: tempTurn.fixedSetNo,
+		action: 'reset',
 	});
+	tempTurn.chatTurnSets = [];
+	tempTurn.setCount = 0;
+	tempTurn.fixedSetNo = -1;
 };
 
 /**
