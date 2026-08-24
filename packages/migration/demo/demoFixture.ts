@@ -29,18 +29,18 @@ import {
 
 export const PUBLIC_DEMO_IDS = {
 	userId: 'public_demo_user',
-	characterId: 'seoha_public_demo',
-	sessionId: 'seoha_public_demo_session',
-	worldLoreId: 'seoha_public_demo_world_lore',
-	mapLoreId: 'seoha_public_demo_memory_map_lore',
-	historyId: 'seoha_public_demo_east_tower_history',
-	midnightArchiveTermId: 'seoha_public_demo_midnight_archive_session_term',
-	memoryKeyTermId: 'seoha_public_demo_memory_key_session_term',
-	manualDraftDocumentId: 'seoha_public_demo_manual_draft_document',
-	generatedDraftDocumentId: 'seoha_public_demo_generated_draft_document',
-	approvedRagDocumentId: 'seoha_public_demo_approved_rag_document',
-	approvedNoRagDocumentId: 'seoha_public_demo_approved_no_rag_document',
-	archivedDocumentId: 'seoha_public_demo_archived_document',
+	characterId: 'seoha_demo',
+	sessionId: 'seoha_demo_session',
+	worldLoreId: 'seoha_demo_world_lore',
+	mapLoreId: 'seoha_demo_memory_map_lore',
+	historyId: 'seoha_demo_east_tower_history',
+	midnightArchiveTermId: 'seoha_demo_midnight_archive_session_term',
+	memoryKeyTermId: 'seoha_demo_memory_key_session_term',
+	manualDraftDocumentId: 'seoha_demo_manual_draft_document',
+	generatedDraftDocumentId: 'seoha_demo_generated_draft_document',
+	approvedRagDocumentId: 'seoha_demo_approved_rag_document',
+	approvedNoRagDocumentId: 'seoha_demo_approved_no_rag_document',
+	archivedDocumentId: 'seoha_demo_archived_document',
 } as const;
 
 const CREATED_AT = '2026-01-01T00:00:00.000Z';
@@ -340,7 +340,7 @@ export const buildPublicDemoFixture = (ownerUserId: string = PUBLIC_DEMO_IDS.use
 	};
 	const character: CharacterInfo = {
 		characterId: PUBLIC_DEMO_IDS.characterId,
-		variant: 'public_demo',
+		variant: 'demo',
 		contact: '',
 		type: METADATA_TYPES.CHARACTER,
 		visibility: CHARACTER_VISIBILITY.PUBLIC,

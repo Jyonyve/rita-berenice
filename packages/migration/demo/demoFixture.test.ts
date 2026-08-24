@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { documentInfoSchema } from '@rita-berenice/shared/domain';
+import { parseProfileId, parseSessionId } from '@rita-berenice/shared/util';
 import { buildPublicDemoFixture, PUBLIC_DEMO_IDS } from './demoFixture.js';
 
 /**
@@ -11,7 +12,7 @@ import { buildPublicDemoFixture, PUBLIC_DEMO_IDS } from './demoFixture.js';
  * would leak them into this repository.
  */
 const DEMO_USER_ID = 'public_demo_user';
-const DEMO_ID_PREFIX = 'seoha_public_demo';
+const DEMO_ID_PREFIX = 'seoha_demo';
 const DEMO_EMAIL_DOMAIN = '@local.invalid';
 
 const ID_KEY_PATTERN = /^id$|Id$|Ids$|IdList$/;
@@ -70,6 +71,29 @@ test('every fixture identifier stays inside the public demo namespace', () => {
 	assert.equal(fixture.profile.userId, DEMO_USER_ID);
 	assert.equal(fixture.session.sessionId, PUBLIC_DEMO_IDS.sessionId);
 	assert.equal(fixture.character.worldLoreId, PUBLIC_DEMO_IDS.worldLoreId);
+});
+
+test('fixture ids survive the parsers the app derives scope from', () => {
+	// The app does not carry characterId alongside sessionId everywhere: ChatPageLoader,
+	// DocumentPage, memoryEngine and termStore all recover it by splitting the session id
+	// into exactly {charName}_{variant}_{uuid}. An id with an extra underscore silently
+	// resolves to a character that does not exist, which is a 404 rather than a test
+	// failure, so assert the round-trip here.
+	const fixture = buildPublicDemoFixture();
+
+	const parsedSession = parseSessionId(fixture.session.sessionId);
+	assert.equal(parsedSession.characterId, fixture.character.characterId);
+	assert.equal(parsedSession.variant, fixture.character.variant);
+	assert.equal(fixture.session.sessionId.split('_').length, 3);
+	assert.equal(fixture.character.characterId.split('_').length, 2);
+
+	// profileId is {sessionId}_{userId}, and parseProfileId reads the owner from the
+	// fourth segment. Real owners are UUIDs, which contain no underscores; the built-in
+	// anonymous owner does, so exercise this with a UUID-shaped placeholder.
+	const uuidOwned = buildPublicDemoFixture('00000000-0000-4000-8000-000000000000');
+	const parsedProfile = parseProfileId(uuidOwned.profile.profileId);
+	assert.equal(parsedProfile.sessionId, uuidOwned.session.sessionId);
+	assert.equal(parsedProfile.userId, uuidOwned.profile.userId);
 });
 
 test('every address in the fixture uses the reserved invalid domain', () => {
