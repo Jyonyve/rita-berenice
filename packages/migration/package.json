@@ -1,0 +1,20 @@
+{
+	"name": "@rita-berenice/migration",
+	"version": "1.0.0",
+	"private": true,
+	"type": "module",
+	"description": "Public demo seed scripts (development only)",
+	"scripts": {
+		"demo:seed": "tsx --env-file ../../.env demo/seedPublicDemo.ts",
+		"demo:test": "tsc --project tsconfig.demo.json && tsx --test demo/demoFixture.test.ts",
+		"embedding:backfill": "tsx --env-file ../../.env embedding/backfillEmbeddings.ts",
+		"embedding:typecheck": "tsc --project tsconfig.embedding.json"
+	},
+	"dependencies": {
+		"@rita-berenice/server": "workspace:*",
+		"@rita-berenice/shared": "workspace:*"
+	},
+	"devDependencies": {
+		"tsx": "4.20.6"
+	}
+}

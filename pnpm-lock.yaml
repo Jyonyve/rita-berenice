@@ -134,6 +134,19 @@ importers:
         specifier: ^7.1.7
         version: 7.1.7(@types/node@24.6.2)(tsx@4.20.6)
 
+  packages/migration:
+    dependencies:
+      '@rita-berenice/server':
+        specifier: workspace:*
+        version: link:../server
+      '@rita-berenice/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      tsx:
+        specifier: 4.20.6
+        version: 4.20.6
+
   packages/server:
     dependencies:
       '@aws-sdk/client-s3':

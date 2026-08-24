@@ -23,6 +23,9 @@ release_command = "node packages/server/dist/db/migrate.js"
   HOST = "0.0.0.0"
   LOCAL_IMAGE_STORAGE_DIR = "public/assets"
   NODE_ENV = "production"
+  # Not a secret, and it has to match whatever wrote the rows in memory_embeddings:
+  # searches filter on embedding_model, so a mismatch silently returns nothing.
+  OPENAI_EMBEDDING_MODEL = "text-embedding-3-large"
   PORT = "3000"
   VITE_API_DOMAIN = "https://rita-berenice-demo.fly.dev"
   VITE_APP_DOMAIN = "https://rita-berenice-demo.fly.dev"
