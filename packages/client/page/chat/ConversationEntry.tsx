@@ -32,6 +32,15 @@ export const ConversationEntry: FC<ConversationEntryProps> = ({
 			localizeDirections={localizeDirections}
 			className={styleEntryFont(role, hasEmbeddedActions ? 'dialogue' : entry.type)}
 			style={chatColorVariables}
+			sx={{
+				// The entry classes declare these same variables in global CSS, but the
+				// Typography root's own variant styles (body1: 1rem/400) are injected after
+				// them and win the cascade at equal specificity. Passing them through sx
+				// merges them into the Typography rule itself, where they are declared last
+				// and therefore apply.
+				fontSize: 'var(--chat-font-size, 1rem)',
+				fontWeight: 'var(--chat-font-weight, 400)',
+			}}
 		/>
 	);
 };
