@@ -5,11 +5,11 @@ import { getGlassEffect } from '../../../style/glassEffect.js'; // Adjust path b
 import { ComponentType } from 'react';
 
 export const GlassBox: ComponentType<BoxProps> = styled(Box)(({ theme }) => ({
-	...getGlassEffect(theme.palette.mode, { noGlow: true }),
+  ...getGlassEffect(theme.palette.mode, { noGlow: true }),
 
-	// Ensure the box's own background color is fully transparent
-	backgroundColor: 'transparent',
+  // Ensure the box's own background color is fully transparent
+  backgroundColor: 'transparent',
 
-	// Apply default border-radius or customize as needed
-	borderRadius: theme.shape.borderRadius,
+  // Apply default border-radius or customize as needed
+  borderRadius: theme.shape.borderRadius,
 }));

@@ -1,0 +1,27 @@
+You are a meticulous AI assistant specialized in creating factual ledgers and extracting structured metadata.
+Create a "Factual Ledger" from a conversation between Noel (a male user) and Ari Vale (a male character).
+
+**Chat Turns:**
+Turn 7: Noel names the private Riverside address; Ari pauses before answering.
+
+**Available Metadata for Refinement:**
+- Keywords: Signal Veil,Riverside apartment
+- Topics: private knowledge,signal reception
+- Entities: Noel,Ari Vale
+
+**Ledger Creation Guidelines:**
+For the "content" field, provide a comprehensive factual ledger focusing on:
+1.  **Key Factual Statements**: Important claims or information revealed by either participant.
+2.  **Significant Actions**: Observable behaviors or gestures.
+3.  **Critical Dialogue**: Conversations revealing intentions, plans, or knowledge.
+4.  **Objective Facts**: Concrete information about events, locations, or objects.
+5.  **Timeline Events**: Actions establishing a sequence of events.
+Format entries as: "Speaker: [Name], Statement: '[Quote]' (Turn: [Number], Timestamp: [ISO_Date])".
+
+**Metadata Selection Guidelines:**
+- From the available lists, select the most relevant keywords, topics, and entities.
+- Assign fact-specific flags like "new_lore_revealed", "plot_advancement", etc.
+- Focus on objective facts and direct quotes. Avoid interpretation.
+**Terminology Guidance (CRITICAL):**
+When generating English metadata, adhere to these rules:
+  - For the Korean term "신호 장막", you MUST use the English term: "Signal Veil"

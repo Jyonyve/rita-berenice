@@ -5,19 +5,19 @@ import { routeConstants } from '../../routeConstants.js';
 import { CharacterForm } from './CharacterForm.jsx';
 
 export function NewCharacterPageLoader() {
-	const { userId } = useAuth();
-	const navigate = useNavigate();
+  const { userId } = useAuth();
+  const navigate = useNavigate();
 
-	if (!userId) return;
+  if (!userId) return;
 
-	return (
-		<GlassPaper>
-			<CharacterForm
-				mode="create"
-				userId={userId}
-				onCancel={() => navigate(`/${routeConstants.CHARACTER}`)}
-				onSuccess={(id) => navigate(`/${routeConstants.CHARACTER}/${id}`)}
-			/>
-		</GlassPaper>
-	);
+  return (
+    <GlassPaper>
+      <CharacterForm
+        mode="create"
+        userId={userId}
+        onCancel={() => navigate(`/${routeConstants.CHARACTER}`)}
+        onSuccess={(id) => navigate(`/${routeConstants.CHARACTER}/${id}`)}
+      />
+    </GlassPaper>
+  );
 }

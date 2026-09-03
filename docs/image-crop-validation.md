@@ -21,7 +21,8 @@ to a 512x512 WebP through `processUserAvatar`.
 
 ## Validation results
 
-Validation uses isolated synthetic images and never reads or replaces real character assets.
+The server tests generate isolated synthetic images and never read or replace real character
+assets.
 
 | Input                 | Result                                                                            |
 | --------------------- | --------------------------------------------------------------------------------- |
@@ -51,6 +52,13 @@ a square crop, so the user sees and controls the final avatar composition.
   CharacterForm processing failures show a toast. A canvas failure is logged and leaves the modal
   open so the user can cancel or retry.
 - There is no detector-specific fallback because there is no detector.
+
+## Automated coverage
+
+- `packages/client/page/character/characterImageCrop.test.ts` locks the 5:7 portrait and 1:1
+  avatar stages.
+- `packages/server/util/imageProcessingUtils.test.ts` covers dimensions, small images,
+  transparency, subject-agnostic inputs, output-file contents, decode failure, and rollback.
 
 ## Manual checklist
 

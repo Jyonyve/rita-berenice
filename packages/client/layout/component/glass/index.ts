@@ -12,3 +12,4 @@ export * from './GlassPortraitSlider.js';
 export * from './GlassCircularProgress.js';
 export * from './GlassContainer.js';
 export * from './GlassMenu.js';
+export * from './GlassTabs.js';

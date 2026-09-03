@@ -1,32 +1,32 @@
 name: CI
 
 on:
- workflow_dispatch:
- push:
-  branches:
-   - main
+  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
- build:
-  runs-on: ubuntu-latest
-  permissions:
-   contents: read
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
-  steps:
-   - name: Checkout
-     uses: actions/checkout@v5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
 
-   - name: Setup Node
-     uses: actions/setup-node@v5
-     with:
-      node-version: 22
-      package-manager-cache: false
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          package-manager-cache: false
 
-   - name: Enable pnpm
-     run: corepack enable pnpm && corepack install -g pnpm@10.18.0
+      - name: Enable pnpm
+        run: corepack enable pnpm && corepack install -g pnpm@10.18.0
 
-   - name: Install dependencies
-     run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-   - name: Run repository checks
-     run: pnpm check
+      - name: Run repository checks
+        run: pnpm check

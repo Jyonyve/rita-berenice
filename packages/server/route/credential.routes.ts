@@ -14,15 +14,15 @@ router.use(verifySession());
  * Validates API keys for a user
  */
 router.post(
-	genRoutePattern('validateApiKeys'),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		validateRequestData(req.body, 'body', ['apiKeys']);
-		const { apiKeys } = req.body;
-		assertApiKeys(apiKeys);
+  genRoutePattern('validateApiKeys'),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    validateRequestData(req.body, 'body', ['apiKeys']);
+    const { apiKeys } = req.body;
+    assertApiKeys(apiKeys);
 
-		const validationResults = await credentialStore.validateApiKeys(apiKeys);
-		res.status(200).json(validationResults);
-	})
+    const validationResults = await credentialStore.validateApiKeys(apiKeys);
+    res.status(200).json(validationResults);
+  }),
 );
 
 /**
@@ -30,14 +30,14 @@ router.post(
  * Retrieves configured API key names without exposing key values
  */
 router.get(
-	genRoutePattern('getUserApiKeys', ['userId']),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		validateRequestData(req.params, 'params', ['userId']);
-		const userId = assertSessionUser(req, req.params.userId);
+  genRoutePattern('getUserApiKeys', ['userId']),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    validateRequestData(req.params, 'params', ['userId']);
+    const userId = assertSessionUser(req, req.params.userId);
 
-		const response = await credentialStore.getUserApiKeyMetadata(userId);
-		res.status(200).json(response);
-	})
+    const response = await credentialStore.getUserApiKeyMetadata(userId);
+    res.status(200).json(response);
+  }),
 );
 
 /**
@@ -45,17 +45,17 @@ router.get(
  * Stores/updates API keys for a user
  */
 router.post(
-	genRoutePattern('storeUserApiKeys'),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		validateRequestData(req.body, 'body', ['userId', 'apiKeys']);
-		const { apiKeys } = req.body;
-		const userId = assertSessionUser(req, req.body.userId);
-		assertApiKeys(apiKeys);
+  genRoutePattern('storeUserApiKeys'),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    validateRequestData(req.body, 'body', ['userId', 'apiKeys']);
+    const { apiKeys } = req.body;
+    const userId = assertSessionUser(req, req.body.userId);
+    assertApiKeys(apiKeys);
 
-		await credentialStore.storeUserApiKeys(userId, apiKeys);
+    await credentialStore.storeUserApiKeys(userId, apiKeys);
 
-		res.status(200).json({ message: 'API keys stored successfully' });
-	})
+    res.status(200).json({ message: 'API keys stored successfully' });
+  }),
 );
 
 /**
@@ -63,30 +63,30 @@ router.post(
  * Updates a single API key for a user
  */
 router.put(
-	genRoutePattern('updateUserApiKey'),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		validateRequestData(req.body, 'body', ['userId', 'keyType', 'keyValue']);
-		const { keyType, keyValue } = req.body;
-		const userId = assertSessionUser(req, req.body.userId);
-		if (!API_KEY_TYPES.includes(keyType as ApiKeyType) || typeof keyValue !== 'string') {
-			throw new Error('Invalid API key update request.');
-		}
+  genRoutePattern('updateUserApiKey'),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    validateRequestData(req.body, 'body', ['userId', 'keyType', 'keyValue']);
+    const { keyType, keyValue } = req.body;
+    const userId = assertSessionUser(req, req.body.userId);
+    if (!API_KEY_TYPES.includes(keyType as ApiKeyType) || typeof keyValue !== 'string') {
+      throw new Error('Invalid API key update request.');
+    }
 
-		await credentialStore.updateUserApiKey(userId, keyType, keyValue);
+    await credentialStore.updateUserApiKey(userId, keyType, keyValue);
 
-		res.status(200).json({ message: `${keyType} updated successfully` });
-	})
+    res.status(200).json({ message: `${keyType} updated successfully` });
+  }),
 );
 
 export default router;
 
 function assertApiKeys(value: unknown): asserts value is UserApiKeys {
-	if (!value || typeof value !== 'object' || Array.isArray(value)) {
-		throw new Error('Invalid API keys.');
-	}
-	for (const [keyType, keyValue] of Object.entries(value)) {
-		if (!API_KEY_TYPES.includes(keyType as ApiKeyType) || typeof keyValue !== 'string') {
-			throw new Error('Invalid API keys.');
-		}
-	}
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('Invalid API keys.');
+  }
+  for (const [keyType, keyValue] of Object.entries(value)) {
+    if (!API_KEY_TYPES.includes(keyType as ApiKeyType) || typeof keyValue !== 'string') {
+      throw new Error('Invalid API keys.');
+    }
+  }
 }

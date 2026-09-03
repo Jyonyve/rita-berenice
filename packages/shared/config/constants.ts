@@ -1,8 +1,7 @@
-export const ALPHANUMERIC_ALPHABET =
-	'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' as const;
+export const ALPHANUMERIC_ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' as const;
 
 export const ABORT_TIMEOUT = 600 as const; ///300초
-export const DEFAULT_RECAP_INTERVAL: number = 3 as const;
+export const DEFAULT_RECAP_INTERVAL: number = 4 as const;
 export const DEFAULT_RELATIONSHIP_RECAP_INTERVAL = 5 as const;
 export const DEFAULT_RECENT_TURN_COUNT: number = 10 as const;
 export const DEFAULT_LOADING_TURN_COUNT: number = 5 as const;
@@ -32,44 +31,44 @@ export const DEFAULT_LOCALIZE_DIRECTIONS = true as const;
 export const DEFAULT_QUERY_LIMIT: number = 10 as const;
 
 export const MODULE_NAMES = {
-	CHARACTER: 'character',
-	PROFILE: 'profile',
-	CHAT: 'chat',
-	SESSION: 'session',
-	TEMP: 'temp',
-	RECAP: 'recap',
-	LORE: 'lore',
-	HISTORY: 'history',
-	TERM: 'term',
-	CREDENTIAL: 'credential',
-	LLM: 'llm',
-	MEMORY: 'memory',
-	PERSONA: 'persona',
-	ORCHESTRATION: 'orchestration',
-	USER: 'user',
-	DOCUMENT: 'document',
+  CHARACTER: 'character',
+  PROFILE: 'profile',
+  CHAT: 'chat',
+  SESSION: 'session',
+  TEMP: 'temp',
+  RECAP: 'recap',
+  LORE: 'lore',
+  HISTORY: 'history',
+  TERM: 'term',
+  CREDENTIAL: 'credential',
+  LLM: 'llm',
+  MEMORY: 'memory',
+  PERSONA: 'persona',
+  ORCHESTRATION: 'orchestration',
+  USER: 'user',
+  DOCUMENT: 'document',
 } as const;
 export type MODULE_TYPES = (typeof MODULE_NAMES)[keyof typeof MODULE_NAMES];
 
 export const METADATA_TYPES = {
-	CREDENTIAL: 'credential',
-	APIKEY: 'apikey',
-	CHARACTER: 'character',
-	PROFILE: 'profile',
-	SESSION: 'session',
-	MESSAGE: 'message',
-	TURN: 'turn',
-	STORY: 'story',
-	RECAP: 'recap',
-	RELATIONSHIP: 'relationship',
-	LORE: 'lore',
-	HISTORY: 'history',
-	TEMP: 'temp',
-	DOCUMENT: 'document',
-	TERM: 'term',
-	USER: 'user',
-	INDEX: 'index',
-	WORLD: 'world',
+  CREDENTIAL: 'credential',
+  APIKEY: 'apikey',
+  CHARACTER: 'character',
+  PROFILE: 'profile',
+  SESSION: 'session',
+  MESSAGE: 'message',
+  TURN: 'turn',
+  STORY: 'story',
+  RECAP: 'recap',
+  RELATIONSHIP: 'relationship',
+  LORE: 'lore',
+  HISTORY: 'history',
+  TEMP: 'temp',
+  DOCUMENT: 'document',
+  TERM: 'term',
+  USER: 'user',
+  INDEX: 'index',
+  WORLD: 'world',
 } as const;
 
 export type MetadataType = (typeof METADATA_TYPES)[keyof typeof METADATA_TYPES];

@@ -9,5 +9,5 @@ export const HoverContext = createContext<boolean>(false);
 // 2. Create the custom hook for consuming the context.
 //    This hook finds the NEAREST HoverContext.Provider up the component tree.
 export const useHoverState = () => {
-	return useContext(HoverContext);
+  return useContext(HoverContext);
 };

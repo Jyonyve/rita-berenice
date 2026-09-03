@@ -13,37 +13,37 @@ import 'swiper/css/pagination';
 import 'swiper/css/effect-fade';
 
 interface GlassPortraitSliderProps {
-	imageUrls: string[];
+  imageUrls: string[];
 }
 
 export const GlassPortraitSlider: FC<GlassPortraitSliderProps> = ({ imageUrls }) => {
-	if (!imageUrls || imageUrls.length === 0) {
-		return null;
-	}
+  if (!imageUrls || imageUrls.length === 0) {
+    return null;
+  }
 
-	return (
-		<Box sx={{ width: '100%', height: '100%', overflow: 'visible' }}>
-			<Swiper
-				modules={[Pagination, A11y, EffectFade, Mousewheel]}
-				slidesPerView={1}
-				loop={true}
-				effect="fade"
-				fadeEffect={{ crossFade: true }}
-				style={{ overflow: 'visible' }}
-				pagination={{ clickable: true }}
-				mousewheel={{
-					forceToAxis: true, // Only respond to horizontal scroll
-					sensitivity: 1, // Adjust scroll sensitivity
-					releaseOnEdges: true, // Allow page scroll when at first/last slide
-					invert: true, // This inverts the scroll direction
-				}}
-			>
-				{imageUrls.map((url, index) => (
-					<SwiperSlide key={index}>
-						<GlassPortrait imageUrl={url} alt={`Character Portrait ${index + 1}`} />
-					</SwiperSlide>
-				))}
-			</Swiper>
-		</Box>
-	);
+  return (
+    <Box sx={{ width: '100%', height: '100%', overflow: 'visible' }}>
+      <Swiper
+        modules={[Pagination, A11y, EffectFade, Mousewheel]}
+        slidesPerView={1}
+        loop={true}
+        effect="fade"
+        fadeEffect={{ crossFade: true }}
+        style={{ overflow: 'visible' }}
+        pagination={{ clickable: true }}
+        mousewheel={{
+          forceToAxis: true, // Only respond to horizontal scroll
+          sensitivity: 1, // Adjust scroll sensitivity
+          releaseOnEdges: true, // Allow page scroll when at first/last slide
+          invert: true, // This inverts the scroll direction
+        }}
+      >
+        {imageUrls.map((url, index) => (
+          <SwiperSlide key={index}>
+            <GlassPortrait imageUrl={url} alt={`Character Portrait ${index + 1}`} />
+          </SwiperSlide>
+        ))}
+      </Swiper>
+    </Box>
+  );
 };

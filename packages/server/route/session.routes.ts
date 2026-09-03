@@ -22,26 +22,20 @@ router.use(verifySession());
  * @throws {500} Internal server error.
  */
 router.post(
-	genRoutePattern('createSession'),
-	asyncHandler(async (req: Request, res: Response) => {
-		validateRequestData(req.body, 'body', ['userId', 'characterId']);
-		const { characterId, firstCharMessage = '', title = '' } = req.body;
-		const userId = assertSessionUser(req, req.body.userId);
-		const contentPolicy: SessionContentPolicy = req.body.contentPolicy ?? 'general';
-		if (contentPolicy !== 'general' && contentPolicy !== 'adult') {
-			throw new ApiError(400, 'Invalid session content policy.');
-		}
+  genRoutePattern('createSession'),
+  asyncHandler(async (req: Request, res: Response) => {
+    validateRequestData(req.body, 'body', ['userId', 'characterId']);
+    const { characterId, firstCharMessage = '', title = '' } = req.body;
+    const userId = assertSessionUser(req, req.body.userId);
+    const contentPolicy: SessionContentPolicy = req.body.contentPolicy ?? 'general';
+    if (contentPolicy !== 'general' && contentPolicy !== 'adult') {
+      throw new ApiError(400, 'Invalid session content policy.');
+    }
 
-		const response = await sessionStore.createSession(
-			userId,
-			characterId,
-			firstCharMessage,
-			title,
-			contentPolicy
-		);
+    const response = await sessionStore.createSession(userId, characterId, firstCharMessage, title, contentPolicy);
 
-		res.status(201).json(response); // 201 for resource creation
-	})
+    res.status(201).json(response); // 201 for resource creation
+  }),
 );
 
 /**
@@ -54,26 +48,26 @@ router.post(
  * @throws {500} Internal server error.
  */
 router.put(
-	genRoutePattern('updateSession'),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const requiredFields = Object.keys({} as SessionInfo);
-		validateRequestData(req.body, 'body', requiredFields);
+  genRoutePattern('updateSession'),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const requiredFields = Object.keys({} as SessionInfo);
+    validateRequestData(req.body, 'body', requiredFields);
 
-		// Now you can safely destructure knowing all fields are present
-		const sessionInfo: SessionInfo = req.body;
-		const storedSession = await assertOwnedSession(req, sessionInfo.sessionId);
-		sessionInfo.userId = assertSessionUser(req, sessionInfo.userId);
-		sessionInfo.characterId = storedSession.characterId;
-		sessionInfo.profileId = storedSession.profileId;
-		sessionInfo.contentPolicy = sessionInfo.contentPolicy ?? storedSession.contentPolicy ?? 'general';
-		if (sessionInfo.contentPolicy !== 'general' && sessionInfo.contentPolicy !== 'adult') {
-			throw new ApiError(400, 'Invalid session content policy.');
-		}
+    // Now you can safely destructure knowing all fields are present
+    const sessionInfo: SessionInfo = req.body;
+    const storedSession = await assertOwnedSession(req, sessionInfo.sessionId);
+    sessionInfo.userId = assertSessionUser(req, sessionInfo.userId);
+    sessionInfo.characterId = storedSession.characterId;
+    sessionInfo.profileId = storedSession.profileId;
+    sessionInfo.contentPolicy = sessionInfo.contentPolicy ?? storedSession.contentPolicy ?? 'general';
+    if (sessionInfo.contentPolicy !== 'general' && sessionInfo.contentPolicy !== 'adult') {
+      throw new ApiError(400, 'Invalid session content policy.');
+    }
 
-		await sessionStore.updateSession(sessionInfo);
+    await sessionStore.updateSession(sessionInfo);
 
-		res.status(204).send();
-	})
+    res.status(204).send();
+  }),
 );
 
 /**
@@ -85,14 +79,14 @@ router.put(
  * @throws {500} Internal server error.
  */
 router.get(
-	genRoutePattern('getSessionsByUserId', ['userId']),
-	asyncHandler(async (req: Request, res: Response) => {
-		validateRequestData(req.params, 'params', ['userId']);
-		const userId = assertSessionUser(req, req.params.userId);
+  genRoutePattern('getSessionsByUserId', ['userId']),
+  asyncHandler(async (req: Request, res: Response) => {
+    validateRequestData(req.params, 'params', ['userId']);
+    const userId = assertSessionUser(req, req.params.userId);
 
-		const response = await sessionStore.getSessionsByUserId(userId);
-		res.status(200).json(response);
-	})
+    const response = await sessionStore.getSessionsByUserId(userId);
+    res.status(200).json(response);
+  }),
 );
 
 /**
@@ -104,15 +98,15 @@ router.get(
  * @throws {500} Internal server error.
  */
 router.get(
-	genRoutePattern('getSessionsByUserIdAndCharacterId', ['userId', 'characterId']),
-	asyncHandler(async (req: Request, res: Response) => {
-		validateRequestData(req.params, 'params', ['userId', 'characterId']);
-		const { characterId } = req.params;
-		const userId = assertSessionUser(req, req.params.userId);
+  genRoutePattern('getSessionsByUserIdAndCharacterId', ['userId', 'characterId']),
+  asyncHandler(async (req: Request, res: Response) => {
+    validateRequestData(req.params, 'params', ['userId', 'characterId']);
+    const { characterId } = req.params;
+    const userId = assertSessionUser(req, req.params.userId);
 
-		const response = await sessionStore.getSessionsByUserIdAndCharacterId(userId, characterId);
-		res.status(200).json(response);
-	})
+    const response = await sessionStore.getSessionsByUserIdAndCharacterId(userId, characterId);
+    res.status(200).json(response);
+  }),
 );
 
 /**
@@ -124,15 +118,15 @@ router.get(
  * @throws {500} Internal server error.
  */
 router.get(
-	genRoutePattern('getSession', ['sessionId']),
-	asyncHandler(async (req: Request, res: Response) => {
-		validateRequestData(req.params, 'params', ['sessionId']);
-		const { sessionId } = req.params;
-		await assertOwnedSession(req, sessionId);
+  genRoutePattern('getSession', ['sessionId']),
+  asyncHandler(async (req: Request, res: Response) => {
+    validateRequestData(req.params, 'params', ['sessionId']);
+    const { sessionId } = req.params;
+    await assertOwnedSession(req, sessionId);
 
-		const response = await sessionStore.getSession(sessionId);
-		res.status(200).json(response);
-	})
+    const response = await sessionStore.getSession(sessionId);
+    res.status(200).json(response);
+  }),
 );
 
 /**
@@ -145,16 +139,16 @@ router.get(
  * @throws {500} Internal server error.
  */
 router.put(
-	genRoutePattern('updateSessionOnNewMessage'),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		validateRequestData(req.body, 'body', ['sessionId', 'latestCharMessage']);
-		const { sessionId, latestCharMessage } = req.body;
-		await assertOwnedSession(req, sessionId);
+  genRoutePattern('updateSessionOnNewMessage'),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    validateRequestData(req.body, 'body', ['sessionId', 'latestCharMessage']);
+    const { sessionId, latestCharMessage } = req.body;
+    await assertOwnedSession(req, sessionId);
 
-		await sessionStore.updateSessionOnNewMessage(sessionId, latestCharMessage);
+    await sessionStore.updateSessionOnNewMessage(sessionId, latestCharMessage);
 
-		res.status(204).send(); // 204 No Content is appropriate for successful updates with no body
-	})
+    res.status(204).send(); // 204 No Content is appropriate for successful updates with no body
+  }),
 );
 
 /**
@@ -167,20 +161,20 @@ router.put(
  * @throws {500} Internal server error.
  */
 router.put(
-	genRoutePattern('initSessionProfileId'),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		validateRequestData(req.body, 'body', ['sessionId', 'profileId']);
-		const { sessionId, profileId } = req.body;
-		await assertOwnedSession(req, sessionId);
-		const profile = await assertOwnedProfile(req, profileId);
-		if (profile.sessionId !== sessionId) {
-			throw new Error(`Profile '${profileId}' does not belong to session '${sessionId}'.`);
-		}
+  genRoutePattern('initSessionProfileId'),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    validateRequestData(req.body, 'body', ['sessionId', 'profileId']);
+    const { sessionId, profileId } = req.body;
+    await assertOwnedSession(req, sessionId);
+    const profile = await assertOwnedProfile(req, profileId);
+    if (profile.sessionId !== sessionId) {
+      throw new Error(`Profile '${profileId}' does not belong to session '${sessionId}'.`);
+    }
 
-		await sessionStore.initSessionProfileId(sessionId, profileId);
+    await sessionStore.initSessionProfileId(sessionId, profileId);
 
-		res.status(204).send(); // 204 No Content is appropriate for successful updates with no body
-	})
+    res.status(204).send(); // 204 No Content is appropriate for successful updates with no body
+  }),
 );
 
 /**
@@ -193,32 +187,45 @@ router.put(
  * @throws {500} Internal server error.
  */
 router.put(
-	genRoutePattern('updateSessionTitle'),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		validateRequestData(req.body, 'body', ['sessionId', 'title']);
-		const { sessionId, title } = req.body;
-		await assertOwnedSession(req, sessionId);
+  genRoutePattern('updateSessionTitle'),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    validateRequestData(req.body, 'body', ['sessionId', 'title']);
+    const { sessionId, title } = req.body;
+    await assertOwnedSession(req, sessionId);
 
-		await sessionStore.updateSessionTitle(sessionId, title);
+    await sessionStore.updateSessionTitle(sessionId, title);
 
-		res.status(204).send(); // 204 No Content is appropriate for successful updates with no body
-	})
+    res.status(204).send(); // 204 No Content is appropriate for successful updates with no body
+  }),
+);
+
+/** Updates a private user note for an owned session. */
+router.put(
+  genRoutePattern('updateSessionUserNote'),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    validateRequestData(req.body, 'body', ['sessionId', 'userNote']);
+    const { sessionId, userNote } = req.body;
+    await assertOwnedSession(req, sessionId);
+
+    await sessionStore.updateSessionUserNote(sessionId, userNote);
+    res.status(204).send();
+  }),
 );
 
 /** Updates the content policy used for future responses in an owned session. */
 router.put(
-	genRoutePattern('updateSessionContentPolicy'),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		validateRequestData(req.body, 'body', ['sessionId', 'contentPolicy']);
-		const { sessionId, contentPolicy } = req.body;
-		await assertOwnedSession(req, sessionId);
-		if (contentPolicy !== 'general' && contentPolicy !== 'adult') {
-			throw new ApiError(400, 'Invalid session content policy.');
-		}
+  genRoutePattern('updateSessionContentPolicy'),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    validateRequestData(req.body, 'body', ['sessionId', 'contentPolicy']);
+    const { sessionId, contentPolicy } = req.body;
+    await assertOwnedSession(req, sessionId);
+    if (contentPolicy !== 'general' && contentPolicy !== 'adult') {
+      throw new ApiError(400, 'Invalid session content policy.');
+    }
 
-		await sessionStore.updateSessionContentPolicy(sessionId, contentPolicy);
-		res.status(204).send();
-	})
+    await sessionStore.updateSessionContentPolicy(sessionId, contentPolicy);
+    res.status(204).send();
+  }),
 );
 
 export default router;

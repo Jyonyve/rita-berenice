@@ -1,54 +1,49 @@
-import { CircularProgress, Container, Typography } from '@mui/material';
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { useCharacterApi, useHistoryApi } from '../../hook/index.js';
-import { useAuth } from '../../provider/index.js';
-import HistoryPage from './HistoryPage.jsx';
-import { GlassCircularProgress } from '../../layout/component/glass/index.js';
-import { getLangText } from '../../util/translateUtils.js';
 import { LANG_KEYS } from '@rita-berenice/shared/config';
+import { useHistoryApi } from '../../hook/index.js';
+import { PageQueryState } from '../../layout/component/PageQueryState.js';
+import { useAuth } from '../../provider/index.js';
+import { getLangText } from '../../util/translateUtils.js';
+import HistoryPage from './HistoryPage.jsx';
 
 export function HistoryPageLoader() {
-	const navigate = useNavigate();
-	const { historyId } = useParams();
-	const { userId } = useAuth();
+  const navigate = useNavigate();
+  const { historyId } = useParams();
+  const { userId } = useAuth();
 
-	useEffect(() => {
-		if (!historyId) {
-			navigate('/not-found-historyId', { replace: true });
-		}
-	}, [historyId, navigate]);
+  useEffect(() => {
+    if (!historyId) {
+      navigate('/not-found-historyId', { replace: true });
+    }
+  }, [historyId, navigate]);
 
-	// The query below is a hook, so the "no historyId" bail-out has to come after it, not before -
-	// an early return here changes the hook order between renders. An empty id keeps the query
-	// disabled through its own `enabled: !!historyId` guard, so nothing is fetched meanwhile.
-	const { data: historyRes, isLoading } = useHistoryApi().getHistory(historyId ?? '');
+  const historyQuery = useHistoryApi().getHistory(historyId ?? '');
 
-	if (!historyId) return null;
+  if (!historyId) return null;
 
-	if (isLoading || !historyRes) {
-		// Use a more descriptive loading state, maybe centered
-		return (
-			<Container
-				sx={{
-					display: 'flex',
-					flexDirection: 'column', // <-- Add this line
-					justifyContent: 'center',
-					alignItems: 'center',
-					height: '80vh',
-				}}
-			>
-				<GlassCircularProgress colorVariant="silver" />
-				<Typography sx={{ mt: 2 }}>{getLangText(LANG_KEYS.LOADING_STORIES)}</Typography>
-			</Container>
-		);
-	}
+  if (historyQuery.isLoading) {
+    return <PageQueryState mode="loading" message={getLangText(LANG_KEYS.LOADING_STORIES)} />;
+  }
 
-	return (
-		<HistoryPage
-			historyInfo={historyRes.historyInfo}
-			imageUrl={historyRes.historyImageUrls[historyRes.historyInfo.historyId]}
-			userId={userId ?? ''}
-		/>
-	);
+  if (historyQuery.isError || !historyQuery.data) {
+    return (
+      <PageQueryState
+        mode="error"
+        message={getLangText(LANG_KEYS.FAILED_LOAD_DATA)}
+        onRetry={() => void historyQuery.refetch()}
+        isRetrying={historyQuery.isFetching}
+      />
+    );
+  }
+
+  const historyRes = historyQuery.data;
+
+  return (
+    <HistoryPage
+      historyInfo={historyRes.historyInfo}
+      imageUrl={historyRes.historyImageUrls[historyRes.historyInfo.historyId]}
+      userId={userId ?? ''}
+    />
+  );
 }

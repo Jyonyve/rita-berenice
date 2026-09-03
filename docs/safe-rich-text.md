@@ -10,7 +10,7 @@ The renderer processes content in this order:
 
 1. Parse Markdown with GitHub Flavored Markdown support.
 2. Parse raw HTML into the same syntax tree.
-3. Optionally localize known narrative direction tokens in text nodes, excluding code spans and blocks.
+3. Optionally localize known roleplay direction tokens in text nodes, excluding code spans and blocks.
 4. Sanitize the tree with an explicit element allowlist and no allowed HTML attributes.
 5. Create React elements from the sanitized tree.
 
@@ -21,7 +21,7 @@ and classes from source content are not allowed. Unsupported elements cannot int
 The allowed content elements are headings, paragraphs, emphasis, deletion, block quotes, line breaks,
 lists, horizontal rules, code, tables, and native `details`/`summary` disclosures.
 
-## Narrative direction tokens
+## roleplay direction tokens
 
 Only conversation UI and session-message previews localize these known tokens:
 

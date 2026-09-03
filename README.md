@@ -1,40 +1,131 @@
-# Rita-Berenice v2
+# Rita-Berenice
 
-[English](README.en.md)
+Rita-Berenice is a pnpm/Turbo TypeScript monorepo for a RAG AI character chatbot.
 
-> **Archived portfolio snapshot**
->
-> 이 저장소는 Rita-Berenice의 개발 과정과 기술적 설계를 보존하기 위한 **이력서/포트폴리오용 공개 스냅샷**입니다.
-> 더 이상 일반 사용자용 배포 저장소로 관리하지 않으며, 설치·운영·업데이트·기능 지원을 제공하지 않습니다.
+The app combines a Vite React client, an Express SSR/API server, shared domain contracts, and PostgreSQL/pgvector persistence.
 
-Rita-Berenice는 개인적으로 사용하기 위해 개발한 self-hosted AI 캐릭터챗 프레임워크입니다. 사용자가 자신의 캐릭터와 대화 데이터를 직접 보관하고, 원하는 LLM 공급자를 연결하며, 장기간의 대화 맥락과 기억을 자신의 데이터베이스에서 관리하는 것을 목표로 개발되었습니다.
+## Packages
 
-이 저장소의 코드는 당시 구현과 아키텍처를 공개적으로 기록하기 위해 남겨 둡니다. **새로운 설치나 실제 사용을 위해 이 저장소를 사용하지 마세요.** 향후 일반 사용자를 위한 공개 버전은 이 저장소와 분리된 별도의 프로젝트와 릴리즈 채널에서 제공할 예정입니다.
+- `packages/client`: React 19 + Vite client and SSR entrypoints.
+- `packages/server`: Express API/SSR server, PostgreSQL stores, RAG services, and LLM orchestration.
+- `packages/shared`: shared API, domain, config, and utility contracts.
 
-## Repository status
+## Setup
 
-- **Status:** Frozen / portfolio archive
-- **Development:** 이 저장소에서는 진행하지 않음
-- **Releases:** 이 저장소에서는 제공하지 않음
-- **Support / maintenance:** 제공하지 않음
-- **Feature requests / Pull Requests:** 받지 않음
-- **Demo availability:** 보장하지 않음
+Use pnpm only. The repository is pinned to `pnpm@10.18.0`.
 
-이 저장소는 향후 공개 릴리즈 프로젝트의 source of truth가 아닙니다.
+```bash
+corepack enable pnpm
+corepack install -g pnpm@10.18.0
+pnpm install
+```
 
-## About the project
+Copy `.env.example` to `.env` for local development and fill in the required values. Do not commit real secrets.
 
-당시 Rita-Berenice는 다음과 같은 방향으로 개발되었습니다.
+```bash
+cp .env.example .env
+```
 
-- 사용자가 소유하는 캐릭터·프로필·대화 데이터
-- BYOK 기반의 여러 LLM provider 연결
-- PostgreSQL/pgvector 기반 영속 저장
-- 장기 대화에서 과거 사건과 맥락을 다시 사용할 수 있는 기억 계층
-- 캐릭터 설정, lore, history, recap, 대화 기록의 분리 관리
-- 사용자가 직접 설치하고 코드를 수정할 수 있는 self-hosted 구조
+On Windows PowerShell:
 
-세부 구현은 이 저장소의 소스 코드와 Git history에 기록되어 있습니다.
+```powershell
+Copy-Item .env.example .env
+```
+
+## Local Development
+
+Start the local PostgreSQL, pgvector, and SuperTokens services:
+
+```bash
+pnpm db:up
+```
+
+The default local service values from `.env.example` are:
+
+- `DATABASE_URL=postgresql://rita:rita@localhost:5432/rita_berenice`
+- `DATABASE_SSL=false`
+- `SUPERTOKENS_CONNECTION_URI=http://localhost:3567`
+- `AUTH_IDENTITY_NAMESPACE=supertokens-dev`
+
+For two-PC development against a shared Neon PostgreSQL database, keep SuperTokens on the existing
+cloud development instance and follow `docs/neon-development-database.md`.
+
+Apply database migrations, then start the combined Express SSR/API host with Vite middleware:
+
+```bash
+pnpm db:migrate
+pnpm dev
+```
+
+Authenticated SuperTokens users must have an explicit row in `auth_identities`; the server never
+links accounts by matching email.
+
+Open `http://localhost:3000`. In another terminal, run `pnpm smoke:local` to verify local
+health, readiness, SSR, and anonymous auth protection.
+
+To include authenticated user/session API checks, run the auth smoke with an existing local account:
+
+```powershell
+$env:RITA_SMOKE_EMAIL = "you@example.com"
+$env:RITA_SMOKE_PASSWORD = "your-local-password"
+pnpm smoke:local:auth
+```
+
+Use `pnpm db:down` to stop the local Docker services.
+
+If Vite reports a Windows `EPERM` rename error under `.vite_cache`, stop `pnpm dev`, run
+`pnpm clean:vite`, then start `pnpm dev` again.
+
+## Common Commands
+
+```bash
+pnpm dev
+pnpm build
+pnpm build:client
+pnpm build:server
+pnpm build:shared
+pnpm build:static
+pnpm typecheck
+pnpm format:check
+pnpm check
+```
+
+`pnpm check` runs formatting, typechecking, and the full Turbo build.
+
+## Agentic Coding
+
+This repo includes project-level guidance for Codex and other coding agents:
+
+- `AGENTS.md`: always-on repository rules and verification expectations.
+- `.agents/skills/rag-change`: workflow for RAG, LLM, prompt, schema, memory, vector retrieval, and model changes.
+- `.agents/skills/tooling-upgrade`: workflow for scripts, CI, Docker, TypeScript, pnpm, formatting, and dependency/tooling changes.
+- `docs/agentic-coding.md`: human-facing guide to the agentic workflow.
+- `.github/codex/prompts/review.md`: reusable prompt for future Codex PR review automation.
+
+Use the relevant skill before changing RAG/LLM behavior or repository tooling.
+
+## Verification
+
+Run the narrowest relevant command first:
+
+- Shared types/config/util changes: `pnpm build:shared`
+- Server/RAG/store/route changes: `pnpm build:server`
+- Client/UI/hook changes: `pnpm build:client`
+- Cross-package or handoff-ready changes: `pnpm check`
+
+If a command requires unavailable local services or secrets, report that clearly and run the checks that do not require them.
+
+## Deployment
+
+- `.github/workflows/ci.yml` runs typechecks, tests, and package builds.
+- `.github/workflows/fly-deploy-demo.yml` deploys the public demo app to Fly.io from `main`.
+- `.github/workflows/deploy.yml` builds the static client for GitHub Pages from the `mock` branch.
 
 ## License
 
-이 저장소에 포함된 기존 라이선스는 이 스냅샷에 적용됩니다. 다만 이 저장소는 더 이상 배포 또는 사용을 권장하는 채널이 아니며, 향후 별도 공개 프로젝트의 라이선스와 배포 정책은 독립적으로 결정됩니다.
+This project is licensed under the Rita-Berenice Enhanced Use License v1.0.
+
+- English: [LICENSE](LICENSE)
+- Korean: [LICENSE.ko](LICENSE.ko)
+
+This software is provided "as is" without any warranties. Use at your own risk. See the license files for full terms.

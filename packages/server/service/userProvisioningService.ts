@@ -11,20 +11,17 @@ import { flowLogger, serializeError } from '../util/jsonlLogger.js';
  * Idempotent: no-op when the identity mapping already exists. The Rita user id is
  * set to the SuperTokens user id, matching the per-user document convention.
  */
-export const provisionUserOnSignup = async (
-	providerUserId: string,
-	email: string
-): Promise<void> => {
-	const authNamespace = getServerEnv().AUTH_IDENTITY_NAMESPACE;
-	const existing = await authIdentityStore.find(authNamespace, providerUserId);
-	if (existing) {
-		return;
-	}
+export const provisionUserOnSignup = async (providerUserId: string, email: string): Promise<void> => {
+  const authNamespace = getServerEnv().AUTH_IDENTITY_NAMESPACE;
+  const existing = await authIdentityStore.find(authNamespace, providerUserId);
+  if (existing) {
+    return;
+  }
 
-	const userId = providerUserId;
-	const userInfo = createBasicUserInfo({ userId, email });
-	await userStore.storeUser(userInfo);
-	await authIdentityStore.create(authNamespace, providerUserId, userId);
+  const userId = providerUserId;
+  const userInfo = createBasicUserInfo({ userId, email });
+  await userStore.storeUser(userInfo);
+  await authIdentityStore.create(authNamespace, providerUserId, userId);
 };
 
 /**
@@ -43,31 +40,31 @@ export const provisionUserOnSignup = async (
  * identity-mapping administration model.
  */
 export const ensureProvisionedUser = async (providerUserId: string): Promise<void> => {
-	const { AUTH_IDENTITY_NAMESPACE, AUTO_PROVISION_USERS } = getServerEnv();
-	if (!AUTO_PROVISION_USERS) {
-		return;
-	}
+  const { AUTH_IDENTITY_NAMESPACE, AUTO_PROVISION_USERS } = getServerEnv();
+  if (!AUTO_PROVISION_USERS) {
+    return;
+  }
 
-	const existing = await authIdentityStore.find(AUTH_IDENTITY_NAMESPACE, providerUserId);
-	if (existing) {
-		return;
-	}
+  const existing = await authIdentityStore.find(AUTH_IDENTITY_NAMESPACE, providerUserId);
+  if (existing) {
+    return;
+  }
 
-	const authUser = await supertokens.getUser(providerUserId);
-	const email = authUser?.emails[0];
-	if (!email) {
-		flowLogger.warn('userProvisioningService', 'provision.skipped.noEmail', { providerUserId });
-		return;
-	}
+  const authUser = await supertokens.getUser(providerUserId);
+  const email = authUser?.emails[0];
+  if (!email) {
+    flowLogger.warn('userProvisioningService', 'provision.skipped.noEmail', { providerUserId });
+    return;
+  }
 
-	try {
-		await provisionUserOnSignup(providerUserId, email);
-		flowLogger.info('userProvisioningService', 'provision.complete', { providerUserId });
-	} catch (error) {
-		flowLogger.error('userProvisioningService', 'provision.failed', {
-			providerUserId,
-			...serializeError(error),
-		});
-		throw error;
-	}
+  try {
+    await provisionUserOnSignup(providerUserId, email);
+    flowLogger.info('userProvisioningService', 'provision.complete', { providerUserId });
+  } catch (error) {
+    flowLogger.error('userProvisioningService', 'provision.failed', {
+      providerUserId,
+      ...serializeError(error),
+    });
+    throw error;
+  }
 };

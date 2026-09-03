@@ -1,64 +1,65 @@
 // src/client/components/profile/ProfileTabs.tsx
 
-import { Box, CardContent, Tab, Tabs } from '@mui/material';
+import { Box } from '@mui/material';
 import { FC, SyntheticEvent, useState } from 'react';
-import { GlassCard } from '../../layout/component/glass/index.js'; // Assuming GlassCard is here
+import { GlassCard, GlassTab, GlassTabs } from '../../layout/component/glass/index.js';
 import { getLangText } from '../../util/translateUtils.js';
-import { ProfileForm } from './ProfileForm.js';
 import { HistoryPreviewList } from './HistoryPreviewList.jsx';
+import { CharacterLorePreviewList } from './CharacterLorePreviewList.js';
 import { LANG_KEYS } from '@rita-berenice/shared/config';
-import { ProfileCdo, SessionContentPolicy } from '@rita-berenice/shared/domain';
 
 interface TabPanelProps {
-	children?: React.ReactNode;
-	index: number;
-	value: number;
+  children?: React.ReactNode;
+  index: number;
+  value: number;
 }
 
 const TabPanel: FC<TabPanelProps> = ({ children, value, index, ...other }) => (
-	<div
-		role="tabpanel"
-		hidden={value !== index}
-		id={`profile-tabpanel-${index}`}
-		aria-labelledby={`profile-tab-${index}`}
-		{...other}
-	>
-		{value === index && <Box sx={{ p: { xs: 1, sm: 2 } }}>{children}</Box>}
-	</div>
+  <div
+    role="tabpanel"
+    hidden={value !== index}
+    id={`profile-tabpanel-${index}`}
+    aria-labelledby={`profile-tab-${index}`}
+    {...other}
+  >
+    {value === index && <Box>{children}</Box>}
+  </div>
 );
 
-export const ProfileHistoryTabs: FC<{
-	userId: string;
-	characterId: string;
-	onSubmit: (profileData: ProfileCdo, contentPolicy?: SessionContentPolicy) => Promise<void>;
-	onHistory: (historyId: string) => void;
-}> = ({ userId, characterId, onSubmit, onHistory }) => {
-	const [tabValue, setTabValue] = useState(0);
+export const CharacterLoreHistoryTabs: FC<{
+  characterId: string;
+  onHistory: (historyId: string) => void;
+}> = ({ characterId, onHistory }) => {
+  const [tabValue, setTabValue] = useState(0);
 
-	const handleTabChange = (event: SyntheticEvent, newValue: number) => {
-		setTabValue(newValue);
-	};
+  const handleTabChange = (event: SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+  };
 
-	return (
-		<GlassCard variant="outlined">
-			<Tabs
-				value={tabValue}
-				onChange={handleTabChange}
-				aria-label={getLangText(LANG_KEYS.PROFILE_CARD_TABS)}
-				variant="fullWidth"
-				sx={{ borderBottom: 1, borderColor: 'rgba(255, 255, 255, 0.22)' }}
-			>
-				<Tab label={getLangText(LANG_KEYS.CREATE_NEW_PROFILE)} />
-				<Tab label={getLangText(LANG_KEYS.STORY)} />
-			</Tabs>
+  return (
+    <GlassCard variant="outlined">
+      <GlassTabs
+        value={tabValue}
+        onChange={handleTabChange}
+        aria-label={getLangText(LANG_KEYS.CHARACTER_CONTENT_TABS)}
+        variant="fullWidth"
+        textColor="inherit"
+      >
+        <GlassTab
+          id="profile-tab-0"
+          aria-controls="profile-tabpanel-0"
+          label={getLangText(LANG_KEYS.CHARACTER_SETTINGS)}
+        />
+        <GlassTab id="profile-tab-1" aria-controls="profile-tabpanel-1" label={getLangText(LANG_KEYS.STORY)} />
+      </GlassTabs>
 
-			<TabPanel value={tabValue} index={0}>
-				<ProfileForm userId={userId} onSubmit={onSubmit} mode={'create'} showTemplateSelector={true} />
-			</TabPanel>
+      <TabPanel value={tabValue} index={0}>
+        <CharacterLorePreviewList characterId={characterId} />
+      </TabPanel>
 
-			<TabPanel value={tabValue} index={1}>
-				<HistoryPreviewList characterId={characterId} handleHistory={onHistory} />
-			</TabPanel>
-		</GlassCard>
-	);
+      <TabPanel value={tabValue} index={1}>
+        <HistoryPreviewList characterId={characterId} handleHistory={onHistory} />
+      </TabPanel>
+    </GlassCard>
+  );
 };

@@ -2,64 +2,64 @@
 name: Rita-Berenice Static Site to GitHub Pages
 
 on:
- # Runs on pushes targeting the static/mock branch.
- push:
-  branches:
-   - 'mock'
+  # Runs on pushes targeting the static/mock branch.
+  push:
+    branches:
+      - 'mock'
 
- # Allows you to run this workflow manually from the Actions tab.
- workflow_dispatch:
+  # Allows you to run this workflow manually from the Actions tab.
+  workflow_dispatch:
 
 # Sets GITHUB_TOKEN permissions to allow deployment to GitHub Pages
 permissions:
- contents: read
- pages: write
- id-token: write
+  contents: read
+  pages: write
+  id-token: write
 
 # Allow only one concurrent deployment
 concurrency:
- group: 'pages'
- cancel-in-progress: true
+  group: 'pages'
+  cancel-in-progress: true
 
 jobs:
- deploy:
-  environment:
-   name: github-pages
-   url: ${{ steps.deployment.outputs.page_url }}
-  runs-on: ubuntu-latest
-  steps:
-   - name: Checkout
-     uses: actions/checkout@v5
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
 
-   - name: Set up Node.js
-     uses: actions/setup-node@v5
-     with:
-      node-version: 22
-      package-manager-cache: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          package-manager-cache: false
 
-   - name: Enable pnpm
-     run: corepack enable pnpm && corepack install -g pnpm@10.18.0
+      - name: Enable pnpm
+        run: corepack enable pnpm && corepack install -g pnpm@10.18.0
 
-   - name: Install dependencies
-     run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-   - name: Create .env.static from GitHub Variables
-     run: |
-      echo "VITE_APP_MODE=${{ vars.VITE_APP_MODE }}" > .env.static
-      echo "VITE_API_DOMAIN=${{ vars.VITE_API_DOMAIN }}" >> .env.static
-      echo "VITE_APP_DOMAIN=${{ vars.VITE_APP_DOMAIN }}" >> .env.static
+      - name: Create .env.static from GitHub Variables
+        run: |
+          echo "VITE_APP_MODE=${{ vars.VITE_APP_MODE }}" > .env.static
+          echo "VITE_API_DOMAIN=${{ vars.VITE_API_DOMAIN }}" >> .env.static
+          echo "VITE_APP_DOMAIN=${{ vars.VITE_APP_DOMAIN }}" >> .env.static
 
-   - name: Build static site
-     run: pnpm build:static
+      - name: Build static site
+        run: pnpm build:static
 
-   - name: Setup Pages
-     uses: actions/configure-pages@v5
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
 
-   - name: Upload artifact
-     uses: actions/upload-pages-artifact@v3
-     with:
-      path: './dist/static'
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist/static'
 
-   - name: Deploy to GitHub Pages
-     id: deployment
-     uses: actions/deploy-pages@v4
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

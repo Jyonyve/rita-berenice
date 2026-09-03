@@ -13,3 +13,4 @@ export * from './LanguageSwitch.jsx';
 export * from './ThemeSwitch.jsx';
 export * from './SafeRichText.jsx';
 export * from './glass';
+export * from './PageQueryState.jsx';

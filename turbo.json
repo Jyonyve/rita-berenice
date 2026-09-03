@@ -1,11 +1,12 @@
 {
-	"$schema": "https://turbo.build/schema.json",
-	"tasks": {
-		"build": { "dependsOn": ["^build"], "outputs": ["dist/**", "../../dist/**"] },
-		"clean": { "cache": false },
-		"dev": { "cache": false, "persistent": true },
-		"lint": {}
-	},
-	"globalDependencies": ["pnpm-lock.yaml"],
-	"ui": "stream"
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": { "dependsOn": ["^build"], "outputs": ["dist/**", "../../dist/**"] },
+    "clean": { "cache": false },
+    "dev": { "cache": false, "persistent": true },
+    "lint": {},
+    "test": {}
+  },
+  "globalDependencies": ["pnpm-lock.yaml"],
+  "ui": "stream"
 }

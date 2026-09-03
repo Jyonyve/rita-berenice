@@ -1,45 +1,45 @@
 {
-	"name": "@rita-berenice/shared",
-	"version": "1.0.0",
-	"private": true,
-	"type": "module",
-	"main": "./dist/index.js",
-	"types": "./dist/index.d.ts",
-	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"development": "./index.ts",
-			"default": "./dist/index.js"
-		},
-		"./api": {
-			"types": "./dist/api/index.d.ts",
-			"development": "./api/index.ts",
-			"default": "./dist/api/index.js"
-		},
-		"./config": {
-			"types": "./dist/config/index.d.ts",
-			"development": "./config/index.ts",
-			"default": "./dist/config/index.js"
-		},
-		"./domain": {
-			"types": "./dist/domain/index.d.ts",
-			"development": "./domain/index.ts",
-			"default": "./dist/domain/index.js"
-		},
-		"./util": {
-			"types": "./dist/util/index.d.ts",
-			"development": "./util/index.ts",
-			"default": "./dist/util/index.js"
-		}
-	},
-	"scripts": {
-		"build": "tsc --project tsconfig.json",
-		"clean": "rimraf dist",
-		"dev": "tsc --project tsconfig.json --watch"
-	},
-	"dependencies": {
-		"nanoid": "^5.1.6",
-		"unique-names-generator": "^4.7.1",
-		"zod": "^4.1.11"
-	}
+  "name": "@rita-berenice/shared",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "development": "./index.ts",
+      "default": "./dist/index.js"
+    },
+    "./api": {
+      "types": "./dist/api/index.d.ts",
+      "development": "./api/index.ts",
+      "default": "./dist/api/index.js"
+    },
+    "./config": {
+      "types": "./dist/config/index.d.ts",
+      "development": "./config/index.ts",
+      "default": "./dist/config/index.js"
+    },
+    "./domain": {
+      "types": "./dist/domain/index.d.ts",
+      "development": "./domain/index.ts",
+      "default": "./dist/domain/index.js"
+    },
+    "./util": {
+      "types": "./dist/util/index.d.ts",
+      "development": "./util/index.ts",
+      "default": "./dist/util/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "clean": "rimraf dist",
+    "dev": "tsc --project tsconfig.json --watch"
+  },
+  "dependencies": {
+    "nanoid": "^5.1.6",
+    "unique-names-generator": "^4.7.1",
+    "zod": "^4.1.11"
+  }
 }

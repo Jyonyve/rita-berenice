@@ -4,12 +4,7 @@ import express, { type Request, type Response, type Router } from 'express';
 import { verifySession } from 'supertokens-node/recipe/session/framework/express';
 import { profileStore } from '../store/profileStore.js';
 import { RESOURCES } from '../db/resource.type.js';
-import {
-	asyncHandler,
-	genRoutePattern,
-	validateRequestData,
-	validateServiceId,
-} from '../util/routeHelpers.js';
+import { asyncHandler, genRoutePattern, validateRequestData, validateServiceId } from '../util/routeHelpers.js';
 import { ProfileInfo, ProfileMetadata } from '@rita-berenice/shared/domain';
 import { buildProfileId } from '@rita-berenice/shared/util';
 import { assertOwnedProfile, assertOwnedSession, assertSessionUser } from '../util/authUtils.js';
@@ -27,13 +22,13 @@ const collectionType = RESOURCES.PROFILE;
  * @throws {500} Internal server error if the database fetch fails.
  */
 router.get(
-	genRoutePattern('getAllProfilesByUserId', ['userId']),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const userId = assertSessionUser(req, req.params.userId);
+  genRoutePattern('getAllProfilesByUserId', ['userId']),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const userId = assertSessionUser(req, req.params.userId);
 
-		const response = await profileStore.getAllProfilesByUserId(userId);
-		res.status(200).json(response);
-	})
+    const response = await profileStore.getAllProfilesByUserId(userId);
+    res.status(200).json(response);
+  }),
 );
 
 /**
@@ -45,15 +40,15 @@ router.get(
  * @throws {500} Internal server error.
  */
 router.get(
-	genRoutePattern('getProfile', ['profileId']),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { profileId } = req.params;
-		validateServiceId(profileId, collectionType);
-		await assertOwnedProfile(req, profileId);
+  genRoutePattern('getProfile', ['profileId']),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { profileId } = req.params;
+    validateServiceId(profileId, collectionType);
+    await assertOwnedProfile(req, profileId);
 
-		const response = await profileStore.getProfile(profileId);
-		res.status(200).json(response);
-	})
+    const response = await profileStore.getProfile(profileId);
+    res.status(200).json(response);
+  }),
 );
 
 /**
@@ -65,15 +60,15 @@ router.get(
  * @throws {500} Internal server error.
  */
 router.get(
-	genRoutePattern('getProfileBySessionId', ['sessionId']),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { sessionId } = req.params;
-		validateServiceId(sessionId, collectionType);
-		await assertOwnedSession(req, sessionId);
+  genRoutePattern('getProfileBySessionId', ['sessionId']),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { sessionId } = req.params;
+    validateServiceId(sessionId, collectionType);
+    await assertOwnedSession(req, sessionId);
 
-		const response = await profileStore.getProfileBySessionId(sessionId);
-		res.status(200).json(response);
-	})
+    const response = await profileStore.getProfileBySessionId(sessionId);
+    res.status(200).json(response);
+  }),
 );
 
 /**
@@ -85,14 +80,14 @@ router.get(
  * @throws {500} Internal server error.
  */
 router.get(
-	genRoutePattern('getProfilesByShowName', ['showName']),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { showName } = req.params;
-		validateRequestData(req.params, 'params', ['showName']);
+  genRoutePattern('getProfilesByShowName', ['showName']),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { showName } = req.params;
+    validateRequestData(req.params, 'params', ['showName']);
 
-		const response = await profileStore.getProfilesByShowName(showName);
-		res.status(200).json(response);
-	})
+    const response = await profileStore.getProfilesByShowName(showName);
+    res.status(200).json(response);
+  }),
 );
 
 /**
@@ -104,57 +99,48 @@ router.get(
  * @throws {500} Internal server error if the database operation fails.
  */
 router.post(
-	genRoutePattern('storeProfile'),
-	asyncHandler(
-		async (
-			req: Request<object, string, ProfileInfo>,
-			res: Response<{ profileId: string }>
-		): Promise<void> => {
-			const requiredFields: (keyof ProfileMetadata)[] = ['name', 'sessionId', 'userId'];
-			validateRequestData(req.body, 'body', requiredFields);
-			await assertOwnedSession(req, req.body.sessionId);
-			req.body.userId = assertSessionUser(req, req.body.userId);
-			req.body.profileId = buildProfileId(req.body.sessionId, req.body.userId);
+  genRoutePattern('storeProfile'),
+  asyncHandler(
+    async (req: Request<object, string, ProfileInfo>, res: Response<{ profileId: string }>): Promise<void> => {
+      const requiredFields: (keyof ProfileMetadata)[] = ['name', 'sessionId', 'userId'];
+      validateRequestData(req.body, 'body', requiredFields);
+      await assertOwnedSession(req, req.body.sessionId);
+      req.body.userId = assertSessionUser(req, req.body.userId);
+      req.body.profileId = buildProfileId(req.body.sessionId, req.body.userId);
 
-			const response = await profileStore.storeProfile(req.body);
-			res.status(201).json(response);
-		}
-	)
+      const response = await profileStore.storeProfile(req.body);
+      res.status(201).json(response);
+    },
+  ),
 );
 
 router.post(
-	genRoutePattern('uploadProfileImage'),
-	profileUpload.fields([
-		{ name: 'image', maxCount: 1 },
-		{ name: 'avatar', maxCount: 1 },
-	]),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		validateRequestData(req.body, 'body', ['profileId']);
-		const { profileId } = req.body;
-		await assertOwnedProfile(req, profileId);
+  genRoutePattern('uploadProfileImage'),
+  profileUpload.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'avatar', maxCount: 1 },
+  ]),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    validateRequestData(req.body, 'body', ['profileId']);
+    const { profileId } = req.body;
+    await assertOwnedProfile(req, profileId);
 
-		const files = req.files as Record<string, Express.Multer.File[]> | undefined;
-		const portraitFile = files?.image?.[0];
-		const avatarFile = files?.avatar?.[0];
-		if (!portraitFile || !avatarFile) {
-			res.status(400).json({ error: 'Both profile portrait and avatar image files are required' });
-			return;
-		}
+    const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+    const portraitFile = files?.image?.[0];
+    const avatarFile = files?.avatar?.[0];
+    if (!portraitFile || !avatarFile) {
+      res.status(400).json({ error: 'Both profile portrait and avatar image files are required' });
+      return;
+    }
 
-		const imagePaths = await processProfileImagePair(
-			portraitFile.buffer,
-			avatarFile.buffer,
-			profileId
-		);
-		res
-			.status(200)
-			.json({
-				success: true,
-				message: 'Profile portrait and avatar uploaded successfully',
-				...imagePaths,
-				profileId,
-			});
-	})
+    const imagePaths = await processProfileImagePair(portraitFile.buffer, avatarFile.buffer, profileId);
+    res.status(200).json({
+      success: true,
+      message: 'Profile portrait and avatar uploaded successfully',
+      ...imagePaths,
+      profileId,
+    });
+  }),
 );
 
 export default router;

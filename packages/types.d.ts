@@ -1,6 +1,6 @@
 declare module '*.module.scss' {
-	const classes: { [key: string]: string };
-	export default classes;
+  const classes: { [key: string]: string };
+  export default classes;
 }
 
 // src/types/axios.d.ts
@@ -9,13 +9,13 @@ declare module '*.module.scss' {
 import 'axios';
 
 declare module 'axios' {
-	// 기존 AxiosRequestConfig 인터페이스에 새로운 속성을 추가합니다.
-	export interface AxiosRequestConfig {
-		/**
-		 * 이 값이 true로 설정되면, 전역 에러 인터셉터가
-		 * 해당 요청에 한해 비활성화됩니다.
-		 */
-		_suppressToast?: boolean;
-		_suppress404Error?: boolean;
-	}
+  // 기존 AxiosRequestConfig 인터페이스에 새로운 속성을 추가합니다.
+  export interface AxiosRequestConfig {
+    /**
+     * 이 값이 true로 설정되면, 전역 에러 인터셉터가
+     * 해당 요청에 한해 비활성화됩니다.
+     */
+    _suppressToast?: boolean;
+    _suppress404Error?: boolean;
+  }
 }

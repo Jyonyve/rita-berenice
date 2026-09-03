@@ -11,61 +11,61 @@ import { getLangAlertText } from '../../util/translateUtils.js';
  * both lore and history entries, with separate hierarchies for each.
  */
 export const useHistoryApi = () => {
-	const MODULE_NAME = MODULE_NAMES.HISTORY;
-	const { addToast } = useToast();
-	const queryClient = useQueryClient();
+  const MODULE_NAME = MODULE_NAMES.HISTORY;
+  const { addToast } = useToast();
+  const queryClient = useQueryClient();
 
-	// --- HISTORY OPERATIONS ---
+  // --- HISTORY OPERATIONS ---
 
-	/**
-	 * Stores a new or updated history entry.
-	 */
-	const storeHistory = useMutation<{ historyId: string }, Error, HistoryInfo>({
-		mutationFn: async (historyInfo) => {
-			const url = genApiUrl(MODULE_NAME, 'storeHistory');
-			const response = await apiClient.post<{ historyId: string }>(url, historyInfo);
-			return response.data;
-		},
-		onSuccess: (data, variables) => {
-			addToast(getLangAlertText(LANG_KEYS.HISTORY_SAVED_SUCCESS), 'success');
+  /**
+   * Stores a new or updated history entry.
+   */
+  const storeHistory = useMutation<{ historyId: string }, Error, HistoryInfo>({
+    mutationFn: async (historyInfo) => {
+      const url = genApiUrl(MODULE_NAME, 'storeHistory');
+      const response = await apiClient.post<{ historyId: string }>(url, historyInfo);
+      return response.data;
+    },
+    onSuccess: (data, variables) => {
+      addToast(getLangAlertText(LANG_KEYS.HISTORY_SAVED_SUCCESS), 'success');
 
-			// Invalidate the specific history entry
-			queryClient.invalidateQueries({ queryKey: ['history', 'detail', 'getHistory', data.historyId] });
+      // Invalidate the specific history entry
+      queryClient.invalidateQueries({ queryKey: ['history', 'detail', 'getHistory', data.historyId] });
 
-			// Invalidate all history lists for this character
-			queryClient.invalidateQueries({
-				queryKey: ['history', 'list', 'getHistories', variables.characterId],
-			});
-		},
-	});
+      // Invalidate all history lists for this character
+      queryClient.invalidateQueries({
+        queryKey: ['history', 'list', 'getHistories', variables.characterId],
+      });
+    },
+  });
 
-	/**
-	 * Fetches all history entries for a character.
-	 */
-	const getHistories = (characterId: string) =>
-		useQuery<HistoryResponse, Error>({
-			queryKey: ['history', 'list', 'getHistories', characterId], // Separate history hierarchy
-			queryFn: async () => {
-				const url = genApiUrl(MODULE_NAME, 'getHistories', [characterId]);
-				const response = await apiClient.get<HistoryResponse>(url);
-				return response.data;
-			},
-			enabled: !!characterId,
-		});
+  /**
+   * Fetches all history entries for a character.
+   */
+  const getHistories = (characterId: string) =>
+    useQuery<HistoryResponse, Error>({
+      queryKey: ['history', 'list', 'getHistories', characterId], // Separate history hierarchy
+      queryFn: async () => {
+        const url = genApiUrl(MODULE_NAME, 'getHistories', [characterId]);
+        const response = await apiClient.get<HistoryResponse>(url);
+        return response.data;
+      },
+      enabled: !!characterId,
+    });
 
-	/**
-	 * Fetches a single history entry by its unique ID.
-	 */
-	const getHistory = (historyId: string) =>
-		useQuery<HistoryResponse, Error>({
-			queryKey: ['history', 'detail', 'getHistory', historyId], // Separate history hierarchy
-			queryFn: async () => {
-				const url = genApiUrl(MODULE_NAME, 'getHistory', [historyId]);
-				const response = await apiClient.get<HistoryResponse>(url);
-				return response.data;
-			},
-			enabled: !!historyId,
-		});
+  /**
+   * Fetches a single history entry by its unique ID.
+   */
+  const getHistory = (historyId: string) =>
+    useQuery<HistoryResponse, Error>({
+      queryKey: ['history', 'detail', 'getHistory', historyId], // Separate history hierarchy
+      queryFn: async () => {
+        const url = genApiUrl(MODULE_NAME, 'getHistory', [historyId]);
+        const response = await apiClient.get<HistoryResponse>(url);
+        return response.data;
+      },
+      enabled: !!historyId,
+    });
 
-	return { storeHistory: storeHistory.mutateAsync, getHistories, getHistory };
+  return { storeHistory: storeHistory.mutateAsync, getHistories, getHistory };
 };

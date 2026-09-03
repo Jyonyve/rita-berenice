@@ -22,15 +22,15 @@ const collectionType = RESOURCES.TERM;
  * @returns {object} A success confirmation message.
  */
 router.post(
-	genRoutePattern('storeSessionTerm'),
-	asyncHandler(async (req: Request, res: Response<{ termId: string }>): Promise<void> => {
-		const requiredFields: (keyof SessionTermInfo)[] = ['koreanTerm', 'sessionId'];
-		validateRequestData(req.body, 'body', requiredFields);
-		await assertOwnedSession(req, req.body.sessionId);
+  genRoutePattern('storeSessionTerm'),
+  asyncHandler(async (req: Request, res: Response<{ termId: string }>): Promise<void> => {
+    const requiredFields: (keyof SessionTermInfo)[] = ['koreanTerm', 'sessionId'];
+    validateRequestData(req.body, 'body', requiredFields);
+    await assertOwnedSession(req, req.body.sessionId);
 
-		const response = await termStore.storeSessionTerm(req.body);
-		res.status(201).json(response);
-	})
+    const response = await termStore.storeSessionTerm(req.body);
+    res.status(201).json(response);
+  }),
 );
 
 /**
@@ -41,15 +41,15 @@ router.post(
  * @returns {object} A success confirmation message.
  */
 router.post(
-	genRoutePattern('storeCharacterTerm'),
-	asyncHandler(async (req: Request, res: Response<{ termId: string }>): Promise<void> => {
-		const requiredFields: (keyof CharacterTermInfo)[] = ['koreanTerm', 'characterId'];
-		validateRequestData(req.body, 'body', requiredFields);
-		await assertOwnedCharacter(req, req.body.characterId);
+  genRoutePattern('storeCharacterTerm'),
+  asyncHandler(async (req: Request, res: Response<{ termId: string }>): Promise<void> => {
+    const requiredFields: (keyof CharacterTermInfo)[] = ['koreanTerm', 'characterId'];
+    validateRequestData(req.body, 'body', requiredFields);
+    await assertOwnedCharacter(req, req.body.characterId);
 
-		const response = await termStore.storeCharacterTerm(req.body);
-		res.status(201).json(response);
-	})
+    const response = await termStore.storeCharacterTerm(req.body);
+    res.status(201).json(response);
+  }),
 );
 
 /**
@@ -59,16 +59,14 @@ router.post(
  * @returns {object} A success confirmation message.
  */
 router.post(
-	genRoutePattern('storeSessionTerms'),
-	asyncHandler(async (req: Request, res: Response<{ termIds: string[] }>): Promise<void> => {
-		validateRequestData(req.body, 'body', ['terms']);
-		await Promise.all(
-			req.body.terms.map((term: SessionTermInfo) => assertOwnedSession(req, term.sessionId))
-		);
+  genRoutePattern('storeSessionTerms'),
+  asyncHandler(async (req: Request, res: Response<{ termIds: string[] }>): Promise<void> => {
+    validateRequestData(req.body, 'body', ['terms']);
+    await Promise.all(req.body.terms.map((term: SessionTermInfo) => assertOwnedSession(req, term.sessionId)));
 
-		const response = await termStore.storeSessionTerms(req.body.terms);
-		res.status(201).json(response);
-	})
+    const response = await termStore.storeSessionTerms(req.body.terms);
+    res.status(201).json(response);
+  }),
 );
 
 /**
@@ -78,16 +76,14 @@ router.post(
  * @returns {object} A success confirmation message.
  */
 router.post(
-	genRoutePattern('storeCharacterTerms'),
-	asyncHandler(async (req: Request, res: Response<{ termIds: string[] }>): Promise<void> => {
-		validateRequestData(req.body, 'body', ['terms']);
-		await Promise.all(
-			req.body.terms.map((term: CharacterTermInfo) => assertOwnedCharacter(req, term.characterId))
-		);
+  genRoutePattern('storeCharacterTerms'),
+  asyncHandler(async (req: Request, res: Response<{ termIds: string[] }>): Promise<void> => {
+    validateRequestData(req.body, 'body', ['terms']);
+    await Promise.all(req.body.terms.map((term: CharacterTermInfo) => assertOwnedCharacter(req, term.characterId)));
 
-		const response = await termStore.storeCharacterTerms(req.body.terms);
-		res.status(201).json(response);
-	})
+    const response = await termStore.storeCharacterTerms(req.body.terms);
+    res.status(201).json(response);
+  }),
 );
 
 /**
@@ -99,20 +95,20 @@ router.post(
  * @returns {TermResponse} An object containing the found term information.
  */
 router.get(
-	genRoutePattern('getTermByKorean', ['id', 'koreanTerm', 'type']),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { id, koreanTerm, type } = req.params;
+  genRoutePattern('getTermByKorean', ['id', 'koreanTerm', 'type']),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { id, koreanTerm, type } = req.params;
 
-		validateRequestData(req.params, 'params', ['koreanTerm', 'type']);
-		if (type === 'session') {
-			await assertOwnedSession(req, id);
-		} else {
-			await assertOwnedCharacter(req, id);
-		}
+    validateRequestData(req.params, 'params', ['koreanTerm', 'type']);
+    if (type === 'session') {
+      await assertOwnedSession(req, id);
+    } else {
+      await assertOwnedCharacter(req, id);
+    }
 
-		const response = await termStore.getTermByKorean(id, koreanTerm, type as 'session' | 'character');
-		res.status(200).json(response);
-	})
+    const response = await termStore.getTermByKorean(id, koreanTerm, type as 'session' | 'character');
+    res.status(200).json(response);
+  }),
 );
 
 /**
@@ -122,14 +118,14 @@ router.get(
  * @returns {TermResponse} An object containing a list of all terms for the session.
  */
 router.get(
-	genRoutePattern('getTermsBySessionId', ['sessionId']),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { sessionId } = req.params;
-		await assertOwnedSession(req, sessionId);
+  genRoutePattern('getTermsBySessionId', ['sessionId']),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { sessionId } = req.params;
+    await assertOwnedSession(req, sessionId);
 
-		const response = await termStore.getTermsBySessionId(sessionId);
-		res.status(200).json(response);
-	})
+    const response = await termStore.getTermsBySessionId(sessionId);
+    res.status(200).json(response);
+  }),
 );
 
 /**
@@ -139,14 +135,14 @@ router.get(
  * @returns {TermResponse} An object containing a list of all terms for the character.
  */
 router.get(
-	genRoutePattern('getTermsByCharacterId', ['characterId']),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { characterId } = req.params;
-		await assertOwnedCharacter(req, characterId);
+  genRoutePattern('getTermsByCharacterId', ['characterId']),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { characterId } = req.params;
+    await assertOwnedCharacter(req, characterId);
 
-		const response = await termStore.getTermsByCharacterId(characterId);
-		res.status(200).json(response);
-	})
+    const response = await termStore.getTermsByCharacterId(characterId);
+    res.status(200).json(response);
+  }),
 );
 
 /**
@@ -157,25 +153,25 @@ router.get(
  * @returns {object} A key-value map of Korean terms to their English translations.
  */
 router.post(
-	genRoutePattern('ensureAndGetTermsForPrompt'),
-	asyncHandler(async (req: Request, res: Response<object>): Promise<void> => {
-		const { sessionId, koreanTermsToEnsure, userId } = req.body;
-		validateRequestData(req.body, 'body', ['sessionId', 'koreanTermsToEnsure', 'userId']);
-		await assertOwnedSession(req, sessionId);
-		const authenticatedUserId = assertSessionUser(req, userId);
+  genRoutePattern('ensureAndGetTermsForPrompt'),
+  asyncHandler(async (req: Request, res: Response<object>): Promise<void> => {
+    const { sessionId, koreanTermsToEnsure, userId } = req.body;
+    validateRequestData(req.body, 'body', ['sessionId', 'koreanTermsToEnsure', 'userId']);
+    await assertOwnedSession(req, sessionId);
+    const authenticatedUserId = assertSessionUser(req, userId);
 
-		// Reaches translateProperNoun for any unknown term, and this endpoint has no turn model, so
-		// the utility model is chosen from the caller's registered keys.
-		const termMap = await termStore.ensureAndGetTermsForPrompt(
-			sessionId,
-			authenticatedUserId,
-			koreanTermsToEnsure,
-			await llmService.resolveUserUtilityModelInfo(authenticatedUserId)
-		);
-		// Convert Map to a plain object for JSON serialization
-		const response = Object.fromEntries(termMap);
-		res.status(200).json(response);
-	})
+    // Reaches translateProperNoun for any unknown term, and this endpoint has no turn model, so
+    // the utility model is chosen from the caller's registered keys.
+    const termMap = await termStore.ensureAndGetTermsForPrompt(
+      sessionId,
+      authenticatedUserId,
+      koreanTermsToEnsure,
+      await llmService.resolveUserUtilityModelInfo(authenticatedUserId),
+    );
+    // Convert Map to a plain object for JSON serialization
+    const response = Object.fromEntries(termMap);
+    res.status(200).json(response);
+  }),
 );
 
 /**
@@ -185,14 +181,14 @@ router.post(
  * @returns {object} A success confirmation message.
  */
 router.delete(
-	genRoutePattern('clearSessionCache', ['sessionId']),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { sessionId } = req.params;
-		await assertOwnedSession(req, sessionId);
+  genRoutePattern('clearSessionCache', ['sessionId']),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { sessionId } = req.params;
+    await assertOwnedSession(req, sessionId);
 
-		termStore.clearSessionCache(sessionId);
-		res.status(200).json({ message: `Cache cleared for session ${sessionId}.` });
-	})
+    termStore.clearSessionCache(sessionId);
+    res.status(200).json({ message: `Cache cleared for session ${sessionId}.` });
+  }),
 );
 
 /**
@@ -202,14 +198,14 @@ router.delete(
  * @returns {object} A success confirmation message.
  */
 router.delete(
-	genRoutePattern('clearCharacterCache', ['characterId']),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { characterId } = req.params;
-		await assertOwnedCharacter(req, characterId);
+  genRoutePattern('clearCharacterCache', ['characterId']),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { characterId } = req.params;
+    await assertOwnedCharacter(req, characterId);
 
-		termStore.clearCharacterCache(characterId);
-		res.status(200).json({ message: `Cache cleared for character ${characterId}.` });
-	})
+    termStore.clearCharacterCache(characterId);
+    res.status(200).json({ message: `Cache cleared for character ${characterId}.` });
+  }),
 );
 
 export default router;

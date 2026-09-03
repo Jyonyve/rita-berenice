@@ -39,4 +39,6 @@ the JSONL file as sensitive local debugging data and do not upload or commit it.
 ## Current boundary
 
 This is the first inspection layer. It does not add an API endpoint, persist evaluation judgments,
-generate an answer, or call an extra LLM.
+generate an answer, or call an extra LLM. The authenticated retrieval-only inspection endpoint
+described in `docs/rag-quality-and-lore-prototype.md` remains a later option if local traces are not
+sufficient for the human evaluation workflow.

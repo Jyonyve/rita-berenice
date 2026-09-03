@@ -1,38 +1,38 @@
 // Create a new file: src/shared/util/translateUtils.ts
 import { EMOTION_CATEGORY_NAMES } from '@rita-berenice/shared/util';
 import {
-	LangCode,
-	DEFAULT_LANG,
-	LangKey,
-	langConstants,
-	alertToastConstants,
-	EmotionValue,
-	GENDER_OPTION,
-	GENDER_OPTIONS,
+  LangCode,
+  DEFAULT_LANG,
+  LangKey,
+  langConstants,
+  alertToastConstants,
+  EmotionValue,
+  GENDER_OPTION,
+  GENDER_OPTIONS,
 } from '@rita-berenice/shared/config';
 
 // 🎯 Global current language state
 let currentLang: LangCode = (() => {
-	if (typeof window !== 'undefined' && (window as any).__INITIAL_LANG__) {
-		return (window as any).__INITIAL_LANG__;
-	}
-	return DEFAULT_LANG;
+  if (typeof window !== 'undefined' && (window as any).__INITIAL_LANG__) {
+    return (window as any).__INITIAL_LANG__;
+  }
+  return DEFAULT_LANG;
 })();
 
 // 🎯 Function for LanguageProvider to update global state
 export const setCurrentLang = (lang: LangCode): void => {
-	currentLang = lang;
+  currentLang = lang;
 };
 
 export const initializeTranslationLanguage = (lang: unknown): LangCode => {
-	const resolvedLang = lang === 'kor' || lang === 'eng' ? lang : DEFAULT_LANG;
-	setCurrentLang(resolvedLang);
-	return resolvedLang;
+  const resolvedLang = lang === 'kor' || lang === 'eng' ? lang : DEFAULT_LANG;
+  setCurrentLang(resolvedLang);
+  return resolvedLang;
 };
 
 // 🎯 Function to get current language
 export const getCurrentLang = (): LangCode => {
-	return currentLang;
+  return currentLang;
 };
 
 /**
@@ -44,15 +44,15 @@ export const getCurrentLang = (): LangCode => {
  * @returns The localized string.
  */
 export const getLangText = (key: LangKey, lang?: LangCode): string => {
-	const useLang = lang || currentLang;
-	const record = langConstants[key];
+  const useLang = lang || currentLang;
+  const record = langConstants[key];
 
-	if (!record) {
-		console.warn(`Language constant not found for key: ${key}`);
-		return key; // Return the key as a fallback for missing entries
-	}
+  if (!record) {
+    console.warn(`Language constant not found for key: ${key}`);
+    return key; // Return the key as a fallback for missing entries
+  }
 
-	return record[useLang] || record[DEFAULT_LANG];
+  return record[useLang] || record[DEFAULT_LANG];
 };
 
 /**
@@ -64,32 +64,31 @@ export const getLangText = (key: LangKey, lang?: LangCode): string => {
  * @returns The localized string.
  */
 export const getLangAlertText = (key: LangKey, lang?: LangCode): string => {
-	const useLang = lang || currentLang;
-	const record = alertToastConstants[key];
+  const useLang = lang || currentLang;
+  const record = alertToastConstants[key];
 
-	if (!record) {
-		return key; // Return the key as a fallback for missing entries
-	}
+  if (!record) {
+    return key; // Return the key as a fallback for missing entries
+  }
 
-	return record[useLang] || record[DEFAULT_LANG];
+  return record[useLang] || record[DEFAULT_LANG];
 };
 
-export const emotionToLangKey = (emotion: EmotionValue): LangKey =>
-	emotion.toUpperCase() as LangKey;
+export const emotionToLangKey = (emotion: EmotionValue): LangKey => emotion.toUpperCase() as LangKey;
 
 export const genderToLangKey = (gender: GENDER_OPTION): LangKey => gender.toUpperCase() as LangKey;
 
 export const getEmotionSelectLabel = () => {
-	return Object.entries(EMOTION_CATEGORY_NAMES).map(([key, value]) => ({
-		key: value,
-		label: getLangText(emotionToLangKey(value)),
-		emotionKey: parseInt(key),
-	}));
+  return Object.entries(EMOTION_CATEGORY_NAMES).map(([key, value]) => ({
+    key: value,
+    label: getLangText(emotionToLangKey(value)),
+    emotionKey: parseInt(key),
+  }));
 };
 
 export const getGenderSelectLabel = () => {
-	return GENDER_OPTIONS.map((option) => ({
-		key: option,
-		label: getLangText(genderToLangKey(option)),
-	}));
+  return GENDER_OPTIONS.map((option) => ({
+    key: option,
+    label: getLangText(genderToLangKey(option)),
+  }));
 };

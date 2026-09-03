@@ -1,6 +1,6 @@
 ---
 name: rag-change
-description: Guide safe changes to Rita-Berenice RAG, LLM, prompt, memory, retrieval, structured-output, embedding, pgvector store, or AI model behavior. Use when modifying server/service, server/store retrieval logic, shared AI model config, prompt templates, schema parsing, or chat orchestration.
+description: Guide safe changes to Rita-Berenice RAG, LLM, prompt, memory, retrieval, structured-output, embedding, vector store, or AI model behavior. Use when modifying server/service, server/store retrieval logic, shared AI model config, prompt templates, schema parsing, or chat orchestration.
 ---
 
 # RAG Change
@@ -17,8 +17,7 @@ Use this workflow before changing AI behavior.
    - Prompt templates: `packages/server/util/templateUtils.ts`.
    - Runtime schemas: `packages/server/util/schemaUtils.ts`.
    - Model config and shared types: `packages/shared/config` and `packages/shared/domain/aimodel`.
-   - Embedding writes and vector search: `packages/server/service/embeddingService.ts` and `packages/server/service/embeddingJobService.ts`.
-   - PostgreSQL/pgvector schema and data access: `packages/server/db` and `packages/server/store`.
+   - Vector store access and reconstruction: `packages/server/db` and `packages/server/store`.
 2. Preserve user data shape unless the task explicitly includes a migration.
 3. Keep provider-specific behavior behind `llmService`.
 4. Keep prompt text, schema shape, parsing, and fallback behavior reviewed together.

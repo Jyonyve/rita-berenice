@@ -10,43 +10,43 @@ import { RecapInfo } from '@rita-berenice/shared/domain';
  * fully refactored with hierarchical query keys.
  */
 export const useRecapApi = () => {
-	const MODULE_NAME = MODULE_NAMES.RECAP;
-	const queryClient = useQueryClient();
+  const MODULE_NAME = MODULE_NAMES.RECAP;
+  const queryClient = useQueryClient();
 
-	/**
-	 * Stores a new or updated recap entry.
-	 * This single mutation handles both factual and relationship recaps.
-	 */
-	const storeRecap = useMutation<{ recapId: string }, Error, RecapInfo>({
-		mutationFn: async (recapInfo) => {
-			const url = genApiUrl(MODULE_NAME, 'storeRecap');
-			const response = await apiClient.post<{ recapId: string }>(url, recapInfo);
-			return response.data;
-		},
-		onSuccess: (_, variables) => {
-			// Invalidate the specific recap list for this session and type
-			queryClient.invalidateQueries({
-				queryKey: ['recaps', 'list', 'getRecapsBySessionId', variables.sessionId, variables.type],
-			});
-		},
-	});
+  /**
+   * Stores a new or updated recap entry.
+   * This single mutation handles both factual and relationship recaps.
+   */
+  const storeRecap = useMutation<{ recapId: string }, Error, RecapInfo>({
+    mutationFn: async (recapInfo) => {
+      const url = genApiUrl(MODULE_NAME, 'storeRecap');
+      const response = await apiClient.post<{ recapId: string }>(url, recapInfo);
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate the specific recap list for this session and type
+      queryClient.invalidateQueries({
+        queryKey: ['recaps', 'list', 'getRecapsBySessionId', variables.sessionId, variables.type],
+      });
+    },
+  });
 
-	/**
-	 * Fetches all recap entries for a session, filtered by type.
-	 */
-	const getRecapsBySessionId = (
-		sessionId: string,
-		type: typeof METADATA_TYPES.RECAP | typeof METADATA_TYPES.RELATIONSHIP
-	) =>
-		useQuery<RecapInfo[], Error>({
-			queryKey: ['recaps', 'list', 'getRecapsBySessionId', sessionId, type], // Hierarchical structure
-			queryFn: async () => {
-				const url = genApiUrl(MODULE_NAME, 'getRecapsBySessionId', [sessionId, type]);
-				const response = await apiClient.get<RecapInfo[]>(url);
-				return response.data;
-			},
-			enabled: !!sessionId && !!type,
-		});
+  /**
+   * Fetches all recap entries for a session, filtered by type.
+   */
+  const getRecapsBySessionId = (
+    sessionId: string,
+    type: typeof METADATA_TYPES.RECAP | typeof METADATA_TYPES.RELATIONSHIP,
+  ) =>
+    useQuery<RecapInfo[], Error>({
+      queryKey: ['recaps', 'list', 'getRecapsBySessionId', sessionId, type], // Hierarchical structure
+      queryFn: async () => {
+        const url = genApiUrl(MODULE_NAME, 'getRecapsBySessionId', [sessionId, type]);
+        const response = await apiClient.get<RecapInfo[]>(url);
+        return response.data;
+      },
+      enabled: !!sessionId && !!type,
+    });
 
-	return { storeRecap: storeRecap.mutateAsync, getRecapsBySessionId };
+  return { storeRecap: storeRecap.mutateAsync, getRecapsBySessionId };
 };

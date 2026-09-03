@@ -1,16 +1,12 @@
 # pnpm-workspace.yaml
 packages:
- - 'packages/*'
-
-overrides:
- rollup: 'npm:@rollup/wasm-node'
- tsx: 4.20.6
+  - 'packages/*'
 
 onlyBuiltDependencies:
- - '@parcel/watcher'
- - browser-tabs-lock
- - esbuild
- - onnxruntime-node
- - protobufjs
- - puppeteer
- - sharp
+  - '@parcel/watcher'
+  - browser-tabs-lock
+  - esbuild
+  - onnxruntime-node
+  - protobufjs
+  - puppeteer
+  - sharp

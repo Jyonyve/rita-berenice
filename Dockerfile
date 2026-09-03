@@ -30,6 +30,7 @@ COPY packages/shared/domain ./packages/shared/domain
 COPY packages/shared/util ./packages/shared/util
 COPY packages/shared/index.ts packages/shared/tsconfig.json ./packages/shared/
 
+COPY packages/client/asset ./packages/client/asset
 COPY packages/client/hook ./packages/client/hook
 COPY packages/client/layout ./packages/client/layout
 COPY packages/client/page ./packages/client/page
@@ -40,6 +41,7 @@ COPY packages/client/App.tsx packages/client/AppProviders.tsx packages/client/en
 
 COPY packages/server/config ./packages/server/config
 COPY packages/server/db ./packages/server/db
+COPY packages/server/eval ./packages/server/eval
 COPY packages/server/route ./packages/server/route
 COPY packages/server/service ./packages/server/service
 COPY packages/server/store ./packages/server/store

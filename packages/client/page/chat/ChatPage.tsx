@@ -5,23 +5,17 @@ import { ChatLog } from './ChatLog.jsx';
 import { UserInput } from './UserInput.jsx';
 
 import {
-	Box,
-	Grid,
-	useTheme,
-	Dialog,
-	DialogTitle,
-	DialogContent,
-	TextField,
-	DialogActions,
-	Typography,
+  Box,
+  Grid,
+  useTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  TextField,
+  DialogActions,
+  Typography,
 } from '@mui/material';
-import {
-	useChatApi,
-	useLlmApi,
-	useOrchestrationApi,
-	useTempChatApi,
-	useSessionApi,
-} from '../../hook/api/index.js';
+import { useChatApi, useLlmApi, useOrchestrationApi, useTempChatApi, useSessionApi } from '../../hook/api/index.js';
 import { useChatState } from '../../hook/state/useChatState.js';
 import { GlassButton, GlassPaper, GlassPortrait } from '../../layout/component/glass/index.js';
 import { containerSpacing } from '../../style/index.js';
@@ -30,954 +24,1000 @@ import { mobileVisualViewportDialogSx } from '../../style/mobileDialogStyles.js'
 import { useEmotionContext } from './ChatPageLoader.jsx';
 import { getLangAlertText, getLangText, parseTextToEntries } from '../../util/index.js';
 import { getCharacterImageArray } from '../../util/portraitUtils.js';
+import { getClientErrorMessage } from '../../util/clientApiHelpers.js';
 import { useResponsive } from '../../hook/useResponsive.js';
 import { preloadImage, usePreloadImages } from '../../hook/useImagePreload.js';
 import { DEFAULT_CHAT_MODEL, DEFAULT_EMOTION, LANG_KEYS } from '@rita-berenice/shared/config';
 import {
-	CharacterInfo,
-	ProfileInfo,
-	SessionInfo,
-	ChatTurnCdo,
-	TempChatTurn,
-	SessionContentPolicy,
-	API_KEY_ERROR_CODES,
-	API_KEY_TYPE_LABELS,
-	isApiKeyErrorCode,
-	type ApiKeyType,
+  CharacterInfo,
+  ProfileInfo,
+  SessionInfo,
+  ChatTurnCdo,
+  TempChatTurn,
+  SessionContentPolicy,
+  API_KEY_ERROR_CODES,
+  API_KEY_TYPE_LABELS,
+  isApiKeyErrorCode,
+  type ApiKeyType,
 } from '@rita-berenice/shared/domain';
 import type { PortraitUrlMap } from '@rita-berenice/shared/config';
 import { createBasicChatTurn } from '@rita-berenice/shared/util';
 import { ChatGenerationStage } from '@rita-berenice/shared/api';
 import {
-	DEFAULT_CHAT_DISPLAY_MODE,
-	getChatDisplayModeStorageKey,
-	readChatDisplayMode,
-	type ChatDisplayMode,
-	writeChatDisplayMode,
+  DEFAULT_CHAT_DISPLAY_MODE,
+  getChatDisplayModeStorageKey,
+  readChatDisplayMode,
+  type ChatDisplayMode,
+  writeChatDisplayMode,
 } from './chatDisplayMode.js';
 import {
-	DEFAULT_CHAT_FONT_SIZE,
-	DEFAULT_CHAT_FONT_WEIGHT,
-	getChatFontSizeStorageKey,
-	getChatFontWeightStorageKey,
-	readChatFontSize,
-	readChatFontWeight,
-	type ChatFontSize,
-	type ChatFontWeight,
-	writeChatFontSize,
-	writeChatFontWeight,
+  DEFAULT_CHAT_FONT_SIZE,
+  DEFAULT_CHAT_FONT_WEIGHT,
+  getChatFontSizeStorageKey,
+  getChatFontWeightStorageKey,
+  readChatFontSize,
+  readChatFontWeight,
+  type ChatFontSize,
+  type ChatFontWeight,
+  writeChatFontSize,
+  writeChatFontWeight,
 } from './chatFontSize.js';
 
 /**
  * Recognises the actionable API key failures the server marks, and renders them in the
  * viewer's language. Anything else stays on the generic error path.
  */
-const readApiKeyFailure = (
-	error: unknown
-): { message: string; keyType?: ApiKeyType } | undefined => {
-	const details = (error as { details?: { code?: unknown; keyType?: unknown } } | undefined)
-		?.details;
-	if (!isApiKeyErrorCode(details?.code)) return undefined;
+const readApiKeyFailure = (error: unknown): { message: string; keyType?: ApiKeyType } | undefined => {
+  const details = (error as { details?: { code?: unknown; keyType?: unknown } } | undefined)?.details;
+  if (!isApiKeyErrorCode(details?.code)) return undefined;
 
-	const keyType = details?.keyType as ApiKeyType | undefined;
-	const providerLabel = keyType ? API_KEY_TYPE_LABELS[keyType] : '';
-	const text = getLangAlertText(
-		details.code === API_KEY_ERROR_CODES.missing
-			? LANG_KEYS.API_KEY_MISSING
-			: LANG_KEYS.API_KEY_REJECTED
-	);
+  const keyType = details?.keyType as ApiKeyType | undefined;
+  const providerLabel = keyType ? API_KEY_TYPE_LABELS[keyType] : '';
+  const text = getLangAlertText(
+    details.code === API_KEY_ERROR_CODES.missing ? LANG_KEYS.API_KEY_MISSING : LANG_KEYS.API_KEY_REJECTED,
+  );
 
-	return { message: providerLabel ? `${providerLabel} ${text}` : text, keyType };
+  return { message: providerLabel ? `${providerLabel} ${text}` : text, keyType };
 };
 
 export const ChatPage: FC<{
-	characterInfo: CharacterInfo;
-	profileInfo: ProfileInfo;
-	sessionInfo: SessionInfo;
-	userId: string;
-	characterPortraitUrls?: PortraitUrlMap;
-	characterAvatarUrls?: PortraitUrlMap;
-	profileAvatarUrl?: string;
-	onMobileInputFocusChange: (focused: boolean) => void;
+  characterInfo: CharacterInfo;
+  profileInfo: ProfileInfo;
+  sessionInfo: SessionInfo;
+  userId: string;
+  characterPortraitUrls?: PortraitUrlMap;
+  characterAvatarUrls?: PortraitUrlMap;
+  profileAvatarUrl?: string;
+  onMobileInputFocusChange: (focused: boolean) => void;
 }> = ({
-	characterInfo,
-	profileInfo,
-	sessionInfo,
-	userId,
-	characterPortraitUrls,
-	characterAvatarUrls,
-	profileAvatarUrl,
-	onMobileInputFocusChange,
+  characterInfo,
+  profileInfo,
+  sessionInfo,
+  userId,
+  characterPortraitUrls,
+  characterAvatarUrls,
+  profileAvatarUrl,
+  onMobileInputFocusChange,
 }) => {
-	const { receiveBotResponse, enqueueFinalization, waitForFinalizationJob } = useOrchestrationApi();
-	const { saveTempChatTurn, getTempChatTurn } = useTempChatApi();
-	const { updateChatTurn, deleteChatTurnsFromSequence } = useChatApi();
-	const { updateSessionOnNewMessage, updateSessionUserNote, updateSessionContentPolicy } =
-		useSessionApi();
-	const { getModelCatalog } = useLlmApi();
-	const { data: modelCatalog } = getModelCatalog();
-	const sessionId = sessionInfo.sessionId;
-	const displayModeStorageKey = useMemo(() => getChatDisplayModeStorageKey(userId), [userId]);
-	const chatFontSizeStorageKey = useMemo(() => getChatFontSizeStorageKey(userId), [userId]);
-	const chatFontWeightStorageKey = useMemo(() => getChatFontWeightStorageKey(userId), [userId]);
+  const { receiveBotResponse, continueTempResponse, enqueueFinalization, waitForFinalizationJob } =
+    useOrchestrationApi();
+  const { saveTempChatTurn, getTempChatTurn, deleteTempChatTurn } = useTempChatApi();
+  const { updateChatTurn, deleteChatTurnsFromSequence } = useChatApi();
+  const { updateSessionOnNewMessage, updateSessionUserNote, updateSessionContentPolicy } = useSessionApi();
+  const { getModelCatalog } = useLlmApi();
+  const { data: modelCatalog } = getModelCatalog();
+  const sessionId = sessionInfo.sessionId;
+  const displayModeStorageKey = useMemo(() => getChatDisplayModeStorageKey(userId), [userId]);
+  const chatFontSizeStorageKey = useMemo(() => getChatFontSizeStorageKey(userId), [userId]);
+  const chatFontWeightStorageKey = useMemo(() => getChatFontWeightStorageKey(userId), [userId]);
 
-	// Get emotion context from Loader
-	const { setCurrentEmotion, imageUrl } = useEmotionContext();
-	const { shouldUseMobileLayout } = useResponsive();
+  // Get emotion context from Loader
+  const { setCurrentEmotion, imageUrl } = useEmotionContext();
+  const { shouldUseMobileLayout } = useResponsive();
 
-	// A character caps out at 15 portraits, so warming the whole set up front is cheap and
-	// means an emotion swap never waits on the network.
-	const portraitUrls = useMemo(
-		() => getCharacterImageArray(characterPortraitUrls),
-		[characterPortraitUrls]
-	);
-	usePreloadImages(portraitUrls);
+  // A character caps out at 15 portraits, so warming the whole set up front is cheap and
+  // means an emotion swap never waits on the network.
+  const portraitUrls = useMemo(() => getCharacterImageArray(characterPortraitUrls), [characterPortraitUrls]);
+  usePreloadImages(portraitUrls);
 
-	// --- MOBILE BACKGROUND CROSSFADE ---
-	// backgroundImage swaps are not animatable in CSS - they snap instantly, which reads as
-	// choppy on mobile. Two alternating layers crossfade via opacity instead.
-	const [bgSlots, setBgSlots] = useState<[string, string]>([imageUrl, '']);
-	const [activeBgSlot, setActiveBgSlot] = useState<0 | 1>(0);
+  // --- MOBILE BACKGROUND CROSSFADE ---
+  // backgroundImage swaps are not animatable in CSS - they snap instantly, which reads as
+  // choppy on mobile. Two alternating layers crossfade via opacity instead.
+  const [bgSlots, setBgSlots] = useState<[string, string]>([imageUrl, '']);
+  const [activeBgSlot, setActiveBgSlot] = useState<0 | 1>(0);
 
-	useEffect(() => {
-		if (!imageUrl || imageUrl === bgSlots[activeBgSlot]) return;
-		let cancelled = false;
-		let frame = 0;
-		const nextSlot = activeBgSlot === 0 ? 1 : 0;
+  useEffect(() => {
+    if (!imageUrl || imageUrl === bgSlots[activeBgSlot]) return;
+    let cancelled = false;
+    let frame = 0;
+    const nextSlot = activeBgSlot === 0 ? 1 : 0;
 
-		// Wait for the image to be paintable before starting the fade. Without this the
-		// crossfade can run against an undecoded layer and land on a blank frame, which
-		// looks worse than the instant swap it replaced.
-		void preloadImage(imageUrl).then(() => {
-			if (cancelled) return;
-			setBgSlots((prev) => {
-				const next: [string, string] = [...prev];
-				next[nextSlot] = imageUrl;
-				return next;
-			});
-			// Let the new layer paint at opacity 0 first, otherwise there is no start value
-			// for the transition to run from.
-			frame = requestAnimationFrame(() => {
-				if (!cancelled) setActiveBgSlot(nextSlot);
-			});
-		});
+    // Wait for the image to be paintable before starting the fade. Without this the
+    // crossfade can run against an undecoded layer and land on a blank frame, which
+    // looks worse than the instant swap it replaced.
+    void preloadImage(imageUrl).then(() => {
+      if (cancelled) return;
+      setBgSlots((prev) => {
+        const next: [string, string] = [...prev];
+        next[nextSlot] = imageUrl;
+        return next;
+      });
+      // Let the new layer paint at opacity 0 first, otherwise there is no start value
+      // for the transition to run from.
+      frame = requestAnimationFrame(() => {
+        if (!cancelled) setActiveBgSlot(nextSlot);
+      });
+    });
 
-		return () => {
-			cancelled = true;
-			if (frame) cancelAnimationFrame(frame);
-		};
-	}, [imageUrl]);
+    return () => {
+      cancelled = true;
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [imageUrl]);
 
-	// --- HOOKS ---
-	const {
-		chatTurns,
-		tempChatTurn,
-		isLoadingHistory,
-		clientError,
-		addChatTurn,
-		changeTempChatTurn,
-		removeChatTurnsFromSequence,
-		getNextSequence,
-	} = useChatState(sessionId);
+  // --- HOOKS ---
+  const {
+    chatTurns,
+    tempChatTurn,
+    isLoadingHistory,
+    clientError,
+    addChatTurn,
+    changeTempChatTurn,
+    removeChatTurnsFromSequence,
+    getNextSequence,
+  } = useChatState(sessionId);
 
-	const tempSequence = useMemo(() => {
-		if (isLoadingHistory) {
-			return -1; // Return an invalid sequence while loading to prevent firing
-		}
-		return chatTurns.length > 0 ? getNextSequence() : 0;
-	}, [isLoadingHistory, chatTurns, getNextSequence]);
+  const tempSequence = useMemo(() => {
+    if (isLoadingHistory) {
+      return -1; // Return an invalid sequence while loading to prevent firing
+    }
+    return chatTurns.length > 0 ? getNextSequence() : 0;
+  }, [isLoadingHistory, chatTurns, getNextSequence]);
 
-	const { data: tempTurnRes } = getTempChatTurn(sessionId, tempSequence);
+  const { data: tempTurnRes } = getTempChatTurn(sessionId, tempSequence);
 
-	useEffect(() => {
-		if (tempTurnRes?.tempChatTurn) {
-			changeTempChatTurn(tempTurnRes?.tempChatTurn);
-			setCurrentTempSetNo(tempTurnRes?.tempChatTurn.chatTurnSets.length - 1);
-		}
-	}, [tempTurnRes]);
+  useEffect(() => {
+    if (tempTurnRes?.tempChatTurn) {
+      changeTempChatTurn(tempTurnRes?.tempChatTurn);
+      setCurrentTempSetNo(tempTurnRes?.tempChatTurn.chatTurnSets.length - 1);
+    }
+  }, [tempTurnRes]);
 
-	// --- STATE (simplified - no image state) ---
-	const [currentTempSetNo, setCurrentTempSetNo] = useState(0);
-	const [userInput, setUserInput] = useState('');
-	const [userNote, setUserNote] = useState(sessionInfo.userNote);
-	const [isProcessing, setIsProcessing] = useState(false);
-	const [streamingText, setStreamingText] = useState('');
-	const [streamingStage, setStreamingStage] = useState<ChatGenerationStage>();
-	const streamAbortControllerRef = useRef<AbortController | undefined>(undefined);
-	const finalizationControllersRef = useRef(new Set<AbortController>());
-	const [pageError, setPageError] = useState<string>();
-	// Set when a send fails because the user's API key is missing or was refused, so the
-	// input area can open the key dialog on the right provider instead of just showing text.
-	const [apiKeyPrompt, setApiKeyPrompt] = useState<ApiKeyType>();
-	const [userEditInput, setUserEditInput] = useState('');
-	const [botEditInput, setBotEditInput] = useState('');
-	const [modelName, setModelName] = useState(DEFAULT_CHAT_MODEL);
-	const [displayMode, setDisplayMode] = useState<ChatDisplayMode>(DEFAULT_CHAT_DISPLAY_MODE);
-	const [chatFontSize, setChatFontSize] = useState<ChatFontSize>(DEFAULT_CHAT_FONT_SIZE);
-	const [chatFontWeight, setChatFontWeight] = useState<ChatFontWeight>(DEFAULT_CHAT_FONT_WEIGHT);
-	const [contentPolicy, setContentPolicy] = useState<SessionContentPolicy>(
-		sessionInfo.contentPolicy ?? 'general'
-	);
-	const [isContentPolicyUpdating, setIsContentPolicyUpdating] = useState(false);
-	const [focusedTurnIndex, setFocusedTurnIndex] = useState(-1);
+  // --- STATE (simplified - no image state) ---
+  const [currentTempSetNo, setCurrentTempSetNo] = useState(0);
+  const [userInput, setUserInput] = useState('');
+  const [userNote, setUserNote] = useState(sessionInfo.userNote);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [streamingText, setStreamingText] = useState('');
+  const [streamingStage, setStreamingStage] = useState<ChatGenerationStage>();
+  const streamAbortControllerRef = useRef<AbortController | undefined>(undefined);
+  const finalizationControllersRef = useRef(new Set<AbortController>());
+  const [pageError, setPageError] = useState<string>();
+  // Set when a send fails because the user's API key is missing or was refused, so the
+  // input area can open the key dialog on the right provider instead of just showing text.
+  const [apiKeyPrompt, setApiKeyPrompt] = useState<ApiKeyType>();
+  const [userEditInput, setUserEditInput] = useState('');
+  const [botEditInput, setBotEditInput] = useState('');
+  const [modelName, setModelName] = useState(DEFAULT_CHAT_MODEL);
+  const [displayMode, setDisplayMode] = useState<ChatDisplayMode>(DEFAULT_CHAT_DISPLAY_MODE);
+  const [chatFontSize, setChatFontSize] = useState<ChatFontSize>(DEFAULT_CHAT_FONT_SIZE);
+  const [chatFontWeight, setChatFontWeight] = useState<ChatFontWeight>(DEFAULT_CHAT_FONT_WEIGHT);
+  const [contentPolicy, setContentPolicy] = useState<SessionContentPolicy>(sessionInfo.contentPolicy ?? 'general');
+  const [isContentPolicyUpdating, setIsContentPolicyUpdating] = useState(false);
+  const [focusedTurnIndex, setFocusedTurnIndex] = useState(-1);
 
-	// Modal state
-	const [isUserNoteModalOpen, setIsUserNoteModalOpen] = useState(false);
-	const [editingUserNote, setEditingUserNote] = useState(sessionInfo.userNote);
+  // Modal state
+  const [isUserNoteModalOpen, setIsUserNoteModalOpen] = useState(false);
+  const [editingUserNote, setEditingUserNote] = useState(sessionInfo.userNote);
+  const [isUserNoteSaving, setIsUserNoteSaving] = useState(false);
 
-	useEffect(
-		() => () => {
-			streamAbortControllerRef.current?.abort();
-			finalizationControllersRef.current.forEach((controller) => controller.abort());
-			finalizationControllersRef.current.clear();
-		},
-		[]
-	);
+  useEffect(
+    () => () => {
+      streamAbortControllerRef.current?.abort();
+      finalizationControllersRef.current.forEach((controller) => controller.abort());
+      finalizationControllersRef.current.clear();
+    },
+    [],
+  );
 
-	useEffect(() => {
-		setDisplayMode(
-			readChatDisplayMode(
-				typeof window === 'undefined' ? undefined : window.localStorage,
-				displayModeStorageKey
-			)
-		);
-	}, [displayModeStorageKey]);
+  useEffect(() => {
+    setDisplayMode(
+      readChatDisplayMode(typeof window === 'undefined' ? undefined : window.localStorage, displayModeStorageKey),
+    );
+  }, [displayModeStorageKey]);
 
-	useEffect(() => {
-		setChatFontSize(
-			readChatFontSize(
-				typeof window === 'undefined' ? undefined : window.localStorage,
-				chatFontSizeStorageKey
-			)
-		);
-	}, [chatFontSizeStorageKey]);
+  useEffect(() => {
+    setChatFontSize(
+      readChatFontSize(typeof window === 'undefined' ? undefined : window.localStorage, chatFontSizeStorageKey),
+    );
+  }, [chatFontSizeStorageKey]);
 
-	useEffect(() => {
-		setChatFontWeight(
-			readChatFontWeight(
-				typeof window === 'undefined' ? undefined : window.localStorage,
-				chatFontWeightStorageKey
-			)
-		);
-	}, [chatFontWeightStorageKey]);
+  useEffect(() => {
+    setChatFontWeight(
+      readChatFontWeight(typeof window === 'undefined' ? undefined : window.localStorage, chatFontWeightStorageKey),
+    );
+  }, [chatFontWeightStorageKey]);
 
-	useEffect(() => {
-		setContentPolicy(sessionInfo.contentPolicy ?? 'general');
-	}, [sessionInfo.contentPolicy]);
+  useEffect(() => {
+    setContentPolicy(sessionInfo.contentPolicy ?? 'general');
+  }, [sessionInfo.contentPolicy]);
 
-	const allTurns = useMemo(
-		() => (tempChatTurn ? [...chatTurns, tempChatTurn] : chatTurns),
-		[chatTurns, tempChatTurn]
-	);
+  const allTurns = useMemo(() => (tempChatTurn ? [...chatTurns, tempChatTurn] : chatTurns), [chatTurns, tempChatTurn]);
 
-	// --- HANDLERS ---
+  // --- HANDLERS ---
 
-	// Add modal handlers
-	const handleOpenUserNoteModal = useCallback(() => {
-		setEditingUserNote(userNote || '');
-		setIsUserNoteModalOpen(true);
-	}, [userNote]);
+  // Add modal handlers
+  const handleOpenUserNoteModal = useCallback(() => {
+    setEditingUserNote(userNote || '');
+    setIsUserNoteModalOpen(true);
+  }, [userNote]);
 
-	const handleCloseUserNoteModal = useCallback(() => {
-		setIsUserNoteModalOpen(false);
-	}, []);
+  const handleCloseUserNoteModal = useCallback(() => {
+    if (!isUserNoteSaving) setIsUserNoteModalOpen(false);
+  }, [isUserNoteSaving]);
 
-	const handleSaveUserNote = useCallback(async () => {
-		await updateSessionUserNote({ sessionId, userNote: editingUserNote });
-		setUserNote(editingUserNote);
-		setIsUserNoteModalOpen(false);
-	}, [editingUserNote, updateSessionUserNote]);
+  const handleSaveUserNote = useCallback(async () => {
+    setIsUserNoteSaving(true);
+    try {
+      await updateSessionUserNote({ sessionId, userNote: editingUserNote });
+      setUserNote(editingUserNote);
+      setIsUserNoteModalOpen(false);
+    } catch (error) {
+      setPageError(getClientErrorMessage(error, getLangText(LANG_KEYS.USER_NOTE_SAVE_FAILED)));
+    } finally {
+      setIsUserNoteSaving(false);
+    }
+  }, [editingUserNote, sessionId, updateSessionUserNote]);
 
-	const handleContentPolicy = useCallback(
-		async (nextPolicy: SessionContentPolicy) => {
-			const previousPolicy = contentPolicy;
-			setContentPolicy(nextPolicy);
-			setIsContentPolicyUpdating(true);
-			try {
-				await updateSessionContentPolicy({ sessionId, contentPolicy: nextPolicy });
-			} catch (error) {
-				setContentPolicy(previousPolicy);
-				setPageError(error instanceof Error ? error.message : 'Failed to update session policy.');
-			} finally {
-				setIsContentPolicyUpdating(false);
-			}
-		},
-		[contentPolicy, sessionId, updateSessionContentPolicy]
-	);
+  const handleContentPolicy = useCallback(
+    async (nextPolicy: SessionContentPolicy) => {
+      const previousPolicy = contentPolicy;
+      setContentPolicy(nextPolicy);
+      setIsContentPolicyUpdating(true);
+      try {
+        await updateSessionContentPolicy({ sessionId, contentPolicy: nextPolicy });
+      } catch (error) {
+        setContentPolicy(previousPolicy);
+        const message = getClientErrorMessage(error, 'Failed to update session policy.');
+        setPageError(message);
+      } finally {
+        setIsContentPolicyUpdating(false);
+      }
+    },
+    [contentPolicy, sessionId, updateSessionContentPolicy],
+  );
 
-	// Simplified: just update emotion in Loader context
-	const handleCharacterImage = useCallback(
-		(emotion: string) => {
-			setCurrentEmotion(emotion);
-		},
-		[setCurrentEmotion]
-	);
+  // Simplified: just update emotion in Loader context
+  const handleCharacterImage = useCallback(
+    (emotion: string) => {
+      setCurrentEmotion(emotion);
+    },
+    [setCurrentEmotion],
+  );
 
-	useEffect(() => {
-		if (allTurns.length === 0) {
-			handleCharacterImage(DEFAULT_EMOTION);
-			return;
-		}
+  useEffect(() => {
+    if (allTurns.length === 0) {
+      handleCharacterImage(DEFAULT_EMOTION);
+      return;
+    }
 
-		const targetTurnIndex =
-			focusedTurnIndex >= 0 && focusedTurnIndex < allTurns.length
-				? focusedTurnIndex
-				: allTurns.length - 1;
-		const focusedTurn = allTurns[targetTurnIndex];
-		if (!focusedTurn) {
-			handleCharacterImage(DEFAULT_EMOTION);
-		} else if (focusedTurn) {
-			if ('setCount' in focusedTurn) {
-				// It's a TempChatTurn
-				const emotion =
-					focusedTurn.chatTurnSets[currentTempSetNo]?.response?.emotion || DEFAULT_EMOTION;
-				handleCharacterImage(emotion);
-			} else {
-				// It's a finalized ChatTurn
-				const emotion = focusedTurn.response?.emotion || DEFAULT_EMOTION;
-				handleCharacterImage(emotion);
-			}
-		}
-	}, [focusedTurnIndex, currentTempSetNo, allTurns, handleCharacterImage]);
+    const targetTurnIndex =
+      focusedTurnIndex >= 0 && focusedTurnIndex < allTurns.length ? focusedTurnIndex : allTurns.length - 1;
+    const focusedTurn = allTurns[targetTurnIndex];
+    if (!focusedTurn) {
+      handleCharacterImage(DEFAULT_EMOTION);
+    } else if (focusedTurn) {
+      if ('setCount' in focusedTurn) {
+        // It's a TempChatTurn
+        const emotion = focusedTurn.chatTurnSets[currentTempSetNo]?.response?.emotion || DEFAULT_EMOTION;
+        handleCharacterImage(emotion);
+      } else {
+        // It's a finalized ChatTurn
+        const emotion = focusedTurn.response?.emotion || DEFAULT_EMOTION;
+        handleCharacterImage(emotion);
+      }
+    }
+  }, [focusedTurnIndex, currentTempSetNo, allTurns, handleCharacterImage]);
 
-	useEffect(() => {
-		if (!modelCatalog?.models.length) return;
-		if (!modelCatalog.models.some((model) => model.id === modelName)) {
-			setModelName(modelCatalog.models[0].id);
-		}
-	}, [modelCatalog, modelName]);
+  useEffect(() => {
+    if (!modelCatalog?.models.length) return;
+    if (!modelCatalog.models.some((model) => model.id === modelName)) {
+      setModelName(modelCatalog.models[0].id);
+    }
+  }, [modelCatalog, modelName]);
 
-	const clearApiKeyPrompt = useCallback(() => setApiKeyPrompt(undefined), []);
+  const clearApiKeyPrompt = useCallback(() => setApiKeyPrompt(undefined), []);
 
-	const handleAiModel = useCallback((selectedModelName: string) => {
-		setModelName(selectedModelName);
-	}, []);
+  const handleAiModel = useCallback((selectedModelName: string) => {
+    setModelName(selectedModelName);
+  }, []);
 
-	const handleDisplayMode = useCallback(
-		(mode: ChatDisplayMode) => {
-			setDisplayMode(mode);
-			writeChatDisplayMode(
-				typeof window === 'undefined' ? undefined : window.localStorage,
-				displayModeStorageKey,
-				mode
-			);
-		},
-		[displayModeStorageKey]
-	);
+  const handleDisplayMode = useCallback(
+    (mode: ChatDisplayMode) => {
+      setDisplayMode(mode);
+      writeChatDisplayMode(
+        typeof window === 'undefined' ? undefined : window.localStorage,
+        displayModeStorageKey,
+        mode,
+      );
+    },
+    [displayModeStorageKey],
+  );
 
-	const handleChatFontSize = useCallback(
-		(fontSize: ChatFontSize) => {
-			setChatFontSize(fontSize);
-			writeChatFontSize(
-				typeof window === 'undefined' ? undefined : window.localStorage,
-				chatFontSizeStorageKey,
-				fontSize
-			);
-		},
-		[chatFontSizeStorageKey]
-	);
+  const handleChatFontSize = useCallback(
+    (fontSize: ChatFontSize) => {
+      setChatFontSize(fontSize);
+      writeChatFontSize(
+        typeof window === 'undefined' ? undefined : window.localStorage,
+        chatFontSizeStorageKey,
+        fontSize,
+      );
+    },
+    [chatFontSizeStorageKey],
+  );
 
-	const handleChatFontWeight = useCallback(
-		(fontWeight: ChatFontWeight) => {
-			setChatFontWeight(fontWeight);
-			writeChatFontWeight(
-				typeof window === 'undefined' ? undefined : window.localStorage,
-				chatFontWeightStorageKey,
-				fontWeight
-			);
-		},
-		[chatFontWeightStorageKey]
-	);
+  const handleChatFontWeight = useCallback(
+    (fontWeight: ChatFontWeight) => {
+      setChatFontWeight(fontWeight);
+      writeChatFontWeight(
+        typeof window === 'undefined' ? undefined : window.localStorage,
+        chatFontWeightStorageKey,
+        fontWeight,
+      );
+    },
+    [chatFontWeightStorageKey],
+  );
 
-	const finalizeTurnInBackground = useCallback(
-		(chatTurnCdo: ChatTurnCdo) => {
-			void addChatTurn(createBasicChatTurn(chatTurnCdo));
+  const finalizeTurnInBackground = useCallback(
+    (chatTurnCdo: ChatTurnCdo) => {
+      void addChatTurn(createBasicChatTurn(chatTurnCdo));
 
-			void (async () => {
-				const controller = new AbortController();
-				finalizationControllersRef.current.add(controller);
-				try {
-					const { job, displayTurn } = await enqueueFinalization.mutateAsync({
-						cdo: chatTurnCdo,
-						signal: controller.signal,
-					});
-					await addChatTurn(displayTurn);
-					if (job.status === 'completed') return;
+      void (async () => {
+        const controller = new AbortController();
+        finalizationControllersRef.current.add(controller);
+        try {
+          const { job, displayTurn } = await enqueueFinalization.mutateAsync({
+            cdo: chatTurnCdo,
+            signal: controller.signal,
+          });
+          await addChatTurn(displayTurn);
+          if (job.status === 'completed') return;
 
-					const finalizedTurn = await waitForFinalizationJob(
-						chatTurnCdo.sessionId,
-						chatTurnCdo.sequence,
-						controller.signal
-					);
-					await addChatTurn(finalizedTurn);
-				} catch (error) {
-					if (
-						controller.signal.aborted ||
-						(error instanceof DOMException && error.name === 'AbortError')
-					) {
-						return;
-					}
-					console.error('Background chat finalization failed:', error);
-					// A finalization can fail for a reason the user can fix - most often a provider key
-					// the enrichment pass needs. Saying "memory indexing failed" for that sent the last
-					// incident's diagnosis to the embedding pipeline instead of to the missing key.
-					const apiKeyFailure = readApiKeyFailure(error);
-					if (apiKeyFailure) {
-						setPageError(apiKeyFailure.message);
-						setApiKeyPrompt(apiKeyFailure.keyType);
-					} else {
-						setPageError(getLangAlertText(LANG_KEYS.TURN_ENRICHMENT_FAILED));
-					}
-				} finally {
-					finalizationControllersRef.current.delete(controller);
-				}
-			})();
-		},
-		[addChatTurn, enqueueFinalization, waitForFinalizationJob, setApiKeyPrompt]
-	);
+          const finalizedTurn = await waitForFinalizationJob(
+            chatTurnCdo.sessionId,
+            chatTurnCdo.sequence,
+            controller.signal,
+          );
+          await addChatTurn(finalizedTurn);
+        } catch (error) {
+          if (controller.signal.aborted || (error instanceof DOMException && error.name === 'AbortError')) {
+            return;
+          }
+          console.error('Background chat finalization failed:', error);
+          // A finalization can fail for a reason the user can fix - most often a provider key
+          // the enrichment pass needs. Saying "memory indexing failed" for that sent the last
+          // incident's diagnosis to the embedding pipeline instead of to the missing key.
+          const apiKeyFailure = readApiKeyFailure(error);
+          if (apiKeyFailure) {
+            setPageError(apiKeyFailure.message);
+            setApiKeyPrompt(apiKeyFailure.keyType);
+          } else {
+            setPageError(getLangAlertText(LANG_KEYS.TURN_ENRICHMENT_FAILED));
+          }
+        } finally {
+          finalizationControllersRef.current.delete(controller);
+        }
+      })();
+    },
+    [addChatTurn, enqueueFinalization, waitForFinalizationJob, setApiKeyPrompt],
+  );
 
-	const handleSendMessage = useCallback(async () => {
-		setPageError(undefined);
-		setIsProcessing(true);
-		setStreamingText('');
-		setStreamingStage('preparing');
-		streamAbortControllerRef.current?.abort();
-		const streamController = new AbortController();
-		streamAbortControllerRef.current = streamController;
+  const handleSendMessage = useCallback(async () => {
+    setPageError(undefined);
+    setIsProcessing(true);
+    setStreamingText('');
+    setStreamingStage('preparing');
+    streamAbortControllerRef.current?.abort();
+    const streamController = new AbortController();
+    streamAbortControllerRef.current = streamController;
 
-		let newTempTurnResult = null;
+    let newTempTurnResult = null;
 
-		try {
-			if (userInput.trim()) {
-				// 1. FIRST: Fix the displayed temp turn. Its picked set becomes turn N, which frees
-				// the new message from landing on the same sequence - the server would otherwise
-				// merge it into the still-unfixed turn as a second, unrelated candidate set, and
-				// the streamed response would be lost when the picked set is what gets finalized.
-				let heldTurnFixed = false;
-				if (tempChatTurn && tempChatTurn.chatTurnSets.length > 0) {
-					const pickedTurnSet = tempChatTurn.chatTurnSets[currentTempSetNo];
-					if (pickedTurnSet) {
-						finalizeTurnInBackground({
-							userId,
-							sessionId: tempChatTurn.sessionId,
-							sequence: tempChatTurn.sequence,
-							request: pickedTurnSet.request,
-							response: pickedTurnSet.response,
-						});
-						heldTurnFixed = true;
-					}
-				}
-				// The held turn is fixed (optimistically in chatTurns); drop it from the temp slot so
-				// a failed generation leaves the conversation showing fixed turns only. Fixing first
-				// also keeps the picked exchange instead of holding it hostage to a retry.
-				changeTempChatTurn(undefined);
-				setCurrentTempSetNo(0);
+    try {
+      if (userInput.trim()) {
+        // 1. FIRST: Fix the displayed temp turn. Its picked set becomes turn N, which frees
+        // the new message from landing on the same sequence - the server would otherwise
+        // merge it into the still-unfixed turn as a second, unrelated candidate set, and
+        // the streamed response would be lost when the picked set is what gets finalized.
+        let heldTurnFixed = false;
+        if (tempChatTurn && tempChatTurn.chatTurnSets.length > 0) {
+          const pickedTurnSet = tempChatTurn.chatTurnSets[currentTempSetNo];
+          if (pickedTurnSet) {
+            finalizeTurnInBackground({
+              userId,
+              sessionId: tempChatTurn.sessionId,
+              sequence: tempChatTurn.sequence,
+              request: pickedTurnSet.request,
+              response: pickedTurnSet.response,
+            });
+            heldTurnFixed = true;
+          }
+        }
+        // The held turn is fixed (optimistically in chatTurns); drop it from the temp slot so
+        // a failed generation leaves the conversation showing fixed turns only. Fixing first
+        // also keeps the picked exchange instead of holding it hostage to a retry.
+        changeTempChatTurn(undefined);
+        setCurrentTempSetNo(0);
 
-				// 2. THEN: Generate the new temp turn on a fresh sequence. getNextSequence() still
-				// reads the pre-finalization chatTurns closure here, so take the max with the slot
-				// the held turn just vacated.
-				const newTempSequence = Math.max(
-					getNextSequence(),
-					tempChatTurn ? tempChatTurn.sequence + 1 : 0
-				);
-				newTempTurnResult = await receiveBotResponse.mutateAsync({
-					request: {
-						sessionId,
-						sequence: newTempSequence,
-						entries: parseTextToEntries(userInput),
-						modelName,
-						intent: 'new',
-					},
-					onDelta: (text) => setStreamingText((current) => current + text),
-					onStatus: setStreamingStage,
-					signal: streamController.signal,
-				});
+        // 2. THEN: Generate the new temp turn on a fresh sequence. getNextSequence() still
+        // reads the pre-finalization chatTurns closure here, so take the max with the slot
+        // the held turn just vacated.
+        const newTempSequence = Math.max(getNextSequence(), tempChatTurn ? tempChatTurn.sequence + 1 : 0);
+        newTempTurnResult = await receiveBotResponse.mutateAsync({
+          request: {
+            sessionId,
+            sequence: newTempSequence,
+            entries: parseTextToEntries(userInput),
+            modelName,
+            intent: 'new',
+          },
+          onDelta: (text) => setStreamingText((current) => current + text),
+          onStatus: setStreamingStage,
+          signal: streamController.signal,
+        });
 
-				// 3. Update UI state with the new temp turn
-				changeTempChatTurn(newTempTurnResult);
-				setCurrentTempSetNo(0);
-				handleCharacterImage(newTempTurnResult.chatTurnSets[0].response.emotion);
-				setFocusedTurnIndex(chatTurns.length + (heldTurnFixed ? 1 : 0));
-				setUserInput('');
+        // 3. Update UI state with the new temp turn
+        changeTempChatTurn(newTempTurnResult);
+        setCurrentTempSetNo(0);
+        handleCharacterImage(newTempTurnResult.chatTurnSets[0].response.emotion);
+        setFocusedTurnIndex(chatTurns.length + (heldTurnFixed ? 1 : 0));
+        setUserInput('');
 
-				// Update session with latest character message
-				updateSessionOnNewMessage({
-					sessionId,
-					latestCharMessage: JSON.stringify({
-						latestCharMessage: newTempTurnResult.chatTurnSets[0].response.entries,
-					}),
-				});
-			}
-		} catch (err: any) {
-			if (!streamController.signal.aborted) {
-				console.error('Send Message Error:', err);
-				const apiKeyFailure = readApiKeyFailure(err);
-				if (apiKeyFailure) {
-					setPageError(apiKeyFailure.message);
-					setApiKeyPrompt(apiKeyFailure.keyType);
-				} else {
-					setPageError(`An error occurred: ${err.clientMessage || err.message || 'Unknown error'}`);
-				}
-			}
-		} finally {
-			setIsProcessing(false);
-			setStreamingText('');
-			setStreamingStage(undefined);
-			if (streamAbortControllerRef.current === streamController) {
-				streamAbortControllerRef.current = undefined;
-			}
-		}
-	}, [
-		// Ensure all dependencies are correct
-		userInput,
-		userId,
-		sessionId,
-		modelName,
-		tempChatTurn,
-		currentTempSetNo,
-		finalizeTurnInBackground,
-		handleCharacterImage,
-		receiveBotResponse,
-		addChatTurn,
-		changeTempChatTurn,
-		getNextSequence,
-		updateSessionOnNewMessage,
-		chatTurns.length, // Keep this dependency
-	]);
+        // Update session with latest character message
+        updateSessionOnNewMessage({
+          sessionId,
+          latestCharMessage: JSON.stringify({
+            latestCharMessage: newTempTurnResult.chatTurnSets[0].response.entries,
+          }),
+        });
+      }
+    } catch (err: any) {
+      if (!streamController.signal.aborted) {
+        console.error('Send Message Error:', err);
+        const apiKeyFailure = readApiKeyFailure(err);
+        if (apiKeyFailure) {
+          setPageError(apiKeyFailure.message);
+          setApiKeyPrompt(apiKeyFailure.keyType);
+        } else {
+          const message = getClientErrorMessage(err, 'Unable to send the message. Please try again.');
+          setPageError(message);
+        }
+      }
+    } finally {
+      setIsProcessing(false);
+      setStreamingText('');
+      setStreamingStage(undefined);
+      if (streamAbortControllerRef.current === streamController) {
+        streamAbortControllerRef.current = undefined;
+      }
+    }
+  }, [
+    // Ensure all dependencies are correct
+    userInput,
+    userId,
+    sessionId,
+    modelName,
+    tempChatTurn,
+    currentTempSetNo,
+    finalizeTurnInBackground,
+    handleCharacterImage,
+    receiveBotResponse,
+    addChatTurn,
+    changeTempChatTurn,
+    getNextSequence,
+    updateSessionOnNewMessage,
+    chatTurns.length, // Keep this dependency
+  ]);
 
-	const handleCancelGeneration = useCallback(() => {
-		streamAbortControllerRef.current?.abort();
-	}, []);
+  const handleCancelGeneration = useCallback(() => {
+    streamAbortControllerRef.current?.abort();
+  }, []);
 
-	const handleRegenerateResponse = useCallback(async () => {
-		if (!modelName) {
-			setPageError('Cannot regenerate: Missing data or AI model info.');
-			return;
-		}
-		if (!tempChatTurn || !tempChatTurn.chatTurnSets[0].request) {
-			setPageError('Cannot regenerate: No current Temp chat turn.');
-			return;
-		}
-		setIsProcessing(true);
-		setPageError(undefined);
-		setStreamingText('');
-		setStreamingStage('preparing');
-		streamAbortControllerRef.current?.abort();
-		const streamController = new AbortController();
-		streamAbortControllerRef.current = streamController;
+  const handleRegenerateResponse = useCallback(async () => {
+    if (!modelName) {
+      setPageError('Cannot regenerate: Missing data or AI model info.');
+      return;
+    }
+    if (!tempChatTurn || !tempChatTurn.chatTurnSets[0].request) {
+      setPageError('Cannot regenerate: No current Temp chat turn.');
+      return;
+    }
+    setIsProcessing(true);
+    setPageError(undefined);
+    setStreamingText('');
+    setStreamingStage('preparing');
+    streamAbortControllerRef.current?.abort();
+    const streamController = new AbortController();
+    streamAbortControllerRef.current = streamController;
 
-		try {
-			const sequence = tempChatTurn.sequence;
-			const result: TempChatTurn = await receiveBotResponse.mutateAsync({
-				request: {
-					sessionId,
-					sequence,
-					entries: tempChatTurn.chatTurnSets[currentTempSetNo].request.entries,
-					modelName,
-					// Says outright that this reuses the stored request, so the server can refuse a
-					// reroll that would otherwise become a second, unrelated question on one turn.
-					intent: 'reroll',
-				},
-				onDelta: (text) => setStreamingText((current) => current + text),
-				onStatus: setStreamingStage,
-				signal: streamController.signal,
-			});
+    try {
+      const sequence = tempChatTurn.sequence;
+      const result: TempChatTurn = await receiveBotResponse.mutateAsync({
+        request: {
+          sessionId,
+          sequence,
+          entries: tempChatTurn.chatTurnSets[currentTempSetNo].request.entries,
+          modelName,
+          // Says outright that this reuses the stored request, so the server can refuse a
+          // reroll that would otherwise become a second, unrelated question on one turn.
+          intent: 'reroll',
+        },
+        onDelta: (text) => setStreamingText((current) => current + text),
+        onStatus: setStreamingStage,
+        signal: streamController.signal,
+      });
 
-			if (result) {
-				const newSetIndex = result.chatTurnSets.length - 1;
-				changeTempChatTurn(result);
-				handleCharacterImage(result.chatTurnSets[newSetIndex].response.emotion);
-				setCurrentTempSetNo(newSetIndex);
-				setFocusedTurnIndex(chatTurns.length);
+      if (result) {
+        const newSetIndex = result.chatTurnSets.length - 1;
+        changeTempChatTurn(result);
+        handleCharacterImage(result.chatTurnSets[newSetIndex].response.emotion);
+        setCurrentTempSetNo(newSetIndex);
+        setFocusedTurnIndex(chatTurns.length);
 
-				updateSessionOnNewMessage({
-					sessionId,
-					latestCharMessage: JSON.stringify({
-						latestCharMessage: result.chatTurnSets[newSetIndex].response.entries,
-					}),
-				});
-			}
-		} catch (err: any) {
-			if (!streamController.signal.aborted) {
-				console.error('Regenerate Error:', err);
-				setPageError(`Failed to regenerate response: ${err.message || 'Unknown error'}`);
-			}
-		} finally {
-			setIsProcessing(false);
-			setStreamingText('');
-			setStreamingStage(undefined);
-			if (streamAbortControllerRef.current === streamController) {
-				streamAbortControllerRef.current = undefined;
-			}
-		}
-	}, [
-		tempChatTurn,
-		modelName,
-		sessionId,
-		receiveBotResponse,
-		changeTempChatTurn,
-		handleCharacterImage,
-		updateSessionOnNewMessage,
-		currentTempSetNo,
-		chatTurns.length,
-	]);
+        updateSessionOnNewMessage({
+          sessionId,
+          latestCharMessage: JSON.stringify({
+            latestCharMessage: result.chatTurnSets[newSetIndex].response.entries,
+          }),
+        });
+      }
+    } catch (err: any) {
+      if (!streamController.signal.aborted) {
+        console.error('Regenerate Error:', err);
+        const message = getClientErrorMessage(err, 'Failed to regenerate the response. Please try again.');
+        setPageError(message);
+      }
+    } finally {
+      setIsProcessing(false);
+      setStreamingText('');
+      setStreamingStage(undefined);
+      if (streamAbortControllerRef.current === streamController) {
+        streamAbortControllerRef.current = undefined;
+      }
+    }
+  }, [
+    tempChatTurn,
+    modelName,
+    sessionId,
+    receiveBotResponse,
+    changeTempChatTurn,
+    handleCharacterImage,
+    updateSessionOnNewMessage,
+    currentTempSetNo,
+    chatTurns.length,
+  ]);
 
-	// Both handlers below are memoized because they are part of ChatLog's props: a new function
-	// identity on every render defeats ChatLog's memo, so the whole list would re-render (and
-	// re-measure) whenever this page re-renders - which it does on every emotion change.
-	const handleEditTempTurnText = useCallback((value: string, req: boolean) => {
-		req ? setUserEditInput(value) : setBotEditInput(value);
-	}, []);
+  const handleContinueResponse = useCallback(async () => {
+    const selectedSet = tempChatTurn?.chatTurnSets[currentTempSetNo];
+    if (!tempChatTurn || selectedSet?.response.generationStatus !== 'length_limited') return;
 
-	const handleSaveTempTurnText = useCallback(async () => {
-		if (!tempChatTurn) return;
+    setIsProcessing(true);
+    setPageError(undefined);
+    setStreamingText('');
+    setStreamingStage('preparing');
+    streamAbortControllerRef.current?.abort();
+    const streamController = new AbortController();
+    streamAbortControllerRef.current = streamController;
 
-		const currentTurnSet = tempChatTurn.chatTurnSets[currentTempSetNo];
-		const updatedTurnSet = {
-			...currentTurnSet,
-			request: { ...currentTurnSet.request, entries: parseTextToEntries(userEditInput) },
-			response: { ...currentTurnSet.response, entries: parseTextToEntries(botEditInput) },
-		};
+    try {
+      const result = await continueTempResponse.mutateAsync({
+        request: {
+          sessionId,
+          sequence: tempChatTurn.sequence,
+          setNo: selectedSet.setNo,
+        },
+        onDelta: (text) => setStreamingText((current) => current + text),
+        onStatus: setStreamingStage,
+        signal: streamController.signal,
+      });
+      changeTempChatTurn(result);
+      const continuedSet = result.chatTurnSets.find((candidate) => candidate.setNo === selectedSet.setNo);
+      if (continuedSet) {
+        handleCharacterImage(continuedSet.response.emotion);
+        updateSessionOnNewMessage({
+          sessionId,
+          latestCharMessage: JSON.stringify({ latestCharMessage: continuedSet.response.entries }),
+        });
+      }
+    } catch (error: unknown) {
+      if (!streamController.signal.aborted) {
+        const apiKeyFailure = readApiKeyFailure(error);
+        if (apiKeyFailure) {
+          setPageError(apiKeyFailure.message);
+          setApiKeyPrompt(apiKeyFailure.keyType);
+        } else {
+          setPageError(getClientErrorMessage(error, 'Failed to continue the response. Please try again.'));
+        }
+      }
+    } finally {
+      setIsProcessing(false);
+      setStreamingText('');
+      setStreamingStage(undefined);
+      if (streamAbortControllerRef.current === streamController) {
+        streamAbortControllerRef.current = undefined;
+      }
+    }
+  }, [
+    tempChatTurn,
+    currentTempSetNo,
+    continueTempResponse,
+    sessionId,
+    changeTempChatTurn,
+    handleCharacterImage,
+    updateSessionOnNewMessage,
+    setApiKeyPrompt,
+  ]);
 
-		const newChatTurnSets = tempChatTurn.chatTurnSets.map((set, index) =>
-			index === currentTempSetNo ? updatedTurnSet : set
-		);
-		const updateTempTurn = { ...tempChatTurn, chatTurnSets: newChatTurnSets };
+  // Both handlers below are memoized because they are part of ChatLog's props: a new function
+  // identity on every render defeats ChatLog's memo, so the whole list would re-render (and
+  // re-measure) whenever this page re-renders - which it does on every emotion change.
+  const handleEditTempTurnText = useCallback((value: string, req: boolean) => {
+    req ? setUserEditInput(value) : setBotEditInput(value);
+  }, []);
 
-		await saveTempChatTurn(updateTempTurn);
-		changeTempChatTurn(updateTempTurn);
-		setUserEditInput('');
-		setBotEditInput('');
-	}, [
-		tempChatTurn,
-		currentTempSetNo,
-		userEditInput,
-		botEditInput,
-		saveTempChatTurn,
-		changeTempChatTurn,
-	]);
+  const handleSaveTempTurnText = useCallback(async () => {
+    if (!tempChatTurn) return;
 
-	const handleUpdateFixedTurn = useCallback(
-		async (sequence: number, userText: string, botText: string) => {
-			const existingTurn = chatTurns.find((turn) => turn.sequence === sequence);
-			if (!existingTurn) return;
-			const request = { ...existingTurn.request, entries: parseTextToEntries(userText) };
-			const response = { ...existingTurn.response, entries: parseTextToEntries(botText) };
-			await updateChatTurn({ sessionId, sequence, request, response });
-			await addChatTurn({ ...existingTurn, request, response, updatedAt: new Date().toISOString() });
-		},
-		[chatTurns, sessionId, updateChatTurn, addChatTurn]
-	);
+    const currentTurnSet = tempChatTurn.chatTurnSets[currentTempSetNo];
+    const updatedTurnSet = {
+      ...currentTurnSet,
+      request: { ...currentTurnSet.request, entries: parseTextToEntries(userEditInput) },
+      response: { ...currentTurnSet.response, entries: parseTextToEntries(botEditInput) },
+    };
 
-	const handleDeleteTurnsFromSequence = useCallback(
-		async (sequence: number) => {
-			// Deleting turn N also un-fixes turn N-1: N's own request was authored in
-			// reaction to N-1's already-picked response, so keeping N-1 fixed while N is gone
-			// makes little sense. This also means N-1's original temp candidates (never
-			// deleted) resurface as the next temp turn after the new latest fixed turn, ready
-			// to reroll/reselect through the existing temp-turn UI.
-			const targetSequence = Math.max(sequence - 1, 0);
-			await deleteChatTurnsFromSequence({ sessionId, sequence: targetSequence });
-			await removeChatTurnsFromSequence(targetSequence);
-			if (tempChatTurn && tempChatTurn.sequence >= targetSequence) {
-				changeTempChatTurn(undefined);
-			}
-			setFocusedTurnIndex(-1);
-		},
-		[
-			sessionId,
-			deleteChatTurnsFromSequence,
-			removeChatTurnsFromSequence,
-			tempChatTurn,
-			changeTempChatTurn,
-		]
-	);
+    const newChatTurnSets = tempChatTurn.chatTurnSets.map((set, index) =>
+      index === currentTempSetNo ? updatedTurnSet : set,
+    );
+    const updateTempTurn = { ...tempChatTurn, chatTurnSets: newChatTurnSets };
 
-	const handleUserInput = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-		setUserInput(e.target.value);
-	};
+    await saveTempChatTurn(updateTempTurn);
+    changeTempChatTurn(updateTempTurn);
+    setUserEditInput('');
+    setBotEditInput('');
+  }, [tempChatTurn, currentTempSetNo, userEditInput, botEditInput, saveTempChatTurn, changeTempChatTurn]);
 
-	// --- RENDER ---
-	const isInputDisabled =
-		isProcessing || (!!tempChatTurn && !tempChatTurn.chatTurnSets[0]?.response);
+  const handleUpdateFixedTurn = useCallback(
+    async (sequence: number, userText: string, botText: string) => {
+      const existingTurn = chatTurns.find((turn) => turn.sequence === sequence);
+      if (!existingTurn) return;
+      const request = { ...existingTurn.request, entries: parseTextToEntries(userText) };
+      const response = { ...existingTurn.response, entries: parseTextToEntries(botText) };
+      await updateChatTurn({ sessionId, sequence, request, response });
+      await addChatTurn({ ...existingTurn, request, response, updatedAt: new Date().toISOString() });
+    },
+    [chatTurns, sessionId, updateChatTurn, addChatTurn],
+  );
 
-	// --- SHARED CHAT LOG PROPS ---
-	const chatLogProps = {
-		allTurns,
-		isLoadingChat: isLoadingHistory,
-		isProcessing,
-		clientError: clientError || pageError,
-		userEditInput,
-		botEditInput,
-		onEditTempTurnText: handleEditTempTurnText,
-		onSaveTempTurnText: handleSaveTempTurnText,
-		onRegenerateResponse: handleRegenerateResponse,
-		onUpdateFixedTurn: handleUpdateFixedTurn,
-		onDeleteTurnsFromSequence: handleDeleteTurnsFromSequence,
-		shouldUseMobileLayout,
-		// focusedTurnIndex intentionally stays here and is not passed down - see ChatLogProps.
-		onFocusTurn: setFocusedTurnIndex, // Pass down the setter
-		currentTempSetNo,
-		changeTempSetNo: setCurrentTempSetNo,
-		streamingText,
-		streamingStage,
-		displayMode,
-		chatFontSize,
-		chatFontWeight,
-		characterPortraitUrls,
-		characterAvatarUrls,
-		profileAvatarUrl,
-		localizeDirections: characterInfo.localizeDirections,
-	};
+  const handleDeleteTempTurn = useCallback(async () => {
+    if (!tempChatTurn) return;
+    await deleteTempChatTurn({ sessionId, sequence: tempChatTurn.sequence });
+    changeTempChatTurn(undefined);
+    setCurrentTempSetNo(0);
+    setFocusedTurnIndex(-1);
+  }, [sessionId, tempChatTurn, deleteTempChatTurn, changeTempChatTurn]);
 
-	const userInputProps = {
-		userId,
-		value: userInput,
-		isProcessing,
-		isDisabled: isInputDisabled,
-		onChange: handleUserInput,
-		onSend: handleSendMessage,
-		onCancel: handleCancelGeneration,
-		modelName,
-		models: modelCatalog?.models,
-		onAiModel: handleAiModel,
-		displayMode,
-		onDisplayMode: handleDisplayMode,
-		chatFontSize,
-		onChatFontSize: handleChatFontSize,
-		chatFontWeight,
-		onChatFontWeight: handleChatFontWeight,
-		contentPolicy,
-		isContentPolicyUpdating,
-		onContentPolicy: handleContentPolicy,
-		onOpenUserNoteModal: handleOpenUserNoteModal,
-		isMobileLayout: shouldUseMobileLayout,
-		onFocusChange: onMobileInputFocusChange,
-		apiKeyPrompt,
-		onApiKeyPromptHandled: clearApiKeyPrompt,
-	};
+  const handleDeleteTurnsFromSequence = useCallback(
+    async (sequence: number) => {
+      // Deleting turn N also un-fixes turn N-1: N's own request was authored in
+      // reaction to N-1's already-picked response, so keeping N-1 fixed while N is gone
+      // makes little sense. This also means N-1's original temp candidates (never
+      // deleted) resurface as the next temp turn after the new latest fixed turn, ready
+      // to reroll/reselect through the existing temp-turn UI.
+      const targetSequence = Math.max(sequence - 1, 0);
+      await deleteChatTurnsFromSequence({ sessionId, sequence: targetSequence });
+      await removeChatTurnsFromSequence(targetSequence);
+      if (tempChatTurn && tempChatTurn.sequence >= targetSequence) {
+        changeTempChatTurn(undefined);
+      }
+      setFocusedTurnIndex(-1);
+    },
+    [sessionId, deleteChatTurnsFromSequence, removeChatTurnsFromSequence, tempChatTurn, changeTempChatTurn],
+  );
 
-	// --- RENDER ---
-	return (
-		<>
-			{displayMode === 'conversation' ? (
-				<Box
-					sx={(theme) => ({
-						position: 'relative',
-						zIndex: 3,
-						height: '100%',
-						minHeight: 0,
-						display: 'flex',
-						flexDirection: 'column',
-						backgroundColor:
-							theme.palette.mode === 'light'
-								? chatSurfaceStyles.light.conversationCanvas
-								: theme.palette.background.default,
-						overflow: 'hidden',
-					})}
-				>
-					<Box sx={{ flexGrow: 1, minHeight: 0, overflow: 'hidden' }}>
-						<ChatLog {...chatLogProps} />
-					</Box>
-					<Box sx={{ flexShrink: 0, minWidth: 0 }}>
-						<UserInput {...userInputProps} />
-					</Box>
-				</Box>
-			) : shouldUseMobileLayout ? (
-				<>
-					{/* Mobile Background (two layers crossfade via opacity) */}
-					<Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}>
-						{([0, 1] as const).map((slot) =>
-							bgSlots[slot] ? (
-								<Box
-									key={slot}
-									sx={{
-										position: 'absolute',
-										top: 0,
-										left: 0,
-										right: 0,
-										bottom: 0,
-										backgroundImage: `url(${bgSlots[slot]})`,
-										backgroundSize: 'cover',
-										backgroundPosition: 'center',
-										backgroundRepeat: 'no-repeat',
-										backgroundAttachment: 'fixed',
-										opacity: activeBgSlot === slot ? 1 : 0,
-										transition: 'opacity 0.4s ease-in-out',
-									}}
-								/>
-							) : null
-						)}
-					</Box>
+  const handleUserInput = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setUserInput(e.target.value);
+  };
 
-					{/* Mobile Overlay */}
-					<Box
-						sx={(theme) => {
-							const bookSurface = chatSurfaceStyles[theme.palette.mode];
+  // --- RENDER ---
+  const isInputDisabled = isProcessing || (!!tempChatTurn && !tempChatTurn.chatTurnSets[0]?.response);
 
-							return {
-								position: 'absolute',
-								top: 0,
-								left: 0,
-								right: 0,
-								bottom: 0,
-								backgroundColor: bookSurface.bookOverlay,
-								backdropFilter: bookSurface.bookBackdropFilter,
-								WebkitBackdropFilter: bookSurface.bookBackdropFilter,
-								zIndex: 2,
-							};
-						}}
-					/>
+  // --- SHARED CHAT LOG PROPS ---
+  const chatLogProps = {
+    allTurns,
+    isLoadingChat: isLoadingHistory,
+    isProcessing,
+    clientError: clientError || pageError,
+    userEditInput,
+    botEditInput,
+    onEditTempTurnText: handleEditTempTurnText,
+    onSaveTempTurnText: handleSaveTempTurnText,
+    onRegenerateResponse: handleRegenerateResponse,
+    onContinueResponse: handleContinueResponse,
+    onDeleteTempTurn: handleDeleteTempTurn,
+    onUpdateFixedTurn: handleUpdateFixedTurn,
+    onDeleteTurnsFromSequence: handleDeleteTurnsFromSequence,
+    shouldUseMobileLayout,
+    // focusedTurnIndex intentionally stays here and is not passed down - see ChatLogProps.
+    onFocusTurn: setFocusedTurnIndex, // Pass down the setter
+    currentTempSetNo,
+    changeTempSetNo: setCurrentTempSetNo,
+    streamingText,
+    streamingStage,
+    displayMode,
+    chatFontSize,
+    chatFontWeight,
+    characterPortraitUrls,
+    characterAvatarUrls,
+    profileAvatarUrl,
+    localizeDirections: characterInfo.localizeDirections,
+  };
 
-					{/* Mobile Content */}
-					<Box
-						sx={{
-							display: 'flex',
-							flexDirection: 'column',
-							height: '100%',
-							minHeight: 0,
-							position: 'relative',
-							zIndex: 10,
-						}}
-					>
-						{/* Mobile Chat */}
-						<Box
-							sx={{
-								flexGrow: 1,
-								minHeight: 0,
-								overflow: 'hidden',
-								WebkitOverflowScrolling: 'touch',
-								overscrollBehavior: 'contain',
-							}}
-						>
-							<ChatLog {...chatLogProps} />
-						</Box>
+  const userInputProps = {
+    userId,
+    value: userInput,
+    isProcessing,
+    isDisabled: isInputDisabled,
+    onChange: handleUserInput,
+    onSend: handleSendMessage,
+    onCancel: handleCancelGeneration,
+    modelName,
+    models: modelCatalog?.models,
+    onAiModel: handleAiModel,
+    displayMode,
+    onDisplayMode: handleDisplayMode,
+    chatFontSize,
+    onChatFontSize: handleChatFontSize,
+    chatFontWeight,
+    onChatFontWeight: handleChatFontWeight,
+    contentPolicy,
+    isContentPolicyUpdating,
+    onContentPolicy: handleContentPolicy,
+    onOpenUserNoteModal: handleOpenUserNoteModal,
+    isMobileLayout: shouldUseMobileLayout,
+    onFocusChange: onMobileInputFocusChange,
+    apiKeyPrompt,
+    onApiKeyPromptHandled: clearApiKeyPrompt,
+  };
 
-						{/* Mobile Input */}
-						<Box
-							sx={(theme) => ({
-								flexShrink: 0,
-								paddingBottom: 'env(safe-area-inset-bottom)',
-								backgroundColor: chatSurfaceStyles[theme.palette.mode].bookInputVeil,
-								'& input, & textarea': { fontSize: '16px' }, // avoid iOS focus zoom
-							})}
-						>
-							<UserInput {...userInputProps} />
-						</Box>
-					</Box>
-				</>
-			) : (
-				// Desktop Layout - Only when there's enough space
-				<GlassPaper
-					key="chat-page"
-					className="paper"
-					sx={{
-						position: 'relative',
-						zIndex: 3,
-						display: 'flex',
-						flexDirection: 'column',
-						height: '100%',
-						minHeight: 0,
-						overflow: 'hidden',
-					}}
-				>
-					<Grid
-						container
-						spacing={containerSpacing}
-						sx={{
-							height: '100%',
-							flex: 1,
-							width: '100%',
-							maxWidth: 1600,
-							minHeight: 0,
-							margin: 0,
-							mx: 'auto',
-							flexWrap: 'nowrap',
-						}}
-					>
-						{/* Portrait Section - Properly contained */}
-						<Grid
-							size={{ md: 4, lg: 3, xl: 3 }}
-							sx={(theme) => ({
-								position: 'sticky',
-								top: theme.spacing(2),
-								alignSelf: 'flex-start',
-								height: '100%',
-								display: 'flex',
-								alignItems: 'flex-start',
-								justifyContent: 'center',
-								minWidth: 0,
-							})}
-						>
-							<Box
-								sx={{
-									height: '100%',
-									width: '100%',
-									maxWidth: 440,
-									display: 'flex',
-									justifyContent: 'center',
-									alignItems: 'flex-start',
-								}}
-							>
-								<GlassPortrait imageUrl={imageUrl} />
-							</Box>
-						</Grid>
+  // --- RENDER ---
+  return (
+    <>
+      {displayMode === 'conversation' ? (
+        <Box
+          sx={(theme) => ({
+            position: 'relative',
+            zIndex: 3,
+            height: '100%',
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor:
+              theme.palette.mode === 'light'
+                ? chatSurfaceStyles.light.conversationCanvas
+                : theme.palette.background.default,
+            overflow: 'hidden',
+          })}
+        >
+          <Box sx={{ flexGrow: 1, minHeight: 0, overflow: 'hidden' }}>
+            <ChatLog {...chatLogProps} />
+          </Box>
+          <Box sx={{ flexShrink: 0, minWidth: 0 }}>
+            <UserInput {...userInputProps} />
+          </Box>
+        </Box>
+      ) : shouldUseMobileLayout ? (
+        <>
+          {/* Mobile Background (two layers crossfade via opacity) */}
+          <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}>
+            {([0, 1] as const).map((slot) =>
+              bgSlots[slot] ? (
+                <Box
+                  key={slot}
+                  sx={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundImage: `url(${bgSlots[slot]})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                    backgroundAttachment: 'fixed',
+                    opacity: activeBgSlot === slot ? 1 : 0,
+                    transition: 'opacity 0.4s ease-in-out',
+                  }}
+                />
+              ) : null,
+            )}
+          </Box>
 
-						{/* Chat Area Section - Takes remaining space */}
-						<Grid
-							size={{ md: 8, lg: 9, xl: 9 }}
-							sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0 }}
-						>
-							<Box
-								sx={{
-									flexGrow: 1,
-									overflow: 'hidden',
-									position: 'relative',
-									width: '100%',
-									minHeight: 0,
-									minWidth: 0,
-								}}
-							>
-								<ChatLog {...chatLogProps} />
-							</Box>
-							<Box sx={{ flexShrink: 0, width: '100%', minWidth: 0 }}>
-								<UserInput {...userInputProps} />
-							</Box>
-						</Grid>
-					</Grid>
-				</GlassPaper>
-			)}
-			{/* User Note Edit Modal */}
-			<Dialog
-				open={isUserNoteModalOpen}
-				onClose={handleCloseUserNoteModal}
-				maxWidth="md"
-				fullWidth
-				sx={mobileVisualViewportDialogSx}
-			>
-				<DialogTitle>{`${getLangText(LANG_KEYS.USER_NOTE)}`}</DialogTitle>
-				<DialogContent>
-					<TextField
-						autoFocus
-						margin="dense"
-						fullWidth
-						multiline
-						rows={6}
-						value={editingUserNote}
-						sx={{ '& .MuiInputBase-input': { fontSize: { xs: '16px', md: 'inherit' } } }}
-						onChange={(e) => setEditingUserNote(e.target.value)}
-						placeholder={getLangText(LANG_KEYS.USER_NOTE_PLACEHOLDER)}
-					/>
-				</DialogContent>
-				<DialogActions>
-					<GlassButton onClick={handleCloseUserNoteModal} colorVariant="silver">
-						{getLangText(LANG_KEYS.CANCEL)}
-					</GlassButton>
-					<GlassButton onClick={handleSaveUserNote} colorVariant="secondary">
-						{getLangText(LANG_KEYS.SAVE)}
-					</GlassButton>
-				</DialogActions>
-			</Dialog>
-		</>
-	);
+          {/* Mobile Overlay */}
+          <Box
+            sx={(theme) => {
+              const bookSurface = chatSurfaceStyles[theme.palette.mode];
+
+              return {
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: bookSurface.bookOverlay,
+                backdropFilter: bookSurface.bookBackdropFilter,
+                WebkitBackdropFilter: bookSurface.bookBackdropFilter,
+                zIndex: 2,
+              };
+            }}
+          />
+
+          {/* Mobile Content */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%',
+              minHeight: 0,
+              position: 'relative',
+              zIndex: 10,
+            }}
+          >
+            {/* Mobile Chat */}
+            <Box
+              sx={{
+                flexGrow: 1,
+                minHeight: 0,
+                overflow: 'hidden',
+                WebkitOverflowScrolling: 'touch',
+                overscrollBehavior: 'contain',
+              }}
+            >
+              <ChatLog {...chatLogProps} />
+            </Box>
+
+            {/* Mobile Input */}
+            <Box
+              sx={(theme) => ({
+                flexShrink: 0,
+                paddingBottom: 'env(safe-area-inset-bottom)',
+                backgroundColor: chatSurfaceStyles[theme.palette.mode].bookInputVeil,
+                '& input, & textarea': { fontSize: '16px' }, // avoid iOS focus zoom
+              })}
+            >
+              <UserInput {...userInputProps} />
+            </Box>
+          </Box>
+        </>
+      ) : (
+        // Desktop Layout - Only when there's enough space
+        <GlassPaper
+          key="chat-page"
+          className="paper"
+          sx={{
+            position: 'relative',
+            zIndex: 3,
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            minHeight: 0,
+            overflow: 'hidden',
+          }}
+        >
+          <Grid
+            container
+            spacing={containerSpacing}
+            sx={{
+              height: '100%',
+              flex: 1,
+              width: '100%',
+              maxWidth: 1600,
+              minHeight: 0,
+              margin: 0,
+              mx: 'auto',
+              flexWrap: 'nowrap',
+            }}
+          >
+            {/* Portrait Section - Properly contained */}
+            <Grid
+              size={{ md: 4, lg: 3, xl: 3 }}
+              sx={(theme) => ({
+                position: 'sticky',
+                top: theme.spacing(2),
+                alignSelf: 'flex-start',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'center',
+                minWidth: 0,
+              })}
+            >
+              <Box
+                sx={{
+                  height: '100%',
+                  width: '100%',
+                  maxWidth: 440,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'flex-start',
+                }}
+              >
+                <GlassPortrait imageUrl={imageUrl} />
+              </Box>
+            </Grid>
+
+            {/* Chat Area Section - Takes remaining space */}
+            <Grid
+              size={{ md: 8, lg: 9, xl: 9 }}
+              sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0 }}
+            >
+              <Box
+                sx={{
+                  flexGrow: 1,
+                  overflow: 'hidden',
+                  position: 'relative',
+                  width: '100%',
+                  minHeight: 0,
+                  minWidth: 0,
+                }}
+              >
+                <ChatLog {...chatLogProps} />
+              </Box>
+              <Box sx={{ flexShrink: 0, width: '100%', minWidth: 0 }}>
+                <UserInput {...userInputProps} />
+              </Box>
+            </Grid>
+          </Grid>
+        </GlassPaper>
+      )}
+      {/* User Note Edit Modal */}
+      <Dialog
+        open={isUserNoteModalOpen}
+        onClose={handleCloseUserNoteModal}
+        disableEscapeKeyDown={isUserNoteSaving}
+        maxWidth="md"
+        fullWidth
+        sx={mobileVisualViewportDialogSx}
+      >
+        <DialogTitle>{`${getLangText(LANG_KEYS.USER_NOTE)}`}</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            fullWidth
+            multiline
+            rows={6}
+            value={editingUserNote}
+            disabled={isUserNoteSaving}
+            aria-busy={isUserNoteSaving}
+            sx={{ '& .MuiInputBase-input': { fontSize: { xs: '16px', md: 'inherit' } } }}
+            onChange={(e) => setEditingUserNote(e.target.value)}
+            placeholder={getLangText(LANG_KEYS.USER_NOTE_PLACEHOLDER)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <GlassButton onClick={handleCloseUserNoteModal} colorVariant="silver" disabled={isUserNoteSaving}>
+            {getLangText(LANG_KEYS.CANCEL)}
+          </GlassButton>
+          <GlassButton
+            onClick={handleSaveUserNote}
+            colorVariant="secondary"
+            disabled={isUserNoteSaving}
+            aria-busy={isUserNoteSaving}
+          >
+            {getLangText(LANG_KEYS.SAVE)}
+          </GlassButton>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
 };

@@ -5,9 +5,9 @@
  * Used for user avatars and general image uploads
  */
 export interface UploadedImage {
-	file?: File;
-	preview: string;
-	crop?: CropData | null; // Add if needed
+  file?: File;
+  preview: string;
+  crop?: CropData | null; // Add if needed
 }
 
 /**
@@ -15,11 +15,11 @@ export interface UploadedImage {
  * Extends UploadedImage with character-specific fields
  */
 export interface UploadedCharacterImage extends UploadedImage {
-	avatarFile?: File;
-	avatarPreview?: string;
-	emotion: string;
-	emotionKey: number;
-	toDelete?: boolean;
+  avatarFile?: File;
+  avatarPreview?: string;
+  emotion: string;
+  emotionKey: number;
+  toDelete?: boolean;
 }
 
 /**
@@ -27,10 +27,10 @@ export interface UploadedCharacterImage extends UploadedImage {
  * Used for server-side crop processing (legacy)
  */
 export interface CropData {
-	x: number;
-	y: number;
-	width: number;
-	height: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 /**
@@ -38,16 +38,16 @@ export interface CropData {
  * Returned by crop utilities
  */
 export interface CroppedImageResult {
-	file: File;
-	previewUrl: string;
+  file: File;
+  previewUrl: string;
 }
 
 /**
  * Image processing options for server-side Sharp
  */
 export interface ImageProcessOptions {
-	outputSize?: { width: number; height: number };
-	format: string; // Use string instead of ImageFormat to avoid circular dependency
-	crop?: CropData;
-	aspectRatio?: string;
+  outputSize?: { width: number; height: number };
+  format: string; // Use string instead of ImageFormat to avoid circular dependency
+  crop?: CropData;
+  aspectRatio?: string;
 }

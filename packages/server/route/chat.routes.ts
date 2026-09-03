@@ -5,15 +5,16 @@ import { verifySession } from 'supertokens-node/recipe/session/framework/express
 import { chatStore } from '../store/chatStore.js';
 import { RESOURCES } from '../db/resource.type.js';
 import {
-	asyncHandler,
-	genRoutePattern,
-	validateRequestData,
-	validateSequenceRule,
-	validateServiceId,
+  asyncHandler,
+  genRoutePattern,
+  validateRequestData,
+  validateSequenceRule,
+  validateServiceId,
 } from '../util/routeHelpers.js';
-import { ChatTurn } from '@rita-berenice/shared/domain';
+import { ApiError, ChatTurn } from '@rita-berenice/shared/domain';
 import { buildChatTurnId } from '@rita-berenice/shared/util';
 import { assertOwnedSession, getSessionUserId } from '../util/authUtils.js';
+import { UpdateChatTurnBodySchema } from '../util/schemaUtils.js';
 
 const router: Router = express.Router();
 router.use(verifySession());
@@ -29,32 +30,32 @@ const collectionType = RESOURCES.CHAT;
  * @returns {string} A JSON string of the stored ChatTurn.
  */
 router.post(
-	genRoutePattern('storeChatTurn'),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		validateServiceId(req.body.sessionId, collectionType);
-		const requiredFields: (keyof ChatTurn)[] = ['sessionId', 'sequence', 'request', 'response'];
-		validateRequestData(req.body, 'body', requiredFields);
-		const session = await assertOwnedSession(req, req.body.sessionId);
-		req.body.userId = getSessionUserId(req);
-		req.body.characterId = session.characterId;
-		req.body.profileId = session.profileId;
+  genRoutePattern('storeChatTurn'),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    validateServiceId(req.body.sessionId, collectionType);
+    const requiredFields: (keyof ChatTurn)[] = ['sessionId', 'sequence', 'request', 'response'];
+    validateRequestData(req.body, 'body', requiredFields);
+    const session = await assertOwnedSession(req, req.body.sessionId);
+    req.body.userId = getSessionUserId(req);
+    req.body.characterId = session.characterId;
+    req.body.profileId = session.profileId;
 
-		const response = await chatStore.storeChatTurn(req.body);
-		res.status(201).json(response);
-	})
+    const response = await chatStore.storeChatTurn(req.body);
+    res.status(201).json(response);
+  }),
 );
 
 router.get(
-	genRoutePattern('getAllChatTurns', ['sessionId']),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { sessionId } = req.params;
-		validateServiceId(sessionId, collectionType);
-		validateRequestData(req.params, 'params', ['sessionId']);
-		await assertOwnedSession(req, sessionId);
+  genRoutePattern('getAllChatTurns', ['sessionId']),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { sessionId } = req.params;
+    validateServiceId(sessionId, collectionType);
+    validateRequestData(req.params, 'params', ['sessionId']);
+    await assertOwnedSession(req, sessionId);
 
-		const response = await chatStore.getAllChatTurns(sessionId);
-		res.status(200).json(response);
-	})
+    const response = await chatStore.getAllChatTurns(sessionId);
+    res.status(200).json(response);
+  }),
 );
 
 /**
@@ -64,15 +65,19 @@ router.get(
  * @returns {ChatResponse} An object containing the list of chat turns.
  */
 router.get(
-	genRoutePattern('getAllDisplayTurns', ['sessionId']),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { sessionId } = req.params;
-		validateServiceId(sessionId, collectionType);
-		await assertOwnedSession(req, sessionId);
+  genRoutePattern('getAllDisplayTurns', ['sessionId']),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { sessionId } = req.params;
+    validateServiceId(sessionId, collectionType);
+    await assertOwnedSession(req, sessionId);
 
-		const response = await chatStore.getAllDisplayTurns(sessionId);
-		res.status(200).json(response);
-	})
+    const response = await chatStore.getAllDisplayTurns(sessionId);
+    // These are private, mutable conversation records. Express otherwise emits an ETag and a
+    // conditional browser request can return 304, which Axios/React Query does not treat as a
+    // fresh successful JSON response. Never cache this authenticated API payload.
+    res.set('Cache-Control', 'private, no-store');
+    res.status(200).json(response);
+  }),
 );
 
 /**
@@ -83,17 +88,17 @@ router.get(
  * @returns {ChatTurn} An object containing the single chat turn.
  */
 router.get(
-	genRoutePattern('getChatTurnBySequence', ['sessionId', 'sequence']),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { sessionId, sequence: sequenceParam } = req.params;
-		validateServiceId(sessionId, collectionType);
-		validateRequestData(req.params, 'params', ['sequence'], [validateSequenceRule('sequence')]);
-		await assertOwnedSession(req, sessionId);
-		const sequence = parseInt(sequenceParam, 10);
+  genRoutePattern('getChatTurnBySequence', ['sessionId', 'sequence']),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { sessionId, sequence: sequenceParam } = req.params;
+    validateServiceId(sessionId, collectionType);
+    validateRequestData(req.params, 'params', ['sequence'], [validateSequenceRule('sequence')]);
+    await assertOwnedSession(req, sessionId);
+    const sequence = parseInt(sequenceParam, 10);
 
-		const response = await chatStore.getChatTurnBySequence(sessionId, sequence);
-		res.status(200).json(response);
-	})
+    const response = await chatStore.getChatTurnBySequence(sessionId, sequence);
+    res.status(200).json(response);
+  }),
 );
 
 /**
@@ -107,18 +112,29 @@ router.get(
  * @returns {object} The updated turn's chatTurnId.
  */
 router.patch(
-	genRoutePattern('updateChatTurn', ['sessionId', 'sequence']),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { sessionId, sequence: sequenceParam } = req.params;
-		validateServiceId(sessionId, collectionType);
-		validateRequestData(req.params, 'params', ['sequence'], [validateSequenceRule('sequence')]);
-		await assertOwnedSession(req, sessionId);
-		const sequence = parseInt(sequenceParam, 10);
+  genRoutePattern('updateChatTurn', ['sessionId', 'sequence']),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { sessionId, sequence: sequenceParam } = req.params;
+    validateServiceId(sessionId, collectionType);
+    validateRequestData(req.params, 'params', ['sequence'], [validateSequenceRule('sequence')]);
+    await assertOwnedSession(req, sessionId);
+    const sequence = parseInt(sequenceParam, 10);
 
-		const chatTurnId = buildChatTurnId(sessionId, sequence);
-		const response = await chatStore.updateChatTurn(chatTurnId, req.body);
-		res.status(200).json(response);
-	})
+    const parsedBody = UpdateChatTurnBodySchema.safeParse(req.body);
+    if (!parsedBody.success) {
+      throw new ApiError(400, 'Invalid chat turn update.', undefined, parsedBody.error.flatten());
+    }
+    for (const [key, message] of Object.entries(parsedBody.data)) {
+      if (message.sessionId !== sessionId || message.sequence !== sequence) {
+        throw new ApiError(400, `${key} message session and sequence must match the route.`);
+      }
+    }
+
+    const chatTurnId = buildChatTurnId(sessionId, sequence);
+    const updates = parsedBody.data as unknown as Partial<Pick<ChatTurn, 'request' | 'response'>>;
+    const response = await chatStore.updateChatTurn(chatTurnId, updates);
+    res.status(200).json(response);
+  }),
 );
 
 /**
@@ -133,17 +149,17 @@ router.patch(
  * @returns {object} The number of turns deleted.
  */
 router.delete(
-	genRoutePattern('deleteChatTurnsFromSequence', ['sessionId', 'sequence']),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { sessionId, sequence: sequenceParam } = req.params;
-		validateServiceId(sessionId, collectionType);
-		validateRequestData(req.params, 'params', ['sequence'], [validateSequenceRule('sequence')]);
-		await assertOwnedSession(req, sessionId);
-		const sequence = parseInt(sequenceParam, 10);
+  genRoutePattern('deleteChatTurnsFromSequence', ['sessionId', 'sequence']),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { sessionId, sequence: sequenceParam } = req.params;
+    validateServiceId(sessionId, collectionType);
+    validateRequestData(req.params, 'params', ['sequence'], [validateSequenceRule('sequence')]);
+    await assertOwnedSession(req, sessionId);
+    const sequence = parseInt(sequenceParam, 10);
 
-		const response = await chatStore.deleteChatTurnsFromSequence(sessionId, sequence);
-		res.status(200).json(response);
-	})
+    const response = await chatStore.deleteChatTurnsFromSequence(sessionId, sequence);
+    res.status(200).json(response);
+  }),
 );
 
 // --- Query Operations ---

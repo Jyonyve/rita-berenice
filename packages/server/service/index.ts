@@ -5,6 +5,8 @@ export * from './llmService.js';
 export * from './memoryEngine.js';
 export * from './embeddingService.js';
 export * from './embeddingJobService.js';
+export * from './factualRecapGenerationService.js';
+export * from './recapGenerationJobService.js';
 export * from './characterGlossaryJobService.js';
 export * from './personaEngine.js';
 export * from './ragQueryService.js';

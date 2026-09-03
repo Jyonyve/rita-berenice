@@ -13,11 +13,11 @@ router.use(verifySession());
 
 // Define a type for the complex request body for clarity and type safety
 type GenerateResponseRequestBody = {
-	recalledMemories: MemoryResponse;
-	characterInfo: CharacterInfo;
-	profileInfo: ProfileInfo;
-	currentUserRequest: ChatMessage;
-	aiModelInfo: AiModelInfo;
+  recalledMemories: MemoryResponse;
+  characterInfo: CharacterInfo;
+  profileInfo: ProfileInfo;
+  currentUserRequest: ChatMessage;
+  aiModelInfo: AiModelInfo;
 };
 
 /**
@@ -28,42 +28,38 @@ type GenerateResponseRequestBody = {
  * @returns {PersonaResponse} An object containing the character's response text and associated emotion.
  */
 router.post(
-	genRoutePattern('generateResponse'),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { recalledMemories, characterInfo, profileInfo, currentUserRequest, aiModelInfo } =
-			req.body;
+  genRoutePattern('generateResponse'),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { recalledMemories, characterInfo, profileInfo, currentUserRequest, aiModelInfo } = req.body;
 
-		// Validate the presence of all required top-level objects in the request body
-		const requiredFields: (keyof GenerateResponseRequestBody)[] = [
-			'recalledMemories',
-			'characterInfo',
-			'profileInfo',
-			'currentUserRequest',
-			'aiModelInfo',
-		];
-		validateRequestData(req.body, 'body', requiredFields);
-		const session = await assertOwnedSession(req, currentUserRequest.sessionId);
-		const storedCharacter = await assertOwnedCharacter(req, characterInfo.characterId);
-		const storedProfile = await assertOwnedProfile(req, profileInfo.profileId);
-		if (
-			session.characterId !== storedCharacter.characterId ||
-			session.profileId !== storedProfile.profileId
-		) {
-			throw new Error('Persona resources do not belong to the same session.');
-		}
+    // Validate the presence of all required top-level objects in the request body
+    const requiredFields: (keyof GenerateResponseRequestBody)[] = [
+      'recalledMemories',
+      'characterInfo',
+      'profileInfo',
+      'currentUserRequest',
+      'aiModelInfo',
+    ];
+    validateRequestData(req.body, 'body', requiredFields);
+    const session = await assertOwnedSession(req, currentUserRequest.sessionId);
+    const storedCharacter = await assertOwnedCharacter(req, characterInfo.characterId);
+    const storedProfile = await assertOwnedProfile(req, profileInfo.profileId);
+    if (session.characterId !== storedCharacter.characterId || session.profileId !== storedProfile.profileId) {
+      throw new Error('Persona resources do not belong to the same session.');
+    }
 
-		// Call the personaEngine with all necessary data and the request's AbortSignal
-		const response = await personaEngine.generateResponse(
-			recalledMemories,
-			storedCharacter,
-			storedProfile,
-			currentUserRequest,
-			aiModelInfo,
-			{ signal: (req as any).signal } // Pass the signal for cancellation handling
-		);
+    // Call the personaEngine with all necessary data and the request's AbortSignal
+    const response = await personaEngine.generateResponse(
+      recalledMemories,
+      storedCharacter,
+      storedProfile,
+      currentUserRequest,
+      aiModelInfo,
+      { signal: (req as any).signal }, // Pass the signal for cancellation handling
+    );
 
-		res.status(200).json(response);
-	})
+    res.status(200).json(response);
+  }),
 );
 
 export default router;

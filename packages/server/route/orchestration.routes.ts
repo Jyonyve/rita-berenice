@@ -6,112 +6,111 @@ import type { SessionRequest } from 'supertokens-node/framework/express';
 import { RESOURCES } from '../db/resource.type.js';
 import { asyncHandler, genRoutePattern, validateServiceId } from '../util/routeHelpers.js';
 import {
-	TempChatTurnCdo,
-	TempChatTurn,
-	ChatTurn,
-	ChatTurnCdo,
-	ApiError,
-	ApiKeyError,
+  TempChatTurnCdo,
+  TempChatTurn,
+  ChatTurn,
+  ChatTurnCdo,
+  ApiError,
+  ApiKeyError,
 } from '@rita-berenice/shared/domain';
-import { RECENT_CHAT_TURN } from '@rita-berenice/shared/config';
-import { receiveBotResponse, finalizeChatTurn } from '../service/orchestrationService.js';
-import { ChatTurnCdoSchema, ReceiveBotResponseBodySchema } from '../util/schemaUtils.js';
+import { continueTempResponse, receiveBotResponse, finalizeChatTurn } from '../service/orchestrationService.js';
+import {
+  ChatTurnCdoSchema,
+  ContinueTempResponseBodySchema,
+  ReceiveBotResponseBodySchema,
+} from '../util/schemaUtils.js';
 import { sessionStore } from '../store/sessionStore.js';
 import { characterStore } from '../store/characterStore.js';
 import { profileStore } from '../store/profileStore.js';
 import { chatStore } from '../store/chatStore.js';
 import z from 'zod';
-import { ReceiveBotResponseIntent, ReceiveBotResponseStreamEvent } from '@rita-berenice/shared/api';
+import {
+  ContinueTempResponseRequest,
+  ReceiveBotResponseIntent,
+  ReceiveBotResponseStreamEvent,
+} from '@rita-berenice/shared/api';
 import { finalizationJobService } from '../service/finalizationJobService.js';
 import { modelCatalogService } from '../service/modelCatalogService.js';
 import { getSessionUserId } from '../util/authUtils.js';
+import { tempStore } from '../store/tempStore.js';
 
 const router: Router = express.Router();
 
 const parseRequestBody = <T>(schema: z.ZodSchema<T>, body: unknown): T => {
-	const result = schema.safeParse(body);
-	if (result.success) {
-		return result.data;
-	}
+  const result = schema.safeParse(body);
+  if (result.success) {
+    return result.data;
+  }
 
-	throw new ApiError(
-		400,
-		'Invalid orchestration request body.',
-		'The chat request payload is malformed.',
-		{ issues: result.error.flatten() }
-	);
+  throw new ApiError(400, 'Invalid orchestration request body.', 'The chat request payload is malformed.', {
+    issues: result.error.flatten(),
+  });
 };
 
 // Define a type for the complex request body for clarity
 interface ReceiveBotResponseBody {
-	sessionId: string;
-	sequence: number;
-	entries: { type: 'dialogue' | 'action'; prompt: string }[];
-	modelName: string;
-	intent?: ReceiveBotResponseIntent;
+  sessionId: string;
+  sequence: number;
+  entries: { type: 'dialogue' | 'action'; prompt: string }[];
+  modelName: string;
+  intent?: ReceiveBotResponseIntent;
 }
 
 const getOwnedSession = async (sessionId: string, userId: string) => {
-	const sessionInfo = (await sessionStore.getSession(sessionId)).sessionInfo;
-	if (!sessionInfo || sessionInfo.userId !== userId) {
-		throw new ApiError(403, 'Session access denied.', 'This chat session does not belong to you.');
-	}
-	return sessionInfo;
+  const sessionInfo = (await sessionStore.getSession(sessionId)).sessionInfo;
+  if (!sessionInfo || sessionInfo.userId !== userId) {
+    throw new ApiError(403, 'Session access denied.', 'This chat session does not belong to you.');
+  }
+  return sessionInfo;
 };
 
 const resolveReceiveBotResponseContext = async (body: ReceiveBotResponseBody, userId: string) => {
-	const { sessionId, sequence, entries, modelName, intent } = body;
-	validateServiceId(sessionId, RESOURCES.CHAT);
-	const sessionInfo = await getOwnedSession(sessionId, userId);
-	if (!sessionInfo.profileId) {
-		throw new ApiError(
-			409,
-			'Session profile is not initialized.',
-			'Select a profile before sending a message.'
-		);
-	}
+  const { sessionId, sequence, entries, modelName, intent } = body;
+  validateServiceId(sessionId, RESOURCES.CHAT);
+  const sessionInfo = await getOwnedSession(sessionId, userId);
+  if (!sessionInfo.profileId) {
+    throw new ApiError(409, 'Session profile is not initialized.', 'Select a profile before sending a message.');
+  }
 
-	const [characterResponse, profileResponse, chatResponse] = await Promise.all([
-		characterStore.getCharacter(sessionInfo.characterId),
-		profileStore.getProfile(sessionInfo.profileId),
-		chatStore.getAllChatTurns(sessionId),
-	]);
-	const characterInfo = characterResponse.characterInfo;
-	const profileInfo = profileResponse.profileInfo;
-	if (!characterInfo || !profileInfo) {
-		throw new ApiError(404, 'Chat context not found.', 'Character or profile data is missing.');
-	}
-	if (profileInfo.userId !== userId || profileInfo.sessionId !== sessionId) {
-		throw new ApiError(403, 'Profile access denied.', 'The session profile is invalid.');
-	}
+  const [characterResponse, profileResponse, chatResponse] = await Promise.all([
+    characterStore.getCharacter(sessionInfo.characterId),
+    profileStore.getProfile(sessionInfo.profileId),
+    chatStore.getRecentChatTurns(sessionId),
+  ]);
+  const characterInfo = characterResponse.characterInfo;
+  const profileInfo = profileResponse.profileInfo;
+  if (!characterInfo || !profileInfo) {
+    throw new ApiError(404, 'Chat context not found.', 'Character or profile data is missing.');
+  }
+  if (profileInfo.userId !== userId || profileInfo.sessionId !== sessionId) {
+    throw new ApiError(403, 'Profile access denied.', 'The session profile is invalid.');
+  }
 
-	const tempChatTurnCdo: TempChatTurnCdo = {
-		sessionId,
-		sequence,
-		userId,
-		inputJsonString: JSON.stringify(entries),
-	};
-	const aiModelInfo = await modelCatalogService.resolveAiModelInfo(modelName);
-	const recentChatTurnString = JSON.stringify(
-		chatResponse.chatTurns.sort((a, b) => a.sequence - b.sequence).slice(-RECENT_CHAT_TURN)
-	);
+  const tempChatTurnCdo: TempChatTurnCdo = {
+    sessionId,
+    sequence,
+    userId,
+    inputJsonString: JSON.stringify(entries),
+  };
+  const aiModelInfo = await modelCatalogService.resolveAiModelInfo(modelName);
+  const recentChatTurns = chatResponse.chatTurns;
 
-	return {
-		sessionId,
-		sequence,
-		intent,
-		adultContentEnabled: sessionInfo.contentPolicy === 'adult',
-		tempChatTurnCdo,
-		characterInfo,
-		profileInfo,
-		aiModelInfo,
-		recentChatTurnString,
-	};
+  return {
+    sessionId,
+    sequence,
+    intent,
+    adultContentEnabled: sessionInfo.contentPolicy === 'adult',
+    tempChatTurnCdo,
+    characterInfo,
+    profileInfo,
+    aiModelInfo,
+    recentChatTurns,
+  };
 };
 
 const writeStreamEvent = (res: Response, event: ReceiveBotResponseStreamEvent): void => {
-	res.write(`${JSON.stringify(event)}\n`);
-	(res as Response & { flush?: () => void }).flush?.();
+  res.write(`${JSON.stringify(event)}\n`);
+  (res as Response & { flush?: () => void }).flush?.();
 };
 
 /**
@@ -120,146 +119,221 @@ const writeStreamEvent = (res: Response, event: ReceiveBotResponseStreamEvent): 
  * context, generating a new response option, and saving it to the temporary chat turn.
  */
 router.post(
-	genRoutePattern('receiveBotResponse'),
-	verifySession(),
-	asyncHandler(
-		async (
-			req: SessionRequest & Request<object, TempChatTurn, ReceiveBotResponseBody>,
-			res: Response
-		): Promise<void> => {
-			const parsedBody = parseRequestBody(
-				ReceiveBotResponseBodySchema,
-				req.body
-			) as unknown as ReceiveBotResponseBody;
-			const userId = getSessionUserId(req);
-			const context = await resolveReceiveBotResponseContext(parsedBody, userId);
+  genRoutePattern('receiveBotResponse'),
+  verifySession(),
+  asyncHandler(
+    async (
+      req: SessionRequest & Request<object, TempChatTurn, ReceiveBotResponseBody>,
+      res: Response,
+    ): Promise<void> => {
+      const parsedBody = parseRequestBody(ReceiveBotResponseBodySchema, req.body) as unknown as ReceiveBotResponseBody;
+      const userId = getSessionUserId(req);
+      const context = await resolveReceiveBotResponseContext(parsedBody, userId);
 
-			// Call the main orchestration service function with the unpacked request body
-			const response = await receiveBotResponse(
-				context.tempChatTurnCdo,
-				context.characterInfo,
-				context.profileInfo,
-				context.aiModelInfo,
-				context.recentChatTurnString,
-				{ adultContentEnabled: context.adultContentEnabled, intent: context.intent }
-			);
+      // Call the main orchestration service function with the unpacked request body
+      const response = await receiveBotResponse(
+        context.tempChatTurnCdo,
+        context.characterInfo,
+        context.profileInfo,
+        context.aiModelInfo,
+        context.recentChatTurns,
+        { adultContentEnabled: context.adultContentEnabled, intent: context.intent },
+      );
 
-			res.status(200).json(response);
-		}
-	)
+      res.status(200).json(response);
+    },
+  ),
 );
 
 router.post(
-	genRoutePattern('receiveBotResponseStream'),
-	verifySession(),
-	asyncHandler(
-		async (
-			req: SessionRequest & Request<object, void, ReceiveBotResponseBody>,
-			res: Response
-		): Promise<void> => {
-			const parsedBody = parseRequestBody(
-				ReceiveBotResponseBodySchema,
-				req.body
-			) as unknown as ReceiveBotResponseBody;
-			const userId = getSessionUserId(req);
-			const context = await resolveReceiveBotResponseContext(parsedBody, userId);
+  genRoutePattern('receiveBotResponseStream'),
+  verifySession(),
+  asyncHandler(
+    async (req: SessionRequest & Request<object, void, ReceiveBotResponseBody>, res: Response): Promise<void> => {
+      const parsedBody = parseRequestBody(ReceiveBotResponseBodySchema, req.body) as unknown as ReceiveBotResponseBody;
+      const userId = getSessionUserId(req);
+      const context = await resolveReceiveBotResponseContext(parsedBody, userId);
 
-			res.status(200);
-			res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
-			res.setHeader('Cache-Control', 'no-cache, no-transform');
-			res.setHeader('X-Accel-Buffering', 'no');
-			res.flushHeaders();
+      res.status(200);
+      res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('X-Accel-Buffering', 'no');
+      res.flushHeaders();
 
-			const disconnectController = new AbortController();
-			res.on('close', () => {
-				if (!res.writableEnded) {
-					disconnectController.abort(new Error('The client disconnected.'));
-				}
-			});
+      const disconnectController = new AbortController();
+      res.on('close', () => {
+        if (!res.writableEnded) {
+          disconnectController.abort(new Error('The client disconnected.'));
+        }
+      });
 
-			try {
-				const tempChatTurn = await receiveBotResponse(
-					context.tempChatTurnCdo,
-					context.characterInfo,
-					context.profileInfo,
-					context.aiModelInfo,
-					context.recentChatTurnString,
-					{
-						adultContentEnabled: context.adultContentEnabled,
-						intent: context.intent,
-						signal: disconnectController.signal,
-						onStatus: (stage) => writeStreamEvent(res, { type: 'status', stage }),
-						onDelta: (text) => writeStreamEvent(res, { type: 'delta', text }),
-					}
-				);
-				writeStreamEvent(res, { type: 'complete', data: tempChatTurn });
-			} catch (error: unknown) {
-				if (!disconnectController.signal.aborted) {
-					const apiError =
-						error instanceof ApiError
-							? error
-							: new ApiError(
-									500,
-									error instanceof Error ? error.message : 'Unknown streaming error',
-									'The character response could not be generated.'
-								);
-					writeStreamEvent(res, {
-						type: 'error',
-						message: apiError.message,
-						clientMessage: apiError.clientMessage,
-						// Forwarded so the client can react to an actionable failure - a missing or
-						// rejected API key - instead of only printing the text.
-						...(apiError instanceof ApiKeyError
-							? { code: apiError.code, keyType: apiError.keyType }
-							: {}),
-					});
-				}
-			} finally {
-				res.end();
-			}
-		}
-	)
+      try {
+        const tempChatTurn = await receiveBotResponse(
+          context.tempChatTurnCdo,
+          context.characterInfo,
+          context.profileInfo,
+          context.aiModelInfo,
+          context.recentChatTurns,
+          {
+            adultContentEnabled: context.adultContentEnabled,
+            intent: context.intent,
+            signal: disconnectController.signal,
+            onStatus: (stage) => writeStreamEvent(res, { type: 'status', stage }),
+            onDelta: (text) => writeStreamEvent(res, { type: 'delta', text }),
+          },
+        );
+        writeStreamEvent(res, { type: 'complete', data: tempChatTurn });
+      } catch (error: unknown) {
+        if (!disconnectController.signal.aborted) {
+          const apiError =
+            error instanceof ApiError
+              ? error
+              : new ApiError(
+                  500,
+                  error instanceof Error ? error.message : 'Unknown streaming error',
+                  'The character response could not be generated.',
+                );
+          writeStreamEvent(res, {
+            type: 'error',
+            message: apiError.message,
+            clientMessage: apiError.clientMessage,
+            // Forwarded so the client can react to an actionable failure - a missing or
+            // rejected API key - instead of only printing the text.
+            ...(apiError instanceof ApiKeyError ? { code: apiError.code, keyType: apiError.keyType } : {}),
+          });
+        }
+      } finally {
+        res.end();
+      }
+    },
+  ),
 );
 
 router.post(
-	genRoutePattern('enqueueFinalization'),
-	verifySession(),
-	asyncHandler(
-		async (
-			req: SessionRequest & Request<object, void, ChatTurnCdo>,
-			res: Response
-		): Promise<void> => {
-			const chatTurnCdo = parseRequestBody(ChatTurnCdoSchema, req.body) as ChatTurnCdo;
-			validateServiceId(chatTurnCdo.sessionId, RESOURCES.CHAT);
-			const userId = getSessionUserId(req);
-			await getOwnedSession(chatTurnCdo.sessionId, userId);
-			chatTurnCdo.userId = userId;
+  genRoutePattern('continueTempResponseStream'),
+  verifySession(),
+  asyncHandler(
+    async (req: SessionRequest & Request<object, void, ContinueTempResponseRequest>, res: Response): Promise<void> => {
+      const body = parseRequestBody(ContinueTempResponseBodySchema, req.body);
+      validateServiceId(body.sessionId, RESOURCES.CHAT);
+      const userId = getSessionUserId(req);
+      const sessionInfo = await getOwnedSession(body.sessionId, userId);
+      if (!sessionInfo.profileId) {
+        throw new ApiError(409, 'Session profile is not initialized.', 'Select a profile before continuing.');
+      }
 
-			const response = await finalizationJobService.enqueue(chatTurnCdo);
-			res.status(202).json(response);
-		}
-	)
+      const tempTurn = (await tempStore.getTempChatTurn(body.sessionId, body.sequence)).tempChatTurn;
+      if (!tempTurn || tempTurn.userId !== userId) {
+        throw new ApiError(404, 'Temporary chat turn not found.');
+      }
+      const selectedSet = tempTurn.chatTurnSets.find((candidate) => candidate.setNo === body.setNo);
+      if (!selectedSet) throw new ApiError(404, 'Temporary response option not found.');
+      if (selectedSet.response.generationStatus !== 'length_limited') {
+        throw new ApiError(409, 'Only a length-limited temporary response can be continued.');
+      }
+      if (!selectedSet.response.model) {
+        throw new ApiError(409, 'The original response model is unavailable.');
+      }
+
+      const [characterResponse, profileResponse, chatResponse, aiModelInfo] = await Promise.all([
+        characterStore.getCharacter(sessionInfo.characterId),
+        profileStore.getProfile(sessionInfo.profileId),
+        chatStore.getRecentChatTurns(body.sessionId),
+        modelCatalogService.resolveAiModelInfo(selectedSet.response.model),
+      ]);
+      const characterInfo = characterResponse.characterInfo;
+      const profileInfo = profileResponse.profileInfo;
+      if (!characterInfo || !profileInfo) throw new ApiError(404, 'Chat context not found.');
+      if (profileInfo.userId !== userId || profileInfo.sessionId !== body.sessionId) {
+        throw new ApiError(403, 'Profile access denied.');
+      }
+
+      res.status(200);
+      res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('X-Accel-Buffering', 'no');
+      res.flushHeaders();
+
+      const disconnectController = new AbortController();
+      res.on('close', () => {
+        if (!res.writableEnded) disconnectController.abort(new Error('The client disconnected.'));
+      });
+
+      try {
+        writeStreamEvent(res, { type: 'status', stage: 'preparing' });
+        const continuedTurn = await continueTempResponse(
+          tempTurn,
+          body.setNo,
+          characterInfo,
+          profileInfo,
+          aiModelInfo,
+          chatResponse.chatTurns,
+          {
+            adultContentEnabled: sessionInfo.contentPolicy === 'adult',
+            signal: disconnectController.signal,
+            onStatus: (stage) => writeStreamEvent(res, { type: 'status', stage }),
+            onDelta: (text) => writeStreamEvent(res, { type: 'delta', text }),
+          },
+        );
+        writeStreamEvent(res, { type: 'complete', data: continuedTurn });
+      } catch (error: unknown) {
+        if (!disconnectController.signal.aborted) {
+          const apiError =
+            error instanceof ApiError
+              ? error
+              : new ApiError(
+                  500,
+                  error instanceof Error ? error.message : 'Unknown continuation error',
+                  'The character response could not be continued.',
+                );
+          writeStreamEvent(res, {
+            type: 'error',
+            message: apiError.message,
+            clientMessage: apiError.clientMessage,
+            ...(apiError instanceof ApiKeyError ? { code: apiError.code, keyType: apiError.keyType } : {}),
+          });
+        }
+      } finally {
+        res.end();
+      }
+    },
+  ),
+);
+
+router.post(
+  genRoutePattern('enqueueFinalization'),
+  verifySession(),
+  asyncHandler(async (req: SessionRequest & Request<object, void, ChatTurnCdo>, res: Response): Promise<void> => {
+    const chatTurnCdo = parseRequestBody(ChatTurnCdoSchema, req.body) as ChatTurnCdo;
+    validateServiceId(chatTurnCdo.sessionId, RESOURCES.CHAT);
+    const userId = getSessionUserId(req);
+    await getOwnedSession(chatTurnCdo.sessionId, userId);
+    chatTurnCdo.userId = userId;
+
+    const response = await finalizationJobService.enqueue(chatTurnCdo);
+    res.status(202).json(response);
+  }),
 );
 
 router.get(
-	genRoutePattern('getFinalizationJob', ['sessionId', 'sequence']),
-	verifySession(),
-	asyncHandler(async (req: SessionRequest, res: Response): Promise<void> => {
-		const { sessionId, sequence: sequenceParam } = req.params;
-		validateServiceId(sessionId, RESOURCES.CHAT);
-		const sequence = Number(sequenceParam);
-		if (!Number.isInteger(sequence) || sequence < 0) {
-			throw new ApiError(400, 'Invalid finalization job sequence.');
-		}
+  genRoutePattern('getFinalizationJob', ['sessionId', 'sequence']),
+  verifySession(),
+  asyncHandler(async (req: SessionRequest, res: Response): Promise<void> => {
+    const { sessionId, sequence: sequenceParam } = req.params;
+    validateServiceId(sessionId, RESOURCES.CHAT);
+    const sequence = Number(sequenceParam);
+    if (!Number.isInteger(sequence) || sequence < 0) {
+      throw new ApiError(400, 'Invalid finalization job sequence.');
+    }
 
-		const userId = getSessionUserId(req);
-		await getOwnedSession(sessionId, userId);
-		const job = await finalizationJobService.get(sessionId, sequence);
-		if (!job) {
-			throw new ApiError(404, 'Finalization job not found.');
-		}
-		res.status(200).json(job);
-	})
+    const userId = getSessionUserId(req);
+    await getOwnedSession(sessionId, userId);
+    const job = await finalizationJobService.get(sessionId, sequence);
+    if (!job) {
+      throw new ApiError(404, 'Finalization job not found.');
+    }
+    res.status(200).json(job);
+  }),
 );
 
 /**
@@ -268,24 +342,19 @@ router.get(
  * as a permanent ChatTurn in the main chat history.
  */
 router.post(
-	genRoutePattern('finalizeChatTurn'),
-	verifySession(),
-	asyncHandler(
-		async (
-			req: SessionRequest & Request<object, ChatTurn, ChatTurnCdo>,
-			res: Response
-		): Promise<void> => {
-			const chatTurnCdo = parseRequestBody(ChatTurnCdoSchema, req.body) as ChatTurnCdo;
-			validateServiceId(chatTurnCdo.sessionId, RESOURCES.CHAT);
-			const userId = getSessionUserId(req);
-			await getOwnedSession(chatTurnCdo.sessionId, userId);
-			chatTurnCdo.userId = userId;
+  genRoutePattern('finalizeChatTurn'),
+  verifySession(),
+  asyncHandler(async (req: SessionRequest & Request<object, ChatTurn, ChatTurnCdo>, res: Response): Promise<void> => {
+    const chatTurnCdo = parseRequestBody(ChatTurnCdoSchema, req.body) as ChatTurnCdo;
+    validateServiceId(chatTurnCdo.sessionId, RESOURCES.CHAT);
+    const userId = getSessionUserId(req);
+    await getOwnedSession(chatTurnCdo.sessionId, userId);
+    chatTurnCdo.userId = userId;
 
-			// Call the finalization service function
-			const enrichedChatTurn = await finalizeChatTurn(chatTurnCdo);
+    // Call the finalization service function
+    const enrichedChatTurn = await finalizeChatTurn(chatTurnCdo);
 
-			res.status(200).json(enrichedChatTurn);
-		}
-	)
+    res.status(200).json(enrichedChatTurn);
+  }),
 );
 export default router;

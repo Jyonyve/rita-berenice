@@ -1,21 +1,17 @@
 // src/server/services/orchestrationService.ts (Updated)
 
-import {
-	ChatGenerationStage,
-	MemoryResponse,
-	ReceiveBotResponseIntent,
-} from '@rita-berenice/shared/api';
+import { ChatGenerationStage, MemoryResponse, ReceiveBotResponseIntent } from '@rita-berenice/shared/api';
 import { ABORT_TIMEOUT, METADATA_TYPES } from '@rita-berenice/shared/config';
 import {
-	TempChatTurnCdo,
-	CharacterInfo,
-	ProfileInfo,
-	AiModelInfo,
-	TempChatTurn,
-	ChatTurnCdo,
-	ChatTurn,
-	ApiError,
-	ChatMessageSet,
+  TempChatTurnCdo,
+  CharacterInfo,
+  ProfileInfo,
+  AiModelInfo,
+  TempChatTurn,
+  ChatTurnCdo,
+  ChatTurn,
+  ApiError,
+  ChatMessageSet,
 } from '@rita-berenice/shared/domain';
 import { createBasicChatTurn, buildTempChatTurnId } from '@rita-berenice/shared/util';
 import { chatStore } from '../store/chatStore.js';
@@ -23,23 +19,39 @@ import { tempStore } from '../store/tempStore.js';
 import { parseEntriesToConversation, buildChatMessage } from '../util/chatParseUtils.js';
 import { detectLanguage } from '../util/languageUtils.js';
 import { sanitizeLlmResponse } from '../util/llmUtils.js';
-import {
-	createOperationLogger,
-	flowLogger,
-	OperationLogger,
-	serializeError,
-} from '../util/jsonlLogger.js';
+import { createOperationLogger, flowLogger, OperationLogger, serializeError } from '../util/jsonlLogger.js';
 import { handleServiceError } from '../util/serviceHelpers.js';
 import { memoryEngine } from './memoryEngine.js';
 import { personaEngine } from './personaEngine.js';
+import { enqueueRecapGenerationAfterFinalization } from './recapGenerationJobService.js';
 
 export interface ReceiveBotResponseOptions {
-	intent?: ReceiveBotResponseIntent;
-	adultContentEnabled?: boolean;
-	signal?: AbortSignal;
-	onStatus?: (stage: ChatGenerationStage) => void;
-	onDelta?: (delta: string) => void;
+  intent?: ReceiveBotResponseIntent;
+  adultContentEnabled?: boolean;
+  signal?: AbortSignal;
+  onStatus?: (stage: ChatGenerationStage) => void;
+  onDelta?: (delta: string) => void;
 }
+
+export interface ContinueTempResponseOptions {
+  adultContentEnabled?: boolean;
+  signal?: AbortSignal;
+  onStatus?: (stage: ChatGenerationStage) => void;
+  onDelta?: (delta: string) => void;
+}
+
+export const recallMemoriesPreservingRecentTurns = async (
+  fallback: MemoryResponse,
+  recall: () => Promise<MemoryResponse>,
+  onFailure?: (error: unknown) => void,
+): Promise<MemoryResponse> => {
+  try {
+    return await recall();
+  } catch (error) {
+    onFailure?.(error);
+    return fallback;
+  }
+};
 
 /**
  * FINAL VERSION:
@@ -48,83 +60,88 @@ export interface ReceiveBotResponseOptions {
  * 세부 로직은 내부 헬퍼 함수에 위임합니다.
  */
 export const receiveBotResponse = async (
-	tempChatTurnCdo: TempChatTurnCdo,
-	characterInfo: CharacterInfo,
-	profileInfo: ProfileInfo,
-	aiModelInfo: AiModelInfo,
-	recentChatTurnString: string,
-	options: ReceiveBotResponseOptions = {}
+  tempChatTurnCdo: TempChatTurnCdo,
+  characterInfo: CharacterInfo,
+  profileInfo: ProfileInfo,
+  aiModelInfo: AiModelInfo,
+  recentChatTurns: ChatTurn[],
+  options: ReceiveBotResponseOptions = {},
 ): Promise<TempChatTurn> => {
-	const { sequence, sessionId, inputJsonString } = tempChatTurnCdo;
-	const requestId = `chat:${sessionId}:${sequence}:${Date.now()}`;
-	const logger = createOperationLogger('orchestrationService', 'receiveBotResponse', {
-		requestId,
-		sessionId,
-		turn: sequence,
-		userId: tempChatTurnCdo.userId,
-		model: aiModelInfo.model,
-	});
+  const { sequence, sessionId, inputJsonString } = tempChatTurnCdo;
+  const requestId = `chat:${sessionId}:${sequence}:${Date.now()}`;
+  const logger = createOperationLogger('orchestrationService', 'receiveBotResponse', {
+    requestId,
+    sessionId,
+    turn: sequence,
+    userId: tempChatTurnCdo.userId,
+    model: aiModelInfo.model,
+  });
 
-	const controller = new AbortController();
-	const abortFromCaller = () => controller.abort(options.signal?.reason);
-	if (options.signal?.aborted) {
-		abortFromCaller();
-	} else {
-		options.signal?.addEventListener('abort', abortFromCaller, { once: true });
-	}
-	const timeoutId = setTimeout(() => {
-		logger.warn('timeout', { timeoutSeconds: ABORT_TIMEOUT });
-		controller.abort();
-	}, ABORT_TIMEOUT * 1000);
+  const controller = new AbortController();
+  const abortFromCaller = () => controller.abort(options.signal?.reason);
+  if (options.signal?.aborted) {
+    abortFromCaller();
+  } else {
+    options.signal?.addEventListener('abort', abortFromCaller, { once: true });
+  }
+  const timeoutId = setTimeout(() => {
+    logger.warn('timeout', { timeoutSeconds: ABORT_TIMEOUT });
+    controller.abort();
+  }, ABORT_TIMEOUT * 1000);
 
-	logger.info('start');
+  logger.info('start');
 
-	try {
-		options.onStatus?.('preparing');
-		// 1. 턴 가져오기 또는 생성
-		let tempTurn = await _getOrCreateTempTurn(sessionId, sequence, tempChatTurnCdo.userId);
-		// --- 2. LOG CHECKPOINT 1 ---
-		logger.checkpoint('tempTurn.ready', { existingOptionCount: tempTurn.setCount });
-		const userConverSation = parseEntriesToConversation(JSON.parse(inputJsonString));
-		// Reconciled before generating, so a rejected reroll costs nothing and a new message
-		// arriving on an occupied slot replaces the stale candidates instead of joining them.
-		reconcileTempTurnRequest(tempTurn, userConverSation, options.intent ?? 'new', logger);
+  try {
+    options.onStatus?.('preparing');
+    // 1. 턴 가져오기 또는 생성
+    let tempTurn = await _getOrCreateTempTurn(sessionId, sequence, tempChatTurnCdo.userId);
+    // --- 2. LOG CHECKPOINT 1 ---
+    logger.checkpoint('tempTurn.ready', { existingOptionCount: tempTurn.setCount });
+    const userConverSation = parseEntriesToConversation(JSON.parse(inputJsonString));
+    // Reconcile before generating. A matching new request is the recovery path after the
+    // response was saved but its final stream event was lost, so return that saved turn rather
+    // than paying for and appending an indistinguishable duplicate response.
+    const action = reconcileTempTurnRequest(tempTurn, userConverSation, options.intent ?? 'new', logger);
+    if (action === 'reuse') {
+      logger.checkpoint('tempTurn.reused', { optionCount: tempTurn.setCount });
+      return tempTurn;
+    }
 
-		// 2. 새로운 응답 생성 및 추가 (책임 위임)
-		tempTurn = await _generateAndAppendResponse(
-			tempTurn,
-			userConverSation,
-			characterInfo,
-			profileInfo,
-			aiModelInfo,
-			recentChatTurnString,
-			{
-				signal: controller.signal,
-				adultContentEnabled: options.adultContentEnabled,
-				onStatus: options.onStatus,
-				onDelta: options.onDelta,
-				logger,
-			}
-		);
-		logger.checkpoint('llm.responseFinished', { optionCount: tempTurn.setCount });
-		// 3. 최종 상태 저장
-		options.onStatus?.('saving');
-		await tempStore.saveTempChatTurn(tempTurn);
-		logger.checkpoint('tempTurn.saved', { optionCount: tempTurn.setCount });
+    // 2. 새로운 응답 생성 및 추가 (책임 위임)
+    tempTurn = await _generateAndAppendResponse(
+      tempTurn,
+      userConverSation,
+      characterInfo,
+      profileInfo,
+      aiModelInfo,
+      recentChatTurns,
+      {
+        signal: controller.signal,
+        adultContentEnabled: options.adultContentEnabled,
+        onStatus: options.onStatus,
+        onDelta: options.onDelta,
+        logger,
+      },
+    );
+    logger.checkpoint('llm.responseFinished', { optionCount: tempTurn.setCount });
+    // 3. 최종 상태 저장
+    options.onStatus?.('saving');
+    await tempStore.saveTempChatTurn(tempTurn);
+    logger.checkpoint('tempTurn.saved', { optionCount: tempTurn.setCount });
 
-		logger.complete({ optionCount: tempTurn.setCount });
-		return tempTurn;
-	} catch (error: any) {
-		logger.error('failed', { error: error instanceof Error ? error.message : String(error) });
-		handleServiceError(
-			error,
-			`[Orchestrator] Failed to process chat request for session ${sessionId}, turn ${sequence}.`,
-			'An unexpected error occurred while processing the request.'
-		);
-	} finally {
-		clearTimeout(timeoutId);
-		options.signal?.removeEventListener('abort', abortFromCaller);
-	}
+    logger.complete({ optionCount: tempTurn.setCount });
+    return tempTurn;
+  } catch (error: any) {
+    logger.error('failed', { error: error instanceof Error ? error.message : String(error) });
+    handleServiceError(
+      error,
+      `[Orchestrator] Failed to process chat request for session ${sessionId}, turn ${sequence}.`,
+      'An unexpected error occurred while processing the request.',
+    );
+  } finally {
+    clearTimeout(timeoutId);
+    options.signal?.removeEventListener('abort', abortFromCaller);
+  }
 };
 
 /**
@@ -137,28 +154,29 @@ export const receiveBotResponse = async (
  * @returns The fully enriched ChatTurn object after being stored.
  */
 export const finalizeChatTurn = async (chatTurnCdo: ChatTurnCdo): Promise<ChatTurn> => {
-	const { sessionId, sequence } = chatTurnCdo;
-	const logger = createOperationLogger('orchestrationService', 'finalizeChatTurn', {
-		sessionId,
-		turn: sequence,
-		userId: chatTurnCdo.userId,
-	});
-	logger.info('start');
+  const { sessionId, sequence } = chatTurnCdo;
+  const logger = createOperationLogger('orchestrationService', 'finalizeChatTurn', {
+    sessionId,
+    turn: sequence,
+    userId: chatTurnCdo.userId,
+  });
+  logger.info('start');
 
-	try {
-		const enrichedChatTurn = await enrichChatTurn(createBasicChatTurn(chatTurnCdo));
-		await chatStore.storeChatTurn(enrichedChatTurn);
+  try {
+    const enrichedChatTurn = await enrichChatTurn(createBasicChatTurn(chatTurnCdo));
+    await chatStore.storeChatTurn(enrichedChatTurn);
+    await enqueueRecapGenerationAfterFinalization(enrichedChatTurn);
 
-		logger.complete();
-		return enrichedChatTurn;
-	} catch (error: any) {
-		logger.error('failed', serializeError(error));
-		handleServiceError(
-			error,
-			`[Orchestrator] Failed to finalize chat turn for session ${sessionId}, sequence ${sequence}.`,
-			'An unexpected error occurred while finalizing the chat turn.'
-		);
-	}
+    logger.complete();
+    return enrichedChatTurn;
+  } catch (error: any) {
+    logger.error('failed', serializeError(error));
+    handleServiceError(
+      error,
+      `[Orchestrator] Failed to finalize chat turn for session ${sessionId}, sequence ${sequence}.`,
+      'An unexpected error occurred while finalizing the chat turn.',
+    );
+  }
 };
 
 /**
@@ -167,53 +185,136 @@ export const finalizeChatTurn = async (chatTurnCdo: ChatTurnCdo): Promise<ChatTu
  * values for one turn.
  */
 export const enrichChatTurn = async (basicChatTurn: ChatTurn): Promise<ChatTurn> =>
-	memoryEngine.enrichChatTurnViaLlm(basicChatTurn);
+  memoryEngine.enrichChatTurnViaLlm(basicChatTurn);
+
+export const mergeResponseContinuation = (existingResponse: string, suffix: string): string => {
+  const boundedOverlap = Math.min(existingResponse.length, suffix.length, 1_000);
+  for (let overlap = boundedOverlap; overlap > 0; overlap -= 1) {
+    if (existingResponse.endsWith(suffix.slice(0, overlap))) {
+      return existingResponse + suffix.slice(overlap);
+    }
+  }
+  const separator = existingResponse.endsWith('\n') || suffix.startsWith('\n') ? '' : '\n';
+  return `${existingResponse}${separator}${suffix}`;
+};
+
+export const continueTempResponse = async (
+  tempTurn: TempChatTurn,
+  setNo: number,
+  characterInfo: CharacterInfo,
+  profileInfo: ProfileInfo,
+  aiModelInfo: AiModelInfo,
+  recentChatTurns: ChatTurn[],
+  options: ContinueTempResponseOptions = {},
+): Promise<TempChatTurn> => {
+  const selectedSet = tempTurn.chatTurnSets.find((candidate) => candidate.setNo === setNo);
+  if (!selectedSet) throw new ApiError(404, `Temporary response set ${setNo} not found.`);
+  if (selectedSet.response.generationStatus !== 'length_limited') {
+    throw new ApiError(409, 'Only a length-limited temporary response can be continued.');
+  }
+  const timeoutSignal = AbortSignal.timeout(ABORT_TIMEOUT * 1_000);
+  const operationSignal = options.signal ? AbortSignal.any([options.signal, timeoutSignal]) : timeoutSignal;
+
+  const userConversation = parseEntriesToConversation(selectedSet.request.entries);
+  const partialResponse = parseEntriesToConversation(selectedSet.response.entries);
+  const langCode = detectLanguage(userConversation);
+  let recalledMemories: MemoryResponse = {
+    langCode,
+    shortTermHistory: recentChatTurns,
+    longTermHistory: [],
+    relevantLore: [],
+    relevantHistory: [],
+    factualRecapSummary: '',
+    relationshipRecapSummary: '',
+  };
+
+  options.onStatus?.('retrieving');
+  recalledMemories = await recallMemoriesPreservingRecentTurns(recalledMemories, () =>
+    memoryEngine.recallRelevantMemories(
+      tempTurn.sessionId,
+      userConversation,
+      tempTurn.userId,
+      recentChatTurns,
+      characterInfo,
+      profileInfo,
+      langCode,
+      aiModelInfo.model,
+    ),
+  );
+
+  options.onStatus?.('generating');
+  const continuation = await personaEngine.continueResponse(
+    recalledMemories,
+    characterInfo,
+    profileInfo,
+    userConversation,
+    partialResponse,
+    aiModelInfo,
+    {
+      signal: operationSignal,
+      adultContentEnabled: options.adultContentEnabled,
+      onDelta: options.onDelta,
+    },
+  );
+  const mergedResponse = mergeResponseContinuation(partialResponse, continuation.response);
+  const entries = sanitizeLlmResponse(mergedResponse);
+  if (!entries.length) throw new ApiError(502, 'The continued response was empty.');
+
+  const now = new Date().toISOString();
+  selectedSet.response = {
+    ...selectedSet.response,
+    entries,
+    emotion: continuation.emotion,
+    generationStatus: continuation.generationStatus ?? 'complete',
+    updatedAt: now,
+  };
+  tempTurn.updatedAt = now;
+  options.onStatus?.('saving');
+  await tempStore.saveTempChatTurn(tempTurn);
+  return tempTurn;
+};
 
 /**
  * [HELPER] Retrieves an existing TempChatTurn or creates a new one if it doesn't exist.
  * This function now uses error handling to manage the control flow.
  * @private
  */
-const _getOrCreateTempTurn = async (
-	sessionId: string,
-	sequence: number,
-	userId: string
-): Promise<TempChatTurn> => {
-	try {
-		// 1. Attempt to fetch the TempChatTurn.
-		// getTempChatTurn will now throw an ApiError with status 404 if not found.
-		const response = await tempStore.getTempChatTurn(sessionId, sequence);
-		flowLogger.info('orchestrationService', 'tempTurn.found', { sessionId, turn: sequence });
-		// Assuming the response object contains the turn, e.g., { tempChatTurn: ... }
-		return response.tempChatTurn;
-	} catch (error: any) {
-		// 2. Check if the error is the specific "Not Found" error.
-		if (error instanceof ApiError && error.status === 404) {
-			// 3. If it is a 404, the turn doesn't exist. Create a new one.
-			flowLogger.info('orchestrationService', 'tempTurn.create', { sessionId, turn: sequence });
-			const now = new Date().toISOString();
-			return {
-				userId,
-				tempTurnId: buildTempChatTurnId(sessionId, sequence),
-				sessionId,
-				sequence,
-				chatTurnSets: [],
-				type: METADATA_TYPES.TEMP,
-				createdAt: now,
-				updatedAt: now,
-				setCount: 0,
-				fixedSetNo: -1,
-			};
-		} else {
-			// 4. For any other error (e.g., 500), re-throw it to be handled by the caller.
-			flowLogger.error('orchestrationService', 'tempTurn.lookup.failed', {
-				sessionId,
-				turn: sequence,
-				...serializeError(error),
-			});
-			throw error;
-		}
-	}
+const _getOrCreateTempTurn = async (sessionId: string, sequence: number, userId: string): Promise<TempChatTurn> => {
+  try {
+    // 1. Attempt to fetch the TempChatTurn.
+    // getTempChatTurn will now throw an ApiError with status 404 if not found.
+    const response = await tempStore.getTempChatTurn(sessionId, sequence);
+    flowLogger.info('orchestrationService', 'tempTurn.found', { sessionId, turn: sequence });
+    // Assuming the response object contains the turn, e.g., { tempChatTurn: ... }
+    return response.tempChatTurn;
+  } catch (error: any) {
+    // 2. Check if the error is the specific "Not Found" error.
+    if (error instanceof ApiError && error.status === 404) {
+      // 3. If it is a 404, the turn doesn't exist. Create a new one.
+      flowLogger.info('orchestrationService', 'tempTurn.create', { sessionId, turn: sequence });
+      const now = new Date().toISOString();
+      return {
+        userId,
+        tempTurnId: buildTempChatTurnId(sessionId, sequence),
+        sessionId,
+        sequence,
+        chatTurnSets: [],
+        type: METADATA_TYPES.TEMP,
+        createdAt: now,
+        updatedAt: now,
+        setCount: 0,
+        fixedSetNo: -1,
+      };
+    } else {
+      // 4. For any other error (e.g., 500), re-throw it to be handled by the caller.
+      flowLogger.error('orchestrationService', 'tempTurn.lookup.failed', {
+        sessionId,
+        turn: sequence,
+        ...serializeError(error),
+      });
+      throw error;
+    }
+  }
 };
 // In src/server/services/orchestrationService.ts
 
@@ -236,33 +337,38 @@ const _getOrCreateTempTurn = async (
  * Exported for tests; nothing outside this module calls it.
  */
 export const reconcileTempTurnRequest = (
-	tempTurn: TempChatTurn,
-	userConversation: string,
-	intent: ReceiveBotResponseIntent,
-	logger?: OperationLogger
-): void => {
-	const existingRequest = tempTurn.chatTurnSets[0]?.request;
-	if (!existingRequest) return;
+  tempTurn: TempChatTurn,
+  userConversation: string,
+  intent: ReceiveBotResponseIntent,
+  logger?: OperationLogger,
+): 'generate' | 'reuse' => {
+  const existingRequest = tempTurn.chatTurnSets[0]?.request;
+  if (!existingRequest) return 'generate';
 
-	const existingConversation = parseEntriesToConversation(existingRequest.entries);
-	if (existingConversation.trim() === userConversation.trim()) return;
+  const existingConversation = parseEntriesToConversation(existingRequest.entries);
+  if (existingConversation.trim() === userConversation.trim()) {
+    // A reroll deliberately requests another candidate; a new request on the same sequence
+    // can only be a retry after its streamed completion was lost.
+    return intent === 'new' ? 'reuse' : 'generate';
+  }
 
-	if (intent === 'reroll') {
-		throw new ApiError(
-			409,
-			`[Orchestrator] Reroll for turn ${tempTurn.sequence} of session ${tempTurn.sessionId} does not match the request already stored on that turn.`,
-			'This message changed since it was sent. Reload the conversation and try again.'
-		);
-	}
+  if (intent === 'reroll') {
+    throw new ApiError(
+      409,
+      `[Orchestrator] Reroll for turn ${tempTurn.sequence} of session ${tempTurn.sessionId} does not match the request already stored on that turn.`,
+      'This message changed since it was sent. Reload the conversation and try again.',
+    );
+  }
 
-	logger?.warn('tempTurn.requestMismatch', {
-		existingSetCount: tempTurn.setCount,
-		fixedSetNo: tempTurn.fixedSetNo,
-		action: 'reset',
-	});
-	tempTurn.chatTurnSets = [];
-	tempTurn.setCount = 0;
-	tempTurn.fixedSetNo = -1;
+  logger?.warn('tempTurn.requestMismatch', {
+    existingSetCount: tempTurn.setCount,
+    fixedSetNo: tempTurn.fixedSetNo,
+    action: 'reset',
+  });
+  tempTurn.chatTurnSets = [];
+  tempTurn.setCount = 0;
+  tempTurn.fixedSetNo = -1;
+  return 'generate';
 };
 
 /**
@@ -271,112 +377,109 @@ export const reconcileTempTurnRequest = (
  * @private
  */
 async function _generateAndAppendResponse(
-	tempTurn: TempChatTurn,
-	userConversation: string,
-	characterInfo: CharacterInfo,
-	profileInfo: ProfileInfo,
-	aiModelInfo: AiModelInfo,
-	recentChatTurnString: string,
-	options: {
-		signal?: AbortSignal;
-		adultContentEnabled?: boolean;
-		onStatus?: (stage: ChatGenerationStage) => void;
-		onDelta?: (delta: string) => void;
-		logger?: OperationLogger;
-	}
+  tempTurn: TempChatTurn,
+  userConversation: string,
+  characterInfo: CharacterInfo,
+  profileInfo: ProfileInfo,
+  aiModelInfo: AiModelInfo,
+  recentChatTurns: ChatTurn[],
+  options: {
+    signal?: AbortSignal;
+    adultContentEnabled?: boolean;
+    onStatus?: (stage: ChatGenerationStage) => void;
+    onDelta?: (delta: string) => void;
+    logger?: OperationLogger;
+  },
 ): Promise<TempChatTurn> {
-	// 1. Recall relevant memories for context.
-	const langCode = detectLanguage(userConversation);
-	const recentChatTurn: ChatTurn[] = JSON.parse(recentChatTurnString);
+  // 1. Recall relevant memories for context.
+  const langCode = detectLanguage(userConversation);
+  // 1. Initialize with a default, empty memory context.
+  let recalledMemories: MemoryResponse = {
+    langCode,
+    shortTermHistory: recentChatTurns,
+    longTermHistory: [],
+    relevantLore: [],
+    relevantHistory: [],
+    factualRecapSummary: '',
+    relationshipRecapSummary: '',
+  };
 
-	// 1. Initialize with a default, empty memory context.
-	let recalledMemories: MemoryResponse = {
-		langCode,
-		shortTermHistory: recentChatTurn ?? [],
-		longTermHistory: [],
-		relevantLore: [],
-		relevantHistory: [],
-		factualRecapSummary: '',
-		relationshipRecapSummary: '',
-	};
+  options.onStatus?.('retrieving');
+  options.logger?.checkpoint('memoryRecall.start', { recentTurnCount: recentChatTurns.length });
+  let recallFailed = false;
+  recalledMemories = await recallMemoriesPreservingRecentTurns(
+    recalledMemories,
+    () =>
+      memoryEngine.recallRelevantMemories(
+        tempTurn.sessionId,
+        userConversation,
+        tempTurn.userId,
+        recentChatTurns,
+        characterInfo,
+        profileInfo,
+        langCode,
+        aiModelInfo.model,
+      ),
+    (error) => {
+      recallFailed = true;
+      options.logger?.warn('memoryRecall.failed', serializeError(error));
+    },
+  );
+  if (recallFailed) {
+    options.logger?.checkpoint('memoryRecall.fallback', { recentTurnCount: recentChatTurns.length });
+  } else {
+    options.logger?.checkpoint('memoryRecall.complete', {
+      shortTermCount: recalledMemories.shortTermHistory.length,
+      longTermCount: recalledMemories.longTermHistory.length,
+      loreCount: recalledMemories.relevantLore.length,
+      historyCount: recalledMemories.relevantHistory.length,
+      hasFactualRecap: Boolean(recalledMemories.factualRecapSummary),
+      hasRelationshipRecap: Boolean(recalledMemories.relationshipRecapSummary),
+    });
+  }
 
-	if (recentChatTurn && recentChatTurn.length > 0) {
-		options.onStatus?.('retrieving');
-		options.logger?.checkpoint('memoryRecall.start', { recentTurnCount: recentChatTurn.length });
-		try {
-			// Overwrite the default memories with the actual recalled data.
-			recalledMemories = await memoryEngine.recallRelevantMemories(
-				tempTurn.sessionId,
-				userConversation,
-				tempTurn.userId,
-				recentChatTurn,
-				langCode,
-				aiModelInfo.model
-			);
-			options.logger?.checkpoint('memoryRecall.complete', {
-				shortTermCount: recalledMemories.shortTermHistory.length,
-				longTermCount: recalledMemories.longTermHistory.length,
-				loreCount: recalledMemories.relevantLore.length,
-				historyCount: recalledMemories.relevantHistory.length,
-				hasFactualRecap: Boolean(recalledMemories.factualRecapSummary),
-				hasRelationshipRecap: Boolean(recalledMemories.relationshipRecapSummary),
-			});
-		} catch (error: any) {
-			// If recall fails with a 404, we log it and proceed.
-			// The `recalledMemories` object will correctly keep its default empty state.
-			if (error instanceof ApiError && error.status === 404) {
-				options.logger?.warn('memoryRecall.empty', { status: 404 });
-			} else {
-				// For any other unexpected error, we re-throw to be handled by the caller.
-				throw error;
-			}
-		}
-	} else {
-		// If there is no history, log it and proceed with the default empty context.
-		options.logger?.checkpoint('memoryRecall.skipped', { reason: 'no_recent_chat_history' });
-	}
+  // 2. Generate the new persona response.
+  options.onStatus?.('generating');
+  options.logger?.checkpoint('personaGeneration.start');
+  const personaResponse = await personaEngine.generateResponse(
+    recalledMemories,
+    characterInfo,
+    profileInfo,
+    userConversation,
+    aiModelInfo,
+    {
+      signal: options.signal,
+      adultContentEnabled: options.adultContentEnabled,
+      onDelta: options.onDelta,
+    },
+  );
+  options.logger?.checkpoint('personaGeneration.complete', { emotion: personaResponse.emotion });
 
-	// 2. Generate the new persona response.
-	options.onStatus?.('generating');
-	options.logger?.checkpoint('personaGeneration.start');
-	const personaResponse = await personaEngine.generateResponse(
-		recalledMemories,
-		characterInfo,
-		profileInfo,
-		userConversation,
-		aiModelInfo,
-		{
-			signal: options.signal,
-			adultContentEnabled: options.adultContentEnabled,
-			onDelta: options.onDelta,
-		}
-	);
-	options.logger?.checkpoint('personaGeneration.complete', { emotion: personaResponse.emotion });
+  const botChatEntries = sanitizeLlmResponse(personaResponse.response);
+  // 3. Create the new bot response message.
+  const request = buildChatMessage(
+    'user',
+    tempTurn.sequence,
+    profileInfo.showName,
+    userConversation,
+    tempTurn.sessionId,
+  );
+  const response = buildChatMessage(
+    'assistant',
+    tempTurn.sequence,
+    characterInfo.showName,
+    parseEntriesToConversation(botChatEntries),
+    tempTurn.sessionId,
+    personaResponse.emotion,
+    aiModelInfo.model,
+    personaResponse.generationStatus,
+  );
+  const newChatTurnSet: ChatMessageSet = { request, response, setNo: tempTurn.chatTurnSets.length };
 
-	const botChatEntries = sanitizeLlmResponse(personaResponse.response);
-	// 3. Create the new bot response message.
-	const request = buildChatMessage(
-		'user',
-		tempTurn.sequence,
-		profileInfo.showName,
-		userConversation,
-		tempTurn.sessionId
-	);
-	const response = buildChatMessage(
-		'assistant',
-		tempTurn.sequence,
-		characterInfo.showName,
-		parseEntriesToConversation(botChatEntries),
-		tempTurn.sessionId,
-		personaResponse.emotion,
-		aiModelInfo.model
-	);
-	const newChatTurnSet: ChatMessageSet = { request, response, setNo: tempTurn.chatTurnSets.length };
+  // 4. Append the new response to the options array and update the timestamp.
+  tempTurn.chatTurnSets.push(newChatTurnSet);
+  tempTurn.setCount = tempTurn.chatTurnSets.length;
+  tempTurn.updatedAt = new Date().toISOString();
 
-	// 4. Append the new response to the options array and update the timestamp.
-	tempTurn.chatTurnSets.push(newChatTurnSet);
-	tempTurn.setCount = tempTurn.chatTurnSets.length;
-	tempTurn.updatedAt = new Date().toISOString();
-
-	return tempTurn;
+  return tempTurn;
 }

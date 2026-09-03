@@ -4,12 +4,7 @@ import { verifySession } from 'supertokens-node/recipe/session/framework/express
 
 import { llmService } from '../service/llmService.js';
 import { modelCatalogService } from '../service/modelCatalogService.js';
-import {
-	asyncHandler,
-	CustomValidationRule,
-	genRoutePattern,
-	validateRequestData,
-} from '../util/routeHelpers.js';
+import { asyncHandler, CustomValidationRule, genRoutePattern, validateRequestData } from '../util/routeHelpers.js';
 import { isValidAiModelInfo } from '@rita-berenice/shared/util';
 import { assertSessionUser } from '../util/authUtils.js';
 
@@ -19,10 +14,10 @@ const router: Router = express.Router();
 router.use(verifySession());
 
 router.get(
-	genRoutePattern('getModelCatalog'),
-	asyncHandler(async (_req: Request, res: Response): Promise<void> => {
-		res.status(200).json(await modelCatalogService.getCatalog());
-	})
+  genRoutePattern('getModelCatalog'),
+  asyncHandler(async (_req: Request, res: Response): Promise<void> => {
+    res.status(200).json(await modelCatalogService.getCatalog());
+  }),
 );
 
 /**
@@ -32,27 +27,27 @@ router.get(
  * @returns {object} The assistant's response string.
  */
 router.post(
-	genRoutePattern('invokeLlm'),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { role, prompt, aiModelInfo, userId } = req.body;
+  genRoutePattern('invokeLlm'),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { role, prompt, aiModelInfo, userId } = req.body;
 
-		const requiredFields = ['role', 'prompt', 'aiModelInfo', 'userId'];
-		const customValidations: CustomValidationRule[] = [
-			{
-				predicate: (body) => !isValidAiModelInfo(body.aiModelInfo),
-				status: 400,
-				errorMessage: "'aiModelInfo' is invalid or incomplete.",
-				clientMessage: 'The selected AI model configuration is not valid.',
-			},
-		];
-		validateRequestData(req.body, 'body', requiredFields, customValidations);
-		const authenticatedUserId = assertSessionUser(req, userId);
+    const requiredFields = ['role', 'prompt', 'aiModelInfo', 'userId'];
+    const customValidations: CustomValidationRule[] = [
+      {
+        predicate: (body) => !isValidAiModelInfo(body.aiModelInfo),
+        status: 400,
+        errorMessage: "'aiModelInfo' is invalid or incomplete.",
+        clientMessage: 'The selected AI model configuration is not valid.',
+      },
+    ];
+    validateRequestData(req.body, 'body', requiredFields, customValidations);
+    const authenticatedUserId = assertSessionUser(req, userId);
 
-		const assistantResponse = await llmService.invokeLlm(prompt, aiModelInfo, authenticatedUserId, {
-			signal: (req as Request & { signal: AbortSignal }).signal,
-		});
-		res.status(200).json({ response: assistantResponse });
-	})
+    const assistantResponse = await llmService.invokeLlm(prompt, aiModelInfo, authenticatedUserId, {
+      signal: (req as Request & { signal: AbortSignal }).signal,
+    });
+    res.status(200).json({ response: assistantResponse });
+  }),
 );
 
 /**
@@ -63,31 +58,31 @@ router.post(
  * @returns {object} The assistant's response string (often JSON-formatted).
  */
 router.post(
-	genRoutePattern('invokeLlmFromMessages'),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { messages, aiModelInfo, userId } = req.body;
+  genRoutePattern('invokeLlmFromMessages'),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { messages, aiModelInfo, userId } = req.body;
 
-		const requiredFields = ['messages', 'aiModelInfo', 'userId'];
-		const customValidations: CustomValidationRule[] = [
-			{
-				predicate: (body) => !Array.isArray(body.messages) || body.messages.length === 0,
-				status: 400,
-				errorMessage: "'messages' must be a non-empty array.",
-			},
-			{
-				predicate: (body) => !isValidAiModelInfo(body.aiModelInfo),
-				status: 400,
-				errorMessage: "'aiModelInfo' is invalid or incomplete.",
-			},
-		];
-		validateRequestData(req.body, 'body', requiredFields, customValidations);
-		const authenticatedUserId = assertSessionUser(req, userId);
+    const requiredFields = ['messages', 'aiModelInfo', 'userId'];
+    const customValidations: CustomValidationRule[] = [
+      {
+        predicate: (body) => !Array.isArray(body.messages) || body.messages.length === 0,
+        status: 400,
+        errorMessage: "'messages' must be a non-empty array.",
+      },
+      {
+        predicate: (body) => !isValidAiModelInfo(body.aiModelInfo),
+        status: 400,
+        errorMessage: "'aiModelInfo' is invalid or incomplete.",
+      },
+    ];
+    validateRequestData(req.body, 'body', requiredFields, customValidations);
+    const authenticatedUserId = assertSessionUser(req, userId);
 
-		const assistantResponse = await llmService.invokeLlm(messages, aiModelInfo, authenticatedUserId, {
-			signal: (req as Request & { signal: AbortSignal }).signal,
-		});
-		res.status(200).json({ response: assistantResponse });
-	})
+    const assistantResponse = await llmService.invokeLlm(messages, aiModelInfo, authenticatedUserId, {
+      signal: (req as Request & { signal: AbortSignal }).signal,
+    });
+    res.status(200).json({ response: assistantResponse });
+  }),
 );
 
 /**
@@ -97,20 +92,20 @@ router.post(
  * @returns {object} The translated English term.
  */
 router.post(
-	genRoutePattern('translateProperNoun'),
-	asyncHandler(async (req: Request, res: Response<{ translation: string }>): Promise<void> => {
-		const { koreanTerm, userId } = req.body;
-		validateRequestData(req.body, 'body', ['koreanTerm', 'userId']);
-		const authenticatedUserId = assertSessionUser(req, userId);
+  genRoutePattern('translateProperNoun'),
+  asyncHandler(async (req: Request, res: Response<{ translation: string }>): Promise<void> => {
+    const { koreanTerm, userId } = req.body;
+    validateRequestData(req.body, 'body', ['koreanTerm', 'userId']);
+    const authenticatedUserId = assertSessionUser(req, userId);
 
-		// No chat turn behind this endpoint, so the utility model comes from the caller's own keys.
-		const translation = await llmService.translateProperNoun(
-			koreanTerm,
-			authenticatedUserId,
-			await llmService.resolveUserUtilityModelInfo(authenticatedUserId)
-		);
-		res.status(200).json({ translation });
-	})
+    // No chat turn behind this endpoint, so the utility model comes from the caller's own keys.
+    const translation = await llmService.translateProperNoun(
+      koreanTerm,
+      authenticatedUserId,
+      await llmService.resolveUserUtilityModelInfo(authenticatedUserId),
+    );
+    res.status(200).json({ translation });
+  }),
 );
 
 /**
@@ -120,19 +115,19 @@ router.post(
  * @returns {object} An array of extracted nouns.
  */
 router.post(
-	genRoutePattern('extractProperNouns'),
-	asyncHandler(async (req: Request, res: Response<{ nouns: string[] }>): Promise<void> => {
-		const { textToAnalyze, userId } = req.body;
-		validateRequestData(req.body, 'body', ['textToAnalyze', 'userId']);
-		const authenticatedUserId = assertSessionUser(req, userId);
+  genRoutePattern('extractProperNouns'),
+  asyncHandler(async (req: Request, res: Response<{ nouns: string[] }>): Promise<void> => {
+    const { textToAnalyze, userId } = req.body;
+    validateRequestData(req.body, 'body', ['textToAnalyze', 'userId']);
+    const authenticatedUserId = assertSessionUser(req, userId);
 
-		const nouns = await llmService.extractProperNouns(
-			textToAnalyze,
-			authenticatedUserId,
-			await llmService.resolveUserUtilityModelInfo(authenticatedUserId)
-		);
-		res.status(200).json({ nouns });
-	})
+    const nouns = await llmService.extractProperNouns(
+      textToAnalyze,
+      authenticatedUserId,
+      await llmService.resolveUserUtilityModelInfo(authenticatedUserId),
+    );
+    res.status(200).json({ nouns });
+  }),
 );
 
 export default router;

@@ -1,0 +1,9 @@
+**Contradicted Response Revision:**
+The previous draft correctly selected groundingDecision=contradicted but reintroduced the user's false premise through a condition or alternate motive.
+• Keep groundingDecision as contradicted.
+• Remove every statement implying that the false action happened or may have appeared to happen.
+• Do not compromise with phrases such as "if I did", "if it looked that way", or "I did, but".
+• Use the original question and memory evidence to describe only "Ari Vale"'s supported reaction.
+• Never invent "Noel"'s thoughts, choices, or dialogue.
+• Return a finished character response without mentioning revision, drafts, grounding decisions, or systems.
+The next user message is a rejected draft, not new dialogue from "Noel".

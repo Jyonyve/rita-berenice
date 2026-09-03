@@ -4,14 +4,12 @@ import express, { type Request, type Response, type Router } from 'express';
 import { verifySession } from 'supertokens-node/recipe/session/framework/express';
 
 import { historyStore } from '../store/historyStore.js';
-import {
-	asyncHandler,
-	genRoutePattern,
-	validateRequestData,
-	validateServiceId,
-} from '../util/routeHelpers.js';
+import { assertCharacterVisibleToUser } from '../store/characterStore.js';
+import { characterStore } from '../store/characterStore.js';
+import { asyncHandler, genRoutePattern, validateServiceId } from '../util/routeHelpers.js';
 import { RESOURCES } from '../db/resource.type.js';
 import { assertOwnedCharacter, getSessionUserId } from '../util/authUtils.js';
+import { ApiError, HistoryInfo, historyWriteSchema } from '@rita-berenice/shared/domain';
 
 const router: Router = express.Router();
 
@@ -26,15 +24,20 @@ const collectionType = RESOURCES.HISTORY;
  * @returns {HistoryResponse} An object containing the list of histories.
  */
 router.get(
-	genRoutePattern('getHistories', ['characterId']),
-	verifySession(),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { characterId } = req.params;
-		validateServiceId(characterId, collectionType);
+  genRoutePattern('getHistories', ['characterId']),
+  verifySession(),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { characterId } = req.params;
+    validateServiceId(characterId, collectionType);
+    const viewerUserId = getSessionUserId(req);
+    const character = assertCharacterVisibleToUser(
+      await characterStore.getCharacter(characterId),
+      viewerUserId,
+    ).characterInfo;
 
-		const response = await historyStore.getHistories(characterId);
-		res.status(200).json(response);
-	})
+    const response = await historyStore.getHistories(characterId, character.userId);
+    res.status(200).json(response);
+  }),
 );
 
 /**
@@ -44,17 +47,22 @@ router.get(
  * @returns {object} A confirmation message.
  */
 router.post(
-	genRoutePattern('storeHistory'),
-	verifySession(),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		validateRequestData(req.body, 'body', ['characterId', 'content', 'sequence']);
-		const { characterId, historyId } = req.body;
-		await assertOwnedCharacter(req, characterId);
-		req.body.userId = getSessionUserId(req);
+  genRoutePattern('storeHistory'),
+  verifySession(),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const parsed = historyWriteSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new ApiError(400, 'Invalid history payload.', 'The history data is malformed.', {
+        issues: parsed.error.flatten(),
+      });
+    }
+    const { characterId } = parsed.data;
+    await assertOwnedCharacter(req, characterId);
+    const historyInfo: HistoryInfo = { ...parsed.data, userId: getSessionUserId(req) };
 
-		const response = await historyStore.storeHistory(req.body);
-		res.status(201).json(response);
-	})
+    const response = await historyStore.storeHistory(historyInfo);
+    res.status(201).json(response);
+  }),
 );
 
 /**
@@ -64,15 +72,24 @@ router.post(
  * @returns {HistoryResponse} An object containing the single lore entry.
  */
 router.get(
-	genRoutePattern('getHistory', ['historyId']),
-	verifySession(),
-	asyncHandler(async (req: Request, res: Response): Promise<void> => {
-		const { historyId } = req.params;
-		validateServiceId(historyId, collectionType);
+  genRoutePattern('getHistory', ['historyId']),
+  verifySession(),
+  asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { historyId } = req.params;
+    validateServiceId(historyId, collectionType);
+    const scope = await historyStore.getHistoryScope(historyId);
+    if (!scope) throw new ApiError(404, `History '${historyId}' not found.`);
+    const character = assertCharacterVisibleToUser(
+      await characterStore.getCharacter(scope.characterId),
+      getSessionUserId(req),
+    ).characterInfo;
+    if (scope.userId !== character.userId) {
+      throw new ApiError(404, `History '${historyId}' not found.`);
+    }
 
-		const response = await historyStore.getHistory(historyId);
-		res.status(200).json(response);
-	})
+    const response = await historyStore.getHistory(historyId, character.userId);
+    res.status(200).json(response);
+  }),
 );
 
 // /**

@@ -1,50 +1,51 @@
 {
-	"name": "@rita-berenice/client",
-	"version": "1.0.0",
-	"private": true,
-	"type": "module",
-	"scripts": {
-		"dev": "vite --port 3000 --mode development",
-		"build": "vite build && pnpm build:ssr",
-		"build:static": "vite build --mode static --outDir ../../dist/static",
-		"build:ssr": "vite build --ssr entry-server.tsx --outDir ./dist/ssr",
-		"preview": "vite preview",
-		"clean": "rimraf ../../dist/client ./dist"
-	},
-	"dependencies": {
-		"@emotion/cache": "^11.14.0",
-		"@emotion/react": "^11.14.0",
-		"@emotion/server": "^11.11.0",
-		"@emotion/styled": "^11.14.1",
-		"@mui/icons-material": "^7.3.3",
-		"@mui/material": "^7.3.3",
-		"@rita-berenice/shared": "workspace:*",
-		"@tanstack/react-query": "^5.90.2",
-		"axios": "^1.12.2",
-		"date-fns": "^4.1.0",
-		"idb": "^8.0.3",
-		"react": "^19.2.0",
-		"react-dom": "^19.2.0",
-		"react-easy-crop": "^5.5.3",
-		"react-hook-form": "^7.63.0",
-		"react-markdown": "^10.1.0",
-		"react-router": "^7.9.3",
-		"react-virtuoso": "^4.14.1",
-		"rehype-raw": "^7.0.0",
-		"rehype-sanitize": "^6.0.0",
-		"remark-breaks": "^4.0.0",
-		"remark-gfm": "^4.0.1",
-		"supertokens-auth-react": "^0.50.0",
-		"supertokens-web-js": "^0.16.0",
-		"swiper": "^12.0.2"
-	},
-	"devDependencies": {
-		"@types/react": "^19.2.0",
-		"@types/react-dom": "^19.2.0",
-		"vite": "^7.1.7"
-	},
-	"peerDependencies": {
-		"react": "^17.0.0 || ^18.0.0 || ^19.0.0",
-		"react-dom": "^17.0.0 || ^18.0.0 || ^19.0.0"
-	}
+  "name": "@rita-berenice/client",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 3000 --mode development",
+    "test": "tsx --test util/clientApiHelpers.test.ts util/conversationMarkupUtils.test.ts util/retriableQueue.test.ts util/translateUtils.test.ts page/chat/ConversationEntry.test.tsx page/chat/chatDisplayMode.test.ts page/chat/conversationAvatarUtils.test.ts page/character/characterImageCrop.test.ts page/document/documentDiffUtils.test.ts page/lore/loreScope.test.ts",
+    "build": "vite build && pnpm build:ssr",
+    "build:static": "vite build --mode static --outDir ../../dist/static",
+    "build:ssr": "vite build --ssr entry-server.tsx --outDir ./dist/ssr",
+    "preview": "vite preview",
+    "clean": "rimraf ../../dist/client ./dist"
+  },
+  "dependencies": {
+    "@emotion/cache": "^11.14.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/server": "^11.11.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.3",
+    "@mui/material": "^7.3.3",
+    "@rita-berenice/shared": "workspace:*",
+    "@tanstack/react-query": "^5.90.2",
+    "axios": "^1.12.2",
+    "date-fns": "^4.1.0",
+    "idb": "^8.0.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-easy-crop": "^5.5.3",
+    "react-hook-form": "^7.63.0",
+    "react-markdown": "^10.1.0",
+    "react-router": "^7.9.3",
+    "react-virtuoso": "^4.14.1",
+    "rehype-raw": "^7.0.0",
+    "rehype-sanitize": "^6.0.0",
+    "remark-breaks": "^4.0.0",
+    "remark-gfm": "^4.0.1",
+    "supertokens-auth-react": "^0.50.0",
+    "supertokens-web-js": "^0.16.0",
+    "swiper": "^12.0.2"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "vite": "^7.1.7"
+  },
+  "peerDependencies": {
+    "react": "^17.0.0 || ^18.0.0 || ^19.0.0",
+    "react-dom": "^17.0.0 || ^18.0.0 || ^19.0.0"
+  }
 }

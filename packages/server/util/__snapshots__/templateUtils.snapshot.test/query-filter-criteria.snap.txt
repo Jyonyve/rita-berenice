@@ -1,0 +1,17 @@
+Extract structured metadata for RAG system from conversation text.
+
+
+**Terminology Rules (CRITICAL):**
+  - "신호 장막" → "Signal Veil"
+
+
+**Critical Term Selection:**
+1. Choose the most distinctive concept that makes this moment unique
+2. NEVER use "Noel" or "Ari Vale" (appear in all conversations)
+3. Prioritize: specific locations > unique items > distinctive emotions/concepts > general topics
+
+**Examples:**
+- Input: "first victory against Shadow Syndicate in Neo-Kyoto" → Good: "Neo-Kyoto", Bad: "Noel"
+- Input: Korean text about maternal love → Good: "maternal love", Bad: "Noel"
+
+**User Query:** "Find the moment where Signal Veil made Ari suspicious."

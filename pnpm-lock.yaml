@@ -134,19 +134,6 @@ importers:
         specifier: ^7.1.7
         version: 7.1.7(@types/node@24.6.2)(tsx@4.20.6)
 
-  packages/migration:
-    dependencies:
-      '@rita-berenice/server':
-        specifier: workspace:*
-        version: link:../server
-      '@rita-berenice/shared':
-        specifier: workspace:*
-        version: link:../shared
-    devDependencies:
-      tsx:
-        specifier: 4.20.6
-        version: 4.20.6
-
   packages/server:
     dependencies:
       '@aws-sdk/client-s3':
@@ -1058,12 +1045,6 @@ packages:
       '@types/react':
         optional: true
 
-  '@napi-rs/lzma-linux-x64-gnu@1.5.1':
-    resolution: {integrity: sha512-oTXEIha4SsuXdTA4Iyskj0kpdx2yVXdhd75c2v3xGrHFfVMsbhTPZU/nMPL4sWKo4pBHm3aucLaqGlF696dTyQ==}
-    engines: {node: ^22.20 || ^24.12 || >=25}
-    cpu: [x64]
-    os: [linux]
-
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
     engines: {node: '>= 8'}
@@ -1103,8 +1084,8 @@ packages:
       rollup:
         optional: true
 
-  '@rollup/wasm-node@4.62.5':
-    resolution: {integrity: sha512-NSyG08F0m74qhvWDyFeYaZapAmieh3bEiQzCzql3N9ErlYoyt+V3xpDX8dBdKiZu1UXUpGNbBEblKaW5zcpqaw==}
+  '@rollup/wasm-node@4.62.3':
+    resolution: {integrity: sha512-sEOQWamme1YgXeVcE1JkB1k44RwtPWcpYpGUW1Lso7bOj+Ay9lN2Pak/CcfNeC4xqIPNhYSabQNaWYkJJR7m8Q==}
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
 
@@ -4450,9 +4431,6 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.0
 
-  '@napi-rs/lzma-linux-x64-gnu@1.5.1':
-    optional: true
-
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
       '@nodelib/fs.stat': 2.0.5
@@ -4483,11 +4461,10 @@ snapshots:
       estree-walker: 2.0.2
       picomatch: 4.0.3
 
-  '@rollup/wasm-node@4.62.5':
+  '@rollup/wasm-node@4.62.3':
     dependencies:
       '@types/estree': 1.0.9
     optionalDependencies:
-      '@napi-rs/lzma-linux-x64-gnu': 1.5.1
       fsevents: 2.3.3
 
   '@simplewebauthn/browser@13.2.0': {}
@@ -7368,7 +7345,7 @@ snapshots:
       fdir: 6.5.0(picomatch@4.0.3)
       picomatch: 4.0.3
       postcss: 8.5.6
-      rollup: '@rollup/wasm-node@4.62.5'
+      rollup: '@rollup/wasm-node@4.62.3'
       tinyglobby: 0.2.15
     optionalDependencies:
       '@types/node': 24.6.2
@@ -7414,8 +7391,7 @@ snapshots:
 
   wrappy@1.0.2: {}
 
-  ws@8.18.3:
-    optional: true
+  ws@8.18.3: {}
 
   xmlbuilder@13.0.2: {}
 

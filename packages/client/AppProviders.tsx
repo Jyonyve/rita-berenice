@@ -14,57 +14,57 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Define the props for our provider component
 interface AppProvidersProps {
-	children: ReactNode;
-	emotionCache: EmotionCache; // This prop makes the component reusable
-	initialLang?: LangCode;
+  children: ReactNode;
+  emotionCache: EmotionCache; // This prop makes the component reusable
+  initialLang?: LangCode;
 }
 
 // Helper component to bridge ColorModeContext to ThemeProvider
 const ThemedAppContent: FC<{ children: ReactNode }> = ({ children }) => {
-	const { mode } = useColorMode();
-	const theme = useMemo(() => getTheme(mode), [mode]);
+  const { mode } = useColorMode();
+  const theme = useMemo(() => getTheme(mode), [mode]);
 
-	return (
-		<ThemeProvider theme={theme}>
-			<CssBaseline />
-			{children}
-		</ThemeProvider>
-	);
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      {children}
+    </ThemeProvider>
+  );
 };
 
 const initQueryClient = () => {
-	return new QueryClient({
-		defaultOptions: {
-			queries: {
-				staleTime: 60 * 1000, // 1분
-				refetchOnWindowFocus: false,
-			},
-			mutations: {},
-		},
-	});
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 60 * 1000, // 1분
+        refetchOnWindowFocus: false,
+      },
+      mutations: {},
+    },
+  });
 };
 
 // This is the main provider component you will export and use.
 export const AppProviders: FC<AppProvidersProps> = ({ children, emotionCache, initialLang }) => {
-	const [queryClient] = useState(initQueryClient);
+  const [queryClient] = useState(initQueryClient);
 
-	return (
-		<React.StrictMode>
-			<QueryClientProvider client={queryClient}>
-				<SuperTokensWrapper>
-					<AuthProvider>
-						<CacheProvider value={emotionCache}>
-							<LanguageProvider initialLang={initialLang}>
-								<ColorModeProvider>
-									<ToastProvider>
-										<ThemedAppContent>{children}</ThemedAppContent>
-									</ToastProvider>
-								</ColorModeProvider>
-							</LanguageProvider>
-						</CacheProvider>
-					</AuthProvider>
-				</SuperTokensWrapper>
-			</QueryClientProvider>
-		</React.StrictMode>
-	);
+  return (
+    <React.StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <SuperTokensWrapper>
+          <AuthProvider>
+            <CacheProvider value={emotionCache}>
+              <LanguageProvider initialLang={initialLang}>
+                <ColorModeProvider>
+                  <ToastProvider>
+                    <ThemedAppContent>{children}</ThemedAppContent>
+                  </ToastProvider>
+                </ColorModeProvider>
+              </LanguageProvider>
+            </CacheProvider>
+          </AuthProvider>
+        </SuperTokensWrapper>
+      </QueryClientProvider>
+    </React.StrictMode>
+  );
 };

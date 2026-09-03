@@ -5,24 +5,32 @@ import { apiClient, consumeNdjsonStream, genApiUrl } from '../../util/clientApiH
 import { MODULE_NAMES } from '@rita-berenice/shared/config';
 import { ChatTurn, ChatTurnCdo, TempChatTurn } from '@rita-berenice/shared/domain';
 import {
-	ChatGenerationStage,
-	EnqueueFinalizationResponse,
-	FinalizationJobSnapshot,
-	ReceiveBotResponseRequest,
-	ReceiveBotResponseStreamEvent,
+  ChatGenerationStage,
+  ContinueTempResponseRequest,
+  EnqueueFinalizationResponse,
+  FinalizationJobSnapshot,
+  ReceiveBotResponseRequest,
+  ReceiveBotResponseStreamEvent,
 } from '@rita-berenice/shared/api';
 import { ApiError } from '@rita-berenice/shared/domain';
 
 interface ReceiveBotResponseStreamVariables {
-	request: ReceiveBotResponseRequest;
-	onDelta?: (text: string) => void;
-	onStatus?: (stage: ChatGenerationStage) => void;
-	signal?: AbortSignal;
+  request: ReceiveBotResponseRequest;
+  onDelta?: (text: string) => void;
+  onStatus?: (stage: ChatGenerationStage) => void;
+  signal?: AbortSignal;
 }
 
 interface EnqueueFinalizationVariables {
-	cdo: ChatTurnCdo;
-	signal?: AbortSignal;
+  cdo: ChatTurnCdo;
+  signal?: AbortSignal;
+}
+
+interface ContinueTempResponseStreamVariables {
+  request: ContinueTempResponseRequest;
+  onDelta?: (text: string) => void;
+  onStatus?: (stage: ChatGenerationStage) => void;
+  signal?: AbortSignal;
 }
 
 /**
@@ -30,93 +38,123 @@ interface EnqueueFinalizationVariables {
  * refactored for TanStack Query.
  */
 export const useOrchestrationApi = () => {
-	const MODULE_NAME = MODULE_NAMES.ORCHESTRATION;
+  const MODULE_NAME = MODULE_NAMES.ORCHESTRATION;
 
-	const enqueueFinalization = useMutation<
-		EnqueueFinalizationResponse,
-		Error,
-		EnqueueFinalizationVariables
-	>({
-		mutationFn: async ({ cdo, signal }) => {
-			const url = genApiUrl(MODULE_NAMES.ORCHESTRATION, 'enqueueFinalization');
-			const response = await apiClient.post<EnqueueFinalizationResponse>(url, cdo, { signal });
-			return response.data;
-		},
-	});
+  const enqueueFinalization = useMutation<EnqueueFinalizationResponse, Error, EnqueueFinalizationVariables>({
+    mutationFn: async ({ cdo, signal }) => {
+      const url = genApiUrl(MODULE_NAMES.ORCHESTRATION, 'enqueueFinalization');
+      const response = await apiClient.post<EnqueueFinalizationResponse>(url, cdo, { signal });
+      return response.data;
+    },
+  });
 
-	const waitForFinalizationJob = async (
-		sessionId: string,
-		sequence: number,
-		signal?: AbortSignal
-	): Promise<ChatTurn> => {
-		const url = genApiUrl(MODULE_NAMES.ORCHESTRATION, 'getFinalizationJob', [sessionId, sequence]);
+  const waitForFinalizationJob = async (
+    sessionId: string,
+    sequence: number,
+    signal?: AbortSignal,
+  ): Promise<ChatTurn> => {
+    const url = genApiUrl(MODULE_NAMES.ORCHESTRATION, 'getFinalizationJob', [sessionId, sequence]);
 
-		while (!signal?.aborted) {
-			const response = await apiClient.get<FinalizationJobSnapshot>(url, { signal });
-			if (response.data.status === 'completed' && response.data.result) {
-				return response.data.result;
-			}
-			if (response.data.status === 'failed') {
-				// `details` mirrors the chat-stream error shape so the caller can reuse the same
-				// API-key handling. Without it a finalization that died on a missing key was
-				// reported as an indexing problem, which is what made the demo incident hard to read.
-				throw new ApiError(500, response.data.error || 'Chat turn finalization failed.', undefined, {
-					code: response.data.errorCode,
-					keyType: response.data.keyType,
-				});
-			}
-			await new Promise((resolve) => setTimeout(resolve, 1_000));
-		}
+    while (!signal?.aborted) {
+      const response = await apiClient.get<FinalizationJobSnapshot>(url, { signal });
+      if (response.data.status === 'completed' && response.data.result) {
+        return response.data.result;
+      }
+      if (response.data.status === 'failed') {
+        // `details` mirrors the chat-stream error shape so the caller can reuse the same
+        // API-key handling. Without it a finalization that died on a missing key was
+        // reported as an indexing problem, which is what made the demo incident hard to read.
+        throw new ApiError(500, response.data.error || 'Chat turn finalization failed.', undefined, {
+          code: response.data.errorCode,
+          keyType: response.data.keyType,
+        });
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
+    }
 
-		throw new DOMException('Finalization status polling was aborted.', 'AbortError');
-	};
+    throw new DOMException('Finalization status polling was aborted.', 'AbortError');
+  };
 
-	/**
-	 * Orchestrates the backend flow for generating a new character response.
-	 * This is a mutation as it creates a new chat turn (even temporary).
-	 * Mutation key: 'receiveBotResponse'
-	 */
-	const receiveBotResponse = useMutation<
-		TempChatTurn, // Return type on success
-		Error, // Error type
-		ReceiveBotResponseStreamVariables
-	>({
-		mutationFn: async ({ request, onDelta, onStatus, signal }) => {
-			const url = genApiUrl(MODULE_NAME, 'receiveBotResponseStream');
-			let completedTurn: TempChatTurn | undefined;
+  /**
+   * Orchestrates the backend flow for generating a new character response.
+   * This is a mutation as it creates a new chat turn (even temporary).
+   * Mutation key: 'receiveBotResponse'
+   */
+  const receiveBotResponse = useMutation<
+    TempChatTurn, // Return type on success
+    Error, // Error type
+    ReceiveBotResponseStreamVariables
+  >({
+    mutationFn: async ({ request, onDelta, onStatus, signal }) => {
+      const url = genApiUrl(MODULE_NAME, 'receiveBotResponseStream');
+      let completedTurn: TempChatTurn | undefined;
 
-			await consumeNdjsonStream<ReceiveBotResponseStreamEvent>(
-				url,
-				request,
-				(event) => {
-					switch (event.type) {
-						case 'status':
-							onStatus?.(event.stage);
-							break;
-						case 'delta':
-							onDelta?.(event.text);
-							break;
-						case 'complete':
-							completedTurn = event.data;
-							break;
-						case 'error':
-							// `details` carries the actionable-failure marker (missing/rejected API key)
-							// so the caller can prompt for the key instead of only printing text.
-							throw new ApiError(500, event.message, event.clientMessage, {
-								code: event.code,
-								keyType: event.keyType,
-							});
-					}
-				},
-				signal
-			);
+      await consumeNdjsonStream<ReceiveBotResponseStreamEvent>(
+        url,
+        request,
+        (event) => {
+          switch (event.type) {
+            case 'status':
+              onStatus?.(event.stage);
+              break;
+            case 'delta':
+              onDelta?.(event.text);
+              break;
+            case 'complete':
+              completedTurn = event.data;
+              break;
+            case 'error':
+              // `details` carries the actionable-failure marker (missing/rejected API key)
+              // so the caller can prompt for the key instead of only printing text.
+              throw new ApiError(500, event.message, event.clientMessage, {
+                code: event.code,
+                keyType: event.keyType,
+              });
+          }
+        },
+        signal,
+      );
 
-			if (!completedTurn) {
-				throw new ApiError(502, 'The response stream ended before completion.');
-			}
-			return completedTurn;
-		},
-	});
+      if (!completedTurn) {
+        throw new ApiError(502, 'The response stream ended before completion.');
+      }
+      return completedTurn;
+    },
+  });
 
-	return { receiveBotResponse, enqueueFinalization, waitForFinalizationJob };
+  const continueTempResponse = useMutation<TempChatTurn, Error, ContinueTempResponseStreamVariables>({
+    mutationFn: async ({ request, onDelta, onStatus, signal }) => {
+      const url = genApiUrl(MODULE_NAME, 'continueTempResponseStream');
+      let completedTurn: TempChatTurn | undefined;
+
+      await consumeNdjsonStream<ReceiveBotResponseStreamEvent>(
+        url,
+        request,
+        (event) => {
+          switch (event.type) {
+            case 'status':
+              onStatus?.(event.stage);
+              break;
+            case 'delta':
+              onDelta?.(event.text);
+              break;
+            case 'complete':
+              completedTurn = event.data;
+              break;
+            case 'error':
+              throw new ApiError(500, event.message, event.clientMessage, {
+                code: event.code,
+                keyType: event.keyType,
+              });
+          }
+        },
+        signal,
+      );
+
+      if (!completedTurn) throw new ApiError(502, 'The continuation stream ended before completion.');
+      return completedTurn;
+    },
+  });
+
+  return { receiveBotResponse, continueTempResponse, enqueueFinalization, waitForFinalizationJob };
 };
